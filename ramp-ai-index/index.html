@@ -456,7 +456,7 @@ footer .note { max-width: 52ch; }
         <div class="card-head">
           <div>
             <h2 class="card-title">Sector</h2>
-            <p class="card-desc">Provider share by sector over time</p>
+            <p class="card-desc">All providers · pick a sector</p>
           </div>
           <div class="controls">
             <select class="select" id="selModelSector"></select>
@@ -464,6 +464,28 @@ footer .note { max-width: 52ch; }
         </div>
         <div class="chart-box tall"><canvas id="chartModelSector"></canvas></div>
       </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">OpenAI · by sector</h2>
+              <p class="card-desc">OpenAI API spend share across sectors over time</p>
+            </div>
+          </div>
+          <div class="chart-box tall"><canvas id="chartModelSectorOpenAI"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">Anthropic · by sector</h2>
+              <p class="card-desc">Anthropic API spend share across sectors over time</p>
+            </div>
+          </div>
+          <div class="chart-box tall"><canvas id="chartModelSectorAnthropic"></canvas></div>
+        </div>
+      </div>
+
     </div>
 
     <div class="subview" id="model-size">
@@ -471,7 +493,7 @@ footer .note { max-width: 52ch; }
         <div class="card-head">
           <div>
             <h2 class="card-title">Business Size</h2>
-            <p class="card-desc">Provider share by FTE segment over time</p>
+            <p class="card-desc">All providers · pick a size segment</p>
           </div>
           <div class="controls">
             <select class="select" id="selModelSize"></select>
@@ -479,6 +501,28 @@ footer .note { max-width: 52ch; }
         </div>
         <div class="chart-box tall"><canvas id="chartModelSize"></canvas></div>
       </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">OpenAI · by business size</h2>
+              <p class="card-desc">OpenAI API spend share across Small / Medium / Large over time</p>
+            </div>
+          </div>
+          <div class="chart-box tall"><canvas id="chartModelSizeOpenAI"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">Anthropic · by business size</h2>
+              <p class="card-desc">Anthropic API spend share across Small / Medium / Large over time</p>
+            </div>
+          </div>
+          <div class="chart-box tall"><canvas id="chartModelSizeAnthropic"></canvas></div>
+        </div>
+      </div>
+
     </div>
 
     <div class="subview" id="model-sector-size">
@@ -1343,6 +1387,81 @@ renderVendorTable("vendorLatestTable", DATA.vendors.latest);
   });
 })();
 
+
+function shortModelSector(n) {
+  const map = {
+    "Technology and media": "Tech & media",
+    "Professional, scientific, and technical services": "Prof. services",
+    "Finance and insurance": "Finance",
+    "Health care": "Health care",
+    "Manufacturing": "Manufacturing",
+    "Construction": "Construction",
+    "Retail": "Retail",
+    "Accommodation and food services": "Accom. & food",
+  };
+  return map[n] || n;
+}
+
+/** One provider's share over time, one line per dimension label (sector or size). */
+function makeProviderByDimChart(canvasId, pack, provider, dimKind) {
+  const labelsOrder = dimKind === "size"
+    ? ["Small", "Medium", "Large"].filter(n => pack.labels.includes(n))
+        .concat(pack.labels.filter(n => !["Small", "Medium", "Large"].includes(n)))
+    : pack.labels.slice();
+
+  const datasets = labelsOrder.map((lab, i) => {
+    const st = styleForSeries(i);
+    const series = (pack.by_label[lab] || {})[provider] || pack.months.map(() => null);
+    return {
+      label: dimKind === "sector" ? shortModelSector(lab) : lab,
+      fullLabel: lab,
+      data: series,
+      borderColor: dimKind === "size" ? colorFor(lab, i) : colorFor(lab, i),
+      backgroundColor: "transparent",
+      borderWidth: 2.25,
+      borderDash: dimKind === "sector" ? st.borderDash : undefined,
+      pointRadius: dimKind === "sector" ? 2.5 : 0,
+      pointHoverRadius: 5,
+      pointStyle: dimKind === "sector" ? st.pointStyle : "circle",
+      tension: 0.25,
+      spanGaps: true,
+    };
+  });
+
+  return new Chart(document.getElementById(canvasId), {
+    type: "line",
+    data: {
+      labels: pack.months.map(fmtMonth),
+      datasets,
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { position: "bottom" },
+        tooltip: {
+          callbacks: {
+            label(ctx) {
+              const full = ctx.dataset.fullLabel || ctx.dataset.label;
+              const v = ctx.parsed.y;
+              return full + ": " + (v == null ? "—" : fmtPct(v));
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
+        y: {
+          min: 0,
+          grid: { color: "#e8e6dc" },
+          ticks: { callback: v => v + "%" },
+          title: { display: true, text: provider + " share", color: "#73726c" },
+        }
+      }
+    }
+  });
+}
+
 function makeProviderShareChart(canvasId) {
   return new Chart(document.getElementById(canvasId), {
     type: "line",
@@ -1417,6 +1536,20 @@ function updateProviderShareChart(chart, months, providers, seriesByProvider) {
   }
   sel.addEventListener("change", render);
   render();
+})();
+
+(function() {
+  const pack = DATA.model_sector_curated;
+  if (!pack || !pack.labels) return;
+  charts.modelSectorOpenAI = makeProviderByDimChart("chartModelSectorOpenAI", pack, "OpenAI", "sector");
+  charts.modelSectorAnthropic = makeProviderByDimChart("chartModelSectorAnthropic", pack, "Anthropic", "sector");
+})();
+
+(function() {
+  const pack = DATA.model_size_curated;
+  if (!pack || !pack.labels) return;
+  charts.modelSizeOpenAI = makeProviderByDimChart("chartModelSizeOpenAI", pack, "OpenAI", "size");
+  charts.modelSizeAnthropic = makeProviderByDimChart("chartModelSizeAnthropic", pack, "Anthropic", "size");
 })();
 
 (function() {
