@@ -172,6 +172,9 @@ footer {
 }
 footer .note { max-width: 52ch; }
 
+#chartSpendSectorSizeBar { min-height: 420px; }
+.chart-wrap:has(#chartSpendSectorSizeBar) { height: 420px; }
+
 </style></head><body>
 <nav class="nav">
   <div class="nav-inner">
@@ -882,15 +885,25 @@ renderVendorTable("vendorLatestTable", DATA.vendors.latest);
   sel.addEventListener("change", renderLines);
   renderLines();
 
-  // Latest-month grouped bar: sectors × sizes
+  // Latest-month grouped bar: sectors × sizes (horizontal + short labels)
   const latest = pack.months[pack.months.length - 1];
   const li = pack.months.length - 1;
   document.getElementById("spendSectorSizeBarLabel").textContent = fmtMonth(latest) + " · median PEPM";
   const sectors = pack.sectors;
+  const shortSector = {
+    "Technology and media": "Tech & media",
+    "Professional, scientific, and technical services": "Prof. services",
+    "Finance and insurance": "Finance",
+    "Health care": "Health care",
+    "Manufacturing": "Manufacturing",
+    "Construction": "Construction",
+    "Retail": "Retail",
+    "Accommodation and food services": "Accom. & food",
+  };
   charts.spendSectorSizeBar = new Chart(document.getElementById("chartSpendSectorSizeBar"), {
     type: "bar",
     data: {
-      labels: sectors,
+      labels: sectors.map(s => shortSector[s] || s),
       datasets: sizeOrder.map(sz => ({
         label: sz,
         data: sectors.map(sec => {
@@ -902,11 +915,33 @@ renderVendorTable("vendorLatestTable", DATA.vendors.latest);
       }))
     },
     options: {
+      indexAxis: "y",
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: "bottom" }, tooltip: tipMoney },
+      plugins: {
+        legend: { position: "bottom" },
+        tooltip: {
+          callbacks: {
+            title: items => {
+              const i = items[0].dataIndex;
+              return sectors[i];
+            },
+            label: ctx => {
+              const v = ctx.parsed.x;
+              if (v == null || Number.isNaN(v)) return ctx.dataset.label + ": —";
+              return ctx.dataset.label + ": $" + Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
+            }
+          }
+        }
+      },
       scales: {
-        x: { grid: { display: false }, ticks: { maxRotation: 45, minRotation: 0, autoSkip: false, font: { size: 10 } } },
-        y: { grid: { color: "#e8e6dc" }, ticks: { callback: v => "$" + Number(v).toLocaleString() } }
+        x: {
+          grid: { color: "#e8e6dc" },
+          ticks: { callback: v => "$" + Number(v).toLocaleString() }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { font: { size: 12 }, autoSkip: false }
+        }
       }
     }
   });
