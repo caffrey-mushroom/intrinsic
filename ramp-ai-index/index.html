@@ -361,6 +361,18 @@ footer .note { max-width: 52ch; }
       <div class="card">
         <div class="card-head">
           <div>
+            <h2 class="card-title">Sector · sizes over time</h2>
+            <p class="card-desc">Filter Mode · state=ALL · financing=ALL · pick a sector → Small / Medium / Large</p>
+          </div>
+          <div class="controls">
+            <select class="select" id="selSpendSectorSize"></select>
+          </div>
+        </div>
+        <div class="chart-box tall"><canvas id="chartSpendSectorSize"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div>
             <h2 class="card-title">Large · sectors over time</h2>
             <p class="card-desc">Filter Mode · state=ALL · financing=ALL · Large only · each line is a sector</p>
           </div>
@@ -1173,6 +1185,43 @@ renderVendorTable("vendorLatestTable", DATA.vendors.latest);
         };
       });
   }
+
+  // Sector picker → Small / Medium / Large lines
+  const selSectorSize = document.getElementById("selSpendSectorSize");
+  charts.spendSectorSize = new Chart(document.getElementById("chartSpendSectorSize"), {
+    type: "line",
+    data: { labels: [], datasets: [] },
+    options: lineOpts(false),
+  });
+  pack.sectors.forEach(sec => {
+    const o = document.createElement("option");
+    o.value = sec;
+    o.textContent = shortSector[sec] || sec;
+    selSectorSize.appendChild(o);
+  });
+  if (pack.sectors.includes("Technology and media")) {
+    selSectorSize.value = "Technology and media";
+  }
+  function renderSectorSize() {
+    const sec = selSectorSize.value;
+    const bySize = pack.by_sector[sec] || {};
+    const sizes = ["Small", "Medium", "Large"].filter(sz => bySize[sz]);
+    charts.spendSectorSize.data.labels = pack.months.map(fmtMonth);
+    charts.spendSectorSize.data.datasets = sizes.map((sz, i) => ({
+      label: sz,
+      data: bySize[sz],
+      borderColor: colorFor(sz, i),
+      backgroundColor: "transparent",
+      borderWidth: 2.25,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      tension: 0.25,
+      spanGaps: true,
+    }));
+    charts.spendSectorSize.update();
+  }
+  selSectorSize.addEventListener("change", renderSectorSize);
+  renderSectorSize();
 
   sizeOrder.forEach(sz => {
     const el = document.getElementById(canvasBySize[sz]);
