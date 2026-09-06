@@ -1,7 +1,10 @@
-# INTRINSIC — Ramp AI Index Dashboard
+# INTRINSIC
 
-Interactive tracking dashboard for the [Ramp AI Index](https://ramp.com/data/ai-index).
+Research hub for INTRINSIC.
 
-**Live:** https://caffrey-mushroom.github.io/intrinsic/
+## Live site
 
-Built for Caffrey / INTRINSIC research. Source data from Ramp; charts cover Adoption, Spend per employee, and Model market share.
+- Hub: https://caffrey-mushroom.github.io/intrinsic/
+- Ramp AI Index dashboard: https://caffrey-mushroom.github.io/intrinsic/ramp-ai-index/
+
+The root page is the summary hub. Dataset dashboards live under subpaths.
