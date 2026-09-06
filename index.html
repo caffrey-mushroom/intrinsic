@@ -342,14 +342,29 @@ footer .note { max-width: 52ch; }
       <div class="card">
         <div class="card-head">
           <div>
-            <h2 class="card-title">Sector + Business Size</h2>
-            <p class="card-desc">Filter Mode · state=ALL · financing=ALL · pick a sector → Small / Medium / Large lines</p>
-          </div>
-          <div class="controls">
-            <select class="select" id="selSpendSectorSize"></select>
+            <h2 class="card-title">Large · sectors over time</h2>
+            <p class="card-desc">Filter Mode · state=ALL · financing=ALL · Large only · each line is a sector</p>
           </div>
         </div>
-        <div class="chart-box tall"><canvas id="chartSpendSectorSize"></canvas></div>
+        <div class="chart-box tall"><canvas id="chartSpendSizeLarge"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h2 class="card-title">Medium · sectors over time</h2>
+            <p class="card-desc">Filter Mode · state=ALL · financing=ALL · Medium only · each line is a sector</p>
+          </div>
+        </div>
+        <div class="chart-box tall"><canvas id="chartSpendSizeMedium"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h2 class="card-title">Small · sectors over time</h2>
+            <p class="card-desc">Filter Mode · state=ALL · financing=ALL · Small only · each line is a sector</p>
+          </div>
+        </div>
+        <div class="chart-box tall"><canvas id="chartSpendSizeSmall"></canvas></div>
       </div>
       <div class="card">
         <div class="card-head">
@@ -854,42 +869,7 @@ renderVendorTable("vendorLatestTable", DATA.vendors.latest);
 
 (function() {
   const pack = DATA.spend_sector_size;
-  const sel = document.getElementById("selSpendSectorSize");
-  const sizeOrder = ["Small", "Medium", "Large"];
-  pack.sectors.forEach(s => {
-    const o = document.createElement("option");
-    o.value = s; o.textContent = s; sel.appendChild(o);
-  });
-  if (pack.sectors.includes("Technology and media")) sel.value = "Technology and media";
-
-  charts.spendSectorSize = new Chart(document.getElementById("chartSpendSectorSize"), {
-    type: "line",
-    data: { labels: [], datasets: [] },
-    options: lineOpts(false)
-  });
-
-  function renderLines() {
-    const sec = sel.value;
-    const by = pack.by_sector[sec] || {};
-    const sizes = sizeOrder.filter(s => by[s]);
-    charts.spendSectorSize.data.labels = pack.months.map(fmtMonth);
-    charts.spendSectorSize.data.datasets = sizes.map(s => ({
-      label: s,
-      data: by[s],
-      borderColor: colorFor(s, 0),
-      backgroundColor: "transparent",
-      borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.25, spanGaps: true,
-    }));
-    charts.spendSectorSize.update();
-  }
-  sel.addEventListener("change", renderLines);
-  renderLines();
-
-  // Latest-month grouped bar: sectors × sizes (horizontal + short labels)
-  const latest = pack.months[pack.months.length - 1];
-  const li = pack.months.length - 1;
-  document.getElementById("spendSectorSizeBarLabel").textContent = fmtMonth(latest) + " · median PEPM";
-  const sectors = pack.sectors;
+  const sizeOrder = ["Large", "Medium", "Small"];
   const shortSector = {
     "Technology and media": "Tech & media",
     "Professional, scientific, and technical services": "Prof. services",
@@ -900,11 +880,67 @@ renderVendorTable("vendorLatestTable", DATA.vendors.latest);
     "Retail": "Retail",
     "Accommodation and food services": "Accom. & food",
   };
+  const canvasBySize = {
+    Large: "chartSpendSizeLarge",
+    Medium: "chartSpendSizeMedium",
+    Small: "chartSpendSizeSmall",
+  };
+
+  function seriesForSize(sz) {
+    return pack.sectors
+      .filter(sec => (pack.by_sector[sec] || {})[sz])
+      .map((sec, i) => ({
+        label: shortSector[sec] || sec,
+        fullLabel: sec,
+        data: pack.by_sector[sec][sz],
+        borderColor: colorFor(sec, i),
+        backgroundColor: "transparent",
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.25,
+        spanGaps: true,
+      }));
+  }
+
+  sizeOrder.forEach(sz => {
+    const el = document.getElementById(canvasBySize[sz]);
+    if (!el) return;
+    charts["spendSizePanel_" + sz] = new Chart(el, {
+      type: "line",
+      data: {
+        labels: pack.months.map(fmtMonth),
+        datasets: seriesForSize(sz),
+      },
+      options: {
+        ...lineOpts(false),
+        plugins: {
+          ...lineOpts(false).plugins,
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const full = ctx.dataset.fullLabel || ctx.dataset.label;
+                const v = ctx.parsed.y;
+                if (v == null || Number.isNaN(v)) return full + ": —";
+                return full + ": $" + Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
+              }
+            }
+          }
+        }
+      }
+    });
+  });
+
+  // Latest-month grouped bar: sectors × sizes (horizontal + short labels)
+  const latest = pack.months[pack.months.length - 1];
+  const li = pack.months.length - 1;
+  document.getElementById("spendSectorSizeBarLabel").textContent = fmtMonth(latest) + " · median PEPM";
+  const sectors = pack.sectors;
   charts.spendSectorSizeBar = new Chart(document.getElementById("chartSpendSectorSizeBar"), {
     type: "bar",
     data: {
       labels: sectors.map(s => shortSector[s] || s),
-      datasets: sizeOrder.map(sz => ({
+      datasets: ["Small", "Medium", "Large"].map(sz => ({
         label: sz,
         data: sectors.map(sec => {
           const arr = (pack.by_sector[sec] || {})[sz];
