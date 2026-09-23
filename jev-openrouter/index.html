@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<title>Jev OpenRouter Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#faf9f5; --panel:#ffffff; --ink:#141413; --muted:#73726c; --faint:#9a988f;
+  --line:#e8e6dc; --grid:#efede5; --accent:#c96442; --accent-2:#141413; --accent-soft:rgba(201,100,66,.14);
+  --bar:#c96442; --bar-partial:rgba(201,100,66,.28);
+  --up:#2f7d4f; --down:#b3453a;
+  --s1:#c96442; --s2:#5B6ABF; --s3:#10A37F; --s4:#8b7355; --s5:#141413;
+  --sans:Inter,"Noto Sans SC",system-ui,-apple-system,"PingFang SC",sans-serif;
+  --serif:Newsreader,Georgia,serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55}
+.wrap{max-width:1120px;margin:0 auto;padding:28px 16px 48px;display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:1px solid var(--line);padding-bottom:14px}
+h1{font-family:var(--serif);font-size:30px;font-weight:500;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--muted);font-size:13px;margin-top:4px}
+.stamp{font-family:var(--mono);font-size:12px;color:var(--faint);text-align:right}
+.stamp b{color:var(--muted);font-weight:500}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.kpi .lab{font-size:12px;color:var(--muted)}
+.kpi .val{font-family:var(--mono);font-size:24px;font-weight:500;font-variant-numeric:tabular-nums}
+.kpi .note{font-size:12px;color:var(--faint);font-family:var(--mono)}
+.up{color:var(--up)} .down{color:var(--down)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:760px){.two{grid-template-columns:1fr}}
+section.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;min-width:0}
+section h2{font-family:var(--serif);font-size:19px;font-weight:500;margin:0 0 2px}
+section .cap{font-size:12px;color:var(--muted);margin:0 0 12px}
+.cap{font-size:12px;color:var(--muted)}
+.subh{font-size:12px;font-weight:500;color:var(--muted);margin:14px 0 4px;padding-top:12px;border-top:1px solid var(--line)}
+.chart{width:100%;overflow-x:auto}
+.chart svg{display:block;width:100%;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td.l,th.l{text-align:left;white-space:normal}
+td.l{color:var(--muted);min-width:220px;font-family:var(--sans)}
+th{font-weight:500;color:var(--muted);font-size:12px}
+td{font-family:var(--mono);font-variant-numeric:tabular-nums}
+tr.partial td{color:var(--faint)}
+.empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:6px}
+.notes{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:760px){.notes{grid-template-columns:1fr}}
+.notes ul{margin:0;padding-left:18px;color:var(--muted);font-size:13px;display:flex;flex-direction:column;gap:6px}
+.notes b{color:var(--ink);font-weight:500}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p style="margin:0;font-size:13px"><a href="../" style="color:var(--accent);text-decoration:none">← INTRINSIC</a></p>
+  <header>
+    <div>
+      <h1>Jev OpenRouter Tracker</h1>
+      <div class="sub">TypeSafe Jev 在 OpenRouter 全平台的每日调用量 · 看增速和份额，不代表 Jev 总量 (不含直连 TypeSafe API)</div>
+    </div>
+    <div class="stamp" id="stamp">等待数据…</div>
+  </header>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="two">
+    <section class="panel">
+      <h2>每日 tokens</h2>
+      <p class="cap">prompt + completion，UTC 日。浅色柱 = 当天未走完</p>
+      <div class="chart" id="cTok"></div>
+      <div class="subh">占 OpenRouter 全平台 tokens</div>
+      <div class="chart" id="cShareTok"></div>
+    </section>
+    <section class="panel">
+      <h2>每日 requests</h2>
+      <p class="cap">调用次数 = Jev 决策次数。浅色柱 = 当天未走完</p>
+      <div class="chart" id="cReq"></div>
+      <div class="subh">占 OpenRouter 全平台 requests</div>
+      <div class="chart" id="cShareReq"></div>
+    </section>
+  </div>
+  <p class="cap" style="margin:-8px 0 0">份额分母 = OpenRouter 当日全平台总量 (约 560 个模型加总)。实心点 = 实际分母；空心点 + 浅色线 = 估算分母 (30 日均值：17.5T tokens、8.0 亿 requests / 天)</p>
+
+  <section class="panel">
+    <h2>每日明细</h2>
+    <p class="cap">来源: OpenRouter model-activity 接口 (公开，无需 API key)。每天 SGT 6:00 自动更新</p>
+    <div class="tbl" id="tblDaily"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Top apps · trailing 7d tokens</h2>
+    <p class="cap">来源: Jev 模型页 top apps (1 week 口径)。按 app 跟，头部 app 接入或迁出会改变曲线</p>
+    <div class="chart" id="cApps"></div>
+    <div class="legend" id="lgApps"></div>
+    <div class="tbl" id="tblSnap" style="margin-top:14px"></div>
+  </section>
+
+  <section class="panel notes">
+    <div>
+      <h2>口径</h2>
+      <ul>
+        <li><b>tokens = prompt + completion</b>。Jev 只对 prompt 收费 ($0.042/M)，completion 免费，所以花费 ≈ prompt tokens × $0.042/M</li>
+        <li><b>每次决策约 3.3k tokens</b> (9/22: 276B ÷ 83.6M 次)，其中 prompt 约 2.9k，比外部文章常说的 1k 高</li>
+        <li><b>全平台分母</b> 来自 OpenRouter rankings 接口的日口径 (约 560 个模型加总)。该接口只给最近一个完整日，漏抓的日子无法补，只能用估算</li>
+        <li><b>WoW 用同一星期几比</b>，避开周末波动；需要满 8 天数据</li>
+        <li>日期是 UTC，SGT 早 6 点跑时 UTC 前一天刚结束，当天那行是未完成的</li>
+      </ul>
+    </div>
+    <div>
+      <h2>要盯的信号</h2>
+      <ul>
+        <li><b>爬坡是否停</b>: 9/21→9/22 requests +1.5%、tokens −4%，若连续一周横盘，说明首批接入的需求已经放完</li>
+        <li><b>tokens/request 变化</b>: 上升说明用户往 Jev 塞更长的上下文，用法在变重</li>
+        <li><b>头部 app 消失</b>: 先查是停用还是转直连 TypeSafe，后者不代表需求下降</li>
+        <li><b>新版本上线</b>: 新版本是新 permaslug，要加总，否则曲线断档</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var daily=[], snaps=[];
+  var $=function(id){return document.getElementById(id)};
+  function fmt(n){
+    if(n==null||isNaN(n)) return "—";
+    var a=Math.abs(n);
+    if(a>=1e12) return (n/1e12).toFixed(2)+"T";
+    if(a>=1e9) return (n/1e9).toFixed(a>=1e11?0:1)+"B";
+    if(a>=1e6) return (n/1e6).toFixed(1)+"M";
+    if(a>=1e3) return (n/1e3).toFixed(1)+"k";
+    return String(Math.round(n));
+  }
+  function usd(n){ return n==null?"—":"$"+Math.round(n).toLocaleString("en-US"); }
+  function pct(x){ if(x==null||!isFinite(x)) return "—"; return (x>=0?"+":"")+(x*100).toFixed(0)+"%"; }
+  function cls(x){ return x==null||!isFinite(x)?"":(x>=0?"up":"down"); }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]}); }
+  function shift(d,k){ var t=new Date(d+"T00:00:00Z"); t.setUTCDate(t.getUTCDate()+k); return t.toISOString().slice(0,10); }
+  function tok(r){ return (r.promptTokens||0)+(r.completionTokens||0); }
+  function find(arr,d){ for(var i=0;i<arr.length;i++) if(arr[i].date===d) return arr[i]; return null; }
+  function full(){ return daily.filter(function(r){return !r.partial && r.requests>1000}); }
+
+  function kpis(){
+    var f=full(); if(!f.length){ $("kpis").innerHTML=""; return; }
+    var L=f[f.length-1], P=find(daily,shift(L.date,-1)), W=find(daily,shift(L.date,-7));
+    var dT=P?tok(L)/tok(P)-1:null, dR=P?L.requests/P.requests-1:null;
+    var wT=W&&W.requests>1000?tok(L)/tok(W)-1:null;
+    var cards=[
+      ["tokens / 天",fmt(tok(L)),L.date+" · DoD "+pct(dT),cls(dT)],
+      ["requests / 天",fmt(L.requests),"DoD "+pct(dR),cls(dR)],
+      ["tokens / request",fmt(tok(L)/L.requests),"prompt "+fmt(L.promptTokens/L.requests),""],
+      ["WoW (tokens)",pct(wT),W?"vs "+W.date:"满 8 天后出数",cls(wT)]
+    ];
+    $("kpis").innerHTML=cards.map(function(c){return '<div class="kpi"><div class="lab">'+c[0]+'</div><div class="val '+(c[0].indexOf("WoW")===0?c[3]:"")+'">'+c[1]+'</div><div class="note '+(c[0].indexOf("WoW")===0?"":c[3])+'">'+esc(c[2])+'</div></div>'}).join("");
+  }
+
+  function niceTop(max){ if(max<=0) return {top:1,step:1}; var mag=Math.pow(10,Math.floor(Math.log10(max))); var step=[1,2,2.5,5,10].map(function(m){return m*mag}).find(function(s){return max/s<=4})||mag*10; return {top:Math.ceil(max/step)*step,step:step}; }
+
+  // 缺当日实际总量时的估算分母：OpenRouter rankings 30 日口径合计 (截至 9/22) ≈ 525T tokens、24.1B requests，折日
+  var EST={tok:525e12/30, req:24.1e9/30};
+  function share(r,kind){ kind=kind||"tok"; var act=kind==="tok"?r.orTotalTokens:r.orTotalRequests; return (kind==="tok"?tok(r):r.requests)/(act||EST[kind]); }
+  function hasAct(r,kind){ return !!(kind==="req"?r.orTotalRequests:r.orTotalTokens); }
+  function bars(host,getv,label,withShare){
+    var rows=daily.filter(function(r){return r.requests>1000||r.partial});
+    if(!rows.length){ host.innerHTML='<div class="empty">暂无数据</div>'; return; }
+    var W=480,H=220,P={l:48,r:8,t:18,b:26};
+    var max=Math.max.apply(null,rows.map(getv)), s=niceTop(max), y=function(v){return P.t+(H-P.t-P.b)*(1-v/s.top)};
+    var n=rows.length, bw=(W-P.l-P.r)/n, g='';
+    for(var t=0;t<=s.top+1e-9;t+=s.step){ g+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+y(t)+'" y2="'+y(t)+'" stroke="var(--grid)"/><text x="'+(P.l-6)+'" y="'+(y(t)+4)+'" text-anchor="end" font-size="10" fill="var(--faint)" font-family="var(--mono)">'+fmt(t)+'</text>'; }
+    var every=Math.max(1,Math.ceil(n/10));
+    rows.forEach(function(r,i){
+      var v=getv(r), x=P.l+i*bw+bw*0.15, w=bw*0.7;
+      g+='<rect x="'+x+'" y="'+y(v)+'" width="'+w+'" height="'+Math.max(0,y(0)-y(v))+'" rx="2" fill="'+(r.partial?"var(--bar-partial)":"var(--bar)")+'"><title>'+esc(r.date)+': '+fmt(v)+(r.partial?' (未完成)':'')+'</title></rect>';
+      if(n<=14&&!r.partial) g+='<text x="'+(x+w/2)+'" y="'+(y(v)-5)+'" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="var(--mono)">'+fmt(v)+'</text>';
+      if(i%every===0||i===n-1) g+='<text x="'+(x+w/2)+'" y="'+(H-8)+'" text-anchor="middle" font-size="10" fill="var(--faint)" font-family="var(--mono)">'+r.date.slice(5)+'</text>';
+    });
+    if(withShare){
+      var fr=[]; rows.forEach(function(r,i){ if(!r.partial) fr.push({i:i,s:share(r,withShare),est:!hasAct(r,withShare)}); });
+      if(fr.length){
+        var smax=Math.max.apply(null,fr.map(function(o){return o.s})), ss=Math.max(0.005,Math.ceil(smax*1.25/0.005)*0.005);
+        var ys=function(v){return P.t+(H-P.t-P.b)*(1-v/ss)};
+        for(var k=0;k<=4;k++){ var v=ss*k/4; g+='<text x="'+(W-P.r+6)+'" y="'+(ys(v)+4)+'" font-size="10" fill="var(--s3)" font-family="var(--mono)">'+(v*100).toFixed(1)+'%</text>'; }
+        var pts=fr.map(function(o){return [P.l+o.i*bw+bw/2, ys(o.s)]});
+        for(var q=1;q<pts.length;q++){ var dash=(fr[q].est||fr[q-1].est)?' stroke-dasharray="5 3"':''; g+='<line x1="'+pts[q-1][0]+'" y1="'+pts[q-1][1]+'" x2="'+pts[q][0]+'" y2="'+pts[q][1]+'" stroke="var(--s3)" stroke-width="2"'+dash+'/>'; }
+        fr.forEach(function(o,j){ g+='<circle cx="'+pts[j][0]+'" cy="'+pts[j][1]+'" r="'+(o.est?3:4)+'" fill="'+(o.est?"var(--panel)":"var(--s3)")+'" stroke="var(--s3)" stroke-width="1.5"><title>'+esc(rows[o.i].date)+' 占比 '+(o.s*100).toFixed(2)+'%'+(o.est?' (估算分母)':' (实际分母)')+'</title></circle>'; });
+        var e=pts[pts.length-1]; g+='<text x="'+(e[0]-6)+'" y="'+(e[1]-8)+'" text-anchor="end" font-size="11" font-weight="600" fill="var(--s3)" font-family="var(--mono)">'+(fr[fr.length-1].s*100).toFixed(1)+'%</text>';
+      }
+    }
+    host.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(label)+'">'+g+'</svg>';
+  }
+
+  function shareChart(){ shareOne($("cShareTok"),"tok"); shareOne($("cShareReq"),"req"); }
+  function shareOne(host,kind){
+    var rows=daily.filter(function(r){return r.requests>1000||r.partial});
+    if(!rows.length){ host.innerHTML='<div class="empty">暂无数据</div>'; return; }
+    var W=480,H=130,P={l:48,r:8,t:20,b:22}, n=rows.length, bw=(W-P.l-P.r)/n;
+    var pts=[]; rows.forEach(function(r,i){ if(!r.partial) pts.push({i:i,v:share(r,kind),act:hasAct(r,kind),d:r.date}); });
+    var max=0; pts.forEach(function(p){if(p.v>max)max=p.v});
+    var step=[0.0025,0.005,0.01,0.02,0.025,0.05].find(function(s){return max*1.25/s<=3})||0.05, top=Math.ceil(max*1.25/step)*step;
+    var x=function(i){return P.l+i*bw+bw/2}, y=function(v){return P.t+(H-P.t-P.b)*(1-v/top)};
+    var g='', dec=step<0.01?1:0;
+    for(var t=0;t<=top+1e-9;t+=step){ g+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+y(t)+'" y2="'+y(t)+'" stroke="var(--grid)"/><text x="'+(P.l-6)+'" y="'+(y(t)+4)+'" text-anchor="end" font-size="10" fill="var(--faint)" font-family="var(--mono)">'+(t*100).toFixed(dec)+'%</text>'; }
+    rows.forEach(function(r,i){ g+='<text x="'+x(i)+'" y="'+(H-6)+'" text-anchor="middle" font-size="10" fill="var(--faint)" font-family="var(--mono)">'+r.date.slice(5)+'</text>'; });
+    for(var q=1;q<pts.length;q++){ var a=pts[q-1],b=pts[q]; g+='<line x1="'+x(a.i)+'" y1="'+y(a.v)+'" x2="'+x(b.i)+'" y2="'+y(b.v)+'" stroke="var(--accent-2)" stroke-width="2" stroke-linecap="round" opacity="'+((a.act&&b.act)?1:0.35)+'"/>'; }
+    pts.forEach(function(p){
+      var lab=(p.v*100).toFixed(1)+'%';
+      g+= p.act
+        ? '<circle cx="'+x(p.i)+'" cy="'+y(p.v)+'" r="4" fill="var(--accent-2)"><title>'+p.d+' '+lab+' (实际分母)</title></circle><text x="'+x(p.i)+'" y="'+(y(p.v)-8)+'" text-anchor="middle" font-size="10" font-weight="600" fill="var(--ink)" font-family="var(--mono)">'+lab+'</text>'
+        : '<circle cx="'+x(p.i)+'" cy="'+y(p.v)+'" r="3.5" fill="var(--panel)" stroke="var(--accent-2)" stroke-width="1.5" opacity=".5"><title>'+p.d+' ≈'+lab+' (估算分母)</title></circle><text x="'+x(p.i)+'" y="'+(y(p.v)-8)+'" text-anchor="middle" font-size="10" fill="var(--faint)" font-family="var(--mono)">≈'+lab+'</text>';
+    });
+    host.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="占 OpenRouter 份额">'+g+'</svg>';
+  }
+
+  function dailyTable(){
+    if(!daily.length){ $("tblDaily").innerHTML='<div class="empty">暂无数据</div>'; return; }
+    var h='<table><thead><tr><th>日期 (UTC)</th><th>tokens</th><th>prompt</th><th>completion</th><th>requests</th><th>tokens/req</th><th>花费</th><th>占 OR tokens</th><th>占 OR requests</th><th>DoD tokens</th><th>WoW tokens</th></tr></thead><tbody>';
+    daily.slice().reverse().forEach(function(r){
+      var p=find(daily,shift(r.date,-1)), w=find(daily,shift(r.date,-7));
+      var d=p&&p.requests>1000&&!r.partial?tok(r)/tok(p)-1:null, ww=w&&w.requests>1000&&!r.partial?tok(r)/tok(w)-1:null;
+      h+='<tr class="'+(r.partial?"partial":"")+'"><td>'+esc(r.date)+(r.partial?' *':'')+'</td><td>'+fmt(tok(r))+'</td><td>'+fmt(r.promptTokens)+'</td><td>'+fmt(r.completionTokens)+'</td><td>'+fmt(r.requests)+'</td><td>'+(r.requests?fmt(tok(r)/r.requests):"—")+'</td><td>'+usd(r.spendUsd)+'</td><td>'+(r.partial?"—":(hasAct(r,"tok")?"":"≈")+(share(r,"tok")*100).toFixed(1)+"%")+'</td><td>'+(r.partial?"—":(hasAct(r,"req")?"":"≈")+(share(r,"req")*100).toFixed(1)+"%")+'</td><td class="'+cls(d)+'">'+pct(d)+'</td><td class="'+cls(ww)+'">'+pct(ww)+'</td></tr>';
+    });
+    $("tblDaily").innerHTML=h+'</tbody></table><p class="cap" style="margin-top:8px">* 当天未走完 · ≈ 分母为估算 (OpenRouter 30 日合计 ÷ 30)；无 ≈ 的是当日实际全平台总量</p>';
+  }
+
+  function apps(){
+    var host=$("cApps");
+    if(!snaps.length){ host.innerHTML='<div class="empty">暂无快照</div>'; $("tblSnap").innerHTML=""; return; }
+    var names=[]; var L=snaps[snaps.length-1];
+    (L.topApps||[]).forEach(function(a){ if(names.indexOf(a.name)<0) names.push(a.name); });
+    snaps.forEach(function(r){ (r.topApps||[]).forEach(function(a){ if(names.length<8&&names.indexOf(a.name)<0) names.push(a.name); }); });
+    var cols=["var(--s1)","var(--s2)","var(--s3)","var(--s4)","var(--s5)","var(--faint)","var(--muted)","var(--accent)"];
+    var W=960,H=220,P={l:52,r:16,t:14,b:26}, n=snaps.length;
+    var ser=names.map(function(nm,i){return {name:nm,color:cols[i%8],vals:snaps.map(function(r){var a=(r.topApps||[]).filter(function(z){return z.name===nm})[0];return a?a.tokens7d:null})}});
+    var max=0; ser.forEach(function(s){s.vals.forEach(function(v){if(v>max)max=v})});
+    var s=niceTop(max), x=function(i){return P.l+(n===1?(W-P.l-P.r)/2:i*(W-P.l-P.r)/(n-1))}, y=function(v){return P.t+(H-P.t-P.b)*(1-v/s.top)}, g='';
+    for(var t=0;t<=s.top+1e-9;t+=s.step){ g+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+y(t)+'" y2="'+y(t)+'" stroke="var(--grid)"/><text x="'+(P.l-6)+'" y="'+(y(t)+4)+'" text-anchor="end" font-size="11" fill="var(--faint)" font-family="var(--mono)">'+fmt(t)+'</text>'; }
+    snaps.forEach(function(r,i){ g+='<text x="'+x(i)+'" y="'+(H-8)+'" text-anchor="middle" font-size="11" fill="var(--faint)" font-family="var(--mono)">'+r.date.slice(5)+'</text>'; });
+    ser.forEach(function(sr){ var pts=[]; sr.vals.forEach(function(v,i){ if(v!=null) pts.push([x(i),y(v)]); }); if(pts.length>1) g+='<polyline points="'+pts.map(function(p){return p.join(",")}).join(" ")+'" fill="none" stroke="'+sr.color+'" stroke-width="2"/>'; pts.forEach(function(p){ g+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="3.5" fill="'+sr.color+'"/>'; }); });
+    host.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Top apps">'+g+'</svg>';
+    $("lgApps").innerHTML=ser.map(function(sr){return '<span><i style="background:'+sr.color+'"></i>'+esc(sr.name)+'</span>'}).join("");
+    var h='<table><thead><tr><th>快照日 (SGT)</th><th>榜单 7d tokens</th><th>Trending 排名</th><th>#1 app</th><th class="l">备注</th></tr></thead><tbody>';
+    snaps.slice().reverse().forEach(function(r){ var a=(r.topApps||[])[0]; h+='<tr><td>'+esc(r.date)+'</td><td>'+fmt(r.jev7dTokens)+'</td><td>'+(r.trendingRank==null?"—":"#"+esc(r.trendingRank))+'</td><td>'+(a?esc(a.name)+" "+fmt(a.tokens7d):"—")+'</td><td class="l">'+esc(r.note||"")+'</td></tr>'; });
+    $("tblSnap").innerHTML=h+'</tbody></table>';
+  }
+
+  function render(){
+    kpis();
+    bars($("cTok"),tok,"每日 tokens");
+    bars($("cReq"),function(r){return r.requests||0},"每日 requests");
+    shareChart();
+    dailyTable(); apps();
+    var f=full(), L=f[f.length-1];
+    $("stamp").innerHTML=L?'最新完整日 <b>'+esc(L.date)+'</b><br>'+f.length+' 天数据':'还没有数据';
+  }
+  render();
+
+  fetch("data.json?v="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(d){
+    daily=(d.daily||[]).slice().sort(function(a,b){return a.date<b.date?-1:1});
+    snaps=(d.snapshots||[]).slice().sort(function(a,b){return a.date<b.date?-1:1});
+    render();
+  }).catch(function(){ $("stamp").textContent="数据加载失败，刷新重试"; });
+})();
+</script>
+
+</body>
+</html>
