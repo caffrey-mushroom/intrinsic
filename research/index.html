@@ -100,6 +100,20 @@ a.row:hover::before{opacity:1}
   .row{grid-template-columns:1fr; gap:4px}
   .row .side{order:-1; text-align:left}
 }
+/* tag filter — text tabs, 2px underline on the active one */
+.filter{margin-top:var(--s4); padding-top:var(--s2); border-top:var(--hair)}
+.q{width:100%; max-width:360px; font:inherit; font-size:var(--fs-body); color:var(--text); background:var(--bg); border:var(--hair); border-radius:var(--radius); padding:var(--s1) 12px}
+.q::placeholder{color:var(--faint)}
+.tagbar{display:flex; flex-wrap:wrap; gap:4px var(--s3); margin-top:var(--s2)}
+.tagbar button{font:inherit; font-size:13.5px; background:none; border:0; border-bottom:2px solid transparent; padding:4px 0; color:var(--muted); cursor:pointer}
+.tagbar button:hover{color:var(--text)}
+.tagbar button[aria-pressed="true"]{color:var(--text); border-bottom-color:var(--slate-500); font-weight:600}
+.tagbar .c{color:var(--faint); margin-left:3px; font-weight:400}
+.count{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s2)}
+.row .tags span{cursor:pointer}
+.row .tags span:hover{text-decoration:underline; text-underline-offset:3px}
+.row .tags span.on{color:var(--text); font-weight:600}
+.row[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -114,7 +128,13 @@ a.row:hover::before{opacity:1}
   <h1 class="ptitle">Research Notes</h1>
   <p class="psub">按时间从新到旧</p>
 
-  <div class="list" style="margin-top:var(--s4); border-top:var(--hair)">
+  <div class="filter">
+    <input class="q" id="q" type="search" placeholder="#标签 或关键词，如 #hbm" aria-label="搜索 notes" autocomplete="off">
+    <div class="tagbar" id="tagbar" role="toolbar" aria-label="按标签筛选"></div>
+    <div class="count" id="count"></div>
+  </div>
+
+  <div class="list" id="notes" style="margin-top:var(--s1); border-top:var(--hair)">
     <a class="row" href="./2026-09-28-primer-hbf/">
       <div>
         <div class="kick num">2026.09.28 · Primer</div>
@@ -144,5 +164,45 @@ a.row:hover::before{opacity:1}
     </a>
   </div>
 </main>
+<script>
+(function(){
+  var rows=[].slice.call(document.querySelectorAll('#notes .row')), q=document.getElementById('q'),
+      bar=document.getElementById('tagbar'), cnt=document.getElementById('count'), active=null;
+  function esc(s){return s.replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]});}
+  // read each note's tags, turn them into clickable spans
+  var counts={};
+  rows.forEach(function(r){
+    var el=r.querySelector('.tags'), tags=el.textContent.trim().split(/\s+/).map(function(t){return t.replace(/^#/,'').toLowerCase()}).filter(Boolean);
+    r._tags=tags; r._text=r.textContent.toLowerCase();
+    el.innerHTML=tags.map(function(t){return '<span data-t="'+esc(t)+'">#'+esc(t)+'</span>'}).join(' ');
+    tags.forEach(function(t){counts[t]=(counts[t]||0)+1});
+  });
+  var tags=Object.keys(counts).sort(function(a,b){return counts[b]-counts[a]||a.localeCompare(b)});
+  bar.innerHTML='<button type="button" data-t="">全部<span class="c">'+rows.length+'</span></button>'+
+    tags.map(function(t){return '<button type="button" data-t="'+esc(t)+'">#'+esc(t)+'<span class="c">'+counts[t]+'</span></button>'}).join('');
+
+  function apply(){
+    var s=q.value.trim().toLowerCase(), words=s.split(/\s+/).filter(Boolean), n=0;
+    rows.forEach(function(r){
+      var ok=(!active||r._tags.indexOf(active)>=0) && words.every(function(w){
+        return w.charAt(0)==='#' ? r._tags.some(function(t){return t.indexOf(w.slice(1))===0}) : r._text.indexOf(w)>=0; });
+      r.hidden=!ok; if(ok) n++;
+      [].forEach.call(r.querySelectorAll('.tags span'),function(sp){sp.classList.toggle('on',sp.dataset.t===active)});
+    });
+    [].forEach.call(bar.querySelectorAll('button'),function(b){b.setAttribute('aria-pressed',String((b.dataset.t||null)===active))});
+    cnt.textContent=(active||s)?('显示 '+n+' / '+rows.length+' 篇'):('共 '+rows.length+' 篇');
+    var u=new URL(location.href); u.search=''; if(active) u.searchParams.set('tag',active); if(s) u.searchParams.set('q',q.value.trim());
+    history.replaceState(null,'',u);
+  }
+  function setTag(t){active=(t&&t!==active)?t:null; apply();}
+  bar.addEventListener('click',function(e){var b=e.target.closest('button'); if(b) setTag(b.dataset.t);});
+  document.getElementById('notes').addEventListener('click',function(e){
+    var sp=e.target.closest('.tags span'); if(!sp) return; e.preventDefault(); setTag(sp.dataset.t); window.scrollTo({top:0,behavior:'smooth'});
+  });
+  q.addEventListener('input',apply);
+  var p=new URLSearchParams(location.search); if(p.get('tag')&&counts[p.get('tag')]) active=p.get('tag'); if(p.get('q')) q.value=p.get('q');
+  apply();
+})();
+</script>
 </body>
 </html>
