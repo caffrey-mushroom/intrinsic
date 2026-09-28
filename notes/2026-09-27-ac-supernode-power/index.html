@@ -1,0 +1,185 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.27 | AC | Power | Supernode Bottlenecks Pt.1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.27 | AC | Power | Supernode Bottlenecks Pt.1</h1>
+<p class="orig">原标题：超节点还能再堆一代吗｜篇一：先卡住的是电力，不是芯片</p>
+<p class="tags">#power #datacenter</p>
+<p class="meta">AceCamp · 2026-09-27 15:36 · 研究文章 · article 70567507</p>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>超节点能否再堆一代，节奏由哪些环节决定；</li><li>如何用扩产周期与资本可加速性判断谁先卡住；</li><li>单柜功率上升如何改变中游每吉瓦价值量；</li><li>电力、上游设备、互联、封装与板材如何排序，如何检验；</li><li>各环节定价权能持续多久，取决于什么。</li></ol>
+<h2>正文</h2>
+<p class="qq">超节点还能再堆一代，节奏由芯片以外的环节决定。按扩产周期与资本能否提速排序，电力与上游材料设备最先卡住，互联受物理规律与配额双重限制，封装与板材的短缺可由资本在一年半内补上。这使得电力锁定总量之后，中游的增长只能来自每吉瓦价值量的提升。</p>
+<p><b>英伟达的机柜功率，四代之间放大了十几倍。</b>芯片每一代都能按时量产，决定新一代机柜能否按期上线的，却是另外几个在发布会上鲜被提及的环节。它们的扩产节奏以年计算，追加资本也难以让它们提速。</p>
+<h2>一、芯片按季度扩产，电力与设备按年扩产</h2>
+<p><b>判断哪个环节先卡住，看的是时间结构，缺口大小只作参考。</b>本报告用两项属性给每个环节打分。第一是扩产周期，也就是从追加投资到形成合格、可交付产能的真实时间，公告里的名义产能只作参考。第二是资本可加速性，也就是多投钱能否压缩交付时间。一个环节越依赖电网审批、设备交期、材料纯度、良率爬坡和客户认证，可加速性越低。两项之外，再用认证周期与替代路径两个补充判据校正。</p>
+<p><b>芯片之所以排不到前面，是因为它的产能对资本反应快。</b>芯片的扩产依赖晶圆代工与先进封装，需求一旦明确，台积电可以在一年左右把封装产能翻倍，头部买方也能用预付款提前锁定晶圆。电网审批、变压器与专用设备则受行政流程与少数供应商的产能约束，资本到位之后仍要排队。这使得在同样的需求冲击下，芯片的缺口以季度收敛，电力与设备的缺口以年收敛，下一代机柜的上线时间由后者决定。</p>
+<p><b>两项属性都有可以核对的刻度。</b>扩产周期按月数分为四档：一年以内、一到两年、两到三年、三年以上。资本可加速性看三个条件：关键设备能否按需采购，核心供应商是否集中在一到两家，项目是否受电网、环评等行政审批约束。三个条件都不满足的环节，可加速性记为低；三个条件都满足的，记为高。本报告对五个约束的打分，均按这套刻度给出。</p>
+<p><b>“卡住”采用紧约束的定义，也就是放松这一环、整体交付随之改善的那个环节。</b>放松其他环节，整体交付保持原状。这个定义把缺口大小与卡住先后分开处理：眼下缺口明显的环节，若资本能在一年内补上产能，排序就靠后。</p>
+<p><b>认证周期与替代路径，决定同样交期下的松紧程度。</b>据笔者8至9月的产业调研，高端铜箔要依次通过铜箔厂、覆铜板厂、PCB厂与终端客户四级认证，仅英伟达体系的完整验证就需要约12到18个月，设备到厂之后还要再等一轮认证，有效产能的释放随之后移。替代路径则起反方向的作用：柴油发电机组的部分功能可由燃气发电机组、燃料电池、储能与电网改造分担，这使得备电环节的紧张主要体现为价格与排期，园区的上线时间仍取决于并网与变压器。</p>
+<p><b>头部买方的采购方式，已经把排队位置当作资产来买。</b>英伟达2027财年第二季度（截至2026年7月）的季报显示，其与供给相关的采购承诺在一个季度内由约1190亿美元升至约2790亿美元，主要用于锁定存储产能。预付与长约买到的是队列里的位置。队列越长，位置越值钱，而队列有多长，恰恰由扩产周期与资本可加速性决定。</p>
+<h2>二、电力锁住总量之后，中游的增长只能来自每吉瓦价值量</h2>
+<p><b>五个约束分属两层，分别回答两个问题。</b>部署层包括电网接入、柴油发电机组、燃气轮机和大型变压器，决定一个园区能通多少电、装多少机柜；节点层包括机柜内的供电架构、散热、板材、封装与互联，决定单个超节点能做多大。TrendForce在9月16日发布的报告中估计，2026年全球数据中心电力需求容量约161吉瓦，同比增长约31%，AI服务器在其中的占比由2025年的约25%升至33.4%，2027年有望超过40%；按其测算，到2030年美国数据中心的电力供需缺口将超过170吉瓦。</p>
+<p><b>部署层决定总量，节点层决定结构。</b>节点层的产品做出来之后，仍要找到通电的园区。一个依赖新建并网路径的园区，从启动到通电往往需要三年以上，这使得部署层的松紧决定了节点层产品的最终装机节奏。反过来，节点层的约束只影响单个超节点的规模与交付时间，对全行业可装机的总量影响有限。</p>
+<p><b>功率上得越快，每吉瓦能装的机柜越少。</b>按英伟达公开的产品信息，Hopper时代的机柜约40千瓦，GB300 NVL72约132到142千瓦，Vera Rubin NVL72约190到230千瓦；按GTC大会的口径，面向Rubin Ultra的Kyber单柜约600千瓦。粗略计算显示，按电能使用效率1.15计，一吉瓦园区在GB300时代可容纳约6300个机柜，到Kyber时代约1450个，减少约77%。电力把园区规模锁定之后，按机柜计价的部件，需求量会随单柜功率上升而下降；只有单柜价值量的增速跟上单柜功率的增速，每吉瓦收入才能守住。</p>
+<p><b>按每吉瓦价值量衡量，中游环节可以分成三类。</b>第一类随功率同步增长，例如供电与散热系统的容量；第二类随芯片数量增长，例如存储与高速互联；第三类随机柜数量增长，例如机柜结构件与按柜配置的标准化部件。以供电为例，单柜功率翻倍，电源架与配电设备的规格同步翻倍；以机柜结构件为例，单柜功率翻倍，每吉瓦所需机柜数减半，结构件的每吉瓦用量随之减半。第三类在单柜功率上移的过程中面临每吉瓦用量下降，第二类取决于每吉瓦能装多少芯片与每颗芯片的带宽需求，第一类则与电力约束同进同退。评估中游任何一个环节，都需要先折算成每吉瓦价值量，再看它在代际之间是升是降。</p>
+<p><b>每吉瓦价值量上升的环节，集中在随代际新出现的部件上。</b>英伟达在其800伏直流架构的技术说明中指出，传统54伏机柜内供电在单柜超过200千瓦后触及物理极限，800伏架构面向2027年起的兆瓦级机柜，同样的导体可输送的功率约为415伏交流方案的1.85倍。这意味着电源架、固态变压器等部件的价值量随功率同步抬升。同类的还有正交背板、微通道盖板与共封装光学，它们都是代际升级中新增的部件。相反，规格由买方统一定义、按机柜计价的标准件，每吉瓦价值量面临下行压力。</p>
+<h2>三、卡住的先后：电力、上游设备、互联、先进封装、板材</h2>
+<p><b>电力排在第一位，它的扩产时钟按年走。</b>Wood Mackenzie的调研显示，2025年美国大型电力变压器的平均交期约128周，发电升压变压器约144周；GE Vernova二季度末的燃气轮机在手订单与付费预留合计116吉瓦，公司已开始接受2031年交付的预留；Power Magazine的统计显示，大缸径柴油发电机组的交期在40到107周之间。柴发的缺口来自缸体铸造、喷油系统寡占与产线建设三重约束的咬合，笔者预计再平衡要到2029至2030年。这些工序只能按顺序完成，资本开支改变的是买方在队列中的位置，队列的长度仍由工序决定，本系列第二篇将展开这一段。</p>
+<p><b>上游材料的产能上限，由生产材料的机器决定。</b>据笔者了解，高端铜箔的表面处理机主要由日本三船制作所供应，全球年产能约8到12台，交期24到30个月；同时调研显示，丰田自动织机5月起停止接受高端喷气织机的新订单，排产已到2029至2030年；长广精机的ABF真空压膜机在全球载板用压膜设备中市占约95%，订单交期已排至2031年。这三类设备分别对应铜箔、电子布与封装载板，供应集中在少数厂商，扩产态度保守，构成了三个环节共同的上限。</p>
+<p><b>互联排在第三位，它的上限同时由物理规律与配额决定。</b>按IEEE 802.3dj与OIF的224G规范，封装到封装之间的插损上限约40分贝，留给无源铜缆的可用距离约1到1.5米，跨出机柜就需要光互联；光的供给则卡在磷化铟。路透6月报道，中国自2025年2月收紧磷化铟出口许可后，6英寸磷化铟晶圆均价上涨约250%，至约5000美元，Lumentum的供应已售至2028年。据笔者了解，磷化铟外延所需的MOCVD设备交期超过14个月，到厂后还需3到4个月调试。这一段的松紧，取决于磷化铟配额与超节点化率两个变量。</p>
+<p><b>先进封装与板材排在后两位，它们的短缺可以用资本在一年半内补上。</b>TrendForce估计，台积电CoWoS的供需缺口将从约20%收窄至2026年底的约10%，其月产能到2028年底有望翻倍至约26万片；另一方面，粗略统计，A股PCB厂商2026年公布的扩产规划合计超过800亿元。笔者认为，这两段的高毛利来自产能分配权。分配权依附于缺口，缺口收敛时，毛利见顶的时点会早于收入见顶，本系列后续将展开这一判断。板材排在末位，原因在于扩产门槛低、参与者多，笔者预计其产能将率先出现结构性宽松。</p>
+<p><b>排在前面与排在后面的环节，对同一笔资本开支的反应方向相反。</b>排在前面的环节，资本投入越多，队列排得越长、排队位置越值钱；排在后面的环节，资本投入越多，缺口越快消失、溢价越快回落。这使得同样的资本开支增长，在两类环节对应相反的利润走向，按资本开支增速给整条链条统一定价，会同时高估中段、低估两头。</p>
+<p><b>缺口明显的环节，未必排在前面。</b>以CoWoS为例，其供需缺口一度约达两成，数字上高于多数环节，但封装扩产依赖标准设备与洁净室，资本到位后9到15个月即可翻倍，排序因此靠后；大型变压器没有一个公认的缺口数字，交期却以两到三年计，扩产还受取向硅钢与手工工序约束，排序靠前。这说明排序衡量的是缺口能否被资本在短期内填平，眼下缺口的大小只作参考。</p>
+<p><b>五段合在一起，卡住的先后是电力、上游设备、互联配额、先进封装与板材制造。</b>这里的顺位是从项目落地到系统扩展的卡住顺序，与短缺的严重程度是两回事。电力与上游设备决定能不能建出来，封装与板材决定能不能按期交付，互联决定新增的芯片能否转化为有效算力。</p>
+<p><b>回到本系列的问题，超节点还能再堆一代，但“堆得出来”“装得上”与“连得上”是三件事。</b>从产品路线看，Vera Rubin NVL72与面向Rubin Ultra的Kyber机柜都已写进英伟达的路线图，芯片、封装、板材与散热都能在资本推动下跟上，这一代堆得出来；能否装得上，取决于园区何时通电与上游材料设备何时到厂，这两段的交期以年计，决定下一代的上线节奏；能否连得上，取决于跨柜互联与磷化铟配额，决定新增芯片能转化为多少有效算力。笔者的答案是：能再堆一代，节奏由电力与上游设备决定，规模由互联配额决定。</p>
+<h2>四、排序是否成立，看五把尺子</h2>
+<p><b>每一段都有自己的观察刻度，排序要靠这些刻度来检验。</b>电力看美国变压器交期能否回落到一年以内，以及燃机预留规模是否继续扩大；上游设备看三船与丰田设备的到厂台数，以及国产设备能否通过头部客户认证；互联看磷化铟晶圆价格与激光器缺口，以及超节点化率的变化；封装看CoWoS缺口能否按期收窄到10%以内；板材看二线厂的稼动率与高端铜箔加工费的环比变化。这些刻度多数按季度更新，任何一段的刻度出现反向变化，排序就需要重估。</p>
+<p><b>本系列后续六篇，按卡住顺序逐段展开。</b>第二篇讨论电力，说明资本开支为何只能改变排队位置；第三篇讨论上游材料设备，说明做材料的机器如何决定产能上限；第四篇讨论散热，说明它为何排在卡住顺序的后段；第五篇讨论板材与封装，说明毛利为何先于收入见顶；第六篇讨论互联，说明铜与光各自的边界；第七篇把各段窗口排到同一条时间轴上，说明利润能持续多久。</p>
+<h2>五、投资含义：定价权能持续多久，看资本能否复制产能</h2>
+<p><b>资本开支的增速与有效产能的增速需要分开看。</b>新增资本难以快速复制的环节，定价权的持续时间以年计；资本可以快速复制的环节，超额利润的持续时间取决于缺口收敛的速度。落到公司层面，金盘科技受影响的是面向海外数据中心的变压器业务；德福科技的相关部分是高端铜箔，前提是表面处理机配额能否按期到位，普通锂电铜箔业务在这条逻辑之外；泰金新能对应阴极辊的国产替代，与材料价格的关联度低。中段的沪电股份与胜宏科技，利润的持续性取决于认证位置与分配权能维持多久；互联段的源杰科技与中际旭创，分别对应激光器配额与高速率产品的能效。上述环节将在本系列后续各篇逐一展开。判断一家公司时，可以先问两个问题：它所在的环节在卡住顺序里排第几位，它的收入按机柜、按芯片还是按功率计价。前一个问题决定定价权的持续时间，后一个问题决定电力锁定总量之后收入能否继续增长。</p>
+<p><b>上行风险来自单柜价值量提前跳升。</b>若800伏直流、微通道盖板与共封装光学提前一代放量，每吉瓦价值量的上移会早于本报告的节奏，中游部分环节的增长持续时间随之延长。</p>
+<p><b>下行风险来自需求端收缩。</b>若主要云厂下调资本开支指引，或核心枢纽地区出台数据中心建设暂缓令，五个约束会同时转松，排序随之失效，此前由排队位置支撑的溢价也会消散。</p>
+<p>以上内容不构成任何投资建议，请风险自担。</p>
+</div>
+</main>
+</body></html>
