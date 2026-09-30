@@ -1,0 +1,252 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.22 | AC | LLM | From Token to Decision: Jev Tiering</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.22 | AC | LLM | From Token to Decision: Jev Tiering</h1>
+<p class="orig">原标题：从Token到Decision：Jev带来的快慢模型分层如何重塑Agent、AI SaaS与端侧芯片</p>
+<p class="tags">#llm #agents</p>
+<p class="meta">AceCamp · 2026-09-22 · article 70567354</p>
+<div class="body">
+<h2>摘要</h2>
+<ol><li></li></ol>
+<p>一个不会说话、只负责选择和打分的模型，为什么会在几天内刷屏开发者社区？Jev瞄准的，是企业Agent最不起眼也最昂贵的环节：一次任务中反复发生的分类、路由、验证、重试与风险判断。本文从这个小切口出发，研究AI应用的成本结构是否正在发生变化。</p>
+<ol><li>笔者没有停留在厂商宣称的百倍提速与降本，而是交叉核对官方接口、价格、首日采用率、独立实测和快速出现的开源复刻，并把一项Agent任务拆成模型推理、微决策、人工接管与失败损失四个维度。文章试图回答：Jev究竟创造了新的模型范式，还是补齐了</li></ol>
+<p>现有工作流的一块短板？判断成本大幅下降后，杰文斯效应会不会真的带来需求爆发？</p>
+<ol><li>文章进一步沿着“任务量—计价方式—利润归属—硬件负载”向产业链传导，比较企业软件、模型路由、服务器CPU、GPU与端侧芯片的兑现条件。研究得到的排序与市场最直观的想象并不完全相同：技术品类能否成立、单一厂商能否建立护城河、哪些公司最先获</li></ol>
+<p>得利润，可能是三个不同的答案。正文将给出判断依据、受益环节和需要持续跟踪的证伪指标。</p>
+<p>企业采购AI，最终算的是一笔订单有没有完成、一张工单有没有关闭，或者一辆车能否在复杂路口安全通行。今天的大模型主要按Token收费。Token是模型处理文本的计量单位，类似电表上的“度”；客户购买的却是已经完成的工作。两者之间隔着大量微小判 断：下一步调用哪个工具、结果是否可信、是否需要重试、何时转人工、哪个模型值得调用。</p>
+<p>Jev切入的正是这一层。它放弃自由文本生成，专门返回选项、评分、概率和置信度，让软件直接使用。若这条路线成立，AI产业的计价单位会从Token延伸到Decision，也就是一次可执行的判断，再逐步靠近工作结果。</p>
+<p class="qq">笔者的判断很明确：Jev仍处在产品验证早期，“廉价决策层”却值得进入投资框架。发布后迅速出现的开源复刻说明，决策模型这个品类可能成立得很快，但这个品类的模型壁垒也可能商品化得更快。对应的产业链直接受益的是掌握客户数据和工作结果的AI软件、模型路由与治理平台。硬件内部，服务器CPU及主机侧内存、网络的逻辑比端侧芯片更直接；自动驾驶、机器人与端侧芯片构成远期期权。数据中心GPU同时受到简单推理分流和使用量扩大的影响，Jev取名自杰文斯悖论暗示了Typesafe研发人员对其模型将发挥的作用的美好寓意。</p>
+<h2>一、 13%的首日采用率，引发市场热议</h2>
+<p>TypeSafe在2026年9月15日发布Jev，将其定义为面向软件自动化的System One Model，可译为“快思考模型”。官方称模型采用新的架构、并行采样器和Reinforcement Learning for Calibrated Decisions，即面向校准决策的强化学习。Jev接收非结构化信息和程序状态，输出预先定义的类型化结果及概率，不再逐Token生成句子。[[1]](about:blank)</p>
+<p>这套产品形态迅速吸引开发者。Jev接入Vercel AI Gateway后的24小时内，接近13%的付费团队至少使用过一次，首日覆盖团队数超过此前其他模型发布。[[2]](about:blank) 分母是Vercel AI Gateway的付费团队，指标是“至少使用过一次”。它不等于Jev的付费客户占比、收入份额或生产部署率。发布期的免费推广还会放大尝鲜数据。Netlify、Cloudflare和OpenRouter随后接入Jev，证明分发渠道正在快速铺开，仍不能替代留存和生产调用验证。[[13][14][15]](about:blank)</p>
+<p>厂商公布的输入价格为每百万Token</p>
+<ol><li>042美元，输出不收费，端到端响应约70至500毫秒。TypeSafe自建工作流测试给出最高193.6倍提速和444.6倍降本，同时主动承认这些数字可能处于真实收益的高端。[[1]](about:blank)</li></ol>
+<p>官方已经确认“新架构”，但没有公开结构图、参数量和完整技术论文。公开资料不足以判断它是否脱离Transformer，也不足以把它定义为基础模型范式的替代者。Jev目前证明的是一种产品分工：开放式推理交给通用大模型，高频判断交给决策模型，精确 执行继续由代码和控制器完成。</p>
+<h2>二 AI智能体的成本，会在几十次小判断中累积</h2>
+<p>一个企业AI智能体（Agent）完成报销审核，看起来只是一项任务，内部可能经历材料完整性检查、费用分类、政策匹配、异常识别、审批路由和人工升级。每一步都调用前沿大模型，单次费用并不显眼，几十次调用叠加后，延迟、推理成本和失败概率都会上升。</p>
+<p></p>
+<p>Agent总成本可以拆成三部分：慢思考成本，加上微决策次数乘以单次判断成本，再加上错误和人工复核成本。过去市场主要关注第一项，即通用模型单价。Agent进入真实工作流后，后两项决定客户最终的Return on Investment（ROI，投资回报率）。</p>
+<p>这与公司的组织分工相似。董事长负责少数复杂决策，日常审批需要中层和规则体系。如果每张报销单都送到董事长办公桌，公司不会因为董事长更聪明而运行得更快。Jev试图为软件补上这层“中间判断”：它比固定规则灵活，又比通用大模型便宜。</p>
+<p>Jev更适合边界清楚的任务。候选动作需要提前定义，结果最好能够验证，业务方还要设定什么置信度可以自动执行、什么置信度必须升级。开放式研究、长篇写作和复杂战略判断仍然属于慢模型。</p>
+<p>这里还有一笔经常被忽略的固定成本：业务人员需要先定义问题、候选项、判断标准和升级阈值，再完成集成和测试。Jev只有在任务大量重复后，才能把这笔投入摊薄。它的总成本应写成：</p>
+<p class="qq">工作流总成本 ＝ 问题与规则设计 ＋ 集成测试 ＋ 任务量 ×（模型判断 ＋ 异常复核 ＋ 预期错误损失）</p>
+<p>所以，Jev的最佳场景不只是“判断简单”，还要同时满足边界稳定、重复次数多、错误可以检查。低频任务或规则经常变化的任务，便宜的模型调用未必能覆盖前期工程成本。</p>
+<h2>三 更合理的分工是：大模型编译，Jev运行，代码执行</h2>
+<p>未来Agent更可能由三层组成。第一层是通用大模型，负责把自然语言业务要求整理成问题、候选答案和判断标准，也处理规则覆盖不了的异常。第二层是Jev类决策模型，反复读取业务状态，完成路由、评分、重试、风控和是否升级。第三层是确定性程序，负责更新数据库、调用Application Programming Interface（API，应用程序接口）或者执行具体操作。OpenRouter已经展示由Claude生成Jev问题、再由Jev批量判断的两阶段流程。[[15]](about:blank)</p>
+<p></p>
+<p>这个结构很像工艺工程师设计生产线，再让检测设备重复工作。通用模型的调用次数可以很少，Jev的调用次数可以很大。Netlify披露，同一份状态可以并行评估多个独立问题，十几个问题放在一次请求中，成本可能只比问一个问题略高。[[13]](about:blank) Jev的经济优势由此不只来自少生成文字，也来自共享输入和并行判断。</p>
+<p>这套分工降低了昂贵模型的调用频率，也把错误限制在更小的动作集合中。厂商所说的“零幻觉”，准确含义是输出不会越出预设类型：只允许选择A或B，它不会凭空返回C。Jev仍可能把A选成B，所以类型安全不能等同于判断正确。</p>
+<p>概率输出也不等于概率已经校准。模型声称有80%把握，只有在大量同类任务中确实约80%正确，这个数字才具有自动执行价值。近期两份分析师实测中，Jev在缺少关键日期时仍给出较高把握，也曾把明确的“不续费”判断成较弱的流失风险。[[16][17]](about:blank) 这些单例不足以估算总体准确率，却足以说明企业必须先用自己的历史数据画出可靠性曲线，再决定高置信度自动执行、中间区域补充信息、低置信度转人工。</p>
+<p>决策模型能留下多少价值，取决于它在系统中的位置。一个便宜分类器很容易陷入价格竞争；能够持续获得任务结果、识别哪些判断带来成功，并参与路由与安全治理的模型，才有机会形成控制层。</p>
+<h2>四 三类场景，为什么会需要同一层“小脑”</h2>
+<p></p>
+<p>企业Agent最有可能率先兑现。工单分类、模型路由、命令安全、上下文压缩、任务终止和转人工，都具有高频、动作有限、结果可追踪的特点。Jev降低微决策成本后，一批原本需要人工处理、自动化回报又太低的长尾任务开始算得过账。</p>
+<p>AI游戏是物理AI的低风险试验场。世界模型负责创造环境、剧情和角色，决策模型负责Non-Player Character（NPC，非玩家角色）是否逃跑、呼叫援军或者改变策略。游戏状态可以快速生成，失败成本较低，适合训练和验证高频决策。Jev官方的Doom演示使用结构化文本状态，并未直接读取画面。它当前更像策略层，尚未承担视觉感知。[[1]](about:blank)</p>
+<p>自动驾驶和机器人提供最大的远期想象空间。多模态大模型理解复杂场景，Jev类模型可以在让行、并线、停止和重新规划等有限动作中快速选择，底层控制器再把选择变成轨迹、方向盘和刹车动作。Waymo的End-to-End Multimodal Model for Autonomous Driving（EMMA，端到端多模态自动驾驶模型）已经展示统一场景理解和轨迹生成的潜力，同时承认多帧输入、激光雷达和计算成本仍有限制。[[12]](about:blank)</p>
+<p>高风险场景不会从云端API直接跳到车辆控制。合理路径是驾驶日志分类、影子模式、模型路由、安全复核、高层战术决策，最后才可能进入闭环控制。当前公开资料没有披露Jev参数量、端侧内存占用、功耗、确定性时延和功能安全认证。自动驾驶的潜在市场最大， 证据距离也最远。</p>
+<h2>五 客户会怎样为“一次判断”付钱</h2>
+<p></p>
+<p>Jev目前仍按输入Token收费，但客户价值不由输入长度决定。一次判断可能只消耗很少Token，却决定一笔交易是否拦截、一台机器是否停机，或者一辆车是否变道。随着Agent进入业务流程，计费方式会沿着Token、模型调用、决策、工作流和业务 结果逐级移动。</p>
+<p>Salesforce已经提供现实样本。Agentforce既可以按用户或对话收费，也通过Flex Credits按Agent执行的具体Action计费。标准Agent Action消耗20个积分，按公开牌价折算约0.10美元一次。[[3]](about:blank) 企业软件已经开始把计价单位从“模型说了多少”移向“软件做了什么”。</p>
+<p>Jev类模型可能衍生五种模式：按决策次数、成功工作流、SaaS高级模块、设备授权，以及安全审计和服务等级收费。模型公司更容易获得调用收入；掌握客户、流程和结果数据的平台，更有机会按工作结果定价。Jev虽然以Jevons命名，低价却不会自动带 来收入爆发。客服分类、审批和邮件路由大多属于封闭任务，处理完就结束了。决策层收入可以拆成“生产任务量×每项任务的判断次数×单次判断价格”。只有前两项的增长超过价格下降，总支出才会上升。因此，杰文斯效应应在完整Agent工作流上验证，不能根据 调用次数直接推导收入和算力需求。</p>
+<h2>六 谁掌握工作结果，谁更容易留下利润</h2>
+<p>TypeSafe目前建立了品类认知，决策模型的技术形态却已开始快速扩散。Jev发布后数日，第三方分别基于Gemma 4 E2B、Gemma 3 270M和DeBERTa-v3-large推出了Jev式开源模型。Gemma版本在TypeSafe公开评测的共同子集上取得76.7%，低于Jev的86.9%；DeBERTa版本在自身测试中取得85.4%的域内准确率，但面对训练中未出现的新问题和新选项时降至69%。两组测试口径不同，虽然不能横向比较，却共同证明“状态输入—并行判断—概率输出”这一产品形态可以被较小模型快速复现。</p>
+<p>这使TypeSafe的护城河问题更加明显。Choice、Score和Noul等输出接口很难构成长期壁垒，更持久的价值可能来自跨任务泛化、客户数据校准、低延迟运行、工作流集成和高风险行业认证。前沿实验室、开源模型、传统分类器和云平台都能进入这 一层；微软、Amazon和Cloudflare已经提供模型路由与控制功能。如果TypeSafe无法持续获得真实任务结果和客户反馈，Jev可能成为一个低价功能，最终被云平台或者SaaS厂商吸收。</p>
+<p></p>
+<p>这一变化对AI SaaS更有利。便宜的判断层可以降低推理成本，提高自动化覆盖率，并让厂商按动作和结果收费。模型分工越细，客户越需要一个平台管理权限、审计、异常和人工交接。收入与毛利率改善，更可能先出现在拥有客户关系和工作流的平台。</p>
+<h2>七 硬件增量先落在CPU上，端侧还要等证据</h2>
+<p></p>
+<p>Jev类模型首先改变的是服务器内部的负载分工。GPU或其他加速器负责模型前向计算；CPU负责把客户数据整理成状态、构造请求、检查权限、调度模型、访问数据库、调用工具、运行Sandbox并处理异常。Jev降低一次判断的模型计算量，却可能让Ag ent承担更多工作流、做出更多判断和工具调用。GPU-seconds未必同比增长，CPU-seconds反而可能先上升。</p>
+<p class="qq">Agent硬件需求 ＝ 成功任务量 ×（每任务CPU秒 ＋ 每任务加速器秒 ＋ 内存与网络占用）</p>
+<p>这并不等于Jev模型已经改在CPU上推理。当前能确认的是云端API产品，底层模型大小和运行硬件没有充分披露。CPU的受益逻辑主要来自Agent控制面和工具执行负载增加。若Agent生产任务持续增加，服务器CPU、主机侧DRAM、网络接口和存 储I/O会承担更多非模型计算。它们能否转化成收入，还要看现有CPU利用率、每台加速器的CPU配置、云厂商自研CPU占比以及任务增长能否超过软件效率提升。Jev提供了相对利好CPU的负载机制，还没有提供CPU出货和平均售价上修的数量证据。</p>
+<p>Meta的Muse补上了一条更接近生产形态的应用证据。Muse为每位用户配置一台持久、隔离的Linux虚拟机，虚拟机内有浏览器、存储、CPU和内存，还要运行安全代理、定时任务与并发子Agent。[[18][19]](about:blank) 聊天机器人通常在提问时才消耗推理资源；这类个人Agent即使关闭前端，也可能继续浏览网页、调用工具和维护状态。对应的资源函数因此更接近：</p>
+<p class="qq">Agent主机需求 ＝ 活跃用户数 × 虚拟机在线时长 ×（CPU负载 ＋ 内存占用 ＋ 存储与网络I/O）</p>
+<p>Jev解释了高频判断为什么变便宜，Muse说明便宜判断如何嵌入一台持续工作的云端电脑。二者共同强化服务器CPU逻辑，但Muse本身并未披露单用户资源配置，尚不能据此测算服务器数量。</p>
+<p>自动驾驶、机器人、无人机和游戏终端更强调低延迟、低功耗与断网可用，快模型具备进入端侧的架构理由。若类似决策模型进入终端，对应硬件包括Neural Processing Unit（NPU，神经网络处理器）、System on Chip（SoC，片上系统）、片上缓存、Low-Power Double Data Rate Memory（LPDDR，低功耗内存）、Microcontroller Unit（MCU，微控制器）和传感器融合芯片。</p>
+<p>云端Graphics Processing Unit（GPU，图形处理器）的影响更复杂。简单判断从前沿模型迁出，会降低单个Agent任务的GPU推理量；自动化成本下降又可能扩大Agent、仿真和世界模型训练。这正是“效率提高会不会带来更多使用”的杰文斯效应问题，笔者认为，给模型取名Jev，正是研发人员对其能够带来杰文斯飞轮的期许。NVIDIA仍可同时承接云端训练、Jetson机器人计算和DRIVE汽车计算，但Jev本身不足以单独上调GPU、HBM和先进封装需求预测。[[10]](about:blank)</p>
+<h2>八 投资上的implications</h2>
+<p></p>
+<p>近期最值得跟踪的是Salesforce、ServiceNow和UiPath。Salesforce已经按Action收费，Jev类模型若降低后台判断成本，可同时推高Flex Credits消耗和Agentforce毛利率。ServiceNow掌握信息技术、客服、人力和安全工作流，并把平台延伸到AI治理、决策和执行。[[4]](about:blank)</p>
+<p>UiPath把Agent、机器人、API和人工审批统一编排，转型成功后的业绩弹性更高；风险在于Agent也可能绕过传统Robotic Process Automation（RPA，机器人流程自动化）平台。[[5]](about:blank)</p>
+<p>第二组是模型路由和控制层。微软、Amazon和Alphabet可以把决策路由吸收到云平台，降低客户使用多模型的复杂度，但Jev对这些公司的整体估值影响有限。Cloudflare更接近AI流量控制期权，潜在弹性较高，当前收入贡献和商业模式仍需 验证。</p>
+<p>第三组是服务器CPU及主机平台。AMD EPYC和Intel Xeon承接通用计算、工具执行和数据处理，Agent工作流越长、API、Sandbox和常驻虚拟机越多，CPU负载越容易上升。Meta已将AMD列为第六代EPYC Venice及面向特定负载优化的Verano的先导客户，因而AMD同时拥有CPU与Instinct GPU两条映射；但该合作早于Muse发布，不能把全部订单归因于个人Agent。[[21]](about:blank) Amazon Graviton、Google Axion和Microsoft Cobalt等自研CPU也会分享增量，因此“CPU需求增加”不能直接等同于x86厂商份额提高。投资上需要跟踪AI服务器的CPU配置、CPU与加速器配比、云厂商自研CPU份额、服务器DRAM容量和CPU业务收入，而不是只看Agent调用次数。</p>
+<p>第四组是端侧物理AI，当前只能列入观察池。Qualcomm的Snapdragon Ride整合Central Processing Unit（CPU，中央处理器）、GPU、NPU和独立安全模块，具备承接不同实时性和安全等级工作负载的技术位置。[[9]](about:blank) NVIDIA覆盖训练、仿真、机器人与汽车，但Jev带来的边际贡献会被更大的物理AI业务稀释。</p>
+<p>地平线机器人征程6支持大参数Transformer、交互式决策和车规安全。[[11]](about:blank) Mobileye也具备汽车专用计算与量产基础。二者要获得Jev逻辑下的收入增量，仍需看到决策模型进入车端、获得定点并提高单车芯片价值。</p>
+<p>国内企业软件可观察金蝶国际和用友网络，但现阶段应检查付费工作流、续费和推理毛利，不宜用发布了多少Agent代替商业验证。数据中心芯片与HBM属于二阶影响，不应以Jev作为独立上修依据。</p>
+<p></p>
+<p>从兑现顺序看，企业Agent和AI SaaS最早，路由与治理平台其次。服务器CPU和主机侧资源拥有较直接的负载逻辑，但仍需生产任务和服务器配置数据验证。端侧芯片需要等待模型规格、本地部署、设计定点和量产。掌握客户和工作流的平台更可能先获得利润；CPU是第二层硬件线索；端侧保留远期期权；独立决策模型公司的护城河最需要验证。</p>
+<h2>九 四道产品验证，四组财务指标</h2>
+<p>Jev能否成为独立品类，至少要通过四道验证。第一，免费推广结束后仍有付费留存和持续调用；第二，在同等任务质量下，计入问题设计、人工复核和错误损失后的完整工作流成本，仍低于小模型、分类器和规则系统；第三，置信度能在不同客户、场景和时间段保持校 准；第四，决策模型能够进入生产流程，而非停留在开发者演示。端侧部署属于下一阶段的额外验证，不应混入近期产品采用率。</p>
+<p>投资上还要观察相应公司的财务信号。Salesforce看付费Action和Flex Credits，ServiceNow看AI合同增量与自动解决率，UiPath看Agentic Automation相关Annual Recurring Revenue（ARR，年度经常性收入）和大客户留存。</p>
+<p>Cloudflare看AI Gateway使用量及其对付费产品的贡献。AMD和Intel看AI服务器CPU配置、数据中心CPU收入和云厂商自研CPU替代。Qualcomm、NVIDIA、地平线和Mobileye先看端侧模型规格与软件支持，再看车企定点、量产节奏与单机价值量。</p>
+<p>开源复刻已经使“小模型能否复制Jev”从假设变成正在发生的竞争，后续应提高验证门槛。三种情况会推翻Jev形成独立收费层的判断：开源模型在多个真实企业数据集上与Jev的准确率差距缩小至5个百分点以内，同时延迟和完整成本接近；问题配置、概率校准 和人工审核成本长期超过推理节省；免费尝鲜在六个月内无法转化为生产部署和持续付费<b>。任何一项长期存在，决策模型都可能保留产业价值，利润却更可能被云平台和企业软件拿走。</b></p>
+<h2>十 结论：先重估工作流，端侧仍要等证据</h2>
+<p>大模型解决了机器理解和生成人类语言的问题，Agent把竞争推进到下一层：机器能否在正确时间，以足够低的成本做出可以执行的判断。Jev仍处在产品验证早期，底层架构、外部评测和长期定价均未充分披露，但它已经把一个长期被Token报价遮住的问题摆 到台前。</p>
+<p>未来的AI系统可能由少数慢模型和大量快模型共同运行。慢模型设计任务和处理异常，快模型反复判断，传统代码负责可靠执行。衡量这套系统时，模型调用价格只是其中一项，问题设计、概率校准、人工升级和错误损失同样进入成本表。</p>
+<p>这条路线最早改善企业Agent的成本和AI SaaS的毛利率，随后提高模型路由与治理的价值。硬件上，Agent控制面扩大使服务器CPU和主机侧资源的逻辑比端侧更近，但仍须穿过生产任务、CPU配置和市场份额三道门。端侧芯片只有在本地运行、设计定点和单机价值量依次得到验证后，才进入业绩逻辑。Jev能否成为赢家仍不确定，“决策模型”这一层已经值得进入投资者的跟踪框架。</p>
+<h2>数据来源</h2>
+<ol><li>TypeSafe AI, Introducing System One Models and Jev,</li></ol>
+<p>2026-09-15.原文</p>
+<ol><li>Vercel, Jev is the fastest-adopted model in AI Gateway history,</li></ol>
+<p>2026-09-18.原文</p>
+<ol><li>Salesforce, Agentforce Pricing.原文</li><li>ServiceNow, ServiceNow turns enterprise AI chaos into control with the platform for governed autonomous work,</li></ol>
+<p>2026-05-05.原文</p>
+<ol><li>UiPath, Enterprise AI agents.原文</li><li>Microsoft, Model router for Microsoft</li></ol>
+<p>Foundry.原文</p>
+<ol><li>Amazon Web Services, Intelligent prompt routing in Amazon</li></ol>
+<p>Bedrock.原文</p>
+<ol><li>Cloudflare, AI Gateway Dynamic Routing.原文</li><li>Qualcomm, Snapdragon Ride.原文</li><li>NVIDIA, Jetson Thor and DRIVE AGX Thor.原文</li><li>Horizon Robotics, Horizon Journey.原文</li><li>Waymo, EMMA End-to-End Multimodal Model for Autonomous Driving.原文</li><li>Netlify, TypeSafe Jev now available in AI Gateway,</li></ol>
+<p>2026-09-17.原文</p>
+<ol><li>Cloudflare AI Docs, TypeSafe Jev.原文</li><li>OpenRouter Labs, Prompt to questions: Claude compiles questions and Jev executes</li></ol>
+<p>decisions.原文</p>
+<ol><li>华福证券AI互联网团队，Jev产品实测交流转写纪要，2026-09</li><li>国金证券计算机团队，Jev产品演示转写纪要，2026-09</li><li>Meta, Introducing Muse: The World's First Personal AI Agent Built for Everyone,</li></ol>
+<p>2026-09-08.原文</p>
+<ol><li>Meta AI Research, How We Built Safety Into Muse,</li></ol>
+<p>2026-09-08.原文</p>
+<ol><li>Reuters, Stocks rise on AI optimism; lower oil helps bonds,</li></ol>
+<p>2026-09-21.原文</p>
+<ol><li>AMD, Form 8-K: Strategic partnership with Meta,</li></ol>
+<p>2026-02-24.原文</p>
+<p>本文仅用于产业研究，不构成投资建议。公司业务映射属于基于公开资料的分析推演，后续需以订单、收入、利润率和量产进度验证。</p>
+</div>
+</main>
+</body></html>

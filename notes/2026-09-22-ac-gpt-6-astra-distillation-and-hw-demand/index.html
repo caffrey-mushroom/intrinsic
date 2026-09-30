@@ -1,0 +1,203 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.22 | AC | LLM | GPT-6 Astra: Distillation &amp; HW Demand</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.22 | AC | LLM | GPT-6 Astra: Distillation &amp; HW Demand</h1>
+<p class="orig">原标题：GPT-6 Astra调研：新技术对蒸馏影响，新一代模型对GPU、CPU、存储等需求变化，国内模型与海外SOTA模型差距变化等</p>
+<p class="tags">#llm #ai-demand</p>
+<p class="meta">AceCamp · 2026-09-22 · article 70567379</p>
+<div class="body">
+<h2>摘要</h2>
+<p>本文核心要点包括： 1，Astra新技术对蒸馏影响 2，国内模型与海外SOTA模型差距变化 3，新一代模型对CPU、存储等需求变化</p>
+<p>以下为专家观点：</p>
+<p class="qq">1，鉴于GPT-6采用了“recurrent steps”等新技术，这是否会影响国内通过蒸馏方式获取其模型能力？</p>
+<p>蒸馏主要分为三种类型：蒸馏输出内容、蒸馏思维链以及蒸馏Agent的执行过程。前两者目前尚可进行，但第三种，即Agent的执行过程，是无法被蒸馏的。这主要是因为Agent的执行需要与真实业务场景深度结合。</p>
+<p>此外，头部大模型厂商，如Anthropic及OpenAI，已经开始部署主动的防蒸馏策略，这将导致蒸馏这条技术路径的有效性持续降低。具体到“recurrent depth”技术，其效果与提示的写法有关，如果蒸馏意图过于明显，模型会触发相应的防御策略。</p>
+<p>更重要的是，自2026年7月以来，模型训练的范式已发生根本性转变。早期的蒸馏之所以有效，是因为模型主要依赖预训练数据。而现在，模型的发展重点已转向后训练和基于Agent的强化学习。模型训练的目标不再是单纯为了在benchmark上获得高分或 实现人类对齐，而是为了让Agent能够更高效地执行任务并取得更优结果。这种范式转变导致了训练目标和数据构成的巨大变化，因此，采用旧有的蒸馏方法来应对新范式下的模型，其意义和效果已经大打折扣。</p>
+<p class="qq">2，为什么Agent的能力无法通过蒸馏的方式来复刻？即使在测试中为其提供一个实际任务，观察其完整的输出，为何也无法获取其核心能力？</p>
+<p>Agent的能力由模型本身和其“harness”（上层业务流、Agent矩阵、技能库等）共同构成。在进行蒸馏时，如果只是对模型进行单点提问，是无法触及其背后复杂的业务流和技能调用的。例如，直接向模型请求编程代码，只能获得其最终输出的结果，但 无法获取其在过程中调用了哪些工具、工具的执行结果是成功还是失败，以及具体的执行轨迹信息，这些中间过程是黑盒化的。</p>
+<p>对于长序列的复杂任务，例如进行一项设计工作，其结果是不可预测的，这与有相对明确答案的问答任务不同。模型在执行这类任务时，并非独立生成结果，而是首先理解任务，然后协同其背后成百上千的技能和Agent矩阵来共同完成。我们只能观察到最终交付的产物 ，如一份报告、一个PPT或一段代码，但无法获知其内部复杂的调用和协作过程。因此，即使提供实际任务进行测试，也无法通过蒸馏来复刻其完整的Agent能力。</p>
+<p class="qq">3，GPT-6所展示出的对第三方软件的操作能力，是否意味着它正在吞并或替代传统Agent的功能？</p>
+<p>GPT-6对第三方软件的操控并非替代关系，而是交叉赋能。其操控软件主要通过三种分层架构实现：</p>
+<p>第一种是“Computer Use”，即模拟人类的鼠标和键盘操作，这种方式可以调用软件的全部功能，适用于最深度的设计和复杂操作。</p>
+<p>第二种是通过软件开放的API控制指令进行对接，从而间接操控软件。这种方式的局限性在于并非所有软件都愿意开放其API指令集。</p>
+<p>第三种是MCP，许多软件如Figma、Adobe及部分CAD工具会将其部分能力封装成MCP server，模型通过与MCP server对接来实现特定功能。这种方式更适合于浅度的、简单的设计任务。</p>
+<p>在实际应用中，模型会根据任务的复杂度选择不同的方式：简单的任务通过MCP完成，复杂的则依赖Computer Use。无论是进行建模、报税、视频生成还是PCB布线设计，最终任务的完成仍然需要借助专业的第三方软件，模型本身无法独立完成。因此，模型与第三方软件之间是相互赋能、协同工作的关系，而非替代。</p>
+<p class="qq">4，Astra是将相关能力直接集成在模型层，还是通过类似Open Interpreter或Claude Code的Agent层来完成任务？开发者调用API时是否能直接实现这些功能？</p>
+<p>部分能力是通过其名为Astra Agent的代理层实现的。Astra Agent背后的一些服务会通过与第三方MCP对接来完成任务，即用户下达指令后，Astra Agent会自动调用这些第三方Agent。另一种方式是直接操控第三方软件，因为并非所有软件厂商都愿意成为MCP，这种情况下Astra Agent会间接操控这些软件来执行任务。</p>
+<p class="qq">5，为什么市面上对Astra的评价存在差异，特别是官方跑分与第三方跑分结果差距较大，导致其在第三方评测中能力看似较弱？这是否与它需要配合特定Agent使用有关？</p>
+<p>跑分结果的差异取决于测试的具体内容和方式：</p>
+<p>首先，在编程能力方面，Astra的官方benchmark得分较高，因为benchmark使用的是相对规范的测试用例。然而，第三方开发者在实际使用中，如果输入的开发需求边界模糊、软件定义不明确，模型生成的结果可能无法精准匹配预期，导致体感不佳 。这并非模型能力问题，而是输入质量问题。</p>
+<p>其次，在编程之外的第三方软件操控方面，Astra通过其“computer use”能力间接调用和操控软件。一个任务可能涉及数十甚至上百次交互，中间可能需要人类用户进行确认（例如，在步骤A和B之间做出选择）。官方benchmark的测试用例会严格规范这些边界条件，而第三方测试若未能妥善处理这些中间环节，任务的最终成功率就会低于官方数据。因此，开发者会感觉其能力不如宣传视频中强大，核心差异在于测试用例的规范性以及任务成功率的计算方式不同。</p>
+<p class="qq">6，既然Astra打通了从模型到第三方软件再到真实世界任务执行的闭环，那么开发者在使用中遇到的困难是否意味着其价值有限？它是否代表了通用智能模型的一次代际跃迁？</p>
+<p>Astra打通了从模型到第三方软件操控的完整链路，这本身就是一项重要进展。尽管目前开发者使用体验可能无法达到100%的完美效果，任务成功率可能在50分到80分之间浮动，但这证明了该技术路径是可行的。后续的性能提升需要通过不断地打磨和场景适配来完成。这并不算是严格意义上的代际跃迁，因为它并非GPT-5级别的模型迭代，而是在模型训练范式上实现了一次飞跃。具体而言，其训练范式从过去的人类对齐（human alignment）转向了Agent对齐（agent alignment），核心在于通过一种新的Agent强化学习方式来训练其“computer use”能力。</p>
+<p class="qq">7，Astra背后用以训练“computer use”能力的新型训练范式具体是如何运作的？哪些厂商在这种范式下具备发展优势？</p>
+<p>这种新的训练范式核心在于获取海量的“computer use”数据。具体做法是，大规模采购并部署工作站（如Mac工作站），在这些设备上运行各类第三方软件。通过模拟真人在电脑上操控这些软件执行各种任务，收集由此产生的交互数据。这些数据随后被用于对模型的“computer use”能力进行强化学习。整个过程形成了一个闭环：模型看懂软件界面、理解用户需求、自主探索如何操控软件、获取结果并进行验证。</p>
+<p class="qq">8，国内大模型厂商在跟进这种基于视觉的“computer use”训练范式时，具备哪些基础能力，又面临哪些核心挑战？</p>
+<p>国内厂商普遍具备实现“computer use”的基础能力，因为其核心是基于视觉技术，即对软件界面进行截图、理解并定位需要操控的功能。例如，智谱AI早期在手机和Pad上实现的功能就属于此类。然而，国内外的差距主要体现在任务的复杂度和长度上。国内目前的能力更接近于RPA，能够执行步骤较少的浅层任务，如“打开微信给老板发消息”。相比之下，海外的技术能够处理需要几十分钟甚至数小时才能完成、涉及数百个步骤的长程任务。关键差距在于如何将用户的原始需求有效拆解为长序列任务。国内厂商已经完成了从0到1的突破，但海外已经进展到从1到10的阶段。要追赶这一差距，最大的难点在于数据局的构建。海外的第三方软件生态相对开放，更容易通过开放API或模拟操作来获取训练数据。而国内在许多专业工具软件（如EDA、3D建模）领域依赖海外产品，自身的工具生态链相对薄弱，这为补齐高质量的“computer use”训练数据带来了挑战。</p>
+<p class="qq">9，在训练模型操作EDA等专业软件时，为何不能简单地提供软件授权和账号密码让模型自行运行，而需要结合MCP、API和Computer Vision等多种方式？</p>
+<p>在训练模型操作复杂软件时，需要将不同层级的交互方式组合使用。这些方式可分为三个层次：浅层的MCP、中等的API和复杂的Computer Vision。单纯依赖Computer Vision进行复杂操作会面临成功率叠加的问题，即任务越复杂，每一步都非100%成功的概率会累积，导致最终整体成功率可能只有60%-80%的水平。因此，实践中通常将这三种方式组合起来以达到最佳效果。此外，成本也是一个重要考量因素。完全使用基于截图分析的Computer Vision方式，其整个链路的token消耗会非常高。相比之下，直接通过API进行控制，完成相同任务的token消耗会显著降低，从而降低单次任务的执行成本。</p>
+<p class="qq">10，在模型实操能力训练方面，国内模型与海外模型相比存在哪些差异？例如，在操作淘宝、携程等国内应用时是否也面临挑战？</p>
+<p>海外模型在实操能力训练上可能更具优势。国内模型在尝试操作某些特定应用时会遇到壁垒。例如，电商平台通常会部署防守策略，因为其广告收入依赖于真实用户的浏览和点击。如果允许AI大规模模拟点击，会扰乱其商业模式，因此平台会拦截此类行为。同样，银行类 APP出于安全考虑，也会阻止随意的截图和自动化操作，以防范账户和密码等敏感信息泄露。这些第三方软件自身的防御机制构成了模型实操训练中的生态壁垒。</p>
+<p class="qq">11，当前国内外大模型公司在模型训练方向上有何不同侧重？国内模型目前处于哪个发展阶段？</p>
+<p>海外主要厂商的战略路径存在差异。OpenAI是目前唯一明确聚焦于Computer Vision赛道的公司。Google则利用其自身的Workspace生态，走的是闭源API路线，专注于打通Gmail等自有软件体系。另一家海外公司则主要专注于Coding领域。相比之下，国内第一梯队的公司，如千问、Kimi、智谱、DeepSeek以及另一家公司，目前普遍处于第二阶段，即通用Agent强化学习阶段，尚未将Computer Vision强化学习作为核心战略方向。国内模型在2026年上半年刚刚在Coding能力上取得突破，下半年开始转向Work Agent的研发。因此，各家即将推出的新一代模型，如智谱5.3、DeepSeek</p>
+<ol><li>1以及千问的下一代版本，其研发重点仍将围绕通用Agent强化学习展开。</li></ol>
+<p class="qq">12，国内大模型在Computer Vision应用方面落后于海外，主要原因是什么？是技术基础问题还是战略选择？</p>
+<p>这背后有多重原因。首先，国内模型在追赶过程中，技术基础尚未完全打牢。在将通用Agent能力做到尽善尽美之前，仓促开辟新的赛道并不现实，目前相关工作仍在进行中。虽然有公司尝试在特定场景（如手机端侧模型）中进行单点突破，但旗舰级大模型的核心能力 尚未达到非常理想的状态。其次，国内的软件生态与海外相比不够健全。在模型接入第三方工具时，需要依赖海外工具，如果这些工具不开源或不提供授权访问，就会形成生态工具壁垒，限制了模型能力的扩展。</p>
+<p class="qq">13，海外模型通过隐藏或锁定思维链（Chain of Thought）来保护其技术，这对国内模型的发展路径有何具体影响？国内模型是否还能通过模仿其思维链来追赶？</p>
+<p>海外头部公司正通过技术手段限制外界通过分析其思维链进行模仿的路径。其中一家公司采取的策略是为思维链上锁，任何改动都会导致历史思维链失效。另一家公司则将思维链隐藏在其潜空间（latent space）中，并将权重和安全能力等进行封装监控，使得即便获取了模型输出，也极难对其内部的隐藏空间进行解码。这两家公司的做法，实际上是堵住了通过CoT“抄近路”来追赶的技术路线。</p>
+<p class="qq">14，面对海外模型隐藏思维链的技术壁垒，国内头部模型的技术追赶路径受到了多大影响？目前采取了怎样的应对策略？</p>
+<p>这种技术壁垒确实增加了追赶的难度。模仿OpenAI的路径虽然尚存可能，但面临被封禁账号等收窄风险。而另一家海外公司的技术路径则已完全被切断。虽然目前国内模型尚未达到像海外顶尖模型那样可以自我迭代的强递归状态，但训练范式的趋同使得技术差距不至 于被过分拉大。然而，对于ASR等引入的全新训练范式，国内短期内仍处于跟踪阶段，因为这涉及到架构、训练范式和数据收集方式等一系列技术的建立，需要时间才能逐步缩小差距。</p>
+<p class="qq">15，类似Astra这样的技术对模型训练和推理的硬件，特别是CPU、GPU和存储的使用，会产生哪些具体影响？</p>
+<p>在训练侧，这类技术需要更强大的算力集群，例如使用B系列以上、配备196GB HBM4e的计算卡。在推理侧，影响主要体现在以下几个方面：首先，由于其Agent属性，需要处理持续几十分钟甚至数小时的长序列任务，这将导致高核心CPU的内核被长时间占用。其次，为了确保任务的连续性，尤其是在跨越多天的设计工作中，系统需要反复读取和保存大量的上下文信息。这些长序列任务的数据必须被存储下来，不能丢失，否则无法衔接。因此，这对DRAM和SSD等存储设备提出了更高的要求。总的来说，该技术对CPU内核的占用时长和用于存储长期任务的内存都产生了新的需求。</p>
+<p class="qq">16，与传统的Chatbot相比，采用Computer Vision等新技术的Agent在保存上下文方面有何不同，这对存储，尤其是HBM等热数据存储，带来了怎样的压力？</p>
+<p>传统的Chatbot主要保存对话中的文本关键信息，对HBM的占用时间较短，对话结束后数据会迅速转移至DRAM，并在数小时后溢出到SSD，最终只保留约10%至15%的核心数据。而新技术下的Agent模式带来了显著变化：第一，在占用时长上，Ag ent与第三方模型的交互是一个多轮、需要人类参与确认的复杂过程，这使得作为热数据的HBM被占用的时间大幅延长，同时CPU为理解和分配任务的加载时间也相应增加。第二，在容量维度上，随着模型支持百万级别的上下文窗口，单次需要存储的内容远超简单的 对话文本，包含了多版本的设计迭代记录（如0.1、0.2、0.3版本）、修改细节等，以确保任务的无缝衔接。这些结构化的键值对数据量远大于传统Chatbot，从而对存储系统构成了更大的压力。</p>
+<p class="qq">17，从实际任务消耗来看，这类新技术对Token的消耗量有多大，进而对存储容量构成了怎样的挑战？</p>
+<p>根据对几个公开任务的估算，即使是绘制硬件PCBA这样相对简单的任务，单轮的Token消耗量就达到110万。如果涉及3D设计，一个小的版本迭代就可能消耗超过200万个Token。尽管不会存储全部Token，但即便只保存10%的关键信息，200 万Token也会产生20万个Token的存储需求。这20万Token所对应的KV数据量相当可观，单轮任务下来就可能达到几个GB的规模，对存储容量是巨大的挑战。</p>
+<p class="qq">18，在当前技术趋势下，模型与Agent之间的界限是如何划分的？对于专门从事Agent能力开发的公司而言，其研究成果是否存在被大型模型公司的能力迭代所覆盖的风险？</p>
+<p>OpenAI等大型模型厂商主要聚焦于通用Agent的研发，创业公司若想在通用Agent领域与其直接竞争，很可能会被碾压。大型厂商正通过不断迭代底层模型来拓展其能力边界，其发展方向可以用一个公式来概括：有效智能 = 模型 × 环境 × 工具生态 × Harmonies × 记忆。对于创业公司而言，生存空间在于选择大型厂商尚未涉足的、非常垂直的细分赛道。此外，大型模型公司正通过类似Computer Vision的技术横向打穿许多第三方专业软件，实现对它们的间接控制和调用。这意味着其能力边界正在拓宽，创业公司需要看清这一趋势，寻找不被其覆盖的差异化发展方向。</p>
+<p class="qq">19，大型模型公司（如OpenAI、Anthropic）应如何划定自身业务边界？它们是会吞噬专业软件市场，还是与第三方软件公司形成协作关系？</p>
+<p>上半年市场曾担忧大型模型厂商会颠覆SaaS、CRM、ERP等专业软件领域，但目前观察来看，它们并未将业务触角伸得那么长。大型模型的核心定位仍然是从用户角度出发，扮演一个帮助人类操控软件的Agent角色，而不是直接取代软件本身。在这个过程中， Agent能够进行自我探索，辅助人类完成任务。例如，用户只需指定一个宏观目标和相关细节，Agent便能自主寻找方法和工具，并进行持续验证。因此，大型模型厂商与专业软件公司之间更多的是一种协作赋能关系，而非取代关系。无论是专业的Agent开发 商还是PC端、Web端的工具软件商，都可以被大型模型所赋能，而不是被其吞噬。</p>
+<p class="qq">20，通义实验室下一代模型的研究重点、技术路线和发布计划是怎样的？</p>
+<p>下一代千问模型的核心围绕几个方面展开：首先是提升计算效率，特别是在国内计算资源环境下，解决百万级上下文的效率问题。其次，在模型训练范式上，我们在原有的SFT、DPO和通用强化学习三步基础上，增加了第四步，即Agent强化学习，这一新范式已经成型。在模态方面，我们不再追求全模态覆盖，而是聚焦于图文多模态作为主版本方向。在Agent层面，我们的目标是构建一个通用的Work Agent底座。至于类似Computer Vision的技术，目前定位为研究型分支项目，待研究成熟后，可能会在千问4.0的后期版本中整合进主线。</p>
+</div>
+</main>
+</body></html>

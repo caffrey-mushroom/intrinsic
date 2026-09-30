@@ -1,0 +1,248 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.24 | TB | Robotics | Harmonic Drive &amp; Humanoid Actuators</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.24 | TB | Robotics | Harmonic Drive &amp; Humanoid Actuators</h1>
+<p class="orig">原标题：Japan &amp; China's Harmonic Drive, Humanoid Robot &amp; Actuator Markets &amp; Harmonic Drive Systems – Senior AI Research Engineer, Embodied AI at a US-based Humanoid Robotics &amp; Physical AI Firm</p>
+<p class="tags">#robotics</p>
+<p class="meta">Third Bridge · 2026-09-24</p>
+<div class="body">
+<p>Client-led • 11 Sep 2026</p>
+<p>Companies: 6324 JP, 688017 CN, TSLA US</p>
+<p><b>Expert</b> Senior AI Research Engineer, Embodied AI at a US-based Humanoid Robotics &amp; Physical AI Firm</p>
+<h3>Agenda</h3>
+<ul><li>Around five years' experience in Japan and China's harmonic drives, humanoid robots and actuators markets, with a deep understanding of Harmonic Drive Systems and other Japan- and China-based players</li><li>Well-placed to comment on Harmonic Drive Systems' paramount precision, focusing on its total capacity, gears used for wrists on robotic arms and torso, as well as durability advantages and actuator sizes</li><li>Knowledgeable on Japan's products for humanoids, highlighting the leading edge of Japan-based manufacturers such as Fanuc (Fuji Automatic Numerical Control) and Yaskawa Electric against China's products, along with highly reliable harmonic drives and actuators</li><li>Key insights into China-based manufacturers such as Unitree Robotics and Leaderdrive, noting their products, market and competitive positioning, along with Tesla's relationship with China-based players' harmonic drives and actuators</li></ul>
+<h3>Introduction</h3>
+<p><b>Client</b> [00:01:36]: I want to understand the different gears used in Japan and China's humanoid robot space and its winners. The Japan-based company Harmonic Drive Systems tends to win where precision is paramount, and those small form factors are used for wrists on robotic arms, similar to Fanuc [Fuji Automatic Numerical Control], Yaskawa Electric and many China-based players.</p>
+<h3>Questions</h3>
+<h3>[00:01:36] In the humanoid robot world, where there are far more joints than needed, there’s a preference for cheap solutions for actuators and gears, as much precision as Fanuc [Fuji Automatic Numerical Control] and Yaskawa Electric, operating 24/7 for the exact task without any error margin in tough environments, isn’t needed. What's your take on this?</h3>
+<p><b>Expert</b> [00:03:13]: I think it's a fair observation definitely because, as you said, most of the joints, especially in humanoids, they rely on harmonic drives. That's why everyone is trying to get the unit cost down by getting cheaper harmonic drives. It introduces some trade-offs, obviously. Overall, when I try to think about it, I try to think about it from two perspectives, one from a more professional player perspective, the other one from a hobbyist. For example, at the end of the day, if you talk about the actuator price ranges, if it is a proper actuator that is going to be used in some manufacturing by companies, it's going to be probably anything around starting from USD 1,000, maybe USD 750 going up to thousands, like USD 2,000-3,000. This is a big number for sure. There is indeed the hobby research versions as well. You can have USD 100 actuator, USD 500 actuator and get your things started. I think one of the important factors in this price range and in this trade-off was before robots were not easily accessible.</p>
+<p>I think until 3-4 years ago, only these high-end labs in big universities, they would have an access to good robots. Now, this impression has been changing because people have shown that if you integrate your robot with most recent AI models, so AI models will overcome or compensate for this missing accuracy. Those basically trade-offs we used to make having cheap actuators is now it's compensated by AI up to some degree. That's why the entry threshold becomes quite low compared to five years ago. I would say this is one thing, of course. On the other hand, people have been experimenting and trying to validate different type of actuators. For example, using quasi-direct drive for, let's say, legs. This is almost becoming a standard. Basically trying to replace harmonic drive as much as possible, also leverage the AI as much as possible. These two are probably the two most major way of reducing the unit cost at the moment.</p>
+<h3>[00:06:14] Do you see big robot players in the professional market, rather than the hobbyist market, such as Unitree Robotics in China, US start-ups and Tesla, as more likely to use China-based players for the upper body for harmonic drives because they’re interested mainly in cost and can leverage AI in a way that they couldn’t five years ago, and in five more years, will it get even better? Are there specific application types in an industry where companies are forced to use Japan's products for humanoids because they are better?</h3>
+<p><b>Expert</b> [00:07:19]: I would say historically, this was correct that Japan has a quite significantly large leading edge against China's products. I would say this has been changing significantly in the last maybe five years, especially after the COVID time. During the COVID time, I think there were many incidents where there was so much delay in manufacturing and order from the Japan manufacturers. Many clients, they had to go with other options, they had to go with China-based options. They started to explore those easily. Before, of course, there is still this impression that, this is China's, it is cheaper, it is less quality. Actually, people started to realise that the difference in quality is not that much and the difference in price is actually significant. They're like, "Okay, this is actually not bad choice." Based on my observations, many companies are actually willing to try China's actuators.</p>
+<p>Even going with them, especially, for example, if you look at Tesla, I think Tesla is just going with the China-based players. This is a known thing. As far as I know, currently, most of their operations are coming from specific China-based manufacturers. I think they have a plan to make them even more scale at larger scale. As for China-based players, as far as I know, government has given some subsidies just to make sure they're not going to Japan-based players because there is still some advantage of going to Japan-based players. If you're looking for very specific specs, if you are looking for some higher technology specific actuator for specific joints for your robot, there is still room for them for sure. I think every day, this gap is closing. That's my at least observation in the last two or three years.</p>
+<h3>[00:09:59] Figure AI is aiming for more industrial applications because broad-brush strokes break the market into China’s research, service, dancing and kung fu. US is focusing on industrial uses for Figure- and Agility Robotics-type US start-ups. Is that where you need to use Harmonic Drive Systems for precision? Industrial humanoids are very different from classic industrial arm robots. People still use China's harmonic drives and leverage AI. What do you think?</h3>
+<p><b>Expert</b> [00:10:57]: I would say, especially arms and the wrist, you still need high accuracy. You still need a very tight range of specs for your actuators because, at the end of the day, if you ignore the base, it is still a robot. It's just arm robot in a sense. There is no way to avoid this. On the other hand, for the hip or lower body, in general, there are alternative ways of dealing with them without too much investing in the harmonic drive. You can have QDDs for hip. I don't know, you can have QDDs for knees, even for ankles. For torso and waist, you will still probably want to have harmonic drive because of it needs the motor torque or depending on the design, of course, these can be changing.</p>
+<p>My point is that even though arms are still arms and they require to be high quality, I would say, compared to the industrial arm category, we don't need these most premium actuators because the whole promise of these new robots is being able to leverage the robotic foundational models. The whole idea is that these models should be able to generalise into these small inaccuracies and all these small difficulties, which were normally taken care of by these very high-precision industrial arms in a controlled environment. That's why I think people still have a lot of reasons to choose China-based players.</p>
+<h3>[00:13:06] If a US start-up or Tesla aims for an industrial humanoid context, you must use strain wave gears or harmonic drives for the arms, wrist and torso. Do you not need to use Japan's harmonic drives, or could you use China-based company Leaderdrive even in an industrial context?</h3>
+<p><b>Expert</b> [00:13:53]: It is not a yes and no question. Yes, because even though we talk about this because since Japan Harmonic Drive is historically leading in this for decades, high quality, high reliability. This is not easy to take over. It's not easy to change people's minds. I would say, for example, the Leaderdrive from China, they have been growing very fast every year. If you check their numbers, it's going to be every year, they are having maybe 50% a lot of growth every year, but I think it's still not aggregated enough to take over Japan's drives.</p>
+<p>I think now compared to five years ago, these players you mentioned maybe before, they were quite sceptical about China-based players. Now, they are trying even for industrial applications. There is definitely room for them because most of these industrial applications, at the end of the day, they are not dealing with hundreds of kilograms of load. They are still dealing with very moderate loads. I think at this point, they are starting to experiment with those and even some of them are switching to those completely.</p>
+<h3>[00:15:16] If Tesla is using China-based players instead of Japan's, and plans to scale, why would other US start-up competitors use Japan's harmonic drives? Is it because Tesla's trying to do something closer to classic industrial use cases and needs higher quality?</h3>
+<p><b>Expert</b> [00:16:05]: There are a couple of reasons. First of all, Tesla already has been having very good relationship with China-based manufacturers even before the humanoids. They had lots of infrastructure, trade lines. All of those pipelines are already there. They just had to extend it. It was a more natural step for them. They didn't have to choose between China and Japan. It was not a hard decision. For these lower-scale start-ups, let's say, Figure AI or Boston Dynamics, Apptronik, these start-ups, they only have one thing to do, which is manufacturing humanoid robots. They are mostly experimental. For example, if you follow Figure AI, you will see that they already have three, four, five version of the robot.</p>
+<p>In every version, there is a significant change in terms of how they get their actuators and all these trade-offs. I would say, when you start your company, I think it's a good idea to start with more reliable and proven actuators because you want to iterate, you don't want to keep fixing your hardware because the main focus of companies are at the beginning, especially the AI part and AI, it requires so much iteration, fast iteration. As you get good AI models, now they can start thinking about alternatives. I think this is the pattern I see. Everyone started with very good actuators, but now they are trying to reduce the unit cost because this is starting to be a bottleneck. Everyone has humanoids now, but now the price makes a difference.</p>
+<h3>[00:18:02] Where will humanoid robots be in 10 years, considering we're at their very early stages? Will it be 90% China-based or even higher? I believe there will be a place for other robot types in Japan-based companies, but will the humanoid space be dominated by China?</h3>
+<p><b>Expert</b> [00:18:55]: Probably in 5-10 years, my expectation would be maybe 50-60% of the market will be using China's actuators. I wouldn't still say 90% because, as I said, even though, yes, Japan-based manufacturers has a premium price, but I think still some companies are willing to pay, and it's not easy to change it because they have a very good product. 60% is still a huge shift because currently, most of the market is still led by the Japan-based players. It's going to be basically flipped by Japan-based players towards the China-based players.</p>
+<h3>[00:19:54] Who will use Japan's actuators in that world? If Unitree is on Agility's side for its niche at scale using China's actuators and Tesla's using it at scale with more of an industrial focus, how will anyone compete, given that actuators are such a large proportion of the BOM [bill of materials] if it’s using Japan's actuators when the competitors are using significantly cheaper alternatives?</h3>
+<p><b>Expert</b> [00:20:40]: At the moment, even though most of the humanoids are probably supposed to be going to industrial applications, which is true, I think there's going to be so many other fields like defence, elderly care, basically, there will be different tiers of humanoid robots. At some tiers, these robots will be interacting with humans a lot. I think especially for those applications, you would still want to go with very premium actuators. I can think of so many examples of that.</p>
+<p>For example, if you have seen any humanoid robots nowadays, deployed anywhere, they are basically operating in an isolated set. It's for safety reasons because you don't want your robot to interact with the human because of the danger. I think next wave of humanoid robots, there are going to be more semi-controlled interactions with humans. For example, it can be in grocery shopping, doing some shelf stocking, where it can just interact with humans in small ways. Then next level is going to be elderly care. It's going to be in your home. All these different tiers, defence is a whole different industry and heavy applications. All these things still, it is very diverse, and I think there is going to be lots of room for Japan-based players still.</p>
+<p><b>Client</b> [00:22:18]: Japan-based companies win in the direct service sector when dealing with humans. My mental model was that you would need Japan's actuators for precise industrial bits. Is that the case for advanced industrial humanoids? What they're doing probably isn't the same thing as Fanuc's arm, yes?</p>
+<p><b>Expert</b> [00:22:57]: Yes, exactly for that reason. Maybe interacting in consumer houses doesn't require as high accuracy as industrial setup, but it requires more certainty. You need to be more certain about how is your robot going to react and you have to have better specs basically.</p>
+<h3>[00:23:28] Why are more advanced, higher-spec actuators and harmonic drives needed for interacting with humans and in elderly care? I believed China and Japan's actuators and harmonic drives are the same in specifications, and the difference is durability. If the same action is performed on Fanuc's arm repeatedly 24/7, the China-based actuators and harmonic drives will last one year, whereas the ones from Japan could last five years. What could go wrong that you want to use a more expensive one for human interaction?</h3>
+<p><b>Expert</b> [00:24:19]: As you said, the durability is one thing for sure. Most of the spec is indeed similar. When we think about some other aspects such as durability, the actuator size and so these error margins in a sense that if you have any specs, all these numbers still have some error margins and these error margins are also making a huge difference because, at the end of the day, imagine that your robot is failing in a factory. It's not a good thing. You're losing money. Robot is done. No one is going to get hurt most of the time. If this happens, even in someone's house, it can kill someone's kid. That's why you have to make sure that even for simple durability things, I would say this is the main reason. That's my expectation, at least. There is also another aspect to this. Maybe China-based players will even catch up with those in 10 years. If that happens, then yes, you're right. There is now no place left for Japan-based players.</p>
+<p><b>Client</b> [00:25:55]: Interestingly, creating humanoid industrial robots at scale seems like you don't see a place for Japan in the factories.</p>
+<p><b>Expert</b> [00:26:10]: Yes. It's going to be less and less.</p>
+<h3>[00:26:15] Unitree is ultimately aiming more at the service sector. It’s plugged into China’s supply chain for various reasons. What do you think about that? Will it deal with the same safety concerns using potentially worse hardware?</h3>
+<p><b>Expert</b> [00:26:55]: I think even though currently, they are mostly going for entertainment or service sectors, I think it is very easy for them to adapt to industrial settings. It might be just like we first had the ChatGPT and US had very good access to this AI. We always had the best model here. The next tier of models are always coming from China. They are catching up. They also now have very good models. Similarly, as we get better models for robots, it is a very easy adaptation for them. In terms of how they deal with the safety concerns, I would say, of course, one of the main differences is that probably these regulations are not as tight as they are in US.</p>
+<p>You can even see already so many robot videos where they're kicking humans accidentally, just falling on kids. There are already these type of videos. At the end of the day, if this becomes a specific industry, if there is a huge interest in buying your own robot, like buying your own car, I think there will be also more regulations around it. As we have more regulations, maybe they are going to be just making new versions of robots, trying to match up with the regulations in their own countries. At the moment, currently, there is not much regulation. Everyone is just doing their iterations. It is a bit hard to estimate because it's a very closed country. Whenever I go to China, I always feel you cannot think about this country linearly. It's different.</p>
+<p><b>Client</b> [00:29:31]: In summary, China’s regulation will be less stringent as well because they are trying to win in humanoids. Therefore, that ultimate precision will matter less than in the US context, where if a robot harms your child, they will take you to court and sue you, and so will everyone else.</p>
+<p><b>Expert</b> [00:30:07]: Yes, that's for sure. That's probably the biggest difference.</p>
+<h3>[00:30:14] If actuators are 50-60% of the robot’s cost, many people won’t appreciate quite how high that is. Ultimately, at scale, you'd be looking for this to be 10-15% in the long term. What will this look like now vs in the future in actuator percentage of the BOM?</h3>
+<p><b>Expert</b> [00:31:17]: I will say currently, it is indeed 50-60%. I assume that this range could be completely different depending on the hand choice because currently, some of the dexterous hands can cost as high as the robot itself. Let's say, it's 50-60%.</p>
+<p><b>Client</b> [00:31:40]: Is 50-60% excluding hands, assuming hands or some tendon system?</p>
+<p><b>Expert</b> [00:31:47]: Yes, it is excluding the hands, for sure. I would say my guess is like ideally, I mean, in an ideal world, this needs to go down to 15-20%. How long would this take is an open question. Based on my expectations, in maybe 10 years, this should be at least going down to 25%. If we have better progress than I expected, maybe we can hit those 15-20% threshold in 10 years. 10 years is long term. I would like to do more like five years, three years estimations. First of all, there is very interesting dynamics where these AI models are driving or affecting these in very interesting ways.</p>
+<p>For example, as I said, because AI is letting us being able to use lower-quality actuators in one way, maybe a huge breakthrough in AI side is going to maybe significantly accelerate this in a sense. If you ignore those unexpected complexities, I would say maybe in five years, it will be maybe 40-45%, maybe 50% max. I think there is definitely some consistent progress every year. We see that. You can even find very super low open-source humanoids. Of course, they're not industrial grade, but it is letting people have a very easy access and researchers can iterate on it. I'm bullish on that, in general.</p>
+<h3>[00:34:09] Actuators will have to get a lot cheaper because the BOM moves from 50% to 60% to 40% to 25%. As it scales, the robots’ prices also come down, and so do BOM prices. We're having a lower percentage of a lower absolute total BOM, correct?</h3>
+<p><b>Expert</b> [00:34:48]: Yes, exactly. As you said, that's true. There's so many other components, and they're also supposed to go down. As they go down, it means your actuator needs to go down even further. Probably the next biggest bill of materials at the moment is AI and compute, basically electronics chips in it. I expect an actually interesting trend there, probably the bill of materials will actually shift towards the AI and compute. Let's say, currently, if it is 10-15%, maybe it's going to be 20-30% in 5-10 years.</p>
+<p><b>Client</b> [00:35:42]: You’ve provided me with figures for how things will change as a percentage. If BOM is USD 100, how much will it be in three, five and 10 years as it scales, and if things go according to plan?</p>
+<p><b>Expert</b> [00:36:39]: I think I would expect in especially 10 years or so, probably it would go from USD 100 to USD 50. On the other hand, some companies have very aggressive estimation, Tesla is trying to sell them under USD 30,000, which is probably currently it is over USD 100,000, I would expect. I would say maybe there is some yearly almost like a linear change in the price. I would say in maybe 3-5 years, it is going to be mostly 40% drop maybe. In 5-10 years, it's going to be up to 60% drop because it has to stop somewhere, obviously. I think currently, every year, still it is dropping more than the previous year in terms of percentage. I think we are close to the point this dropping speed is going to slow down soon.</p>
+<p><b>Client</b> [00:38:05]: Is the drop speed slowing?</p>
+<p><b>Expert</b> [00:38:09]: I think it is going to be slowing soon.</p>
+<p><b>Client</b> [00:38:15]: How would you define that?</p>
+<p><b>Expert</b> [00:38:18]: I would say within the next three years.</p>
+<p><b>Client</b> [00:38:25]: The initial 40% drop happens within the first three years and slows down over the next 10 years. Ultimately, you get a 60%-something. Most of the dramatic increase is from the initial scaling, yes?</p>
+<p><b>Expert</b> [00:38:43]: Yes.</p>
+<h3>[00:38:49] If actuators are 60% and the BOM cost is USD 100, USD 60 is spent on actuators. If that falls from 60% to 40% over 10 years and actuators are 25% of that, then it goes from USD 60 to close to USD 10, which should be incredibly dramatic. This is a bottleneck. Is Harmonic Drive Systems' total capacity, and that of the China-based players, enough for the actual gears and actuators to come online fast enough for the aggressive ramping all robot companies want to do?</h3>
+<p><b>Expert</b> [00:40:15]: Yes, of course. Current capacity is nowhere near ready for a 10-year horizon prediction scale. I would say there are a couple of bottlenecks. First of all, these companies already trying to expand at very high speed. Even with that, I don't think simply expanding what is available is going to be enough for the next 10 years. That's why there is companies like Schaeffler from Europe or some other small Korean players, they try to get into these markets as well, especially the companies who has been working or who has been existing in different domains like defence or automotive or some others.</p>
+<p>Now, they are trying to adapt their manufacturing pipelines or workflows into this space. I think it still boils down to the fact that if we can get better AI models, which would enable robot, basically, there needs to be some trigger for companies to desire to manufacture those robots at higher scales as they show more promising results. I think as they show more promising results, there is going to be those companies from other sectors trying to adapt into this. I think by this way, in theory, it is possible to get there, but I don't think it's too easy.</p>
+<p><b>Client</b> [00:42:12]: Could you repeat the company names?</p>
+<p><b>Expert</b> [00:42:31]: The European is a Schaeffler from Germany. I don't remember the exact name from Korea, but as you know, there is already Hyundai. The Boston Dynamics is literally owned by Hyundai. I'm sure Korea is actually major location. I'm sure they also are going to have some margin on that.</p>
+<h3>[00:43:01] Is QDD [quasi-direct drive] for legs? Is the lower body part planetary-driven? Is it more QDD and planetary?</h3>
+<p><b>Expert</b> [00:43:49]: You're right. QDD, it's more like recent thing that people try to experiment and use it. I would say, currently, yes. Maybe if you go check most of the humanoids, you will see that's planetary. Obviously, QDD has excellent backdrivability. One of the reasons we would like to have QDD in lower body is that we want our robot's lower body to be very compliant. Imagine, especially for humanoids, falling is part of the game. It's a huge part of the game. It's one of the most probably common failure modes. Whenever the robot falls, if your actuators are very stiff and especially it's very bulky like planetary, then it's going to definitely have lots of problems. It's going to get broken much easily. On the other hand, if you have a QDD design, it is much easier to handle the fall, so you can be more compliant. That's one of the reasons, not a single reason, but that's one of the reasons why actually we are trying to get QDDs more commonly integrated into those.</p>
+<p><b>Client</b> [00:45:26]: Will QDD move up the body, including the shoulders, waist and potentially the elbows? Are those strain wave positions?</p>
+<p><b>Expert</b> [00:45:45]: The problem with those is that for those, especially for shoulders and upper body specific parts, we need very high ratio, very high torque ratio. It also has to able to be resistant to shocks, all these thermal requirements and large range of motion, speed. I think for QDD to replace those, all of those specs is not super practical at this moment.</p>
+<h3>[00:46:30] I believe lack of backdrivability is an issue in the upper body for harmonic drives. QDD can respond to pushes and gravity more than harmonic drives, which could be a safety risk. What do you think?</h3>
+<p><b>Expert</b> [00:47:03]: I would say, that's true. For shoulders, even though there is no easy way to get rid of harmonic drive, but for elbows and wrists, yes, especially for elbows because shoulder is carrying the whole arm. It has a very long torque arm. The QDD is definitely not suitable for that. As you get towards the fingers, you have better chance of putting QDDs. Indeed, I know there are some designs where they use QDD for elbows. That's the right intuition. Ideally, we want all of our robot body to be quite compliant, backdrivable. Of course, there are some priorities and feasibility issues.</p>
+<p><b>Client</b> [00:48:02]: What are the issues?</p>
+<p><b>Expert</b> [00:48:06]: Some priorities in the feasibility aspect, basically.</p>
+<h3>[00:48:13] You mentioned visibility was trying to work out, and there are elbow designs in QDD. Is the direction of travel for harmonic drives toward shoulders and QDD toward elbows in the next 10 years?</h3>
+<p><b>Expert</b> [00:48:42]: Yes, for sure.</p>
+<p><b>Client</b> [00:48:43]: Will QDD take elbows eventually?</p>
+<p><b>Expert</b> [00:48:55]: Yes, I think so. First of all, it is an easy way to cut the cost. It's just one direct way to cut cost first. Secondly, if you get really maybe as we get even better QDDs, it's also going to be making a huge difference in backdrivability. These two are basically no-brainers. If you have those two offered to you, you would take them.</p>
+<p><b>Client</b> [00:49:31]: What about wrists?</p>
+<p><b>Expert</b> [00:49:37]: Wrist can be tricky. Normally, a pure QDD is avoided in the wrist because it requires a very wide, a pancake-shaped motor to generate adequate enough torque. That's why the wrist itself has very specific requirements in terms of shapes and its connection with the hands, especially if your dexterous hands are tendon drive, it's going to change the whole story as well. Then it means all of the actuators that were supposed to be going to the hands will be actually in the wrist. I would say the wrist, maybe together with the hands are, probably most experimental and least standard in the overall industry at the moment. You could see all things. Probably harmonic drive, those small mini harmonic drives are probably still some easy choice to get started, but they're probably nowhere close to being the most optimal choice there as is.</p>
+<h3>[00:51:07] Where will harmonic drives be in the humanoid space in the next 10 years? If a humanoid's bottom half is planetary and QDD, with it eventually growing, and if elbows become QDD, what will still be harmonic drives in 10 years?</h3>
+<p><b>Expert</b> [00:51:44]: I think probably for hip and shoulder, it's still going to be harmonic drive. I don't expect to see big changes there. For example, currently, there is still lots of hand design, which is using these micro-harmonic drives, but I think in 10 years, no one is going to be using harmonic drives for hands. I think that's almost like a very clear projection for me. You can still see some harmonic drive for knees and ankles. There is probably going to be very minimal use for them in the future, maybe 5-10% of people will be still using them. I think shoulder and hips, they're mostly going to be harmonic drive. I don't expect change for them.</p>
+<p>You could literally have a humanoid robot with only harmonic drives in theory, because they're quite flexible, they have very good specs overall, you can use it for all kind of purposes. That's why they are on very high demand. In the future, as we try to optimise all these unit costs and everything, I think we will only end up with the bare minimum pieces that require harmonic drives, which is going to be, I think, shoulder. Even for hips, I suspect there might be some very good progress in maybe QDDs or even maybe planetary ones. I wouldn't be surprised if in 10 years, maybe there are some alternatives for hips but for shoulders, I don't expect any change.</p>
+<p><b>Client</b> [00:54:14]: How many gears are needed for a humanoid shoulder to be good, and how many to be like a human?</p>
+<p><b>Expert</b> [00:54:41]: I would say, per shoulder, it is normally three or four degrees of freedom, meaning that you would have three or four actuators there.</p>
+<p><b>Client</b> [00:54:58]: There are 3-4 actuators, not multiple gears within one actuator, correct?</p>
+<p><b>Expert</b> [00:55:04]: It depends on the design, but I would say it is basically, at the end of the day, you need to have three or four degree of freedom. There is no way to avoid that. I think that's the tricky part. I would say three is much more common because at the end of day, you have the shoulder pitch like shoulder yaw and the shoulder roll. In rare, I think some people are experimenting with having some shoulder, like, shoulder shrugging but I think three is quite standard. You would end up with six of them. Three per shoulder.</p>
+<p><b>Client</b> [00:55:59]: Is it 3-6 for every joint now, regardless of the kind of gear in the elbows and wrists? If it’s 3-4 per shoulder, it’s 6-8 in an extremely optimistic case. Is it 3-4 for wrists, elbows and hips, each? Is that same for all joints?</p>
+<p><b>Expert</b> [00:56:43]: No. It's all different for each joint. You can actually intuitively test this out yourself. When you have time, you can try to turn your shoulder around and you will see it is supposed to rotate around three axes. That's why it is 3-4. If you check your elbow, it's going to be like an extension and a bending. Your shoulder cannot rotate around. It cannot do roll. Your wrist is not like your shoulder. It is going to be 1-2, for example. Similarly, your wrist is going to be 2-3 and probably hips is going to be three as well. For example, for your knees, you just only have one. You can just open and close them in one direction. It depends on the joint and the degree of freedom we want to introduce in the joint. In total, you would end up with around 30, except for, of course, the hands.</p>
+<p><b>Client</b> [00:57:58]: To confirm, it's 1-2 for the elbow, 1-2 for the wrist, 3 for the hips, 1 for the knees and 2-3 for the ankle, yes?</p>
+<p><b>Expert</b> [00:58:09]: Ankles is two.</p>
+<h3>[00:58:11] How are you seeing AI leverage to quantify what you could do previously with the harmonic drive from Japan vs China? Is there any way to quantify how much better China’s harmonic drives have become with AI, or how much closer the two are by applying AI for backlash?</h3>
+<p><b>Expert</b> [00:59:01]: It's not too easy to quantify, but maybe you can see this as an example. Let's say, before the big progress in AI, the universities used to have an access to those maybe USD 60,000-70,000 arms from Panda, UR5, whatever. With the AI, we started to see this USD 5,000-10,000 arms, which are made of cheaper actuators. Even though, of course, there is still some quality difference, there's no one ignoring that, but now before you wouldn't even think of doing some tasks with those cheap arms, because you wouldn't even think those cheap arms would be useful for anything, but now you could do, let's say, simple pick and placing of an object almost at the same quality with the two arms. Basically, now even as a hobbyist, you can just spend a couple of thousand dollars and get some very simple arm and start doing very simple stuff at home. I think this is probably the most significant change and maybe the most clear signal.</p>
+<p><b>Client</b> [01:00:25]: Harmonic Drive Systems’ biggest advantage is durability and the actual size of its actuators. The actuators can be the size of a small clove of garlic. Its China-based competitors’ actuators are the size of a tangerine or a small orange. How true is this? How much of an advantage is being small, or is it not really, because if it's small enough, it's still fine? You don't need them to be the size of a small clove of garlic, correct?</p>
+<p><b>Expert</b> [01:01:44]: I would say size definitely matters because, especially for hands, it is the probably number one blocking parameter. You have to have the right size. Otherwise, you would end up with some monster hand. Japan-based players are known that can get very small size and very high-quality actuators and the China's equivalents will be not as small with the same quality, so that's a fair assessment. I think when we go back to shoulder, you still need to have proper size, but at that size now, I think China-based players can match the Japan-based players.</p>
+<h3>[01:02:44] If China’s is 50-60% in 10 years and Japan’s is 40% for the kind of gears used in joints, would you still stick with the figures? Is 50-60% of your harmonic drives from China? If so, are harmonic drives becoming less and less important for robots in general?</h3>
+<p><b>Expert</b> [01:03:24]: I was just thinking from the general actuator perspective when I think about those numbers. It includes different actuator types. It's not like per robot because per robot prediction is probably not possible and have lots of error. I think you can think of from that perspective as well, as you said, for example, those components which will still use harmonic drive, they probably have better chance. Japan-based players have probably better chance at surviving in them.</p>
+<p><b>Client</b> [01:04:04]: If we move to a world where you potentially use harmonic drives in shoulders and wrists, it's all China-based.</p>
+<p><b>Expert</b> [01:04:26]: Harmonic Drive, literally the company, even though, of course, Japan-based players can provide you similar product, but I think in the future, they will still have an advantage of being able to provide much better product at a premium price. The reason now China-based players can match them is that because if you go with very standard shoulder, you can go with the China-based one, but if you have very tight specs, maybe you optimise every other part of your body and now your shoulder has to be very specific range.</p>
+<p>Now, China-based player will not be able to match that because this is where actually the Japan's heritage and all these technologies focused on. Yes, but I think this might sound like a very specific case, but I think it is not because as we keep optimising all the parts of the robot and maybe some joints will be more critical. I think shoulder is one of them and the wrist is also another one of them because there are less room for trade-off in those. As you keep optimising the rest of the body, now you will end up with very tight specs for these, and then, maybe this might even eliminate some of the China-based players if it gets too tight.</p>
+<p><b>Client</b> [01:06:11]: There could be a world where only harmonic drives are used in shoulders and wrists, but because enough money was saved elsewhere using QDDs, you can afford to have or need the very best in the shoulders, but there's a caveat with China getting better.</p>
+<p><b>Expert</b> [01:06:42]: That's the part which is very hard to predict. It's really hard to predict how good they can get at the technology itself, if they can really match. That's why I think Japan-based players are also aware of that. They're also trying to understand how far they are ahead of their competitors. I think they predict that their China-based player is going to catch up at some point.</p>
+<p>That's why actually they're trying to come up with some solutions to make their products look more appealing. For example, I don't know if you have heard something called smart actuators. It's a whole different story. This is one way, for example, they nowadays try to basically decorate their actuators, making them smarter. Even though maybe rest of the specs are quite similar to China's, they're going to be like, "Oh, but ours has this bundle of being smart and it comes with these features."</p>
+<p><b>Client</b> [01:07:50]: Does that matter?</p>
+<p><b>Expert</b> [01:07:54]: I think it matters because buying an actuator is the easy part. Once you buy it, you have to do the calibration and the maintenance and you have to understand the lifetime, the life cycle. For example, if your robots unexpectedly stop working. This is one thing, and on the other hand, you might have very expected maintenance to avoid this. These smart actuators have the potential to reduce these burdens a lot. That's why they have a very high return of investment in theory.</p>
+</div>
+</main>
+</body></html>

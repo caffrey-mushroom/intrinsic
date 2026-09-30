@@ -1,0 +1,366 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.23 | GP | Software | AI Observability: DDOG &amp; DT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.23 | GP | Software | AI Observability: DDOG &amp; DT</h1>
+<p class="orig">原标题：AI Observability: Datadog and Dynatrace — The 3Q26 and 2026–2027 Outlook Plus AI Impacts</p>
+<p class="tags">#software</p>
+<p class="meta">GuidePoint · 2026-09-23</p>
+<div class="body">
+<p>Plus AI Impacts</p>
+<p>Primary:</p>
+<p>DDOG</p>
+<p>DT</p>
+<p>Associated:</p>
+<p>MSFT</p>
+<p>ESTC</p>
+<p>AMZN</p>
+<p>New Relic, Inc.</p>
+<p>Splunk Inc.</p>
+<p>CSCO</p>
+<p>GOOGL</p>
+<p>Viewpoint:</p>
+<p>Industry Consultant</p>
+<p>Moderator: Eileen Segall (ES)</p>
+<p>| Sep 23, 2026 | 29 Min Read</p>
+<p>Bernd K Harzog (BKH), CEO - APM Experts</p>
+<p>SU MMARY</p>
+<p>Overview</p>
+<p>The discussion focuses on the observability market, particularly the impact of AI on this sector. The expert, a seasoned consultant in the observability industry, shares insights on how businesses are increasingly relying on online systems for critical functions, which drives the demand for observability solutions. The conversation also explores how AI is introducing new complexities and opportunities within the market.</p>
+<p>Key Insights</p>
+<p>The expert highlights that the growing reliance on online systems for business-critical functions is a primary driver for the observability market. AI is fundamentally altering the landscape by introducing new challenges, such as monitoring AI-driven applications to prevent potential harm. The expert believes that despite challenges, the observability market will continue to grow, as these solutions are essential for managing AI-related risks. The expert suggests that observability vendors have a significant opportunity to expand their offerings by addressing AI-specific needs.</p>
+<p>Competitive Landscape</p>
+<p>Company</p>
+<p>Strengths</p>
+<p>Challenges/Opportunities</p>
+<p>Datadog</p>
+<p>Strong growth in sales; adept at identifying new customer needs.</p>
+<p>Faces challenges in maintaining growth as customers optimize costs.</p>
+<p>Dynatrace</p>
+<p>Long-term investment in AI; strong enterprise sales approach.</p>
+<p>Needs to continue expanding AI capabilities to stay competitive.</p>
+<p>Startups</p>
+<p>Target AI-native observability solutions, offering niche solutions.</p>
+<p>Lack breadth compared to established players; focus mainly on cloud apps.</p>
+<p>Quantitative Insights</p>
+<p>Confidential</p>
+<p>09/24/2026 at 09:57 AM UTC</p>
+<p>1</p>
+<p>Metric</p>
+<p>Datadog</p>
+<p>Dynatrace</p>
+<p>Recent Sales Growth</p>
+<p>36% year-over-year (recent quarter)</p>
+<p>17% ARR growth in constant currency</p>
+<p>Customer Spend Optimization</p>
+<p>Large customers reducing usage</p>
+<p>-</p>
+<p>Conclusion</p>
+<p>The observability market is poised for growth, driven by the increasing complexity introduced by AI and the ongoing digital transformation of businesses. Established players like Datadog and Dynatrace are well-positioned but must continue to innovate to capture new opportunities, particularly in AI monitoring and agent management. Startups are emerging with AI-native solutions, but they face challenges in competing with the comprehensive offerings of larger vendors.</p>
+<p>ES: Hi, everyone. On the phone with us today is Bernd Harzog, CEO of APM Experts. Thanks, Bernd, for joining us.</p>
+<p>Bernd Harzog: Happy to be here.</p>
+<p>ES: Yeah, great to have you. And for our audience, before we introduce Bernd, we're going to let you know that if you have any questions during our call, feel free to email them to ask@guidepoint.com, and I can read your questions. And that email again is ask@guidepoint.com. So, Bernd, if you could, please just give us a brief introduction to you and your practice, which observability vendors you work with, how do you work with them, and what kind of clients do you have?</p>
+<p>Bernd Harzog: Good morning, everyone, or good afternoon, depending on where you are. Briefly, I've been in this business for about 45 to 50 years. I've been on the product side of this business, primarily working for vendors. I've been a CEO of 2 venture-funded startups, sold 1 of them to Citrix. When I sold my last company to Citrix, I became a consultant. I... I consulted as a 1-person consulting firm. And I focus upon—it wasn't called observability back then, it was called APM back then—but I focus upon the APM industry or the observability industry. My clients are large customers and I help them evaluate and better use these products. I think a simple example of the kind of problem I help my large customers solve is I had a large financial institution call me up last year and say, "We're spending $20 million a year with Datadog, and we're not sure that this is the right thing to be doing. Can you help?" And the answer is, yeah, I can help with that. Or I've had somebody else call and say, "We're using New Relic today, and we're thinking we might want to change observability platforms. We want to evaluate what's out there today and then make a choice." ES: Can you run the evaluation process for us?</p>
+<p>Bernd Harzog: Yes, I can, right? I also work for vendors. So I've had vendor A contact me and say, we want to do a better job of competing with vendor B. What do we have to do, both on the product side and the marketing and positioning side and the sales side, to compete better with vendor B? And both vendor A and vendor B, and you can guess who they are, have asked me that question over time. Right. So that's the kind of thing that I do for a living.</p>
+<p>ES: That's wonderful. That's a very helpful background to give everyone perspective. And just a quick disclaimer, please limit the discussion to your own observations in the industry and please don't share any material non-public information about any public companies, including unreleased products, roadmaps, unannounced earnings figures or confidential customer contract terms.</p>
+<p>Confidential</p>
+<p>09/24/2026 at 09:57 AM UTC</p>
+<p>2</p>
+<p>Bernd Harzog: Of course.</p>
+<p>ES: Okay, great. Let's get started. So let's start just 10,000-foot view of the observability market. Very briefly, what have been the long-term drivers for the market? What has changed recently with AI? And what are you seeing in particular very recently in the last few months, in the last 3 months of the third quarter?</p>
+<p>Bernd Harzog: Well, the long-term driver of observability is that customers of all shapes and sizes are putting more and more of their business-critical functionality into online systems, okay? Now, that used to be called digital transformation, right, sort of during the COVID era. But it's a trend that continues. And at this point, there is little that most companies do where at least part of it isn't subject to some online process that is part of that business, end-to-end business process, right? And that stuff has to work. That's the fundamental driver of observability. It has to be reliable. It has to perform effectively. So it has to provide a good user experience and provide an effective throughput at scale. It has to be secure, right? And it has to basically evolve with the trends shaping the entire software industry, and those have recently been the cloud, for example, microservices, and now, of course, AI. And AI is having a multidimensional effect upon the observability industry. And so customers are adding LLM functionality to their applications. That requires the need for LLM monitoring. That expands the TAM for observability.</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: Customers are putting agents into production. Agents are pieces of software that can do work independently to do things for you. Well, guess what? They need to be monitored to make sure that not only are they working, but are they not doing something harmful. And that's a whole new and different problem that the vendors have to solve. Turns out you can use AI to write code for you. It's called vibe coding, right? And so as you as a customer use the AI to write software for you, guess what? You put software into production that none of your humans fully understand because it's written by AI, not you, not your humans.</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: Well, you better watch that software. You'd better put observability in place for that software. That's your only chance of knowing how it's behaving. Customers are choosing to run a lot of their own software on their own infrastructure, which highlights the importance that customers are placing upon their own business data. So now their customers are constructing an entire system, not an application, AI, LLM, and underlying hardware that they own, that they now have to make work. They can't just rely upon the cloud to make that work or upon OpenAI or Anthropic to make that work.</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: And ultimately, AI is going to be used by the vendors to automate problem detection, root cause, and fix verification, which is going to dramatically expand the value of observability solutions. If it isn't obvious from all of these comments, no, the SaaS apocalypse, to the extent to which it occurs, is not going to put the observability vendors out of business. All of these things are reasons for these observability vendors to exist and continue to exist and grow. So not only are they not going to go away, they're going to grow.</p>
+<p>ES: Yeah, so I'm hearing that AI, not just boosting volume for observability to monitor, it's also just changing things fundamentally and creating new problems and new issues for the customers. In terms of that...</p>
+<p>Confidential</p>
+<p>09/24/2026 at 09:57 AM UTC</p>
+<p>3</p>
+<p>Bernd Harzog: Real ES: yeah.</p>
+<p>Bernd Harzog: quick, every time we've gone through a wave of change.</p>
+<p>ES: Yeah.</p>
+<p>Bernd Harzog: We've got the cloud and microservices being the 2 most recent examples. What we've done is we've created new problems that need to be understood. So in that respect, AI is just another change. There's 1 added wrinkle. This is the first time that we have a change that results in things that can act on their own and do act on their own and which can do harm as a result.</p>
+<p>ES: Yeah.</p>
+<p>Bernd Harzog: Actually, that leads me to another point. Moving to the cloud did not create a new reason for there to be harm. Moving to microservices did not create a new reason for there to be harm. AI creates a new reason for there to be harm. And that is in and of itself a great opportunity for the observability vendors and the security vendors. Because someone has to notice what this AI, these AI agents and AI-based applications are doing, and someone has to know when they're doing something inappropriate and someone has to put a stop to it. I mean, we certainly heard the AI will kill us all from Datadog even louder most recently.</p>
+<p>ES: Let me comment on that real quick. Because, look, first of all, and I'm going to be very clear, this is my opinion. In my opinion, AI by itself is completely useless. An LLM by itself can't do anything. Can do nothing good or can do no harm. AI embedded into an application, either an application that you already have and then you add LLM functionality to it, or an agent. AI embedded into an application can do something both good and can do something bad.</p>
+<p>Bernd Harzog: Okay. Understanding how applications are behaving generally is a problem that we in the industry understand how to solve. It's why the observability exists, and it's a part of what security does for a living. It's a part of what CrowdStrike and those guys do. Right? Okay. Now, do we need to expand the ability of the security and the observability vendors' products to work with AI and handle the AI use case? Yes, we do. We need to make sure that call this the control layer for AI and this control layer for AI operates below the AI software itself, right? That it operates in the privileged domain of the operating system and that the AI software itself is not allowed to operate in the privileged mode. And the reason that's important is you don't want the AI application to have the right to make configuration changes to the security software.</p>
+<p>ES: Mm.</p>
+<p>Bernd Harzog: Because ES: Mm-hmm.</p>
+<p>Bernd Harzog: if you allow that, it will then turn off the security software. Okay? Right. So we have to cross that bridge of creating</p>
+<p>Confidential</p>
+<p>09/24/2026 at 09:57 AM UTC</p>
+<p>4</p>
+<p>layers of authentication and permission and making sure that the control program, the security software or the observability software operates with the root permissions and system permissions that it needs, right? And that AI is prohibited. The AI applications are prohibited from operating at that layer. And ES: Yeah, Bernd Harzog: if we ES: I mean...</p>
+<p>Bernd Harzog: do that, then it's a straightforward process for the control layer, which would be the observability products and the security products, to both notice what AI is doing and, if necessary, stop it from doing that.</p>
+<p>ES: And so Datadog and Dynatrace, you know, how do you see them benefiting from this or not?</p>
+<p>Bernd Harzog: Well, so, you know, I have not had this conversation with either of them, right? I know for a fact that Dynatrace has been investing heavily in AI for years, for about 8 or 10 years. Right. I strongly suspect that this thought has occurred to them. I know for a fact that Datadog has been investing heavily in this for years, right?</p>
+<p>ES: Hmm.</p>
+<p>Bernd Harzog: CrowdStrike's products already operate in the secured root domain of the operating system. They already operate, if you will, in the privileged domain, right? So they're completely accustomed to living in that world and making sure that they can see problems from that perspective already. They're already positioned to do this, okay? This is, in my opinion, a major problem and a major opportunity, okay? It's a major problem because, oh, we can't let the AI kill us all, you know, and we can't let the AI turn off things that we rely upon either, okay? So we have to have a layer of software underneath the AI that notices what the AI is doing and prevents the AI from doing this, right? And the good news is that, hey, that is a big opportunity for the observability and security guys, and it is not a, "Oh my God, what we've been doing in the past 10 years is wrong. We need to do this instead." It's not that. It's a straightforward extension of what they already do.</p>
+<p>ES: And so do you see them already, so Datadog grew their sales 36% year over year in the June quarter? Do you think they're already benefiting from that level of control, or is that still to come?</p>
+<p>Bernd Harzog: No, no, they're not. No, what they're benefiting from is something as simple as LLM monitoring. Their customers are building AI functionality into the applications that they use to run their business, and they need that AI functionality to be monitored to make sure it's working correctly. So, they're benefiting from the very first part of this, as is Dynatrace. And they've only begun to benefit from the rest. They've only begun to benefit from vibe coding. They've only begun to benefit from agents in production. They've not started. I mean, if you want, I'm sure they started from an R&amp;D perspective, but they've not started it at all from a revenue perspective to benefit from the question of how do we notice bad AI behavior and control it. That's a brand new problem that dramatically expands the TAM and the value of observability solutions. And I would venture to guess that that's an R&amp;D project at both companies.</p>
+<p>ES: That's a very helpful perspective. And obviously 36% year over year is strong growth, but Datadog did see a deceleration to 28% to 29% based on a large customer renewing with Datadog, but reducing their usage. Just in your experience, and generally, why and how could a large customer renew but use less? Is that ways of cost optimization, moving stack, and what would cause a reduction in usage when all these volumes are going up for observability</p>
+<p>Confidential</p>
+<p>09/24/2026 at 09:57 AM UTC</p>
+<p>5</p>
+<p>accounts?</p>
+<p>Bernd Harzog: Yeah, so what I would say is this, right? The first thing you have to understand is if you're not going to use Datadog or Dynatrace or something else in that category to watch an application that's doing something you care about, what are you going to do instead? Right? Because if it's something you care about, then the choice is not to do Datadog or do nothing. The choice is to do Datadog or Dynatrace or New Relic or something else, right? And the something else is almost always let's just leverage open source. Let's find a way to cobble together our own observability solution out of OpenTelemetry and some open source database. And the problem with that approach is that that requires you to burn people time to implement that and then manage that and support that and evolve that over time. You don't tend to have the people. Most companies don't have enough people to implement that approach at scale.</p>
+<p>ES: Got it. So a customer that would be going to open source or doing things in-house would have to be a very sophisticated, very large customer with kind of an in-house team that could handle this. Is that right?</p>
+<p>Bernd Harzog: That would be 1 dimension. And the other dimension would be, and this is true for the ones that do it, they can be very large, but they have relatively few applications. So think of a customer that is in 1 business with 1 application. Right. Okay, that 1 application generates 100% of the revenue. Okay. So we have 1 application here. Maybe we use 3 or 4 different languages in that 1 application. It runs in 1 place. Let's say it runs in the cloud, right? It has 1 principal architecture. Let's say it's microservices. Okay.</p>
+<p>ES: Yeah.</p>
+<p>Bernd Harzog: Well, that's a contained enough problem so it's possible for someone to roll their own with open source. On the other end of the spectrum, I've got a client who's a major investment bank. They have 5,000 business critical applications that run in the cloud, in their own on-premise VMware environment, in their own bare metal high performance computing environment, on their mid-range systems and on their mainframes. Are they going to build their own monitoring for that incredibly heterogeneous mess? And the answer is no, they can't. It's not possible. So in between those 2 extremes lies all different kinds of shades of gray. So when customers seek to reduce their spend on observability, and this is, in fact, what I counsel them to do, and this is obvious once I say it, the very first thing I tell them to do is find stupidity and eliminate it. Examples of stupidity would be somebody decided to spin up 1,000 cloud instances up in Amazon or somewhere to conduct an experiment to see if something would work, and they implemented observability to watch the applications that are part of that experiment.</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: And when the experiment was over, they failed to turn it off.</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: Because they're monitoring 1,000 things that no one is using that they don't need anymore, and they're wasting money not only on the observability licenses, they're wasting money on the cloud resources. This kind of thing happens all the time because there are business units that have the right to go do this stuff, and IT doesn't even know that they're doing it. So let's say that they're rolling a major new release of an application into production. And the very last part of that is to run it in a pilot environment. So to run it in an environment with production load that mirrors</p>
+<p>Confidential</p>
+<p>09/24/2026 at 09:57 AM UTC</p>
+<p>6</p>
+<p>the exact configuration of what they have in production. They just have a subset of their users using it.</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: So what they're doing is they're testing something that is as close to production as they could get without actually being in production. Do they monitor that? Well, of course they do. Now, when that test is over, do they remember to go back and turn everything off?</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: Oftentimes, no. It's still running, even though the test is over and the next test might not be for 6 months. So especially in large companies with distributed decision making where there are multiple business units and multiple business teams making independent decisions.</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: Which is very often the case when it comes to business level applications. This kind of stuff happens because there is no centralized control of observability usage and observability spent. In the case of I have a client who spends $20 million a year with 1 particular vendor and the CIO said, "I was shocked to learn that we were spending this much money on observability." ES: Mm-hmm.</p>
+<p>Bernd Harzog: I said, well, why were you shocked to learn? I said, well, because we have 5 business units and they got together and they picked 1 product, but I didn't see a consolidated bill for observability. I saw 5 different bills for 5 different business units, and each of those bills did not ring the alarm bell. Collectively, it rang the alarm bell, right? And that kind of thing happens all the time, too.</p>
+<p>ES: Yeah, have you been seeing that more lately? I mean, with volume going up for observability, are you seeing CFOs push back on pricing and how do you see Datadog and Dynatrace's pricing compared to others?</p>
+<p>Bernd Harzog: Well, look, I think that, well, let me back up and give you the top level perspective here. I think the consensus number on the part of everyone is that something on the order of 20% of the application workloads running in production that are running things that you care about are, in fact, monitored by an observability vendor. In other words, from the perspective of a vendor, like a Datadog or a Dynatrace, the vendors have penetrated 20% of their market. And 80% remains unpenetrated.</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: The vendors know this. And the vendors know that in order to grow, the most rapid path to growth consists of 1 of 2 things. Either go capture some of this unmonitored stuff. Okay.</p>
+<p>ES: Okay.</p>
+<p>Bernd Harzog:</p>
+<p>Confidential</p>
+<p>09/24/2026 at 09:57 AM UTC</p>
+<p>7</p>
+<p>Competing with roll your own is a whole lot easier than having to unseat a competitive vendor. Or go get one of these new use cases. Go capture the LLM monitoring. Go capture agents. Go capture being able to trust that your vibe coding is working correctly. And that vibe coding is putting applications in production that you really want to have running in your environment. Go attack those new things. And so now, stepping back even further, in my opinion, the good news is it appears that because of the productivity gains of AI in general, the business climate here in America for sure. Company profits are going up. So the good news is that budgets at a top level are not necessarily flat, which they have been for a long time. And if profits are increasing, they have to spend that money somewhere.</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: They can return it to their shareholders in the form of repurchases or dividends, or they can invest it. Or they can spend it on something. And spending it on making sure that the things that drive your revenue and the things that take care of your customers and your partners and your suppliers are working correctly.</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: And spending it on making sure that you are effectively deploying AI without doing harm seems like a reasonable thing to spend some of the extra money on. So it feels to me like we're not dealing with the flat budget problem that we had been dealing with for the last 10 or so years, where if you wanted a big company to spend more on something, you have to tell them, show them how to spend less on something else.</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: The last time I ran a company was in 2019, and that was the environment we were in then. When I came to a big customer, I said, I want you to spend $250,000 a year on my new product here. Their reply was always, show me how to spend $250,000 less on something else and I will.</p>
+<p>ES: And what's the answer that the vendors, Datadog and Dynatrace, could give clients if they're complaining about that $20 million bill? What are they saying they can spend less on elsewhere?</p>
+<p>Bernd Harzog: Well, I don't think that's the problem these days.</p>
+<p>ES: Yeah.</p>
+<p>Bernd Harzog: I think the problem is that the situation is that generally speaking, not true for every company, but generally speaking, earnings are growing. And therefore, the prospect exists for incremental cash to be spent. And the other thing that's important, the other dynamic that's very true is that these earnings are growing because they're seeing productivity gains from the deployment of AI in their business applications.</p>
+<p>ES: Got it.</p>
+<p>Bernd Harzog: So spending money making sure that those productivity gains continue to occur and don't do harm. This seems quite logical and plausible to me.</p>
+<p>Confidential</p>
+<p>09/24/2026 at 09:57 AM UTC</p>
+<p>8</p>
+<p>ES: Right. And so Dynatrace also grew well. Their annual ARR grew 17% in constant currency last quarter, and that was faster than the previous quarter and a year ago. It's also acquiring an AI observability company, Arise. And you mentioned that both Dynatrace and Datadog have been investing in AI for years. How do you read both of their AI strategies in this moment? Do you think they're executing well? Are their features, AI features, deciding deals yet? Or are they still sort of a demo and a tiebreaker to win a deal?</p>
+<p>Bernd Harzog: Well, so what I would say is Dynatrace has been investing in AI for probably 10 years at this point, right? So if you define AI as automatically detecting problems, automatically figuring out how to solve them, automatically implementing the solution to the problem, and automatically making sure the solution actually works and didn't create new problems.</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: I would say Dynatrace is ahead of everyone from that perspective. Okay. All right. If you define AI as being able to monitor LLM, right? I would say Datadog has made more progress in monitoring LLM for their customers than any other vendor. Okay. Now, the next thing we'll have to watch closely is agents in production, right? You know, Datadog is very, very good at noticing what are the new things that their customers are doing and putting in place a focused effort to capture those new things.</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: Even if those new things don't generate any profits the first time they sell them to the customer. So it isn't unusual for Datadog to say to its sales force, "We want you to go find examples of this new thing," okay? And let's say that going and finding this and selling Datadog to this new thing generates $10,000 of incremental revenue. They might pay $10,000 in commission to the salesperson that found that because they know that's going to grow, okay? Out of the gate, this brand new thing, okay, might not be profitable in the first quarter that they do it, right?</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: But they know it's going to grow over time, and that's the approach they've taken with the cloud. That's the approach they've taken with applications, the approach they've taken with logs, the approach they've taken with LLMs.</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: My guess is, and I don't know, I haven't talked to them about this, my guess is it's the approach they're going to take with agents, okay, right? So, you know, Datadog, in my opinion, has a proven ability to identify the new things that customers are doing and to put in place a product and a revenue stream to capture those new things. Okay.</p>
+<p>ES: And yeah. That makes sense. And in terms of capturing these new things in competition, do you see Datadog and Dynatrace going head-to-head in competition for those new things?</p>
+<p>Bernd Harzog: Well, so the whole notion of do they compete with each other, okay? So at a top level, the answer is that what Datadog tries to do is find somebody doing something new. Historically, that's been the cloud team. So find the cloud team and make them a customer for $10,000 a year and get that deal done as fast as possible. Okay? Right? Find</p>
+<p>Confidential</p>
+<p>09/24/2026 at 09:57 AM UTC</p>
+<p>9</p>
+<p>somebody with an application running in the cloud. Make them a customer for $10,000 a year.</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: Find somebody who wants to look at logs, make them a customer. Find somebody doing LLM monitoring, make them a customer, right? Now, over time, and they've proven this, that grows, right? Dynatrace takes a different approach. Dynatrace, the sales guy walks in the door and goes, who is responsible for making sure that everything works?</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: And everything is the cloud, the VMware environment, the mid-range system, the AIX system, the mainframe, right? Okay. And all the different applications. So, you know, Dynatrace tries to do an enterprise sale, okay, as the first sale. Okay.</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: And if you look at their business results, you see the results reflecting that difference in approach. Datadog adds more new customers a quarter than Dynatrace does. Datadog adds them at a far lower average deal price, $10,000 or $20,000 a year than Dynatrace does, which is north of $200,000 a year, right?</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: So, you know, what I would say is do they compete with each other? But I would say in terms of go-to-market, no. They have very different go-to-market motions and very different go-to-market machines. And so they try to accomplish different things when they're first going to market. Now, is it true that when Dynatrace goes and does an enterprise sale to a customer, that that customer is already a Datadog customer somewhere in that enterprise?</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: And the answer to that question is yes, it is true. Almost always, right? Does Dynatrace seek to displace Datadog as a part of the initial sale? And the answer is no, because that's hard to do, right? You can solve the problem in the rest of the enterprise and leave the Datadog team alone and get the first sale done. Now, over time, does Dynatrace say, you know what, you standardized on Dynatrace except for this one thing, this one team using the cloud.</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: Do you want to, you know, replace that as well? And here would be the process to do that. Dynatrace has been very successful at doing that with Splunk. They've got a very successful program to go into Splunk accounts and say, let me show you, let me map out for you the process. And we have services that will execute the process for you to change from Splunk to us for log monitoring. All right?</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog:</p>
+<p>Confidential</p>
+<p>09/24/2026 at 09:57 AM UTC</p>
+<p>10</p>
+<p>They've not done that yet for switching from Datadog to Dynatrace. It wouldn't surprise me if they do. But let's remember the other overall dynamic, which is real important. If you're running sales at either company, if you're the chief revenue officer, and you have a choice, you can go generate more revenue by capturing some business where there is no monitoring vendor. People are using open source and homegrown tools. Or you can try to replace a monitoring vendor. Which of those 2 is easier?</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: The former is easier, much easier. So are they going to take the path of least resistance? Yes.</p>
+<p>ES: So sorry, you're saying they're more likely to go to open source than replace a tool?</p>
+<p>Bernd Harzog: Yes. Replacing another tool is hard, and it's hard because customers customize those tools. So to replace it, you have to replace not just the tool, but their customization of the tool, and because invariably those tools are monitoring applications and not just infrastructure.</p>
+<p>ES: And a lot of testing goes into monitoring applications to make sure that the monitoring doesn't break the application. And customers are very loathe to repeat that testing process, having gone through it once for an application.</p>
+<p>Bernd Harzog: Makes sense. And so basically you're saying Datadog and Dynatrace don't go head-to-head against each other that much. What about the rest of the market? Do you see the market consolidating into Datadog and Dynatrace, or what do you see in the landscape? Are you seeing more startups? Are you seeing more people going to open source? What are the trends you see right now? Well, so I would define consolidation as the number of vendors in the market going down. The market is being addressed by a smaller number of vendors.</p>
+<p>ES: Mm-hmm.</p>
+<p>Bernd Harzog: Okay.</p>
+<p>ES: Mhm.</p>
+<p>Bernd Harzog: However, I don't think that's happening at all. And the data to prove that is that there's a large number of startups, a growing number of startups, just to mention a couple, Cribl, Lightrun, Causely, Dash0, Groundcover, Otterize, Last9, Braintrust, right? Okay. And that's... a third of the ones that belong on that list. I just made a short list, not a long list, right? Mhm.</p>
+<p>ES: So, and the list has been growing, right? So the market is not consolidating. And in fact, AI is such a new and different problem that some of these startups are finding success, right, in targeting the AI-enabled application use case.</p>
+<p>Bernd Harzog: Mhm.</p>
+<p>ES: Right.</p>
+<p>Confidential</p>
+<p>09/24/2026 at 09:57 AM UTC</p>
+<p>11</p>
+<p>Bernd Harzog: Do you think any of these startups could be a threat because they're kind of AI-native observability companies to Datadog and Dynatrace? So in order to compete. Yeah. With Datadog or Dynatrace as a company, right, you have to address the breadth of coverage, right? And Dynatrace has much, much more breadth than Datadog does. And Datadog and New Relic and, you know, AppDynamics, right, and Instana, now owned by IBM, all have a lot of breadth. Okay. And these startups have little breadth. They tend to focus upon ES: Mhm.</p>
+<p>Bernd Harzog: just applications running in the cloud, which is the easy thing to focus on. Right. Okay. So for them to compete with the entire company, Datadog or Dynatrace, would require a large amount of money and a large number of years, okay, for them to compete for a set of applications. You know, so, for example, Chronosphere very successfully competed for a set of applications, specifically ES: Mhm.</p>
+<p>Bernd Harzog: Microservices applications deployed at scale and in many cases had joint customers with Datadog and/or Dynatrace. So Chronosphere captured the set of applications that met their profile and everything else stayed with Datadog and Dynatrace, okay? So, you know, that kind of thing is much more likely than anybody replacing somebody who's got a true enterprise footprint.</p>
+<p>ES: Mm-hmm. Yeah, that makes sense. And unfortunately, we have to wrap up in the next few minutes, but I really want to ask you, you know, what do you expect to see the rest of 2026 and 2027? How do you see that playing out for Datadog and Dynatrace? You know, what are a couple of things or a few things that investors should watch for in this market.</p>
+<p>Bernd Harzog: Well, so first of all, as a just nature of my business, right, I don't have visibility into any form of unannounced business performance, and I generally don't work with the sales teams at the vendors where I work with vendors, okay? I work with the product team, okay? And this is by design. I've designed my business not to have access to what you would consider as unannounced or, you know, material non-public information, right? I just want to make sure that I never cross that bridge, right? So with that caveat in place, what I expect is I expect revenue and profits from specifically data, observability, and tracing to publicly traded vendors in this space to continue to grow. And the reason is because the market that they are addressing is growing quite rapidly. The problems that the customers want them to solve are growing quite rapidly. And so you have an expanding TAM and an expanding problem set, okay? Conditions are ripe for you, therefore, to grow more rapidly.</p>
+<p>ES: And would you say agents are maybe the top reason for that or LLM monitoring? What do you think is going to become a lot bigger? It's what?</p>
+<p>Bernd Harzog: Right now it's LLM monitoring.</p>
+<p>ES: Yeah.</p>
+<p>Bernd Harzog: It's about to be agents, right? You know, agents are about to be the next thing. You know, one of these years soon, it's going to be the year of the agents. I'm not sure whether it's going to be next year or the year after, but sometime soon, right? Agents are going to be everywhere, okay? And</p>
+<p>Confidential</p>
+<p>09/24/2026 at 09:57 AM UTC</p>
+<p>12</p>
+<p>ES: Yeah.</p>
+<p>Bernd Harzog: that's going to represent a massive problem and a massive opportunity for the observability vendors.</p>
+<p>ES: Yeah, that makes sense. All right, Bernd, I'm sorry I have to wrap this up now, but this was very helpful, really informative. Thank you for all the details you shared and insight into this industry. And that's it. Thank you.</p>
+<p>Bernd Harzog: Sure.</p>
+<p>ES: And thanks, everyone. You may now hang up.</p>
+<p>Bernd Harzog: Goodbye and thank you. Thanks for watching!</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>Confidential</p>
+<p>09/24/2026 at 09:57 AM UTC</p>
+<p>13</p>
+</div>
+</main>
+</body></html>

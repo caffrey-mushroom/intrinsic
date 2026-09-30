@@ -1,0 +1,272 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.28 | Substack | Memory | SemiAnalysis: GLM5.3 Sparse Attention &amp; HBM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.28 | Substack | Memory | SemiAnalysis: GLM5.3 Sparse Attention &amp; HBM</h1>
+<p class="orig">原标题：How GLM5.3 Sparse Attention Affects HBM Memory Usage</p>
+<p class="tags">#memory #llm</p>
+<p class="meta">Substack · SemiAnalysis · 2026-09-28</p>
+<div class="body">
+<h2>How Sparse Attention Affects DRAM/NAND Memory</h2>
+<p>How does sparse attention affect the TAM of memory, including HBM and NAND? Sparse attention selects top-k most relevant tokens to attend to, reducing the memory consumption and bandwidth requirements during the core Scaled Dot-Production Attention (SDPA) operation. However, <b>the efficiency improvement doesn’t directly translate to overall memory savings in practice</b>. Concretely, the top-k selection operation typically requires the full context to be in HBM, so <b>sparse attention doesn’t eliminate the memory capacity bottleneck.</b></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623824348-6.jpg" alt="" loading="lazy"></p>
+<p>Sparse attention throughput is bottlenecked by memory capacity. Source: HiSparse</p>
+<p>To overcome this limitation, the SGLang team designed HiSparse, a hierarchical memory system that proactively offloads KV cache entries from device HBM to host DRAM. <b>HiSparse behaves like an LRU (Least Recently Used) cache</b>, where it loads tokens from DRAM to HBM upon top-k selection cache miss, and it offloads tokens from HBM to DRAM based on the LRU eviction policy. To reduce the cache miss latency, HiSparse overlaps KV cache loading of layer N with the execution of layer N-1 (layer-wise overlapping), introduced in HiSparse’s prior work HiCache.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623825023-7.jpg" alt="" loading="lazy"></p>
+<p>Layer-wise overlapping. Source: CachedAttention</p>
+<p>With HiSparse, SGLang greatly boosts throughput at high concurrency and long context scenarios, at the cost of top-k cache miss I/O overhead.</p>
+<p><b>Sparse attention reduces KV cache memory and bandwidth requirements at the SDPA operation, but it does not reduce the overall memory capacity usage.</b> In addition, HiSparse shows that system optimizations can overcome sparse attention’s memory capacity limitations, so <b>sparse attention memory profile alone cannot sufficiently portray the full picture of system KV cache efficiency</b>. To provide a more holistic picture of serving sparse attention models, here we explain the design of Z.ai’s GLM-5 model series, and how they are served in practice.</p>
+<h2>GLM5.3 Agentic Inference Serving</h2>
+<p>In our realtime benchmark board InferenceX, GB300 delivers the lowest modeled serving cost in our comparison at a response speed of 150 tokens per second. GB300 handles more tokens per GPU, and its higher hourly cost still leaves it ahead of GB200 on cost efficiency. The GB300 result uses Dynamo-TRT-LLM, while the GB200 result uses Dynamo-SGLang.</p>
+<p>We use the September 17 AgentX snapshot results to help illustrate the serving implications of GLM-5.3. We estimate costs using InferenceX’s model of owning and operating infrastructure at hyperscaler scale. Total tokens include input and generated output, including cached input history reused across turns. Streaming speed is measured using p90 interactivity; time to first token is evaluated separately.</p>
+<p>At 150 tokens per second, GB200 costs approximately $0.044 per million total tokens, compared with $0.238 for MI355X running ATOM. That is about 82% lower cost at the same streaming-speed target. These values are estimated from the measured curves, rather than from a separate test at exactly 150 tokens per second.</p>
+<p>For this comparison, we use InferenceX’s estimated cost of owning and operating the infrastructure at hyperscaler scale. Total tokens include input and generated output, including input history reused from cache.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623825761-8.jpg" alt="" loading="lazy"></p>
+<p>Source: SemiAnalysis InferenceX current InferenceX dashboard; interpolation method; GB300 source run; MI355X source run.</p>
+<p>Among the Dynamo-SGLang results, GB300 serves roughly 13950 total tokens per second per GPU here, a 17.5% throughput advantage versus 11873 total tokens for GB200. However, we assume $2.31 per GB300 GPU hour versus $1.86 for GB200. The higher hourly cost more than offsets GB300’s throughput lead at this target.</p>
+<p>In the comparison with AMD, GB200 costs about 52% less than ATOM at 100 tokens per second, 62% less at 125, and 82% less at 150. Across these three targets, the gap widens as response speed increases.</p>
+<p>Counting only generated output, GB200 costs $5.92 per million output tokens at a response speed of 150 tokens per second, which is 79% less than $28.52 for MI355X ATOM. This metric is useful to analyze cost under agentic workloads, where agents repeatedly reuse long input histories while generating relatively little new text.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623826858-9.jpg" alt="" loading="lazy"></p>
+<p>Source: SemiAnalysis InferenceX; current InferenceX dashboard</p>
+<p>The GB200 measurements on either side of the 150 token per second target have p90 TTFT (time to first token) of 14-19 seconds, compared with 1.3-1.7 seconds for MI355X ATOM. Some of the GB200 lowest cost runs have much longer waits for the first token.</p>
+<p>We therefore make a second comparison using only configurations that were actually tested and achieved at least 150 tokens per second with p90 TTFT below two seconds. The chart below shows B200 with Dynamo-SGLang at $0.0666 per million total tokens versus $0.1265 for MI355X with SGLang. B200 still costs about 47% less with the first-token limit.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623827611-10.jpg" alt="" loading="lazy"></p>
+<p>Source: SemiAnalysis InferenceX B200 run 442071; GB300 run 441597; MI355X run 442075</p>
+<h3>Optimizations</h3>
+<p>In GLM’s 5.2 / 5.3 model, its attention architecture reduces memory demands, and long running agents still need to retain earlier conversation history. GLM reduces the cost of handling this history in two ways: KV compression reduces the cached state stored per token, and sparse attention reduces how much of that state each attention operation reads. Then the serving engine would determine where to store the cache and how to retrieve it efficiently.</p>
+<p>These B200 results show how much reuse can happen outside of GPU memory. When concurrency increases from 8 to 16 requests, the share of prompt tokens reused from GPU memory falls from 90.3% to 54.8%. Much of that reuse shifts to host memory, which rose from 6.0% to 40.3%. Much of the decline in GPU cache is offset by reuse from host memory, keeping the overall cache hit rate above 95% at all concurrency levels.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623828648-11.jpg" alt="" loading="lazy"></p>
+<p>Source: SemiAnalysis InferenceX; InferenceX B200 rows 440962, 440961, and 440959; workflow run 33683520699</p>
+<p>Beyond cache management, changes to how the serving engine executes prefill and decoding can also change performance. Two separate GLM-5.2 studies illustrate this:</p>
+<ul><li>vLLM keeping the first decoding step on a consistent CUDA graph execution path reduced average TPOT (time per output token) from about 40 ms to 22 ms in an NVFP4 study.</li><li>On a different 8 MI355X long context workload, ATOM engine processing prefill in chunks across pipeline stages delivered 98% higher total throughput and reduced median TTFT from 28.6 to 8.7 seconds.</li></ul>
+<h2>TileRT</h2>
+<p>For GLM5.3 on TileRT, AMD MI355X was supported first. TileRT is a low-latency LLM inference engine for that compiles decoding into a single persistent kernel, reducing launch overhead and overlapping computation, memory access, and communication.</p>
+<p>It prioritizes faster token generation per user, rather than maximum batched throughput, while vLLM handle prefill.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623829181-12.jpg" alt="" loading="lazy"></p>
+<h3>Ultra-High Interactivity on NVIDIA GPUs? - TileRT InferenceX</h3>
+<p>Bryan Shan, Daniel Nishball, and 4 others</p>
+<p>·</p>
+<p>Aug 10</p>
+<p>Read full story</p>
+<p>On AgentX, FP8 TileRT MI355X achieves 2x the P90 interactivity than the best FP4 MI335X config. Comparing to GB300 NVL72, it brings a 40% uplift in interactivity. These are serving metrics that used to require specialized hardware.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623830009-13.jpg" alt="" loading="lazy"></p>
+<p>However, TTFT is suboptimal and there is still room for development, such as optimizing KV transfer, FP4 support, and larger batch sizes.</p>
+<h2>DeepSeek Sparse Attention</h2>
+<p>GLM-5 (and GLM-5.x models) is a 744B total, 40B active-parameter mixture-of-experts model. For every token, it has 1 shared expert and is routed through 8 out of 256 experts, which is sparsity 32. It features DeepSeek Sparse Attention, which we will discuss in this section.</p>
+<p>DeepSeek Sparse Attention (DSA), introduced in DeepSeek V3.2, consists of two components: A <b>lightning indexer</b> that selects top K tokens, and a <b>sparse Multi-Latent Attention</b> (MLA).</p>
+<h2>Lightning Indexer</h2>
+<p>A lightning indexer is functionally similar to a <b>lightweight attention mechanism</b>. Queries and keys are down-projected to lower dimensions, with indexer queries being multi-headed and indexer keys single-headed. Since we only need a query and key relation score (logits) for selecting top K tokens, the indexer doesn’t need value embeddings or the softmax operation for normalized logits. Instead, it computes a query-key dot product, followed by a ReLU non-linearity. The indexer then computes each token’s indexer score as a weighted sum of logits across all query heads, which we use to select the top K tokens with. This means despite the indexer having multiple heads, <b>token selection is shared across multiple attention heads</b>. When selecting top K tokens, we keep <b>queries that attend to less than K tokens as dense attention</b>, and we select top K otherwise.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623830898-14.jpg" alt="" loading="lazy"></p>
+<p>Conceptual example of the lightning indexer. Source: SemiAnalysis</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623831802-15.jpg" alt="" loading="lazy"></p>
+<p>Indexer score is a weighted sum of all indexer query heads. Source: SemiAnalysis</p>
+<h2>Sparse MLA</h2>
+<p>As we explained in our Kimi K3 article, MLA operates in two modes: Multi-Head Attention (MHA) mode and Multi-Query Attention (MQA) mode. Both come with trade-offs: MHA mode has lower FLOPs but 42x higher memory cost, MQA mode has lower memory cost but up to 3.4x higher FLOPs. DSA uses MQA mode, since sparse attention attends to less tokens,mitigating the higher FLOP usage. However, in practice, there is a sequence length threshold where under it, MHA mode is actually more efficient that MQA mode. The intuition is that at shorter sequence length, the memory loading time isn’t as dominating, and MHA mode may have an edge for being lower FLOPs. vLLM implements this feature, and configures MHA mode for sequence length 2K to about 5K for data parallel, and 2K to about 77K for tensor parallel. The 2K minimum is due to top K being 2048, and as mentioned above, attention below 2K is dense.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623832769-16.jpg" alt="" loading="lazy"></p>
+<p>MHA (green) can be faster than MQA (red). Source: [vLLM PR</p>
+<h2>48770]()</h2>
+<h2>MLA Modifications</h2>
+<p>Comparing the MLA dimension configurations of GLM-5 and DeepSeek V3.2, we see that the most notable differences are the <b>number of query heads</b> and the <b>query key head dimension</b>.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623833429-17.jpg" alt="" loading="lazy"></p>
+<p>GLM-5 tech report mentions DeepSeek chose the number of query heads according to the roofline of H800. This is likely referring to the fact that <b>MLA’s SDPA arithmetic intensity during decode is roughly at the ridge point of H800</b>. Derivation as follows. Assume</p>
+<ul><li>`L`: Sequence length</li><li>`d`: Head dimension</li><li>`r`: RoPE dimension</li><li>`H`: Number of heads</li><li>`b`: Number of bytes per parameter</li></ul>
+<p>In MQA mode, the FLOPs are</p>
+<p>``` 2 * H * L * (d+r)  # P = Q [H, d+r] @ K.T [d+r, L] 2 * H * L * d      # O = P [H, L] @ V [L * d] ```</p>
+<p>and the memory loaded is</p>
+<p>``` b * H * (d+r)  # Q b * L * (d+r)  # K and V ```</p>
+<p>So the arithmetic intensity is</p>
+<p>``` (2 * H * L * (2 * d + r)) / (b * (d+r) * (L + H)) = (2 * H * L * (2 * d + r)) / (b * L * (d + r))  # L &gt;&gt; H = (2 * H * (2 * d + r)) / (b * (d + r)) ```</p>
+<p>If we plug in the DeepSeek V3.2 configuration `d` = 512, `r` = 64, `b` = 2), we get</p>
+<p>``` (2 * H * (2 * 512 + 64) / (2 * (512 + 64)) ~= 2 * H ```</p>
+<p>H800’s practical arithmetic intensity is 258.2 FLOP/B (Practical peak 865 TFLOP/s, 3.35 TB/s bandwidth, according to DeepSeek), and plugging in the formula gives us `H` ~= 128.</p>
+<p>The fact that GLM-5 has H = 64, half the number of query heads, implies that GLM-5 may be designed for different hardware. If we plug in GLM-5’s configuration (d = 512, r = 64, b = 2, H = 64), we get an arithmetic intensity of 120.8 FLOP/B. Thus, we suspect GLM-5 is optimized for Moore Threads MTT S4000, which is about 128 FLOP/B. Moore Threads’ collaboration with Z.ai, such as GLM-5.3-Flash day 0 support, corroborates our theory.</p>
+<p>Separately, GLM-5 increases the QK NoPE dimension from 128 to 192, as ablations show the configuration is superior under iso-FLOP and iso-parameter constraints. This increases the SDPA head dimension from 192 to 256, which is still a 33% FLOP reduction after considering the head number reduction.</p>
+<h2>IndexShare</h2>
+<p>The latency cost of the indexer becomes non-negligible as context grows. To mitigate the cost, Z.ai proposes IndexShare (aka IndexCache) in GLM-5.2, where every 4 DSA layers share one indexer.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623834376-18.jpg" alt="" loading="lazy"></p>
+<p>Latency cost at different context lengths for a 30B DSA model. Source: IndexCache</p>
+<p>IndexShare introduces complications in training and inference. Standard DSA training involves two stages: A dense warm-up stage where all model weights except the indexer are frozen and attention computation is dense, and then a sparse adaptation stage where the full model is trained with sparse attention.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623835145-19.jpg" alt="" loading="lazy"></p>
+<p>In terms of training objective, the indexer is trained to align with the sum of attention head scores, using a KL divergence objective. IndexShare adapts the training objective to <b>aligning the indexer logit distribution with the average distribution of attention scores across shared layers</b>.</p>
+<p>For inference, typically <b>the indexer caches keys, like attention caches KV.</b> Since multiple layers share one indexer, we need to additionally cache the top K indices at the full layer, in order to reuse the top K selection information at shared layers.</p>
+<p>This design reduces indexer cache by 75%, reduces indexer FLOPs by 75%, and boosts throughput by 1.5x to 1.8x at different context lengths and prefill/decode.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623835979-20.jpg" alt="" loading="lazy"></p>
+<p>Baseline vs. GLM-5.2 configuration (red) for a 30B DSA model. Source: IndexCache</p>
+<h2>Post-Training Design</h2>
+<h2>Pipeline</h2>
+<p>After pre-training and mid-training, GLM-5’s post-training pipeline starts with supervised fine-tuning (SFT), continues with <b>three RL training stages</b> (reasoning RL, agentic RL, and general RL), and ends with an <b>on-policy cross-stage distillation</b>, distilling reasoning and general RL back into the SFT checkpoint.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623836996-21.png" alt="" loading="lazy"></p>
+<p>GLM-5 post-training pipeline. Source: SemiAnalysis</p>
+<p>Here we highlight two details. First, the tech report states that the reasoning RL model is trained <b>entirely on-policy</b>, implying that it is trained synchronously. Synchronous RL training is low system efficiency but has higher RL training stability. Second, <b>on-policy cross-stage distillation is similar to Multi-teacher On-Policy Distillation (MOPD)</b>, where a student model is RL trained with on-policy distillation over multiple teacher models. However, unlike MOPD, whose goal is to merge expert teacher models into one model, GLM-5 here seems to be more about <b>recovering old capability loss</b> when the model learns new capabilities. Following this assumption, we are not sure why the Z.ai only uses reasoning and general RL checkpoints as teachers, instead of using all three RL checkpoints.</p>
+<p>Based on the announcement blog post, GLM-5.2 may have replaced the on-policy cross-stage distillation with a standard MOPD pipeline, which Z.ai named parallel OPD training. Z.ai touted its scale and training efficiency: they merged more than ten expert models into a final model by training for about two days.</p>
+<h2>RL Training Algorithm</h2>
+<p>Z.ai adopts different RL algorithms for synchronous and asynchronous RL stages. Here we compare the major differences in the RL objectives.</p>
+<p>In the synchronous RL stage, Z.ai adopts Group Relative Policy Optimization (GRPO)-based RL algorithm with modern adaptations, including:</p>
+<ul><li><b>Remove KL regularization term</b> to improve system efficiency and allow more aggressive gradient updates</li><li><b>IcePop</b>: Apply token-level masking based on the training-inference mismatch ratio</li><li><b>Clip-Higher</b>: Use a higher max threshold for importance sampling ratio to encourage exploration</li></ul>
+<p>In contrast, Z.ai employs a REINFORCE-like RL algorithm for asynchronous RL stage, adding Direct Double-Sided Importance Sampling (DIS), an IcePop-like clipping mechanism. Below we compare the token-level objectives for the two RL stages:</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623837547-22.jpg" alt="" loading="lazy"></p>
+<p>Token-level objective for the two RL stages. Source: SemiAnalysis</p>
+<p>The importance sampling (IS) ratio compares <b>the probability of each sampled action under the current policy and the behavior policy</b>, scaling each action’s contribution to the training objective. For IS ratio, the synchronous RL stage utilizes the <b>trainer policy of the previous iteration</b> for the behavior policy, whereas the asynchronous RL stage utilizes the <b>inference policy</b> for that. In an asynchronous training setting, policy updates happen multiple times during rollouts, so we will need every checkpoint version in between to calculate the IS ratio. However, this is infeasible due to the high memory and latency overhead. As a result, Z.ai opts for using inference policy for efficiency and simplicity, at the cost of numeric stability challenges.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623838095-23.jpg" alt="" loading="lazy"></p>
+<p>IS ratio for the two RL stages. Source: SemiAnalysis</p>
+<p>Finally, we highlight the major differences in advantage calculation in RL training, cross-distillation, and long-horizon RL training. RL training employs the GRPO standard group-normalized advantage, and cross-distillation uses the reverse KL divergence.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623838871-24.jpg" alt="" loading="lazy"></p>
+<p>Advantage calculation comparison. Source: SemiAnalysis</p>
+<h3>Single-Rollout Asynchronous Optimization</h3>
+<p>Long horizon tasks produce extremely long trajectories, and in the context of GRPO, the high variance in trajectory length produces unstable training signals that may skew towards longer trajectories. What’s worse, since RL rollout workload is sensitive to end-to-end latency, the tail-latency of a straggler rollout worsens for long horizon tasks. To mitigate this issue, Z.ai introduced Single-rollout Asynchronous Optimization (SAO) for long-horizon RL training in GLM-5.2. <b>SAO replaces group-normalized advantage with a modified Generalized Advantage Estimation (GAE)</b>, inspired by Proximal Policy Optimization (PPO). GAE only needs a single rollout to compute the advantage. This removes the need to do multiple rollouts per prompt, mitigating GRPO’s short-come.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623839883-25.jpg" alt="" loading="lazy"></p>
+<p>Generator node asking trainer node to wait for rollout completion. Source: SAO</p>
+<p>GAE is computed with <b>values</b> (In RL terms, expected returns of the current state), estimated by a <b>value model</b>. Concretely, the value model takes the rollout as input and produces a value estimation for every token. SAO adapts GAE to agentic RL training by removing the observation tokens, i.e. tool call results, from the optimization. Previously in GLM-5, skipping the tokens is sufficient; in SAO, we modify the advantage estimation formula to bypass the observation tokens. We refer readers to the SAO paper and its appendix A.1 for more intuition on the Bellman target and the ablations.</p>
+<p>In SAO, <b>the value model is a separate LLM concurrently trained with the policy model</b>. This means early stages of training are susceptible to high variance of advantage calculations, due to a weak value model. To combat this, SAO proposes multiple techniques for training value models:</p>
+<ul><li><b>Two Time-scale Update Rule</b>: Updating the value model twice as frequently as the policy model. This means training on each data batch twice at every policy training step</li><li><b>Attention Parameter Freezing</b>: Freezing the value model’s full attention layers to improve training stability</li><li><b>Scaling Pre-training</b>: Scaling the value model pre-training corpus to initialize the value model, so that the value model can robustly estimate values in the early stages of training. Unfortunately, Z.ai didn’t disclose the scaling information of pre-training corpus</li></ul>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623840712-26.jpg" alt="" loading="lazy"></p>
+<p>Source: SemiAnalysis</p>
+<p>At the cost of computational overhead and doubling memory footprint, SAO replaces group-wise sampling with a value model, mitigating the latency issues of GRPO.</p>
+<h2>Post-Training Infrastructure</h2>
+<p>Z.ai uses <i>slime</i>, one of the best open-source RL training frameworks,as the post-training infrastructure throughout all GLM-5 models. We refer readers to the <i>slime</i> GitHub repo to learn more about its design and features, and here we highlight two features.</p>
+<p>Performance characteristics of RL rollouts are highly task-dependent, and each task comes with different tools and reward functions. To ensure system efficiency, Z.ai designed a <b>server-based multi-task rollout orchestrator</b>. Each task acts as an independent microservice server, controlling rollout and reward logic. The orchestrator <b>balances the overall performance</b>, controlling the per-task rollout ratio and generation speed. Centralization also allows dynamic ratio adjustments across tasks, fine-grained progress monitoring, and many more. Z.ai claims the orchestrator supports 1000 concurrent rollouts when training GLM-5.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1790623842067-27.png" alt="" loading="lazy"></p>
+<p>Architecture diagram of the multi-task rollout orchestrator. Source: SemiAnalysis</p>
+<p>In the GLM-5.3 announcement, Z.ai claims to use local storage as a cache layer in addition to host memory, which enables <b>dynamic teacher model switching and prefetching for MOPD</b>. <i>slime</i> PR#1538 implements teacher switching by introducing a `TensorBackuper` class, which stores teacher weights as PyTorch tensors pinned to CPU memory. When a rollout is routed to a teacher, a `TensorBackuper` object copies the teacher model back to GPU memory to perform a forward pass (implementation here). However, this is CPU-backed weight swapping, and we have yet to see storage-backed implementation.</p>
+<p>In our paywall section, we present our analysis of GLM-5.3’s cybersecurity capabilities...</p>
+</div>
+</main>
+</body></html>

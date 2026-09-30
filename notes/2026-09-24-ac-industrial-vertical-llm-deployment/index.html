@@ -1,0 +1,230 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.24 | AC | LLM | Industrial Vertical LLM Deployment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.24 | AC | LLM | Industrial Vertical LLM Deployment</h1>
+<p class="orig">原标题：工业垂类大模型AI项目获客和部署流程，和国产头部模型的竞争展望，海外市场拓展等。</p>
+<p class="tags">#llm #software</p>
+<p class="meta">AceCamp · 2026-09-24 · article 70567494</p>
+<div class="body">
+<h2>摘要</h2>
+<ul><li>大厂AI项目与国产头部模型的竞争。</li><li>国内和海外市场拓展情况等更新。</li></ul>
+<p class="qq">专家观点：</p>
+<p class="qq">对于一个工业AI项目，从获客、部署到最终收款的整个流程中，前期的投入成本和后期的盈利情况是怎样的？</p>
+<p>工业AI项目通常以项目制形式进行盘点和毛利率计算，由项目经理作为总负责人，对交付过程中的所有环节及团队成员进行考核。项目的毛利率计算相对直接，主要基于合同售价扣除项目实施过程中产生的成本。</p>
+<p>项目成本主要由两大部分构成：硬件成本和人工成本。研发成本不计入单个项目的实施成本内。</p>
+<p>· 硬件成本：通常包括显示器、服务器，有时也包含控制室的大屏以及其他配套产品。在某些情况下，如果前期控制系统建设不足，可能还会增加一小部分现场设备，如变送器、传感器等。</p>
+<p>· 人工成本：这是工业AI项目中最主要的成本构成。成本核算基于投入的人员数量和项目时长，即“人/天”。公司内部对每个人天有固定的成本基数，人力成本覆盖了从合同签订后项目团队进场，直至交付完毕的全部人力投入。</p>
+<p>将硬件成本与人工成本相加，即可得出项目的总成本，再结合合同金额，便可计算出该项目的毛利率。</p>
+<p class="qq">浙江中控在获取一个付费客户方面的费用大概是多少，或者这个费用是如何计算的？</p>
+<p>具体的单个客户获客成本属于内部保密信息。不过，可以参考公司整体的销售费用率来估算。以2025年的公开数据为例，公司的销售费用率为10.5%。该数据在过去三至五年内保持相对稳定，浮动范围很小，基本维持在10.5%左右，通常不会超过11%。</p>
+<p>因此，可以通过公司年度总营收乘以销售费用率来计算出年度总销售费用。这个费用率是公司层面的平均值，同样适用于所有项目类型，因为无论是何种项目，前期都需要经历接触客户、技术交流、方案设计及招投标等标准流程。这笔费用主要用于支持销售人员的运营开销 ，与个人销售提成无关。</p>
+<p class="qq">TPT业务与传统的DCS业务在客户拓展、客户接受度、成本、执行以及内部员工接受度等方面存在哪些主要差异？</p>
+<p>TPT与DCS业务所面向的客户群体是重叠的，主要集中在化工、石化、电力、制药等十几个核心行业，客户群完全一致。在销售模式上，两者也完全相同，均采用项目型销售，通过招投标获取项目，流程包括前期获取项目信息、与客户反复沟通、投标并最终签订合同。 此外，TPT项目常与DCS、现场仪表等打包进行一体化招标，这种情况相当普遍且占比较大。</p>
+<p>两者主要的差异体现在以下几个方面：</p>
+<p>第一，产品与交付形态不同。TPT是纯软件产品，而DCS以硬件为主，软件比重低。因此，交付过程差异显著：TPT的现场交付主要由软件工程师进行调试，而DCS则涉及大量的硬件安装及后续调试工作。</p>
+<p>第二，成本结构不同。DCS作为成熟产品，其前期的研发投入已基本摊销完毕。相比之下，TPT作为较新的业务，其前期研发成本尚未完全摊销。</p>
+<p>第三，付费模式存在差异。DCS业务基本全部采用一次性付费模式，即签订合同、交付、回款。而TPT业务则存在两种模式：一种是与DCS相同的一次性付费；另一种是年费订阅制。</p>
+<p class="qq">为什么大型国央企对TPT业务的年费订阅制接受度不高？</p>
+<p>年费订阅模式对中小型客户的吸引力更大。调研显示，中小型客户更倾向于此模式，主要原因在于其现金流相对大型国央企较弱。对于一个例如千万元级别的项目，一次性支付会带来较大资金压力，而分摊至三到五年支付则能显著降低采购门槛，使其能够快速决策。对于几 十万或百万级的项目，年费制也能降低其前期费用。</p>
+<p>大型国央企，例如“三桶油”这类客户，对年费制接受度不高的主要原因有两点：</p>
+<p>第一，年费制对它们的吸引力不足，一次性付费的模式更符合其采购习惯和流程。</p>
+<p>第二，信息安全是所有受访客户都重点关注的问题，而年费订阅模式可能在这方面引发了它们更多的顾虑。因此，目前中大型项目极少采用年费订阅模式进行付费。</p>
+<p class="qq">在已披露的客户中，例如万华、新发、华谊等，它们是否接受年费订阅模式？以及新发集团采用年费制后的年度付款情况如何？</p>
+<p>大部分这类客户不采用年费订阅模式，而是选择一次性买断。不过，新发集团是一个例外，由于与集团层面签订了战略合作，他们非常倾向于这种模式，其下属的二十多家分厂或分公司均按年费制收费。</p>
+<p>关于新发集团每年的具体付款金额，这个数字并不固定，因为每年的项目数量会有变化。例如，2025年可能做了十个项目，但到2027年，新签订单的数量可能会增加或减少。年费制的特点是存量项目会持续付费，理论上总额会逐年增长，但每年新签订单的数量是波 动的。例如，2026年新签了十个项目并开始收费，2027年除了继续收取这十个项目的年费外，可能新增五个项目，也可能新增二十个项目，因此每年的增量订单数存在不确定性。</p>
+<p class="qq">对于采用一次性买断模式的客户，例如华谊，其定价逻辑是怎样的？</p>
+<p>一次性买断模式的定价逻辑较为复杂，每个项目的价格差异很大，可能从几十万、几百万到几千万甚至上亿元不等。价格主要受两大因素影响：首先是项目的规模，即数据点的数量，例如一个几万点的项目与一个几千点的项目在价格上会有显著差异。其次是项目中使用的功 能模块数量。在TPT的混合专家模型架构下，包含了许多垂直的细分模型或功能单元，客户使用的功能越多，收费自然越高。例如，一个项目只使用两个功能可能收费100万，而使用十个功能则可能达到数百万。除了这两个技术因素，最终价格还会受到商务条款和市场 竞争等因素的影响。</p>
+<p class="qq">像中石化、中石油这类大型企业，在数据和工艺相对固化后，是否会考虑自行开发类似TPT的软件系统以替代采购？</p>
+<p>这类大型企业自行开发类似系统的可行性很低，行业内也未出现此类实践。尽管从技术能力上看，他们投入足够的时间和成本后肯定能够开发出来，但面临的代价和风险将极其巨大。首先，自研产品仅供内部使用，从经济角度看非常不划算。其次，产品的稳定性和成熟度会 存在巨大隐患。对于化工、石化、油气等行业的客户而言，系统的安全性和可靠性是首要考量，远超于性价比。一个自研系统要达到成熟部署的水平，需要经历漫长且代价高昂的测试周期，这是他们不愿意承担的风险。因此，他们倾向于选择市场上更成熟、更可靠的产品。</p>
+<p class="qq">如果客户不选择自研，而是转而采购如合利时等其他厂商的同类产品，这与选择中控的产品有何区别？客户在选择供应商时会综合考虑哪些因素？</p>
+<p>客户采购其他厂商的同类产品是完全可行的，市面上也确实存在多家供应商。不同厂商的产品在功能性、可靠性、性价比以及用户操作的便捷性等方面存在差异。客户的选择是一个综合考量的结果。一个重要的因素是，在一些项目中，客户可能需要同时采购DCS系统以及 大量的现场仪器仪表，这种情况下他们更倾向于从单一厂家进行整体采购，以简化流程。此外，项目的最终效益也是关键。这不仅取决于产品本身的稳定性与功能，还依赖于实施团队在项目交付过程中的定制化开发与服务能力。因此，最终客户的选择取决于哪家供应商的综 合方案最能满足其需求。</p>
+<p class="qq">对于已经购买了DCS系统的客户，再向其销售TPT是否存在重复收费的嫌疑？</p>
+<p>不存在重复收费的问题。DCS与TPT是两个完全独立的系统，它们在功能上没有重叠。</p>
+<p class="qq">请问DCS系统与TPT大模型在功能上有何区别，TPT能为客户带来哪些具体的价值？</p>
+<p>DCS（集散控制系统）是工厂的神经系统，其核心功能是依据设计院提供的工艺流程，将现场所有的传感器、设备、仪表等硬件串联起来，通过编程让生产线按照预定的工艺流程正常运转，实现从原材料到成品的全过程。</p>
+<p>TPT大模型则是在DCS实现基础自动化控制之上的增值优化层。它内部集成了超过200个工业软件APP的功能，这些功能针对生产过程中的特定环节进行深度优化。具体而言，TPT的价值主要体现在以下几个方面：</p>
+<p><b>· 提升产品质量与合格率</b>：在DCS确保设备正常运转的基础上，TPT可以通过优化工艺参数，将产品的合格率从例如95%提升至96%，这种微小的提升能为客户带来巨大的经济收益。</p>
+<p><b>· 提高生产效率</b>：TPT能够对生产效率相关的参数进行优化，即便只是提升0.5%甚至1%，其创造的价值也相当可观。</p>
+<p><b>· 优化人员配置与降低成本</b>：通过TPT大模型内嵌的垂直小模型功能，可以显著减少控制室内的人员需求。例如，一个原先需要100人监控数百台显示器的控制室，在应用TPT后可能只需要20至30人，由此节省的七八十人的人力成本非常显著，同时也包括现场维护人员的精简。</p>
+<p class="qq">TPT大模型在项目交付后，是否还有持续改进和升级的空间？</p>
+<p>是的，TPT大模型具备持续改进和升级的空间。这种持续性主要体现在两个层面：</p>
+<p>首先，TPT内部包含了众多被称为“agent”的垂直小模型，这些模型的功能每年都在不断孵化和增加。除了提升产品质量和生产效率外，还在安全、节能、低碳等多个维度进行功能细化和拓展。目前已有的200多个工业软件APP功能库会持续扩充，同时现有功 能模块的性能也会不断提升。</p>
+<p>其次，公司本身对TPT大模型的基础功能和后续研发项目有持续的投入。每年都会有大量的研发投入用于核心功能的增强和新项目的开发。从财务报告中可以看出，公司的研发费用投入水平一直很高，甚至超过了营销费用，在公司总费用中排在首位，这些投入主要就用于 此类产品的持续创新。</p>
+<p class="qq">工业生产数据（如温度、压强）相对稳定，为何基于这些数据训练的大模型仍有持续更新的需求和空间，而不是很快达到优化极限？</p>
+<p>TPT大模型的持续更新并非仅仅源于数据训练，而更多地体现在软件功能的持续升级和拓展上。可做的事情非常多，除了宏观层面的安全、产品质量、效率、节能、低碳等方向，每年都会立项开发几十个新的软件类产品项目，同时也会有几十个针对现有产品的升级项目。 这些开发使得功能划分越来越精细。</p>
+<p>对于单个垂直小模型而言，其性能提升空间确实是有限的，不可能每年都进行无限度的迭代升级。因此，公司的策略是每年开发全新的项目，同时选择性地对一部分现有产品进行升级迭代，而不是在同一个产品上无休止地投入。</p>
+<p class="qq">客户在初次通过TPT实现显著的成本降低（例如效率提升1%）后，后续的微小改进是否还足以支撑其持续支付订阅费的意愿？</p>
+<p>客户持续付费的意愿是存在的，因为TPT带来的效益是持续性的。假设在客户的生产工艺、原材料、硬件设备和控制系统程序均未改变的情况下，TPT大模型在2026年为其带来了1%的综合效益提升。如果客户在第二年停止使用该服务，那么这1%的效益提升将不 复存在，系统会退回至原来的运行水平。只要竞争对手（例如，通过模仿获得类似技术并以更低价格提供）不出现，客户为了维持这种已获得的持续性收益，便有动力继续支付费用。</p>
+<p class="qq">在当前市场环境下，如果竞争对手推出效果更好、价格相当的产品，客户是否会选择更换供应商？考虑到技术升级空间有限以及整体市场增长乏力，公司如何维持客户并实现增长？</p>
+<p>客户确实有可能因为竞争对手推出效果提升2%且价格相当或稍贵的产品，而在次年（2027年）更换供应商。因此，产品必须不断升级迭代。目前国内流程工业的市场客户群体相对固定，增长有限，加之近年整体宏观环境不佳，市场实际上处于相对萎缩的状态。那个通 过化工行业客户数量每年大幅新增的时代已经过去。尽管如此，企业每年仍会产生新的项目需求，即便没有新建工厂或生产线，也存在大量升级改造类的项目，只是项目数量会有波动。因此，公司每年的业务重点在于开发新客户，并提高现有项目的中标率。</p>
+<p class="qq">如何评价中控与和利（HollySys）时等竞争对手在新能源等领域的产品能力和市场地位？</p>
+<p>客观地讲，在国内流程工业自动化领域，中控的产品目前在功能上处于领先地位。其核心优势在于TPT是一个通用大模型，可以跨行业、跨装置应用。相比之下，包括和利时在内的其他厂商提供的多是面向特定行业的垂直类小模型，这是两者最主要的区别。不过，从客户 角度看，他们更关注的是产品的可靠性、稳定性以及能带来的实际价值，而非模型是通用型还是专用型。在与和利时等对手竞争时，客户首先考量的是哪家产品更稳定、更安全，绝不能出问题。在可靠性不相上下的情况下，客户会比较哪家产品能创造更大的价值。此外，后 续服务和付款方式等也是客户决策的考虑因素。</p>
+<p class="qq">考虑到中控在TPT产品上的领先地位，竞争对手如和利时通过挖人来复制模型并以半价竞争的难度有多大，这种可能性高吗？</p>
+<p>理论上这种操作是可能的，并且在行业内也相对常见，但实际操作难度非常大。中控与和利时自1993年成立以来，在服务、内部管理和市场营销等能力上各有专长。然而，在化工、石化及油气等领域，中控拥有深厚的行业根基，积累了大量的产品和技术专家以及行业k now-how。这些长期的积累最终转化为了产品的核心功能与性能，尤其体现在当前的TPT产品中。这构成了很高的行业门槛，并非短期内可以达到的水平。过去30年的市场表现也证明了这一点，在化工石化行业的中大型项目中，和利时面对中控的胜率极低。客户 选择供应商并非完全以价格为导向，技术和产品的能力、稳定性、可靠性以及易用性是更重要的考量。因此，中控通常并非低价中标，其报价有时甚至会略高。</p>
+<p class="qq">根据公司中报，整体收入并未增长，利润甚至出现下滑。尽管TPT这类新产品概念很好，但下游客户的预算有限，未来是否可能出现新产品增长侵蚀原有业务，导致公司总收入停滞不前的局面？</p>
+<p>这种情况很有可能发生。公司目前整体业务总量确实在下降，这一点在中报中也有所体现。虽然工业AI业务增长迅猛，但其在公司总业务中的占比尚不算高，而其他几个业务板块均在下滑，导致了整体营收的下降。这主要是由市场大环境所决定的。尽管公司在DCS和T PT等产品的市场占有率持续提升（现场仪表类业务则相对稳定），但整体营收仍在下降，这恰恰说明了市场大盘正在萎缩，且其他竞争对手的下滑幅度更为剧烈。如果产品竞争力不足，下滑可能会更明显。</p>
+<p class="qq">从单一客户（如万华化学）的角度看，即使新产品性能优越，客户是否会倾向于将新旧产品（如TPT与DCS）打包采购，但总体采购金额保持不变，从而导致供应商的客户总盘子规模无法增长？</p>
+<p>这种情况是有可能发生的，具体取决于客户自身的经营状况。公司的项目订单主要分为两类：一类是新建项目，即客户新建工厂或生产线；另一类则是升级改造项目。客户的总支出规模会根据其自身的项目规划和预算而定。</p>
+<p class="qq">考虑到为客户创造了显著的成本节约（例如为新发节约了上千万元），为何产品的定价相对保守（例如仅收费一百万元），以及未来是否存在提价的可能性？</p>
+<p>根据过往经验，尤其是在中国市场，客户普遍不接受涨价，特别是对于软件类产品。因此，提价基本不太可能，通常只能维持现有价格或降价。以DCS为例，过去十年的趋势显示其价格一直在持续下降。这主要由两个因素决定：首先是客户的接受度问题；其次，也是最关 键的因素，是日益激烈的市场竞争。竞争对手不断增多，导致价格竞争愈发激烈。新产品的溢价和毛利在初期会比较高，因为竞争者少。但随着产品逐渐普及和同质化，例如DCS，价格下降是必然趋势，公司只能通过压缩成本来应对。</p>
+<p class="qq">TBT产品是否有可能改变这种价格持续下降的趋势？</p>
+<p>TBT产品的长期价格趋势预计将与其他产品类似，最终也会面临降价压力。尽管TBT目前凭借在行业能耗优化和产品稳定可靠性方面的优势构筑了竞争壁垒，使得竞争对手难以在短期内（例如一两年）达到同等水平，从而减缓了价格下降的速度。但从长期趋势看，竞争 对手与公司技术差距会逐渐缩小。市场上存在大量对价格敏感的中小型客户，只要产品可用且稳定，他们就会倾向于选择性价比更高的方案。为了抢占市场份额，公司最终也不得不逐步降低价格。</p>
+<p class="qq">既然价格长期承压，公司未来的增长动力将主要来源于拓展新行业用户，还是依赖于保持产品的技术领先性？</p>
+<p>公司可拓展的新行业空间已相对有限，目前覆盖的十几个行业都已深耕多年，解决方案和产品均已比较成熟，因此从行业拓展上发力的空间不大。主要的增长动力来自于保持产品的技术领先性。通过持续的研发投入，开发能为客户带来真实价值的新功能，实现“人无我有， 人有我优”的局面，才能确保较高的中标率和产品毛利率。这也是公司研发投入居高不下的原因。为控制成本，公司正在探索第二条路径，即通过与SICK、华为等企业以及高校进行深度合作和生态共建。这种合作模式有助于分摊研发成本，将部分基础性工作交由合作方 完成，而公司则专注于核心技术和专利的掌控。完全依靠自身投入所有研发和交付，人力成本过高，并不划算。</p>
+<p class="qq">像DeepSeek或华为这类科技公司，是否存在进入并竞争这个行业的可能性？</p>
+<p>这类纯互联网软件公司或像华为这样的企业基本无法进入这个行业。核心壁垒在于极高的行业门槛，即必须深刻理解特定行业的生产工艺。例如，公司的核心人员大多拥有化工自动化等专业背景，他们精通从原油到汽油的整个生产流程，了解在各个环节需要控制的关键参数 和工艺，以确保产品质量与生产效率。这其中涉及大量复杂的专业知识和化学变化过程。如果缺乏这种行业知识积累，仅靠一批编程人员是无法开发出符合要求的功能软件的。这个领域不同于通用的语言大模型，后者门槛相对较低，可以找到大量软件人才进行开发。而工业 软件，对行业专业知识的要求极高，需要长时间的知识和经验积累。</p>
+<p class="qq">综合来看，是否可以认为公司在该领域具备显著的技术和壁垒优势，但整体市场增长（行业贝塔）限制了收入的增长空间？</p>
+<p>是的，公司的优势一直比较明显，例如DCS产品在国内市场的占有率已达到41%。但当前面临的最大挑战是，整个市场的整体规模增长缓慢，近两年甚至出现下滑。为维持较高的增长速度，公司的战略非常清晰，即寻找新的增长点。从产品维度看，最大的增长点在于T BT。国内工业软件在自动化及整个工业领域的渗透率较低，这意味着TBT所面向的潜在市场空间非常巨大。</p>
+<p class="qq">公司的主要增长点为何定位于工业AI赛道，以及该领域的市场潜力与政策导向是怎样的？</p>
+<p>公司将工业AI作为主要增长点，其核心逻辑在于巨大的市场潜力。目前工业软件的渗透率不足25%，意味着超过70%的用户尚未使用此类软件，这构成了广阔的潜在市场。从市场体量来看，尽管不同第三方咨询公司的评估数据存在差异，但普遍认为这是一个千亿级的 市场，保守估计可达两三千亿规模。其增长速度预计将远超DCS（年市场规模约100亿，增长率仅为2-3%）和现场仪表（市场规模约六七百亿，增长趋于平稳）等已基本饱和的市场，工业软件领域保持两位数的增长没有问题。</p>
+<p>政策层面也提供了明确的导向。2026年1月6、7日，工信部连续发布了两个带有落地措施的文件，明确了项目补贴政策。政策特别强调，DCS等控制系统和工业软件属于“卡脖子”的关键领域，必须实现国产替代。在市场趋势和政策支持的双重驱动下，发展TPT 的大方向是明确且正确的，当前重点是保证技术领先并快速推向市场。</p>
+<p class="qq">近年来工业软件市场快速发展，是否与TPT等AI技术的出现有必然联系？</p>
+<p>工业软件市场的增长与TPT或AI技术的出现没有必然联系。早在三年前，公司的产品发展重点就已聚焦于工业软件，这是基于对市场潜力的详细分析。当时，约75%的客户尚未使用工业软件，原因在于他们尚未认识到其价值，或是受限于精力及资金预算。工业软件渗 透率的提升是一个长期过程。</p>
+<p>TPT这类工业AI产品的出现，可以理解为加速并促进了这一渗透过程。当前工业AI概念热度高，产品成熟度也较好，项目实施后为客户带来的综合效益，如提升质量、效率和节能降耗（尤其是在“双碳”政策背景下），已得到越来越多的验证。客户看到明确的投资回 报，这极大地激发了他们的采纳意愿。从本质上看，TPT所解决的问题与传统工业软件一致，但AI技术的融入使得产品性能更强大、交互更便捷、智能化水平更高。对于供应商而言，AI也显著提升了交付效率，例如，过去一个需要10人团队花费3个月完成的项目， 在TPT阶段可能仅需5人团队和1-2个月时间，效率提升一倍甚至更多，从而也可能带来更高的利润率。</p>
+<p class="qq">公司内部对于销售DCS等一次性高提成产品与销售TPT这类订阅制产品的激励机制是如何平衡的，这是否会影响销售人员的积极性？</p>
+<p>从公司内部考核机制来看，销售模式的差异对销售人员的个人收入影响不大。首先，考核政策对所有销售人员是公平的。其次，虽然TPT的订阅制模式可能导致销售提成在时间上有所延迟，但并不会减少总收入。今年的项目收入会在明年及以后持续产生，而明年新签的项 目同样会产生新的提成，收入会逐年累积。这种模式在某种程度上也有助于稳定销售团队。</p>
+<p>更重要的是，在销售人员个人的整体KPI考核体系中，TPT这类产品的销售额占比非常小。因此，单一产品线的考核权重被稀释后，其对总奖金的影响就非常有限了。</p>
+<p class="qq">公司在海外市场是如何推广TPT这类新产品的？</p>
+<p>对于TPT这类相对较新的产品，公司在海外市场的推广策略非常审慎。基本原则是，产品必须在国内市场经过充分打磨、达到比较成熟的阶段后，才会向海外推广。这样做的主要目的是为了控制后期成本和品牌风险。一旦产品在海外出现问题，派工程师到现场进行调试和 处理的代价较高，同时也会对公司在新市场和新客户中建立的品牌形象产生负面影响。因此，当前TPT在海外的推广是有选择性的，主要集中在一些业务关系较为成熟的市场和客户群体中进行，尚未开展大规模、全面的市场推广，以最大限度地降低潜在风险。</p>
+</div>
+</main>
+</body></html>

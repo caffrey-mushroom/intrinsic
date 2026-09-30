@@ -1,0 +1,183 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.29 | AC | Power | Supernode Bottlenecks Pt.2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.29 | AC | Power | Supernode Bottlenecks Pt.2</h1>
+<p class="orig">原标题：超节点还能再堆一代吗｜篇二：钱买到的是排队位置，不是交期</p>
+<p class="tags">#power #datacenter</p>
+<p class="meta">AceCamp · 2026-09-29 09:36 · article 70567508</p>
+<div class="body">
+<ol><li>柴发、燃机与变压器交期多长；</li><li>资本开支能否压缩交期，扩产受哪些工序约束；</li><li>排队位置如何定价，溢价能持续多久；</li><li>800伏、机柜储能与现场发电能否缓解电力约束；</li><li>哪些指标预示约束松动，收益窗口如何排序。</li></ol>
+<h2>正文</h2>
+<p class="qq">柴发、燃机与变压器的交期都以年计，工序只能按顺序完成，资本开支改变的是买方在队列中的位置。这使得排队位置成为可以定价的资产，但它的价值会随2029至2030年的供需再平衡消退。电力段的超额收益有明确期限，变压器交期是数据中心开工的领先指标。</p>
+<p><b>云厂开始高价收购核电站旁边的地块。</b>它们看中的是电厂旁边已经接好的变压器和输电线路。这类资产原本只是园区的配套，如今却被交期重新定价。</p>
+<h2>一、柴发、燃机、变压器的交期都以年计，新园区通电排到2029年以后</h2>
+<p><b>大缸径发电机组的排队已延伸到2030年。</b>Caterpillar二季度末的在手订单721亿美元，同比增长约92%，一个季度内增加94亿美元；公司披露发电设备销量同比增长72%，在手订单中59%将在未来12个月内交付，部分订单已排到2030年。Power Magazine的统计显示，大缸径柴油发电机组的交期在40到107周之间。笔者在中判断，缸体铸造、喷油系统寡占与2到3年的产线建设周期相互咬合，最乐观也要到2029至2030年才能基本再平衡，二季度的订单读数与这一判断一致。</p>
+<p><b>燃气轮机的交付位已经卖到2031年。</b>GE Vernova二季度末的燃机在手订单与付费预留合计116吉瓦，其中确定订单53吉瓦、付费预留63吉瓦，较2025年末的83吉瓦增加约四成，公司表示已开始接受2031年交付的预留；Siemens Energy的燃机在手订单69吉瓦，交期在三年以上。Wood Mackenzie在4月的报告中称，燃机价格较一年前上涨约195%。价格与排期同时上移，说明新增需求主要在消化队列，产能本身扩张有限。</p>
+<p><b>燃机队列里直接来自数据中心的只是一部分。</b>GE Vernova披露，其燃机客户约100家、分布在26个国家，其中约80%为传统公用事业、约20%为数据中心。笔者判断，公用事业的新增订单有相当部分在为数据中心负荷配套，数据中心对燃机队列的实际占用超出20%的直接口径。这使得队列一旦形成，就同时约束了电网侧与园区侧两类项目。</p>
+<p><b>变压器直接卡在并网路径上。</b>Wood Mackenzie的调研显示，2019年以来，升压变压器需求增长约274%，变电站变压器增长约116%，同期电力变压器价格上涨约77%，配电变压器上涨约78%到95%。TrendForce在6月的报告中估计，美国新增负荷的并网排队时间已超过5年。美国能源部的评估显示，美国大型电力变压器约八成依赖进口，海运、关税与认证都会进一步拉长到货时间。变压器到位的时间，决定了先行到货的发电设备能否真正接入园区。</p>
+<p><b>园区的通电时间，取决于三条产线中交期最长的一条。</b>柴发可以先到，燃机可以用航改机组过渡，但在变压器与并网批复到位之前，园区只能依靠临时电源运行。按前述读数，一个在2026年下半年启动、依赖新建并网路径的园区，变压器交期约2.5到3年，并网排队超过5年，通电时间大概率落在2029年以后；这与柴发、燃机的再平衡时点基本重合，也解释了云厂为何愿意高价收购已有并网资格的园区。</p>
+<h2>二、钱压缩不了工序，只能买到队列里的位置</h2>
+<p><b>三条产线的扩产都卡在串行工序上。</b>柴发的瓶颈在大缸径缸体的铸造与精密喷油系统，这两个环节集中在少数供应商手中；变压器的瓶颈在取向硅钢与手工绕线、真空干燥等工序，美国本土的取向硅钢只有Cleveland-Cliffs一家生产；燃机的瓶颈在热端叶片与高温合金铸件，上游耐热合金的供货能力与精密机床的交付时间才是燃机产能弹性的风向标，本轮订单本质上是2022到2023年项目审批周期错配后的集中兑现。这些工序只能按顺序完成，追加投资可以增加并行的产线，但新产线本身的建设与认证同样以年计。</p>
+<p><b>设备商扩产克制，有上一轮周期的教训。</b>2017到2018年，全球燃机需求回落，GE的燃气发电业务大幅减值、裁员，西门子也同期削减燃机产能与人员；柴发与变压器行业在2010年代同样经历过需求平淡、产能出清的阶段。经历过这一轮的整机厂，对把一次集中兑现的订单当作长期需求来扩产态度谨慎，倾向于用预留、提价与延长交期来消化需求。这使得产能扩张的速度，天然落后于订单增长的速度。提价本身也换不来扩产：设备商把提价收入用于扩产，新产线仍要两到三年才能投产，提价只会让出价高的买方排到前面，队列的总长度并不因此缩短。</p>
+<p><b>资本开支的另一种用法是扶持第二供应商，但新供应商的认证同样以年计。</b>整机厂把热端叶片、缸体等部件外包给新的铸造厂，可以在两到三年后增加有效产能；在此之前，新供应商需要完成材料、工艺与整机的逐级认证。这意味着资本对交期的影响存在滞后，2026到2027年下的订单，改变的是2028年以后的产能。</p>
+<p><b>买方能做的，是用付费预留和长约提前占住交付位。</b>GE Vernova 63吉瓦的付费预留，是客户为2029年以后的交付位提前支付的对价；出价高、下单早的买方排到前面，队列的总长度仍由工序决定。笔者认为，在电力约束的上游，在手订单代表定价权；到了数据中心运营一侧，同样规模的订单意味着先投入、后收入的资金占用。排队位置的价值，正是这份定价权在时间维度上的体现。</p>
+<h2>三、排队位置是资产，溢价集中在2029年之前</h2>
+<p><b>排队位置已经成为一种可以定价的资产。</b>2024年3月，亚马逊云科技以6.5亿美元从Talen Energy手中买下宾夕法尼亚州萨斯奎哈纳核电站旁的数据中心园区，2025年双方又把购电协议扩大到1.92吉瓦；微软在2024年9月与Constellation签下20年购电协议，推动三哩岛1号机组重启。买下已有并网资格的电厂旁地块，等于直接接手现成的变压器和输电通道。笔者认为，拿到燃机交付位或并网批复的项目，价值会随之上一个台阶，这正是云厂愿意为此付出溢价的原因。另一条路径是用现场发电绕开并网排队：OpenAI在得克萨斯州Abilene的园区由开发商Crusoe建设，Crusoe在2025年向GE Vernova订购了29台航改燃机，对应约1吉瓦的现场发电能力。无论是买园区还是买燃机，买方付费的对象都是时间。对云厂而言，提前一个季度通电，意味着这一季度的算力收入与折旧回收提前实现，这就是它们愿意为排队位置支付的溢价上限。也正因为溢价的上限由算力收入决定，只要AI算力的租金维持高位，排队位置的价格就有支撑。</p>
+<p><b>长期购电协议是排队位置的另一种形态。</b>云厂与核电、燃机电厂签下十年以上的购电协议，锁定的是已经并网的发电容量。前述两笔交易都在用长约换取确定的接入时间；这类协议越集中，留给后来者的已并网容量越少，新项目只能回到变压器与燃机的队列之中。</p>
+<p><b>这份资产的价值会随供需再平衡而消退。</b>按第二节所述，燃机订单的高峰属于一次集中兑现；柴发的再平衡时点在2029至2030年。据此推算，排队位置的溢价主要集中在2026到2029年，此后买方的议价能力逐步回升。对设备商而言，当前的超额定价权有明确的时间边界，估值应按有期限的超额收益计算，按永续增长外推会高估其价值。</p>
+<h2>四、800伏与机柜储能削减的是峰值负荷，总电量仍由电网决定</h2>
+<p><b>机柜侧的800伏直流与储能，改变的是电网看到的负荷形状。</b>TrendForce在6月的报告中估计，英伟达800伏电源架将于2026年三季度开始备货，作为Vera Rubin的可选配置，自Rubin Ultra起规模采用，2028年成为主流。英伟达在介绍GB300 NVL72的功率平滑功能时称，电源内置储能配合功率上限管理，最多可把电网侧的峰值需求降低约30%。这两项技术让同一条并网容量承载的算力随之增加，但园区消耗的总电量由算力负载决定，电网侧的约束依然成立。800伏直流的利润归属取决于整流环节放在哪里：放在机房配电侧，价值落在配电设备商；移到机柜附近，价值落在电源架厂商。本轮需求集中在北美，国内厂商主要以器件与模块形式参与。</p>
+<p><b>“储能”这个词下面，是两套相反的定价逻辑。</b>数据中心侧的储能是成本项，买方是云厂和运营方，要解决的是负载平滑、衔接柴发启动与换取接入许可，评价标准是交付速度和可靠性；电网侧大储是收益项，买方是新能源开发商和独立储能运营商，收益来自峰谷价差与辅助服务，评价标准是项目收益率。笔者中分析，8月储能电池销量同比增长约114%，主因是消费税、出口退税与美国关税三个政策时钟叠加下的前置发货，被透支的是2027年一季度的海外需求。把数据中心的电力焦虑直接套到大储的需求上，会同时高估两者。数据中心侧储能的放电时长，从秒级的功率平滑到数小时的备电衔接不等，采购规模随园区功率线性增长，单价竞争取决于集成商的交付记录，这一侧的需求确定，但利润率由成本项采购的逻辑决定。</p>
+<h2>五、现场发电能分担缺口，卡点转到燃气管道与排放许可</h2>
+<p><b>现场发电是绕开并网排队的主要路径。</b>美国电力公司AEP在2024年与Bloom Energy签下最多1吉瓦燃料电池的采购协议，首批用于俄亥俄州的数据中心；Brookfield在2025年宣布向Bloom Energy燃料电池的部署投入最多50亿美元。往复式燃气发电机组与航改燃机也在承接一部分需求。这些方案把卡点从变压器转移到了天然气管道容量与空气排放许可上，xAI在孟菲斯的Colossus集群在等待并网期间以移动式燃气轮机供电，就曾因排放许可引发地方争议。笔者判断，它们适合几十到几百兆瓦的园区，吉瓦级园区仍需要并网作为主电源或备用。</p>
+<p><b>替代路径的存在，给排队溢价加上了第二个期限。</b>燃气发电机组可以承担柴发的部分连续供电角色，燃料电池可以在小规模场景中替代燃机。进入再平衡阶段后，替代方案会加快排队溢价的回落，这使得柴发与燃机的超额定价权同时受产能释放与替代渗透两股力量约束。</p>
+<p><b>国内的电力约束形态不同，卡点在指标与布局。</b>国内电量总体充裕，变压器、燃机与柴发的供应链也以本土为主，交期约束明显弱于美国；笔者判断，国内数据中心的卡点在能耗指标、绿电配比要求与算力枢纽的布局规划上，表现为项目审批与上架率的节奏，设备交期的约束相对次要。这使得国内电力设备商从本轮受益的主要途径是海外订单，国内数据中心的扩张对其拉动有限。</p>
+<h2>六、投资含义：变压器交期是数据中心开工的领先指标，柴发与燃机的超额收益有明确期限</h2>
+<p><b>对“超节点还能再堆一代吗”这一问题，电力侧给出的答案是：堆得出来，但装得上的节奏由通电时间决定。</b>按英伟达路线图，Rubin Ultra一代在2027年下半年推出，而依赖新建并网路径的园区通电大概率在2029年以后，这使得2027到2028年新增的超节点，主要部署在已有并网容量的园区与现场发电项目上。笔者判断，下一代的装机规模在这两年内由存量电力与现场发电的可用容量封顶，电力约束决定的是再堆一代的速度，产品本身的可行性不受影响。</p>
+<p><b>判断电力约束何时松动，首先看变压器交期。</b>变压器交期回落到一年以内，意味着并网路径开始疏通，数据中心的实际开工会随之加快；燃机方面看GE Vernova季度预留规模是否继续扩大、预留交付年份是否继续后延；柴发方面看Caterpillar在手订单的交付结构，以及主要整机厂2028到2029年的新产线能否如期投产。三组读数都随公司季报按季度更新，其中变压器交期领先于数据中心的实际开工，燃机预留领先于2029年以后的装机。制度层面还要看并网改革的进展：美国联邦能源监管委员会要求电网运营商以集群方式处理并网申请，改革落地的快慢，决定了排队时间能否从5年以上缩短。</p>
+<p><b>电力段的超额收益以年计，但有明确的期限。</b>潍柴动力受影响的是大缸径发电机组业务，笔者认为，其北美业务的中长期支撑来自美国电网改造，数据中心需求对应的是再平衡之前的窗口；科泰电源、玉柴国际的相关部分同样是机组交付。变压器方面，金盘科技、思源电气受益的是海外数据中心与电网的输变电订单，国内配网业务另有节奏。燃机链上，应流股份受益的是西门子等整机厂的热端叶片外包，东方电气的机会在海外民用燃机订单。储能方面，宁德时代、阳光电源的数据中心配储订单按成本项采购，与电网侧大储分开计价；江海股份的超级电容对应机柜侧功率平滑，仍处在批量采购验证阶段。按时间排列，2026到2027年兑现的主要是柴发与变压器的量价，2027到2029年是燃机交付与叶片外包，2029年以后的支撑来自电网改造与替代能源，窗口的次序决定了各家公司的业绩节奏。</p>
+<p><b>上行风险来自设备商提前扩产。</b>若主要柴发与燃机厂的新产线提前一年投产，或美国变压器交期回落到一年以内，电力约束会提前松动，数据中心建设节奏加快，中游各环节的需求随之上修，电力设备商的排队溢价则会提前回落。</p>
+<p><b>下行风险来自需求端的行政收缩。</b>若核心枢纽地区出台数据中心建设暂缓令，或云厂下调资本开支指引，排队队列会因撤单而缩短，排队位置的价值随之下降。</p>
+<p>以上内容不构成任何投资建议，请风险自担。</p>
+</div>
+</main>
+</body></html>

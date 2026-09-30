@@ -1,0 +1,279 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.24 | AC | PCB | RCC &amp; mSAP for AI Optics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.24 | AC | PCB | RCC &amp; mSAP for AI Optics</h1>
+<p class="orig">原标题：RCC与mSAP双轮驱动，AI及高阶光模块进入产能释放期</p>
+<p class="tags">#pcb #optical</p>
+<p class="meta">AceCamp · 2026-09-24 · article 70567478</p>
+<div class="body">
+<h2>摘要</h2>
+<p>·RCC材料在800G/1.6T光模块试制中表现优异，对位精度达±15微米，解决80%以上对位难题，良率与交付周期优于传统PP方案。 ·工艺路线双轨并行：泰国及国内六期工厂已部署mSAP设备，应对高多层AI及光模块需求；同时保留传统减成法以平衡成本与良率。 ·供应链策略调整：针对2026年CCL等材料紧缺，公司通过锁定订单及导入华正新材等供应商保障供应，预计行业紧缺将持续至2027年。 ·前瞻布局：积极接触英伟达（HDI板）及Meta，探讨3.2T及CPO技术储备，RCC+mSAP被视为实现10/10μm精细线路的潜在最优路径。</p>
+<p class="qq">以下内容来自资深行业专家：</p>
+<p class="qq">Q&amp;A</p>
+<p class="qq">请介绍一下公司在RCC技术领域的合作历史、上游供应商以及下游客户情况？</p>
+<p>公司在2025年开始布局RCC技术，初期与台湾的专家团队进行了关于光模块未来发展趋势的探讨，并由此接触到RCC材料。经过深入研究，发现RCC在光模块制造方面具备显著优势，例如，其交付周期和供应链相较于传统的电子布等板材更为稳定。</p>
+<p>随后，公司引入了相关技术团队进行指导，并启动了内部测试验证。按照公司内部既有的车载产品及光模块产品的标准进行测试后，确认RCC材料能够满足性能与品质要求。在此基础上，公司正式导入RCC材料，并利用现有的软板及软硬结合板设备，对800G、1. 6T等光模块产品进行了试制。验证结果表明，RCC材料在处理高密度细线路上具有明显优势，其铜厚较薄，使得线路蚀刻的难度降低，从而提升了信号传输的稳定性。</p>
+<p>此外，RCC技术有效解决了传统半固化片在多层叠压过程中因玻璃纤维存在而可能引发的离子迁移及高温下胀缩不均导致的对位难题。采用RCC方案后，对位精度可达到±15微米，解决了80%以上的对位问题，使得激光钻孔和线路对位更为精细，确保了高阶光模块 的信号传输稳定性。</p>
+<p>目前，公司同时向客户提供两种技术方案：一种是传统的电子布压合方案，另一种是RCC方案。两种方案均已完成制作并交付客户进行实装和性能测试。从现有结果看，两种方案均属可行，但RCC方案在良率和交付周期方面表现更优。</p>
+<p class="qq">公司RCC方案的送样客户主要有哪些，具体的送样时间及客户验证反馈如何？</p>
+<p>公司的RCC方案已向位于厦门和武汉的光模块企业进行了送样，这些企业并非行业内的头部厂商，但其部分终端产品会供应给头部客户。</p>
+<p>首次送样是在2025年春节前完成的。客户在大约一个月后给出了初步验证反馈，确认方案没有问题。不过，客户也提出了一些顾虑，主要是因为RCC作为一种较新的材料方案，其在行业内的接受度尚待提升。客户担心其介电损耗和阻抗可能会随环境温湿度的变化而产 生影响，因此需要进行更长周期的验证。</p>
+<p class="qq">针对去年（2025年）年底已送样验证的客户，目前的合作进展处于哪个阶段？</p>
+<p>去年（2025年）针对该客户完成初步验证后，对方下达了400G、800G等产品的小批量订单。随后，公司、客户及材料供应商三方进行了对接。公司从材料供应商处获取了更精进的材料进行制作，客户因此要求对新材料方案再次进行验证和测试，之后再确认最终 方案。目前正处于第二步验证阶段，即公司生产完成后再提交给客户进行验证。初步反馈显示，客户对测试结果是认可的，但由于这种新材料方案对他们而言成本相对传统PP方案更高，因此需要进行更多测试。如果将这种高成本材料实装在光模块上，例如直接贴装晶圆， 任何一次不良或报废都可能导致整个方案被否定，因此客户表现得较为谨慎。</p>
+<p class="qq">公司的材料供应商是哪家？双方的合作模式是怎样的？</p>
+<p>公司的材料供应商是诺沛。最初，公司通过与诺沛的一位台湾专家接触，了解到其提出的理念和方案。经过公司内部验证，公司认为其在设备、方案及后续材料方面都具有很大的发展潜力，因此逐步导入了RCC方案。公司与诺沛保持着内部联系，尤其是在材料改善方面进 行合作。双方仅为合作关系，其相关人员并未在公司任职。</p>
+<p class="qq">除了RCC方案，公司在光模块PCB业务上是否也采用传统压合工艺？具体是哪种技术路线？</p>
+<p>是的，公司同时在推进两种方案。除了RCC方案，公司也在生产采用传统PP工艺的光模块PCB。在传统工艺方面，公司最初使用常规的减成法。但根据导入客户的经验，公司发现制造光模块产品需要更多地导入mSAP工艺，这对后期良率有显著改善。由于光模块的 加工流程较长，使用传统设备和方法会导致良率在后期急剧下降，尤其在当前原材料价格高企的情况下，成本难以管控。因此，公司正在导入mSAP的工艺和设备。</p>
+<p class="qq">mSAP工艺的设备和产能布局情况如何？</p>
+<p>公司在两年前布局的泰国工厂已优先部署了mSAP设备。同时，国内扩产的六期工厂也同样引进了mSAP的设备和相关工艺。这些新增产能主要用于攻克高多层的AI产品以及光模块产品。</p>
+<p class="qq">对于非RCC方案的光模块PCB，目前的业务进展如何？</p>
+<p>目前，针对1.6T等高端产品，大部分仍处于送样打样阶段。而对于400G等相对简单的产品，部分已经实现量产，客户正在逐步释放小批量订单。</p>
+<p class="qq">采用RCC方案和非RCC方案的客户是否为同一批？公司是否直接与旭创、新易盛等终端客户合作？</p>
+<p>大部分情况下是同一批客户。公司通常会同时提供两种方案给客户，由他们进行对比验证。公司有接触其中一家终端客户，但并非直接合作。公司的直接客户并非中间商，而是产业链中的一个环节，他们再与旭创、新易盛这类生产完整光模块的厂商进行合作。</p>
+<p class="qq">既然公司在去年（2025年）底就已通过诺沛的材料进行了RCC方案的送样，进度相对较快，为何后续诺沛与迅捷兴的合作更为紧密，例如迅捷兴参与了其融资，而公司没有？</p>
+<p>公司与诺沛确实保持着合作关系，尤其是在材料改善方面。</p>
+<p class="qq">请问公司与李家铭方面的合作模式是怎样的？他是否同时与其他公司如则成电子等进行接触？</p>
+<p>公司与李家铭方面一直保持着合作联络，目前使用的材料仍然是他们供应的。公司根据各项要求和需求，在材料优化方面与他们持续沟通。李家铭本人对RCC工艺非常熟悉，他除了销售和提供材料外，还会先与相关公司接触，洽谈合作，这可以理解为一种培训前期的导入 介绍。至于他是否与其他公司接触，他曾向公司介绍过相关情况，但具体的合作方向和内容公司并不清楚。</p>
+<p class="qq">如果公司采用RCC方案的样品通过验证并进入量产，与李家铭方面的利润分配、专利费或技术顾问费等商业模式是如何安排的？</p>
+<p>目前尚未进入讨论利润分配或支付专利费、技术顾问费的阶段。公司现阶段的合作主要集中在他向公司导入材料的层面。</p>
+<p class="qq">考虑到传统工艺的良率问题，公司计划引入mSAP工艺的周期是多久？</p>
+<p>首先，关于良率问题，公司传统方案的良率虽然相较于RCC方案略低，但并非处于很低的水平。RCC方案在每个流程循环中的良率可以达到95%甚至更高，而公司传统方案的良率也能达到90%以上。其次，关于mSAP工艺的部署，泰国工厂已经安装了相关设备。 六期工厂计划在2026年内完成设备安装并投入生产。在泰国和六期工厂优先部署后，总部工厂将根据实际情况，例如当光模块及其他AI产品的产能占比非常高时，再考虑跟进部署。</p>
+<p class="qq">公司在光模块业务上的整体产能规划是怎样的？</p>
+<p>进入2026年第三季度后，公司国内的总产能约为每月17至18万平方米。目前，光模块业务的产能约占公司总产能的10%。由于光模块产品附加值高，材料利用率也高，并且目前已导入多家客户进行打样，预计未来光模块的产能占比将提升至30%左右。当前阶段 ，公司与客户达成的共识是先确保送样合格，完成生产流程和标准的建立，待客户再次审核通过后，再逐步释放量产订单。</p>
+<p class="qq">按照目前规划，光模块业务约1.8万平方米/月的产能在何时可以实现满产？届时出货的产品结构是怎样的？</p>
+<p>公司预计最快在2026年第四季度末可以实现光模块业务的满产目标。目前，从400G到1.6T产品的标准制作和流程已基本完成。考虑到1.6T产品的生产周期远长于400G和800G，因此在年底实现量产初期，出货的产品将主要以400G和800G为主 。</p>
+<p class="qq">请问公司400G、800G至1.6T光模块以及1.6T RCC产品的价格分别是多少？</p>
+<p>关于具体产品的直接定价不便透露。作为参考，在之前某个月份，公司生产了大约三到四款样品，实现了约15万至20万元的营收，这属于初期的样品价格。对于1.6T RCC产品，根据2025年的市场情况，每平方米的价格大约在4万至6万元，折合每支约200至300元，这一价格范围与公司了解到的情况基本相符。</p>
+<p class="qq">公司mSAP产线的建设进度如何，预计何时能实现规模化出货？在设备采购方面是否存在障碍？</p>
+<p>从产业导入到实现规模化生产，国内工厂的进度预计会到2026年年底，目前新工厂的设备尚处于导入和安装测试阶段。泰国工厂则已经开始进行部分生产。在设备方面，目前不存在买不到设备的问题，而是处于对比筛选阶段，旨在选择性能和价格更适合的设备。公司与 电镀、图形、钻孔等传统mSAP设备供应商有多年的紧密合作关系，这些供应商也针对mSAP工艺提供了新的改善方案和产品，正在与公司进行沟通和测试。</p>
+<p class="qq">在原材料供应方面，公司是否面临短缺问题，尤其是在覆铜板等材料上？</p>
+<p>原材料供应是整个PCB行业在2026年面临的严峻挑战。截至2026年9月，8月份是材料最紧缺的时期，行业普遍面临供应紧张，公司也因此进行了相应的减产以确保材料的有效利用。为应对此状况，公司高层积极寻求外部材料资源，并在8月底取得了解决方案。 通过与多家上游供应商合作，获得了从常规的FR-4到高难度的M7、M8等多种材料的供应。公司的策略是与多家供应商合作，并根据客户产品的具体需求（如光模块、AI产品或机器人）推荐不同供应商的材料，以确保供应链的稳定和产能的最大化释放。</p>
+<p class="qq">目前上游普通板材（如FR-4）的供应情况如何？公司采取了哪些措施来保障未来供应？</p>
+<p>目前整个行业的FR-4等普通板材供应依然非常紧张。许多行业内的大型企业已在第三季度提前锁定了供应链，从而在8月份保证了较好的产能释放。借鉴这一策略，公司在8月底之后也开始与上游供应商进行深度合作洽谈，提前锁定一部分订单，以确保未来至少两个月 内不会再发生类似的材料短缺问题。</p>
+<p class="qq">公司PCB业务的上游覆铜板主要从哪些企业采购？不同等级产品的供应商是如何选择的？</p>
+<p>公司的覆铜板主要供应商包括生益科技和南亚塑胶。对于有特殊需求的客户，也会采用中国台湾地区的台光电子、台耀科技的产品。这些供应商主要服务于对材料要求严格的高端AI客户。对于常规产品，公司也导入了其他供应商的材料，例如华正新材。在经历了8月份的 供应紧张后，公司对华正新材等供应商的常规材料进行了大量的导入和内部可靠性验证测试，并将其推荐给相应的客户。采购策略是根据客户订单的具体产品应用和需求，匹配并推荐合适的材料供应商。</p>
+<p class="qq">当前PCB产品是否存在涨价情况？</p>
+<p>是的，PCB产品正在涨价。</p>
+<p class="qq">公司产品在2026年以来的涨价情况如何，主要原因是什么？</p>
+<p>公司产品自2026年第二季度开始涨价，但涨幅相对较小。进入第三季度，由于材料价格上涨且供应紧缺，产品价格涨幅更为显著。部分采用高级材料的PCB产品价格甚至实现了翻倍增长。此次涨价是行业普遍现象，主要归因于国内供应链的火爆与紧缺状况，导致各厂 商需高价采购原材料，进而将成本压力传导至客户端。此外，生产周期和良率等因素也共同推动了产品附加值的提升。</p>
+<p class="qq">鉴于产品涨价和产能释放，公司2026年下半年的业绩预期如何？</p>
+<p>预计2026年第三季度的业绩将优于第二季度，而第二季度的业绩已好于第一季度。业绩向好主要受益于两个方面：首先，尽管市场行情火爆导致产能整体处于紧缺状态，但随着各家公司陆续解决原材料供应问题，产能得到大幅释放。以8月份为例，公司在内部实行减产 的情况下，月产量仍达到17万平方米，相较于前两个季度有显著提升。其次，从行业季节性特点来看，第三季度通常是PCB行业最为火爆的时期。这可能与客户订单的释放节奏有关，加之今年材料紧缺导致交期延后，使得需求在第三季度集中体现。</p>
+<p class="qq">公司目前的产能利用率和总产能情况是怎样的？</p>
+<p>目前月产能约为17万至18万平方米，但尚未达到满产状态。产能利用率大约在85%至90%之间，主要原因是原材料供应问题尚未完全解决，对产能释放构成了一定限制。</p>
+<p class="qq">公司产品的整体平均单价以及不同业务板块的价值分布是怎样的？</p>
+<p>由于客户群体广泛，涵盖日系、车载、国内AI以及欧美等多个领域和地区，产品种类繁多，因此难以提供一个具体的公司整体平均单价。在所有产品中，AI相关产品的单价是最高的，这也是行业内的共识和发展方向。</p>
+<p class="qq">公司AI相关业务的营收占比、生产布局及产品线是怎样的？</p>
+<p>目前，AI相关业务的营收已占公司总营收的三成左右。公司在总部区域内设立了专门的工厂或生产区域，专门用于生产AI产品。产品线方面，除了光模块，公司也生产AI电源，并从2026年第三季度开始导入机器人相关的项目。</p>
+<p class="qq">公司在服务器PCB业务方面有哪些新进展，特别是与英伟达的合作情况如何？</p>
+<p>公司正在积极接触服务器PCB业务。受行业内英伟达与其他厂商洽谈的影响，公司也主动与英伟达进行了沟通，并于2026年8月底收到了对方的一份资料。目前正处于初步接触阶段，主要工作是与英伟达方面确认其产品的测试规范与公司的标准是否存在差异，为后续 的送样测试和进一步合作探讨做准备。现阶段接触的产品类型预计将首先从HDI板开始。</p>
+<p class="qq">除了英伟达，公司是否与其他云服务厂商有接触？</p>
+<p>目前暂时没有与谷歌进行接触，但与Meta（原Facebook）作为终端客户有过接触。</p>
+<p class="qq">对于公司2027年的业绩增长有何展望？与2025年相比，今年的业绩表现有何不同？</p>
+<p>作为中小型企业，公司的成长空间较大，因此从增幅上看，业绩提升将相当可观。相较于沪电、生益等头部企业，虽然它们的利润和产能规模保持领先，但其业绩增幅可能相对平稳。与2025年相比，今年的业绩表现有显著改善。2025年公司虽然也生产了大量的AI 及高多层产品，但由于当时接触时间不长，在良率控制和设备使用上未能达到理想的平衡状态，导致最终的业绩表现未及预期。</p>
+<p class="qq">2026年上半年公司业绩是否受到了材料供应的影响，以及下半年的业绩展望如何？</p>
+<p>2026年上半年确实受到了材料供应的影响。在公司高层与几家上游供应商沟通后，从第三季度开始，供应情况已逐月持续改善。预计在正常情况下，下半年将保持稳步提升的态势，有望取得良好的业绩。</p>
+<p class="qq">鉴于近期RCC（Resin Coated Copper）材料关注度较高，公司是否已获得相关客户的订单？同时，公司在PTFE材料方面有何布局和进展？</p>
+<p>近期确实有不少客户就RCC方案前来接洽，并提供了一些新的订单，目前主要以样品为主。这部分需求可能源于当前材料普遍紧缺，客户在积极寻求可替代方案。至于PTFE，公司涉足更早，几年前便已开始研发，对相关方案较为熟悉，并且已经有量产交付。不过，P TFE材料由于其特殊性，在PCB压合及后续与化学药水接触的工序中，材料变化较大，导致虽然能生产出高品质产品，但良率的控制始终是一个挑战。</p>
+<p class="qq">公司目前是否为PTFE产品制定了明确的产能扩张计划，例如在2027年达到特定的生产规模？</p>
+<p>公司暂时没有为PTFE产品制定明确的规模化生产目标。当前，公司在AI产品和高多层板等领域的产能已经非常紧张和饱和。PTFE产品的研发和测试主要由内部的专门研发团队负责，在形成成熟方案后，会向有需求的客户介绍其优势。</p>
+<p class="qq">公司与厦门三优光电和武汉光迅的合作深度如何？</p>
+<p>公司与后者的合作关系更为深入，无论从合作规模还是重视程度上都更具优先性。通过与该客户的合作，公司间接参与到了旭创和新易盛的产业链中，但并未与后两者建立直接的合作关系。</p>
+<p class="qq">公司是否为IC载板业务配置了专用产线？在工艺技术上，是采用mSAP（改良半加成法）还是减成法？</p>
+<p>公司已经为IC载板业务设立了专门的车间。目前在总部，该车间主要采用的是减成法工艺。预计mSAP工艺的导入会晚于泰国及新工厂的进度。</p>
+<p class="qq">1.6T光模块对线宽线距的具体要求是什么？公司是否具备满足该要求的能力？</p>
+<ol><li>6T光模块要求线宽线距至少达到15/15μm。公司此前交付的一款1.6T样品正是按照这一标准制作的。从客户的设计来看，如果线宽线距超过15/15μm，可能会对信号传输产生影响，难以满足性能要求。正是因为成功交付了符合标准的样品，客户才愿</li></ol>
+<p>意释放更多其他订单。</p>
+<p class="qq">对于未来的3.2T光模块以及CPO（共封装光学）等技术，其对工艺精度的要求是怎样的？公司现有的减成法和mSAP工艺能否满足这些下一代产品的需求？</p>
+<p>目前尚未接触到3.2T产品的具体PCB制作数据，仅从客户处了解到有相关方案。不过，mSAP工艺具备满足未来更高精度需求的技术潜力。从设计和制造方案来看，mSAP工艺在15/15μm的基础上仍有很大的提升空间，能够通过严格管控来满足更精细的线 宽线距要求。行业内如景旺等经验丰富的厂商，可能已经拥有更成熟的方案和设计标准，预计能够达到12/12μm甚至更高的水平。</p>
+<p class="qq">在mSAP工艺中，采用PP或RCC等不同材料是否会影响项目进度？</p>
+<p>从进度角度看，材料选用PP或RCC对mSAP工艺的整体进度没有太大影响，因为该工艺的核心主要在于铜的处理。不过，两种材料存在区别：RCC（Resin Coated Copper）与传统的PP（半固化片）相比，不含玻纤，这在激光钻孔等工序中能降低损耗。</p>
+<p class="qq">RCC与mSAP的结合是否是未来的最优工艺路线，以及当前推广应用主要面临哪些不确定性？</p>
+<p>乐观来看，RCC与mSAP的结合方案可能更适用于高多层AI产品或光模块产品。然而，目前存在不确定性，主要在于该方案尚未经过大规模具体产品的验证。尽管现有的测试验证结果良好，但无法确定后续是否会有其他验证环节暴露出RCC材料的某些性能短板或弊 端。客户的主要顾虑也源于此，因为传统的PP方案已经过行业长期且广泛的应用验证。</p>
+<p class="qq">公司在RCC材料的采购来源以及针对RCC方案的产能分配策略是怎样的？</p>
+<p>RCC材料的采购来源之一是诺沛。在产能分配上，公司并未预留特定产能给RCC方案。目前的策略是，对于接触到的每一个光模块等相关项目，都会同时制作PP和RCC两种方案的样品提供给客户进行验证。最终根据客户的反馈结果来决定采用何种材料进行生产，并 相应分配产能。现阶段，生产仍以PP方案为主，但公司会基于内部的测试和验证结果，积极向客户推荐RCC方案。</p>
+<p class="qq">与行业内的竞争对手（如胜宏科技）相比，公司的技术路线和进度有何不同？</p>
+<p>对公司的进度更有信心。竞争对手（胜宏科技）在执行力、管理理念等方面有其强大之处，给人的感觉是全力投入RCC路线。相比之下，公司的策略更为稳健，并非将所有资源投入单一技术路线。公司同时推进mSAP+PP和mSAP+RCC两种方案，如果技术路线 最终验证RCC为优，公司会采用RCC；如果未到那个阶段，则继续使用成熟的mSAP+PP方案。这种策略与公司早期接触光模块项目时的做法类似，即先进行接触、多方案并行，最终选择最优解。</p>
+<p class="qq">公司今年一、二季度出现增收不增利的原因是什么，预计净利润何时能有明显改善？</p>
+<p>2026年第一、二季度的利润表现受到了2025年的一些遗留影响。2025年公司虽然产能已有较大规模，但在接触并开发AI多层板等新产品的过程中，为了攻克新工艺、建立新标准，牺牲了部分良率和设备产能，导致利润受损。预计从2026年第三季度开始， 净利润将有不错的提升。利润改善主要得益于几个方面：首先，产品单价有所上涨；其次，也是更关键的，是生产良率正在提升；最后，随着前期大量测试工作的完成，设备产能得到更充分的释放。综合来看，预计下半年的整体进度会快于上半年，全年业绩值得期待。</p>
+<p class="qq">在当前PCB行业普遍涨价的背景下，产品价格上涨能否有效覆盖成本上涨，从而提升整个行业的净利润水平？</p>
+<p>预计整个行业的净利润水平仍会得到提升。当前市场，尤其是AI相关领域的需求非常火爆，使得PCB厂商能够较为容易地将成本上涨的压力传导至下游客户，实现顺价。</p>
+<p class="qq">如何看待年底消费电子旺季对PCB价格的影响，以及明年（2027年）年初价格是否会回落？</p>
+<p>年底消费电子新品发布和圣诞节前的出口需求，确实会带动相关PCB产品的量价齐升，形成一个价格高峰。但这种涨价主要针对消费电子领域。预计到2027年年初，消费电子类PCB产品的价格会出现正常回落，因为这类产品主要贡献的是量，而非高附加值。相比之 下，用于AI产品的PCB价格走势则不同。由于AI产品所采用的材料和制造工艺均属行业顶级，其价格能够维持不变就已是良好状态，甚至可能继续上涨。汽车电子PCB的情况与消费电子类似，年底也会迎来一波旺季行情，但长期来看，只有AI相关产品的价格能维 持坚挺。</p>
+<p class="qq">上游原材料如电子布、CCL等的短缺情况预计何时能够缓解？</p>
+<p>当前电子布、PP、CCL等上游原材料对于PCB行业而言，供应均处于非常紧缺的状态。初步预计，随着上游厂商扩产以及新设备导入，这一情况可能要到2027年年中才有望得到缓解。从更乐观的角度看，预计到2027年3月份左右，市场可能会出现一个暂时的 缓和状态，但后续需求仍会提升，只是增速可能不会像2026年这么迅猛。</p>
+<p class="qq">关于诺沛公司在IC材料方面所采用的工艺，是以减成法为主还是mSAP为主？其材料利用率和铜箔厚度方面有何特点？</p>
+<p>根据前期的接触与沟通，诺沛公司主要采用减成法进行生产。该公司的技术特长在于减成法，而非主推mSAP。从其材料特性来看，采用减成法能够获得更好的材料利用率。这主要是因为RCC材料本身的初始铜厚不会太厚，在激光钻孔等工序中，孔径可以钻得比较小， 从而在后续电镀环节无需镀过厚的铜层。相比之下，传统工艺由于介质层较厚，需要电镀更厚的铜层。在铜箔厚度方面，若采用RCC材料制作线宽为15微米的产品，其铜箔厚度大约在7微米以内。为提升良率，之前在测试阶段曾将铜箔厚度降至5微米。</p>
+<p class="qq">对于RCC材料而言，将铜箔厚度做得更薄（例如5微米）是否是其核心技术难点？其主要的技术挑战体现在哪些方面？</p>
+<p>将铜箔厚度做薄（如5微米）并非RCC材料当前最主要的技术难点。目前所遇到的核心挑战主要在于增层过程中的压合工艺。</p>
+<p class="qq">公司布局的三层AI产品目前的产能利用情况如何？是从哪个季度开始进入在产状态的？</p>
+<p>公司布局的三层AI产品目前已经达到满产状态。该产品从2026年第三季度开始正式投产。此前，虽然收到了大量客户订单，但由于涉及一些新工艺需要与客户共同确认测试标准，以及部分材料供应问题，生产曾短暂暂停。目前这些问题已解决，并已实现三层满负荷生 产。</p>
+<p class="qq">从光模块厂商的需求来看，RCC作为一种新技术路线，其解决了哪些核心痛点？这些优势是否足以形成强大的市场推动力？</p>
+<p>RCC技术针对光模块产品的生产主要具备两大优势：首先是生产周期更短，与同类型传统工艺产品相比，生产时间可缩短约10%至15%，这在当前市场环境下是客户的核心痛点之一；其次是生产良率更高，在配备专用设备的情况下，其良率表现优于传统工艺。尽管m SAP工艺成熟后良率可能与之持平甚至反超，但目前RCC的良率优势是客户乐于见到的。</p>
+<p class="qq">目前市场对RCC技术的接受程度如何？其未来是否有可能在行业内引发新的技术浪潮？</p>
+<p>自2025年送样以来，公司持续向客户介绍RCC材料。总体来看，市场目前仍处于观望和验证阶段。由于光模块产品价值较高，客户对于新材料的导入持谨慎态度，需要更长时间的持续验证。然而，当前传统材料供应极度紧缺，如果RCC能够证明其材料供应充足、交 期更短且良率有保障，一旦其性能得到客户的充分验证和认可，确实有可能在行业内掀起一波新的技术浪潮，促使其他厂商也开始重视并采用该技术。</p>
+<p class="qq">RCC技术在进一步降低线宽线距方面是否具备潜力，例如从15μm/15μm降低至10μm/10μm？若要实现这一目标，需要结合哪些工艺？</p>
+<p>RCC技术具备将线宽线距进一步降低至10μm/10μm的潜力。要实现这一目标，不能仅依赖单一技术，而应采取综合方案，例如将RCC作为基材，并结合mSAP工艺进行制造。当挑战工艺极限时，需要从多个角度整合不同技术才能实现突破。</p>
+<p class="qq">如果采用RCC基材结合mSAP工艺的方案，基材的生产供应情况如何？</p>
+<p>采用RCC基材结合mSAP工艺的方案在生产上是可行的。从工艺角度出发，会考虑并测试多种可能性与方案。如果测试结果表明该方案能够实现稳定的生产和良率，公司内部会正式提出方案进行验证和最终确认。</p>
+<p class="qq">实现更精细的线宽线距（例如10μm/10μm）对光模块厂商的核心吸引力体现在哪些方面？</p>
+<p>实现更精细的线宽线距对光模块厂商的吸引力主要体现在两个方面。首先，更精细的线路设计是客户乐于见到的技术进步，能够提升产品上限。其次，除了精细度，信号的稳定性至关重要。在追求更细线路的同时，必须保证阻抗传输等性能的稳定性。不能因为在某些区域实 现了精细化，而牺牲了其他部分的性能，否则整体信号传输仍会受到严重影响。因此，客户在关注精细度的同时，对产品稳定性的要求也非常高。</p>
+<p class="qq">RCC材料相较于传统含玻纤的材料，其稳定性优势是如何实现的？</p>
+<p>RCC材料的稳定性优势源于其去除了玻纤。由于RCC材料主要由环氧树脂构成，其介电常数和介电损耗相对更为稳定。相比之下，传统材料中的玻纤会对信号传输产生不利影响。</p>
+<p class="qq">从0到10分来评估，RCC技术目前对光模块厂商的吸引力有多大？</p>
+<p>目前，RCC技术对光模块厂商的吸引力评分大约在7到8分。这主要是因为行业内各方都在积极寻找新的技术可能性，为未来的产品和市场进行布局。</p>
+<p class="qq">除了在光模块PCB领域的应用，RCC材料在ABF载板、服务器背板或封装等其他应用场景的拓展前景如何？</p>
+<p>RCC材料凭借其在信号传输方面的优势，特别适用于高频高速的AI相关领域。其材料特性和制作能力使其在传统机器人或车载项目的电源部分并不具备优势，这些领域更适合传统的减成法PCB。因此，RCC材料未来的主要突破方向和应用前景集中在AI领域，一旦 其性能在当前应用中得到充分验证，便有望在更多AI相关的高频高速场景中得到推广和应用，以发挥其性能释放的潜力。</p>
+<p class="qq">将线宽线距做得更精细，具体能带来哪些好处？</p>
+<p>将线宽线距做得更精细，主要的好处是节约空间。在下游客户的需求驱动下，一块PCB板需要承载大量的元器件并完成复杂的信号传输。如果线路不够精细，就需要通过增加层数来满足设计要求，但这会导致PCB板变得更厚。对于许多微型化器件和AI产品而言，它们 需要在极小的空间内运行，无法接受过厚的板材。因此，通过缩小线宽线距，可以在有限的、轻薄的空间内容纳更密集的线路，从而实现产品的小型化和高集成度。</p>
+<p class="qq">目前RCC结合减成法的技术路线，其技术验证是否已经完成？后续推进的主要挑战是什么？</p>
+<p>是的，该技术路线已经完成了前期的认识、导入、测试以及反复验证，所有性能指标均能满足需求，目前正等待客户方的验证测试。当前阶段的主要挑战已非技术本身，而是工程化问题，即何时能够实现规模化量产以及如何提升良率。提前进行这些工作，目的在于预先暴露 并解决量产过程中可能出现的难点。一旦客户验证通过并开始释放订单，公司就能提供一个成熟的平台来满足其量产需求。此技术路线的方向是明确且可行的，当前的核心在于完成验证周期和提升量产良率的进程。</p>
+<p class="qq">对于RCC这种重大的材料变更，如果头部光模块厂商验证通过后，其他供应商是否也需要逐一进行验证，还是可以同步进行扩产？</p>
+<p>此类材料变更后的验证流程与传统的PP方案类似，需要逐一进行。验证过程不仅针对材料本身，更重要的是评估每一家PCB制造商的特定生产方案、工艺流程、工程能力以及品质可靠性。因此，每家供应商都必须独立完成验证过程。</p>
+<p class="qq">如果RCC技术路线被证实可行并进入规模化生产阶段，多家供应商共同参与的情况下，决定客户优先选择的关键竞争要素是什么？</p>
+<p>在多家供应商同时具备生产能力的情况下，客户选择的优先考量因素主要有两个层面。首先，从合作关系角度看，客户可能会优先考虑合作的持久性和稳定性。其次，从工艺和产品角度看，品质是首要的决定性因素。由于RCC材料通常应用于附加值较高的产品上，客户对 产品品质的要求极高，不会为了降低成本而接受潜在的高风险。</p>
+<p class="qq">RCC材料取消了传统的玻纤布，其结构强度是如何保证的？是否完全依赖树脂？</p>
+<p>RCC材料的结构强度并非完全依赖纯树脂。其主要成分确实是高占比的环氧树脂，但为了确保材料的稳定性和强度，材料供应商会在树脂中添加陶瓷颗粒等填充物。这种配方设计旨在替代传统玻纤布的作用，通过调整树脂配方并加入特定填料来保证其机械性能，避免因缺 少玻纤的拉伸作用而产生易变形等问题。</p>
+<p class="qq">鉴于传统方案普遍采用玻纤来增强结构强度，取消玻纤后，RCC材料的强度是否引发了下游客户的普遍担忧，以及这一问题在验证过程中是否被证实为关键难点？</p>
+<p>在项目导入初期，确实存在关于取消玻纤后材料强度是否足够耐受的疑问。然而，根据上游材料供应商提供的信息以及公司内部进行的实际测试验证，结果表明该材料的强度完全能够满足设计和应用要求。在验证过程中，强度问题并未构成障碍，客户的担忧也通过实际测试 数据得到了解决。</p>
+</div>
+</main>
+</body></html>

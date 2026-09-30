@@ -1,0 +1,231 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.28 | AC | Materials | Gallium Oxide Deep Dive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.28 | AC | Materials | Gallium Oxide Deep Dive</h1>
+<p class="orig">原标题：β氧化镓产业深度分析—全过程工艺、技术门槛、中日比较</p>
+<p class="tags">#materials #semis</p>
+<p class="meta">AceCamp · 2026-09-28 22:10 · article 70567619</p>
+<div class="body">
+<ol><li>β 相氧化镓是氧化镓里最稳定，目前唯一可实现大尺寸单晶制备、产业应用的晶型，因此β 相氧化镓成为第四代超宽禁带半导体的核心材料。β 相氧化镓具备优异特性，主打1200V以上超高压、高效率、低损耗差异化场景，与SiC（600-1200V）形成互补而非完全替代。</li><li>β氧化镓产业生产过程分为单晶衬底制备、外延薄膜生长、器件工艺、后端封装四大核心环节，其中衬底与外延是产业链环节的核心，也是国内外竞争焦点。氧化镓产业化壁垒高于SiC/GaN，核心集中在材料、工艺、器件、生态四大维度，也是当前全球产业共同面临的瓶颈。</li><li>β 氧化镓当前处于产业化早期、需求快速爬坡阶段，仅少量肖特基二极管实现小批量商用，尚未进入大规模放量阶段，未来增长空间极大。</li></ol>
+<h2>正文</h2>
+<p><b>1.</b>β<b>氧化镓核心市场应用场景</b></p>
+<p>氧化镓有多种晶型，存在 α、β、γ、δ、ε 等晶型，其中<b>β 相氧化镓</b>是氧化镓里最稳定，<b>目前唯一可实现大尺寸单晶制备、产业应用的晶型</b>，因此<b>β 相氧化镓</b>成为第四代超宽禁带半导体的核心材料。β‑Ga₂O₃（β 相氧化镓）具备优异特性，其凭借4.8-4.9eV超宽禁带宽度、8MV/cm超高击穿场强、远超SiC/GaN的巴利加优值（即材料制备高压功率器件的理论性能上限）），主打1200V以上超高压、高效率、低损耗差异化场景，与SiC（600-1200V）形成互补而非完全替代，核心应用分为四大板块：</p>
+<p class="qq">1.1高压功率半导体</p>
+<p>适配远超SiC材料性能瓶颈的超高电压场景，是当前高端产业化落地核心方向，具体包括：特高压直流输电、轨道交通牵引变流器、大型光伏/风电并网逆变器、电网储能变流系统、兆瓦级数据中心高压电源、800V以上高压新能源汽车车载充电机与主逆变器、高压工业电源。同等耐压条件下，氧化镓器件损耗比碳化硅（SiC）降低15%-20%，器件体积更小巧，适配高端大功率电力电子设备迭代需求。</p>
+<p class="qq">1.2日盲紫外光电探测</p>
+<p>仅响应200-280nm深紫外波段、不响应可见光，天然规避环境光干扰，是高端日盲探测核心材料。主要应用于工业火焰探测、电网绝缘故障紫外监测、海上搜救预警、航天空间紫外探测、军工紫外告警、环境大气臭氧检测，具备高灵敏度、低误报率的核心优势。</p>
+<p class="qq">1.3射频与高频器件</p>
+<p>依托超高击穿场强与高频特性，适配5G/6G基站高频功率放大器、卫星通信高频开关器件、军用射频微波器件，可实现高频工况下更低损耗、更高功率密度。</p>
+<p class="qq">1.4航天军工与特种场景</p>
+<p>具备优异的抗辐照、耐高温特性，适配航天卫星电源系统、核工业特种电力设备、军工高压电源等极端工况场景，是高端特种半导体的关键材料。</p>
+<p class="qq"> </p>
+<p><b>2.</b> β<b>氧化镓产业全过程工艺</b></p>
+<p>β氧化镓产业制程分为单晶衬底制备、外延薄膜生长、器件工艺、后端封装四大核心环节，其中衬底与外延是产业链环节的核心，也是国内外竞争焦点。整体工艺区别于传统Si、SiC半导体，衬底依靠熔体生长技术，外延采用特殊外延工艺。</p>
+<ol><li>1衬底&amp;精密加工工艺</li></ol>
+<p>单晶衬底制备是氧化镓产业链技术壁垒最高、竞争最核心的前置环节，完整工艺流程为：高纯氧化镓原料（5N/6N纯度）→坩埚装填→高温熔体熔化（熔体单晶炉）→籽晶下种、引颈缩颈→放肩与等径长晶→晶体缓慢冷却退火→完整晶锭成型。该复合工序环节直接决定衬底的缺陷密度、均匀性与良率，是后续外延生长、器件性能的基础。目前产业中的β相氧化镓单晶是唯一结构稳定、可实现大尺寸制备与商业化应用的晶相。经过多年技术迭代，全球形成三大主流单晶生长工艺，技术路线差异显著、各有优劣：</p>
+<p>导模法EFG：技术成熟度最高，生长出的晶体完整性高、缺陷可控性好，适配4-6英寸衬底稳定量产，是全球早期商用氧化镓衬底的核心工艺。核心短板为高度依赖贵金属铱坩埚，耗材成本居高不下，且8英寸及以上大尺寸单晶生长难度极大、量产良率偏低，难以适配大尺寸、低成本产业化趋势。</p>
+<p>垂直布里奇曼VB法：核心优势是可实现超大尺寸单晶生长，是全球唯一实现12英寸氧化镓单晶突破的工艺，搭配AI智能长晶技术，大幅提升晶体生长效率。该工艺尺寸上限高、单片晶锭产出量大，长期成本下降空间充足；不足之处在于超大尺寸晶体的内部应力控制、整体均匀性及量产良率，仍处于持续迭代优化阶段。</p>
+<p>铸造法：中国国内独创的低成本创新工艺，彻底突破传统长晶工艺的成本瓶颈，可大幅削减80%的铱坩埚耗材用量，单炉出片量较传统工艺提升3-4倍，能够稳定实现6英寸衬底规模化量产，显著降低衬底端核心成本，是国内氧化镓产业化差异化竞争的核心技术。</p>
+<p>精密加工工艺：晶锭成型后，还需经过一系列精密后处理工序：定向切片、双面研磨、超精密化学机械抛光、微观缺陷检测、超净清洗与表面钝化，最终产出低缺陷、高平整、符合半导体器件制造标准的高纯氧化镓单晶衬底。</p>
+<p class="qq">2.2外延薄膜生长</p>
+<p>单晶衬底制备完成后，进入外延薄膜生长环节。外延层是氧化镓功率器件的核心功能层，器件的耐压、导通电阻、可靠性等关键性能主要由外延层的厚度、载流子浓度、缺陷水平决定，是衬底之后产业链第二大难点工艺与行业竞争焦点。氧化镓外延分为同质外延与异质外延两大路线，适配不同产业化阶段：</p>
+<p><b>同质外延</b>：在氧化镓衬底上生长氧化镓外延层，晶格匹配完美、缺陷密度极低，器件性能最优，是高端功率器件首选路线，国内镓仁半导体已实现6英寸同质外延片批量商用交付。</p>
+<p><b>异质外延（SiC/蓝宝石）</b>：在SiC、蓝宝石衬底上生长氧化镓薄膜，优势是衬底成本低、适配大尺寸量产；缺点是晶格失配、缺陷较高，主打中低端高压器件、探测器件，是产业化初期降本主力路线。</p>
+<p>另外，两类外延路线均依托 MOCVD、HVPE 作为主流外延设备，国内目前已完成 8 英寸、12 英寸氧化镓外延工艺技术突破。</p>
+<p class="qq">2.3芯片器件制造工艺</p>
+<p>完成外延薄膜制备后，进入氧化镓芯片器件制造环节。相较于传统Si、SiC器件工艺，氧化镓器件加工对表面精度、缺陷控制、掺杂工艺与高温制程适配性要求更为严苛。目前行业受<b>p型掺杂瓶颈</b>限制，β氧化镓材料难以实现高导电、高稳定性的p型有效掺杂，无法构建成熟的PN结结构，因此现阶段仅可规模化量产单极型器件，双极型器件仍处于实验室研发阶段。</p>
+<p>氧化镓单极型器件主流量产工艺流程完整闭环为：<b>离子注入掺杂→刻蚀成型→介质沉积→金属电极蒸镀→高温退火活化→晶圆电性测试。</b>首先通过精密清洗与表面处理消除外延层表面杂质与微缺陷，保障后续工艺稳定性；再通过精准离子注入完成局部掺杂改性，调控器件导通特性；随后通过光刻、刻蚀完成器件台面结构与沟槽图形成型；接着沉积绝缘介质层实现隔离防护，蒸镀金属材料制备源极、漏极与栅极电极；最后通过高温退火激活掺杂离子、修复工艺损伤，提升载流子迁移率与器件可靠性，完成晶圆级器件制备与晶圆电性检测。</p>
+<p class="qq">2.4后端封装工艺</p>
+<p>晶圆电性测试完成后，进入后端封装环节。氧化镓封装基础流程为：晶圆划片、芯片裂片、引线互联、腔体封装、成品电性与可靠性测试等工序。氧化镓材料本身热导率偏低，是功率器件封装的核心瓶颈，传统 Si、SiC 常规封装方案难以满足高压大电流工况下的散热需求，核心难点为散热优化。行业研发重点集中在散热技术优化，主流采用背面减薄、金刚石键合、石墨烯界面导热等特殊封装工艺，缩短芯片有源区到散热通路的距离、降低界面热阻，快速导出器件工作产生的热量，保障器件在高压大电流工况稳定运行。</p>
+<p><b>3.</b> β<b>氧化镓核心技术门槛</b></p>
+<p>氧化镓产业化壁垒远高于SiC/GaN，核心集中在材料、工艺、器件、生态四大维度，也是当前全球产业共同面临的瓶颈：</p>
+<p class="qq">3.1材料物理核心瓶颈</p>
+<p><b>无有效p型掺杂技术</b>：β氧化镓空穴有效质量大、受主能级深，全球尚未实现稳定、可重复的p型导电，无法制备PN结与双极型器件、CMOS电路，仅能做单极器件，极大限制器件品类与应用场景。</p>
+<p><b>热导率极低</b>：β氧化镓热导率仅10-27W/m·K，为SiC的1/13、硅的1/5，高压大电流工作下热量极易堆积，易引发热击穿，散热成为高压器件量产核心阻碍。</p>
+<p class="qq">3.2单晶衬底工艺门槛</p>
+<p>β氧化镓在大尺寸单晶生长难度极高，晶体易开裂、缺陷密度难控制，6英寸良率尚未完全稳定，8/12英寸量产良率偏低；</p>
+<p>传统工艺依赖高价铱坩埚，耗材成本高昂，无铱低成本生长工艺尚未规模化落地；</p>
+<p>超精密抛光、低缺陷加工工艺壁垒高，半导体级高纯衬底良率提升周期长。</p>
+<p class="qq">3.3外延与器件工艺门槛</p>
+<p>β氧化镓同质外延晶格调控、缺陷抑制难度大，外延层迁移率、均匀性直接决定器件耐压与损耗性能；超高耐压器件（6kV以上）的电场调控、介质钝化、可靠性控制工艺不成熟；缺乏标准化器件工艺体系，车规级、工控级可靠性验证方案缺失。</p>
+<p class="qq">3.4产业生态门槛</p>
+<p>相较于已经完成多年商业化迭代的 SiC 产业，氧化镓整体产业生态尚处于早期建设阶段，尚未形成完整配套的设计、流片、封装、测试、验证一体化供应链。行业缺少长期积累的器件可靠性数据库，统一的工艺标准、测试规范尚未成型，下游电力电子、新能源等终端客户的产品认证体系也未建立，新产品验证周期漫长，进一步拉长产业化落地周期。</p>
+<p><b>4.</b> β<b>氧化镓全球及中国氧化镓市场需求</b></p>
+<p class="qq">4.1全球市场规模</p>
+<p>β 氧化镓当前处于产业化早期，需求快速爬坡阶段，当前仅有少量肖特基二极管实现商用，尚未进入大规模放量阶段，未来增长空间极大。富士经济预测，2030 年全球氧化镓功率器件市场规模约 12.2 亿美元；同时<b>行业</b>预测到2034 年全球氧化镓半导体全产业链市场规模有望达到 161 亿美元，产业处于高速增长期，是增速较高的超宽禁带半导体赛道之一（数据来源：<b>富士经济，Stratistics MRC（2026 年发布）</b>）。</p>
+<p class="qq">4.2中日两国市场规模</p>
+<p>由于β 氧化镓单晶衬底的产能、长晶专利与产业化项目高度集中在中日，中国与日本共同构成全球氧化镓产业两大核心发展极。《中国氧化镓市场调研分析与发展前景预测报告 2026 年》（2026 年 5 月）数据显示，2025 年中国氧化镓市场规模约 2.12 亿元人民币；Bosson Research《Global β-Ga₂O₃ Wafers Market Research Report 2026》数据，中日两国合计占全球 β-Ga₂O₃单晶衬底市场约 89.5%，是全球单晶衬底供给的核心主体。从当前需求结构来看，<b>教育科研采购仍是最大下游约占 53.2%</b>；电力电子按应用占 46% （数据来源：QYResearch《全球氧化镓衬底市场报告 2025-2031》2026 年 2 月数据）。</p>
+<p>现阶段市场以科研试样、工程验证订单为主，新能源汽车、光伏储能、特高压电网等场景仍处于可靠性验证阶段，是中长期核心增长驱动力。</p>
+<p class="qq">5.β氧化镓全球及中国头部厂家</p>
+<p class="qq">5.1日本、美国头部厂家</p>
+<p><b>日本NCT（Novel Crystal Technology）</b>：全球老牌龙头，长期垄断全球近100%氧化镓衬底供应，持有全球60%以上核心发明专利。4英寸衬底稳定量产， 2026年实现6英寸衬底样品批量交付，年产能数十万片级别（4英寸等效）。规划2027年推出外延片，2029年全面量产；主打EFG成熟工艺，产能稳定但成本偏高。</p>
+<p><b>日本田村、三菱化学、住友电工</b>：日本田村（Tamura，NCT 创始股东）、三菱化学、住友电工布局氧化镓材料、外延与器件研发，依托 NEDO 国家级项目，主攻高端工业、车载功率器件验证。田村是日本 EFG 导模法氧化镓产业化核心主体；三菱化学聚焦高纯材料与外延配套；住友电工发力大功率器件模组与可靠性研究。日本企业走材料 - 器件一体化路线，重点攻坚高可靠车载、工业场景，积累专利壁垒。</p>
+<p><b>美国TI、英飞凌、ST、Flosfia</b>：聚焦氧化镓器件开发与可靠性验证。其中美国TI、英飞凌、ST 依托成熟功率半导体平台评估新能源、工业电源落地潜力；Flosfia 主攻异质外延路线，研发高压功率与紫外探测器件；海外大厂多聚焦器件与应用验证，衬底制造布局较少。</p>
+<p class="qq">5.2中国头部厂家</p>
+<p><b>富加镓业</b>：全球唯一掌握12英寸氧化镓单晶制备技术企业，拥有“装备-长晶-衬底-外延”全链条闭环能力，外延薄膜迁移率达全球顶尖水平，8/12英寸外延工艺实现突破，主打超大尺寸、高性能路线。</p>
+<p><b>镓仁半导体</b>：全球唯一商用6英寸同质外延片批量供货企业，建成全球首条6/8英寸兼容同质外延量产线，自研铸造法大幅降本，产品出口德国企业，商业化落地速度国内第一，也为国内唯一稳定商用出货企业；</p>
+<p><b>镓创未来</b>：异质外延技术全球领先，主打低成本SiC/蓝宝石基氧化镓外延路线，适配中高压功率器件与光电探测场景。</p>
+<p class="qq">6. β氧化镓产业中日对比</p>
+<p>当前β氧化镓产业格局为：中国在大尺寸、低成本工艺、商业化落地速度上实现局部领先；日本在基础专利、工艺稳定性、长期可靠性、车规级验证上仍具备深厚积淀优势，整体差距呈现“局部超越、整体追赶”的特征，具体差异如下：</p>
+<p class="qq">6.1专利与底层技术壁垒</p>
+<p>日本NCT掌控全球60%以上氧化镓核心底层发明专利，覆盖晶体生长、衬底加工、基础器件结构等核心底层技术，专利壁垒极高；国内专利多集中在工艺优化、设备改良、大尺寸迭代等应用层，底层原创技术布局不足。</p>
+<p class="qq">6.2工艺稳定性与良率</p>
+<p>日本EFG工艺经过多年迭代，4英寸衬底良率稳定、缺陷密度低，器件一致性、稳定性久经市场验证；国内6英寸良率仍处于爬坡阶段，批次一致性、工艺稳定性略逊于日本，大尺寸量产良率差距更明显。</p>
+<p class="qq">6.3可靠性与高端认证</p>
+<p>日本企业拥有多年器件可靠性测试数据积累，车规级、工控级验证体系成熟；国内氧化镓器件暂无完整的万小时可靠性数据，车规级认证、标准化验证体系尚未完善，高端终端导入受限。</p>
+<p class="qq">6.4尺寸与成本</p>
+<p>日本最大量产尺寸为6英寸，8英寸尚在规划、2035年才计划落地；国内富加镓业已实现12英寸单晶技术突破，形成一代半代际尺寸领先，单片产出效率、成本潜力远超日本。同时国内自研铸造法等低成本工艺，大幅削减铱耗材成本，衬底成本优势显著，日本传统EFG工艺成本居高不下。</p>
+<p class="qq">6.5商业化落地速度</p>
+<p>日本以技术研发、样品交付为主，量产落地节奏保守；国内镓仁、富加镓业等企业已实现6英寸外延片批量商用、出口海外，产业链协同、终端试样导入速度远超日本，产业化落地速度更快。</p>
+<p><b>7.</b> β<b>氧化镓产业发展趋势分析</b></p>
+<p class="qq">7.1尺寸大型化、成本极致化</p>
+<p>行业从4英寸向6英寸量产、8英寸中试、12英寸技术突破快速迭代，国内12英寸单晶技术形成代际领先；同时低成本铸造法、无铱DG法逐步落地，衬底成本有望大幅下降，逐步缩小与SiC的成本差距。</p>
+<p class="qq">7.2技术工艺瓶颈持续突破</p>
+<p>业内通过异质结集成、表面电场工程绕开p型掺杂难题，拓展器件品类；金刚石键合、石墨烯导热等散热技术逐步工程化，解决热击穿痛点；外延缺陷密度持续降低，器件耐压、损耗性能稳步提升。</p>
+<p class="qq">7.3产业化走向批量商用</p>
+<p>2026-2027年以下游车企、光伏、电网企业试样测试为主，2028年前后实现高压二极管小批量规模化供货，2030年前后高压MOSFET逐步商用，逐步替代高端场景SiC器件。</p>
+<p class="qq">7.4国产替代加速，全球格局重构</p>
+<p>中国依托大尺寸技术、低成本工艺、庞大下游市场，打破日本独家垄断格局，从材料衬底到外延、器件全链条自主可控，成为全球氧化镓产业化核心阵地。</p>
+<p>风险提示：以上内容根据公开资料及产业调研整理，不代表任何投资建议，请自担风险。</p>
+</div>
+</main>
+</body></html>

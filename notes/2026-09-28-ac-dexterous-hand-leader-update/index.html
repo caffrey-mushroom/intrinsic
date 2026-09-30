@@ -1,0 +1,194 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.28 | AC | Robotics | Dexterous Hand Leader Update</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.28 | AC | Robotics | Dexterous Hand Leader Update</h1>
+<p class="orig">原标题：灵巧手龙头近况更新—技术路线、产品参数及出货情况</p>
+<p class="tags">#robotics</p>
+<p class="meta">AceCamp · 2026-09-28 · article 70567527</p>
+<div class="body">
+<p>以下观点来自行业资深专家：</p>
+<ol><li>低自由度系列，包括O6和L6，均为六个主动自由度。中高自由度系列，主要是L20系列，包括L20和L20 Lite。</li><li>触觉传感器的配置因型号而异。六自由度系列产品默认不配备触觉传感器。20系列（L20）和30系列（L30、O30）产品均标配。</li><li>客户主要分为两类。第一大类是高校和科研机构，第二大类是协作机器人和人形机器人本体厂商。</li></ol>
+<ol><li>请介绍一下灵心巧手的基本发展情况？</li></ol>
+<p>灵心巧手自2024年上半年开始涉足灵巧手业务，彼时市场以低自由度产品为主，高自由度领域尚属空白。灵心巧手推出的首款产品是高自由度的L20灵巧手，并至今仍是主力产品。2024年下半年至2025年下半年，灵心巧手基于市场反馈，开始布局其他技术路线和自由度配置，陆续推出了O6、L30及L20 LIGHT等版本的灵巧手。随着产品线的丰富和市场声量的提升，灵心巧手在2024年末至2025年初进行了融资，扩大了研发、装配及市场团队的规模，并增加了展会参与度。到2025年末，灵心巧手融资达到数亿元规模，在此期间，产品线新增了一款直驱高自由度灵巧手O30，并拓展至摇操臂和机械臂产品。灵心巧手也与下游核心供应商，如灵妙动力及一些减速机、视触觉传感器厂商达成了合作。截至目前（2026年9月），灵心巧手估值约在200亿人民币上下。在人员规模方面，2024年时不足百人，2025年超过百人，目前包括外包及生产人员在内的总规模约为300人。</p>
+<ol><li>请详细介绍一下灵心巧手各系列灵巧手产品的具体参数和性能差异？</li></ol>
+<p>灵心巧手目前的灵巧手产品序列主要依据自由度进行划分。</p>
+<p>低自由度系列，包括O6和L6，均为六个主动自由度。两者均采用直驱方式，区别在于L6选用丝杠加拉杆结构，出力更大（指尖力接近20牛），速度稍慢；而O6速度略快，出力较小（指尖力约10牛多）。这两款产品默认不提供触觉传感器，尺寸比成年男性手略小 ，主要实现四指弯曲及大拇指的侧摆和弯曲。其单手重量在400至500克之间，稳定工作温度约40℃，正常使用寿命可达三至四个月。</p>
+<p>中高自由度系列，主要是L20系列，包括L20和L20 Lite。该系列将主动自由度提升至16个，在六自由度基础上，为四指增加了侧摆，并将指中关节由被动变为主动，同时大拇指也增加了两个自由度。这使得L20能完成更丰富的手势。其尺寸与成年男性手相当或略大。由于电机数量增加且内部空间更紧凑，其重量接近1千克，稳定工作温度也升至50-55℃，但寿命与六自由度系列基本持平。L20系列默认标配五个指尖压阻式电子皮肤，并可选配全掌配置。L20与L20 Lite在性能参数上几乎无差别，主要区别在于一款的主动弯曲自由度在指中关节，另一款在指尖关节。</p>
+<p>高自由度系列，包括L30和O30。L30采用绳驱技术路线，拥有16个主动自由度，其驱动电机置于小臂，因此手掌部分重量很轻，散热情况也优于其他型号。其指尖力在12至15牛之间，但由于采用高纤维材料的腱绳，存在蠕变和磨损问题，导致其寿命相对最短 ，约为两个月。O30是2026年推出的新款，为22个主动自由度的全直驱手，完全参考人手自由度，可视为在L20基础上将所有指间关节均升级为主动。其重量与L20相近，接近1千克，尺寸也略大于成年人手。O30的指尖出力约15牛，目前寿命接近三个月 ，尚在稳定优化中。由于电机密集，其稳定工作温度较高，在55至60℃之间。O30默认配备五个指尖视触觉传感器，其力的分辨率实测约为0.2牛。</p>
+<p>在通讯与控制方面，从6系列到30系列，通讯速率峰值可达300Hz（约3毫秒/帧），平均在150-200Hz（5-8毫秒/帧）之间。所有系列均提供位置控制和速度控制，以及力矩模式，但尚不提供力位混合控制模式。</p>
+<ol><li>如何定义高自由度的灵巧手，以及目前灵心巧手的产品线哪些属于高自由度？</li></ol>
+<p>通常以主动自由度作为衡量标准，大于16个主动自由度即可被认为是高自由度灵巧手。根据此标准，灵心巧手于2026年新推出的O30型号，具备全主动自由度，属于高自由度产品。O6型号则属于低自由度手。其余产品如L30和L20，虽然总自由度达到22个 ，但其中包含5至6个被动自由度，因此严格意义上不属于高自由度，可归类为中偏高自由度。</p>
+<p>在灵心巧手的产品体系中，L20、L30以及O30这几款灵巧手被归类为高自由度产品。</p>
+<ol><li>对于灵巧手而言，多高的自由度是比较合适的？</li></ol>
+<p>灵巧手合适的自由度取决于应用场景。对于工厂中标准化的工件抓取任务，6到10个主动自由度已足够。若灵巧手的目标是与机械臂结合，以替代人类在工作或生活中的多数场景，那么18到22个自由度是比较理想的范围，因为这一范围理论上能完全拟合人手的功能。 因此，过度追求更高的自由度，例如达到30个，可能并无必要。特斯拉灵巧手采用约22个全主动自由度的设计是合理的，其当前主要在绳驱和直驱两种驱动方式之间进行权衡，但自由度方案已基本确定。需要注意的是，部分采用绳驱或将驱动机构（电机、线性执行器） 置于小臂的灵巧手，会因其承担了部分手腕功能而增加2到3个自由度，但这与直驱且不带小臂的设计在逻辑上有所不同。</p>
+<ol><li>当前灵心巧手主要的技术路线有哪些？以及灵心巧手的主推方向是什么？</li></ol>
+<p>目前市场存在多种技术路线，灵心巧手均有覆盖。但从行业趋势来看，直驱是主推的技术方向。这一判断基于对头部厂商动向的观察：2026年7月，包括因时科技、强脑科技、曦诺未来、在内的主要厂商发布的新一代高自由度手均采用了直驱或以直驱为主的技术方案。 为顺应市场趋势，灵心巧手也推出了一款直驱灵巧手，并将其作为产品层面最成熟、最主推的方案。</p>
+<ol><li>灵心巧手各型号灵巧手的具体定价策略是怎样的？</li></ol>
+<p>灵心巧手产品定价根据型号和配置有所不同。六自由度系列中，O6型号售价为6,000余元，而出力更大的L6型号因线性执行器成本增加，售价为8,000余元。L20系列分为L20和L20 LIGHT两个版本，价格带在4万元左右，具体分别为3万多元和4万出头。L30型号的定价约为9万元，该定价参考了市场上同类绳驱、近高自由度竞品普遍在大几万甚至更高的价格水平。最新推出的O30型号，其价格区间预计在6万至8万元之间。</p>
+<ol><li>采购量达到多少时可以获得折扣，折扣幅度大约是多少？</li></ol>
+<p>若单次采购量达到几十只以上，通常可以获得一定的价格折扣。例如，对于售价6,000余元的型号，采购一两只基本按原价销售；但若采购量达到几十只，则可以提供10%至20%的折扣。</p>
+<ol><li>L30型号定价远高于L20的原因是什么？</li></ol>
+<p>L30在2025年推出时，其主要竞品是特斯拉的上一代绳驱手和曦诺未来的第一代产品Flex 1，这两款产品的售价分别在15-16万元和近20万元。尽管从技术和产品精细度上看，竞品确实更优，且主要面向科研和高校的采购渠道，量产能力有限，导致消费级市场存在空白。当时L30的成本与L20相近甚至略低，但考虑到同类竞品的市场定价，灵心巧手制定了一个既能保证利润空间，又比竞品价格有明显优势的策略。该型号的定位并非追求销量，而是为了收集市场反馈，因此定价较高。</p>
+<ol><li>灵心巧手不同型号的灵巧手是否标配触觉传感器，其配置方案有何差异？</li></ol>
+<p>触觉传感器的配置因型号而异。六自由度系列产品默认不配备触觉传感器。20系列（L20）和30系列（L30、O30）产品均标配。其中，L20和L30配备的是五个指尖的压阻式触觉传感器；而O30同样配备五个指尖，但采用的是视触觉技术路线的传感器。 所有标配传感器的型号，其价格已包含传感器成本。</p>
+<ol><li>为何部分型号标配触觉传感器而另一部分不标配？</li></ol>
+<p>是否标配触觉传感器主要取决于目标客户的需求和成本考量。六自由度手的购买者通常用于简单的工业抓握场景，其抓取对象和力度已知，对触觉反馈需求不大。对于售价约6,000元的产品，增加1,200至1,300元的传感器成本对客户而言负担较重。相比之下 ，20系列和30系列手的主要客户是高校和科研机构，他们通常进行课题研究，对触觉功能有实际需求。对于售价4万元或更高的产品，增加几千元的传感器成本在总价中占比较小，客户可以接受。</p>
+<ol><li>传感器是否可以单独购买？</li></ol>
+<p>虽然传感器可以单独购买，但涉及拆解手部进行装配，并需要修改主控板上的软件，而这部分通常不向客户开放，因此自行适配过程会非常不便。</p>
+<ol><li>除了灵巧手，灵心巧手还有哪些其他产品或业务？</li></ol>
+<p>除灵巧手外，灵心巧手的产品线还包括一个遥操作臂和一款外骨骼动捕手套。这两个硬件产品与自研的机械臂和灵巧手相配合，形成一套遥操作系统。此外，灵心巧手设有一个小团队利用该系统进行素材制作和仿真工作，由此产生的数据资产也会对外销售。</p>
+<ol><li>灵心巧手当前主要的客户群体构成是怎样的？近年来客户结构有何变化趋势？</li></ol>
+<p>灵心巧手的客户主要分为两类。第一大类是高校和科研机构，如北京周边、西安交通大学及江浙沪地区的高校，这类客户采购量虽单次不大，但累计已达数百只。第二大类是协作机器人和人形机器人本体厂商。一个显著的趋势是，2025年人形机器人本体厂商是主要客户 ，但进入2026年，随着宇树科技、智元机器人等灵心巧手内部孵化出灵巧手团队，来自这类客户的采购有所减少。因此，2026年协作机器人厂商（如珞石机器人）在本体厂商客户中的占比有所提升。与本体厂商的合作也体现在联合地方政府共建素材中心等场景，而 在实际进入工厂或用于对外展示的机器人上，安装灵巧手的比例仍然较少。</p>
+<ol><li>灵心巧手在灵巧手的供应链现状如何？</li></ol>
+<p>供应链主要包括几个部分。结构件有指定的生产商，但需对产出零件的公差进行筛选复查。线性执行器（电缸、电机）的软件部分自研，硬件部分与合作伙伴共同研发，板卡生产没有问题。触觉传感器主要由新纳传感或华威科供应，这两家供应商具备稳定的指尖皮肤生产能 力。装配环节有两三家具备能力的代工厂。目前供应链的主要瓶颈在于，尽管代工厂具备装配能力，但产成品的整体稳定性仍有待提高。</p>
+<ol><li>灵巧手的成本构成中？哪些零部件占比最高？</li></ol>
+<p>成本占比最高的部分是线性执行器，即电机部分。其次是结构件、线束以及主控PCB板。由于目前仅在五个指尖安装传感器，因此触觉皮肤部分的成本排在第三。</p>
+<ol><li>灵心巧手是否自研零部件？</li></ol>
+<p>在零部件自研方面，目前没有完全自研的部件。线性执行器属于部分自研，其软件为自研，但硬件结构非自研。触觉皮肤为纯外购。线束和PCB板这类无技术壁垒的部件，谈不上自研。</p>
+<ol><li>灵心巧手灵巧手在2025年的销量情况以及2026年的销售预期是怎样的？</li></ol>
+<p>2025年，灵心巧手实际交付的灵巧手总量接近3,000只。其中，产生销售收入的约2000只，其余近1,000只是由于产品在一年质保期内损坏，灵心巧手提供免费换新服务而交付的。</p>
+<p>展望2026年，预计收入增幅高于数量增幅的原因在于，预计2026年的出货将有一部分来自单价较高的O30型号。</p>
+<ol><li>目前灵心巧手在国内灵巧手市场的销量排名如何？</li></ol>
+<p>根据不完全统计数据，仅从销量维度看，灵心巧手在2025年国内市场大致排在第2至第4名的区间。可以确定的是，因时科技的销量高于灵心巧手，而强脑科技的销量与灵心巧手大致相当。</p>
+</div>
+</main>
+</body></html>

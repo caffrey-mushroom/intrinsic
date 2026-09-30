@@ -1,0 +1,326 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.25 | TB | Software | Heaps.ai Expert</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.25 | TB | Software | Heaps.ai Expert</h1>
+<p class="orig">原标题：Heaps.ai</p>
+<p class="tags">#software</p>
+<p class="meta">Third Bridge · 2026-09-25</p>
+<div class="body">
+<p>Primer • 17 Sep 2026</p>
+<p><b>Expert</b> Former Senior Executive in Sales &amp; Marketing</p>
+<p><b>Aastha Mahajan (Analyst)</b> — Third Bridge Sector Analyst</p>
+<h3>Agenda</h3>
+<ul><li>Over eight years' experience in the healthcare space</li><li>Over two years' experience at Heaps.ai (left within the last three years)</li></ul>
+<h3>Introduction</h3>
+<p><b>Analyst</b>: Please could you state either I agree or I do not agree to the following statement. You understand the definition of material non-public information and agree not to disclose any such information, or any other information which is confidential, during the Primer Interview today.</p>
+<p><b>Expert</b>: I agree.</p>
+<h3>Questions</h3>
+<h3>Could you describe what Heaps.ai does? What products and services does the company offer?</h3>
+<p><b>Expert</b>: Heaps.ai is an AI-driven longitudinal chronic care and post-discharge care management company. It works in the payer space and it works with hospitals across the globe. Heaps.ai is a health management and compliance management company. It works with hospitals, insurance companies across the world. With hospitals, it focuses on post-discharge and chronic care management. With insurance companies, it focuses on long-term care management and risk management for all the insured members.</p>
+<h3>What would you say is the core value proposition of Heaps?</h3>
+<p><b>Expert</b>: The core value proposition of the company will be using AI and ML to create a longitudinal healthcare plan for individuals, personalised with all the chronic conditions in the picture.</p>
+<h3>What would you say is the full range of customers, industries and businesses that can use Heaps's products and services? What might be the company's TAM?</h3>
+<p><b>Expert</b>: With respect to the total range of Heaps's services, Heaps can work with insurance companies, hospitals and corporates. It's a B2B company. The total TAM would be anywhere close to USD 50bn-60bn.</p>
+<p><b>Analyst</b>: How much of Heaps's revenue comes from customer profiles, such as companies, hospitals and corporates?</p>
+<p><b>Expert</b>: The majority of Heaps's revenue comes from insurance companies. Heaps works with almost all the top insurance companies in India. It has a strong presence in South Africa. It started its work in the UAE and the Middle East. In the last couple of years, Heaps is clocking anywhere from USD 2.5m-3m. 81-90% of the revenue comes from insurance companies.</p>
+<h3>Could you profile Heaps's typical target customers within the discussed range? What's the size of insurance companies?</h3>
+<p><b>Expert</b>: As I said, in India, if we talk about the Indian competitive landscape, Heaps works with seven of the top 12 companies. The average number of lives that insurance companies manage is anywhere between 50,000 and 5 lakh. For example, Aditya Birla manages 4 lakh-5 lakh people. Bajaj manages around 2 lakh-3 lakh people. The average number of lives that insurance companies manage is between 50,000 and 5 lakh. More than 5 lakh, I would say. I mean, it can be 10 lakh-15 lakh, depending if every year the number of people is increasing who are getting insurance. It is anywhere from 5-10 lakh, yes.</p>
+<p><b>Analyst</b>: What makes the company's customer sweet spot within the 50,000 and above range?</p>
+<p><b>Expert</b>: For Heaps, obviously, the bigger the company, the better it is. Because as far as the sweet spot is concerned, since they charge per life managed, even if it is a 50,000 insurance company, with 50,000 lives, INR 50,000 premiums, it is okay with them. Even if it's a company which is managing 10 lakh people or, I would say, INR 10 lakh premium, that is okay with them. In my opinion, it is irrelevant for them.</p>
+<p><b>Analyst</b>: What type of customers does the company deal with in hospitals and corporates?</p>
+<p><b>Expert</b>: Heaps is focused more on corporate hospitals. For hospitals, the product that Heaps was selling was post-discharge care management, where every hospital size that Heaps was targeting is worth more than 200 beds. When I say 200 beds, for a 200-bed hospital, we are looking at an annual discharge capacity of around 8,000 patients. That is the average size of the hospital that Heaps was focusing on. Since they are corporate hospitals, if you get one corporate hospital chain, then you can eventually manage all their beds. For example, if Heaps were partnered with Max Hospital, Heaps would be able to manage 20,000 beds. When I say 20,000 beds, it means that Heaps would be managing around 2 lakh-3 lakh patients after discharge every year.</p>
+<p><b>Analyst</b>: What might be Heaps's customer acquisition channels?</p>
+<p><b>Expert</b>: Heaps always worked directly with all the channels. Heaps did not have channel partners. Heaps had small channel partners, especially abroad, where Heaps did not have a foot on the ground. But in India, they did not work with any channel partners.</p>
+<h3>What would you say are the key countries that Heaps gets revenue from? What might be the revenue contribution from each region?</h3>
+<p><b>Expert</b>: India. 71-80% of Heaps's revenue comes from India.</p>
+<p><b>Analyst</b>: What might be the other countries?</p>
+<p><b>Expert</b>: South Africa.</p>
+<p><b>Analyst</b>: How much of Heaps's revenue comes from South Africa?</p>
+<p><b>Expert</b>: 11-20%. The rest comes from the UAE and Oman. I think they also work with hospitals. You mentioned the UAE already. So, Middle East, yes, is right.</p>
+<p><b>Analyst</b>: Would you say that the Middle East contributes 0-10%?</p>
+<p><b>Expert</b>: Yes. Of course.</p>
+<p><b>Analyst</b>: What might be the top 2-3 Indian cities for the company?</p>
+<p><b>Expert</b>: All the insurance companies. If you're talking about revenue, insurance companies are predominantly based out of Delhi, Gurgaon and Delhi NCR and Bombay. Only one insurance company, Bajaj, is based out of Chennai. Rest all insurance companies, ICICI Lombard, Aditya, ManipalCigna in Noida. 81-90% of Heaps's insurance revenue comes from insurance companies which are based out of Mumbai or Delhi NCR.</p>
+<h3>What would you say are Heaps's core revenue-generating segments? What offerings, products or software does the company offer? What percentage of revenue comes from each segment?</h3>
+<p><b>Expert</b>: As I said initially, Heaps has two products. One is a post-discharge care management product. Post-discharge, in short form, you can [say] PDCM. PDCM contributes to 81-90% of the revenue that comes from hospitals. If you're [asking] it in terms of contributing to the whole revenue, then [it is] 0-10%. Another is health compliance and risk management. HCRM, health compliance and risk management.</p>
+<p><b>Analyst</b>: Might the HCRM [health compliance and risk management] segment contribute the remaining 91-100%?</p>
+<p><b>Expert</b>: Yes. This is the product they sell to insurance companies.</p>
+<h3>What would you say is the typically observed revenue model for each of Heaps's segments, starting with the HCRM [health compliance and risk management] product? Is it transactional [one-time payment], reoccurring [unpredictable yet on a regular basis] or recurring [fixed contract or a subscription-based model]?</h3>
+<p><b>Expert</b>: It was not a fixed-fee model. It was bifurcated into two parts. Like any product that you sell to insurance companies and hospitals, obviously, the number of people that it is impacting will vary. So, the clients, especially companies like Heaps.ai, will have a model where there will be fixed fees plus variable fees. I would say it's a recurring model. It can go up and down. It is not a fixed-fee model.</p>
+<p><b>Analyst</b>: What might the variable fees be dependent on other than the number of people?</p>
+<p><b>Expert</b>: HCRM variable fees, especially with insurance companies, will depend on what your output is, what is the qualitative output. For example, if you promise that you will reduce admissions by 0-10% in a particular category. In spite of your intervention, if you could not reduce it by, let's say, 6-10%, you fall below the committed 0-5%, then you will not be able to get the 91-100% of the variable fees that we agreed.</p>
+<p><b>Analyst</b>: Might most of the revenue come from fixed fees that the company offers or is it from variable charges?</p>
+<p><b>Expert</b>: It's the fixed fees. Since it is a decent-sized company, I would say it's fixed fees.</p>
+<p><b>Analyst</b>: Is there a minimum contract in place? Is it a monthly payment? What are the payment terms?</p>
+<p><b>Expert</b>: Terms of payment is monthly always.</p>
+<p><b>Analyst</b>: What might be the revenue model for PDCM [post-discharge care management]? Might it be the same?</p>
+<p><b>Expert</b>: Yes. Terms of payment, both the products, always monthly.</p>
+<h3>Could you discuss a use case for each of Heaps's segments? What product is the company offering? What does the product do for customers, starting with HCRM?</h3>
+<p><b>Expert</b>: Health and compliance risk management, I would say. From a layman's interpretation, you would understand that it is compliance and risk management for the people who are using that particular insurance. Heaps.ai helps insurance companies reduce hospitalisation and readmissions of the patients who are users of that insurance company. I'll give an example. Now, if I have Care Insurance and I am 42, I have been paying my premium for the last five years. By God's grace, I have not been coerced to use the insurance because I have never been hospitalised. As an insurance company, whatever premium that I'm paying per year is not being spent because whatever [someone else] is paying for the last 10 years, since [they] have never been hospitalised, I didn't have to pay a penny to [them], which is the best-case scenario for the insurance company. Heaps.ai helps the insurance company to manage people like [them] based on the risk factors [that they] have right now, which will eventually lead to hospitalisation. When Heaps.ai uses AI to manage [someone's] life, the only purpose of that management is to reduce their chances of hospitalisation. Because if they get hospitalised, whatever his insurance plan is, let's say their plan is of INR 10 lakh, he will use that INR 10 lakh or he will use INR 5 lakh.</p>
+<p>Then, the insurance company has to pay the hospital. That's where Heaps.ai helps Care Insurance that "We'll make sure that people like [them] do not get hospitalised." That is the main goal of health and compliance risk management. How do they do it? They use AI and run an algorithm across all the people who are using Care Insurance. They have a proprietary risk stratification algorithm, which tells Heaps.ai that out of 15,000 Care Insurance users, these 5,000 people are at higher risk of hospitalisation. They have not been hospitalised yet, but they are most likely to use hospitalisation resources. Then, what they do is proactively reach out to the insured people like [them] and tell them that I'm calling from Care Insurance company. We have seen that your risk level has increased significantly in the last three months. We have a certain intervention plan. We have a certain consultation. We have planned consultations with, let's say, an onco surgeon diabetologist. Please attend those consultations and make sure that you do not fall sick. If you do not fall sick, you will not be hospitalised. That is the number one goal. Heaps.ai provides this dashboard, these analytics to caller from Care Insurance company that please use my software and call [person A] and whatever, however, we are guiding you in the software, please stick to that protocol.</p>
+<p><b>Analyst</b>: What data does the stratification algorithm use?</p>
+<p><b>Expert</b>: They have the risk stratification in Heaps.ai as proprietary stratification. They use AI and so they have access to a lot of databases. This is clinically valid. I would not say that it's a clinically validated risk stratification. They have their own proprietary scoring algorithm. Answering your question, what data do they use? They use all the data that the insurance company has access to. For example, if I bought Care Insurance company, Care Insurance must have asked me to do all the blood tests, all the routine checks so that they would decide my premium. All this data gets fed into the Heaps.ai system and then my risk is calculated by Heaps's scoring algorithm.</p>
+<p><b>Analyst</b>: Could you discuss a use case for PDCM [post-discharge care management]?</p>
+<p><b>Expert</b>: Post-discharge care management is a product that is completely focused on hospitals. How it helps hospitals and what it promises to the hospital is that, post-discharge, they do not know where the patient is going in 91-100% of cases. For example, if I get a knee transplant, let's say, in Kokilaben in Bombay. After my knee transplant, I was discharged after two days and then I went back home. On the fourth day post-discharge, I was just trying to stand up on my knee, but I got a fever and I got an infection in my wound. I don't know what to do. What Heaps.ai does is that after every discharge, the discharge summary of the patients gets uploaded into the Heaps.ai database. Heaps.ai database then uses AI and ML to create a customised recovery plan for [Person A], which means that even after getting discharged from the hospital, [they] will get health and management guidance from Kokilaben, which is, right now, not the case.</p>
+<p>How it helps hospital? Kokilaben home care coordinator or care coordinator is getting all the dashboard. [Person A] was discharged one week ago. Now I have called to check up on [they]. Now [they] are telling me that I have a fever. In the dashboard, the post-discharge care management dashboard, which is open in front of the care coordinator of Kokilaben, she just sees that, "Okay, if the patient has a fever, it's an emergency. Please raise an alarm." She flags that this patient was discharged 10 days back, has a fever and raises the alarm to the ambulance team of Kokilaben that this patient needs to be admitted immediately. If the alarm is not raised, if there's no intervention, the hospital never gets to know that the patient, after discharge, could not recover well. That is point number one. Point number two, if my fever goes out, then I will be getting admitted in Kokilaben Hospital again, which means then I am a readmission. Readmission is bad in quality. It's a bad indicator of quality. I would say, it's like the surgeon has flunked in the exam.</p>
+<p><b>Analyst</b>: Might there be any manual processes within the HCRM segment that are needed post-AI integration or does AI do risk calculations on its own?</p>
+<p><b>Expert</b>: No. The tech, everything with respect to planning and the risk algorithm, is done by the technology, AI. The only human interface needed is somebody to call the patient and coordinate accordingly. With respect to the planning risk, populating the data, creating a risk score for every individual is done by AI. There's no human intervention.</p>
+<h3>Which of Heaps's two segments – HCRM and PDCM [post-discharge care management] – in your opinion, could be the fastest growing and the big opportunity for the company in future?</h3>
+<p><b>Expert</b>: I just had a shadow of a doubt. Because all the insurance companies globally are struggling with people getting admitted. They would want people admitted so that they can pay money. That's where Heaps.ai has a better future. That's why, even in South Africa, their 91-100% revenue is HCRM. PDCM is for hospitals that are very quality-driven. But we both know how many hospitals in India actually care about quality.</p>
+<p><b>Analyst</b>: Might the entire platform be proprietary to Heaps?</p>
+<p><b>Expert</b>: Yes.</p>
+<p><b>Analyst</b>: Might it be managed in-house?</p>
+<p><b>Expert</b>: Yes.</p>
+<h3>What would you estimate Heaps's NRR [net revenue retention] rate to be – less than 80%, 80-90% or higher, up to more than 120%?</h3>
+<p><b>Expert</b>: I think the churn rate for the insurance company is pretty low. To show actual impact, I think it would be around 80-90%.</p>
+<p><b>Analyst</b>: What might be the current NRR rate? How much revenue is the company able to get from customers over the time period?</p>
+<p><b>Expert</b>: Yes. That's what I'm saying. It's 80-90%.</p>
+<h3>What do you believe are the key drivers of Heaps's NRR?</h3>
+<p><b>Expert</b>: Key drivers, insurance companies. I would say the insurance company has pretty good client relationship management. I would say customer satisfaction. They have very solid people, programme managers. One is relationship management, for sure. Second one is that before they sign a contract, they do a pilot and their average contract length is around two years. So, if an insurance company uses a platform to actually reduce their expenditure, they would not generally switch after two years because it will take another two years for them to settle down. So, it is not organic to Heaps always. It can be with any company. I think the key drivers of better NRR are customer satisfaction and, how do I put it, I think, limited competition. Although they have competition, I am pretty sure that with respect to the HCRM space, there's not a lot of competition in the insurance payer space.</p>
+<h3>Could you specify the industry that, according to you, best describes Heaps? What industry might the company be a part of?</h3>
+<p><b>Expert</b>: I think it's a digital health SaaS. Healthtech SaaS, you can call it.</p>
+<h3>What would you say the healthtech SaaS market's AAGR has been over the past three years?</h3>
+<p><b>Expert</b>: I think the last two years have not been very great, so I don't think it has grown recently. I think it would be 6-10%, because there's too much focus now on medical devices and software, digital health apps.</p>
+<h3>What do you believe have been the key drivers of the historical 6-10% market growth?</h3>
+<p><b>Expert</b>: With respect to the key drivers in the healthtech SaaS space, better adoption by insurance companies, payers and providers, internet expansion, because the whole point for any digital health company is to reach the patient. If the patient is not tech-savvy, there's no point in having a digital-led product because if hospitals buy PDCM and the patient is not coordinating on the phone through WhatsApp and sending a picture of the infection they have in the wound, it doesn't matter because then you do not know what infection it is. So, I think the main driver would be adoption of technology by conventional players like hospitals and insurance companies. Two is internet usage by more and more patients.</p>
+<h3>What do you believe could the market's AAGR be over the next three years in percentage ranges?</h3>
+<p><b>Expert</b>: I think it won't be more than 6-10%. I don't think it will grow in 10 years. It's not growing, yes.</p>
+<h3>What do you think could be the key drivers of future market growth?</h3>
+<p><b>Expert</b>: AI and diverse data. Because now all the tech companies have access to a lot of diverse streams of data and with AI, they can definitely push digital health products, especially with hospitals and insurance companies. Now insurance companies have their own apps, for that matter. Who would have thought that Bajaj would have their own app where you can book second opinions. I think AI and more structured and wider range of data.</p>
+<p><b>Analyst</b>: Could you elaborate on the diverse data that you mentioned?</p>
+<p><b>Expert</b>: I said more structured and a wider range of data. What that means is that if a digital health company, let's say, like Heaps.ai, for example. If Heaps.ai wants to focus on reducing hospitalisation because of cancer, maybe Heaps.ai will tell Bajaj Allianz or let's say, Aditya Birla Group that, "Hey, this patient has comorbidity, like diabetes, hypertension and he is a chain smoker." It comes from diverse data and then AI will be used to figure out whether this patient is at higher risk of getting cancer and what the risk is. Do we need immediate intervention since he's 55 or can we wait another 2-3 years because our focus is on people who would need immediate intervention?</p>
+<h3>What would you estimate the adoption rate to be for healthtech SaaS across the TAM?</h3>
+<p><b>Expert</b>: 50-60% of insurance companies in India. The top 12 are using Heaps.ai or any competitor like Zyla Health and all. So, yes, 50-60%.</p>
+<h3>To what degree do you think the healthtech SaaS industry is correlated to economic cyclicality? Is it counter-cyclical, very cyclical, somewhat cyclical, somewhat resilient or resilient?</h3>
+<p><b>Expert</b>: I look at this from the investment perspective. Five years back, the economy before COVID, even Heaps.ai raised investment around COVID on value just before the second wave of COVID. I think I wouldn't say that it is resilient.</p>
+<p><b>Analyst</b>: How might the demand for similar solutions in the market be affected by an economic downturn?</p>
+<p><b>Expert</b>: I would say it's somewhat resilient. I do not think hospitals and insurance companies stop buying solutions like Heaps.ai.</p>
+<p><b>Analyst</b>: Why would you say the market is somewhat resilient and not resilient?</p>
+<p><b>Expert</b>: Because, in healthcare, there are three main Ps. One is payers, one is provider, another is pharma. The patient is at the centre of all these Ps. If there's an economic downturn, a patient might not be able to afford surgery in a bigger hospital, but there are enough hospitals and enough insurance companies that can provide services to the patient. As far as insurance companies and hospitals are concerned, even if there's an economic downturn, it will not reduce their willingness to spend on technology, which, again, is a subset of how technology has helped them before the economic downturn. So, in my opinion, it is somewhat resilient. Since it is not a tech, it's not a device investment. For example, if I buy an INR 50 crore machine and then I'm not getting patients to treat it, then it's a loss for me.</p>
+<h3>Based on public information, what impactful technological evolutions or innovations should we anticipate in the market over the next 3-5 years?</h3>
+<p><b>Expert</b>: I'll speak from the hospital's perspective and I'll come to the insurance part. Now, with hospitals, the technological evolution will be in the field of screening diseases early. Early detection of problems or diseases or let's say conditions. That is the technological evolution that's there. A lot of data mining, AI and correlation, AI and ML will come and help hospitals figure out which patients are most likely to get a stroke or cancer or any condition, for that matter. That is one area that will catch a lot of eyeballs.</p>
+<p>Another one for insurance companies is, "How do we integrate IoT devices with insurance?" For example, if I have an Apple Watch and I have a tie-up with Care Insurance and if Care and Apple Watch tie up, Apple Watch will be sharing all my data insights, all my workout, heartbeat, all my workout data with Care Insurance and Care Insurance then automatically will keep on looking at my heart rate so that whenever if there is an abnormality, they can reach out to me as my insurance provider that, "[Person A], we have noticed that you are not well." There's a lot of research which is being done and there's a lot of potential for insurance companies to collaborate with the IoT space where, in a nutshell, it helps insurance companies track and manage the personal health of all the insured members. I think it's very technical, but I hope you got my point.</p>
+<p><b>Analyst</b>: Are there any use cases for AI in the healthcare SaaS space?</p>
+<p><b>Expert</b>: Most of Heaps's revenue comes from insurance companies because, with hospitals, they do not make money because hospitals are not great paymasters. There are two use cases for all the companies that are similar to Heaps.ai, be it in India or abroad. The first and foremost solution that they can provide using AI is to reduce the risk of hospitalisation and that's where insurance companies make money. I think that is the only area where they can make a lot of money. That's where AI is being used generally with respect to Heaps and other contemporary companies. Another area where I think that AI can help insurance companies, where Heaps and other companies focus more, is on taking care of patients after discharge, which obviously is an extension of post-discharge care management. But Heaps.ai do not use post-discharge care with insurance companies because it's a low-ticket size. Because if you give me a chance to manage the lives of 15,000 people who are insured or manage 5,000 people who just use my insurance membership to pay at their discharge, I'll take 50,000. So, where AI can be used more frequently.</p>
+<h3>Do you see any downside risks or risk factors that might impact market growth over the next three years?</h3>
+<p><b>Expert</b>: Risk factors for the market? I'll talk about India. For insurance, I think risk factors would be that, in spite of all the innovation and awareness, the uptake of people who are insured, the TAM has not been great for insurance companies. India is still hovering at 0-10% insurance coverage, which is very poor. The biggest risk factor, in my opinion, is that still the perception of people has not been pro-insurance. That is a bigger risk factor because if I'm Heaps, if I'm projecting that in the next five years, I will manage, let's say, from seven insurance companies, I'm managing 50,000 lives, for example, per month. But I expect myself to be managing 5 lakh lives in five years. But it depends on how many people actually go and buy insurance.</p>
+<p>The biggest risk factors here with insurance companies will be determined by how insurance adoption is in the public domain, which is, again, driven by what the premium is, how much insurance companies are trying to squeeze per month from the patient, from the subjects, which anyway is difficult for a price-sensitive country like India. That is one. Another point is that insurance is a very regulated market. Let's say tomorrow if IRDAI does not allow an insurance company to share the data with a third party, although anonymised data with a third party like Heaps.ai, even though it's anonymised, they might say that "You don't need to. You cannot share this because it's very sensitive data." It is giving too many insights. So, maybe Heaps.ai can sell this data to pharma companies. If a new regulation comes and this is a very regulated field, you never know what the regulation would be. So, it's very uncertain.</p>
+<p>But my last point here is that with respect to hospitals, which again is an under-tapped market. Hospitals, again, most of the hospitals in India are now becoming venture-backed or PE-backed. They do have enough appetite and enough resources at their end to create a tech product like Heaps.ai. If you do not sell at the right point in time, you will be replaced by an IT team at a hospital. That is the risk that you have to keep in mind.</p>
+<h3>How fragmented do you consider the healthcare SaaS market to be? Is it a monopoly? Are there 2-5 strong players? Is it fragmented or highly fragmented?</h3>
+<p><b>Expert</b>: It will always be relationship-driven, so it will be 2-5 strong players.</p>
+<h3>Who would you say are Heaps's top 2-3 direct competitors?</h3>
+<p><b>Expert</b>: I think the number one competitor of Heaps is Zyla Health. Innovaccer, but Innovaccer does not necessarily work in insurance companies. Let's just focus on Zyla, then I'll probably recall similar companies.</p>
+<p><b>Analyst</b>: Could you mention any other player for the discussion?</p>
+<p><b>Expert</b>: With insurance companies, I don't think so. With hospitals, you can say there's a company called Innovaccer. Innovaccer is USA-based. Innovaccer does work with hospitals, mainly. It's a post-discharge company.</p>
+<p><b>Analyst</b>: Might it be only for hospitals?</p>
+<p><b>Expert</b>: Yes.</p>
+<h3>What would you say are Heaps, Zyla Health and Innovaccer's relative market shares, in percentage ranges?</h3>
+<p><b>Expert</b>: For this particular market, Heaps is leading without a shadow of doubt. Heaps's market share would be 51-60%. Zyla has two insurance companies out of major 14, so it would be 21-30%.</p>
+<p><b>Analyst</b>: What could be Innovaccer's market share in India?</p>
+<p><b>Expert</b>: In India, their market share should be less than 5%.</p>
+<h3>What was each player's revenue for the last year – USD 0-50m, USD 50m-100m, USD 100m-200m or more?</h3>
+<p><b>Expert</b>: Heaps's revenue last year was USD 0-50m.</p>
+<p><b>Analyst</b>: What was Zyla's revenue?</p>
+<p><b>Expert</b>: USD 0-50m.</p>
+<p><b>Analyst</b>: What was Innovaccer's revenue?</p>
+<p><b>Expert</b>: They have different products as well. I think they are bigger than Heaps.ai and Zyla Health because they are USA-based. I have to look into that also. But I think their revenue will be USD 0-50m in their Indian entity, I'm saying.</p>
+<h3>What was each player's revenue growth rate for the last year in percentage ranges? Could you start with Heaps?</h3>
+<p><b>Expert</b>: 6-10%. Zyla has grown remarkably well. More than 20%. [Innovaccer's] growth rate would be, last time I saw, 0-5%.</p>
+<h3>Would you say that each player's growth has been organic, M&amp;A-based or mixed, starting with Heaps?</h3>
+<p><b>Expert</b>: Organic. Zyla, organic. They have not acquired anybody. [Innovaccer has] grown mixed. They have acquired a few people.</p>
+<h3>What would you say is the generally observed EBITDA margin for the market in percentage ranges?</h3>
+<p><b>Expert</b>: 0-10%.</p>
+<h3>Might each player's margin be in line with, above or below the 0-10% industry EBITDA, starting with Heaps?</h3>
+<p><b>Expert</b>: It cannot be above. It has to be below or in the same range, on industry, yes. Zyla, they're not doing any. Yes, on industry. [Innovaccer is] doing better. They are above the industry.</p>
+<h3>How do you think each player differentiates itself? What are the differences between the two product offerings? What are each player's USPs, starting with Heaps?</h3>
+<p><b>Expert</b>: The pricing model is the same. Heaps works with hospitals. Zyla does not. Zyla works with pharma. Heaps do not.</p>
+<p><b>Analyst</b>: What product does Zyla offer? What does the product do?</p>
+<p><b>Expert</b>: Zyla offers chronic care management, which is similar to health and compliance risk management. So, the product is very similar.</p>
+<p><b>Analyst</b>: Does Zyla also partner with similar insurance companies?</p>
+<p><b>Expert</b>: Yes. They do more work with corporate insurance companies. With corporate, what they do, they allow corporates to manage end-to-end care of their employees. They are like a medical broker firm, an insurance broker firm. If you really want to dig deep in Zyla and Heaps.ai, major revenue comes from insurance companies. Zyla, most of their revenue comes from pharma and corporate. That is the major difference. In terms of breadth of products, Heaps.ai has two products. Zyla also has two products. In terms of pricing model, they are both digital healthtech products, subscription-based products. Their target customers' approach is very similar. Their approach is that they do not have a channel partner, in fact. Because with insurance and hospitals, you cannot have a channel partner.</p>
+<p><b>Analyst</b>: What are the key features of Zyla that make it stand out against Heaps? What could be the company's USPs?</p>
+<p><b>Expert</b>: As I said, Zyla focuses more on chronic care management platform, where Zyla is focused on, let's say, diabetes, kidney, heart, liver. It's a long-term care platform where the whole ecosystem is provided, where Zyla has dietitians, where Zyla has mental healthcare experts to do interventions. Heaps does not have these dietitians. They do not provide intervention services. They provide a dashboard and coordinating platform which can be used by teams from hospitals and insurance companies to provide services. Zyla has those people who can provide services. So, Zyla is a delivery platform as well. Heaps is not. Heaps is a tech platform.</p>
+<p><b>Analyst</b>: Does Zyla's risk and compliance management differ from Heaps?</p>
+<p><b>Expert</b>: No. Fundamentally, no. But as I said, Zyla does have in-house people who can provide services. Heaps do not have in-house people who provide them. They guide hospitals and insurance companies that these are the services that need to be provided; please go and provide them.</p>
+<p><b>Analyst</b>: What are Innovaccer's differentiating factors? What does the company's product offer? What are its USPs?</p>
+<p><b>Expert</b>: Innovaccer, obviously, I would say, is a detailed, is a better product with more products to offer to the industry. But with insurance companies, it is very similar to Heaps.ai, where they want to improve outcome from the patient and move the industry to value-based care, where they want to improve the patient's life so that their hospitalisation gets reduced. But they also have solutions for hospitals, as Heaps.ai does. But the majority of hospital revenue comes from the USA because they are a US company. They also have software for pharmacies. With respect to breadth and quality, they are obviously superior to Heaps and Zyla Health. With respect to their tech capability, they are better than Heaps and Zyla Health. In India, their focus is more on hospitals, not on the insurance companies. Because all the insurance companies mostly work with Heaps and Zyla.</p>
+<h3>What would you say are customers' top three KPC [key purchasing criteria]? How does each rank by importance? Customers are insurance companies.</h3>
+<p><b>Expert</b>: Data security. The first one because, obviously, it's a digital health company. Data security will be obvious. The first one is clinical validation. The second one will be data security.</p>
+<p><b>Analyst</b>: What might be the third KPC?</p>
+<p><b>Expert</b>: I think it'd be price. Price, yes, cost to the insurance company.</p>
+<h3>How important would you say is price to customers in the healthcare SaaS market? Is it commoditised [very important], somewhat commoditised [somewhat important] or not commoditised [not important]?</h3>
+<p><b>Expert</b>: It is important because if I have to, if I'm giving a licence to Heaps to manage 5 lakh lives and if Zyla comes to me and tells me that I'll probably improve from the baseline and I'll charge INR 100-200 more, I'll give it to Zyla. Because as I said, both the companies have that basic clinical validation. They do have a history of working with insurance companies. I think it comes down to price in the end.</p>
+<h3>What would you say is the industry's average annual churn rate for healthcare SaaS?</h3>
+<p><b>Expert</b>: 10-20%. Very rarely do people change these companies because there's too much integration that goes into the background. It will take another 2-3 years to find somebody, a new vendor and integrate.</p>
+<p><b>Analyst</b>: Would you say it's 11-15% or 16-20%?</p>
+<p><b>Expert</b>: 16-20%.</p>
+<h3>How would you say Heaps's churn rate compares to the industry's? Is it above, in line with or below the industry?</h3>
+<p><b>Expert</b>: Heaps is doing well. It's above the industry.</p>
+<p><b>Analyst</b>: Does the company have a higher churn than the industry?</p>
+<p><b>Expert</b>: No. Below industry. In the last four years, they only lost one insurance client.</p>
+<h3>What do you think has been the key driver of Heaps's historical growth?</h3>
+<p><b>Expert</b>: First-mover advantage in value-based care.</p>
+<h3>How fast do you think Heaps could grow over the next three years?</h3>
+<p><b>Expert</b>: Not more than 10%, 6-10%.</p>
+<h3>What could be some of the most interesting ways to grow Heaps? How would you look at improving the company's organic growth if you were running it?</h3>
+<p><b>Expert</b>: Collaborating with different stakeholders in digital health, like IoT companies, personalised IoT. I would say maybe go B2C as well.</p>
+<p><b>Analyst</b>: What offering should the company provide in the B2C segment?</p>
+<p><b>Expert</b>: If you are improving the lives of people, reducing hospitalisation without making a brand for yourself, you're doing it on behalf of the insurance company. "Why don't you build an app?" Build a platform where the hospitals and the individual doctors can eventually enrol patients and use our technology to manage the patients and we will probably charge them per patient.</p>
+<h3>What would be something you'd want to do for Heaps's margin improvements?</h3>
+<p><b>Expert</b>: I think operational efficiency, of course. I think that if tech is more robust, it reduces your operating expenses as well. It takes you away because if you invest more in tech, your efficiency gets better. You can churn out more data, more insight in less time with less optimal intervention. I think if you develop the product, you can definitely work on operational efficiency.</p>
+<p><b>Analyst</b>: What would you want to change to curb operational expenses?</p>
+<p><b>Expert</b>: When you say that I want to reduce the expenditure, what I meant was that there are a lot of avoidable expenditures on human capital that can be offset by investment in the tech. For example, I'll give you an example to throw more light on it. Five years back, I had four people to actually call the patients and remind them that they have a chemo appointment. They were cancer patients. Now I have an AI agent. I do not need four people. These AI agents will call, monitor, understand the response and act accordingly. When I say margin improvement, there's a lot of scope with respect to any digital health company in operational efficiency, by reducing the manpower cost.</p>
+<h3>Based on publicly announced acquisitions, how would you describe Heaps's M&amp;A strategy? Has the company carried out any M&amp;A? Has it been opportunistic or growth-related?</h3>
+<p><b>Expert</b>: They have not done any.</p>
+<p><b>Analyst</b>: Why has the company not actively looked at M&amp;A?</p>
+<p><b>Expert</b>: Because a B2B company with decent technology, I'm sure they did not find anybody good. But that's where the opportunity is. They have missed out on the opportunity because then they would have made the canvas bigger.</p>
+<h3>In your opinion, could it make sense for Heaps to acquire, merge with or be acquired by any companies in or outside the space? If so, which one of the three makes the most sense?</h3>
+<p><b>Expert</b>: There are a lot of digital health companies globally. Innovaccer is one of the biggest and they have the more data capital. If I'm Heaps's founder and I get an opportunity and I want the bigger slice of the pie, I will definitely get acquired by Innovaccer if I get the opportunity. But as far as, since if you're talking about Indian context specifically, I think I would be very interested in collaborating or getting merged with a pharma, CRO companies, which does pharma research. Why not?</p>
+<p><b>Analyst</b>: Could you provide examples of any companies that you would want to look at?</p>
+<p><b>Expert</b>: I gave the example, Innovaccer. If they want to acquire Heaps, why not? That is one. There's a CRO company which work with pharma. For example, a company like Pi Health. Pi Health is a leading CRO company, works with a lot of pharma companies. There's Iqvia. We can probably work with Iqvia. Maybe get merged with Iqvia to generate more insight for the pharma.</p>
+<h3>What would you say are the 1-2 biggest risks faced by Heaps?</h3>
+<p><b>Expert</b>: Risks that Heaps initially faced and will, I think in my opinion, it has been facing is that Heaps, they do not solve the entire puzzle for the healthcare provider. For example, if I'm the owner of Bajaj Allianz, if you come and tell me that I'll identify the problem for you, you go and manage it on your own. Then, I have to find the third player who will go and manage it as per insights from Heaps.ai. The biggest risk is that somebody like Zyla will come and solve the whole puzzle for the client and they will eventually move to somebody who will take the whole problem for them, who will take the, who will bite the whole bullet for them. That is one risk. Another risk with insurance companies is that insurance companies, somewhere down the line, they know that they have good data insights and can be smart in-house also. All the US insurance companies, sooner or later, they will develop in-house data intelligence and they will not need a third party like Heaps.ai. Because risk profiling and risk stratification are not an innovation anymore. There are a lot of people who do it. There are doctors who can do it. They might not be doing it with AI. But eventually, they will, AI come and they can do it themselves.</p>
+<h3>In your opinion, is there anything that the market doesn't understand about Heaps? Are there any misconceptions about the company?</h3>
+<p><b>Expert</b>: I think the misconception the market has is that Heaps.ai does 100% of its work through AI, if not. The only time AI is being used is to create a plan for the patient and then it becomes a CRM. The usage of AI here is only 21-30% of the product. 71-80% is normal flow, normal Excel, I would say, which can be done by anybody. That is one. It is the case with any other healthtech start-up. AI is not 100% or 71-80% of the work. AI is only, I would say, for glamour part of it. That is one misconception, which is a negative misconception. The positive misconception, I would say, which I think the market could look at Heaps.ai is managing 50,000 lives. If you really want to develop an insights company where you want to know how patient profiling, patient pooling, patient risk mitigation are done, Heaps is a very good company to work with. If you really want to know how patient profiling is done in the country, it is the best company to work with. These are the two misconceptions, I think, in the market that have somehow stalled the growth of the company, which I expect to be better.</p>
+</div>
+</main>
+</body></html>

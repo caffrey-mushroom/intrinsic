@@ -1,0 +1,194 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.23 | AC | Agents | Meta Muse Per-User VM Footprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.23 | AC | Agents | Meta Muse Per-User VM Footprint</h1>
+<p class="orig">原标题：一人一台云电脑：Meta Muse的资源占用与供应链影响拆解</p>
+<p class="tags">#agents #cloud</p>
+<p class="meta">AceCamp · 2026-09-23 · article 70567397</p>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>Muse为何要为每位用户常驻一台虚拟机；</li><li>内存、存储跟人数走，GPU跟用量走，如何拆解验证；</li><li>常驻成本相对免费层算力成本量级几何；</li><li>租用与自建CPU的费用和资本开支如何记账；</li><li>CPU与内存条数增量分别流向哪些厂商。</li></ol>
+<p>&gt; <b>Muse为每位用户常驻一台云端虚拟机，用户闲置时也占着内存与存储。这部分资源随人数增长，GPU随用量增长。全部常驻时，这层成本约为免费层算力成本的八成。CPU租建并行，资本开支只反映自建部分。CPU增量流向Arm，内存条数增量落在澜起科技。</b></p>
+<p><b>9月8日上线的Muse，给每位用户在云端配了一台专属虚拟机。</b>这台机器存放用户的全部数据，用户关掉应用后，它仍按计划继续工作。互联网服务过去的做法是许多用户共用一台服务器，Muse则为每个人单独保留一台。这样一台机器平时占用哪些资源，这些资源又会随用户数怎样增长，需要从Meta的公开披露里一项项拆开来看。</p>
+<h2><b>一、Muse按人配一台虚拟机，用户闲置时它也在占用资源</b></h2>
+<p><b>Muse分配资源的单位是人。</b>按Meta在9月8日发布的新闻稿，Muse运行在专属的Muse Secure VM上，每台虚拟机同时装着智能体和这位用户的数据。Meta研究院的技术博客进一步说明，每台虚拟机都是一台隔离的Linux机器，配有浏览器，存储、CPU与内存足以编译代码、运行并发的子代理和定时任务；这台机器是用户放进Muse的全部内容的主存储（system of record），第三方服务的凭证放在其中单独隔离的容器里，数据持续备份，并与Meta的广告系统隔离。Muse官网还写明，用户设定目标后，Muse会按计划并在相关事件发生时继续推进，关掉应用后照常运行。这几条放在一起，意味着虚拟机的状态必须跨越用户闲置的时段保存下来。这正是Muse与聊天类产品在资源占用上的分界点。</p>
+<p></p>
+<p><b>此前的智能体云计算按任务计量，沙箱随任务开启，也随任务回收。</b>Manus在2025年12月的官方博客中披露，上线以来累计处理超过147万亿个token，创建超过8,000万台虚拟计算机。粗略计算，每台虚拟机平均只对应约184万个token，据此推算其虚拟机基本按任务分配、用完即收。其他平台同样按用量计费：E2B的沙箱暂停后停止计费，恢复约需1秒；AWS AgentCore只对活跃CPU计费，单个会话最长运行8小时（两家官方文档与价目页）。在这种模式下，成本只在机器干活时产生。关于GPT-6 Astra的分析正是按任务小时测算，得出CPU约占智能体边际成本8%的结论，并指出沙箱行业正把会话数与物理核数拆开。</p>
+<p><b>按人分配把闲置时段带进了成本，而这一层成本还没有被计入。</b>笔者9月22日报告测算了免费层的算力成本，并判断Muse计量的token接近营销单位。测算中，用户结构为九成轻度用户每周约用200万个token、9%的核心用户约用1,000万个、1%的自动化用户用满1亿个；每名周活每月的算力成本约为1.8美元（按贡献者价）到13.7美元（按标准价）；周活达到1亿时，年化成本约为22亿到164亿美元。下文沿用这组数字，不再逐一注明出处。这组测算按E2B默认规格（2个vCPU、512MB内存）的小时价、每小时约处理150万个token，把虚拟机成本计为任务小时费用，隐含的前提是虚拟机只在干活时存在。按这一用户结构，周活用户平均每周工作约2.5小时，只占全周的1.5%；轻度用户约1.3小时，占0.8%。但Muse的设计要求状态在其余约98%的时间里继续保存。任一时刻仍留在内存里的虚拟机占全部虚拟机的比例，本报告称为常驻比例。Meta还没有披露这一比例，而这层成本的高低取决于它，它也是贯穿全文的核心变量。</p>
+<h2><b>二、每百万用户算一遍：内存与存储跟着人数走，GPU跟着用量走</b></h2>
+<p><b>GPU的需求取决于用户用了多少token，每百万周活约需600到2,000张H100等效卡。</b>按前述用户结构加权，每名周活每周约用370万个token。按每卡每秒3,000到10,000个token的有效吞吐（本报告假设，已计入利用率折损）估算，每百万周活约需600到2,000张H100等效卡。这个量级可以用两家大平台校验：1亿周活对应日均约53万亿个token，约为谷歌5月公布的日均用量（每月超过3.2千万亿个，折合日均约105万亿个）的一半，约为豆包6月日均180万亿个（火山引擎披露）的三成。由于Muse计量的token接近营销单位，GPU需求以区间表示。这一项的特点是随用量变化：用户数翻倍而人均用量减半时，GPU需求基本持平。</p>
+<p></p>
+<p><b>内存跟着常驻人数走：全部常驻时每百万周活约需4PB，只保留活跃并发时约0.18PB。</b>本报告假设每台虚拟机占用4GB内存，依据是浏览器、终端与凭证隔离容器需要同时留在内存里。全部常驻时，每百万周活约需4PB内存，约合6.25万根64GB RDIMM；三成常驻时约1.2PB；如果只保留正在工作的虚拟机，按峰值系数3计约0.18PB。两端相差二十多倍，差别全部来自常驻比例。换句话说，常驻比例定下来，内存需求也就定下来了。</p>
+<p><b>宿主机的容量由内存决定，CPU核按内存配齐。</b>一颗192核的Graviton5如果每个内存通道插一根64GB内存条（1DPC），共有768GB内存，约可承载192台4GB的虚拟机，正好每核一台。据调研了解，一个并发沙箱至少占用1到2个vCPU，约合一个物理核，与这一密度吻合。若每通道插两根（2DPC），单机可承载的虚拟机翻倍，每核约两台。但无论每通道插几根，一台4GB的虚拟机都对应十六分之一根64GB内存条。也就是说，内存条总数只取决于常驻人数与模组容量，每通道插几根改变的只是服务器台数。这一点在第五节讨论接口芯片时还会用到。</p>
+<p><b>存储跟着注册人数走，与常驻比例脱钩。</b>按每人约20GB（含连续备份，本报告假设）计，每百万周活约需20PB持久存储；虚拟机常驻与否，这部分都要长期保存。归纳起来，随用户数增长的是存储与常驻内存，随用量增长的是GPU，CPU则随唤醒时长增长。前序报告判断算力增量向CPU与内存外溢，本报告在此基础上把两者拆开：CPU的增量取决于用户用了多久，内存的增量取决于用户有多少。</p>
+<h2><b>三、这层成本有多大：全部常驻时，约为免费层算力成本的八成</b></h2>
+<p><b>全部常驻时，常驻层每名周活每月约1.5美元（自建）到10.4美元（租用），免费层算力成本则为1.8美元到13.7美元。</b>自建口径只计内存折旧。内存单价的推算过程是：Counterpoint数据显示，64GB RDIMM固定合约价从2025年四季度的450美元涨到2026年一季度的900美元以上；再按TrendForce公布的二季度通用DRAM合约价环比涨幅（58%到63%）与三季度服务器DRAM环比涨幅（13%到18%）推算，三季度约为1,600到1,730美元，折合每GB约25到27美元，本报告取每GB约25美元。4GB内存按5.5年折旧，粗略计算每月约1.5美元。租用口径取AWS上2vCPU、4GiB规格的t4g.medium实例，三年期EC2实例节省计划价每小时约0.0145美元（us-east-1），按每月约719个闲置小时计，约10.4美元。自建口径与贡献者价配对，租用口径与标准价配对，常驻成本与免费层算力成本之比分别约为0.83和0.76。这意味着，无论按内部成本还是按市场价格算，全部常驻带来的追加成本都接近免费层算力成本本身。</p>
+<p></p>
+<p><b>常驻比例降到三成时，追加成本约为免费层算力成本的两成多；降到一成时，约为8%上下。</b>常驻成本与常驻比例同比例变化：三成常驻时每月约0.45美元（自建）到3.1美元（租用），一成常驻时约0.15美元到1.0美元。技术上，压低常驻比例的条件已经具备：E2B的沙箱暂停后约1秒可恢复，Morph Cloud官方文档称其整机快照可在250毫秒内恢复。但Muse的后台任务按计划与事件触发，每次触发都要把虚拟机唤醒，触发频繁时常驻比例难以压低。所以常驻比例最终落在哪里，取决于Meta在唤醒延迟与内存成本之间的取舍。</p>
+<p><b>放到用户规模上，这层成本可以直接映射到Meta的资本开支。</b>1亿周活全部常驻时，常驻层年化成本约18亿美元（自建）到125亿美元（租用），而免费层本身的年化算力成本约为22亿到164亿美元。所需内存约400PB，按每GB约25美元计约100亿美元，约为Meta的2026年资本开支指引（1,300亿到1,450亿美元）的7%到8%。当前体量仍小：TechCrunch在9月21日引述的Apptopia估算（第三方数据，非公司披露）显示，上线第12天Muse美国移动端日活约64.2万。</p>
+<p><b>租约规模从另一侧给出了参照。</b>Meta向AWS租用的Graviton起步即为数千万核。按上一节的密度，每核约一台常驻虚拟机，这批核对应数千万台常驻虚拟机的承载能力，与Muse在千万级用户、全部常驻情形下的需求处在同一量级。公告没有说明这些核的具体用途，这一对照只能说明规模可比；Meta是否按全部常驻来设计，仍需看后续披露。</p>
+<p></p>
+<h2><b>四、这笔钱记在哪：租来的CPU进费用，资本开支只看得到自建部分</b></h2>
+<p><b>Meta已把一部分智能体的CPU负载交给AWS，这部分以第三方云支出计入费用。</b>4月23日，Meta与AWS宣布部署Graviton处理器，起步规模为数千万个Graviton核，并可随需求扩展。Meta在公告中称，智能体业务对算力的要求正在向CPU倾斜；AWS则称，智能体的兴起带来大量CPU密集型负载，涵盖实时推理、代码生成、搜索与多步任务编排，Graviton5正为此设计。彭博报道称，这是一份多年期、数十亿美元规模的协议，Meta将租用数十万颗Graviton芯片。公告未点名Muse，但所述负载与Muse虚拟机的工作内容吻合。关键在记账方式：Meta二季度披露写明，基础设施成本的增长来自折旧、数据中心运营成本与第三方云支出。租来的CPU属于第三方云支出，计入费用；资本开支指引只覆盖自建部分。</p>
+<p><b>自建部分同步推进，CPU层的记账会逐步从租金转向资本开支与折旧。</b>自建有三条线。第一条是Arm AGI CPU：Meta是首发伙伴并参与共同开发，Meta基础设施负责人称双方合作开发了这款芯片；Arm在3月发布时称Meta将于年内开始规模部署，按Arm最新说法，芯片四季度开始向客户交付、年底前进入全面量产，据此推算大规模上量主要落在2027年。第二条是英伟达：Grace独立CPU已在Meta规模部署，Vera可能在2027年规模部署（英伟达公告）。第三条是AMD：Meta是第六代EPYC处理器Venice，以及按负载优化的Verano的首发客户（AMD公告）。自建服务器按Meta的会计政策折旧：Meta自2025年起把大部分服务器与网络设备的折旧年限延长到5.5年，当年折旧因此减少29.2亿美元（2025年年报）；二季度披露还提到，长寿命的数据中心与网络底座可以容纳之后的服务器选择。据此推算，常驻层一旦转为自建，资本开支中通用服务器与内存的占比将逐步上升。GPU的折旧与经济寿命问题，本文不再展开。</p>
+<p></p>
+<p><b>利用率要分两层看：常驻层看一台服务器装得下多少台虚拟机，GPU侧看免费额度。</b>常驻层受内存约束，常驻比例下降，同一台宿主机可承载的注册用户随之增加；后台任务按计划与事件触发，可以错峰排进租来的核里。租约是否按承诺用量计费，Meta还没有披露；如果按承诺用量计费，闲置的核同样计入费用，利用率风险就落在Meta一侧。GPU侧，扎克伯格在二季度电话会上表示，将逐步让产品像广告系统一样按结果收费，并在算力上运行高效的拍卖，免费额度的松紧也会随之调整。回到本文的核心问题，Muse的成本只有一部分出现在资本开支里，只看资本开支指引会低估这类产品的实际投入。</p>
+<h2><b>五、谁来赚这笔钱：CPU增量落在Arm阵营，内存条数增量落在接口芯片</b></h2>
+<p><b>Meta已披露、与智能体负载挂钩的三笔CPU安排都采用Arm架构。</b>Graviton5为192核Neoverse V3、3nm工艺、12通道DDR5-8800；Arm AGI CPU为136核Neoverse V3，官方规格注明使用12通道RDIMM、速率最高8800MT/s；据The Register报道，Meta用仅配Grace的CPU系统承载无需GPU的通用与智能体负载。AMD第六代EPYC同样进入了Meta的采购，但公告没有把它与智能体负载挂钩。按核计费的商业软件一直是Arm进入通用服务器的阻力之一，而Muse的软件栈由Meta自己掌握，笔者判断这一阻力在此基本可以忽略。同时也要看到行业全貌：TrendForce认为，基于x86的通用服务器仍是智能体负载的主要内存平台；据调研了解，云厂商新增的智能体CPU基础设施中，Arm约占25%到40%。两相对照，笔者判断Arm的份额提升主要体现在Meta这类自己掌握软件栈的大客户上。Muse Confidential VM计划年内推出，要求整台虚拟机用用户自己持有的密钥加密，它的硬件平台选择，是x86进入这一层的变量。</p>
+<p></p>
+<p><b>按人常驻把增量压在通用服务器的内存位元上，价格上涨集中在未签长协的客户。</b>TrendForce在7月9日指出，部分美国云厂商已签订长期供货协议，三季度起服务器DRAM涨价主要来自未签长协的客户与协议外的增量采购；TrendForce初步估计2027年RDIMM位元供给同比增长15%到20%，并预计服务器DRAM在2027年继续短缺。同一份报告提到，2026年上半年起，部分系统把96GB、128GB模组换成32GB、64GB模组，以控制采购成本并匹配CPU供应。模组容量下降后，承载同样的常驻人数所需的内存条数随之增加。</p>
+<p><b>按条计价的接口芯片获得根数增量，这与2027年平台换代带来的单条价值量是两个不同的乘数。</b>笔者9月16日报告把接口芯片收入拆成台数、单机根数、单条芯片数与单芯片单价四项，每根RDIMM含RCD、PMIC、SPD集线器与两颗温度传感器共5颗芯片。Muse这类负载作用在前两项的乘积，也就是内存条总数上。第二节已经说明，内存条总数只取决于常驻人数与模组容量：全部常驻时，每百万周活约对应6.25万根64GB RDIMM；模组若换成32GB，根数翻倍。聚辰股份的SPD每根1颗，是纯粹的根数敞口。江波龙受益于持久存储与连续备份带来的企业级SSD位元，但利润仍由价格驱动。国内对照方面，阿里云无影AgentBay为智能体提供浏览器、云电脑、代码空间与云手机四类运行环境；据C114报道，中国移动2026年至2027年PC服务器集采约6.29万台，其中Arm架构40,896台，占65.01%。</p>
+<h2><b>六、投资含义：Meta看费用结构，亚马逊与Arm看租赁和授权，A股看内存条数</b></h2>
+<p><b>对Meta，常驻层成本随周活线性增长，与付费转化脱钩，广告业务未受直接波及。</b>受影响的是费用结构，租用与自建分别落在第三方云支出与资本开支两栏，只看资本开支指引会低估Muse这类产品的实际投入。广告业务则因Muse虚拟机数据与广告系统隔离，未受直接影响。</p>
+<p><b>对亚马逊，受益的是AWS EC2的Graviton租赁收入。</b>这笔收入的持续期取决于Meta自建的节奏。AGI CPU的大规模上量与Vera的规模部署都指向2027年，届时Meta新增的常驻层需求可能转向自建，Graviton租约能否在数千万核之上扩容，是观察这笔收入能否延续的关键。</p>
+<p><b>对Arm与英伟达，增量落在CPU授权与独立CPU业务；AMD的变量在机密计算。</b>Arm从Graviton5、Grace与Vera收取授权费，AGI CPU则直接带来芯片收入；英伟达受益的是独立CPU与机密计算业务。AMD的受益主要在Venice与Verano的通用采购，Muse Confidential VM的硬件选型是其进入智能体专用层的窗口；上述智能体专用安排未涉及英特尔。三星、SK海力士与美光获得服务器DRAM的位元增量，但对已签长协的美国云厂商，提价空间受协议上限约束。</p>
+<p><b>A股方面，影响按内存条数传导。</b>澜起科技的内存接口芯片按条计价，常驻人数增长经由内存条总数进入其收入；MRDIMM的单条价值量是另一条线，取决于2027年的平台换代。聚辰股份的SPD芯片直接对应根数。江波龙受益于企业级SSD位元，利润弹性仍取决于NAND价格。常驻比例下降时，前两家的条数增量随之收窄，江波龙的存储位元增量维持不变。三家公司这部分受益的大小，最终都要回到常驻比例这个核心变量上验证。</p>
+<h2><b>七、跟踪与证伪：看常驻机制、Graviton扩容和自建CPU上量</b></h2>
+<p><b>本报告的判断有三个主要检验点。</b>第一，Meta是否披露Muse虚拟机的休眠与恢复机制及单机规格，这直接决定常驻比例；第二，AWS三季报与后续公告中，Graviton是否在数千万核之上扩容；第三，Meta三季报（10月下旬）中费用增长的驱动项、折旧增速与2027年资本开支的表述，以及AGI CPU与Vera的上量进度。其余跟踪项见跟踪清单。</p>
+<p></p>
+<p><b>三种情况会推翻或修正本报告的判断。</b>第一，Meta披露虚拟机按任务临时创建、闲置时只保留存储，内存条数的增量将明显收窄，存储的判断维持不变；第二，Muse全部运行在自有x86机群上，CPU的受益方需要改写；第三，人均用量接近免费额度上限，GPU将主导全部成本，常驻层的相对权重随之下降。</p>
+<p><b>下行风险来自渗透放缓、安全事件与平台封禁。</b>上线初期的热度可能回落。路透社报道，Muse在内部测试中曾绕过护栏，调取测试者iCloud中的私人照片，类似事件会影响用户授权意愿。亚马逊已封禁Muse在其网站下单，其他平台若跟进，使用场景将进一步收窄。另外，DRAM价格若在高位横盘，内存链条的价格弹性将逐步减弱。</p>
+<p><b>上行风险来自分发、机密计算与持续运行的任务。</b>按路透社报道，Muse上线时即可通过WhatsApp使用，而Meta旗下应用的日活跃人数（DAP）为36亿（2026年6月均值），分发一旦扩大，周活规模的上限将大幅抬高；Confidential VM要求整台虚拟机加密与严格隔离，每台虚拟机的资源占用可能上升；价格监控、票务刷新这类持续运行的任务会提高常驻比例。</p>
+<p class="qq">以上内容不构成任何投资建议，请风险自担。</p>
+</div>
+</main>
+</body></html>

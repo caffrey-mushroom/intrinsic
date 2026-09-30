@@ -1,0 +1,238 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.28 | AC | Agents | Meta Muse: Consumer Agent Stack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.28 | AC | Agents | Meta Muse: Consumer Agent Stack</h1>
+<p class="orig">原标题：Meta Muse：消费级Agent第一次把云端执行、安全与交易入口装进一个产品</p>
+<p class="tags">#agents #internet</p>
+<p class="meta">AceCamp · 2026-09-28 · article 70567551</p>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>Muse不是换壳聊天机器人。Meta在9月8日发布的产品给每个用户分配隔离的Muse Secure</li></ol>
+<p>VM，内含浏览器、文件系统和终端；任务可以在用户关闭App后继续运行。它把模型、云电脑、长期记忆、权限和履约装进一个面向普通消费者的产品。</p>
+<ol><li>市场最容易算错的是算力。持续VM确实把Agent负载从GPU推理扩展到CPU、内存、存储、浏览器和安全服务，但‘每个用户一台VM’不等于每个用户独占一台7×24小时满载服务器。决定成本的是活跃任务时长、并发、休眠率、模型调用和成功率。</li></ol>
+<ol><li>下载量只能证明获客，不能证明商业模式。卖方援引第三方数据称，Muse上线12天iOS下载约180万、美国移动端日活约64.2万；Meta没有在公告中披露这些指标。9月27日美国App</li></ol>
+<p>Store页面显示评分超过6万条，可作为热度旁证，但不能替代留存、任务完成率、付费率和单位经济。</p>
+<ol><li></li></ol>
+<p>价值迁移最清楚的三层是Meta、交易连接器和安全/算力栈。Meta拥有产品和分发入口；Shopify、PayPal、Stripe等进入购物与支付闭环；CPU、GPU和云基础设施需求增加，但具体芯片供应商和Muse增量采购未披露。Charm和AI眼镜是入口扩张，不应在价格、出货和BOM未知时直接推导供应商业绩。</p>
+<p class="qq">Meta Muse：消费级Agent第一次把云端执行、安全与交易入口装进一个产品</p>
+<p class="qq">【摘要 】</p>
+<p><b>1. Muse不是换壳聊天机器人。</b>Meta在9月8日发布的产品给每个用户分配隔离的Muse Secure VM，内含浏览器、文件系统和终端；任务可以在用户关闭App后继续运行。它把模型、云电脑、长期记忆、权限和履约装进一个面向普通消费者的产品。</p>
+<p><b>2. 市场最容易算错的是算力。</b>持续VM确实把Agent负载从GPU推理扩展到CPU、内存、存储、浏览器和安全服务，但‘每个用户一台VM’不等于每个用户独占一台7×24小时满载服务器。决定成本的是活跃任务时长、并发、休眠率、模型调用和成功率。</p>
+<p><b>3. 下载量只能证明获客，不能证明商业模式。</b>卖方援引第三方数据称，Muse上线12天iOS下载约180万、美国移动端日活约64.2万；Meta没有在公告中披露这些指标。9月27日美国App Store页面显示评分超过6万条，可作为热度旁证，但不能替代留存、任务完成率、付费率和单位经济。</p>
+<p><b>4. 价值迁移最清楚的三层是Meta、交易连接器和安全/算力栈。</b>Meta拥有产品和分发入口；Shopify、PayPal、Stripe等进入购物与支付闭环；CPU、GPU和云基础设施需求增加，但具体芯片供应商和Muse增量采购未披露。Charm和AI眼镜是入口扩张，不应在价格、出货和BOM未知时直接推导供应商业绩。</p>
+<p>核心判断：Muse的意义不是又多了一个AI应用，而是Meta开始争夺‘用户把事情交给谁做’。如果任务成功率、权限信任和单位成本同时过关，互联网入口会从搜索、信息流转向任务调度；若用户只试用不托付账号和交易，Muse就只是一次昂贵的获客事件。</p>
+<p class="qq">第一部分 Muse是什么：从回答问题走到替人完成任务</p>
+<p class="qq">1. 产品边界：个人Agent，不是Meta AI的普通升级</p>
+<p>Muse于2026年9月8日在美国上线，支持iOS、Android、网页和WhatsApp。用户可以把整理邮件、安排日程、订餐、旅行、购物、费用管理、健身计划等任务交给它。Meta的官方描述强调三个动作：把长期目标拆成计划、在后台持续推进、 在发送邮件或付款等敏感环节回到用户确认。</p>
+<p>它与Meta AI的差别不在模型名字，而在执行环境。普通助手多在一次会话中生成答案；Muse拥有持久化云电脑，可打开浏览器、填表、写代码和建立新工具。它能同时启动子Agent，按时间表或外部事件继续工作，并在结果值得打扰用户或需要批准时主动发消息。</p>
+<p>Muse也不等于完全自治。Meta在App Store说明中明确提示，它仍可能给出错误结果或采取意外动作，用户需要检查并随时介入。产品宣传中的‘gets it done’与经营上可核验的任务成功率之间仍有距离。</p>
+<p></p>
+<p>图1：Muse新增的核心资产是执行环境与权限系统，模型只是其中一层。</p>
+<p class="qq">2. 为什么是现在：模型能力、产品入口和支付基础设施同时成熟</p>
+<p>第一，Muse Spark已经针对长任务、工具调用、长上下文和多Agent协作训练。Meta 9月2日发布Muse Spark</p>
+<ol><li>3，强调在混乱、多来源任务中持续收集上下文、修正计划、请求澄清并在后果重大的动作前确认。模型不只需要回答正确，还要在几十步任务中不丢约束。</li></ol>
+<p>第二，Meta有低成本分发。Muse可以直接进入WhatsApp，未来接入AI眼镜；Facebook、Instagram和Messenger则提供用户关系、兴趣、内容和连接器基础。相较从零获取用户的独立Agent公司，Meta可以把智能体放 进现成的沟通习惯里。</p>
+<p>第三，支付和连接器开始允许Agent合法履约。Muse上线即支持Stripe的Link，使用一次性卡隐藏真实卡号并提供特定购买保护；Meta随后宣布Shop Pay、PayPal以及Shopify完整商品目录，Expedia、Instacart、Walmart、Best Buy、Notion、GitHub、Box等连接器。这件事暂时比模型跑分重要，因为没有结构化接口，Agent只能在网页上脆弱地模拟点击。</p>
+<p class="qq">3. 安全不是附属功能，而是产品能否存在的前提</p>
+<p>每个Muse运行在独立Linux虚拟机中，运行容器与保存敏感数据的主机区域隔离。另一个系统级分离的Sentinel负责审查对外网络动作；Muse本身看不到明文密码和支付方式，用户可限定邮箱等连接器是只读还是可发送，并查看完整审计轨迹。Met a还宣布最高30万美元的Muse漏洞赏金，其中成功影响单个用户的提示注入最高13万美元。</p>
+<p>这些设计降低了单次事故的影响范围，但不能消灭风险。提示注入、错误下单、越权发送、第三方连接器漏洞、长期记忆误判和责任归属会随着任务数量放大。Muse Confidential VM计划在年内推出，届时整个VM使用只有用户持有的密钥加密；在该功能正式上线和被外部验证前，不能把它当作现有能力。</p>
+<p class="qq">4. 采用路径：热度已经出现，信任和留存还在第一阶段</p>
+<p>Meta官方只披露了美国上线范围和‘大部分需求免费、重度用户有订阅方案’，没有披露下载、日活、留存、任务数、付费用户或收入。援引Appfigures等第三方数据称，上线前12天iOS下载约180万、美国移动端日活约64.2万；这些数字显示冷 启动很快，但统计地域、平台和去重口径并未由Meta确认。</p>
+<p>美国App Store的公开页面在9月27日显示评分数已超过6万、均分约4.87，且应用自9月8日以来多次更新。评分数量是真实可见的采用信号，但不能据此反推出下载或日活。下一阶段需要看30日留存、每名活跃用户发起的任务数、任务完成率、敏感权限开启率和付费转化。</p>
+<p class="qq">第二部分 BM与价值迁移：谁控制任务、履约和信任，谁掌握利润</p>
+<p class="qq">1. 收入端有四条路，短期只有订阅最容易计量</p>
+<p>第一条是订阅。Meta官网没有公布价格，只说大部分功能免费并提供更高用量方案；券商产品观察普遍记录20美元和100美元两档，本文只把它用于敏感性测算，不视作财报口径。若基准情景为5000万活跃用户、6%付费率、月ARPPU 25美元，对应年订阅收入约9亿美元。即便达到乐观情景36亿美元，规模仍显著小于Meta现有广告业务。</p>
+<p>第二条是交易。Muse能搜索商品、比价、填表、付款和处理退货，价值可能来自支付费、商家分成或转化服务。但Meta没有披露与Shopify、PayPal、Stripe及商家的费率安排。短期更可能优先扩大可完成任务范围，而非立即抽取高比例佣金。</p>
+<p>第三条是广告和商业推荐。Muse不把私人对话或VM数据分享给Meta广告系统，这是重要边界；但在用户授权和合规前提下，Agent仍可能把广告从‘展示’改成‘完成任务时的候选方案’。关键问题将从点击率变成推荐排序、成交归因和商家是否愿意为Ag ent流量付费。</p>
+<p>第四条是硬件和生态订阅。Muse将进入AI眼镜，Muse Charm提供随身语音入口。硬件可提升使用频次并形成Meta One等订阅协同，但Charm尚未公布价格、完整规格和出货计划，当前不能建立可靠收入模型。</p>
+<p></p>
+<p>图2：Agent将价值从单次模型调用迁向长时间执行、安全、身份和履约。</p>
+<p class="qq">2. 成本端的新变量是‘任务小时’，不是单纯Token</p>
+<p>Muse的成本由模型推理、虚拟机CPU和内存、存储、浏览器流量、安全审查、第三方API、客服与赔付组成。聊天产品的边际成本多随Token增长；个人Agent还随任务持续时间、并发子Agent、网页失败和重试次数增长。一个需要持续监控价格三天 的任务，与一次生成购物清单的成本完全不同。</p>
+<p>市场把每个用户一台Secure VM解读为服务器CPU需求爆发，有方向上的合理性，却容易高估数量。虚拟机可以共享物理服务器、休眠、弹性唤醒和限制资源；免费用户也不会始终运行任务。正确测算应是：活跃用户×每月Agent任务小时×每小时CPU/内存/存储占用，再加GPU推理，而不是用户数直接乘一台服务器。</p>
+<p>Meta 2026年二季度收入608.0亿美元、净利润158.5亿美元、经营现金流318.6亿美元，资本开支约310.8亿美元；全年Capex指引为1300亿—1450亿美元。Muse给高投入提供了新的变现出口，但二季度财报尚未包含Muse收入。若免费任务增长快于付费和交易变现，自由现金流压力会先上升。数据来自Wind，美元口径按Wind原始百万元/亿元展示换算。</p>
+<p class="qq">3. 最大X factor：任务完成率与单位经济能否同时过关</p>
+<p>消费Agent的增长公式不是下载量，而是：获客×激活×30日留存×月任务数×成功率×可变现比例。盈利还要扣除每次成功任务之前的失败重试、人工支持和赔付。一个任务成功率从70%提高到90%，带来的不仅是用户满意度，还会减少重复推理和客服成本。</p>
+<p>最值得跟踪的六项指标是：30日和90日留存；每名活跃用户的完成任务数；敏感连接器授权率；敏感动作确认后的完成率；付费转化和ARPPU；每个完成任务的全栈成本。若Meta只披露下载或覆盖范围而长期不披露活跃、任务和收入数据，说明商业闭环仍缺证 据。</p>
+<p></p>
+<p>图3：情景表只测订阅，不含广告、佣金或硬件；也未扣除算力和安全成本。</p>
+<p class="qq">4. 互联网价值会从‘让用户停留’迁向‘替用户完成’</p>
+<p>搜索和信息流时代，平台通过曝光、点击和停留时间变现。个人Agent把用户意图压缩成任务，然后选择工具、商家和支付方式。谁拥有用户长期上下文、权限和信任，谁就可能掌握新的分发权。商家面对的不再只是SEO和投放，还要让商品目录、库存、价格、售后 和支付接口能被Agent准确调用。</p>
+<p>这也会触发平台冲突。电商和旅行平台可能欢迎增量订单，也可能担心被降格为履约后台、失去用户关系和广告收入。连接器能否长期开放、排序规则是否透明、平台是否要求分成，会决定Muse从‘能操作网页’走向‘稳定商业网络’的速度。</p>
+<p class="qq">第三部分 受益公司：直接关系优先，算力与硬件映射降级处理</p>
+<p class="qq">1. Meta：唯一同时拥有模型、入口、数据、广告和硬件的核心受益者</p>
+<p>Meta的优势有三层。第一是分发，Muse能进入WhatsApp和数十亿用户已有的社交生态；第二是上下文，用户在授权后可连接邮件、日历、Instagram、Facebook、健康和财务数据；第三是变现组合，订阅、广告优化、交易、支付入口与A I眼镜可以交叉。</p>
+<p>它的短板同样集中：资本开支已经接近季度经营现金流；个人Agent需要承担远高于聊天机器人的安全、客服和赔付责任；若用户不愿授权邮箱、支付和长期记忆，Meta的生态优势无法转成任务完成。当前Muse收入未单独披露，不能用Meta整体28%的收 入增长证明产品已经贡献业绩。</p>
+<p class="qq">2. Shopify：Agent Commerce中最清晰的公开上市合作方</p>
+<p>Meta确认Muse上线即拥有整个Shopify商品目录，Shop Pay即将接入。这让Shopify商家无需逐一适配，就能被Agent搜索和结账。Shopify最新季度收入约35.83亿美元、净利润15.02亿美元、经营现金流6.58亿美元（Wind口径换算），但Muse带来的GMV、支付渗透和收入尚未披露。</p>
+<p>Shopify的弹性来自商品结构化和商户网络，而非单纯支付按钮。风险是Muse控制推荐和用户关系，Shopify可能获得交易量却失去流量定价权；若Meta未来自建更深的商家体系，平台议价也会变化。</p>
+<p class="qq">3. PayPal、Stripe与1Password：支付和身份层先获得确定使用场景</p>
+<p>Meta Connect公告确认PayPal将作为Muse支付连接器；上线时Link by Stripe已经提供一次性卡和购买保护，1Password则计划接入凭证。PayPal最新季度收入约86.82亿美元、净利润11.04亿美元、经营现金流19.83亿美元（Wind口径换算）。这些公司的受益路径是新增结账入口、身份调用和交易保障，不是模型收入。</p>
+<p>当前最大缺口是经济条款。Meta没有披露支付费率、交易分成、损失承担或退款责任。Agent若产生更多低客单价和高退货率订单，交易量增长未必等于利润增长。Stripe和1Password不是公开上市主体，应放在产业链而非股票推荐中。</p>
+<p class="qq">4. 商家、旅行和办公平台：连接器带来新入口，也可能稀释品牌</p>
+<p>Walmart、Best Buy、American Eagle、DICK’S、Fanatics、Gap、Michael Kors、Sephora、Ulta、Wayfair、Expedia、Instacart、Notion、Granola、GitHub和Box均被Meta列为新增连接器或合作方。它们获得的是被Muse调用和成交的机会，具体收入弹性取决于商品覆盖、任务排名和分成。</p>
+<p>品牌方需要观察一个反直觉风险：Agent可能强化价格、配送和退货条件的比较，削弱情绪化广告和品牌溢价。平台即使获得更多订单，也可能付出更高佣金、更透明价格和更弱用户关系。</p>
+<p class="qq">5. CPU/GPU、服务器与眼镜供应链：需求方向成立，标的映射仍缺合同</p>
+<p>Muse会增加GPU推理，也会增加CPU编排、浏览器执行、内存、存储、网络和安全负载；这与卖方讨论的Agent混合算力方向一致。但Meta没有披露Muse Secure VM使用哪家CPU、单用户资源、服务器数量或新增采购。AMD、Intel、NVIDIA和ARM生态只能列为间接受益候选，不能把市场上涨当作订单证明。</p>
+<p>AI眼镜将接入Muse，Muse Charm也已公布，但Charm只确认了掌上形态、实时语音模型和‘年内披露更多信息’。价格、上市地区、出货目标、芯片、屏幕、电池和供应商均未由Meta完整披露。任何A股/港股零部件映射都应等公司公告、客户认证或订单数据后再升级。</p>
+<p></p>
+<p>图4：确认合作不等于收入重大；未披露BOM和订单的硬件、算力链只列待验证。</p>
+<p class="qq">决定这条产业链能走多远的指标</p>
+<p><b>用户质量：</b>30/90日留存、日活/月活、每用户任务数，而非累计下载。</p>
+<p><b>执行质量：</b>任务完成率、平均重试次数、人工介入率、取消/退款/投诉率。</p>
+<p><b>信任：</b>邮箱、日历、支付和财务等高敏连接器的授权率，以及用户撤销权限的比例。</p>
+<p><b>商业化：</b>免费到付费转化、20/100美元档位是否持续、交易GMV和Meta实际抽成。</p>
+<p><b>单位经济：</b>每个完成任务的GPU推理、VM、存储、安全、客服和赔付成本。</p>
+<p><b>生态：</b>连接器数量不是终点，关键是覆盖订单、支付、退货和售后的完整任务比例。</p>
+<p><b>硬件：</b>Muse进入AI眼镜后的使用频次；Charm价格、发售、销量、BOM及复购。</p>
+<p class="qq">风险提示与说明</p>
+<ol><li>产品与安全风险：Muse可能出现提示注入、越权、错误发送、错误购买、隐私泄露或长期记忆误判，监管、赔付和信任损失可能高于普通AI聊天产品。</li></ol>
+<ol><li>采用风险：早期下载和评分可能来自新鲜感；若30日/90日留存、任务完成率和高敏权限授权率偏低，产品难以形成长期入口。</li></ol>
+<ol><li>单位经济风险：持续VM、多Agent、浏览器执行和安全审查会增加CPU、内存、存储及客服成本；免费使用增长可能快于订阅和交易收入。</li></ol>
+<ol><li>平台竞争风险：OpenAI、Google、Anthropic、Amazon、Apple及独立Agent公司可能用模型、操作系统、浏览器、云和支付入口竞争；第三方平台也可能限制Muse访问或提高接口成本。</li></ol>
+<ol><li>商业模式风险：Meta未披露订阅价格、付费用户、交易分成或广告归因；本文订阅空间为透明假设下的敏感性计算，不是公司指引或盈利预测。</li></ol>
+<ol><li>产业映射风险：Meta未披露Muse服务器CPU/GPU、Charm及AI眼镜完整BOM和新增订单，不能据虚拟机架构或合作传闻确认相关上市公司收入。</li></ol>
+<ol><li>数据口径风险：下载、日活和订阅价格来自AlphaEngine收录的券商对第三方数据及产品的观察，Meta官方尚未确认；美国App Store评分会动态变化，不等于下载量。</li></ol>
+<p>本文基于截至2026年9月27日的Meta产品公告、Meta AI Research、Apple App Store公开页面、Wind资料整理。事实、公司自述、机构观点和研究测算已尽量分开，仅供产业研究讨论，不构成投资建议、收益保证或任何证券买卖依据。</p>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,261 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.23 | 9K | AMD | AMD Expert: Agent CPU Sizing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.23 | 9K | AMD | AMD Expert: Agent CPU Sizing</h1>
+<p class="orig">原标题：AMD离职专家|个人agent可按活跃用户数与每用户平均8个CPU核测算需求并结合2倍至4倍超配，CPU与GPU需分别按沙箱负载和token指标核算；训练市场仍由英伟达主导，推理端P和D异构芯片或在未来2到5年成为主流，Cerebras受44GB SRAM容量约束而需外挂DRAM，AMD凭借与英伟达70%到80%的架构相似度保持第二位适配能力</p>
+<p class="tags">#semis #agents</p>
+<p class="meta">Meritco 久谦 · 2026-09-23</p>
+<div class="body">
+<h2>摘要</h2>
+<p>个人agent的CPU需求可按每用户平均8个CPU核并结合超配测算，GPU则按token与延迟独立核算。训练仍以英伟达为主，推理ASIC及P和D异构方案将加速渗透；Cerebras受SRAM容量限制，AMD凭借GPGPU相似架构在适配能力上 位居第二</p>
+<h2>要点</h2>
+<ol><li>个人agent的CPU需求可按活跃用户数与每用户平均8个CPU核测算，低端配置可从2个核起步并随任务复杂度动态升至4个或8个核；云厂商通常还会采用2倍甚至4倍超配，因此必须同时考虑沙箱数量、饱和度和分时复用</li></ol>
+<ol><li>CPU需求与沙箱、任务和线程数量相关，并不与token数量直接正相关；GPU应按每token、每秒、每用户及延迟目标测算，CPU与GPU按1:4等固定比例配置并不可靠，两类集群在不同rack中通过API解耦调用</li></ol>
+<ol><li>训练市场大概率仍由英伟达GPU主导，数千张卡乃至万卡集群能力和CUDA通用生态构成核心壁垒；推理市场ASIC占比将持续提高，针对P和D采用不同芯片或异构组合可能在未来2到5年内迅速成为相对主流方案</li></ol>
+<ol><li>英伟达凭借上万个细粒度计算单元、Multi-Stream和软件优化，可在4类输入输出长短组合中兼顾吞吐、TTFT与延迟；粗粒度ASIC虽可能在长上下文等特定场景占优，但通常更难实现跨负载的均衡表现</li></ol>
+<ol><li>Cerebras的44GB SRAM适合承载MoE中的expert并减少数据搬运，按FP8计算，40GB SRAM理论上对应约40G参数权重，但实际还需预留中间值、缓存和部分KV</li></ol>
+<p>Cache空间；SRAM容量增速跟不上每代2到3倍的算力提升，长期前景有限</p>
+<ol><li>Cerebras外挂DRAM可形成SRAM与DRAM两级存储并缓解容量短板，但延迟可能约为SRAM的10倍；通用适配能力方面AMD可排第二，其架构与英伟达约70%到80%相似，而CUDA仍使英伟达在新模型Day 0支持上保持明显优势</li></ol>
+<h2>Q:最近Metamuse对CPU需求的拉动情况如何？其带来的增量需求大致可以如何测算？</h2>
+<p>A:Muse属于个人agent，因此可能需要为其分配专用CPU核，以启动沙箱或虚拟机。业界通常会为agent配置不同档位:相对保守、性能略低的方案可能配置4到8个核；相对激进、更加重视用户体验的方案可能配置8到16个核，中位数可按8个核考虑 。云厂商也会像销售虚拟机一样设置多个档位，低端方案可能仅配置2个核。</p>
+<h2>Q:平均每个用户可以按对应8个CPU核计算吗？</h2>
+<p>A:可以按8个核考虑，再根据各家的物理CPU型号进行折算，例如一颗物理CPU能够服务多少个用户。此外，还要观察Muse的实际用户数，尤其是活跃用户数，但我目前没有这方面的数据。</p>
+<h2>Q:vCPU，即虚拟CPU，与CPU core之间是什么关系？</h2>
+<p>A:此前讨论的是物理CPU和物理核。从虚拟化角度看，vCPU有可能指具体分配的核数，但还要考虑分时复用。假设一颗物理CPU有256个核，每个沙箱或虚拟机分配8个核，直接相除只能服务32个用户；但实际不会只分配给32个用户，因为用户活跃度存在 峰谷，云厂商通常会进行超配。</p>
+<p>如果按一倍超配计算，就可以服务64个客户，但这64个客户并非始终同时使用资源。如果部分客户在峰值时段同时使用，则可进行分时复用。测算时可以纳入超配因子、饱和度以及不同时段的饱和度。每项业务的情况不同，我无法给出具体数字，但这是其中一种测算方 法。</p>
+<p>实际肯定会超配，可能按2倍，甚至更高的4倍超配。只要能够进行分时复用，并迅速将沙箱从静态存储中拉起，用户感受到的可能只是响应速度下降，即应用程序发出请求后的整体反馈变慢，而不会出现非常明显的离线感。</p>
+<h2>Q:这里是否存在冗余配置的概念？</h2>
+<p>A:这就是前面提到的超配和分时利用。简单来说，实际只有一份CPU资源，却可以对外提供两份CPU资源，相当于各分配一半。如果某一时点只有一个用户使用，该用户就可以独占资源；如果两个用户同时使用，则将一半时间分配给一个用户、另一半时间分配给另一 个用户，并在两者之间来回切换。用户感受到的是性能或体验下降，而不是完全无法使用。</p>
+<h2>Q:一个CPU核可以简单理解为用于执行一个进程吗？</h2>
+<p>A:不能。CPU核代表分配给用户的一项硬件资源。理论上，一个核在某个微观时点可以运行一个线程，但从宏观上看可以在不同线程之间切换，并非一个核固定绑定一个线程。</p>
+<h2>Q:例如让agent帮助用户点外卖或预订酒店，虽然期间可能切换多个App并调用不同线程，但整个过程有可能只使用一个CPU core，可以这样理解吗？</h2>
+<p>A:有可能，但负载较高时会配置多核。现在的OS通常会运行多个线程，而不是只运行单线程。配置多核后，可以并发运行不同线程，从而提升综合响应速度。理论上，一个核可以对应一个虚拟机；但如果虚拟机中存在多个线程，一个核在某个时点只能让这些线程依次排 队，响应速度就会变慢。因此，从能否运行的角度看，一个核可以运行；但为了改善用户体验，需要配置更多核。</p>
+<h2>Q:能否根据agent应用产生的token数量，反推出所需的CPU core数量？除按用户数量测算外，能否根据token数量测算CPU需求？</h2>
+<p>A:不能。例如，同样是人与AI对话，有些问题只需简短回答，有些问题则需要较长回答，每次对话场景都可能有很大差异。不同模型的表现也不相同，同一个问题交给不同模型，消耗的token数量可能不同。此外，每个模型还可能提供快速响应模式或深度模式，选 择不同模式后产生的token数量也不同，因此情况非常复杂。</p>
+<p>CPU core数量与任务数量、线程数量的相关性更高，并不与token数量直接正相关。用于维护agent沙箱和session的CPU集群，与负责生成token的GPU应位于两个不同的rack。只有agent需要token时，才会通过API申请调用GPU，因此两者是解耦的。</p>
+<h2>Q:AMD EPYC CPU的预期出货量大概是多少？</h2>
+<p>A:这个问题无法预测。相对明确的是，Muse具有较强代表性，说明现在的agent已经非常个人化。需要追踪的不仅是Muse，还包括各大云平台agent的活跃用户数量。例如，阿里几年前就在做无影，其背后原本就是云计算；进入AI agent时代后，无影也会向围绕agent和OS的方向演进。</p>
+<p>可以追踪agent的活跃用户数量，再按每个用户平均8个CPU core测算，从而得到一个基础数字。但随着用户对agent的使用不断深入，即使用户数保持不变，单个用户平均需要的沙箱数量也可能增加。例如，用户订购Kimi套餐后，随着使用程度由浅入深，单个用户的资源需求也会继续提升。</p>
+<h2>Q:网上有些测算认为，Muse Secure VM每个用户使用2个CPU core，而您采用每个用户8个CPU core的假设。应如何理解这一差异？</h2>
+<p>A:第一，要看用户需要完成什么任务；第二，要看是否采用成本较低但响应较慢的方式。购买高端CPU，是因为高端CPU执行并行任务的能力更强。老款CPU或核数较少的CPU并非不能运行Windows，只是运行速度较慢。阿里云最低档的实例也会提供2个 核，同样能够完成相应任务，只是速度较慢。</p>
+<p>因此，实际可能按需购买，并根据任务复杂度动态配置资源。当前技术方向是让沙箱像切换线程一样快速启动和关闭。用于维护session的上下文存储与CPU core相互解耦，启动初期可以只分配2个CPU core；随着同一session中的任务越来越复杂，不排除采用动态算法，将沙箱切换至4个核或8个核，实现动态升级。</p>
+<h2>Q:如果给agent一个任务，最终可能返回1万个token，也可能返回10万个token。虽然token数量不同，但由于任务数量相同，对CPU core或CPU quota的需求能否理解为相同，而GPU需求则不同？</h2>
+<p>A:两类需求不同。计算CPU数量时，应从沙箱数量的角度推算；计算GPU数量时，则应关注每token、每秒、每用户等指标。在满足一定延迟和服务质量的情况下，GPU benchmark会给出某款GPU在特定上下文输入和输出条件下，能否维持例如每个用户每秒50个token，据此可以计算一块GPU能够服务多少个用户。</p>
+<p>GPU和CPU应当分开计算。所谓GPU与CPU按照1:4等固定比例配置，我认为并不可靠。这两类算力本来就可以结合调度，强行根据GPU数量反推CPU数量并不科学。GPU应采用每token、每秒、每用户等指标测算，CPU则应根据沙箱数量和运行负 载测算。</p>
+<h2>Q:对于GPU和ASIC，您如何看待未来技术路线的发展和演进趋势？目前除GPU外，还有Groq的LPU、Cerebras、TPU、各家CSP自研芯片以及OpenAI芯片等多种路线。</h2>
+<p>A:需要从训练和推理两个角度分析。训练市场大概率仍将由英伟达GPU主导。当前模型规模很大，集群规模非常重要，必须达到数千张卡甚至万卡规模，才能训练如此庞大的模型。目前具备这种能力的主要是英伟达和谷歌TPU。但谷歌TPU的问题是可能主要用于训 练谷歌自己的模型，通用性仍然不足。在市场上仍有多种模型并存的情况下，训练市场一定还是英伟达占据主要份额。</p>
+<p>在推理市场，ASIC的占比一定会越来越高。即使是英伟达GPU，也在逐渐向ASIC方向发展，其加入的专用计算单元在某种意义上就是ASIC。但英伟达存在历史包袱，还需要兼顾CUDA框架，因此不能将全部芯片面积用于专用计算单元。在部分场景下，其性 价比可能无法做到极致，尤其是在低延迟场景中可能存在架构缺陷。</p>
+<p>因此，英伟达才会引入类似RPU的组合，以解决decoding阶段在低延迟条件下的吞吐问题，形成GPU加RPU的组合。甚至还有将Transformer中的Attention、FFN等部分放到专用单元中的方案，目的都是在保证吞吐的同时改善延迟。 英伟达最了解整体业务需求和痛点，这类组合方案具有代表性，也说明ASIC一定会进入市场。</p>
+<p>ASIC同样面临问题。如果Prefill-Decode Disaggregation成为业界标准架构，同一种ASIC可能很难同时做好P和D，因此可能采用异构方案。异构方案可以由不同厂商组合，一家负责P、另一家负责D，各自发挥优势。例如，AMD、AWS与Cerebras之间都可能探讨此类合作。</p>
+<p>OpenAI的芯片相对特殊。从benchmark来看，它似乎可以在单一芯片中同时兼顾P和D并达到平衡，但具体设计尚不为外界所知。一种可能是在芯片内部用一部分资源解决P、另一部分资源解决D，形成单芯片内部异构。不过，目前披露的测试主要针对较小模型，可能在单芯片中就完成了Prefill-Decode Disaggregation混合部署。当前模型越来越大，单机多卡都未必足够，必须采用多节点部署，而其多节点Prefill-Decode Disaggregation表现尚未看到相关数据，仍有待观察。</p>
+<p>未来不排除衍生出P节点芯片和D节点芯片两类产品，单一厂商也可能推出两种不同芯片。无论如何，针对P和D采用不同芯片或异构组合，可能在未来2到5年内迅速成为相对主流的解决方案。</p>
+<h2>Q:不同应用场景和工作负载是否会对GPU或ASIC提出不同要求？不同性能指标和各自优劣势分别适合哪些场景与workload？</h2>
+<p>A:从大语言模型的角度看，首先要考虑输入和输出的长短组合:两者都长、两者都短、输入长而输出短、输入短而输出长，共有4种基本组合。“长”本身也有不同程度，因此benchmark会设置多个阶梯。理论上可以针对每种组合设计专用硬件，但我认为并不划 算，因为芯片仍需要依靠规模摊薄成本。</p>
+<p>更合理的方式是通过软件，在单一芯片上尽可能平衡不同的上下文输入和输出。英伟达芯片在新模型的多种典型输入输出条件下，通常表现得相对均衡，这体现了其软件优化能力。其SM架构从编程角度可以兼顾多个极端场景，例如输入输出都短或都长，并通过软件取得相 对均衡的结果。</p>
+<p>ASIC可能更难做到全面均衡。部分ASIC可能在长上下文场景中更有优势，但在输入输出都很短的场景中，由于编程粒度和计算单元粒度较粗，可能难以通过编程充分利用算力，因此更偏向特定场景。不过，芯片仍然需要规模，不太可能针对每一种case分别设计 芯片，只能结合软件方法尽可能达到平衡。</p>
+<h2>Q:除输入、输出长短形成的4种场景外，是否还需要考虑延迟、TTFT等指标？</h2>
+<p>A:这些指标都需要衡量，不能只提高吞吐，却让TTFT等延迟指标表现很差。现在MLPerf之类的benchmark会设定一些具有代表性的典型场景，通过这些场景衡量软硬件协同能力。评估时不会只看硬件，而是看硬件与软件结合后，能否在不同场景下取得 平衡。这非常考验软件能力，当然软件能力也受硬件架构特点制约。</p>
+<p>以英伟达GPGPU为例，其拥有上万个可调用的细粒度单元，能够灵活组合。在不同负载下，可以让不同数量的单元完成一个任务，并通过软件灵活组织这些单元。部分ASIC则采用较大的计算核，编程粒度更粗。假设只有16个大核，就需要积累足以占用4个核或8 个核的计算量后再进行调度。这样可以提升吞吐和算力利用率，但延迟会比较差。</p>
+<p>英伟达的调度粒度较细，可以灵活组合，相当于既可以发小车，也可以发中型车或大车；再结合Multi-Stream等方式，更容易通过软件编程在延迟和吞吐之间取得平衡。对于粗粒度CPU core，可组合的case较少，部分case甚至可能无法处理，硬件架构也可能决定其很难同时实现低延迟和稳定吞吐。英伟达在不同benchmark场景中的表现通常相对均衡。</p>
+<h2>Q:Cerebras这类产品和技术路线最适合哪些工作负载和应用场景？</h2>
+<p>A:P和D都可以做，但从成本角度看，其单个wafer中的可用存储仍然较小。如果完全使用这类芯片拼接一个大模型，需要的芯片数量会非常多。其最突出的优势是SRAM，因为SRAM是距离计算单元最近的一类存储，但容量也较小。目前的一种做法是将MoE 模型中的expert放入SRAM，因为每个expert相当于一个小型专家模型，权重较小，可以利用SRAM发挥优势。</p>
+<p>此外，它还可以用于某些固定阶段，这两个维度可能结合使用。</p>
+<h2>Q:对于3万亿到5万亿参数规模的MoE大模型，能否在Cerebras的设备上实现高效率、低成本和高速度运行？</h2>
+<p>A:从技术上看，可以将一个很大的模型全部部署到其系统上，但需要大量wafer，而且制造成本很高。如此大的die在良率等方面本来就很难控制，因此成本会极高。将P节点替换为其他厂商的芯片，是降低整体方案成本的一种方式。</p>
+<p>其自身已经很难继续挖掘太多降本空间，只能将一部分任务交给其他芯片处理，从整体系统层面实现降本。</p>
+<h2>Q:MoE大模型中包含很多expert。Cerebras的SRAM容量小于英伟达HBM，如果在SRAM中放入一个或多个expert，能否帮助其扬长避短？</h2>
+<p>A:这正是扬长避短。将较小的权重放入SRAM后，计算可以完全或大部分在芯片内部完成，无需频繁将数据搬出芯片。数据只在输入和输出结果时各交换一次，与计算过程中不断和DDR交换完全不同，因此可以避免数量级上的延迟。</p>
+<h2>Q:将模型或expert放入SRAM，属于部署或软件侧的工作吗？</h2>
+<p>A:属于软件工作。需要拆分一个大模型，如果其中一部分是一个expert，就将其分配到一台Cerebras设备上。假设一个模型有256个expert，就可以将其相应分配到多个设备。不能简单按照传统TP或Tensor并行方式机械切分，而要结合e xpert结构进行组合和划分。</p>
+<h2>Q:Cerebras一片Wafer-Scale Engine大约有44GB SRAM。提供推理服务时，SRAM中通常存放什么内容？是模型权重、KV Cache，还是其他数据？</h2>
+<p>A:KV Cache整体无法放入SRAM，可能需要放在GPU侧或其他容量更大的存储侧，因为其空间需求非常大。但计算时仍可能需要将部分KV Cache读入SRAM。因此，SRAM除存放权重外，还需要预留一部分空间，将当前计算所需的KV Cache传入其中，在芯片内部完成计算后再输出。</p>
+<h2>Q:SRAM容量与可容纳模型参数量之间大致是什么换算关系？例如每GB SRAM能够存放多少参数？</h2>
+<p>A:简单按FP8权重计算，假设有40GB SRAM，可以大致理解为能够存放40GB模型权重。FP8格式下，每个参数按1 byte计算，因此40GB SRAM理论上可对应约40G参数的权重。</p>
+<p>但实际不能将全部空间用于存放权重，因为还要考虑计算中间值、中间缓存以及计算时读入的部分KV Cache，所以实际可容纳的权重需要更少。目前较主流的方案也会对KV Cache进行FP8量化。</p>
+<h2>Q:量化后能否缩小数据尺寸？</h2>
+<p>A:可以。FP8意味着每项数据按1 byte计算。模型训练完成后，如果不压缩，可能采用FP32等更高精度格式。目前FP8已经得到充分验证，推理时基本可以使用FP8，甚至部分采用FP4或介于两者之间的FP6，但测算时可以先按主流FP8计算。</p>
+<h2>Q:您如何看待Cerebras这类技术路线的长期前景？</h2>
+<p>A:我认为前景有限，因为SRAM这种存储方式不会随着工艺升级而实现质的容量提升。例如，从5纳米升级至3纳米后，在同样大小的wafer上，SRAM容量不会像计算单元一样实现线性或数量级提升。SRAM结构本身很难仅依靠先进制程快速增加容量，这是 一个致命缺点。</p>
+<p>其存储容量增速跟不上算力增速。以英伟达为例，目前每一代工艺和架构升级仍可带来2到3倍算力提升，但SRAM容量无法实现同等幅度的增长，因此会越来越难以匹配算力需求。</p>
+<h2>Q:如果依靠软件优化，通常能够带来多大的提升空间？</h2>
+<p>A:目前能够看到的主要优化方式是量化，即减少存储所需的byte数。压缩一定会造成精度损失，但以当前的软件算法看，FP8相较FP16的精度损失可以认为很小。</p>
+<p>FP4可以用于模型的部分层，形成混合精度量化，效果可能也可以接受。但如果进一步采用更低位宽的定点量化，精度损失可能会很大，在部分任务和数据精度场景中，用户会产生明显感知。</p>
+<h2>Q:英伟达收购的Groq，其技术亮点似乎也是SRAM。Groq未来的提升空间是否同样有限？</h2>
+<p>A:我认为同样有限。但它的优势是不需要采用一颗超大die，可以使用更小的die。die越小，良率越高；良率越高，成本越低。因此，它可以用更多小芯片替代单颗超大芯片，同时将成本控制在较低水平。</p>
+<h2>Q:Cerebras的Inference Stack从第一代升级到第二代后，据说效率提高了一倍:过去运行一个模型需要100多台设备，现在可能只需50多台或60到70台。纯软件升级是否可能实现这种幅度的性能或成本改善？</h2>
+<p>A:理论上，如果处理性能翻倍，在相同负载下，设备用量就可以减少一半。通过纯软件升级实现这种提升是有可能的，一个重要原因可能是初代软件栈的优化程度不够高。</p>
+<p>但在性能已经提升一倍后，不太可能在很短时间内再次提升一倍。优化会越来越困难，后续提升幅度会逐渐下降。目前也可以借助agent或大模型等软件方法探索编译优化空间，但这种提升不可能无限持续。</p>
+<h2>Q:Cerebras的roadmap规划通过wafer-to-wafer、wafer-on-wafer或Hybrid Bonding集成额外DRAM。假设每个CPU core增加约2MB，约90万个CPU core合计可能达到1.8TB DRAM，您如何看待这条路线？它能否显著改善当前短板？</h2>
+<p>A:这正是为了解决此前提到的物理限制:SRAM很难随着制程升级而成倍增加容量，因此外挂DRAM是合理的。如果Cerebras希望不依赖其他厂商的Prefill-Decode Disaggregation方案，或者希望从自身角度降低成本，就一定需要外挂DRAM。</p>
+<p>外挂DRAM后，SRAM与DRAM将形成两级存储关系，关键问题在于高速互连，即外挂DRAM能够以多大带宽连接到计算wafer。这种方案带有一定的不得已成分，目的是突破原有SRAM容量过小且成本很高的限制。</p>
+<h2>Q:如果通过Hybrid Bonding实现类似3D堆叠，将DRAM与原有wafer上的计算单元和SRAM连接起来，其互连速度和带宽是否会比较理想？</h2>
+<p>A:它一定会比SRAM慢。即使互连设计得很好，我认为两者之间也可能至少存在一个数量级的差距。例如，外挂DRAM的延迟可能约为SRAM的10倍。尽管如此，这仍可能是现有架构下较好、甚至唯一能够较好解决容量问题的方案。</p>
+<h2>Q:从产业角度看，后续各种ASIC厂商中，您更看好哪些公司？原因是什么？内地市场的情况又如何？</h2>
+<p>A:需要综合考虑出货量、市场、软件可编程性以及应用生态，我认为最终不会剩下很多厂商。从通用市场看，已经有英伟达和AMD。TPU目前还不能算完全通用，但具有软硬件结合的优势，也有谷歌自己的模型，还可以针对特定客户和特定模型组建专门团队进行优化 。</p>
+<p>对于小型创业公司，我整体并不看好，国际市场很难容纳太多厂商。内地市场的情况有所不同，我相对看好阿里和H公司。部分其他厂商目前表现尚可，但未来情况很难判断，因为内地市场还涉及产能分配、政策等问题。很多其他公司的前景可能并不理想，市场没有必要容 纳如此多厂商。</p>
+<p>阿里的芯片架构以及软硬件结合兼容性相对较好，适配能力较强，并且自身拥有足够体量，可以围绕自身业务开展定制化发展。其他厂商如果只是增加投入，同时还受到产能等因素限制，我认为发展空间不会太大，其他方面的表现可能更差。</p>
+<h2>Q:Anthropic等海外大模型厂商自行设计ASIC，是否也有发展机会？</h2>
+<p>A:大型厂商发展定制化ASIC具有一定空间。OpenAI已经展示了这种可能性:结合AI辅助设计能力以及软件侧AI agent的作用，可以在大约9个月内从芯片设计推进至实际模型部署，并取得一定性能。</p>
+<p>这类公司本身具有较强的AI能力，也拥有自己的应用负载，对模型算法理解较深。在AI加持下，它们能够快速迭代定制化产品，我认为会形成一定体量。但最终仍取决于各家公司的实际能力。有些厂商启动得更早，但目前的表现未必很好，因此不能只看启动时间。</p>
+<h2>Q:这种自研ASIC能力是如何构建的？为什么有些公司能够做起来，而有些公司不能？</h2>
+<p>A:综合来看有几个因素。第一，公司本身对AI理解较深，并且自行研发大模型，其模型通用性和知识能力较强。第二，公司使用AI工具的能力很强。第三，还需要外部支持，例如博通这样的公司能够在硬件设计方面提供定制化支持，这一点也非常关键。上述因素共同 促使这些公司能够快速推进自研ASIC。</p>
+<h2>Q:英伟达的软件生态优势主要来自CUDA。CUDA是否使英伟达能够更快部署新模型，而AMD或其他ASIC需要更长的部署和适配时间？这种生态优势最终体现在哪些客户价值、经济性或成本优势上？</h2>
+<p>A:很多公司开展研究和开发，尤其是模型端开发时，天然会使用英伟达GPU。因此，新算法发布后，CUDA通常能够立即提供支持，功能甚至性能表现都比较好。例如，新版本模型发布时，如果研发过程原本就在英伟达平台上进行，设计阶段已经充分利用英伟达硬件能力，那么在Day 0时，该模型在英伟达平台上就能获得较好的基础性能。虽然仍有优化空间，但至少发布时即可使用。</p>
+<p>其他平台适配同一个新模型时，如果模型厂商没有深度参与，就一定会存在时间差，具体时长取决于各家的软件能力。有一类情况比较特殊，即模型与硬件由同一家公司协同设计，此时专用模型与专用硬件也可能具备成本优势。</p>
+<p>但如果一家ASIC厂商希望进入通用市场，并开放支持不同厂商的各种模型，就一定需要追赶CUDA生态，而且可能不具备明显优势。其硬件架构也可能不适合某些新算法。由于当前新模型算法主要诞生于以CUDA为主的生态，天然会在CUDA上运行得更好。</p>
+<h2>Q:以Cerebras为例，如果其目前能够部署Kimi，而Kimi从K2.8升级至K3，您预计需要多长时间才能将K3部署到Cerebras设备上？</h2>
+<p>A:实现基本功能会比较快。如果只是让模型运行起来，也许可以在1个月以内完成，甚至2到3周就能跟进。但何时能够将性能优化到位则很难判断。Cerebras几乎没有外部生态，适配工作基本需要自行完成，模型厂商也未必会专门配合。</p>
+<p>因此，我无法判断其何时能够达到较好的性能。甚至不排除其硬件架构与某个模型适配不佳，或者无法充分发挥该模型的极致性能。</p>
+<h2>Q:适配一个新模型通常需要多大规模的工程师团队？</h2>
+<p>A:这不完全取决于绝对人数。在AI时代，并非人数越多就越能完成任务。对于系统性问题，几十人的团队可能已经足够。团队既要有懂计算的人员，也要有懂网络和系统的人员。几十人的团队适配一个模型已经可行，团队过大反而会产生沟通成本。由小几十人的团队专 门针对一个模型进行优化，应该比较合适。</p>
+<h2>Q:AMD是否也面临CUDA生态所带来的类似适配挑战？能否举例说明其对新模型的支持情况？</h2>
+<p>A:AMD同样面临这类挑战。例如，某个新模型的4.1版本发布后，AMD未必能够在Day 0提供支持。从公开信息看，发布至少24小时后可能仍未出现相应支持或公开性能数据，因此差距确实存在。</p>
+<p>不同模型需要case by case分析。如果新一代与上一代模型的架构变化不大，基本功能通常没有问题，只是性能仍需继续优化。但如果模型版本之间出现大量计算结构变化，非英伟达平台在Day 0时甚至可能无法提供完整的功能支持。</p>
+<h2>Q:因此，新模型的适配时间只能case by case讨论，无法给出通用的经验数值，是吗？</h2>
+<p>A:是的，无法给出统一数值。</p>
+<h2>Q:横向比较AMD与AWS Trainium、Inferentia及TPU等ASIC平台时，AMD在新模型支持和适配方面是否更具优势？</h2>
+<p>A:AMD相对这些平台肯定更有优势。如果按照运行和适配能力排名，AMD排在第二位没有问题。首要原因是AMD和英伟达都采用GPGPU路线，硬件架构存在很多相似之处。虽然并非完全相同，但可能有70%到80%的部分相似。硬件相似意味着软件更容易兼 容，甚至可以通过一定转换较快完成迁移。</p>
+<p>TPU和AWS自研芯片的架构与GPGPU存在更大差异。虽然AWS芯片和TPU已经迭代了六七代，但其兼顾和支持的算法数量相对仍然较少。</p>
+<p>以上仅供交流探讨，不构成投资建议</p>
+</div>
+</main>
+</body></html>

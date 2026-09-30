@@ -1,0 +1,194 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.28 | AC | Agents | Meta Muse Take-Rate Model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.28 | AC | Agents | Meta Muse Take-Rate Model</h1>
+<p class="orig">原标题：Meta Muse的交易抽成商业模式是否走得通？障碍在哪里？能否复制？</p>
+<p class="tags">#agents #internet</p>
+<p class="meta">AceCamp · 2026-09-28 · article 70567505</p>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>Muse能否独立完成交易，在交易链中处于什么位置；</li><li>三家平台的站内结账抽成为何都已退场；</li><li>佣金费率上限由什么决定，对Meta是否构成增量；</li><li>扩大商户覆盖的主要障碍在哪里；</li><li>这一模式能否被复制，哪些公司受益。</li></ol>
+<p>&gt; <b>Muse已能替用户下单，但商户只按获客成本付费，谷歌零收费的结账协议又收窄了议价空间，费率上限约5%。零售佣金与Meta自有广告争夺同一笔预算，增量在旅行与本地服务。OTA的付费获客首当其冲，Shopify与支付通道则因握有结账环节受益。</b></p>
+<p><b>9月23日的Connect大会上，扎克伯格说明了Muse免费额度的回报方式：Meta期望日后从交易中收取一笔小额费用。</b>这句话让交易抽成成为市场评估Muse的新焦点，Muse也开始被看作广告之外的第二条收入曲线。但佣金由谁来付、费率能定多高，扎克伯格没有说明，而这两点决定了这条曲线能画多高。本文沿着这两点，依次回答三个问题：抽成能否走通，障碍在哪里，这一模式能否被复制。</p>
+<h2><b>一、Muse已能替用户下单，收款和发货仍归商户与支付通道</b></h2>
+<p><b>要判断抽成能否走通，先要确认Muse能否独立完成一笔交易，这个前提已经基本具备。</b>按Meta在9月8日发布时的说明，每位用户分配一台云端专属计算机，另有一个名为Sentinel的代理在同一台机器上审批所有对外动作，账户凭证Muse可以调用却看不到。有公开接口的服务，Muse通过连接器调用API；其余服务则由它在云端虚拟机里操作浏览器完成。支付交给Stripe：据Stripe新闻稿，在接受Link的100万家以上商户处，Muse直接使用用户存储的支付方式结账，其余商户由Link签发仅限本次购买的一次性虚拟卡，每笔金额都由用户在对话中确认。扎克伯格在9月8日的发布帖中还表示，免费档每周最多可用1亿tokens。执行、支付、授权三段都已接通，这意味着技术上已经可以按笔计费。</p>
+<p></p>
+<p><b>在这条链上，Muse负责决策与操作，收款、发货与售后都留在商户和支付通道手里。</b>商户保留记录商户（merchant of record）身份，承担发货、退换与售后；付款由Stripe、Shop Pay或PayPal完成，Muse接触不到底层卡号。9月23日的Connect大会又加入了Shop Pay与PayPal，并公布了沃尔玛、百思买、Expedia、Shopify等连接器伙伴，开发者连接器平台开放不到一周，就收到1,500多份申请（TechCrunch）。这种分工决定了Muse在利润分配中的位置：它提供流量与执行，交易中的资金、履约与售后环节都由别人承担。把成交留在商户站内的安排，也对应了此前三家流量平台撤出站内结账的教训。</p>
+<h2><b>二、Meta、谷歌、OpenAI都试过站内结账抽成，最后都退回商户站内</b></h2>
+<p><b>在Muse之前，Meta、谷歌和OpenAI都试过在自家界面内完成结账并收取佣金，三次尝试的结局相同。</b>Meta Shops的5%销售费自2021年起多次豁免，2023年7月取消，只保留支付处理费；2025年9月4日，站内结账整体下线，改为跳转商户网站。谷歌的Buy on Google在2020年7月改为零佣金，美国站于2023年9月26日关闭，谷歌发言人对Search Engine Land表示，这是一个使用商户数量有限的小功能。OpenAI的即时结账（Instant Checkout）在2025年9月上线，据PYMNTS报道，Shopify商户经ChatGPT成交需另付4%的费用；截至2026年2月，可通过即时结账购买的Shopify商户只有约30家。2026年3月，OpenAI表示即时结账将转向Apps，购买改在接入ChatGPT的商户应用内完成。</p>
+<p></p>
+<p><b>三次退场背后是同一个规律：用户愿意在平台内发现商品，付款却习惯回到商户站内。</b>沃尔玛在ChatGPT内上架了约20万件商品，但其高管在2026年3月披露，在ChatGPT内完成结账的转化率，约为跳转回沃尔玛网站结账的三分之一。聊天内结账遇到的是“用户习惯墙”。谷歌的后续做法也印证了这一点：它关停Buy on Google后，改为把购物者直接送到商户网站的结账页；据Search Engine Land刊出的谷歌商户邮件，使用这一功能的试点商户GMV提升了1%到10%。导流环节的数据同样指向这个方向：Adobe统计显示，2026年3月AI导流流量的转化率较非AI流量高42%，而2025年3月还低38%。笔者判断，智能体交易最先跑通的会是一次性购买的访客结账，用户借Shop Pay、Link这类一键支付完成购买，无需在商户站内注册账户。</p>
+<p><b>Muse的设计则避开了这一短板：它在商户站内代用户下单，这也决定了它在经济上的身份。</b>用户在Muse里表达意向、比价并授权，下单动作落在商户页面，商户看到的仍是一笔来自外部渠道的订单。换句话说，Muse在经济上是一个带执行能力的导流方。这使得Muse的定价参照从平台佣金转向获客成本：商户为这笔订单愿意付多少，取决于它原本获取同一位顾客要花多少。</p>
+<h2><b>三、费率上限约5%，由商户获客成本和谷歌的免费协议共同决定</b></h2>
+<p><b>平台佣金是一个打包价格，Muse只能分到其中获客的那一部分。</b>亚马逊对第三方卖家多数品类收取15%的推荐费，电子产品为8%（亚马逊卖家定价页）；酒店付给OTA的佣金普遍在15%到25%之间（酒店管理软件商整理）。这些费率覆盖流量、交易保障、履约或客服等一整套服务。而在Muse的链条里，售后与退换仍由商户承担，Muse提供的只有流量与执行，因此与它可比的是商户的获客费用。Booking的年报给出了一个直接读数：2025年营销费用81.9亿美元，占当年总预订额1,861亿美元的4.4%，这大致就是一家大型中介为每一美元预订额支付的获客成本。由此可以推出，Muse向商户收费的参照系是营销费用率；平台佣金率对应的是整套服务，Muse只提供其中一部分。</p>
+<p><b>竞争对手的定价进一步收窄了这一空间。</b>谷歌在2026年1月发布通用商务协议（Universal Commerce Protocol，UCP），商户保留记录商户身份并以Google Pay结账，至今未见公开的商户费率；据PYMNTS报道，谷歌AI Mode、Gemini与微软Copilot的结账暂不向商户额外收费。OpenAI的4%则已随即时结账转向Apps而退场。当两家同样握有大流量入口的公司对代理结账暂不收费时，Meta若按平台佣金收费，商户可以把订单引向免费的渠道，Meta的议价空间因此被锁定在低位。</p>
+<p></p>
+<p><b>Muse自身的中立承诺，也要求佣金以统一的小额费率收取。</b>扎克伯格称Muse会帮用户赚钱。本文推测，排序一旦可以购买，就与这一承诺相冲突，Meta因此大概率对所有接入商户按同一费率收费，性质接近支付网络的手续费。综合以上三点，据此推算，Muse的可行费率在交易额的低个位数，上沿约5%，由Booking的4.4%、Meta Shops已取消的5%和OpenAI已退场的4%三个参照共同界定。费率上限回答了能收多少，接下来要看这笔钱从哪里来。</p>
+<h2><b>四、零售佣金与Meta自有广告争夺同一笔预算，增量在旅行和本地服务</b></h2>
+<p><b>佣金出自商户的获客预算，这意味着它在零售品类与Meta的广告收入互相替代。</b>零售商户的效果广告预算大量投向Meta，按Meta二季度电话会的说法，Advantage+的年化收入约750亿美元。同一家商户为Muse带来的订单支付佣金，与在Instagram上为同一位顾客投放转化广告，动用的是同一笔钱。对Meta而言，零售佣金多收一部分，广告收入就可能少收一部分，净增量取决于Muse带来的订单中有多少原本就会成交。笔者判断，零售佣金给Meta带来的净增量有限。</p>
+<p><b>真正的增量来自目前流向搜索广告与OTA的获客预算，旅行与本地服务是主要品类。</b>以旅行为例，Booking在2025年的营销费用占收入的30.4%，这笔预算主要用于购买流量。Muse若能以低于OTA佣金的费率把订单送到酒店或OTA，分走的就是这部分预算，而它对Meta属于新增收入。笔者认为，这也是Expedia选择以连接器方式接入Muse的原因：对OTA而言，Muse相当于一个新的付费获客渠道。</p>
+<p><b>规模换算显示，佣金要对Meta产生实质影响，Muse需要承接一个Shopify量级的交易额。</b>粗略计算，年收100亿美元佣金，按1%、2%和5%的费率，所需交易额分别约为10,000亿、5,000亿和2,000亿美元。三个数字各有参照：麦肯锡估计2030年美国B2C零售经智能体完成的交易至多10,000亿美元；Shopify二季度GMV为1,155.7亿美元，年化约4,623亿美元；Booking在2025年全年的总预订额为1,861亿美元。即使费率取到上沿，Muse也要承接相当于Booking全年的交易额，而年100亿美元粗略计算只相当于Meta按二季度年化收入的约4%。作为对照，Meta的2026年资本开支指引为1,300亿到1,450亿美元，二季度家庭应用的“其他收入”首次达到10亿美元。这与笔者9月22日报告的判断相互衔接：在佣金形成规模之前，免费额度的近期回报仍落在训练数据上。</p>
+<p></p>
+<p><b>回到第一个问题，本文的答案是：抽成走得通，但它是一笔按获客成本定价的费用。</b>费率上限约5%，零售部分还要先与Meta自己的广告相互抵消。这门生意能做多大，取决于有多少商户愿意接入，这正是下一节要讨论的障碍。</p>
+<h2><b>五、最大的障碍在大平台的放行权，信任与安全问题可以处理</b></h2>
+<p><b>法律上的阻力已经松动，决定覆盖面的是技术拦截与商户意愿。</b>亚马逊自9月20日起在站内拦截Muse，给出的理由是Meta未事先告知、代理浏览时不表明身份、疑似存储客户凭证。代理购物绕开的正是站内广告位，而亚马逊2025年广告服务收入为686.3亿美元；与此同时，亚马逊自家的Buy for Me会到其他零售商网站代用户下单。法律上，8月4日第九巡回法院撤销了亚马逊针对Perplexity的初步禁令，认定访问网站的是用户、AI助手只是工具，案件发回重审。这使得争议的焦点从访问是否合法，转向平台是否愿意放行，而后者取决于商业利益。</p>
+<p><b>国内的先例已经走完一轮，结果是由应用自己声明是否放行。</b>2025年12月1日，与中兴通讯合作推出的努比亚M153工程样机搭载豆包手机助手发售，售价3,499元；从12月2日晚起，用户陆续反映微信账号异常退出、淘宝触发人机验证、多家银行App弹窗限制使用。12月5日，豆包发布《关于调整AI操作手机能力的说明》，暂时下线操作银行、互联网支付类应用的能力。2026年9月16日二代机上市，引入屏幕自动化操作声明协议（SAEP），由第三方应用自行声明是否允许AI操作；每日经济新闻的实测显示，它在微信、淘宝与美团外卖内仍无法完成应用内的自动操作。九个月下来，放行权留在了超级应用手里。</p>
+<p></p>
+<p><b>信任与安全的约束真实存在，但可以在现有框架内处理。</b>商户仍是记录商户，Link的购买保障也覆盖Muse的订单。高客单价的旅行品类中，行程出问题由谁兜底仍待解决，本文估计，未来12到24个月住宿预订转向AI原生交易的比例在3%上下。Adobe的数据也显示，旅行类AI流量与非AI流量的转化差距，已由2024年10月的86%收窄至2026年3月的14%，AI流量的转化仍然偏低。安全方面，研究员披露的not-a-mused漏洞需要攻击者先在本机执行代码，Meta已推送热修复。Meta自身的取舍同样构成约束，Shops的销售费最终让位于广告，便是先例。</p>
+<p><b>回到第二个问题，障碍的排序是放行权第一，信任与安全其次。</b>放行机制走向由应用自主声明之后，愿意付费的商户会向两类集中：缺少自有流量的长尾商户，以及本来就在购买流量的中介。前者的主要入口是Shopify，它已向Muse开放全量商品目录与Shop Pay；后者以Expedia为代表。笔者判断，握有自有流量的大平台会倾向于拒绝接入，或在谈判中要求零费率。</p>
+<h2><b>六、代客下单多家都能复制，能稳定收费的是握有结账与支付的公司</b></h2>
+<p><b>代客下单的能力正在向多家公司扩散，复制的门槛在技术之外。</b>谷歌的UCP、OpenAI与Stripe共建的智能体商务协议（Agentic Commerce Protocol，ACP）、微软Copilot的结账、亚马逊的Buy for Me以及豆包手机助手，都已具备雏形。本文认为，收取佣金需要同时握有四项资产：意图入口决定订单从谁那里发起，执行权限决定能否替用户完成操作，支付凭证决定能否直接付款，责任兜底决定出了问题由谁负责。开放网络里每一家都缺一环，四项齐全的只有封闭生态：亚马逊在自家站内，腾讯与阿里巴巴在各自的生态内。这也解释了亚马逊对外部代理设防的原因，它在站内已握有全部四项，外部代理只会分走它的收入。</p>
+<p><b>逐家对照，Meta的长处在入口，短处在执行与兜底。</b>Meta家庭应用的日活达到36亿，入口一项占优；执行依靠云端虚拟机与连接器，缺少操作系统层面的权限；支付借用Stripe Link、Shop Pay与PayPal，兜底依赖商户与Link的购买保障。谷歌同时握有搜索与Gemini的入口、安卓与Chrome的执行权限和Google Pay，却选择了零收费加广告的组合。苹果握有iOS的系统权限与Apple Pay。豆包的入口规模庞大，执行权限却要逐个应用取得许可。</p>
+<p></p>
+<p><b>无论哪家代理胜出，每笔交易都要经过结账与支付环节，稳定的费用落在这里。</b>Shopify的二季度财报提供了读数：Shop Pay的GMV同比增长53%，Shopify Payments的渗透率达到68%。Stripe的Link在100万家以上商户可用，Stripe在4月Sessions大会上推出的共享支付令牌（Shared Payment Token）与一次性虚拟卡，让代理交易沿用现有的卡组织网络。如笔者9月9日关于模型层与框架层的报告分析，权限合规边界、渠道身份这类难以自动评分的能力，会随代理自主度上升而升值，支付凭证与责任兜底正属于这一类。</p>
+<p><b>回到第三个问题，答案是：这一模式能被复制，但能稳定收费的是已经拥有结账环节的公司。</b>对开放网络里的代理而言，抽成的上限由商户的获客预算决定；对封闭生态而言，佣金本来就包含在既有的平台抽成里。两种情形下，稳定的费用都落在结账与支付环节。</p>
+<h2><b>七、结账与支付环节受益，OTA的付费获客首当其冲</b></h2>
+<p><b>对Meta而言，佣金短期内影响的是“其他收入”一项，核心广告未受直接影响。</b>按现有披露口径，Muse的订阅与交易费大概率计入家庭应用的“其他收入”，二季度这一项为10亿美元，粗略计算约占当季总收入608亿美元的1.6%。预计2028年前佣金规模有限；零售品类的佣金会替代部分Advantage+预算，旅行与本地服务构成增量。Muse对Meta的近期价值，主要体现在数据积累与使用时长上。</p>
+<p><b>亚马逊受影响的是广告服务，AWS与履约业务未受直接波及。</b>笔者判断，站内广告位被代理绕开，是亚马逊拦截Muse的经济动因。第九巡回法院的判决削弱了诉讼这一手段，冲突随之转向技术拦截与商务谈判。Alphabet同时握有入口、执行与支付三项资产，零收费协议是它的主动选择，代价是购物类搜索广告面临重新定价。</p>
+<p><b>Shopify、Stripe（未上市）与PayPal处在结账与支付环节，不论哪家代理胜出都能收费。</b>Shopify开放全量商品目录，成为长尾商户接入代理的主要通道。Booking与Expedia首先变化的是付费获客的渠道结构，Expedia已以连接器方式接入Muse；酒店端佣金与直销渠道短期未受直接波及。</p>
+<p><b>国内的放行权留在超级应用手里。</b>腾讯与阿里巴巴通过风控与应用声明机制，保留了是否让外部代理进入的决定权，美团外卖同样在还没有放行的应用之列。字节跳动的豆包需要逐个应用取得许可，其代客下单的商业化进度取决于超级应用的放行节奏；中兴通讯作为豆包手机的硬件合作方，相关业务敞口有限。</p>
+<p><b>以下五个信号决定本文的判断是否需要修正。</b>第一，Meta公布零售品类佣金高于5%，且有具名商户接受，费率上限的判断随之失效。第二，谷歌或微软开始向商户收取代理结账费用，竞争对手给出的价格锚随之上移。第三，亚马逊以连接器方式接入Muse或与Meta达成协议，覆盖面的障碍随之解除。第四，Meta在三季度或四季度财报中单独披露Muse的交易额或佣金收入，届时费率可以直接验证。第五，Booking与Expedia披露的AI渠道预订占比，在12到24个月内明显高于3%。</p>
+<p><b>上行与下行风险都有具体的触发点。</b>对佣金规模而言，上行风险在于Muse转为记录商户并承担兜底，佣金的正当性随之上升；酒店集团也可能以低于OTA的费率，经Muse直接接单。下行风险来自监管与安全：若监管要求披露或限制付费排序，佣金只能进一步向统一的小额费率收敛；一旦发生重大安全事件，用户授权的意愿会明显回落。此外，Shops的退场说明，Meta新业务的投入会随优先级调整。</p>
+<p class="qq">以上内容不构成任何投资建议，请风险自担。</p>
+</div>
+</main>
+</body></html>

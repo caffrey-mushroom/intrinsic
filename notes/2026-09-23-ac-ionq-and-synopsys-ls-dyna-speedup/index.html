@@ -1,0 +1,250 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.23 | AC | Quantum | IonQ &amp; Synopsys LS-DYNA Speedup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.23 | AC | Quantum | IonQ &amp; Synopsys LS-DYNA Speedup</h1>
+<p class="orig">原标题：量子计算叩开工业软件大门：LS-DYNA实测提速14.6%</p>
+<p class="tags">#quantum #software</p>
+<p class="meta">AceCamp · 2026-09-23 · article 70567434</p>
+<div class="body">
+<h2>摘要</h2>
+<p>2026年9月17日，IonQ（NYSE：IONQ）与新思科技（Synopsys，NASDAQ：SNPS）公布了量子算法辅助LS-DYNA计算的研究进展。团队选择优化大型稀疏矩阵的首次图划分，再由传统计算机完成后续求解。在四个工业模型中，所 选候选方案的最好结果均优于LS-DYNA原有划分器，Drill模型的总运行时间最高下降14.56%。 这项研究针对的是工业仿真中的一个具体问题：大型稀疏矩阵在分解时会产生额外计算，而前期变量排序会影响这些计算的规模。量子算法处理的只是压缩后的小规模划分问题，但更好的划分可能减少后续大型矩阵的求解时间。 这次改善有多大，取决于测试结果能否覆盖完整计算成本，也取决于优化方案能否重复使用。本文据此分析首次图划分如何影响仿真耗时、14.6%的结果适用于哪些条件，以及这一方法怎样接入工业软件。</p>
+<p>2026年9月17日，IonQ（NYSE：IONQ）与新思科技（Synopsys，NASDAQ：SNPS）公布了量子算法辅助LS-DYNA计算的研究进展。团队选择优化大型稀疏矩阵的首次图划分，再由传统计算机完成后续求解<b>。在四个工业模型中 ，所选候选方案的最好结果均优于LS-DYNA原有划分器，Drill模型的总运行时间最高下降14.56%。</b></p>
+<p>这项研究针对的是工业仿真中的一个具体问题：大型稀疏矩阵在分解时会产生额外计算，而前期变量排序会影响这些计算的规模。量子算法处理的只是压缩后的小规模划分问题，但更好的划分可能减少后续大型矩阵的求解时间。</p>
+<p>这次改善有多大，取决于测试结果能否覆盖完整计算成本，也取决于优化方案能否重复使用。本文据此分析首次图划分如何影响仿真耗时、14.6%的结果适用于哪些条件，以及这一方法怎样接入工业软件。</p>
+<h2><b>01 一次图划分怎样让LS-DYNA少跑14.6%</b></h2>
+<h2><b>量子算法仅介入首次图划分，LS-DYNA仍承担后续仿真主体</b></h2>
+<p>LS-DYNA用于碰撞、结构、振动等工程仿真。本次研究针对其中的隐式求解流程：计算机需要处理大型稀疏矩阵，即绝大多数位置为零、只有少部分位置存在有效数值的矩阵。</p>
+<p>即使矩阵已经稀疏，求解过程中仍可能产生新的非零元素。变量的计算顺序会影响这些新增元素的数量，进而改变内存占用和矩阵分解时间。</p>
+<p>研究团队把矩阵的连接关系表示为图：节点代表变量，连线代表变量之间的联系。图划分需要兼顾两侧规模均衡与跨区域连接权重，为矩阵排序提供依据。</p>
+<p>原始图先由经典算法逐步压缩，再交给量子算法搜索首次划分方案。候选经过经典细化后送回LS-DYNA，后续递归划分、矩阵分解和仿真仍由经典系统完成。</p>
+<p class="qq">量子算法参与LS-DYNA矩阵排序的流程</p>
+<p></p>
+<p>数据来源：Zhu等，2026年8月25日版本，第3页原图1；保留原图计算流程与模块关系。</p>
+<p>量子处理器承担的是小规模划分搜索，候选方案经过经典细化，再以LS-DYNA运行时间评价效果。论文比较的是整套混合方法与原有LS-GPart划分器的结果，尚未通过保持其他步骤不变、仅替换粗化图求解器的对照实验，单独确定量子算法的贡献。</p>
+<h2><b>四个模型的最好结果均优于LS-GPart，Drill总耗时降幅达14.56%</b></h2>
+<p>研究使用Sedan、Jet、Impeller和Drill四个工业模型。原始图约有360万至3490万个节点、5530万至8.706亿条连接，远超量子处理器能够直接处理的规模。</p>
+<p class="qq">四个工业模型的原始图规模</p>
+<p></p>
+<p>数据来源：Zhu等，2026年8月25日版本，第2页原表Ⅰ；节点和边分别表示变量及连接关系，M表示百万。</p>
+<p>与LS-DYNA原有划分器LS-GPart相比，四个模型在所测试配置中的最好总运行时间分别下降约5.91%、13.80%、9.65%和14.56%。Drill由2119.19秒降至1810.63秒，减少308.56秒，对应80节点的量子线路 模拟方案。</p>
+<p class="qq">四个模型的矩阵分解时间与总运行时间</p>
+<p></p>
+<p>数据来源：Zhu等，2026年8月25日版本，第11页原表Ⅲ；单位为秒，分别报告分解时间与总运行时间的最小值。Simulation为量子线路模拟，Hardware为真实量子硬件。</p>
+<p>这些降幅来自筛选后的最好结果。每组配置选取20个较好的候选划分，分别运行LS-DYNA，再报告最小耗时；14.56%并非平均改善幅度。优化主要影响矩阵分解，因此不同模型的总时间收益还取决于该环节的耗时占比。</p>
+<h2><b>真机规模为36量子比特，模拟测试扩展至150节点</b></h2>
+<p>真实硬件实验使用IonQ的Forte处理器，最多涉及36个量子比特。Drill的硬件最好结果为1863.88秒，比基准减少255.31秒，降幅12.05%。Sedan和Impeller的硬件最好结果也有改善，Jet的结果来自模拟。</p>
+<p>团队还使用GPU执行矩阵乘积态模拟，将测试扩大至150节点。这种方法以受控近似表示量子状态，结果对应论文采用的固定近似参数。</p>
+<p>真实硬件实验检验量子处理器能否生成有用的划分候选，模拟实验则用于研究更大压缩图上的算法表现。</p>
+<h2><b>从VarQITE到Iterative-QAOA，研究扩大了规模和任务覆盖</b></h2>
+<p>2025年的前序研究使用变分量子虚时间演化算法VarQITE，测试RoofCrush、BloodPump和VibrationAnalysis三个模型，真实硬件最高达到32个量子比特。</p>
+<p>前序研究已经测量了LS-DYNA实际运行时间。其中BloodPump优于生产基准，其他模型的表现则说明，划分评分改善未必对应总运行时间下降。</p>
+<p class="qq">前序研究三个模型的归一化运行时间</p>
+<p></p>
+<p>数据来源：Aboumrad等，2025年4月14日版本，第9页原图6；依次为RoofCrush、BloodPump和VibrationAnalysis，展示不同划分方法下的运行时间及组成。</p>
+<p>2026年研究改用迭代量子近似优化算法Iterative-QAOA，扩大了硬件与模拟测试规模，并在四个模型上找到优于基准的候选。论文还比较了候选对应的运行时间分布，为判断结果是否稳定提供了更多依据。</p>
+<h2><b>02 这次突破到底有多大：优化矩阵排序，缩短工业仿真时间</b></h2>
+<h2><b>总运行时间最多缩短14.6%，主要节省矩阵分解时间</b></h2>
+<p class="qq">在论文测试的四个工业模型中，相对LS-DYNA原划分器LS-GPart，最好候选方案的总运行时间缩短约5.91%—14.56%。</p>
+<p>其中，Drill模型的改善最大：总运行时间从2119.19秒降至1810.63秒，减少308.56秒，约合5.1分钟。这一结果来自80节点的量子线路模拟方案。</p>
+<p>不同模型和粗化图规模下的结果，显示了首次划分对后续求解时间的影响。</p>
+<p class="qq">四个工业模型在不同粗化图规模下的总运行时间与矩阵分解时间</p>
+<p></p>
+<p>数据来源：Daiwei Zhu等，《End-to-end Performance of Quantum-Accelerated Large-Scale Linear Algebra Workflows》，2026年，第11页表III。WCT为实际经过时间，单位为秒；Nodes为粗化图节点数；各项为对应配置下所选候选方案中的最好结果。</p>
+<p>节省的时间主要来自矩阵分解。首次划分改善后，后续排序可能产生更少填充，使分解更快。<b>排序步骤仍然保留，其作用是减少之后的计算工作。</b></p>
+<h2><b>为什么Drill节省更多时间：分解占比和排序质量共同决定收益</b></h2>
+<p>同样使用量子算法优化排序，四个模型的改善幅度并不相同。差异来自两方面：矩阵分解原本占用多少时间，以及新排序具体改善了多少。</p>
+<p>在LS-GPart基准结果中，SedanCar的矩阵分解约占总时间的53.4%，最好总时间降幅为5.91%；JetEngine的对应数据为59.2%和13.80%；Impeller为88.3%和9.65%；Drill为94.2%和14.56 %。</p>
+<p class="qq">分解占比越高，改善分解效率对总时间的影响通常越大；实际节时还取决于模型结构和排序质量。</p>
+<p>Drill几乎全部时间都用于矩阵分解，因此这一环节加快，容易反映到总运行时间上。SedanCar有接近一半时间用于其他环节，分解提速对总时间的影响较小。</p>
+<p>不过，JetEngine的分解占比低于Impeller，最好总时间降幅却更大，说明分解占比不能单独解释全部差异。不同模型能够从新划分中获得的改善也不同。</p>
+<p>客户筛选适用任务时，应先检查矩阵分解的耗时、现有排序的改善空间，以及同一种稀疏结构需要重复求解多少次。分解耗时较长、排序结果又能重复使用的任务，更容易分摊前置优化成本。</p>
+<p class="qq">双轨验证技术路径：36量子比特真机实证近期可行性，150节点模拟锚定远期扩展空间</p>
+<p>在IonQ Forte真机测试中，Drill模型的最好总运行时间降至1863.88秒，相对基准缩短12.05%，约节省4.3分钟。SedanCar和Impeller也取得改善，JetEngine没有相应的真机结果。</p>
+<p class="qq">36量子比特真机的测试表明，现有量子硬件已经能够参与工业模型的局部优化，并改善后续经典求解的运行时间。</p>
+<p>更大规模的模拟用于考察：粗化图包含更多节点后，算法能否找到更好的划分。节点增加可以保留更多原始结构信息，同时也增加量子计算或线路模拟的工作量。因此，粗化图规模需要结合划分质量、后续求解时间和前置成本选择。</p>
+<h2><b>对工程师和客户意味着什么：减少等待，提高现有计算资源的产出</b></h2>
+<p><b>首先是缩短等待结果的时间。</b>在Drill测试中，最好模拟结果节省约5.1分钟，最好真机结果节省约4.3分钟。如果类似改善能够在客户常用模型上重复获得，工程师就可以更早拿到结果，缩短一次设计修改后的计算等待。具体收益应在客户实际任务上测量。</p>
+<p><b>其次，单个任务占用服务器的时间减少，可以为其他任务释放计算资源。</b>对于反复比较设计方案、计算多个工况的客户，这种收益可以逐次积累。若矩阵稀疏结构保持不变，排序结果还可能重复使用，进一步分摊生成和筛选候选的成本。接触关系或网格变化影响稀疏结构时，则需要重新判断排序是否适用。</p>
+<p><b>量子优化也有机会成为工业软件内部的一项求解功能。</b>工程师继续提交模型、选择计算设置和查看结果，由软件完成问题压缩、量子调用和结果处理。本次研究使用的是改造后的软件流程，常规产品中的自动选择、调用和服务安排还需要软件厂商完成。</p>
+<h2><b>03 新的启示：量子计算的落地路径</b></h2>
+<p>LS-DYNA案例说明，量子计算可以从工业软件中的局部问题开始：先找到适用环节，再接入现有流程，核算完整收益，最后形成客户可以持续使用的功能。</p>
+<p class="qq">量子计算接入工业软件的实施流程</p>
+<p></p>
+<p>数据来源：根据《End-to-end Performance of Quantum-Accelerated Large-Scale Linear Algebra Workflows》，2026年，及其混合计算流程整理。图中为作者归纳的实施步骤。</p>
+<h2><b>第一步：找出关键环节，让局部优化影响后续大量计算</b></h2>
+<p><b>优先选择规模能够压缩、优化结果又会影响后续大量工作的环节。</b> LS-DYNA研究只将压缩后的首次划分交给量子算法，却能影响大型矩阵的分解效率。筛选其他任务时，同样需要检查：压缩是否保留关键关系，改善这一环节能为完整任务节省多少工作。</p>
+<h2><b>第二步：接入现有软件，让用户沿用熟悉的操作</b></h2>
+<p>工业软件需要自动完成问题提取、量子调用、结果处理和约束检查，并在不适用时使用经典方案。工程师继续提交模型和查看结果，量子计算作为内部求解步骤运行。软件厂商负责模型与业务流程，量子厂商提供计算服务，双方共同解决调用时间、结果格式和异常处理。</p>
+<h2><b>第三步：核算完整收益，按实际收益提供服务，支持客户持续使用</b></h2>
+<p><b>比较对象应当是完成同一任务的总耗时、总成本和结果质量。</b> 对LS-DYNA而言，需要计入候选生成、筛选与最终求解，并与同等条件下的经典方案比较。排序可以重复使用时，前置成本由多次求解分摊；模型结构经常变化时，则要计入重新优化的费用。客户测试还应覆盖平均表现与结果波动，据此确定适用范围。</p>
+<p>适用范围明确后，软件厂商才能决定收费方式和服务保障。仿真客户主要比较计算时间与新增费用，生产客户更关注设备效率和执行成本，研发客户还会考察方案或预测质量。持续使用的基础，是这些改善能够在日常任务中重复出现。</p>
+<h2><b>按此思路，量子计算可以延伸到设计、生产和金融</b></h2>
+<p>沿着这一思路，可以先提取局部的搜索、划分或计算任务，由量子与经典算法协作求解，再将结果交回业务软件。适用方向包括工业设计中的参数组合与材料计算、生产物流中的排序与调度，以及金融模型中的数据处理。</p>
+<p>已有案例覆盖不同阶段：</p>
+<ul><li>波音（NYSE: BA）与IBM（NYSE: IBM）完成了40变量的复合材料铺层真机演示</li><li>QCEDA研究验证了DRAM地址映射的小规模实例</li><li>Ford Otosan（BIST: FROTO）使用D-Wave（NYSE: QBTS）混合求解服务，将每轮1000辆车的排程计算从30分钟缩短至不足5分钟，并已用于生产</li><li>HSBC（LSE: HSBA）与IBM在债券交易数据回测中，取得最高约34%的样本外预测评分相对改善。</li></ul>
+<p class="qq">量子计算的应用环节、业务评价指标与代表案例</p>
+<p></p>
+<p>数据来源：LS-DYNA联合研究，2026年；IBM波音复合材料设计及腐蚀研究案例，2023年；《QCEDA: Using Quantum Computers for EDA》，2024年公开；D-Wave的Ford Otosan公告，2025年3月31日，以及Pier 300案例报告，2022年；HSBC与IBM债券成交概率预测研究，2025年。图中按应用目的归类，评价指标为作者整理。</p>
+<p><b>更值得优先筛选的，是优化结果能够反复使用，或一次决策会影响大量后续活动的任务。</b> 排序可以服务多次求解，设计配置会影响产品长期运行，调度计划会影响整批设备作业。应用价值既取决于局部改善幅度，也取决于这种改善作用于多少次计算、多少台设备或多少笔业务；全部调用和集成成本，应放在同一范围内核算。</p>
+<h2><b>结论</b></h2>
+<p><b>第一，量子算法已经能够接入成熟工业软件的具体计算环节。</b> 本次研究将量子算法用于首次图划分，由经典计算机完成后续求解，并在工业模型上测得运行时间改善。</p>
+<p><b>第二，14.6%证明了局部排序优化对完整求解的影响。</b> 这一降幅对应所测配置中的最好候选。客户任务能够节省多少时间，由矩阵分解占比、排序质量、前置开销和结果复用次数共同决定。</p>
+<p><b>第三，量子计算的应用需要落实到软件中的具体功能。</b> 仿真看完整任务耗时，设计看方案质量，生产看作业效率，预测看准确性。能够在日常使用中持续改善这些指标，并覆盖新增费用的功能，才有长期使用价值。</p>
+<h2><b>资料与说明</b></h2>
+<p><b>LS-DYNA测试口径。</b> 文中运行时间降幅以论文LS-GPart结果为基准计算，均对应所测配置和候选方案中的最好结果。论文采用限定的振动分析与瞬态分析任务，相关降幅对应这些测试设置；前置量子候选生成等全部开销未纳入所列LS-DYNA运行时间。</p>
+<p><b>时间统计口径。</b> 总运行时间与矩阵分解时间的最小值分别统计，可能来自不同候选方案，因此不据两者之差推算同一候选方案的其他环节耗时。</p>
+<p><b>计算规模。</b> 原始图节点数、粗化图节点数与量子比特数对应不同处理阶段。36量子比特为真机测试规模；150节点为粗化图及相应量子线路模拟规模。矩阵乘积态模拟属于经典计算机上的近似量子线路模拟。</p>
+<p><b>扩展案例。</b> 波音铺层与QCEDA对应研究演示；Ford Otosan数据对应完整混合求解方案的排程时间；HSBC的约34%对应部分模型样本外测试评分的相对改善。Pier 300案例由SavantX（非上市）与相关合作方实施，其运营改善对应整套系统。各案例的硬件、算法和评价指标不同，文中分别说明其用途与阶段。</p>
+<h2><b>图表及数据来源</b></h2>
+<p><b>LS-DYNA论文与原图：</b> Daiwei Zhu、Miguel Angel Lopez-Ruiz、François-Henry Rouet等，《End-to-end Performance of Quantum-Accelerated Large-Scale Linear Algebra Workflows》，2026年，arXiv 2603.15515，第4版。模型规模见第2页表I，混合计算流程见第3页图1，候选结果分布见第8页图4，运行时间见第11页表III。</p>
+<p><b>联合研究公告：</b> IonQ，《IonQ Demonstrates Computer-Aided Engineering Workload Acceleration by Up to 14.6% with Quantum Technology》，2026年9月17日，研究内容与性能结果部分。</p>
+<p><b>实施流程图与应用逻辑图：</b> 根据本文所列论文及公司资料整理，分别表示实施步骤，以及应用环节、评价指标和已披露案例阶段。</p>
+<p><b>复合材料设计：</b> IBM，《Boeing seeks new ways to engineer strong, lightweight materials》及《How quantum computers could help design airplanes》，2023年，复合材料铺层与40变量模型演示部分。</p>
+<p><b>芯片设计：</b> Matthias Jung等，《QCEDA: Using Quantum Computers for EDA》，2024年公开，研究问题、案例测试与规模讨论章节，涉及DRAM地址映射及小规模真机验证。</p>
+<p><b>材料计算：</b> IBM，《Can quantum computers bring an end to corrosion?》，2023年10月3日；T. P. Gujarati等，《Quantum computation of reactions on surfaces using local embedding》，《npj Quantum Information》9卷，88号，2023年，镁表面水还原反应研究。</p>
+<p><b>制造排程：</b> D-Wave，《In Production: Ford Otosan Deploys Vehicle Manufacturing Application Built with D-Wave Technology》，2025年3月31日，1000辆汽车生产排程的混合求解服务案例。</p>
+<p><b>港口物流：</b> D-Wave，《SavantX: Logistics Optimization at the Port of Los Angeles》，2022年，第1—2页，Pier 300吊机与卡车调度及HONE系统应用。</p>
+<p><b>金融预测：</b> HSBC，量子辅助算法交易试验公告，2025年9月25日；Axel Ciceri等，《Enhanced fill probability estimates in institutional algorithmic bond trading using statistical learning algorithms with quantum computers》，2025年，arXiv 2509.17715，交易数据处理、回测与样本外评分部分。</p>
+<p class="qq">风险提示：上述内容均为笔者个人观点，投资者需风险自担。</p>
+</div>
+</main>
+</body></html>

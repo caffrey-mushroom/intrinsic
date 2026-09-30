@@ -1,0 +1,538 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.24 | 9K | INTC | Intel Channel Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.24 | 9K | INTC | Intel Channel Check</h1>
+<p class="orig">原标题：Merit 英特尔近况调研(2026-09-24 16:00:00)</p>
+<p class="tags">#semis</p>
+<p class="meta">Meritco 久谦 · 2026-09-24</p>
+<div class="body">
+<h2>音频信息</h2>
+<p>音频标题: 260924 - Merit 英特尔近况调研</p>
+<p>相关标的：undefined</p>
+<p>议题：</p>
+<p>完整音频链接：</p>
+<h2>音频纪要总结</h2>
+<h2>专家访谈纪要</h2>
+<h2>1. Muse AI及Agent对服务器CPU需求的拉动</h2>
+<h3>a) Muse AI与传统聊天机器人有何区别，为什么会显著增加CPU需求？</h3>
+<ul><li>传统聊天机器人的主要流程是用户输入问题，由GPU完成大语言模型推理并返回答案；CPU主要负责预处理、网络处理及归档等辅助工作。</li></ul>
+<ul><li>Muse AI并非单纯的聊天机器人，其核心设计是每个智能体可运行在持久化或专用安全虚拟机中，并拥有独立浏览器，能够自主访问网页、填写表格、订票及处理客服任务。</li></ul>
+<ul><li>一次完整的Muse AI任务涉及：</li></ul>
+<ol><li>大语言模型推理；</li></ol>
+<ol><li>浏览器实例；</li></ol>
+<ol><li>安全虚拟机及网络协议栈；</li></ol>
+<ol><li>数据库与工具调用；</li></ol>
+<ol><li>JavaScript执行；</li></ol>
+<ol><li>多个子智能体之间的协调。</li></ol>
+<ul><li>上述环节中，主要只有大语言模型推理依赖GPU，其余大量任务均由CPU承担，因此Agent AI对CPU的使用强度明显高于传统生成式AI应用。</li></ul>
+<ul><li>Muse只是代表性产品，真正长期的需求增量将来自所有Agent类应用，而非单一产品。</li></ul>
+<h3>b) 如何测算单个Muse活跃用户对应的CPU使用量？</h3>
+<ul><li>中性情景下，假设每名日活用户每天执行3个Agent任务，每个任务平均运行15至20分钟，执行期间平均使用2个虚拟CPU。</li></ul>
+<ul><li>按照“3个任务×20分钟×2个虚拟CPU”计算，每名活跃用户每天约消耗120个虚拟CPU分钟，即约2个VCPU小时。</li></ul>
+<ul><li>若Muse日活达到1,000万：</li></ul>
+<ol><li>每天约需要2,000万个VCPU小时；</li></ol>
+<ol><li>除以24小时，相当于约83万个VCPU持续运行；</li></ol>
+<ol><li>按服务器平均利用率60%至70%、每颗x86服务器CPU拥有100至150个有效核计算；</li></ol>
+<ol><li>理论上约需1万至2万颗服务器CPU等效算力。</li></ol>
+<ul><li>若日活达到1亿，对应需求约为10万至20万颗服务器CPU等效算力。</li></ul>
+<ul><li>如果用户每天使用Agent的时间提升至1至2小时，CPU需求还会进一步增长。</li></ul>
+<h3>c) 为什么理论测算不能直接等同于实际CPU采购量？</h3>
+<ul><li>理论需求转化为实际采购量时，需要考虑4个变量：</li></ul>
+<ol><li>Meta可能采取较为激进的虚拟机超配及资源调度策略；</li></ol>
+<ol><li>很多Muse虚拟机并非始终处于活跃状态；</li></ol>
+<ol><li>Meta除采购Intel和AMD外，还可能使用自研芯片；</li></ol>
+<ol><li>部分任务可以共享公共服务，并非每个用户独占CPU核心。</li></ol>
+<ul><li>因此，理论算力需求不能直接理解为Meta需要按同等数量采购物理CPU。</li></ul>
+<h3>d) 2026年至2028年，Muse可能带来多少新增服务器CPU需求？</h3>
+<ul><li>2026年Muse处于上线初期，用户规模和应用强度仍较低，对CPU需求拉动有限。</li></ul>
+<ul><li>2027年，若Muse日活达到3,000万至5,000万，预计新增约5万至15万颗服务器CPU等效需求。</li></ul>
+<ul><li>2028年，若日活达到1亿至2亿，且Agent任务明显普及，预计新增需求约为15万至40万颗服务器CPU等效。</li></ul>
+<ul><li>上述为整体服务器CPU需求，并不代表全部由Intel获得。</li></ul>
+<h3>e) Muse可能为Intel带来多少增量？</h3>
+<ul><li>若Intel获得Muse通用CPU需求的30%至40%：</li></ul>
+<ol><li>2027年对应新增需求约2万至6万颗；</li></ol>
+<ol><li>2028年对应新增需求约5万至15万颗。</li></ol>
+<ul><li>Intel目前每年服务器CPU出货量超过1,000万颗，因此即使新增需求接近15万颗，占比也仅约1%至2%。</li></ul>
+<ul><li>Muse单一产品的短期增量并不大，更重要的长期逻辑是全球Agent应用全面普及。</li></ul>
+<ul><li>内部模型假设：若2028年不考虑Agent时全球服务器CPU需求指数为100，加入所有Agent AI需求后，指数可能提升至105至115，即带来约5%至15%的额外需求。</li></ul>
+<h2>2. 服务器CPU行业需求、供给与价格趋势</h2>
+<h3>a) 2026年服务器CPU市场景气度如何？</h3>
+<ul><li>2026年服务器CPU市场进入明确的上行阶段，实际需求强于此前市场预期。</li></ul>
+<ul><li>市场原本认为AI资本开支将主要投入GPU，通用CPU需求可能偏弱，但实际情况相反。</li></ul>
+<ul><li>AI服务器除GPU外，还需要大量Host CPU，同时带动控制平面、存储、网络等通用计算需求。</li></ul>
+<ul><li>Intel和AMD均出现交货周期拉长：</li></ul>
+<ol><li>Intel在中国市场的部分产品交期一度达到6个月；</li></ol>
+<ol><li>AMD交期约为8至10周。</li></ol>
+<ul><li>2026年第二季度，Intel服务器CPU出货量同比增长约9%，ASP同比增长48%。</li></ul>
+<ul><li>第三方报告预计，2026年AI服务器出货量约280万台，同比增长30%以上，AI服务器在整体服务器产值中的占比已处于较高水平。</li></ul>
+<ul><li>预计2026年至2027年服务器CPU出货量将维持强劲双位数增长，增长动能有望延续至2028年。</li></ul>
+<h3>b) Intel未来三年的服务器CPU出货量如何预测？</h3>
+<ul><li>Intel内部预计：</li></ul>
+<ol><li>2026年服务器CPU出货量约1,250万颗，同比增长10%至15%；</li></ol>
+<ol><li>2027年约1,450万颗，同比增长12%至18%；</li></ol>
+<ol><li>2028年约1,650万颗，同比增长10%至15%。</li></ol>
+<ul><li>行业整体服务器CPU出货量可能达到4,000万至5,000万颗，但访谈未提供完整的行业统计数据。</li></ul>
+<ul><li>Intel和AMD均将受益于市场扩张，因此行业增长不等同于Intel独享增长。</li></ul>
+<h3>c) 服务器CPU价格将经历哪些阶段？</h3>
+<ul><li>第一阶段为2026年下半年至2027年上半年：</li></ul>
+<ol><li>供应持续紧张；</li></ol>
+<ol><li>高核数产品尤为紧缺；</li></ol>
+<ol><li>CPU价格及ASP预计保持较强增长。</li></ol>
+<ul><li>第二阶段自2027年下半年开始：</li></ul>
+<ol><li>Intel 18A产能逐步提升；</li></ol>
+<ol><li>AMD下一代EPYC产品扩产；</li></ol>
+<ol><li>供应改善将抑制同代SKU继续大幅涨价；</li></ol>
+<ol><li>常规产品价格涨幅趋缓。</li></ol>
+<ul><li>第三阶段为2028年及以后：</li></ul>
+<ol><li>每个Socket的售价仍可能维持高位；</li></ol>
+<ol><li>每核价格将逐步下降；</li></ol>
+<ol><li>CPU将通过更高核数实现更高整颗芯片ASP。</li></ol>
+<ul><li>例如，当前一颗CPU可能售价5,000元，未来新一代产品可能达到8,000至10,000元，但核心数可能从64核提升至128核、192核甚至更高。</li></ul>
+<h3>d) Intel近期调价幅度及ASP增长来源是什么？</h3>
+<ul><li>Intel已对部分服务器CPU SKU主动调价，旗舰产品6980的价格上调约12%。</li></ul>
+<ul><li>超大规模客户通常不完全按照公开目录价格采购，因此评估价格变化时应重点关注实际ASP。</li></ul>
+<ul><li>2026年第二季度ASP同比增长48%，其中：</li></ul>
+<ol><li>约12个百分点来自主动调价；</li></ol>
+<ol><li>剩余约36个百分点主要与供需紧张及产品结构变化相关。</li></ol>
+<ul><li>第三季度ASP同比增幅可能高于第二季度的48%，第四季度也将延续较高水平。</li></ul>
+<ul><li>从环比看，涨幅相对温和：</li></ul>
+<ol><li>第三季度较第二季度预计上涨10%以内；</li></ol>
+<ol><li>第三季度至第四季度的环比涨幅预计约在10%左右。</li></ol>
+<ul><li>预计2026年11月仍可能进行新一轮价格调整。</li></ul>
+<h3>e) Socket、CPU和Core之间是什么关系？</h3>
+<ul><li>在服务器配置语境下，1个Socket可近似理解为安装1颗CPU。</li></ul>
+<ul><li>每颗CPU包含的核心数因产品不同而异，常见规格包括64核、128核、192核等。</li></ul>
+<ul><li>因此，未来服务器CPU可能呈现“单颗价格上涨、单颗核心数大幅增加、每核价格下降”的趋势。</li></ul>
+<h2>3. Intel三条业务线的共振逻辑</h2>
+<h3>a) Intel过去一年最重要的变化是什么？</h3>
+<ul><li>Intel的变化并非单一产品突然变强，而是3条业务线开始形成共振：</li></ul>
+<ol><li>先进制程；</li></ol>
+<ol><li>先进封装；</li></ol>
+<ol><li>服务器CPU。</li></ol>
+<ul><li>先进制程方面，18A已经从“能否量产”转向“良率、成本和产能能否顺利爬坡”的阶段，18A-P已于6月进入风险试产。</li></ul>
+<ul><li>14A已进入客户测试和产能预留阶段，但距离成熟商业化量产仍较远。</li></ul>
+<ul><li>先进封装方面，Intel正由EMIB向EMIB-T推进，受益于AI芯片多Chiplet、多HBM和超大封装的发展趋势。</li></ul>
+<ul><li>CPU业务重新受益于AI服务器对Host CPU、控制平面、存储及网络的同步需求增长。</li></ul>
+<h2>4. Intel与SK海力士潜在合作</h2>
+<h3>a) Intel与SK海力士可能合作哪些产品？</h3>
+<ul><li>双方目前仍在洽谈，预计合作重点优先集中于：</li></ul>
+<ol><li>HBM；</li></ol>
+<ol><li>服务器DRAM；</li></ol>
+<ol><li>相关DRAM前道制造。</li></ol>
+<ul><li>其他产品和合作方向的优先级相对靠后。</li></ul>
+<h3>b) 双方合作的产业逻辑是什么？</h3>
+<ul><li>SK海力士已在美国印第安纳州启动投资超过40亿美元的HBM项目，目标是：</li></ul>
+<ol><li>2028年10月洁净室准备就绪；</li></ol>
+<ol><li>2029年下半年开始量产下一代HBM。</li></ol>
+<ul><li>印第安纳州项目主要定位于先进封装和测试，并非完整的DRAM前道晶圆厂。</li></ul>
+<ul><li>SK海力士目前仍计划主要在韩国生产DRAM晶圆，因此其美国业务存在“有HBM后道能力、缺少本土先进前道产能”的缺口。</li></ul>
+<ul><li>若Intel俄亥俄州相关合作落地，有望形成美国本土闭环：</li></ul>
+<ol><li>俄亥俄州负责晶圆制造；</li></ol>
+<ol><li>印第安纳州负责HBM堆叠、封装和测试；</li></ol>
+<ol><li>最终在美国本土完成交付。</li></ol>
+<ul><li>该模式能够满足美国本土供应链及客户交付需求。</li></ul>
+<h3>c) 合作项目预计何时落地？</h3>
+<ul><li>该项目建设周期较长，不应理解为短期即可大量出货。</li></ul>
+<ul><li>基准情景下：</li></ul>
+<ol><li>2026年下半年至2027年上半年，完成合作结构设计，包括租赁或合资模式、出资安排及知识产权隔离；</li></ol>
+<ol><li>2027年至2028年，完成厂房配置修改和设备订购；</li></ol>
+<ol><li>2028年至2029年，进入工程晶圆和客户认证阶段；</li></ol>
+<ol><li>顺利情况下，2029年前后有望开始量产；</li></ol>
+<ol><li>更稳妥的首批规模化运营时间区间为2029年至2031年。</li></ol>
+<ul><li>访谈同时给出“目前处于试生产、约3年后商用”的基准判断，具体仍取决于合作结构与资本安排。</li></ul>
+<h3>d) 潜在产能规模有多大？</h3>
+<ul><li>初始产能预计约为每月1.5万至2.5万片300毫米晶圆。</li></ul>
+<ul><li>若验证顺利，产能可提升至每月3万至5万片。</li></ul>
+<ul><li>若亚马逊、微软、Meta等CSP参与，并签订长期包销协议，产能可能扩展至每月5万至8万片甚至更高。</li></ul>
+<ul><li>核心变量不是厂房本身，而是谁承担先进晶圆厂的资本风险。</li></ul>
+<ul><li>若仅由Intel和SK海力士承担资本投入，决策可能较为谨慎；若大型云厂商共同参与，扩产节奏可能加快。</li></ul>
+<h2>5. 18A先进制程客户、产能与良率</h2>
+<h3>a) 18A的主要外部客户有哪些？</h3>
+<ul><li>亚马逊是目前最明确的18A外部客户：</li></ul>
+<ol><li>双方已于2024年签署合作备忘录；</li></ol>
+<ol><li>Intel Foundry将使用18A为亚马逊生产AI Fabric Chip；</li></ol>
+<ol><li>同时还涉及Intel 3工艺的另一项定制产品合作。</li></ol>
+<ul><li>微软也已有明确的18A芯片设计合作备忘录，但推进速度慢于亚马逊。</li></ul>
+<ul><li>微软未公开具体产品用途，受访者推测可能与Maia系列相关，但该判断尚未确认。</li></ul>
+<ul><li>相比外部客户，18A近期更重要的需求仍来自Intel内部产品。</li></ul>
+<h3>b) 亚马逊AI Fabric Chip属于哪类芯片？</h3>
+<ul><li>该产品不是传统CPU，也不是直接承担训练或推理计算的AI加速器。</li></ul>
+<ul><li>其定位是AI集群内部高带宽互联的定制化网络ASIC。</li></ul>
+<ul><li>可以将其理解为Scale-up或Scale-out网络中的交换芯片。</li></ul>
+<ul><li>产品正式发布后可能会拥有独立品牌名称，目前内部统一称为AI Fabric Chip。</li></ul>
+<h3>c) Intel内部哪些产品将采用18A？</h3>
+<ul><li>主要包括：</li></ul>
+<ol><li>PTL；</li></ol>
+<ol><li>Core Ultra 13；</li></ol>
+<ol><li>服务器端CWF，即Xeon 6+。</li></ol>
+<ul><li>CWF的芯片架构与18A工艺匹配度较高，但由于其Die尺寸较大，良率爬坡难度高于小尺寸计算芯片。</li></ul>
+<h3>d) 18A产能将如何爬坡？</h3>
+<ul><li>18A目前由两个主要生产基地承担，合计产能约每月3万片300毫米晶圆。</li></ul>
+<ul><li>预计2026年年底达到约每月4万片较为合理。</li></ul>
+<ul><li>2027年将进一步向每月5万至6万片靠拢。</li></ul>
+<ul><li>18A已进入商业化爬坡阶段，后续重点是提升大型Die良率、降低成本并提高稳定产出。</li></ul>
+<h3>e) 18A目前的良率水平如何？</h3>
+<ul><li>不同芯片尺寸对应的良率差异较大：</li></ul>
+<ol><li>PTL等较小计算单元的18A良率约为80%；</li></ol>
+<ol><li>CWF等大型服务器Die的良率约为50%。</li></ol>
+<ul><li>到2027年，预计：</li></ul>
+<ol><li>PTL等小型芯片良率稳定在85%以上；</li></ol>
+<ol><li>CWF等大型芯片良率进入60%至75%的经济区间。</li></ol>
+<ul><li>大型服务器芯片不一定需要达到90%以上良率才能实现经济性和盈利。</li></ul>
+<h2>6. 14A先进制程客户、定位与量产节奏</h2>
+<h3>a) 14A为何比18A更关键？</h3>
+<ul><li>18A近期主要服务Intel内部产品，外部客户虽已导入，但规模仍有限。</li></ul>
+<ul><li>14A从设计初期就更面向外部代工客户，因此是决定Intel Foundry长期竞争力的关键节点。</li></ul>
+<ul><li>Intel直到2026年第二季度才正式确认将完成14A开发，项目仍处于相对早期阶段。</li></ul>
+<h3>b) 14A有哪些潜在客户及应用方向？</h3>
+<ul><li>特斯拉是当前讨论较深入、具有象征意义的潜在大客户。</li></ul>
+<ul><li>特斯拉及SpaceX提出的TeraFab相关芯片需求可能分为两类：</li></ul>
+<ol><li>用于车辆和Optimus机器人的AI计算芯片；</li></ol>
+<ol><li>用于大型AI数据中心的计算芯片。</li></ol>
+<ul><li>Intel预计14A规模化后主要应用于：</li></ul>
+<ol><li>AI ASIC；</li></ol>
+<ol><li>AI Fabric等高性能网络芯片；</li></ol>
+<ol><li>高性能计算Chiplet。</li></ol>
+<ul><li>14A未来可能不会以手机芯片为主要应用方向。</li></ul>
+<h3>c) 博通、AMD、高通、苹果和英伟达是否可能成为14A客户？</h3>
+<ul><li>博通、高通、AMD及苹果均属于潜在客户。</li></ul>
+<ul><li>但这些公司在移动IP、射频、低功耗库及现有代工生态方面投入较深，更换代工厂时会较为谨慎，不太可能激进切换。</li></ul>
+<ul><li>Intel与英伟达进行过相关探讨，但尚未深入推进，英伟达预计仍更倾向于台积电。</li></ul>
+<ul><li>Intel与联发科的沟通相对更多，合作可能性高于英伟达。</li></ul>
+<h3>d) 14A产能和商业化节奏如何？</h3>
+<ul><li>14A尚不能视为成熟产能，当前目标为：</li></ul>
+<ol><li>2027年年底达到约每月6,000片；</li></ol>
+<ol><li>2028年年底达到约每月2.4万片；</li></ol>
+<ol><li>2029年后进入真正意义上的商业化量产。</li></ol>
+<ul><li>通常先进制程月产能至少达到3万片，较理想为3万至4万片以上，才能视为规模化商业量产。</li></ul>
+<h3>e) 14A良率预计如何爬坡？</h3>
+<ul><li>14A目前尚无具有代表性的实际量产良率数据，现阶段主要是预期值。</li></ul>
+<ul><li>预计：</li></ul>
+<ol><li>2027年风险试产初期良率约30%至50%，中枢接近30%；</li></ol>
+<ol><li>2028年进入高量制造阶段后，良率约60%至70%；</li></ol>
+<ol><li>2029年成熟后，良率可能稳定在75%至85%。</li></ol>
+<ul><li>上述良率均属于预测，仍取决于工艺开发、客户产品设计和产能爬坡情况。</li></ul>
+<h2>7. EMIB-T先进封装业务及客户进展</h2>
+<h3>a) EMIB-T目前的客户和订单情况如何？</h3>
+<ul><li>客户对EMIB-T的兴趣较高，存量订单持续增加。</li></ul>
+<ul><li>当前良率和可靠性已基本达到内部目标，可支持2027年客户放量。</li></ul>
+<ul><li>两个最重要的外部客户是谷歌和亚马逊。</li></ul>
+<ul><li>先进封装的直接客户与最终芯片品牌方可能并不一致：</li></ul>
+<ol><li>谷歌负责定义ASIC；</li></ol>
+<ol><li>联发科等公司可能参与设计；</li></ol>
+<ol><li>台积电可能负责前道制造；</li></ol>
+<ol><li>Intel可能负责先进封装。</li></ol>
+<ul><li>最终对应产品主要是大尺寸AI加速器或定制AI芯片。</li></ul>
+<h3>b) 谷歌和亚马逊可能将EMIB-T用于哪些产品？</h3>
+<ul><li>谷歌方面：</li></ul>
+<ol><li>主要对应下一代TPU；</li></ol>
+<ol><li>2026年主要产品仍为TPU V7；</li></ol>
+<ol><li>2027年以后产品封装面积和HBM数量预计继续增加；</li></ol>
+<ol><li>EMIB-T有望从2027年之后切入。</li></ol>
+<ul><li>亚马逊方面：</li></ul>
+<ol><li>更可能用于后续训练类芯片；</li></ol>
+<ol><li>也可能用于其他自研AI Silicon。</li></ol>
+<ul><li>适合EMIB-T的芯片通常具有3个特征：</li></ul>
+<ol><li>计算Die数量较多；</li></ol>
+<ol><li>HBM数量较多；</li></ol>
+<ol><li>封装面积非常大。</li></ol>
+<ul><li>Intel EMIB目前最大可支持约120毫米×120毫米的封装尺寸。</li></ul>
+<h3>c) EMIB产能如何理解，能否与台积电CoWoS直接比较？</h3>
+<ul><li>EMIB与CoWoS的产能口径不同，不能简单按照晶圆片数直接比较。</li></ul>
+<ul><li>CoWoS通常以中介层晶圆数量衡量，而EMIB只使用局部硅桥，不需要完整的大型硅中介层。</li></ul>
+<ul><li>因此，1片EMIB相关晶圆不能直接等同于1片CoWoS中介层晶圆。</li></ul>
+<ul><li>Intel先进封装产能主要分布在美国和亚洲，包括新墨西哥州，后续仍将持续扩产。</li></ul>
+<h3>d) EMIB外部业务何时开始贡献收入？</h3>
+<ul><li>2026年仍以Intel内部产品占用产能及外部客户认证为主。</li></ul>
+<ul><li>2027年下半年预计开始出现明显的外部收入爬坡。</li></ul>
+<ul><li>2028年进入较稳定的运行阶段。</li></ul>
+<ul><li>2029年预计达到阶段性高峰。</li></ul>
+<ul><li>产能方面：</li></ul>
+<ol><li>2026年可向外部客户提供的有效产能相对有限；</li></ol>
+<ol><li>2027年伴随谷歌、亚马逊等客户放量，产能可能扩大2至3倍；</li></ol>
+<ol><li>2028年以后若验证顺利，AI封装能力可能达到每月数万至10万级。</li></ol>
+<h3>e) 先进封装业务收入规模如何预测？</h3>
+<ul><li>2027年外部先进封装收入预计低于10亿美元，处于个位数亿美元水平。</li></ul>
+<ul><li>2028年若客户验证及放量顺利，收入有望达到约10亿美元。</li></ul>
+<ul><li>2029年业务规模预计明显扩大。</li></ul>
+<ul><li>长期来看，先进封装业务有望达到十亿美元级以上，单个大型客户理论上可贡献数十亿美元业务规模。</li></ul>
+<h2>8. Intel先进封装相较台积电的优势与劣势</h2>
+<h3>a) Intel EMIB/EMIB-T的主要优势是什么？</h3>
+<ul><li>核心优势可概括为架构灵活性、潜在成本优势及美国本土供应链能力。</li></ul>
+<ul><li>具体包括：</li></ul>
+<ol><li>EMIB不需要完整的大型硅中介层，可降低对超大尺寸中介层的依赖；</li></ol>
+<ol><li>面对十几个计算Chiplet、多个HBM及I/O Die时，多个局部互连桥具有更高的设计灵活性；</li></ol>
+<ol><li>更适合超大型AI芯片封装；</li></ol>
+<ol><li>EMIB-T加入TSV后可实现垂直供电，改善高功耗封装的供电网络；</li></ol>
+<ol><li>对几千瓦级AI封装中的IR Drop、电源噪声及热管理等问题具有差异化价值；</li></ol>
+<ol><li>具备美国本土制造和供应链安全优势。</li></ol>
+<h3>b) Intel相较台积电的主要劣势是什么？</h3>
+<ul><li>Intel服务外部客户的先进封装量产经验明显少于台积电。</li></ul>
+<ul><li>台积电CoWoS在客户认证、良率、产能规模和产业生态方面更加成熟。</li></ul>
+<ul><li>Intel需要通过2027年至2029年的外部客户量产，验证其良率、交付能力及供应链协同能力。</li></ul>
+<ul><li>总体而言，Intel的优势是技术架构灵活和潜在成本，台积电的优势是成熟度、良率及完整生态。</li></ul>
+<h2>结构化总结表格</h2>
+<div class="tbl"><table class="t wrap"><thead><tr><th>业务板块</th><th>核心指标</th><th>当前状态</th><th>后续预测/目标</th><th>关键变量</th></tr></thead><tbody><tr><td><b>Muse AI CPU需求</b></td><td>单用户CPU用量</td><td>每名DAU约2个VCPU小时/日</td><td>2027年新增5万至15万颗CPU等效；2028年15万至40万颗</td><td>DAU、任务时长、VM超配、共享服务、自研芯片</td></tr><tr><td><b>Intel受益规模</b></td><td>Muse带来的Intel增量</td><td>近期贡献有限</td><td>2027年2万至6万颗；2028年5万至15万颗</td><td>Intel份额按30%至40%测算</td></tr><tr><td><b>Agent长期拉动</b></td><td>2028年全球CPU需求指数</td><td>不含Agent为100</td><td>加入Agent后提升至105至115</td><td>Agent渗透率与用户使用时长</td></tr><tr><td><b>服务器CPU市场</b></td><td>行业景气度</td><td>供应紧张，高核产品短缺</td><td>强劲双位数增长延续至2028年</td><td>AI服务器、Host CPU及控制平面需求</td></tr><tr><td><b>Intel服务器CPU出货</b></td><td>年度出货量</td><td>2026年预计1,250万颗</td><td>2027年1,450万颗；2028年1,650万颗</td><td>AMD竞争、18A供给、产品升级</td></tr><tr><td><b>Intel服务器CPU ASP</b></td><td>2026年Q2同比</td><td>增长48%</td><td>Q3/Q4维持较高增速，环比约10%以内或左右</td><td>主动调价、供需紧张、产品组合</td></tr><tr><td><b>服务器CPU价格</b></td><td>Socket/Core价格趋势</td><td>单颗价格上涨</td><td>2027H2涨幅趋缓；2028年每Socket高价、每Core下降</td><td>核数提升及供应改善</td></tr><tr><td><b>SK海力士合作</b></td><td>潜在合作方向</td><td>HBM、服务器DRAM及前道制造</td><td>2029年至2031年进入量产运营窗口</td><td>合作模式、资本承担、CSP包销</td></tr><tr><td><b>相关DRAM/HBM产能</b></td><td>300毫米晶圆/月</td><td>初始约1.5万至2.5万片</td><td>验证后3万至5万片；CSP参与可达5万至8万片以上</td><td>长期订单及资本投入</td></tr><tr><td><b>18A产能</b></td><td>晶圆/月</td><td>当前约3万片</td><td>2026年底约4万片；2027年5万至6万片</td><td>良率、成本、设备爬坡</td></tr><tr><td><b>18A良率</b></td><td>PTL/CWF</td><td>PTL约80%；CWF约50%</td><td>2027年PTL超85%；CWF约60%至75%</td><td>Die尺寸及工艺成熟度</td></tr><tr><td><b>18A客户</b></td><td>外部及内部客户</td><td>亚马逊最明确，微软已有MOU</td><td>亚马逊Fabric Chip、微软定制芯片逐步推进</td><td>客户认证和流片节奏</td></tr><tr><td><b>14A产能</b></td><td>晶圆/月</td><td>尚处早期阶段</td><td>2027年底6,000片；2028年底2.4万片；2029年后规模量产</td><td>外部客户导入及工艺开发</td></tr><tr><td><b>14A良率</b></td><td>风险试产至成熟期</td><td>尚无代表性实际数据</td><td>2027年30%至50%；2028年60%至70%；2029年75%至85%</td><td>产品设计及工艺爬坡</td></tr><tr><td><b>14A客户方向</b></td><td>潜在应用</td><td>特斯拉合作讨论较深入</td><td>车辆/机器人AI芯片、数据中心AI芯片、HPC Chiplet</td><td>客户切换意愿及生态支持</td></tr><tr><td><b>EMIB-T客户</b></td><td>重点外部客户</td><td>谷歌、亚马逊</td><td>2027年后逐步放量</td><td>TPU及训练芯片认证</td></tr><tr><td><b>先进封装收入</b></td><td>外部业务收入</td><td>2026年以认证为主</td><td>2027年个位数亿美元；2028年约10亿美元；2029年明显放量</td><td>良率、外部量产经验和客户爬坡</td></tr><tr><td><b>先进封装竞争力</b></td><td>对比台积电CoWoS</td><td>灵活性和本土供应链占优</td><td>需建立外部客户规模量产记录</td><td>台积电成熟度、良率及生态优势</td></tr></tbody></table></div>
+<h2>新版prompt提炼之后的转译</h2>
+<p class="qq">提问者：可否先介绍一下Meta的Muse AI对CPU需求的拉动？我们应该如何测算Muse AI对CPU颗数、核数（Core）及其使用量的影响？</p>
+<p>回　答　者：在您发来的14个问题中，我们先讨论最后一部分，即CPU和Muse AI。这个问题目前受到很多关注，但我认为，市场仍然低估了Muse AI对CPU需求的拉动。不仅是Muse AI，未来所有类似的智能体（Agent）都会拉动CPU需求。</p>
+<p>首先需要解释Muse AI与过去传统聊天机器人（Chatbot）的区别。传统聊天机器人的基本流程是：用户输入问题，由GPU完成大语言模型推理并返回答案。在这一过程中，CPU主要承担预处理、网络处理和归档等工作。</p>
+<p>Muse AI并不是单纯的聊天机器人。从Meta公开的信息可以了解到，其关键设计之一是，每个Muse AI都可以运行在持久化或专用安全虚拟机（Persistent或Dedicated Security VM）中，即运行在持续存在且专用的虚拟机中。这个虚拟机拥有自己的浏览器，可以自行访问网页、填写表格、订票和处理客服等任务。</p>
+<p>因此，Muse AI执行一次任务，实际上涉及大语言模型推理、浏览器实例、QSVM、虚拟机、网络协议栈、数据库、工具调用以及JavaScript等。此外，它还涉及多个子智能体（Sub-agent）之间的协调。其中，只有大语言模型推理会使用GPU。</p>
+<p class="qq">提问者：相关工作全部依赖 GPU，这也是 Agent AI 与传统 GenAI 对 CPU 的使用强度完全不同的原因。那么，这部分应如何评估，大概会达到什么规模？</p>
+<p>回　答　者：我们有几个版本，我介绍其中最核心的一个 scenario。假设未来1名 MUSE 的 DAU 每天执行3个真正意义上的 Agent task，每个 task 平均运行15到20分钟，执行过程中平均需要2个虚拟 CPU。按3乘以20乘以2计算，约等于120个 VCPU per day，即每个活跃用户每天大概需要2个虚拟 CPU hours。</p>
+<p>如果 MUSE 的 DAU 达到1000万，对应2000万个 VCPU hours per day。再除以24，相当于大概83万个 VCPU 持续运行。考虑到服务器无法保持100%满载，按照60%到70%的平均利用率计算，再考虑未来1颗 x86 CPU 大概拥有100到150个有效 core 资源，单纯支撑1000万 DAU，理论上可能需要大概1万到2万颗 server CPU，或者等价的 equivalent。</p>
+<p>如果 DAU 达到1亿，大概需要10万到20万颗 CPU equivalent。如果使用强度更高，例如用户每天让 MUSE 工作1到2个小时，这一数字还会明显增加。</p>
+<p>但这并不意味着 Meta 明天就要采购或带动20万颗 CPU 的需求，因为其中存在4个变量。第1，Meta 会采取非常 aggressive 的 VM overcommitment 和 simulation。第2，很多 MUSE VM 并非始终处于 active 状态。第3，Meta 不只采购 Intel，还会采购 AMD，并使用自研 silicon。第4，很多任务可以共享公共服务，而不是真正由每人独占1颗 core。</p>
+<p>因此，按照较为现实的商业预测，MUSE 单一产品对整体 CPU 需求的影响是：2026年 MUSE 刚上线，目前需求还比较小；到明年2027年，当日活达到3000万到5000万时，预计新增 CPU 需求大概为5万到15万颗 CPU 等效；到28年，如果日活达到1亿到2亿，而且真正的 Agent 任务明显普及，预计需求将达到15万到40万颗 server CPU equivalent。</p>
+<p>这里指的是整体需求，并不意味着全部由 Intel 提供。如果 Intel 最终获得相关 general purpose CPU 需求的30%到40%，对应的新增需求在27年约为2到6万颗，28年大概为5到15万颗。这些都是中性预估。</p>
+<p class="qq">提问者：明白。听起来这里仍然存在一些假设变量。</p>
+<p>回　答　者：由于刚上线，大家对后续的使用体验、生态匹配等才刚刚开始了解。以中性预期来看，Intel 1年大概有1000多万颗服务器CPU，目前初步评估不到15万颗，约处于1%至2%的区间，增量其实不大。</p>
+<p>但真正大的逻辑不是Muse，而是所有这类NGTize，也就是Asoftable，即所有Agent。Muse只是其中之一。</p>
+<p class="qq">提问者：这是一个2C市场。如果未来应用场景逐渐成熟，用户形成使用习惯，实际空间是否可能更大？您前面的假设是1天有3个任务，每个任务需要15到20分钟，但用户每天使用手机的时间远不止1个小时。当然，具体情况还需要继续观察。</p>
+<p>回　答　者：我们内部的模型是，假设2028年全球服务器CPU的需求指数为100，考虑所有Agent AI带来的需求后，大概会提升至105到115。</p>
+<p class="qq">提问者：如果暂时不考虑AI，或者Muse这类面向2C的Agent，今年、明年和后年服务器CPU行业原本的预期出货量如何？Intel服务器CPU的出货量又将如何？我主要关注服务器CPU的行业供需情况、价格趋势，以及Intel服务器CPU的情况，不涉及个人笔记本。</p>
+<p>回　答　者：从服务器市场来看，2026年是一个非常明确的Pad5。市场已经能够感受到这一变化，因为实际情况超出了很多人此前对2025年的预期。当时市场普遍认为，AI相关资金都会投入GPU，因此通用计算CPU的需求会比较弱，但现实正好相反。</p>
+<p>今年可以看到，AI Server不仅需要GPU，也需要大量Host CPU，同时还涉及Control Plane、存储和网络等方面的需求。</p>
+<p>回　答　者：Intel和AMD都出现了交货时间拉长的情况。在中国，交货时间一度达到6个月，AMD也达到8到10周。</p>
+<p>从我们的内部数据来看，目前Q3尚未结束，因此现阶段只能参考Q2的数据。整个Q2的出货量同比增加9%，ASP，即平均单价，增加48%。</p>
+<p>根据我们购买的第三方报告，2026年AI服务器出货量预计约为280万台，同比增长30%以上。AI服务器在整个服务器产值中的占比已经非常高。</p>
+<p>我们也在进行内部调整。26年、27年，服务器CPU及unit shipment都将保持strong double-digit growth，即强劲的2位数增长，这一增长动能将延续至2028年。不过，还需要考虑竞争因素。Intel在增长，AMD也会增长，以上是整体市场情况。</p>
+<p>服务器CPU价格走势可以分为3个阶段。目前已经处于第1个阶段，即2026年下半年至2027年上半年。这一阶段的价格增长会比较强劲，主要是因为当前供应确实非常紧张，high core产品的需求尤其紧张。</p>
+<p>今年，我们已经对部分服务器SKU进行了价格调整。例如，旗舰产品6980的价格基本上调了12%，大概是12左右。不过，Hyperscaler不一定按照list price采购。尽管如此，我们确实进行了幅度较大的价格调整。</p>
+<p>因此，分析CPU价格时，更应该关注ASP。以我们自身为例，Q2的ASP增长了48%。Q3方面，11月份大概率还会调整价格，Q3的ASP同比增幅可能高于48%，Q4也包括在内。</p>
+<p>到2027年下半年，价格涨幅将趋缓。届时，我们的18A CF产能将逐步提升，供应也会得到改善。同时，AMD的下1代EPYC也在扩产，这些因素都会抑制价格上涨。因此，预计从2027年下半年开始，SKU的normal price将趋于平稳。但对于新1代CPU，因为其核数更多……</p>
+<p>回　答　者：这类内存的带宽会更高，因此每个 socket 的单价仍然会更高。就27年的整体情况而言，27年下半年价格将开始趋缓。到28年，我们认为 price per socket 仍然会很高，但 price per core 会下降，这也是服务器 CPU 未来较为典型的趋势。例如，目前1颗 CPU 售价为5000块钱，未来新推出的 CPU 售价可能达到8000甚至1万块钱。虽然单价看起来更高，但以前1颗 CPU 是64核，未来可能达到128核、192核甚至更多。</p>
+<p class="qq">提问者：您前面提到，今年2季度同比增长了8。这里面有多少是由 core 数量增加和产品升级带来的 ASP 增长？此外，是否存在因供需更加紧张，导致相同核数、相同型号的 CPU 也出现涨价的情况？产品升级和供需趋紧分别贡献了多少价格涨幅？</p>
+<p>回　答　者：这里的 ASP 指整颗芯片的 ASP。在48%的涨幅中，12%来自我们的主动调价。也就是说，即使其他条件不变，供需关系和产品技术均未发生变化，价格也会上涨12%。关于剩余部分，先提到31%，后更正为36%，均由供需关系导致。</p>
+<p class="qq">提问者：Q3和Q4的环比涨价幅度大概是多少？</p>
+<p>回　答　者：从环比来看，涨幅不会特别明显。我评估Q3较Q2可能会略有上涨，可以理解为大概在10%以下。接下来Q3和Q4的环比涨幅大概都会在10%左右，整体不会特别明显。</p>
+<p class="qq">提问者：1个 socket 和 core 在数量上是什么关系？</p>
+<p>回　答　者：每个产品的配置不同，有128核、19核、192核和64核等不同规格。</p>
+<p class="qq">提问者：1个 socket 就是1个 CPU，可以这样对应理解吗？</p>
+<p>回　答　者：可以这样理解，但这是针对1台服务器的说法，我们称为1个 socket。</p>
+<p class="qq">提问者：从全球市场来看，今年、明年及后年的服务器 CPU 出货量预计是多少？我看到的不同数据显示，明年可能达到4000多万颗或5000万颗。</p>
+<p>回　答　者：行业整体情况与您提到的数据可能较为接近，但我们没有专门统计行业数据。我可以提供 Intel 内部的预计数据：26年服务器 CPU 出货量预计为1250万颗，27年预计为1450万颗，28年预计为1650万颗。同比来看，26年预计增长10%到15%，27年预计增长12%到18%，28年预计增长10%到15%。</p>
+<p class="qq">提问者：近期路透社报道了我们与海力士之间的潜在合作，可以介绍一下相关情况吗？</p>
+<p>回　答　者：从9月份的情况来看，我认为 Intel 过去1年最大的变化，不是某1个单独产品突然变强，而是3条业务线开始形成一定程度的共振。</p>
+<p>第1条业务线是先进自产。我们的18、18A已经不再是能否量产的问题，目前已经进入良率、成本和产能能否爬坡的阶段。18AP在6月份已经进入风险试产。14A目前也已进入客户测试阶段，并开始进行 capacity reservation，即产能预留。</p>
+<p>第2条业务线是先进封装。我认为，这一领域实际上比先进自产更值得关注。Intel 的 EMIB 已经发展多年，目前重点转向 EMIB-T。AI 芯片进入多 chiplet、多 HBM 时代后，真正的瓶颈不只是晶体管和制程，还包括如何将10几块甚至更多的 chiplet 与 HBM 集成在1个 packaging 中。</p>
+<p>第3条业务线是 CPU，它重新受益于……</p>
+<p>回　答　者：其实刚刚我也提到，24、25年行业普遍认为服务器CPU会下降，但事实并非如此，大致有3点核心逻辑。</p>
+<p class="qq">提问者：此前关于Intel与SK海力士合作的讨论中，第1个问题是合作产品是什么？</p>
+<p>回　答　者：目前双方仍在洽谈。根据我们的判断，合作重点更可能集中在HBM和DRAM领域，优先级最高的是服务器DRAM和HBM，包括相关DRAM的前道制造，之后才会考虑其他方向。这个判断的原因，我上次已经说明过。</p>
+<p class="qq">提问者：可以简单说明一下原因吗？</p>
+<p>回　答　者：SK海力士在美国已经有较为明确的HBM布局。其于8月份在印第安纳州正式启动了一个投资超过40亿美元的项目，计划生产HBM。当时的目标是28年10月实现洁净室准备就绪，并于29年下半年开始量产下一代HBM。</p>
+<p>印第安纳州项目的核心并不是完整的DRAM前道晶圆厂，而是先进封装和测试基地。SK海力士也明确表示，其DRAM晶圆仍将主要在韩国制造。由此出现了一个明确缺口，即其在美国拥有HBM后道产能，却没有SK海力士自己的先进前道产能。</p>
+<p>因此，我认为，如果俄亥俄州的合作能够落地，就可能补上这一缺口，基本形成闭环：由韩国生产HBM晶圆，在印第安纳州进行堆叠封装；如果未来俄亥俄州的合作成功，则由俄亥俄州生产晶圆、印第安纳州负责封装，最终可直接在美国交付。这是我们的判断。</p>
+<p>这部分产能规划和落地节奏会比较长。不要将该项目理解为2024年至2028年就能大量出货。我预计可能要到2030年前后才能建设完成并进入运营，第2阶段甚至可能更靠后。即使SK海力士参与，公用工程、厂房、设备选型等也都需要重新规划。</p>
+<p>因此，我认为第1个真正意义上的量产时间仍会在29年至31年，整体周期会比较长。如果按基准情形判断，今年下半年至明年上半年，双方可能主要完成合作结构设计，包括究竟采取租赁还是合资模式、由谁出资，以及如何隔离技术产权等。</p>
+<p>27年至28年，主要完成配置修改和设备订购；28年至29年，进入工程晶圆和认证阶段。一切顺利的情况下，29年才有可能进入量产。</p>
+<p class="qq">提问者：目前处于什么阶段，预计何时商用？如果按照数量估算，产能大概是多少？</p>
+<p>回　答　者：目前是试生产，即 pilot production，预计3年后商用，这是1个 base case。</p>
+<p>按照数量估算，EC的产能大概为每月1.5到25000片300毫米 wafer。如果验证顺利，产能大概可以达到每月3到5万片。</p>
+<p>如果有CSP参与，例如亚马逊、微软、Meta，并与TGV签订长期 offtake agreement，产能可能扩展到每月5到8万片，甚至更高。</p>
+<p>其中的关键变量不是有没有厂房，而是谁来承担资本风险。先进Fab非常烧钱，如果只由Intel和台积士这2家承担，决策会比较谨慎；但如果亚马逊、谷歌、微软参与，情况就会有所不同。</p>
+<p class="qq">提问者：由于我0.5个小时后有1个会谈，请尽量简要介绍先进制程中18A和14A的潜在客户及订单情况。</p>
+<p>回　答　者：18A和14A需要分开来看。18A最确定的外部客户是亚马逊。我们在24年已经与亚马逊正式开展合作并签署MOU，当时已确认由我们的foundry使用18A为亚马逊生产1款AI Fabric Chip，同时也会使用我们的3纳米Intel3生产1个customer Action new。这是与亚马逊最明确的合作。</p>
+<p>第2个是微软，双方至少已有1个明确的MOU，但目前微软方面的进展没有亚马逊快。</p>
+<p>对于18A而言，与外部客户相比，我们自己的PTL和CWF才是重点。</p>
+<p>14A才是真正决定Intel代工服务能否长期发展的节点。14A从一开始就更加面向外部代工客户进行设计。我们其实早就讨论过，但直到今年Q2才正式确认将完成14A的开发。与外部客户的讨论中，较多涉及的是特斯拉。</p>
+<p>回　答　者：我们与特斯拉的合作目前已经确定。后续，特斯拉会成为我们18A一个非常具有象征意义的大客户。这是14A的情况，也是目前14A的进展。</p>
+<p>您此前还问到最终对应客户的哪些产品，我逐一说明。亚马逊的18A产品就是刚才提到的AI Fabric Chip。</p>
+<p class="qq">提问者：亚马逊的这款产品是用于training还是Influential？除了AI Fabric Chip之外，是否有更具体的名字？</p>
+<p>回　答　者：它目前就叫AI Fabric Chip，并不是传统意义上的CPU，而是一款用于AI Cluster内部高带宽互联、处于Networking层的ASIC。</p>
+<p>这款产品正式发布时肯定会有品牌名称，但亚马逊目前尚未正式命名，因此我们内部都称其为Fabric Chip。它实际用于连接而非计算，是Networking领域的定制化ASIC。</p>
+<p class="qq">提问者：这是否可以理解为类似交换芯片，即Scale-up或Scale-out的交换芯片？</p>
+<p>回　答　者：对，就是交换芯片，这是亚马逊的产品。</p>
+<p>微软这边也已经确认了一个18A的Chip Design，但微软没有向我们说明具体用途。我猜测可能是Maya，但并不确定。我认为大概率会是Maya。</p>
+<p>我们自己的产品则非常明确，包括PTL、Core Ultra13，以及服务器端的CWF，也就是我们的Xeon 6+。CWF本身的结构非常适合Intel的18A。</p>
+<p class="qq">提问者：那么14A这边的情况如何？</p>
+<p>回　答　者：14A目前还比较早。如果特斯拉的Terafarm能够顺利推进，大概会有2类。第1类是特斯拉的车。</p>
+<p>回　答　者：Optimus机器人需要AI计算芯片，这是第1类。第2类是更大型的AI数据中心计算芯片。特斯拉和SpaceX在提及TeraFab时已经表示，其芯片一方面将面向车辆和机器人，另一方面将面向AI数据中心。这是非常明确的客户。</p>
+<p>从我们的内部策略来看，我认为14A这一最先进制程实现规模化应用后，很可能不会主要用于手机，而会更多应用于3类产品：第1类是AI ASIC；第2类是类似亚马逊AI Fabric网络芯片的产品；第3类是高性能计算Chiplet。手机相关产品的数量可能不会特别多，这是我个人的判断。</p>
+<p class="qq">提问者：博通、AMD、高通等ASIC或定制芯片公司，会成为我们的潜在客户吗？</p>
+<p>回　答　者：这些公司肯定是我们的潜在客户。不过，包括博通、高通和苹果在内的公司，目前在移动IP、RF和低功耗库等领域的体量都很大，因此在切换代工厂时会非常谨慎。我认为它们不会采取特别激进的策略。如果我是这些公司，也不会过于激进。</p>
+<p class="qq">提问者：英伟达是否也与我们进行过相关探讨？</p>
+<p>回　答　者：有过探讨，但没有进行深入讨论。我个人判断，英伟达可能仍然更倾向于台积电。</p>
+<p>不过，我们与联发科讨论过一些相关事项。联发科与我们的沟通可能比英伟达更多。</p>
+<p class="qq">提问者：14A的产能规划、放量节奏和良率爬坡情况，预计大致如何？</p>
+<p>回　答　者：关于产能情况，我将18A和14A一起说明。目前，18A主要有2个生产地点，1个在佛罗港，另1个在阿维中，合计产能约为每月3万片300毫米晶圆。到今年年底，保底能够达到中位数。</p>
+<p>回　答　者：做到每月4万片是比较合理的。明年会进一步向月产5到6万片靠拢，这是18A的情况。</p>
+<p>14A则处于另一个阶段，目前还不能将其视为成熟产能。我们最新的预测或者目标是，到27年年底达到约每月6000片，到28年年底达到约每月2.4万片。如果要实现真正意义上的商业化量产，我认为要到29年之后。</p>
+<p class="qq">提问者：如何理解14A的商业化量产？通常达到每月多少万片，可以认为实现了商业化大规模量产？</p>
+<p>回　答　者：正常来讲，商业化量产至少需要达到每月3万片，即3万片以上，通常为3到4万片以上。至少要达到目前18A的水平。</p>
+<p class="qq">提问者：目前18A是否有良率方面的数据？现在大概处于什么水平？</p>
+<p>回　答　者：这里有一个比较容易混淆的点。PTL这类相对较小的计算单元，与CWF这类大型server die的良率完全不同。</p>
+<p>直接从数据来看，PTL目前对应的18A良率大约为80%，这是中位值。对于尺寸较大或对良率较敏感的CWF大型芯片，目前良率不高，大约为50%。</p>
+<p class="qq">提问者：后续良率是否还有提升空间？预期会达到什么水平？</p>
+<p>回　答　者：我们肯定会尽可能优化和提升。到27年，18A的前置产品都会有所提升。到27年，较小的PTL良率会稳定在85%以上；对于大型CWF，我认为良率会稳定在60%到75%的经济区间。大型芯片并非一定要达到90%以上的良率才能盈利。</p>
+<p class="qq">提问者：14A目前仍处于很早的阶段，现阶段是否还不存在实际良率数据，即使有也只是预期数据？</p>
+<p>回　答　者：目前不存在实际良率数据，即使有也只是预期数据。如果要进行预期，我认为27年初期是在做这种……</p>
+<p>回　答　者：在风险试产阶段，基本判断只有30%，不会超过50%，大概是30%，即处于30%到50%的区间。到28年开始进行high volume manufacture时，大概会达到60%到70%；29年成熟之后，可能会稳定在75%到85%。以上均为预计。</p>
+<p class="qq">提问者：接下来请您介绍一下先进封装的情况。</p>
+<p>回　答　者：目前在先进封装领域，客户对EMIB-T的兴趣较高，backlog存量订单也在陆续增加。良率和可靠性刚刚达到当前目标，从内部来看较为达标，同时也能够支持27年的customer ramp。</p>
+<p>从客户来看，2个最大的外部客户中，1个是谷歌，1个是亚马逊。但先进封装真正的客户，不一定是外界最终看到其logo的公司。例如，谷歌的ASIC可能由联发科参与设计，foundry可能由台积电负责，而先进封装可能由Intel负责，这是1条完整的供应链。</p>
+<p>先进封装最终对应的芯片，基本上都是大尺寸AI accelerator或定制化AI IC。以谷歌为例，主要是下一代TPU。今年谷歌的主要方向仍然是TPU V7。27年的后续产品封装面积会继续增大，HBM数量也会继续增加。我们认为，27年之后EMIB-T也有机会切入。</p>
+<p>亚马逊方面，我们认为更有可能采用EMIB-T的是训练类后续迭代产品，或其他自研AI Silicon。就这2类产品而言，从技术角度看，更适合EMIB-T的芯片基本具备3个特征，包括computing die较多、HBM较多，以及package面积非常大。EMIB目前最大能够做到120乘120毫米。</p>
+<p class="qq">提问者：EMIB目前的产能有多大，未来将如何扩充？</p>
+<p>回　答　者：EMIB目前的产能情况，最难、也比较……</p>
+<p>回　答　者：Intel EMIB较难与台积电CoWoS直接比较。CoWoS通常以interposer wafer per month作为对标口径，而EMIB只使用局部Silicon Bridge，因此不能简单地将1片EMIB晶圆与1片CoWoS晶圆等同。我们不建议直接比较Intel EMIB与台积电CoWoS各自有多少万片产能后再计算比例，这一比较逻辑并不合理。</p>
+<p>目前，我们的先进封装产能主要分布在美国和亚洲，包括新墨西哥，后续还会继续扩产。从商业化角度看，26年仍以内部产品占用产能，以及外部产品qualification为主。明显的外部external revenue ramp预计将在27年下半年开始，28年进入run rate，29年达到峰值，这是我们的内部预判。</p>
+<p>长期来看，这项业务规模将达到10亿级以上。理论上，单个大型客户基本可以形成数10亿美元的业务量。</p>
+<p>以base case为例，26年能够向外部客户提供的封装端EMIB或EMIT有效产能较少。27年，随着谷歌、亚马逊等客户ramp，产能可能实现2到3倍扩张。28年以后，如果客户验证顺利，预计可以进一步达到每月数万甚至10万级别的AI packaging产能。</p>
+<p class="qq">提问者：明年和后年，这项业务的收入体量大概处于什么范围、什么量级？您前面提到，长期来看单个客户可能带来数10亿美元的业务量。我们主要想评估这项业务大概有多大。</p>
+<p>回　答　者：如果估算明年的收入，应该不到10亿美元，处于几亿美元的量级。具体而言，27年大概是个位数亿美元的量级。28年以后会有所改善，如果客户验证顺利，28年预计能达到10亿美元上下，29年的规模会比较大。</p>
+<p class="qq">提问者：我们的ABF载板主要供应商有哪些？您了解这方面的情况吗？</p>
+<p>回　答　者：我主要负责销售，对供应商方面平时关注较少。不过，这些信息应该可以获取，我也可以帮您询问，应该能够找到。</p>
+<p class="qq">提问者：我们的先进封装业务与台积电相比，有哪些优势和劣势？</p>
+<p>回　答　者：用1句话概括，Intel的优势在于架构灵活性和潜在成本，台积电的优势则在于成熟度、良率和整体生态系统。</p>
+<p>先说Intel的优势。第1，EMIB不需要一整块大型硅中介层，这是我们设计上的核心产品优势。</p>
+<p>第2，EMIB适合超大型AI封装。当1个封装需要集成十几个计算芯粒，以及HBM或I/O Die时，采用多个局部互连桥，理论上比制造一块超大型中介层更加灵活。</p>
+<p>第3，EMIB-T的垂直供电很有特点。加入TSV后，电源可以穿过互连桥，垂直向上输送。当前AI芯片面临的主要问题已不只是信号，而更多是供电网络问题。例如，在几千瓦级封装中，IR Drop、Power Noise和Terminal都是核心问题。EMIB-T在这方面具有较强的技术差异化优势。</p>
+<p>第4，我们具备美国本土供应链优势。</p>
+<p>劣势也比较明显。第1，我们服务外部客户的量产经验远少于台积电。第2，CoWoS的生态系统更加成熟。</p>
+<h2>原文转译</h2>
+<p>投资建议,相关人员应自主做出投资决策,并自行承担投资风险。 九谦咨询不因使用本次内容所导致的任何损失承担任何责任。 专家发言内容仅代表专家个人观点,不代表本公司观点。 本次会议内容不得涉及国家保密信息、内幕信息、 未公开重大信息、商业秘密、个人隐私,不得涉及可能引发不当炒作或股价异常波动的敏感信息。 不得涉及影响社会或资本市场稳定的言论。 未经九千咨询事前书面许可,任何机构或个人不得以任何形式复制、录音、刊载、转载、转发,引用本次会议内容。 否则由此造成的一切后果及法律责任由该机构或个人承担。 本公司保留追究其法律责任的权利。 感谢您的理解和支持。 哎,专家你好。 哎,专家你好。 那个我们那个,我们开始哈,就是首先可不可以先请您就是介绍一下我们这个 呃,就是那个Meta的那个Muse AI, 对呃CPU的这个需求拉动,就是我们大概可以 呃就是说怎么样去测算它这个Meta AI它对 影响这个CPU的这个颗数啊或者是里面的 这个核数啊,core的数量啊,这个 使用,这怎么怎么去测算? 谢谢。 呃,因为你发了我这个一共14个问题啊。 然后,我们现在就直接到最后一个问题,就是那个问题是吗? 对的对的,是要么我们对,要么就先从最后一部分CPU开始, 开始聊,对。 要对,你要么先说对,先说一下这个Muse的这个,嗯。 好,就是首先这个问题其实很多人都在,都在关注哈。 呃但我认为的话现在目前市场上的还是低估了就是Muse对CPU, 就不仅仅是Muse,就是未来所有类似的这种agent对CPU的拉动。 首先我解释一下就是Muse为什么和过去的这种chatbot不太一样? 就传统的chatbot它基本流程是比如说输入用户输入问题, 然后到GPU做这个大语言模型的推理,就返回答案。 但是CPU那个时候CPU主要承担的是一些这种 呃预处理,包括这种network和这种 呃 呃归档吧, 但是Muse它不单纯是chatbot。 因为其实从从Meta那个 公开信息就可以了解到,它里边有非常关键的设计, 就是每个Muse,这上是咱们聊过哈,每个Muse 可以运行在 persistent或者说 dedicated security VM,就是说一个 一个,呃,中文怎么讲啊? 呃,一个 呃,叫什么专用的 虚拟机是吗? 呃对,就是它是持续存在的,而且是专用的虚拟机。 而且这个VM它是有自己的browser的。 那么它可以自己访问网页, 自己填写表格、订票、处理客服等等。 所以Muse它一次任务实际上就变成了大语言的这种reasoning,包括这种浏览器的instance,包括这种QSVM,还有这个虚机, 包括了这种Network stack,包括了database等等,包括甚至包括这种 工具的使用,包括JavaScript等等。 那么而且呢它还有一点,它甚至会多多个就是呃sub-agent的协调, 那么这里面只有 大语言的这个interfering, interferring,它会使用在GPU, 剩下的大量 工作全部都以来GPU。 那这就是为什么就是agent AI 它传统的这种GenAI对CPU的intensity完全是不一样的。 那么这,那么这一块会怎么来一个评估呢？就是大概会达到多少呢？ 嗯，当然我们有几个版本啊，但是我们我就介绍一个最中心的一个scenario。 假设未来一个MUSE的DAU每天执行三个真正意义上的agent task。 那么每个task平均运行15到20分钟。 执行过程中，平均大概需要两个这种虚拟的CPU。 那么你把它那个乘一下，就是3，3乘以20乘以2， 那么这就是 约等于120个VCPU per day。 那么， 这，这就是每个活跃用户每天大概 两个虚拟CPU hours。 那么如果 MUSE做到1000万的DAU，就DAU做到1000万， 那这就是2000万个VCPU hours per day。 那么再除以24的话，就相当于 相当于大概83万台，83万个VCPU的持续运行。 那么 考虑服务器它不能100%的满载，我们就按照60%到70%这种平均的这种 利用率来看。 再考虑一颗未来的这种我们的X86，大概会有100到150个有效的core的资源。 那么单纯支撑1000万DAU, 理论上就可能需要大概1万到2万颗server CPU， 或者等价的equivalent。 那么如果到1亿的DAU， 大概就是10万到20万颗的这种CPU equivalent。 如果使用强度更高，比如说用户一天让MUSE工作 一到两个小时，那么这个数字还会明显的增加。 嗯， 这并不是说Meta明天就要买那个，就是Meta明天就要这个带动20万颗的这种CPU啊，因为这里边会有四个变量。 第一个变量是Meta它会做 非常aggressive的VM overcommitment和这个 simulation。 这第一个。 第二个，很多的MUSE VM，它不是一直在就是active，不是一直在活跃的状态。 那么第三个，Meta它不只采购Intel，它还有AMD，还包括它自研的这个silicon。 那么第四个，就很多任务可以共享公共服务，它而不是 真正一人独占一颗的这种core。 所以呢，我们就是给一个比较现实版的这种商业型的预测， 就是 MUSE单一产品对整个CPU的影响，我们 2026年MUSE刚上线，那么我们 现在的这个需求还比较小啊， 但是到明年2027年， 我觉得他们的这个日活做到3000万到5000万的时候， 我估计这个新增的CPU的需求大概在5万到15万颗这个 CPU等效。 那么如果是28年的时候做到1亿到2亿DAU， 而而且真正的agent任务明显会普及的话，我觉得这里边会达到15万到40万颗这个 server CPU equivalent。 OK,但是我这说的是整个,不是说,不是说全部都是Intel啊。 明白明白。 那么如果是说是 对，那如果是说Intel最后拿到相关的这种general purpose CPU的需求30%到40%的话， 那么对应的这种新增啊，27年就是2到6万颗， 28年大概是5到15万颗左右。 就是这是，但这都是中性的预估啊。 嗯，明白明白。 明白，对，因为这里面感觉听上听上去还是，你讲得很清楚，就是说这里面有些假设变量 就是还是有一些，相当于... 可能未来还是有些电话的空间是吧?您像 嗯。 对。 嗯。 对,就您您比方, 您说。 对您说。 您说,您说您先说。 没没没您说,您说,您说,嗯,没事。 好。 你说因为因为大家对这个,因为刚早上线嘛,大家对这个它的后续的这种使用体验感,包括它的这种,后面的这种生态的匹配,等等等等,其实大家就刚开始刚刚才开始,对。 所以我我刚刚说那个这个中性,比如说 我们现在,Inteil一年大概是1000多万颗的这种server CPU。 那么其实只,其实刚刚周评估不到15万颗。 15万颗的话也就是1%,2%的这个区间啊,就是大概是这个样子。 其实 嗯, 看这个增量其实不大。 但是呢, 我们真正大的,真正大的逻辑,它其实不是Muse, 而是所有的这种 NGTize, 就是Asoftable,就是所有的这种agent。 我我您这样,我这样讲,您明白点,不仅仅是 Muse, Muse只是其中之一。 嗯,明白,明白。 包括包括,包括,对啊,这个明白啊,OK,那我就不赘述啊。 嗯,对。 好的好的,而且就是可能如果因为这是个2C的市场嘛,就是如果以后应用场景,比方说,就是说这个大家形成的这种使用习惯,那可能 因为您前面有一个假设就是说,可能比方说一天三个任务,然后每个任务可能 15到20分钟,那那这个好像,嗯,就是它有可能,因为我每天用手机的时间远远不止一个小时嘛。 嗯。 就是对就就可能,对,我感觉这个可能,可能也有些,也有一些空间,就当当然这个可能还是要往后边走边看嘛,就是。 对。 我们自己内部啊,我们自己的模型是这样的。 我们假设2028年全球服务器的这种CPU的需求指数 如果是100的话, 那我们考虑这个Agent,就是,AgentAI之后,我们大概会把它起到105到115。 嗯,明白明白。 所有的这种AgentAI。 OK,OK,明白,好的好的好的,这个,我们这边自己也有算算了一下也差不多,就是您说这个百分比是差不多。 行。 呃,那好那好,那那那就, 因为我们今天话题还比较多,我们就,要么就进入,就是我们就下一个问题,对对,对就是,然后CPU整个行业的话,现在 就是您比方说像今年明年后年整个,就如果说我们先不考虑这个 呃,就是AI的话,就或者说Muse这种AI嘛,就是2C的Agent的话, 原本这个现在的这个预期的出货量是怎么样的,然后我们 就是Intel的这个CPU的出货量是是是怎么样的呢? 这是我看眼你之前报告里边,就是,一个是服务器,就是服务器CPU的行业供需情况对吗? 对对对。 价格趋势以及Intel服务器的这个 这里边是服务器,不是,不是那个,不是个人笔记本。 对对对,我就比较关心服务器CPU一点,对。 好,稍等,稍等一下啊。 呃,是这样的, 就是我们看服务器啊,2026年它其实是一个非常明确的一个Pad5。 呃,这个大家市场都能感觉到,因为 这个变化其实超出了很多人对2025年的一个一个预期。 因为当时大家都普遍认为就是AI的钱都花到GPU了。 那么这种这种CPU的话,通算啊,CPU,它的需求比较弱, 但但现实的话正好相反。 那么今年我们看到这种AI Server,它不仅需要GPU,也需要大量的这种 Host CPU, 包括这种 Contro Plan啊,包括存储啊,包括网络等等等等。 那么 与此同时,所以我们就是今年我们 Intel和AMD都出現了這種交貨時間的拉長。 就是拉的,有一度甚至,我覺得當時在中國的話一度是到,到六個月,然後AMD也是到,到八到十週吧,這是,這個情況。 那麼我們自己的內部的數據的話是這樣的。 就是因為現在Q3還沒過完,我們現在Q2的數據。 Q2的數據的時候,我們看到就是量,整個Q2是同比增加了9%。 但是我們的ASP,就是我們的價格,單價是增加了48%。 這個是我們我們自己的。 那麼, 對,這,但我們看這種第三方的一些,比如說我們也買了一些第三方的報告。 比如說我們看到這種,相關報告裡邊,我們看2026年的這種AI server shipment, 大概會有280萬一台,同比增長的話是30%往上。 而且這種AI server在整個server產值當中已經佔比其實已經非常高了。 那我們, 其實,其實我們自己也在做一些內部的一些調整嘛,就是比如說26年27年服務器的CPU,包括這種unit shipment,我們都會保持,我們這個叫, strong double digital growth,就是強兩位數的增長。 而且,而且增長的動能的話會到2028年。 但是呢,這裡邊要我要補充一個競爭性因素啊,因為Intel雖然也在,在增長,AMD其實也要漲,也要漲,這個你們應該也知道,所以我就不再贅述。 那麼,這個是,這個是整個大盤。 那麼,那麼我們你看服務器的這個CPU價格會怎麼走。 那麼我認為的話,這個裡邊要分成三個階段,我們內部會評估會三個階段。 第一個階段就是其實我們已經在第一個階段了,就是2026的下半年到2027年的上半年, 我們看到這裡邊價格的話會增長會比較偏強。 因為現在的供給量確實是太緊了,而且這種high core的這種需求,更更更緊張。 那麼我們其實今年已經對一些這種服務器的SKU啊,做了這種所謂的server的SKU做了一些調價,包括您剛看到我們旗艦的這個6980, 那我們基本上是上調了12%吧,反正12大概是。 但是,但是就是這種 Hyperscaler呢,這個絕對也不會不一定是按照這個list的買啊,但是我們確實是調,這個價格是調了不少, 那麼, 所以我們在分析這種CPU價格的時候,其實,我覺得應該看,更應該看一些這種ASP,就是我,我先拿我們自己來說,就剛剛說的數據啊,我們Q2的這個ASP是增長的48%。 那麼,二,就是Q3的話, 11月份,就是大概率我們還要調試價。 那麼,可能這個增長的話,同比,對,我們還會調試價,那麼同比的話可能還會, 比這個48%,我覺得可能還會高,就是ASP,就整個Q3。 包括,包括Q4。 但是到了這個2027年的下半年,價格漲幅呢就會趨緩一些。 因為我們的18A的這個CF產能會起來,那麼那個,我們的這個供應呢也會改善,包括了其實那個MD, MD的,它下一代的那個EPYC也在做擴張嘛,所以這塊會抑制價格的上漲。 所以我預計2027年下面,下半年開始啊, 這種從SKU的這種normal price,它會基於一個平穩。 但是新一代的這種CPU呢,因為它的核數更多, 包括了这种memory的bandwidth会更高。 所以它每个socket的价格依然会,就是单价还依然会,会更高。 这是整个27年的情况,就是27年下半年它会价格开始趋缓。 那么28年的时候,就是我们觉得那个price per socket,它会仍然很高。 但是呢,price per core它会下降。 因为这是也服务器CPU未来一个比较典型的趋势。 嗯,有可能今年今天我一颗CPU,一颗CPU我卖5000块钱。 未来新出的CPU我卖8000甚至1万块钱,这个是没问题,看起来比较贵。 但是我之前,那我一颗,我以前的一颗CPU64核,那我以后就128核,192核甚至更多。 这个比较好理解,OK。 嗯。 那么, 嗯,您刚刚,对,还有什么问题吗? 嗯,那好,那我这里我再问你一个问题,就是 呃,呃,就是你你前面,比如说您说这个,比如说到今年是是同比是是二季度是吧,是同比增加增长了 当然是8,因为您刚才提到了,就这里面可能比如说有多少是 比如说core的数量, 我们的ASP。 对对对,我们的ASP,我们这个ASP是指是指那个啥,是指我们整个整个整个芯片啊。 不是说我明白。 哦,OK,我明白,我明白,对,我就想理解一下,就是这里面它有多少是,比如说, 因为您说,因为现在这个CPU的core的数量也在增加嘛,那那可能就是它相当于是个产品升级,或者数量增加,它带来了这个SP的增加,那有没有一些就是可能因为是共需更紧张了,导致的这种,就是哪怕是同样的阔数的CPU,同样型号的CPU,它也,也涨价了,就是这两个大概分别贡献了多少的这个价格涨幅啊,就产品升级和这个共需,共需更紧导致的涨价。 其实是这样,我我听懂,我听懂,听懂你的意思了。 这48%里边12%是因为那个我们主动调价。 就是我我认为的话,这 对,这12%是这个 呃,即使 叫什么呢?即使everything都不变, 就是即使供需关系都没有任何,就是 怎么说呢? 就是这个市场上没有任何呃共需的 就没有任何,没有任何产品技术的升级。 它也会涨12%。 OK。 那么剩下的那31%,那36%,都是因为共需关系导致的。 明白。 明白,对。 哦,明白明白。 呃,那个,哎,不好意思,等一下。 哎,我我还问一下,就是,哦,那么我们Q3啊,包括这个Q4的这个呃环比是 呃就是环比涨价大概可能会是多少啊? 嗯,其实环比来看的话,不会那么明显。 环比来看 我评估Q3跟Q2可能会 会略涨吧,你可以理解成大概10%以下吧,如果说接下来那三,接下来的Q3的环比和Q,Q4的环比的话,大概都是会10%左右。 环比不会特别明显。 嗯,OK。 好的,好的。 然后您还有提到就是像一个socket和这个和这个core是在数量上是什么关系啊? 他是,因为每个产品的形状它不太一样的。 嗯,比如说有,有128的,有19,有192的,有64的。 就是 对,这,这个您应该清楚吗? 对对对,我知道我知道,对,就是说我可以理解为 是一个socket就是一个CPU吗？还是是这样对应是这样吗？ 呃，你可你可以这样理解，但是这个是针对一个服务器的说法，我们叫一个socket。 哦哦哦，OK。 呃，好的好的，行。 那行，那我我我先问追问这么几个这几个问题，然后， 对，然后你要不您接着介绍一下，就对，就是您包括可能，呃，就是我们预期的后面的这种行业， 您包括这个行业现在，比如说今年是不是，比如说说明年是不是，我看， 反正我看到有不同数据啊，就可能明年比方说有有4000几多万颗的或者是5000万颗的这个， 呃，服务器CPU的出货量，我是指全球哈。 就整个市场，就是，你包括到后面的，就是今年明年后年的这个大概，呃，整个行业里面的这个预期的服务器出货，CPU出货量大概是多少？ 行业的，可能跟你们刚刚说的是差不多啊，但是， 呃，我们没有特别 就是我们没有特别去找行业上的数，但是我们内部的这个Intel的数我可以告诉你。 啊，需要的话。 可以的，可以的，嗯。 就是行业是，我觉得跟跟您刚刚说差不多啊，但是我们我们Intel内部哈，我大概那个一个列几个数。 行。 26年，27年，28年啊，然后我们服务器啊，就是服务器的这个出货量，CPU的出货量，26年的话我们预计是1250万颗。 嗯。 27年预计是1450万颗。 28年是1650万颗。 那么同比的话，26年，26年预计同比增長10到15。 27年同比增長12到18。 28年同比增長10到15。 嗯，OK。 好的好的。 行。 好，那那那行，那我那CPU这块差不多了，因为我后面还有几个好几个话题。 啊，那那要么就接下来要不请您再介绍一下那个，对对，我们就是对，从要么就从第一个问题开始好了，就是我们近期的这个，就是那个路透社那个router上面有，有新闻呢，包括对，就是讲我们和这个，就是海力士啊这个一个潜在的合作，这个可以再介绍一下，谢谢。 可以可以啊。 嗯，我我先把这个大逻辑讲一讲了好，就是说， 从9月份这个时间，我先把大逻辑讲一讲，就是我们从9月份这个时间看，就是看看Intel，我我我认为过去一年呢，它最大的变化， 呃，不是某一个单独产品突然变强， 而是三条业务线都开始形成一定程度的共振。 第一条线就是先进自产， 对我们的18，18A，它已经不是能不能量产的问题啊，就是现在已经进入良率、成本、产能能不能进行爬坡的阶段。 那么我们的18AP，其实在6月份我们已经也进入了这个风险试产。 那么14A现在也进入了客户的这个这个我们在测试吧，就capacity reservation， 开始做了这种产能，产能预留了。 那么这个是先进自产。 那么第二条的话是先进封装。 那么我认为呢，这里实际上比先进自产还值得关注啊，就是先进封装。 我们的EMIB，呃，EMIB本身呢，Intel已经做了很多年， 现在重点转向EMIB-T。 那么因为AI芯片呢，它更多了，它其，呃，AI芯片进入多chiplet，多 HBM的这个时代之后，那么真正的瓶颈不单只是晶体管，晶体制程的这个一个情况，还包括怎么把这种十几块甚至更多的这种chiplet和HBM装在一个packaging里面，OK。 那么第三个的话是CPU， 它重新受益于 嗯,就是其實剛剛我我也說了,我們2425年行業都認為,就是時代CPU會下降,但事實上其實不是,大概是這三個點,就是大的邏輯。 那麼我們就是其實之前我們討論過一次啊,關於這個Intel跟海市的這個合作。 那麼第一個問題當時是問的是合作產品是什麼,其實我我當時有回答啊, 就是說,嗯,現在其實在談, 但是我個人,我們判斷的話,我們更多的還是在這個 嗯, HBM和這個DRAM,就是這塊哦。 嗯,其他的話考慮不多,所以我認為優先級最高嘛,就是服務器的DRAM和這個HBN。 嗯,包括包括相關的這種DRAM的這種前道的製造。 然後才是其他啊,這個。 這個理由其實我我我上次已經講過一次了,您還需要聽一下嗎? 這個原因的話。 嗯,可以簡單講一下,你可以。 嗯。 啊,我簡單講,我簡單講一下嘛。 因為其實因為那個S海士,它在美國其實已經有一個比較明確的這種HBM的佈局。 他8月份剛剛在這個Indiana就正式啟動了一個,嗯,那個項目還超過40億美金, 他們自己準備做 做這個HBN,然後他們的當時的,我就是當時的目標是要做到28年的10月,要做到那個Cleanroom要ready。 然後29年下半年要開始做這個下一代的 HBN的量產。 就 在那個Indiana那個項目,它的核心它不是完整的DRAM前,不是完整的DRAM前道金元廠,它是一個先進封裝和測試基地。 嗯,這是,所以,而且他明確,而且他明確說了,就是說他們的這個DRAM金元的話,主要還是在韓國製造,那麼這樣的話就出現了一個明確的缺口,就是說他美國有HPN的這個後道,但是卻沒有這種海是自己的這種先進的前道,那麼所以呢我認為如果歐哈爾這邊合作如果落地的的話, 嗯,大概是會把這個缺口給補上,那就是基本上他們就能完成一個閉環,就是韓國生產,那個HBN的這個金源,然後Indiana做這種 堆疊封裝, 然後如果未來這種俄亥俄合作成功的話,那就是嗯,歐海爾這邊做這種金金源,然後英娜做封裝,直接在美國就專的就可以交付了。 這是我們的一個就是我我們判斷吧。 OK。 那麼 這塊的這種產能規劃和落地節奏啊,它是 它會比較長一點,因為我認為呢, 這塊它,嗯,我覺得不要把這個項目理解成就是說2024年2028年就大量出貨, 我我預估呢這個可能會到 嗯,2030年前後, 才能完成,而且進入運營。 甚至第二甚至更靠後,所以即使就是SK海是它進來, 因為這種啊,utility啊,包括room啊,設備選型等等,這些都需要全部要重新規劃。 所以我我認為第一個這種真的真正意義上的量產還是29年到31年的事,所以這個應該會比較比較久。 但如果說,你要讓我比如說你要讓我做一些這種base case,那我認為就是下半年,對今年下半,就是今年下半年到明年上半年可能會,可能會主要完成一些合作的一些結構吧,包括要到底是租還是做venture,實代出資,他們技術產權怎麼隔離等等。 嗯,27年到28年的話,主要是完成那個的配置修改,包括這種equipment ordering,那麼28年到29年的話就進入這種engineering wafer和這種qualification。 29年才會,才有可能啊, 一切順利29年才可能進入這種 是试生产, pilot production, OK? 搞三年才会商用, 对, 这是我的, 我们那个, 一个 base case. OK。 嗯, 明白明白。 嗯, 很清楚, 很清楚, 嗯。 对啊。 OK, 那么, 这如果说让我去估算的话, 就是外, 就是按照量啊, 就是按照这个数量来估算的话, 我觉得 EC它可能产能的话, 大概是在 1.5到25000片, 那个300毫米的 wafer啊, 大概一个月吧。 那么, 如果顺利, 就是验证顺利以后的话, 大概可以做到3到5万片每个月。 但如果是说那种CSP参与啊, 比如说这个亚马逊啊, 或者说这种微软啊, Meta啊, 参与进来, 包括跟这种 TGV做长期的这种offtake agreement。 这种长期, 就是长期有可能扩展到5到8万片, 甚至更高啊。 反正这个, 其实这个, 这里面其实关键变量是这样的。 它其实不是看有没有厂房, 而是看谁来承担这个风险, 就是这个资本风险。 因为这种先进的 Fab它是非常烧钱的。 就是如果只是Intel和台积士这两家承担, 我觉得会比较谨慎啊。 但如果说有亚马逊, 谷歌这种微软这样参与的话, 那就不太, 那就不一样了。 OK。 嗯。 这是我想您这产能的问题, 对, 产能的问题。 那么您后面一个问题是说先进自成, 18A和14A潜在客户和订单的情况啊。 嗯, 对。 先进这块介绍一下对。 对对, 因为, 因为我的话, 那个, 再过半个小时之后有个会谈, 我看, 我们今天先聊, 聊到哪儿算哪儿, 后面我们如果没聊到的话, 我们再约好不好? 啊行, 可以可以。 接着往下走, 我想快一点。 对, 我想快一点。 那么是这样, 对, 那么是这样的。 关于18A和14A的话, 这块要分开来看啊, 那么18A 我觉得最确定的外部客户的话是亚马逊, 这个我不知道您您听, 您知不知道, 其实我们跟亚马逊在, 就是24年的时候, 已经正式在, 在做, 已经签了这个 MOU啊, 而且我们当时已经确认了就是我们的 foundry, 我们的 foundry会用18A给这个亚马逊生产一款, 他们叫 AI Fabric Chip。 同时的话 也会使用这个三纳米, 是我们Intel3, 生产一个 customer, Action new, OK。 那么这是跟亚马逊最最明确的一个。 那么第二个的话, 其实是跟微软, 其实也有一个明确的一个, 至少明确的一个叫什么呢, MOU吧, 那么, 但是 现在微软这块呢, 的那个进展呢其实没有亚马逊这么, 这么快啊。 但是呢, 我认为18A这一块, 它其实对外部客户其实还好啊, 其实跟这些外部客户比起来的话, 我觉得我们自己的这个PTL和我们的这个CWF, 这一块才是, 就是才是一个重点。 那么, 这个是叫什么呢, 这个是我们的18, 18A的情况。 那么14, 14A呀, 我认为14A的这款产品呢, 才是真正决定就是说我们的那个 Intel代工服务能不能长期的这个长期的一个节点。 因为 14A呢, 我们从一开始就更加的这个面向就是外部的这种代工, 代工, 代工客户的设计啊。 那么, 呃, 自从, 就是, 自从我们今年, 呃, Q2, 实际上, 其实早就有讨论过, 但我们Q2才正式的这个确认啊, 就是完成这个14A的这个开发。 那么我们当时其实讨论跟我们, 我们跟外部客户讨论更多的, 一方呢是特斯拉。 那么, 呃,基本上我們跟特斯拉的合作已經現在已經確定了, 就是說我們後面會 呃,特斯拉會是我們18A的一個非常有象徵意義的一個大客戶吧, 這是 14A的,這這個是14A的情況吧。 那麼, 嗯,您當初還有一個問題是問的是最終 對應到客戶什麼產品啊。 嗯,是這樣的, 就這個我逐個逐個講下來吧,就是亞馬遜的這個18A,就是我剛剛說的,就是它的AI Fabric Chip。 啊。 它的,你應該,你應該聽過它這個這個產品啊。 這裡我想,這裡我,這裡我想追問一下,不好意思,我這裡我想打斷一下,就是 呃,亞馬遜這個它是,呃,它它是什麼,它是那種training嗎?還是什麼Influential,就是 他他還是就是還是就是說你你你有知道,反正就是叫您說的這個名字,AI Fabric Chip。 就是它是有,有沒有更具體的名字? 名字,對, 你名字它就叫AI Fabric Chip。 就是它的名字就要這個名字。 它不是一款,它不是一個傳統意義上的CPU, 它 它是一個,我怎麼怎麼講啊? 它是一個那種AI cluster內部用於高代寬互聯的, 啊,一款networking這一層的那個asic。 啊。 就是 呃,它最後因為最後那個名字它可能會再命名一下啊,它是一款用於連接的,就是用於 呃,我我不知道怎麼說啊。 就是 那個network asic你知道什麼東西嗎? 欸? Hello? Hello? 不好意思。 聽清,聲音 欸餵餵餵,不好意思。 對對。 哎哎,好好好,我我繼續啊,就是是這樣的,就它這款產品的話, 嗯,它最後,最後它出來,它肯定發布的時候會有個品牌名,但是我們內部的話是現在是,因為亞馬遜並沒有正式命名,我們內部都是叫Fabric Chip。 它,它這款產品實際上是用於,用於連接的,它並不是用來計算的。 嗯,它是, 它是用來做那個networking這一塊的這種定制化的asic。 呃,我我不知道 呃,怎麼說啊? 對。 這個我大概可以理解,我大概可以理解,這個可能有點像一個就是交換芯片的,可能有點像 就是scale up或者是scale out的這個交換芯片。 明白明白。 對對對對,交換芯片,對對對對對。 啊對對對對對,就是這個啊,就是亞馬遜的。 好。 呃, 那,那這個其實微軟的話,微軟這邊18A,它其實其實也確認了一個 一個就是18A的chip design,但是呢,微軟這一塊 嗯,他沒有跟我們說具體的用處啊。 但是我猜的話應該是那個 呃, 呃, Maya,我我猜的話,但這個我也不確定。 大概率是會,我覺得大概率會是這個Maya。 明白。 那麼我們自己的就很,對,我們自己的就很很清楚了啊,就是說就這個PTL和,就是我們PTL和那個Core Ultra13, 還有就是server端的,就是那個C,CWF,也就是我們的Action 六家啊。 而且, 而且本身我們的這個CWF的話,它那個結構啊,它就很 很適合,就是Intel這一塊的這個18A。 OK,那麼這14A這邊呢, 嗯,是這樣的,14A這一塊,當然現在比較早啊, 但是我們如果說Tesla的那個, Terafarm,那個如果說它能走得順利的話, 大概會有這兩類。 第一類的話就是特斯拉的這個車, 和那个Optimus机器人,他们需要的这种 AI computer silicon, silicon。 那么这第一类。 那么第二的话是更大型的这种AI data center computing的这种芯片。 那么,其实 呃,您关注最近的一些,可能我不知道他们有没有对外说哈,就反正特斯拉和这种Xspace, 其实它在在在说他那个TeraFab的时候,它已经就已经提到了一些, 一方面他们那个芯片会面向这种车辆和这个机器人,一方面会面向那个AI data center。 呃,那么,对,那么这一块的话,可能是,对,这是很明确的一个,我们的一个客户。 但是呢, 呃, 这,以我们内部的那个策略来看,反正 我认为反正14A这个最先进的 呃,形成规模的哈。 很可能不是手机啊。 我觉得更,反正更多的就是三类产品,一款就是这个AI ASIC, 和这个,这是第一个,第二个的话是那个,就我刚说的亚马逊,类似于亚马逊那种那种AI Fabric, network的 chip, chiplet, 还有就是那种high performance的这种computing chiplet。 呃,手机的话,我觉得不会,不会特别多啊,我自己判断。 嗯,明白,明白。 那么 这里我很快,我很快追问一下这里,就是, 呃,那那您像那个,呃,那个像像那个,就是说,博通,AMD啊,这些什么的,就是,包括高通啊,这些等等,其他的这些ASIC的, 或者是那个custom silicon的公司有, 就是有有会是我们潜在的这个客户吗? 呃,是这样的。 首首先呢,肯定是我们的潜在客户,但是, 包括您说,刚刚说的这种博通啊,高通啊,包括像苹果呀这些, 因为他们现在在这些, 不管是这种mobile IP的,或者说那种RF的,或者说那种low power的library的, 他们的量嘛都很大。 他们要切换factory的话,其实是非常谨慎的。 所以这一块,反正我认为不会,就是,不会那么那么激进啊,我要是他们的话,我不会那么激进。 明白明白。 哦对,还包括您像那个英伟达呢? 他他是也是 就是他也是在 就是有有有有那个有什么探讨之类的没有? 首先,呃,对, 探讨是有探讨,但是没有什么深入探讨过,啊。 我觉得英伟达他可能 还是偏向于台积电吧,啊。 我我猜的话啊。 嗯。 嗯,明白明白。 好,好。 嗯。 嗯。 好。 好。 但是我们跟,我们跟那个联发科其实讨论过一些。 OK。 我觉得联发科可能,对, 对, 联发科那边跟我们聊的比英伟达可能还要多一些。 啊,明白明白。 好的好的,那那这块的这个就是14A这块的 产能规划,就是放量节奏,包括良率爬坡, 呃,大概是怎么样预期的? 嗯。 呃,是这样子的,就是对,这这个是您的一个问题哈,关于这种产能情况。 我把,我把那个18A和14A都给你讲一讲吧。 行行,好。 嗯。 好。 是这样子的, 我觉得, 呃,我们,我们目前预计正常的话,就是, 呃,我们现在一共18月的,主要是两两个地方,一个是那个 佛罗港的,一个是那个阿维中的。 这两个地方我们的合计的话大概是3万片。 啊,300,300毫米的这个wafer每月上下。 到今年年底的时候,我为呢,能够,呃,保底能够,就是 中,中位数吧,能够 做到4万片每月,啊,这是比较合理的。 那明年的话会进一步向这种月产5到6万片来靠拢。 啊,这是18A。 那么 OK。 那么这个,嗯,14A的话,其实是另外一个阶段了。 因为14A现在还不能把它当做一个成熟的产产栏。 那么,我们 最新的预测的话,就是,或者说目标吧, 就是27年年底, 大概是能,嗯,6000片每月。 到28年年底的时候,大概是2.4万片每月。 啊, 这个是14A的一个情况哈,嗯。 OK。 OK。 那么,就是如果说,其实跟之前,对,跟之前也说过,就是说, 如果说真的真正意义上,就是商业上,商业上要量产这种14A, 那我觉得要到,就是29年之后了。 嗯。 明白明白。 呃,你对,我想请教一下,就是这个,呃,怎么去理解就是商业上量产这个14A的话,就是通常是多少万片每个月就可以认为是这种商业上的大规模量产? 嗯,正常来讲,我们是,就是商业上量产的话大概是,至少是3万,3万以上,3到4万以上。 嗯,好,OK。 好的好的。 对,就像现在我们现在18A的这个水平吧,至少是。 嗯,明白明白。 我还想请教一下,就是您像现在18A的话, 呃,就是这这个这个良率是有有这个概念吗?就是以及就是这个可能现在是在什么水平? 嗯。 呃。 是是这样的。 嗯,这里边良率呢,它是,这里边有个比较容易混淆的点啊,就是说 嗯,像PTL这种比较相对小的这种计算单元, 和那个 嗯,CWF这种大型的这种server die, 这个良率是完全不一样的。 啊, 我就,那我直接就回到您的数,数字啊,就是 嗯,PL这种对应的良率我们18A现在大概是80%。 啊,这个这是中中位值吧。 那么这种,嗯, 大,这种大型的大或者说就是对这个就比较敏感的, 嗯,我们其实CWF这种大型的芯片, 我们现在良率的话,嗯,其实不高啊,现在大概是50%的样子。嗯。 嗯,明白,明白。 好的好的,这 呃,这个是后面还会就是说有有有提升的空间嘛,就是就是后面有预期是怎么样呢? 嗯,肯定会这个尽可,我们会尽可能的去优化提升吧。 我觉得的话,到,嗯,到27年吧。 到27年,就是18A的这种前置产品 都会提到,就是我刚刚说那个小的那个,PTL,那个我们会稳在85%以上。 对于大型的这种,CWF的话,我认为会比较稳,就是稳在60%到75%这个这个经济区间。 因为大,其实大型的这个,对,它并不是一定要达到90%以上的良率才赚钱。 OK。 嗯,明白明白。 好的好的,然后那现在就是,您像就14A现在就是说肯定就是因为现在还在很早的阶段,就是这个, 就是说你要要不存在。对。 就是就算是说良率可能也是只是预期的数。嗯。 对对对对对,这个这个纯预期啊。 但是如果说你你要让我预期的话,是这样的,我认为 27年初期啊,就是在做这种, 和这个风险市场的时候, 呃,基本上我判断只有30%到,就不过效果50%啊,大概是30%,30%到50%这个区间。 然后到28年开始做这种 high volume manufacture的时候,嗯,大概是到60%到70%。 29年成熟之后啊,可能会稳在75%到85%这个时候。 这个是预计啊,纯预计。 明白明白,好的好的,行,行。 好的好的,那那我们那接下来就要不您再介绍一下那个就是先进封装的情况,好吧? 好,好,没问题。 呃,是这样的。 嗯 我认为,我认为是这样的啊,就是说现在,嗯,先进封装这一块就是呃 EMIB-T啊,这块我们客户的这种其实兴趣呢,它是比较高的。 那我现在也看到我们的这个backlog存量订单啊,也现在陆续的增加。 包括这种呃良率和这种可靠性,刚达到刚前的呃目标,我觉得也是比较,比较,我们看内部看也是比较达标的。 而且也支持就是27年的这种customer的这种ramp。 嗯 但是呢,就是这里边的话,如果按客户看啊, 嗯,最值得,就是最大的两个客户吧,一个是谷歌,一个是那个亚马逊。 啊。 那么这个是 嗯,外部客户啊。 OK。 那么,但是呢,这里面有个有个有个事,就是有个有个点啊, 嗯,其实这种先进封装啊,它真正的客户它不一定,就是,就是最后不一定 是我们在外面看到logo的那家公司。 就比如说这种谷歌的这种asic,它可能是由这种联发科参与设计,然后那个乘下那种foundry,它可能是由台积电,但是这种先进的这种,先进封装,它可能是Intel,它是,它是供应链,OK。 嗯。 那么,这个是,对,它是一条链。 那么, 嗯,这里边,先进封装,我怕你问的问题是对,最终对应客户的这个什么芯片啊。 实际上这个里边基本上都打,都是做那种大尺寸的这种AI accelerator, 啊,或者说这种定制化的AIic。 我以谷歌为例啊,就是说主要还是做下一代的这种TPU啊。 那么,因为今年呢,的话我们那个谷歌那边主要方向还是TPU那个V7嘛,V7。 那么27年后后续产品呢,后续产品的话,封装面积它会 继续增大,那么包括这种HPM的数量啊,也会继续增加。 嗯,那这一块的话,我们认为27年之后就是那个 嗯,EMI-T这个也会有机会切入啊,这个是以主端为例。 嗯,那么亚马逊的话, 呃,我们,我们觉得更有可能的是做那个,嗯,训练,就是 训练的,后期的代级产品,或者一些这种其他的自研的这种AI Silicon。 这个是这两款吧,如果说跟就是从技术上看啊,我认为,就我们认为跟更适合EMIB-T的这种芯片,基本上有三个特征, 一个是这种computing代比较多, 还有就是HBM比较多,还有就是package的面积非常大。 OK。 就是,因为我们在做,就是EMIB这一块,我们最大的能做到120乘120毫米。 OK。 OK。 那么,嗯,然后看您问了一个问题是 是EMIB产能现在多大,未来怎么扩啊。 嗯,其实是这样的,就是您您也知道,就是说这个EMIB它现在的产能,它其实 嗯,最难,比较 比较难和那个就台积电那个 嗯,CoWoS直接比较。 因为那个CoWoS它,通常它习惯用就是那个 interposer wafer per month,那个来来做一些对标啊, 但是 EMIB如果只使用,因为我们EMIB只使用局部的这种Silicon Bridge,所以不能简单的把一个这种EMIB的wafer和一个 CoWoS那个wafer来等价。 所以呢, 我不太,我们不太建议直接就说Intel EMIB多少万片, 台积电那边做了多少万片,然后相除啊, 不应该,我觉得不太,这个逻辑不太不太对。 呃,是这样,就是 我们呢这个现在的这个先进封装主要还是分分布在这种,就是美国和亚洲啊,包括这种新墨西哥。 后面会继续扩产。 那么,呃,从商业化的角度来看的话, 26年我们还是这种内部产品,呃,加这个 内部产品做产能,加上外部产品做qualification为主。 那么真正明显的这种外部的这种external revenue ramp, 大概会到 27年下半年, 好, 这个是我们的一个预测。 就是 27年下半年会进行一个ramp,28年的话会有进入一个run rate, 那么29年会达到一个峰值, 这个是 呃,我们内部的一个预判啊。 而且的话,这个长期去看的话,它是一个 十亿级,十亿往上的一个规模。 那么,而且单客户,单个大型客户理论上啊,基本上就能形成这种 数十亿美金的一个业务量, 这是 对于先进封装这么一个一个情况吧。 那么如果比如说你要问我,我们的一个,我们的一个base case 呃,举个例啊,就是base case的话, 我们其实,其实我们26年呢,就是能够给外部客户提供这种包端的这种 呃,EMIB啊,或者EMIT这种有效产能其实是比较少的, 呃,但是27年的话,随着这种谷歌亚马逊的这种 客户的这种ramp,那么可能会做到两到三倍的一个扩张。 然后28年以后,如果客户验证顺利的话, 呃,我们进一步应该可以做到数万,甚至10万级别的这种AI packaging per month。 OK。 嗯,明白。 这个大概,我不知道有没有回你的问题啊。 嗯可以可以。 欸我我这里我想请教一下您就是, 呃这个好不好拍,您比方说 呃,就是 你刚才说明年呢,后年呢,就是说这个业务大概 它的收入体量大概是在什么范围,什么量级啊? 就可能你前面有讲,就可能每个每个客户是,可能几十亿美元,那這樣子 对,然后 那那个长期看,那是长期看啊。 嗯。 嗯, 呃,你要让我拍明年的收入的话,我觉得明年可能 不到,应该就是 不到10个亿吧,明年就是小小几亿美元的一个量级。 嗯。 然后, 就是27年啊, 就大概个位数啊,个位数亿美金的一个量级,到28年之后, 就会比较好一些,如果说客户那个验证顺利的话,28年我觉得能做到10亿上下。 那么29年的话就比较大了。 嗯,行。 OK。 好呀好呀,呃,那可能对,如果对这个这块可能可能如果说还有,对可能后面再有机会我们再可能再给您 如果我们对这块再继续研究的话,再给您一个更详细的一个一个问题,现在好了。 主要看一下这个大概就是评估一下这个大概是个多大的业务。 呃,那那这样,那个专家,我这边还有,就是还有几个问题,不在那个问题清单上的,但是想也想 呃,很快找您问一下。 呃,就是 一个问题就是说这个, 呃,诶,我这里有一个问题,就是说这个,我们的这个ABF载板的主要供应商是哪些? 这块您了解不? ABF载板? ABF载板吗? 对,ABF,ABF载板。 呃 对。 我让做。 呃,其他的因为,对,因为其实其实我,其实应该你要是告诉我了,我其实可以获取这个说啊,但是我平时没有去,因为我是负责,其实负责更多的负责对销,就销售这个口。 对于工商这个口的话,我可以帮你问一下,啊。 哦哦哦,没事没事。 我稍等啊,我找。 应该能找到。 应该能能找到。 啊没事没事。 哦对,我还有一个定性的问题,对对对,就是一个定性的问题。 刚刚我在问题清单里面也有的,就是,呃,就是说我们我们这个先进封装的业务和这个相比这个台积电的话, 呃,就是我们我们这个有有些什么优劣势? 哦。 呃,你其实这个。 这样的。 呃,稍等一下,我换个人机啊。 诶,能听到吗? 哈喽? 可以的可以的。 可以。 可以听到,可以听到。 可以哈。 是是这样的,就如果说,一句话哈,比如说Intel,它是优势在于这个architecture的flexibility和这个potential cost,啊,就是潜在的这个成本。 那么台积电的话,它是在那个它的成熟度,良率,还有整个ecosystem。 那么我先说就是Intel的优势啊。 呃,第一个,就是EMIB,它不需要一整块大的这种silicon interposer,啊,这个很好理解啊,这个本来就是我们这个,这个设,这个叫什么,核心的这个产品优势啊,这个就我就不再赘述了。 那么第二个,我们的EMIB的话,它是适合超大的这种AI package。 因为当一个package它要几,要集成十几个这种compute tile, 呃,这种小模块啊。 呃,还有这种HBM或者说这种IO die的时候,很多局部的这种bridge理论上啊,比造一块超大的这种interposer是更灵活的。 那么第三个的话就是我们的EMIB-T的这种vertical power delivery,它其实很有特点。 比如说, 呃,你加入这种TSV之后啊,电源它电源可以穿透bridge,垂直的送上去。 那AI chip它现在越来越大的问题,它其实已经不是信号了。 它更多的是这种power delivery network,比如说几千,比如几千瓦级的那种package里边,这种IR drop啊,这种power noise啊,这种terminal啊都是一些核心问题。 那么EMIB-T这一点,在这一点上,就是有比较强的这种technical differentiation啊。 那么,这是第三点吧。 第四点的话这就很简单啊,我们这个是美国本土供应链,啊,这个就字面含义的。 呃,对,然后,对,就是美国本土供应链,就是外部客户量,这个,呃,这这这是字面含义。 那么劣势啊,劣势也会比较明显。 呃,第一个,就是我们的外部客户量,是,就是外部客户的量产经验是远远要少于这个台积电的,啊,这个是已经很好理解。 那么第二个的话就是那个CoWoS,它那个生态它是更加成熟的,啊。</p>
+</div>
+</main>
+</body></html>

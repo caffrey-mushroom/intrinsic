@@ -1,0 +1,205 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.24 | AC | Security | Okta AI Agent Security Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.24 | AC | Security | Okta AI Agent Security Blueprint</h1>
+<p class="orig">原标题：Okta CEO Todd McKinnon：发布AI代理安全蓝图，身份治理与实时拦截驱动企业级AI规模化</p>
+<p class="tags">#security #agents</p>
+<p class="meta">AceCamp · 2026-09-24 · article 70567487</p>
+<div class="body">
+<h2>摘要</h2>
+<p>纪要源于：2026年9月24日，Okta发布的Oktane 2026大会主题演讲“Okta secures AI: Setting the Standard for the Secure Agentic Future”，由Okta CEO Todd McKinnon主持，AWS、Anthropic、Dell Technologies及PGA of America的嘉宾领导者共同参与。</p>
+<p>以下为访谈全文：</p>
+<p class="qq">Q&amp;A</p>
+<p class="qq">鉴于AI技术正在重塑整个技术堆栈，您如何看待确保AI Agent安全所面临的跨行业挑战？</p>
+<p>AI与传统软件的根本区别在于其非确定性的概率性本质，这使得AI Agent在获得强大能力的同时，也难以被有效保护，因为它们的行为路径并非每次都相同。可以将AI Agent类比为人类行为者，但区别在于我们能接触到它们的“大脑”。赋予它们越多的访问权限和责任，其能力就越强。因此，确保AI Agent的安全是一个跨行业的共同挑战。要解决这个问题，需要回答四个关键问题：第一，Agent在哪里；第二，它们能做什么；第三，它们实际上在做什么；第四，当出现问题时如何响应。由于Agent将无处不在——无论是AWS、SaaS供应商还是客户自己构建的——它们都必须协同工作。这就凸显了建立一个行业蓝图的必要性，该蓝图能够为所有参与方提供统一的指导和标准。</p>
+<p class="qq">对于希望将AI应用从原型试验阶段推向规模化生产的客户而言，行业蓝图将如何帮助他们应对挑战并管理相关风险？</p>
+<p>目前，许多CISO和企业高管都希望在加速AI应用的同时有效管理风险，这已成为董事会和CEO层面的议题。他们需要的是一套能够提供信心和明确指导的护栏，而不是成为阻碍创新的瓶颈。行业蓝图通过回答关键问题，为企业提供了清晰的框架：首先是可见性，确 保每个Agent都有一个经过验证的身份；其次是治理，为Agent分配任务范围内的访问权限；再次是实时监控与追踪，了解Agent的实际行为；最后是遏制措施，能够在不影响整个系统的情况下停止并恢复单个Agent。行业面临的核心挑战是不能通过增加 更多的人工审查关卡来解决安全问题，因为这会将AI的速度拖回到人类的速度，从而限制其潜力。</p>
+<p class="qq">随着行业的发展，Blueprint Alliance将如何确保蓝图的持续演进以适应未来的技术变革？</p>
+<p>行业正从一个依赖遥测数据、存储、查询和人工仪表盘的时代，迈向一个由遥测、上下文、推理和Agent自主行动驱动的新时代。为了适应这种转变，蓝图的设计初衷就是支持一个渐进式的演进路径。初期阶段可以采用“人在环路中”（humans in the loop）的“学习模式”，由人类进行监督和改进。随着时间的推移和信心的增强，可以过渡到“人在环路外”（humans on the loop），即人类仅处理异常情况。最终，当系统足够成熟时，便可以实现完全的自主运行。该蓝图为企业提供了一个可信赖的渐进式发展路径。更重要的是，这一蓝图超越了任何单一供应商，旨在避免供应商锁定，确保整个行业能够安全、有效地部署和应用AI Agent，并为其设置正确的护栏。</p>
+<p class="qq">Agent SSO基于何种开放标准，其工作原理与传统OAuth流程有何不同？目前该标准的行业采纳情况如何？</p>
+<p>Agent SSO基于一项名为Cross-App Access的开放标准。其核心理念在于，当一个AI Agent需要连接到某个资源时，系统不再像传统的OAuth流程那样向最终用户请求授权，而是直接向企业身份提供商请求预定义的策略。该策略会明确授予恰当的权限，从而避免了对最终用户的干扰，同时为IT和安全团队提供了集中化的可见性与控制力。这项标准已经研发了四年，目前正获得越来越多的行业支持，许多供应商已在其技术中采纳了Cross-App Access。此外，Claude已支持该标准，并选择Okta作为首家合作的身份提供商。在MCP（Model-Component-Protocol）框架内，Cross-App Access已被标准机构接纳为实现企业级授权的方式。当Claude与MCP通信时，会寻找Cross-App Access的接口，从而实现无缝的用户体验。</p>
+<p class="qq">从MCP（Model-Component-Protocol）的开发角度看，为何坚持开放标准至关重要？该协议的成功是否超出了预期？</p>
+<p>开放标准为企业提供了选择权，使其能够审查、保护并共同构建技术生态。若要建立一个像MCP这样的生态系统，开放是必由之路，这在云计算、身份认证以及当前的Agent领域都得到了验证。我们需要共同的标准来真正驱动一个Agentic基础设施。MCP的 成功确实超出了最初的预期，目前所有主要的AI提供商、云服务商以及全球大多数财富500强企业都在采用该协议，这证明了其广泛的接受度和影响力。</p>
+<p class="qq">企业级授权和Cross-App Access标准将为企业客户带来哪些核心价值和能力？</p>
+<p>随着模型能力日益增强，为企业提供安全、可靠的模型访问权限变得至关重要。这需要一种既无缝又安全的产品体验。企业级授权（Enterprise Managed Authorization）的核心价值在于，将授权决策从最终用户的同意界面转移到IT管理员层面，由管理员预设策略。这样做既能为用户提供流畅的体验，又能将安全和合规的控制权交还给企业。这对于AI系统的大规模应用至关重要，尤其是在模型需要连接到企业内部SaaS系统和专有系统时，能够真正释放其潜力。</p>
+<p class="qq">在构建安全的Agentic基础设施方面，身份提供商、AI模型和安全行业未来面临哪些关键挑战和发展方向？</p>
+<p>过去几十年，我们构建的身份和授权机制都是围绕人类用户设计的，这些假设在AI Agent的场景下已不再完全适用。行业仍面临许多悬而未决的问题，例如细粒度授权、基于意图的授权以及为Agent进行即时身份配置等。这些都需要AI实验室、身份提供商、云服务商等行业各方共同协作，持续开发新的标准来支撑Agentic基础设施。我们正处于下一代基础设施建设革命的早期阶段，关键在于通过行业合作，共同构建企业可以信赖的、坚实的标准。</p>
+<p class="qq">Okta for AI Agents这款产品的定位是什么？它如何实现蓝图中关于身份认证的核心功能？</p>
+<p>Okta for AI Agents是公司的旗舰产品，旨在实现“安全Agentic企业”蓝图中与身份相关的核心功能。虽然蓝图涵盖范围广泛，但其基础部分大量围绕身份展开。该产品专注于构建这些身份功能，并确保与客户环境中的其他组件无缝协作。Agent SSO是标准化的重要一步，但它无法发现未知Agent、进行Agent治理、在不同协议间进行连接代理，也不包含“紧急停止开关”（kill switch）。Okta for AI Agents则提供了这些更高级的功能，以满足更全面的安全需求。该产品自2026年4月起已正式发布。</p>
+<p class="qq">Okta如何组织内部资源以快速推进Okta for AI Agents产品的研发与迭代？</p>
+<p>公司采取了特定的组织架构来加速产品创新。首先，成立了一个直接向CEO汇报的“AI Takeoff Team”，其职责是深入了解客户环境、挑战及需求，并将这些洞察直接反馈给研发团队。其次，重组了研发部门，建立了一个统一的团队，确保有足够的优先级、带宽和资源来构建Okta for AI Agents，并将其能力无缝集成到所有产品线中。此外，CEO每天都会与研发团队会面，以清除障碍并推动项目进展。这种组织方式确保了产品创新是基于客户实际需求、有针对性且目标明确的，而非泛泛的科学实验。</p>
+<p class="qq">Okta for AI Agents在实际应用中取得了哪些成功案例？其为企业带来了怎样的具体价值？</p>
+<p>该产品已在多家企业得到成功应用。例如，金融科技公司Ramp利用其内部AI Agent“Glass”提升了全公司的内部生产力。Yahoo则将其应用于名为“Y Connect”的软件工程Agentic系统中，Okta for AI Agents负责代理该系统与虚拟MCP服务器之间的连接，提供了关键的可见性和控制能力。Dell Technologies在其客户服务和成功部门部署了一个AI平台，该平台基于数百万次客户互动的数据，为服务人员提供“下一个最佳行动”建议，从而改善客户成果和满意度。在Okta内部，名为“Dex”的AI Agent通过自动化内部运营流程，预计在2026年将节省25万个工时。此外，通过精确控制Agent可调用的工具，还能显著降低成本，在某些情况下，由于避免了Agent对无权访问的工具进行无效调用，可节省高达90%的token成本。</p>
+<p class="qq">自今年四月以来，Okta在安全代理企业（secure agentic enterprise）方面发布了哪些重要的安全功能，特别是在代理安全创新方面？</p>
+<p>自2026年4月以来，我们已经发布了25项主要功能。其中三项尤为关键：第一是针对端点的影子AI代理发现（shadow AI agent discovery for endpoints）；第二是代理网关（Agent Gateway）；第三是支持第三方身份提供商。</p>
+<p>影子AI代理发现功能旨在解决开发者笔记本电脑上通过CLI和客户端代理带来的风险。该功能通过与CrowdStrike和Okta Verify应用集成，提供对端点活动的全面可见性，并将这些信息反馈至Okta for AI agents平台，从而实现对相关风险的管控。</p>
+<p>代理网关是我们收到最多需求的功能，它是一个虚拟MCP服务器。该网关允许将所有MCP服务器置于其后，通过Okta for AI agents统一管理所有工具中对群组、角色和用户的授权与权限。它兼容自建的MCP服务器以及SaaS应用提供的MCP服务器。作为一个网络网关，它能提供流量的完全可见性，允许将客户端的令牌集中存放在网关中以增强安全性，并提供一个“一键关闭”（kill switch）功能，确保所有代理必须通过此网关，从而在必要时可以切断其访问。</p>
+<p>第三项功能是支持第三方IDP。Okta for AI agents现在可以与第三方MCP协同工作，允许企业在异构环境中，将人类身份和代理身份分别管理于不同的系统，例如人类身份保留在原有系统中，而代理身份则通过Okta for AI agents进行管理。</p>
+<p class="qq">Okta平台如何支持面向客户的代理活动，特别是在电子商务场景中的应用？</p>
+<p>我们通过在平台中支持Auth for UCP（Universal Commerce Protocol）来实现对面向客户活动的投资。UCP是一种通用商业协议，它使Gemini AI代理能够与任何支持该协议的电子商务网站进行交互，执行账户注册、购物车管理和结账等操作，从而在Gemini内部创造无缝的商业体验。如果商家的电子商务网站使用Auth0作为身份提供商，现在可以与UCP无缝集成。我们预测，到明年（2027年）Oktane大会时，面向客户的代理应用将成为一个重要议题，整个行业将向此方向发展，并同样面临风险控制与鼓励创新之间的平衡。</p>
+<p class="qq">在PGA of America的案例中，Okta如何帮助他们发现并管理企业内部的代理，特别是那些未知的“影子AI”？</p>
+<p>在Okta的体系中，每个代理都被视为一个独特的、一级的身份（first-class identity），并记录在Universal Directory中。每个代理都拥有唯一的加密身份和一个指定的人类所有者，以确保治理周期中的问责制。</p>
+<p>为了回答“我的代理在哪里？”这一核心问题，我们使用了Okta的ISPM（Identity Security Posture Management）。ISPM能够发现企业内所有类型的代理，包括在端点上运行的代理、嵌入在AWS或Salesforce等已知平台中的代理、在浏览器中运行需要OAuth授权的代理，以及影子MCP服务器。</p>
+<p>具体到端点代理的发现，ISPM与CrowdStrike和Okta Verify集成，能够发现本地运行的代理并获取其关键元数据，如代理ic harness、代理名称、关联用户以及该代理可能使用的任何MCP服务器。通过AI代理图谱（AI agent graph），可以直观地看到代理的整个影响范围（blast radius），包括谁在访问它以及它正在访问哪些资源。例如，我们发现一个代理连接到了一个未经批准和注册的自建MCP服务器，这正是影子AI的典型特征。通过ISPM，可以直接在平台内将这个影子代理和影子MCP服务器注册到Universal Directory中，使其从未知变为受管理状态，整个过程无需邮件或工单流转。</p>
+<p class="qq">在明确了代理的身份和位置后，Okta平台如何定义和管理这些代理的权限，并确保其操作的可追溯性？</p>
+<p>为了回答“这些代理能做什么？”的问题，我们使用了配置设计器（configuration designer）。以一个需要访问Salesforce和Gmail的销售运营代理为例，通过配置设计器，可以可视化其完整的访问图谱，包括每一条连接、它委托访问权限给的其他代理，以及从用户到代理再到资源的路径上的每一个MCP服务器。</p>
+<p>这个功能的核心价值在于解决了“监管链”（chain of custody）的痛点。它展示了从用户到代理，再到子代理、MCP服务器，最终到资源的完整委托链。整个过程形成了一个单一、不间断的日志链，这些日志被记录到我们的系统日志中，并可以流式传输到客户的SIEM系统以进行威胁建模。这确保了所有代理行为都具备可审计性和可追溯性，从而在审计时能够准确说明代理的权限和行为。</p>
+<p class="qq">在代理运行时，Okta如何实时监控和控制其行为，并在检测到潜在风险时做出响应？</p>
+<p>我们使用Agent Gateway来控制代理在运行时的行为，以回答“它们实际上在做什么？”以及“我该如何响应？”这两个问题。Agent Gateway作为一个统一的控制点，取代了过去管理数十个点对点集成的复杂模式。</p>
+<p>通过Agent Gateway，可以精细化地查看和控制特定代理（如销售代理）能够连接的工具。例如，可以将其权限范围限定为仅访问Salesforce。在运行时，每当该代理调用一个工具，网关都会检查其身份，应用预设的策略，并将所有活动实时写入审计日志。</p>
+<p>如果发生异常行为，例如一个销售人员试图让代理将包含前五大客户摘要的敏感数据发送到其个人邮箱，系统会触发响应。首先，代理会拒绝该请求；其次，Okta会检测到这次数据外泄尝试，并自动切断该代理与Salesforce的连接。这种行为，即使提示本身 和销售人员的意图并非恶意，也可能导致敏感客户数据泄露。</p>
+<p>安全团队会立即在Slack中收到警报，其中包含有关所用攻击手段（MITRE ATT&amp;CK Tactic）、规则、严重性等详细信息。点击警报可以查看从提示到代理工具调用再到响应的完整会话记录。这个流程展示了从设计时到运行时的闭环管理：为代理分配唯一身份和所有者，应用最小权限原则，在运行时评估每一次工具调用，并在代理被要求执行不当操作时，通过“一键关闭”功能切断其资源访问权限。</p>
+<p class="qq">在面向消费者的场景中，例如PGA of America的客户通过AI工具购物，Okta和Auth0如何保障交易安全并优化用户体验？</p>
+<p>在面向客户的场景中，体验、减少摩擦和交易信任至关重要。当PGA of America的客户通过像Gemini这样的AI工具购物时，Auth0发挥了关键作用。零售商可以部署一个由Auth0保护的UCP（Universal Commerce Protocol）服务器，该服务器能直接接入这些AI生态系统。</p>
+<p>例如，一个高尔夫新手通过Gemini寻找课程和商品。AI代理会根据其新客户身份，展示个性化的搜索结果和专属折扣。当需要结账并创建PGA of America账户时，由于客户已通过Google连接到Gemini，他们只需同意关联账户即可，无需手动输入用户名和密码，极大地减少了操作摩擦。</p>
+<p>在涉及资金交易的最后环节，为确保有人类参与，客户会在手机上收到一条通知，批准后即可完成购买。整个过程都在Gemini体验内完成。此外，如果客户在账户中发现未经其批准或可疑的AI客户端连接，他们可以直接终止该连接。Okta的角色是确保这种体验 既足够安全可信，又足够简单，让客户始终掌握控制权。</p>
+<p class="qq">目前介绍的这些AI安全相关功能和产品的可用性如何？</p>
+<p>本次演示中展示的所有功能，要么已经正式可用，要么预计在（2027年）一月前可用。这些都是真实的产品功能。所有这些创新都直接源于客户的反馈，包括将代理作为唯一身份、授权、治理、一键关闭功能以及意图授权等。</p>
+<p class="qq">请问Dell的AI转型历程是怎样的，以及公司是如何构建其AI平台的？</p>
+<p>Dell的数字化转型始于大约七八年前，最初的重点是流程数字化和结构化数据的利用。随着机器学习和数据科学能力的发展，公司认识到其中的巨大机遇。大约三年前，随着AI在处理非结构化数据方面的突破，公司看到了构建内部平台的巨大潜力。基于此，Dell建立了四个核心AI平台，分别围绕供应链、直销团队、服务的“下一个最佳行动”（next best action）以及研发项目。在这些平台的基础上，公司开始构建AI能力，并很快预见到AI代理可以自主或协同工作。</p>
+<p class="qq">在AI代理的开发过程中，为何决定为每个代理赋予独立的身份，其背后的考量是什么？</p>
+<p>为每个AI代理赋予身份的核心驱动力是实现“可观测性”。大约两年前，在平台搭建完成后，公司认识到，只有能够观测到代理的行为，才能对其进行有效管理。因此，为代理建立身份并内置可观测性能力，可以追踪这些代理在何处、为何以及被谁使用。基于这一需求， 公司开始反向构建相应的机制，从而确保对所有AI代理活动的可视化与管控。</p>
+<p class="qq">在实现AI代理的可观测性之后，Dell如何进一步发展其代理架构以提升内部流程效率，并最终改善客户体验？</p>
+<p>在建立可观测性的基础上，公司进一步规划了代理架构，实现了代理之间的直接通信（agent-to-agent），并为此建立了内部身份识别机制。同时，公司还构建了代理之间的“祖孙三代”（grandparent-parent-child）层级关系。 这种架构使得不同平台的代理能够协同工作，并由上层管理代理进行协调，从而实现了内部端到端流程的整合与打通。这种横向整合能力是提供卓越客户体验的关键，它使公司能够兑现为客户提供端到端成果和体验的承诺，是整个转型过程中的核心突破。</p>
+</div>
+</main>
+</body></html>

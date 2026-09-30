@@ -1,0 +1,188 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.22 | AC | ASIC | Chip Design House: Ada1/Ada2 ASICs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.22 | AC | ASIC | Chip Design House: Ada1/Ada2 ASICs</h1>
+<p class="orig">原标题：芯片设计大厂调研_Ada1_Ada2定制ASIC量产及迭代规划,新客户项目拓展,端侧AI芯片布局及工业场景拓展-聚焦字节_阿里_智谱_DeepSeek等</p>
+<p class="tags">#asic #china</p>
+<p class="meta">AceCamp · 2026-09-22 · article 70567392</p>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>Ada1/Ada2定制ASIC量产及迭代规划;</li><li>新客户项目拓展;</li><li>端侧AI芯片布局及工业场景拓展。</li></ol>
+<p class="qq">以下为专家观点：</p>
+<p class="qq">请问最近一个月内，公司在订单和项目方面有哪些新的进展？</p>
+<p>最近一个月，上半年与字节跳动和阿里巴巴的既有项目在正常延续。同时，5月份之后启动的几个新项目取得了进展，均在8月底至9月初签订了第二期研发合同，这部分属于NRE订单。量产订单方面，与一个月前相比没有新增。 在预期订单层面，已和智谱AI达成初步协议，预计明年（2027年）上半年将获得端侧（本地化部署）订单。与DeepSeek的合作则以外包形式展开，主要提供技术支持团队，但暂时不涉及量产或完整芯片设计。此外，与宇树科技也制定了初步规划，预计今年（2026年）第四季度将围绕端侧大脑项目签订部分定制化设计合同，该项目的量产同样计划在明年（2027年）。</p>
+<p class="qq">此前预期的第二季度收入未达成的原因是什么？</p>
+<p>第二季度收入未达预期的主要原因是整体项目周期延长。过去评估的交付周期，即从签订合同到完成交付确认，大约为9到12个月。然而，目前整个设计周期已将确认收入的时间点推迟至14个月，而量产周期则延长至14到18个月。 周期延长的核心原因在于测试环节的拉长。一方面，客户自身评估能力有限，需要引入第三方对研发和量产的交付产品进行多重验证，以确保其符合要求。另一方面，在交付完成后，存在一个“已交付但未确认收入”的阶段。这个阶段过去预计为一到两个月，现在延长到了二到四个月。这主要是因为客户在当前的投资环境下，希望延长付款周期，而公司在这方面的议价能力有限。</p>
+<p class="qq">为何要采用裸Die交付的方式，并且是由第三方机构进行CP测试？</p>
+<p>采用裸Die交付并引入第三方测试机构，可以视为一种行业间的协议性安排。理论上可以等待全流程供应链完善后再进行交付，但当前环节下，公司需要尽快确认收入以改善资金链状况，不能等到一两个月后才收款。因此，裸Die交付成为一个必要的中间验证环节。对 于客户而言，这也提供了一种保障，使其能预先评估裸Die的条件，以确保其商业规划不受影响。对公司而言，在全流程交付前，通过裸Die交付至少可以收回一部分款项。</p>
+<p class="qq">当前量产产品的正式代号是什么，是Ada1还是Ada1S？</p>
+<p>产品的通用名称是Ada1。由于HBM 2E版本已不再使用，为当前搭载HBM3的版本特别加上“S”的后缀意义不大，因此在绝大多数场景下都直接称为Ada1，Ada1S这个代号很少被使用。</p>
+<p class="qq">与去年（2025年）相比，今年（2026年）大型互联网公司在硬件基础设施建设方面有何策略变化？</p>
+<p>今年（2026年）大型互联网公司（如字节、阿里、腾讯）在新建硬件基础设施时，策略上相比去年（2025年）更为审慎，不再那么急于求成。它们现在更注重未来几年的长期低运维成本，而非单纯追求快速扩大算力规模。这导致它们可能会放缓硬件的接收和建设节 奏。预计今年（2026年）字节在进行新的硬件部署时会更加谨慎。</p>
+<p class="qq">字节明年（2027年）在自研芯片使用方面有何规划，尤其是在视频生成等场景中，这款芯片相较于市场主流产品（如690、950 PR）的替代潜力如何？</p>
+<p>这款自研芯片主要针对视频生成等推理场景，并不适用于豆包这类应用。其设计初衷是为SeeDance模型进行专用优化。最初的设计是基于SeeDance 2的PT文件进行的，通过分析该文件来优化硬件电路，例如砍掉使用率低的逻辑部分并进行聚合，以实现高算法效率和低功耗。当模型迭代至SeeDance 2.5时，由于设计时已预留了一定的冗余，该芯片的运行效率下降至SeeDance 2水平的85%，这一结果在可接受范围内。若没有预留冗余，效率可能会下降至不到一半。</p>
+<p class="qq">这款为SeeDance模型定制的芯片，其性能如何适应模型的快速迭代，例如从SeeDance 2到SeeDance 2.5乃至未来的SeeDance 3，以及相应的生产和改版计划是怎样的？</p>
+<p>芯片的性能与模型版本高度相关。目前在SeeDance 2.5版本上测试的效率是SeeDance 2的85%，可以正常使用。根据当前预估，若字节的模型规划方向无重大变化，该芯片在未来的SeeDance 3上运行，算法效率大约会是SeeDance 2的60%。针对SeeDance</p>
+<ol><li>5的推出，市场曾有关切该芯片是否需要大幅改版，但目前的结论是不需要。至于明年二季度是否改版，则需视情况而定，主要取决于另一款4纳米芯片的进展。若4纳米芯片项目进展顺利且成熟，则可能无需改版；反之，若存在风险，则有改版的必要。如果需要针对SeeDance</li><li>5进行专门改版，研发周期约需一到两个月，可以赶上明年二季度的生产。但改版会面临一个权衡，即改版后的芯片良率需要重新爬坡。因此，这要求字节方面不能过于频繁地更新模型，并且在模型更新前需提前沟通，以便在芯片设计中预留出相应的冗余。</li></ol>
+<p class="qq">请解释一下“静态反量化单元”在国产AI芯片中的作用和原理是什么？</p>
+<p>量化通常是在硬件开销受限或对输出结果精度要求不高的场景下，将数据从高精度（如FP32）转换为低精度（如FP16或INT8）的技术。而反量化，其核心在于计算过程是量化的，但最终输出的结果看起来未经过量化。实现这一点的原理是在计算过程中的特定步 骤，将一些关键的、重要的高精度数值预先存储下来。随后，大部分数据以低精度形式进行计算，但在最终输出结果之前，让这些低精度值与先前保留的少量高精度值进行运算。通过这一步骤，可以使最终的输出结果在精度上看起来没有经过量化处理。</p>
+<p class="qq">如何理解静态反量化机制及其在当前工程应用中的实际价值？</p>
+<p>静态反量化机制是在硬件层面，将需要保留的高精度数据进行存储、向后传输并进行逻辑控制的过程。这与动态反量化不同，后者通常指非硬件的软件层面手段，例如通过特殊电路配合软件，将软件中需要高精度的部分单独修改模型来处理。目前，静态反量化在工程应用上 尚未看到明确的结论，其主要作用更多是为主观感知提供一种“伪精确”的体验，从硬件角度看意义不大。不过，这种思路在未来模型迭代的过程中，有可能展现出更大的工程应用价值。</p>
+<p class="qq">Ada2芯片的目标应用场景是什么，特别是在模型训练方面有何具体规划？</p>
+<p>Ada2芯片的目标场景主要包括SeeDance 3模型的训练和推理。这与Ada1的设计目标不同，Ada1当时明确只针对推理场景。虽然Ada1曾有一个用于训练的12 Die合封备用方案，但近半年已不再提及，SeeDance 2的训练基本还是使用H100。对于Ada2，其在双Die合封的方案中就明确支持SeeDance 3的训练。当前H100明确不够用，H200又采购困难，将其他业务的H100转移过来存在巨大风险和成本。因此，尽管使用Ada2进行SeeDance 3训练的功耗比H100更高、效率更低，但因其能够规避不确定风险而被认为是可接受的方案。Ada2的设计首先要满足SeeDance 2和SeeDance 3的推理需求，在此基础上，当需要时也能支持SeeDance 3的训练。</p>
+<p class="qq">公司在海南的医疗项目具体涉及哪些业务，与芯片主业有何关联，以及该业务背后的战略考量是什么？</p>
+<p>公司正在海南扩建一栋实验室，专门用于医疗项目。该项目主要涵盖两大领域：一是与博鳌相关的、用于医院场景的高端智能监控医疗设备；二是家用的佩戴式监控设备，这些设备不仅限于监控，还具备实时处理能力。这些新兴医疗设备对芯片制程的要求正在向先进制程演 进。这项投资背后的战略共识是，预计2028年将出现一个行业转变，届时云端计算业务将进入平稳增长期，而端侧计算业务将迎来爆发，增量上会超过云端。</p>
+<p class="qq">关于公司与智谱AI的合作项目，其具体业务场景、技术要求以及市场规模的预估依据是什么？</p>
+<p>与智谱AI的合作项目主要面向生产侧的应用场景，而非办公自动化场景。这类工业场景的核心需求并非数据保密，而是满足实时I/O的要求，因为云端API无法满足其对实时性的需求。具体应用例如，机械臂需要根据实时输入进行非程序化的自主决策。因此，公司的 角色是为这些特定的工业场景设计并提供相应的芯片及整体解决方案。需要明确的是，这款芯片主要用于端侧应用，并非用于支持智谱AI大模型的迭代（如5.3、5.4、5.5版本），可以理解为其一项专用业务。关于市场规模预估达到数十亿人民币，其判断主要基 于两个方面：一是智谱AI自身提供的业务规划，包括其计划进入的行业领域以及已签署合作备忘录的企业数量；二是公司依据过往与浪潮等客户合作的经验，对单一客户潜在需求量的评估。</p>
+<p class="qq">公司与智谱AI在模型推理端目前是否有合作意向或规划？</p>
+<p>双方在模型推理端存在合作意向，但目前尚未进入实质性阶段，主要原因是合作条件尚未成熟。具体而言，智谱AI的大模型本身仍处于快速迭代的阶段，其迭代速度尚未稳定并降至一个可以进行针对性硬件优化的水平。在模型迭代速度稳定下来之前，公司无法开展相关的 芯片设计工作。</p>
+<p class="qq">考虑到明年（2027年）及以后AI行业可能出现自回归模型（AI训练AI）并导致模型迭代速度急剧加快的趋势，公司有哪些应对策略？</p>
+<p>针对自回归模型可能带来的快速迭代风险，公司目前规划了三条应对路径。首先，优先拓展端侧业务，因为端侧应用场景的迭代速度相对云端较慢，可以作为稳固的基本盘。其次，在云端业务上，寻找AI自迭代技术尚未充分渗透或数据积累不足的新兴方向，例如全息技术 领域，这可以为公司提供几年的缓冲期。最后，探讨在保持专业化路线的同时，开拓一条新的通用化或偏通用化路线。不过，通用化路线面临巨大挑战，因为需要直接与英伟达等行业巨头竞争，投入巨大且成功难度高，因此需要审慎评估，可能无法采取直接对抗的策略。</p>
+<p class="qq">公司与智谱AI当前合作的财务状况如何，包括已签署的合同金额及具体款项？</p>
+<p>目前与智谱AI已签署的合同仅包含技术支持服务，尚未签订明年（2027年）具体的芯片定制化订单。今年（2026年）已签订的技术支持服务合同。</p>
+<p class="qq">公司与DeepSeek的合作模式是怎样的，目前项目进展到了哪个阶段？</p>
+<p>DeepSeek采取了“跑马”的模式，即同时让多家设计服务公司参与竞标，并且其内部团队也在同步推进项目。与部分其他公司不同，DeepSeek的内部团队技术实力稳固，对项目需求和分工有清晰的规划，明确了哪些环节由内部完成，哪些环节需要外部芯片 设计公司支持。公司目前参与了其设计服务的第一阶段，主要工作是根据DeepSeek提供的算法进行算子库的建设，完成后交由其验收。项目的下一步是进入指令集级别的招投标，具体将围绕其算法需求，确定采用RISC-V架构下的何种自定义子指令集。此外， 今年（2026年）内可能还会进行软架构方案的“跑马”竞标，这部分架构偏向应用层。DeepSeek的策略是将其芯片设计的各个阶段都开放给合作伙伴进行竞争。</p>
+<p class="qq">除了字节跳动的项目外，公司在其他云服务厂商方面是否还有大规模项目？</p>
+<p>除了字节跳动的项目，与蚂蚁集团在密算领域的合作项目规模也相当可观，虽然体量不及字节跳动，但对公司而言已是不小的业务。</p>
+</div>
+</main>
+</body></html>

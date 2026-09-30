@@ -1,0 +1,742 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.22 | 9K | PCB | PCB Leader Channel Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.22 | 9K | PCB | PCB Leader Channel Check</h1>
+<p class="orig">原标题：Merit PCB龙头厂商经营近况&amp;产业趋势调研(2026-09-22 16:00:00)</p>
+<p class="tags">#pcb</p>
+<p class="meta">Meritco 久谦 · 2026-09-22</p>
+<div class="body">
+<h2>音频信息</h2>
+<p>音频标题: 260922 - Merit PCB龙头厂商经营近况&amp;产业趋势调研</p>
+<p>相关标的：undefined</p>
+<p>议题：</p>
+<p>完整音频链接：</p>
+<h2>音频纪要总结</h2>
+<h2>专家访谈纪要</h2>
+<h2>1. NVIDIA Rubin供应份额与竞争格局</h2>
+<h3>1.1 胜宏在NVIDIA Rubin项目中的最新份额如何？</h3>
+<ul><li>9月实际出货口径下，胜宏在Rubin Compute PCB中的板量份额约为75%。</li></ul>
+<ul><li>Rubin Switch PCB方面，胜宏份额约为25%，目前属于第三供应商，并非市场传言所称的第一供应商。</li></ul>
+<ul><li>Rubin Compute采用26层、5阶HDI方案，当前主要使用M8材料，主要板材供应商包括山和、台光。</li></ul>
+<ul><li>Rubin Switch采用32层高多层板方案，同样以M8材料为主。</li></ul>
+<h3>1.2 Rubin Switch PCB的主要供应商及份额如何分布？</h3>
+<ul><li>沪电是Switch第一供应商，份额约为35%—38%。</li></ul>
+<ul><li>方正是第二供应商，份额接近30%；由于份额增长较快，也可视为与第一梯队接近。</li></ul>
+<ul><li>胜宏是第三供应商，份额约为25%。</li></ul>
+<ul><li>胜宏在GB200 Switch中的供应规模较小，份额不足5%；到Rubin代际才明显提升至25%。</li></ul>
+<ul><li>GB300 Switch中，胜宏的份额也仅约5%，其核心优势主要集中在Compute HDI，而非Switch。</li></ul>
+<h3>1.3 胜宏Rubin份额后续可能如何变化？</h3>
+<ul><li>当前75%的Compute板量份额处于较高水平，明年可能随着其他认证供应商释放新工厂产能而重新分配。</li></ul>
+<ul><li>专家预计，胜宏份额可能下降10—15个百分点，但仍将保持最大供应商地位。</li></ul>
+<ul><li>份额变化主要取决于：</li></ul>
+<ol><li>新进入者的工厂认证进度；</li></ol>
+<ol><li>新产线的产能及良率爬坡；</li></ol>
+<ol><li>胜宏厂房10等新增产能的投产进度；</li></ol>
+<ol><li>NVIDIA对供应链多元化的安排。</li></ol>
+<ul><li>明年上半年新供应商对格局的冲击预计有限，因为新增工厂同样需要经历产能和良率爬坡。</li></ul>
+<h3>1.4 胜宏此前在GB200、GB300中的份额如何？</h3>
+<ul><li>GB200从2025年1月开始交付，胜宏初期板量份额约为60%，部分订单由Unimicron切换而来。</li></ul>
+<ul><li>GB300 Compute HDI方面，胜宏板量份额接近100%。</li></ul>
+<ul><li>需要注意，上述均为PCB板数量份额，并非价值量份额；即便HDI板量份额达到100%，也不代表整机PCB价值量份额达到100%。</li></ul>
+<ul><li>GB300 Switch方面，胜宏份额约为5%，明显低于Compute业务。</li></ul>
+<h2>2. 主要竞争对手与供应商能力判断</h2>
+<h3>2.1 胜宏目前最大的潜在竞争对手是谁？</h3>
+<ul><li>专家判断，景旺是胜宏在NVIDIA Compute PCB、尤其是HDI业务上的最大潜在竞争对手。</li></ul>
+<ul><li>主要依据包括：</li></ul>
+<ol><li>景旺于2025年6月获得NVIDIA HDI合格供应商认证；</li></ol>
+<ol><li>2025年8月建设新的AI PCB工厂；</li></ol>
+<ol><li>新工厂已进入试产阶段，定位就是AI PCB；</li></ol>
+<ol><li>景旺引进了UniMichael中国工厂的原班管理人员，负责珠海AI PCB工厂试产和运营；</li></ol>
+<ol><li>景旺持续配合NVIDIA开展测试，具备后续争取订单的基础。</li></ol>
+<ul><li>胜宏此前获得GB200、GB300相关HDI订单，也与引入原供应商团队、快速承接技术和管理经验有关。</li></ul>
+<h3>2.2 景旺短期能否大规模冲击胜宏？</h3>
+<ul><li>景旺目前尚未向NVIDIA实现大批量供货，初期订单预计不会太多。</li></ul>
+<ul><li>其新工厂仍需经历设备调试、工厂认证、产能爬坡和良率爬坡。</li></ul>
+<ul><li>专家认为，景旺目前在高多层板和HDI板方面尚不足以直接挑战现有第一、第二供应商。</li></ul>
+<ul><li>明年更可能出现增量的是Compute PCB中的HDI业务，而不是Switch或midplane。</li></ul>
+<h3>2.3 Switch和midplane的供应格局是否相同？</h3>
+<ul><li>两者供应格局不同：</li></ul>
+<ul><li>Switch：第一供应商为沪电，第二供应商为方正，第三供应商为胜宏。</li></ul>
+<ul><li>Midplane：第一供应商为沪电，第二供应商为胜宏。</li></ul>
+<ul><li>这一差异主要来自各供应商在高多层板、VP产线及相关产品经验上的差别。</li></ul>
+<h3>2.4 景旺在midplane方面是否已有较大份额？</h3>
+<ul><li>专家对此持否定态度。</li></ul>
+<ul><li>景旺目前可用于生产midplane板的VP线仅有2条：</li></ul>
+<ol><li>第一条线最初计划采购宝德设备，后调整为TTPT，试产约半年后才勉强实现生产；</li></ol>
+<ol><li>第二条线为后续新增。</li></ol>
+<ul><li>当前景旺在midplane方面仍处于小批量供应测试阶段，尚不具备大规模生产条件。</li></ul>
+<h2>3. 正交背板方案与量产进度</h2>
+<h3>3.1 NVIDIA正交背板目前处于什么阶段，是否已经确定订单？</h3>
+<ul><li>正交背板仍处于多方案测试和内部决策阶段，尚不能确认已形成明确的大批量订单。</li></ul>
+<ul><li>市场传言胜宏已拿到70%份额，专家认为缺乏依据。</li></ul>
+<ul><li>核心原因包括：</li></ul>
+<ol><li>最终技术方案尚未完全确定；</li></ol>
+<ol><li>部分方案仍需较长时间进行在线测试；</li></ol>
+<ol><li>胜宏现有HLC厂区不具备78层正交背板的大批量生产能力；</li></ol>
+<ol><li>当前打样良率不足50%，不支持大规模交付。</li></ol>
+<h3>3.2 正交背板目前有哪些测试方案？</h3>
+<ul><li>当前存在3类测试思路，其中会议重点讨论了以下方案：</li></ul>
+<ol><li><b>M9+Coble方案</b></li></ol>
+<ul><li>已基本完成测试；</li></ul>
+<ul><li>最终是否采用仍需等待NVIDIA内部讨论；</li></ul>
+<ul><li>专家判断该方案采用概率较高；</li></ul>
+<ul><li>Midplane当前已使用类似的纯M9+Coble方案，正交背板则用于更全面地替代铜缆。</li></ul>
+<ol><li><b>M9+PTFE混压方案</b></li></ol>
+<ul><li>目前仍在测试和认证过程中；</li></ul>
+<ul><li>尚不具备短期定型和放量条件。</li></ul>
+<ol><li><b>其他叠构方案</b></li></ol>
+<ul><li>沪电采用“40+40”方案；</li></ul>
+<ul><li>同井、胜宏和深南采用“72+6”方案；</li></ul>
+<ul><li>目前相关方案的测试进度大致相近。</li></ul>
+<ul><li>纯M9方案无法满足信号传输要求，因此需要通过复合材料或不同叠构改善性能。</li></ul>
+<ul><li>部分方案目前只处于第二阶段测试，第三阶段还需要6个月以上在线测试，结果预计到明年Q2末或Q3初才可能明确。</li></ul>
+<h3>3.3 正交背板将应用于哪些产品？</h3>
+<ul><li>专家判断，Rubin Ultra和Kyber/NVL144均会应用正交背板。</li></ul>
+<ul><li>但正交背板是否会延伸至更高机型，以及是否按原计划应用于576机型，仍存在不确定性。</li></ul>
+<ul><li>Kyber后续可能进一步导入新的材料或方案，具体需等待NVIDIA最终定案。</li></ul>
+<h3>3.4 胜宏短期为何难以获得70%的正交背板份额？</h3>
+<ul><li>现有高层板产线能力不足，尚不能稳定批量生产78层正交背板。</li></ul>
+<ul><li>打样良率不足50%，距离规模量产要求仍有较大差距。</li></ul>
+<ul><li>厂房10尚未投产，新增高多层和超高多层产能无法立即承接订单。</li></ul>
+<ul><li>技术方案、客户认证和产能条件均未完全成熟，因此现阶段谈明确份额为时尚早。</li></ul>
+<h2>4. 谷歌TPU V8业务进展</h2>
+<h3>4.1 谷歌TPU V7和V8分别采用什么PCB方案？</h3>
+<ul><li>TPU V7采用高多层板方案：</li></ul>
+<ul><li>以22层和44层产品为主；</li></ul>
+<ul><li>材料以M7、M8为主；</li></ul>
+<ul><li>包括高配版和主力量产版两个版本。</li></ul>
+<ul><li>胜宏在V7中仅通过认证，并未获得实质份额。</li></ul>
+<ul><li>V7高多层板最早的主要供应商为韩国厂商，份额约为80%。</li></ul>
+<ul><li>TPU V8采用“HDI+高多层板”的组合方案：</li></ul>
+<ul><li>HDI约占板量的30%；</li></ul>
+<ul><li>其余约70%为高多层板；</li></ul>
+<ul><li>CCL以M8、M9为主，其中M8搭配二代布。</li></ul>
+<h3>4.2 胜宏在TPU V8中的份额如何？</h3>
+<ul><li>胜宏获得V8 HDI部分接近100%的板量份额。</li></ul>
+<ul><li>高多层板部分的份额接近30%。</li></ul>
+<ul><li>综合HDI与高多层板的用量和价值量，专家预计胜宏在V8中的整体份额至少可达60%，甚至更高。</li></ul>
+<ul><li>虽然HDI板量占比较低，但其单位价值量明显高于普通高多层板，因此对整体收入和利润贡献更大。</li></ul>
+<ul><li>原V7主要供应商在V8中的份额由约80%下降至约20%，供应格局发生明显变化。</li></ul>
+<h3>4.3 TPU V8目前处于什么放量阶段？</h3>
+<ul><li>7月完成NPI提交和交付。</li></ul>
+<ul><li>8月开始小批量交付。</li></ul>
+<ul><li>9月进入中小批量阶段，目前仍在逐步爬坡。</li></ul>
+<ul><li>今年整体仍以中小批量供应为主，明年的订单规模和客户需求指引预计会更加明确。</li></ul>
+<ul><li>目前尚未获得谷歌对今年及明年PCB需求量的明确指引。</li></ul>
+<h3>4.4 TPU V8是否可能带来业绩预期上修？</h3>
+<ul><li>存在业绩上修的可能，但目前不宜过早给出确定收入预测。</li></ul>
+<ul><li>新工厂试投产阶段通常需要以高多层板产品完成验厂、良率和产能爬坡。</li></ul>
+<ul><li>谷歌TPU与NVIDIA部分产品均涉及44层板，适合作为新厂爬坡阶段的导入产品。</li></ul>
+<ul><li>由于当前份额仍主要为预估，且供应规模处于小批量阶段，建议在第四季度末再重新评估年度收入贡献。</li></ul>
+<ul><li>TPU V9目前尚无明确进展，V8项目启动时间较短。</li></ul>
+<h2>5. 产能布局与各工厂进展</h2>
+<h3>5.1 HDI 1处的产能和运营情况如何？</h3>
+<ul><li>月产能约为4.5万平方米。</li></ul>
+<ul><li>稼动率已达到98%以上，接近满产。</li></ul>
+<ul><li>当前良率约为85%。</li></ul>
+<ul><li>平均单价约为2万元/平方米，高价产品可达到2.8万元/平方米。</li></ul>
+<ul><li>主要高价产品包括GB300相关产品。</li></ul>
+<ul><li>HDI 1处已进入成熟生产阶段，是公司现有高端HDI业务的重要基础。</li></ul>
+<h3>5.2 HDI 2处/厂房4的产能和爬坡情况如何？</h3>
+<ul><li>HDI 2处位于厂房4，总设计月产能为12万平方米。</li></ul>
+<ul><li>其中约3万平方米用于mSAP，其余约9万平方米用于HDI。</li></ul>
+<ul><li>当前HDI稼动率约为40%—45%，良率约为75%。</li></ul>
+<ul><li>分月产量情况为：</li></ul>
+<ul><li>5月：1.2万平方米；</li></ul>
+<ul><li>6月：1.8万平方米；</li></ul>
+<ul><li>7月：3万平方米；</li></ul>
+<ul><li>8月：3.8万平方米；</li></ul>
+<ul><li>9月预计：约5万—5.2万平方米。</li></ul>
+<ul><li>HDI 2处的NV高端产品采用26层、6阶方案，单价约为3.5万元/平方米。</li></ul>
+<ul><li>当前生产内容不只包括NVIDIA产品，也包括谷歌TPU等项目。</li></ul>
+<ul><li>专家判断，HDI 2处是Q3和Q4最主要、甚至是唯一明确的新增产能来源。</li></ul>
+<h3>5.3 HDI 2处良率最终可以提升到什么水平？</h3>
+<ul><li>目标良率上限约为84%，很难达到或超过HDI 1处的85%。</li></ul>
+<ul><li>一般情况下，每增加1阶工艺，报废率会提高约2—3个百分点。</li></ul>
+<ul><li>虽然HDI 2处采用新设备和较先进工艺，可弥补部分损失，但高阶HDI的工艺复杂度决定其良率上限低于成熟产线。</li></ul>
+<ul><li>当前良率已从72%提升至75%，仍有持续改善空间。</li></ul>
+<h3>5.4 厂房10目前是什么状态？</h3>
+<ul><li>厂房10尚未正式投产，目前仍处于厂房装修和设备安装阶段。</li></ul>
+<ul><li>现场脚手架尚未完全拆除，与“已投产并爬坡”的市场说法不符。</li></ul>
+<ul><li>专家预计最快可能在Q4开始试产，明年Q2完成工厂认证并逐步投入生产。</li></ul>
+<ul><li>厂房10主要定位于高多层、超高多层板，对标沪电相关能力。</li></ul>
+<ul><li>设计月产能约为3万平方米。</li></ul>
+<ul><li>明年全年预计主要处于产能和良率爬坡阶段。</li></ul>
+<ul><li>最终产值取决于产品结构：</li></ul>
+<ul><li>若主要生产普通或低价值产品，产值相对有限；</li></ul>
+<ul><li>若生产midplane、正交背板等高价值产品，收入弹性将显著提高。</li></ul>
+<ul><li>厂房10的实际贡献还取决于公司最终能获得多少HLC和高端背板份额。</li></ul>
+<h3>5.5 厂房11和厂房12的进展如何？</h3>
+<ul><li><b>厂房11</b></li></ul>
+<ul><li>定位于HDI及PCB载板类产品；</li></ul>
+<ul><li>当前刚完成基础施工，进度相对较慢；</li></ul>
+<ul><li>预计最快在明年Q3、Q4形成部分贡献；</li></ul>
+<ul><li>后续有望实现批量性增长。</li></ul>
+<ul><li><b>厂房12</b></li></ul>
+<ul><li>专门面向光模块PCB；</li></ul>
+<ul><li>当前刚完成购地，仍处于规划和铺线前期；</li></ul>
+<ul><li>真正的光模块大批量生产预计需要依赖厂房12；</li></ul>
+<ul><li>按当前进度，后年可能形成批量贡献。</li></ul>
+<h3>5.6 mSAP产线目前进展如何？</h3>
+<ul><li>厂房4拥有约3万平方米/月的mSAP设计产能。</li></ul>
+<ul><li>mSAP设备从去年8月开始导入，目前仍处于试产和良率爬坡阶段。</li></ul>
+<ul><li>mSAP与传统PCB工艺差异较大，良率达到60%—65%已属较好水平；即便按70%良率计算，实际有效产能约为2万平方米/月。</li></ul>
+<ul><li>当前主要用于：</li></ul>
+<ol><li>Metal Frame生产；</li></ol>
+<ol><li>Rubin产品打样；</li></ol>
+<ol><li>1.6T光模块打样；</li></ol>
+<ol><li>800G相关小批量产品。</li></ol>
+<ul><li>现阶段光模块业务仍处于小批量阶段，尚不能进行大规模量产。</li></ul>
+<h3>5.7 国内传统产能情况如何？</h3>
+<ul><li>国内传统产区1—6处合计月产能约60万平方米。</li></ul>
+<ul><li>1—5处：</li></ul>
+<ul><li>稼动率约95%；</li></ul>
+<ul><li>良率约97%；</li></ul>
+<ul><li>产品均价约2000—2500元/平方米。</li></ul>
+<ul><li>6处：</li></ul>
+<ul><li>月产能约1.6万平方米；</li></ul>
+<ul><li>稼动率约83%；</li></ul>
+<ul><li>良率约70%；</li></ul>
+<ul><li>主要生产Maple Link等高端产品；</li></ul>
+<ul><li>单价显著高于传统产品，部分产品估计接近10万元/平方米。</li></ul>
+<h3>5.8 泰国和越南工厂进展如何？</h3>
+<ul><li>泰国一期高多层板已正常生产，月产能规模约3万平方米。</li></ul>
+<ul><li>泰国二期处于工厂认证和小批量试产阶段，设计月产能约6万平方米。</li></ul>
+<ul><li>泰国产品价格预计与国内传统1—5处接近，约2000—3000元/平方米。</li></ul>
+<ul><li>越南工厂尚未开始试产，短期难以形成明显收入贡献。</li></ul>
+<h2>6. Q3、Q4经营拐点与盈利展望</h2>
+<h3>6.1 Q3收入环比增长50%以上是否有依据？</h3>
+<ul><li>专家认为，Q3收入环比增长50%以上并非市场臆测，具备产能数据支撑。</li></ul>
+<ul><li>Q2收入约为61.1亿元，当时主要依靠成熟产区和HDI 1处供货。</li></ul>
+<ul><li>Q3最主要增量来自HDI 2处：</li></ul>
+<ul><li>7月产量约3万平方米；</li></ul>
+<ul><li>8月约3.8万平方米；</li></ul>
+<ul><li>9月预计约5万—5.2万平方米；</li></ul>
+<ul><li>Q3合计产量接近12万平方米。</li></ul>
+<ul><li>按高端HDI约3.5万元/平方米测算，相比Q2可形成接近30亿元的收入增量。</li></ul>
+<ul><li>其他工厂如厂房10、11、12尚未投产，因此Q3新增贡献高度集中于HDI 2处。</li></ul>
+<h3>6.2 Q3收入和利润大致如何判断？</h3>
+<ul><li>按专家口径，Q3收入环比增长50%以上具备可行性。</li></ul>
+<ul><li>会议测算认为，Q3单季度利润可能达到23亿—25亿元左右，但该数值属于交流测算，并非公司正式指引。</li></ul>
+<ul><li>专家认可这一测算方向，认为Q3将成为明显经营拐点。</li></ul>
+<ul><li>核心原因是：</li></ul>
+<ol><li>HDI 2处产量快速提升；</li></ol>
+<ol><li>原有人员和设备配置基本到位，新增产量对费用增加有限；</li></ol>
+<ol><li>稼动率提高摊薄固定成本；</li></ol>
+<ol><li>良率提升直接增加可销售产出。</li></ol>
+<h3>6.3 Q3毛利率预计处于什么水平？</h3>
+<ul><li>Q2财报口径毛利率约为32.1%。</li></ul>
+<ul><li>Q3整体毛利率预计可提升至33%—34%，理想情况下可能略高。</li></ul>
+<ul><li>单独看高端产品，成熟状态下正常毛利率可达到约42%。</li></ul>
+<ul><li>但当前受以下因素影响，Q3高端HDI毛利率预计难以直接达到40%：</li></ul>
+<ol><li>新设备折旧；</li></ol>
+<ol><li>稼动率仍然不足；</li></ol>
+<ol><li>良率仅约75%；</li></ol>
+<ol><li>新产线仍处于爬坡阶段。</li></ol>
+<ul><li>随着良率、产能利用率持续提升，毛利率有望逐季改善。</li></ul>
+<h3>6.4 Q4还能实现多大增长？</h3>
+<ul><li>专家预计Q4在Q3基础上仍可能增长约30%—40%。</li></ul>
+<ul><li>公司会推动HDI 2处尽可能接近满产，但年底能否真正拉满仍取决于订单和终端需求。</li></ul>
+<ul><li>Q4的核心观察指标包括：</li></ul>
+<ol><li>HDI 2处月产量能否继续提升；</li></ol>
+<ol><li>稼动率是否接近设计水平；</li></ol>
+<ol><li>良率能否从75%进一步向80%以上提升；</li></ol>
+<ol><li>Rubin和TPU项目订单能否持续放量。</li></ol>
+<h3>6.5 今年收入目标和实际可能水平如何？</h3>
+<ul><li>公司内部目标较高，收入目标约为400亿元。</li></ul>
+<ul><li>会议测算的可实现区间大致为300亿—340亿元，但仍需考虑订单兑现和产能爬坡折扣。</li></ul>
+<ul><li>专家认为，上述测算方向基本合理，但最终数字需要适当打折。</li></ul>
+<ul><li>今年Rubin和TPU仍处于爬坡阶段，AI PCB的主要业绩贡献仍来自GB300。</li></ul>
+<h2>7. 明后年增长路径与利润率趋势</h2>
+<h3>7.1 明年收入预计达到什么水平？</h3>
+<ul><li>专家预计明年收入有望达到约450亿元。</li></ul>
+<ul><li>相比今年可能增加100亿元以上。</li></ul>
+<ul><li>主要增量来源包括：</li></ul>
+<ol><li>厂房4/HDI 2处产能进一步释放；</li></ol>
+<ol><li>现有高端HDI产能接近满产；</li></ol>
+<ol><li>厂房10在下半年、尤其Q3和Q4开始贡献；</li></ol>
+<ol><li>Rubin、谷歌TPU等项目进一步放量；</li></ol>
+<ol><li>产品结构继续向高价值HDI和高多层板倾斜。</li></ol>
+<ul><li>若新增产能释放顺利，实际收入目标可能高于450亿元。</li></ul>
+<h3>7.2 明年毛利率和净利率能否继续提升？</h3>
+<ul><li>正常情况下，随着产能和良率爬坡，毛利率及净利率均有提升空间。</li></ul>
+<ul><li>理想状态下，整体毛利率可能达到约37%。</li></ul>
+<ul><li>利润率提升主要来自：</li></ul>
+<ol><li>稼动率提高，摊薄固定成本；</li></ol>
+<ol><li>良率改善，提高可销售产品占比；</li></ol>
+<ol><li>人员基本不变而产量增加，形成经营杠杆；</li></ol>
+<ol><li>高端HDI、高多层板占比提升。</li></ol>
+<ul><li>折旧通常按5年或8年计提，并非最关键变量；更需要关注产能是否被订单填满以及良率能否达到成熟工厂水平。</li></ul>
+<h3>7.3 行业扩产是否会压低明年毛利率？</h3>
+<ul><li>存在价格竞争和毛利率承压的可能。</li></ul>
+<ul><li>但明年上半年影响预计不会太大，原因是竞争对手的新工厂同样需要经过认证、产能爬坡和良率爬坡。</li></ul>
+<ul><li>以NVIDIA业务为例，预计被重新分配出去的订单约为10%—15%。</li></ul>
+<ul><li>胜宏即使份额有所下降，仍可能通过行业需求增长、产能扩张和产品结构升级实现收入增长。</li></ul>
+<h3>7.4 后年增长逻辑是什么？</h3>
+<ul><li>按公司产能规划，后年可能成为新一轮集中放量期：</li></ul>
+<ol><li>厂房10实现批量增长；</li></ol>
+<ol><li>厂房11实现批量增长；</li></ol>
+<ol><li>厂房12可能开始贡献光模块PCB产能；</li></ol>
+<ol><li>高端HDI、高多层板、载板和光模块PCB布局逐步完整。</li></ol>
+<ul><li>厂房10主要对标高多层、超高多层板市场。</li></ul>
+<ul><li>厂房11主要面向HDI和PCB载板类产品。</li></ul>
+<ul><li>厂房12专门针对光模块PCB。</li></ul>
+<ul><li>除ABF载板外，公司在多数AI PCB相关领域已完成或正在完成布局。</li></ul>
+<ul><li>当产能扩张基本完成后，后续业绩弹性将主要取决于AI服务器、光模块及客户需求。</li></ul>
+<h2>8. 新材料、新技术与光模块PCB判断</h2>
+<h3>8.1 PTFE和陶瓷基板的布局进展如何？</h3>
+<ul><li>PTFE与陶瓷基板并非独立应用，通常需要与其他材料及PCB结构配合。</li></ul>
+<ul><li>PTFE主要与正交背板有关，目前正在测试M9+PTFE混压方案。</li></ul>
+<ul><li>相关产品仍处于测试和客户认证阶段，短期内难以完成定型。</li></ul>
+<ul><li>陶瓷基板同样处于研发测试过程中，尚未形成明确量产进度。</li></ul>
+<ul><li>胜宏已配置相关研发人员，其中部分人员由NVIDIA产业链推荐，体现客户协同研发特征。</li></ul>
+<h3>8.2 CPO PCB材料是否可能从M8降级到M4？</h3>
+<ul><li>专家认为可能性较低。</li></ul>
+<ul><li>光模块速率提升后，对PCB高频高速性能要求越来越高：</li></ul>
+<ul><li>早期光模块主要使用M6、M7；</li></ul>
+<ul><li>800G基本使用M8；</li></ul>
+<ul><li>1.6T、3.2T预计需要M9及以上材料。</li></ul>
+<ul><li>M4属于传统FR-4材料，难以满足高速信号传输要求。</li></ul>
+<ul><li>除非出现新的信号传输技术，否则从M8降级到M4不符合当前技术演进规律。</li></ul>
+<h2>9. 泰金新能与胜宏的供应合作</h2>
+<h3>9.1 泰金新能主要向胜宏提供什么产品？</h3>
+<ul><li>泰金主要提供VCP设备使用的不溶性阳极，包括钛网类产品。</li></ul>
+<ul><li>传统VCP使用铜球作为可溶性阳极，但高端PCB反复电镀对镀层均匀性要求较高，可溶性阳极难以保证局部电镀一致性。</li></ul>
+<ul><li>当前高端产线更多采用不溶性阳极，并通过氧化铜粉补充铜离子。</li></ul>
+<ul><li>钛网主要承担导电作用，有助于保持镀液中铜离子状态稳定，提高镀层均匀性。</li></ul>
+<h3>9.2 胜宏是否会向泰金下达实质订单？</h3>
+<ul><li>专家表示，胜宏此前70%以上的不溶性阳极采购来自铱创。</li></ul>
+<ul><li>目前胜宏已终止与铱创的相关合同，后续预计将整体切换至泰金。</li></ul>
+<ul><li>胜宏总裁赵启强已入股泰金，专家判断该合作具有公司层面的推动。</li></ul>
+<ul><li>因此，双方并非单纯资本关系，预计会形成实质性订单。</li></ul>
+<h3>9.3 不溶性阳极的市场价值量有多大？</h3>
+<ul><li>不溶性阳极属于耗材，行业常见更换周期约为2—3年，实际寿命可能更短。</li></ul>
+<ul><li>单条产线每次更换价值量约为100万—150万元。</li></ul>
+<ul><li>仅胜宏相关VCP产线就有数十条：</li></ul>
+<ul><li>某一厂区约12条；</li></ul>
+<ul><li>另一厂区约14条；</li></ul>
+<ul><li>尚未计入厂房10、11未来新增产线。</li></ul>
+<ul><li>随着新工厂投产，泰金可获得的持续性耗材订单具备进一步增长空间。</li></ul>
+<ul><li>泰金与陶瓷基板业务并非同一逻辑，其对胜宏的直接供应主要是不溶性阳极产品。</li></ul>
+<h2>10. ABF载板供需与材料瓶颈</h2>
+<h3>10.1 ABF载板未来是否会出现短缺？</h3>
+<ul><li>2025年ABF载板总体处于供大于求状态。</li></ul>
+<ul><li>今年供需整体接近平衡。</li></ul>
+<ul><li>专家预计明年可能出现约20%的产能缺口。</li></ul>
+<ul><li>国内新增ABF载板产能多数尚不具备批量生产能力。</li></ul>
+<h3>10.2 国内哪些企业具备ABF载板量产能力？</h3>
+<ul><li>国内真正具备批量生产能力的企业主要包括：</li></ul>
+<ol><li>深南；</li></ol>
+<ol><li>新盛快捷；</li></ol>
+<ol><li>方正集团旗下相关载板企业。</li></ol>
+<ul><li>上述企业产能均相对有限，单家月产能大致在1万多平方米水平。</li></ul>
+<ul><li>国内生产的NVIDIA ABF载板供应链中，还包括Unimicron、奥特斯及原日系载板企业等代表性厂商。</li></ul>
+<h3>10.3 ABF载板短缺的原因是什么？</h3>
+<ul><li>设备和材料两方面均存在约束。</li></ul>
+<ul><li>ABF膜约95%由味之素供应，供应集中度较高。</li></ul>
+<ul><li>国内企业正在研发CBF、NBF等性能接近的替代膜材料，但尚不具备大规模替代ABF膜的能力。</li></ul>
+<ul><li>华正新材、生益等企业均参与相关材料研发和测试，现阶段仍需继续验证。</li></ul>
+<h2>11. 核心结论</h2>
+<h3>11.1 胜宏当前最关键的基本面变化是什么？</h3>
+<ul><li>Q3是明确的经营拐点，核心驱动力是HDI 2处快速爬产，而非多个新工厂同时贡献。</li></ul>
+<ul><li>Q3收入环比增长50%以上具有产量和单价支撑，Q4仍有进一步增长空间。</li></ul>
+<ul><li>Rubin Compute和谷歌TPU V8是新增订单的重要方向，但今年AI PCB的主要利润贡献仍来自GB300。</li></ul>
+<ul><li>当前Rubin Compute份额约75%，后续可能下降10—15个百分点，但胜宏仍有望保持最大供应商地位。</li></ul>
+<ul><li>明年增长主要依赖HDI 2处满产和厂房10开始贡献；后年则关注厂房10、11、12集中放量。</li></ul>
+<ul><li>中长期利润率改善的核心不是折旧，而是稼动率、良率和高价值产品占比。</li></ul>
+<ul><li>正交背板仍处于方案测试阶段，市场关于胜宏已获得70%份额的说法缺乏产能、良率和订单依据。</li></ul>
+<h2>结构化总结表格</h2>
+<div class="tbl"><table class="t wrap"><thead><tr><th>业务板块</th><th>核心指标</th><th>当前状态</th><th>后续展望</th><th>关键变量</th></tr></thead><tbody><tr><td><b>Rubin Compute</b></td><td>胜宏板量份额</td><td>约75%</td><td>明年或下降10—15个百分点，但仍为最大供应商</td><td>新供应商认证、产能与良率爬坡</td></tr><tr><td><b>Rubin Switch</b></td><td>供应格局</td><td>沪电35%—38%；方正近30%；胜宏约25%</td><td>份额可能继续调整</td><td>高多层产能、客户分配</td></tr><tr><td><b>GB300</b></td><td>Compute HDI份额</td><td>胜宏接近100%</td><td>仍是今年AI PCB主要贡献来源</td><td>后续代际切换</td></tr><tr><td><b>谷歌TPU V8</b></td><td>胜宏份额</td><td>HDI接近100%；高多层近30%；综合预计60%以上</td><td>今年中小批量，明年需求更明确</td><td>谷歌需求指引、良率爬坡</td></tr><tr><td><b>正交背板</b></td><td>技术及订单状态</td><td>多方案测试中，尚未明确大批量订单</td><td>部分方案最快明年Q2末至Q3初明确</td><td>NVIDIA定案、78层量产能力、良率</td></tr><tr><td><b>HDI 1处</b></td><td>月产能/稼动率/良率</td><td>4.5万㎡；稼动率98%+；良率85%</td><td>稳定满产</td><td>产品结构</td></tr><tr><td><b>HDI 2处/厂房4</b></td><td>月设计产能</td><td>12万㎡，其中HDI约9万㎡、mSAP约3万㎡</td><td>Q3、Q4核心增量来源</td><td>稼动率40%—45%、良率75%</td></tr><tr><td><b>HDI 2处产量</b></td><td>月度爬坡</td><td>5月1.2万㎡；6月1.8万㎡；7月3万㎡；8月3.8万㎡</td><td>9月预计5万—5.2万㎡</td><td>订单、设备与良率</td></tr><tr><td><b>厂房10</b></td><td>设计月产能</td><td>约3万㎡，尚在装修及装机</td><td>最快Q4试产，明年Q2认证，全年爬坡</td><td>高多层及正交背板订单</td></tr><tr><td><b>厂房11</b></td><td>定位及进展</td><td>HDI/载板类，刚完成基础施工</td><td>明年Q3—Q4后可能贡献</td><td>建设及认证进度</td></tr><tr><td><b>厂房12</b></td><td>定位及进展</td><td>光模块专用工厂，处于购地及规划阶段</td><td>后年可能批量贡献</td><td>1.6T/3.2T光模块需求</td></tr><tr><td><b>Q3经营</b></td><td>收入及毛利率</td><td>收入有望环比增长50%以上；毛利率预计33%—34%</td><td>明显经营拐点</td><td>HDI 2处产量、良率</td></tr><tr><td><b>Q4经营</b></td><td>环比增量</td><td>预计较Q3再增长30%—40%</td><td>继续爬坡但未必满产</td><td>订单是否充足</td></tr><tr><td><b>明年经营</b></td><td>收入/毛利率</td><td>收入预计约450亿元</td><td>理想毛利率约37%</td><td>产能填充、竞争与价格</td></tr><tr><td><b>泰金合作</b></td><td>产品与订单</td><td>供应不溶性阳极，胜宏预计整体切换采购</td><td>随新产线增加形成持续耗材需求</td><td>产线数量、更换周期</td></tr><tr><td><b>ABF载板</b></td><td>供需趋势</td><td>当前大致平衡</td><td>明年或出现约20%缺口</td><td>ABF膜供应、设备与量产能力</td></tr></tbody></table></div>
+<h2>新版prompt提炼之后的转译</h2>
+<p class="qq">提问者：请您介绍一下胜宏在NVIDIA Rubin这边最新的份额情况。</p>
+<p>回　答　者：Rubin这一代，胜宏的份额是75%，Switch方面的份额是25%。</p>
+<p class="qq">提问者：从9月开始应该已经有部分产品出货了。目前实际出货的份额大概就是这一水平吗？</p>
+<p>回　答　者：是的，这是目前9月份实际出货的份额。</p>
+<p class="qq">提问者：这2天市场上有很多说法，其中一种说法是，胜宏在Switch方面仍是1供。如果份额是25%，实际上并不是1供的卡位。</p>
+<p>回　答　者：是3供。</p>
+<p class="qq">提问者：您了解到Switch和Mithril这边的其他主要供应商有哪些？</p>
+<p>回　答　者：Switch方面的主要1供仍是沪电，中间新增加了方正，相当于2供，但其实也可以算作1供。方正在Switch方面的份额增加较大，将近30%左右。</p>
+<p class="qq">提问者：也就是说，1供沪电的份额大概在40%以上？</p>
+<p>回　答　者：大约为35%至38%左右。</p>
+<p class="qq">提问者：2供是方正，3供是胜宏，对吗？</p>
+<p>回　答　者：对。胜宏在GB200的Switch方面基本只有小批量供应，份额不到5%。到了今年的Rubin这一代，其份额才增加到25%。</p>
+<p class="qq">提问者：您如何判断后续的份额变化？</p>
+<p>回　答　者：我预计到明年，份额可能会重新分配。第1个原因是，在GB300方面，胜宏占100%的份额，但今年只占75%，到明年估计还会发生变化。主要影响因素是，此前已经认证合格的供应商，其新ATP工厂的产能将逐步释放，因此份额肯定会有所调整。75%是比较高的比例，后续可能会有所下降。</p>
+<p class="qq">提问者：您指的是哪一部分？</p>
+<p>回　答　者：因为在GB300方面，胜宏基本上几乎是……</p>
+<p>回　答　者：此前没有太多参与，只提供小批量样品、测试及小批量供货。到今年，这一块的份额才上升到25%。目前，HRC主要在6处生产，6处的设备、制程能力及良率远远无法满足客户需求。</p>
+<p>因此，明年可能发生变化。厂房10目前正处于设备安装阶段，预计明年Q2通过工厂认证。正常情况下，厂房10将在今年Q4开始试产；如果进展顺利，明年Q2投入生产后，份额可能发生相应变化。厂房10主要用于生产高多层、超高多层板。</p>
+<p class="qq">提问者：厂房10的年产值是多少？今年是否已经投产，目前正在爬坡？</p>
+<p>回　答　者：厂房10尚未投产。我上周刚去过现场，目前脚手架还没有拆除，不可能已经投产。现阶段仍处于厂房装修和设备安装过程中。</p>
+<p class="qq">提问者：预计什么时候能够投产？</p>
+<p>回　答　者：我预计最快可能在Q4开始投产。虽然对外宣称早已准备试产，但实际仍处于厂房装修和设备安装阶段。</p>
+<p class="qq">提问者：厂房10的产值是多少？爬产需要多长时间？</p>
+<p>回　答　者：目前还无法确定产值。如果生产随起板，价值量不高；如果生产Maly和正交背板，价值量就较高。目前设计产能为3万平方米。如果按照正交背板计算，金额会很大；但如果只是生产M或者随起，产值就不太高。最终要看明年公司的定位，也就是能够拿到多少HLC份额。</p>
+<p class="qq">提问者：3万平方米是月产能吗？从投产到实现满产，大约需要多长时间？</p>
+<p>回　答　者：明年一整年预计都会处于产能爬坡和良率爬坡阶段，主要是HRC这一块。</p>
+<p class="qq">提问者：您刚才提到，今年75%的份额到明年随着新玩家进入，可能会下降，是吗？</p>
+<p>回　答　者：有可能会下降，但它依然是最大的供应商。</p>
+<p class="qq">提问者：如果份额下降，稳态水平大概是多少？</p>
+<p>回　答　者：我估计会下降10%到15%左右。</p>
+<p class="qq">提问者：目前最大的潜在竞争对手是谁？</p>
+<p>回　答　者：景旺。</p>
+<p class="qq">提问者：为什么这么判断？</p>
+<p>回　答　者：首先，景旺在25年6月拿到了NV的HDI合格供应商认证，并于25年8月建设了新的PCB工厂。</p>
+<p>回　答　者：截至目前，尚未向NV批量供货。胜宏去年的R41也是类似情况，由于没有足够的产能空间释放，无法配合NV进行批量供货。</p>
+<p>新的AI PCB工厂今年已经进入试产状态。此外，UniMichael的中国工厂已经出售给景旺，UniMichael原班管理人员也被景旺引进珠海工厂，专门负责新的AI PCB工厂的试产和运营。这是最大的竞争对手。胜宏当初能够从UniMichael手中获得NV的GB200、GB300相关AGDI订单，也是因为引进了部分团队。</p>
+<p>综合来看，第1，景旺在25年已经取得核心供应商资格，并且一直在配合开展相关测试。第2，今年新的AI PCB工厂投产并进入试产阶段。该工厂实际上是为AI PCB建设的，建成后必然会争取相关订单。不过，初期订单不会太多，因为还要经历产能爬坡和良率爬坡阶段。</p>
+<p class="qq">提问者：关于midplane，我们了解到1供是沪电，2供是方正，是这样吗？</p>
+<p>回　答　者：不是。Switch的1供是沪电，2供是方正。midplane的1供是沪电，2供是胜宏，这就是经验方面的差异。</p>
+<p class="qq">提问者：但我们了解到，景旺在Switch和midplane方面的份额似乎也还可以。</p>
+<p>回　答　者：我不清楚这一信息的来源。景旺目前能够生产midplane板的VP线只有2条。第1条线是在25年11月份引进的，最初准备采购宝德的VP，后来调整计划，改为TTPT。这条线试产了半年，仍然无法正常生产，之后才勉强实现生产。目前又采购了1条，总共只有2条VP线，现阶段仅处于小批量供应测试阶段。</p>
+<p class="qq">提问者：我们也与景旺的一些老师交流过。您的意思是，与景旺的竞争主要集中在computer PCB方面，是吗？</p>
+<p>回　答　者：是的，主要集中在computer PCB方面。客观而言，景旺目前在高多层板和HDI板方面，还不是现有1供、2供的对手。唯一的可能是，明年其computer PCB中的HDI业务可能存在上升空间。原因主要有2个：第1是新工厂建成；第2是引进了UniMichael原班管理人员。</p>
+<p class="qq">提问者：另外，关于正交背板一直存在很多传言，目前到底是……</p>
+<p class="qq">提问者：目前整体处于什么进展阶段？北美客户是否已经下订单？方案是否已经确定？</p>
+<p>回　答　者：目前正交背板共有3种方案。首先，第1种方案已基本完成测试，即M9加Coble方案，最终是否采用，还要看NV内部讨论的结果。</p>
+<p>我认为该方案会采用。因为Midplane目前采用纯M9加Coble方案，而且Midplane只是部分替代铜缆，正交背板则是全部替代铜缆，相当于为后续应用做铺垫。不过，最终可能不会应用到更高机型，也不会像原始计划那样应用到576机型。因此，最终仍要看NV的决定。</p>
+<p>至于市场所称胜宏能够拿到70%的份额，我持否定态度。第1个原因是，目前其HLC 6处不具备78层正交背板批量生产能力，打样时的良率还不到50%。目前所有HLC高层产品还要视厂房情况而定。</p>
+<p>正交背板共有3种测试方案，刚才提到的是3种测试方案中的第1种，即纯M9加Coble方案。该方案可能会采用，但最终要看NV在这个月或下个月作出的决定，这是第1个方案。</p>
+<p class="qq">提问者：您的判断是，最有可能采用的方案目前仍未完全确定，因此也不存在市场传言所称已经获得订单的情况，对吗？</p>
+<p>回　答　者：是的。纯M9方案无法达到信号传输要求，因此还提出了M9加PDFE方案。目前，M9加PDFE方案仅处于第2阶段测试，第3阶段需要进行6个月以上的在线测试。也就是说，测试结果基本要到明年Q2季度末或Q3季度初才会出来。</p>
+<p>因此，市场传言胜宏拿到70%份额，基本可能是因为近期股价太低而推出的“小作文”。</p>
+<p class="qq">提问者：目前比较明确的是，正交背板只会应用于Kyber，也就是NVL144，对吗？</p>
+<p>回　答　者：Rubin Ultra这一代也会应用。Kyber之后可能会采用PDF1。</p>
+<p class="qq">提问者：这类背板不就是应用于这一代，也就是Kyber吗？目前的预期应该是由Kyber采用，对吗？</p>
+<p>回　答　者：Rubin Ultra和Kyber都会使用正交背板，在这一代产品中都会应用正交背板。</p>
+<p class="qq">提问者：明白，请您继续介绍其他方案。</p>
+<p>回　答　者：刚才讲到的是2个方案。其中，第2个方案又分为2种方案：沪电采用40加40的方案，同井、胜宏和深南采用72加6的方案。该方案与刚才提到的第2个方案，目前布设进度基本相近。</p>
+<p>回　答　者：GGF1有2个方案，目前还没有确定，至少要到明年。如果按照业界传闻，M9+方案达不到NV的要求，现阶段更不可能拿到份额。</p>
+<p class="qq">提问者：谷歌TPU配套PCB目前的预期如何？</p>
+<p>回　答　者：目前来看，V8的HDI部分全部份额，即00%，都给到胜宏。</p>
+<p class="qq">提问者：我再确认一下，之前我们聊过谷歌V7，其PCB采用的是高多层方案，对吗？具体是多少层，配套什么等级的CCL？</p>
+<p>回　答　者：对，V7采用高多层方案，主要以22层和44层为主，材料以M7和M8为主。它有2个版本，分别是高配版和主力量产版。</p>
+<p class="qq">提问者：其单板价值量是多少？需要多少块板？</p>
+<p>回　答　者：这方面没有进行过细致测算。</p>
+<p class="qq">提问者：胜宏在V7中有份额吗？</p>
+<p>回　答　者：V7没有份额，只是通过了认证。在V7的高多层部分，最早的主供是韩国公司离速全创，占据了差不多80%的份额。</p>
+<p class="qq">提问者：胜宏主要参与的是V8。V8采用什么PCB方案？</p>
+<p>回　答　者：V8采用HDI加高多层的方案，其中差不多30%左右是HDI，其余为高多层。V8的供应格局发生了很大变化，离速全创在V7中的份额差不多是80%，从V7到V8，其份额从80%降到了20%。</p>
+<p class="qq">提问者：胜宏在HDI中的份额是00%吗？</p>
+<p>回　答　者：HDI的份额是00%。</p>
+<p class="qq">提问者：高多层部分的份额呢？</p>
+<p>回　答　者：目前争取到的份额将近30%。</p>
+<p class="qq">提问者：由于高多层和HDI的价值量、用量不同，综合来看，胜宏在V8中的整体份额预计能达到多少？是否进行过估算？</p>
+<p>回　答　者：预计至少应该达到60%，甚至更高。</p>
+<p class="qq">提问者：也就是说，HDI虽然用量较少，但价值量较高，对吗？</p>
+<p>回　答　者：对。</p>
+<p class="qq">提问者：V9目前是什么情况？</p>
+<p>回　答　者：V9目前还没有相关进展，V8在7月份才开始。</p>
+<p class="qq">提问者：V8使用的CCL是什么？</p>
+<p>回　答　者：以M8和M9为主，M8配合的是二代布。</p>
+<p class="qq">提问者：谷歌现在是否已经逐步产生订单，或者具备放量预期？</p>
+<p>回　答　者：已经在逐步放量。7月份提交并交付NPI，8月份开始小批量交付，9月份进入中小批量阶段，目前正在逐步爬坡。整体来看，Rubin和TPU目前都处于产能爬坡阶段。今年胜宏在Rubin和TPU上的整体份额合计应该不会超过20%。今年胜宏AI PCB业务的主要贡献仍来自GB300。</p>
+<p class="qq">提问者：如果整体来看，胜宏在GB200、GB300、Rubin以及谷歌TPU V8上的份额，您所说的是价值量份额吗？</p>
+<p>回　答　者：不是，指的是板子的份额。例如HDI在GB300中的份额为100%，但价值量份额不可能达到100%。</p>
+<p class="qq">提问者：GB300中的HDI就是Compute部分的PCB，对吗？</p>
+<p>回　答　者：对，是Compute部分。</p>
+<p class="qq">提问者：胜宏在GB300 Switch部分的份额是多少？</p>
+<p>回　答　者：份额不多，大约为5%。</p>
+<p class="qq">提问者：GB200的份额大概是什么情况？</p>
+<p>回　答　者：GB200最初的份额应该是60%。GB200于25年1月份开始交付，最初的主要供应商是Unimicron，这部分订单是从Unimicron手中切换过来的。</p>
+<p class="qq">提问者：胜宏在谷歌项目上的份额是否超预期？谷歌是否提供过需求量指引，例如今年和明年大概分别有多少亿的需求？</p>
+<p>回　答　者：目前还没有拿到相关指引。由于项目刚刚开始放量，今年整体仍相当于中小批量供应，明年的情况基本会更加明确。</p>
+<p class="qq">提问者：市场有传言称，TPU相关PCB业务使胜宏的业绩指引上调2倍，是否存在这样的变化？</p>
+<p>回　答　者：存在这种可能性。第1，厂房刚开始试投产后，需要通过高多层板进行验厂，同时涉及良率和产能爬坡，因此基本会采用谷歌的TPU。目前MV这边只有Metal，还没有正交背板生产。谷歌TPU是44层，NV也是44层，因此在厂房试投产阶段，这是最大的可能性。此外，当时没有其他产能，最大的可能性就是向谷歌争取相关订单。</p>
+<p class="qq">提问者：此前市场对谷歌业务的年度收入预期是多少？考虑到您刚才提到的情况，上修后的预期是多少？</p>
+<p>回　答　者：建议在第4季度末再评估。目前相关份额都只是预估，因为现阶段仍处于小批量供应阶段。</p>
+<p class="qq">提问者：对于Q3的经营展望，公司收入和利润大概能达到什么水平？近期市场传言称，环比增幅至少为50%，您了解到的情况如何？</p>
+<p>回　答　者：环比增长50%以上并非空穴来风，是有依据的。首先，2025年总体收入约为192亿元，接近193亿元，其中80多亿元来自IPPCB业务。今年第2季度收入为61.1亿元，当时主要依靠1处和HC6处供应。</p>
+<p>HD2处于4月通过认证，5月工厂开始逐步准备交付，6月开始小批量交货。从新增贡献来看，主要关注HD2处。5月产量为1.2万平方米，6月接近2万平方米，7月达到3万平方米，8月达到3.8万平方米。目前HD2处仍在持续进行产能爬坡和良率爬坡，良率已经达到75%，稼动率达到50%。</p>
+<p class="qq">提问者：按照您刚才的数据，5月产量为1.2万平方米，6月接近2万平方米。4月产量是多少？</p>
+<p>回　答　者：1.8万平方米。更正一下，4月没有产量，1.8万平方米是6月的数据。具体来看，5月为1.2万平方米，6月为1.8万平方米，7月为3万平方米，8月为3.8万平方米。</p>
+<p class="qq">提问者：预计9月产量能达到多少？</p>
+<p>回　答　者：预计9月可能达到5万至5万200平方米。</p>
+<p class="qq">提问者：这部分全部都是HDI，即适配NV的HDI吗？</p>
+<p>回　答　者：不只是NV，还包括其他部分。</p>
+<p>回　答　者：谷歌的TPO也在这边生产。</p>
+<p class="qq">提问者：如果在这边生产，HDI单平方米的价格大概处于什么水平？毛利能达到多少？</p>
+<p>回　答　者：目前来看，光路宁这一代产品的正常毛利可以达到42%左右。但由于设备折旧，以及目前稼动率和良率不足，整体毛利被拉低，基本在31%左右。</p>
+<p class="qq">提问者：31%左右是整体毛利吗？</p>
+<p>回　答　者：整体毛利不止31%，平均应该能达到33%—34%。</p>
+<p class="qq">提问者：您是按照财报口径计算的，也就是Q2的财报口径，对吗？</p>
+<p>回　答　者：财报口径是32.1%。</p>
+<p class="qq">提问者：所以您认为，到Q3可以达到33%—34%？</p>
+<p>回　答　者：对。</p>
+<p class="qq">提问者：单平方米的平均价格大概是什么水平？</p>
+<p>回　答　者：这一代产品基本达到35000元/平方米左右。</p>
+<p class="qq">提问者：如果只看这部分增量，按照刚才的计算，相当于季度产量从3万平方米提升到12万平方米左右，多出来9万平方米，对吗？这是Q3的数据吗？</p>
+<p>回　答　者：全部达到的话，是12万平方米。</p>
+<p class="qq">提问者：不是3万、3.8万和5万平方米相加吗？</p>
+<p>回　答　者：您说的是1个季度，对吗？我说的是1个月，因为这个工厂的设计产能是每月12万平方米。</p>
+<p class="qq">提问者：我说的是1个季度。如果只看9万平方米，按照9、9乘以3.5计算，这部分大概也有30亿元的增量，对吗？</p>
+<p>回　答　者：差不多有30亿元的增量。</p>
+<p class="qq">提问者：Q2整体收入才60亿元，因此收入至少会环比增长50%以上。</p>
+<p>回　答　者：所以这个数据并非空穴来风。</p>
+<p class="qq">提问者：有道理。</p>
+<p>回　答　者：目前唯一的增量部分就在2。</p>
+<p class="qq">提问者：这是唯一的增量吗？</p>
+<p>回　答　者：对。其他方面，无论是厂房10还是厂房11，都还没有开始生产；厂房12才开始铺线，目前仍在规划，其他地方没有增量。</p>
+<p class="qq">提问者：由于产能仍在爬坡，这部分应该会带来毛利增量，对吗？例如从32提升到33。</p>
+<p>回　答　者：一定会带来增量。</p>
+<p class="qq">提问者：如果单独看这部分增量HDI，在Q4、Q3能达到40%的毛利吗？</p>
+<p>回　答　者：Q3可能达不到40%的毛利。</p>
+<p class="qq">提问者：Q3能达到多少？</p>
+<p>回　答　者：Q3预计要看能否达到34%左右，可能略高一些。毛利不会一下子提升。目前影响毛利的关键因素，第1是设备折旧，第2是稼动率不足，第3是良率。上个月的良率只有72%，这个月提高了3个百分点，目前已经达到75%。</p>
+<p class="qq">提问者：如果是这样，Q2的利润大概是15.7，对吗？</p>
+<p>回　答　者：我没有仔细看过。</p>
+<p class="qq">提问者：是10、10、10那个数据，我这里有数据，大概是15.7。如果假设其他部分变化不大，新增的30亿元收入按照26%的净利率计算，我们看一下。</p>
+<p>回　答　者：净利率需要看26。净利率之前已经做到26%了，差不多25.7。</p>
+<p class="qq">提问者：您是指Q2吗？</p>
+<p>回　答　者：对，Q2。</p>
+<p class="qq">提问者：Q2为25.7。如果再考虑良率提升，按理来说，Q3大概是23到25亿元，这是大概的新增营收，对吗？</p>
+<p>回　答　者：对，就是Q3单季度。</p>
+<p class="qq">提问者：这样测算大概合理吗？增幅为50%吗？</p>
+<p>回　答　者：可以。</p>
+<p class="qq">提问者：Q3对圣宏而言确实出现了一些拐点，对吧？</p>
+<p>回　答　者：Q3一定是拐点。因为Q2在5月份时才1万几片，稼动率还不到10%。原有配置全都是配齐的。</p>
+<p class="qq">提问者：那么Q4会在这个基础上再增长多少？</p>
+<p>回　答　者：预计还有将近30-40%的增量。</p>
+<p class="qq">提问者：还会继续增长，是吗？</p>
+<p>回　答　者：对。一定要想办法看看年底能否拉满，但年底估计无法拉满，因为目前的订单没有那么多，还是要看需求。</p>
+<p class="qq">提问者：我测算一下，如果按90、93，93再乘以1个93、0.3，保守来看，今年的收入应该在300亿元。目标是300亿元吗？</p>
+<p>回　答　者：目标定得较高，是400亿元。</p>
+<p class="qq">提问者：按照我的测算，大概能达到300亿元、330亿元、340亿元的水平。</p>
+<p>回　答　者：差不多，但还需要打个折扣。</p>
+<p class="qq">提问者：展望明后年，主要有2个问题。第1，从公司自身目标来看，未来应该实现怎样的增长？第2，明后年各家的产能也都扩出来了，竞争是否会更加激烈并影响毛利？还是随着良率和稼动率爬坡，毛利仍能有所提升？总体而言，应如何展望明后年的经营趋势？</p>
+<p>回　答　者：Q3、Q4一定是拐点。良率和产能爬坡到一定程度后，利润率也会不断提升。原有人员不变，但产能增加、良率提升，这2个因素对利润率的贡献最大。</p>
+<p>折旧方面，会按照5年、8年的比例进行折旧，基本不用重点关注。最主要的是看产能能否塞满、稼动率能够达到多少，以及良率何时能够达到目前HD一出的标准。</p>
+<p class="qq">提问者：从公司内部预期来看，应如何展望明后年？例如，收入还能保持50-60%的增速吗？收入增长应如何预测？</p>
+<p>回　答　者：明年预计应该达到450亿元左右。</p>
+<p class="qq">提问者：也就是增加100亿元左右。这部分增量主要来自哪里？</p>
+<p>回　答　者：全部产能都拿满了。</p>
+<p>回　答　者：明年的主要贡献来自厂房4，厂房10预计到下半年Q3、Q4可能会有一部分贡献。</p>
+<p class="qq">提问者：这两部分加起来，预计会新增100多亿元收入，对吗？</p>
+<p>回　答　者：对，估计到时候给出的数字可能还不止这个数。</p>
+<p class="qq">提问者：厂房4是不是还有一部分mSAP产能？</p>
+<p>回　答　者：有3万平方米月产能。</p>
+<p class="qq">提问者：这3万平方米产能大概对应几条产线？一条产线能够对应多少万只光模块的需求？</p>
+<p>回　答　者：目前没有披露对应多少万只光模块的需求，现有信息也存在偏差。当前光模块仍处于小批量生产阶段，尚不能进行大批量生产。</p>
+<p>首先，mSAP设备是在去年8月开始导入的，设备导入后还需要试产。mSAP与传统PCB完全不同，良率能够达到60%或65%就已经非常不错。按照3万平方米计算，即使良率达到70%，实际产能也只有2万平方米。</p>
+<p>目前，这2万平方米产能主要用于Metal Frame生产，也包括Rubin这一代产品的打样，以及1.67光模块的打样。目前mSAP产线还只生产800G产品，光模块的真正量产要依靠厂房12。厂房12在设计上就是专门生产光模块的工厂。</p>
+<p class="qq">提问者：厂房12目前是什么进展？</p>
+<p>回　答　者：厂房12刚买地不久。</p>
+<p class="qq">提问者：如果明年做到450，按照您的判断，厂房4需要满产，厂房10也需要释放一部分产能，理论上毛利率和净利率应该会有所提升，对吗？</p>
+<p>回　答　者：正常情况下会有所提升。</p>
+<p class="qq">提问者：如果考虑正常的产能爬坡情况，比较理想的毛利率和净利率水平是多少？</p>
+<p>回　答　者：比较理想的情况下，毛利率应该在37%左右。</p>
+<p class="qq">提问者：目前大家都在扩产。到明年，竞争格局是否可能对价格造成影响，从而导致毛利率无法达到37%左右？</p>
+<p>回　答　者：存在这种可能性，但上半年受到的冲击预计不会太大。以NV为例，分出去的订单估计在10%-15%左右。毕竟新增的IPP工厂也需要经历产能和良率爬坡。</p>
+<p class="qq">提问者：那么如何展望后年，也就是28年？</p>
+<p>回　答　者：28年还比较遥远。</p>
+<p>回　答　者：按照胜宏的设计，后年将迎来爆发。厂房10和厂房11一定会实现批量性增长。按照目前的进度，厂房12也有可能实现批量性增长。届时，胜宏的产能基本已经扩充完成，后续主要取决于市场需求。</p>
+<p>目前，厂房10主要对标沪电；厂房11用于生产PCB载板类产品，后续也会大量投产；厂房12则专门针对光模块。当前唯一尚未布局的是BF载板，其余相关领域基本都已完成布局。</p>
+<p class="qq">提问者：关于新技术，包括陶瓷基板和PTFE，能否介绍一下胜宏在这些方面的布局、准备情况以及合作伙伴？另外，泰金新能与胜宏是什么关系？</p>
+<p>回　答　者：首先，PTFE和陶瓷基板并非单独使用。PFM1主要应用于正交背板，相关产品目前都在测试M9加PTFE的混压方案，现阶段仍处于测试和认证过程中，不会很快完成。</p>
+<p>陶瓷基板也在测试过程中。目前负责该项研发的是我之前的1位同事，他是由英伟达相关人员推荐到胜宏的。如果需要了解具体方案，可以整理1份详细目录，我再找他私下沟通。</p>
+<p>关于泰金新能，我在19年与其接触过。它以前是西安的1家研究所，主要从事金属类产品，具体包括VCP使用的钛网，即阳极、不溶性阳极。</p>
+<p>传统VCP使用铜球，属于可溶性阳极。随着技术要求越来越高，反复电镀对镀层均匀性的要求也越来越高，因此不再适合使用可溶性阳极。可溶性阳极有些位置的阳极较多，有些位置较少，会影响镀层的均匀性。</p>
+<p>随着技术逐渐成熟，目前普遍采用不溶性阳极，并通过氧化铜粉补充铜离子。原来的铜球阳极需要溶解，以供应铜离子；现在使用的是不溶性阳极。早期使用铂金钛网，后来使用铱钽钛网。钛网放置在缸内，只起导电作用，同时加入氧化铜粉，持续补充铜离子。</p>
+<p>回　答　者：可以保证缸内铜离子处于最佳状态，从而有效保证镀层的均匀性。泰金以前就是做这一块的。据我收到的消息，胜宏的总裁入股了泰金，这背后应该还有老板层面的推动。</p>
+<p class="qq">提问者：明白。不过，入股或其他形式的商业合作都很正常，关键是泰金能否拿到持续性订单来支撑业绩。我们主要想了解双方是否存在实质性的真实合作，以及胜宏是否会向泰金下订单。</p>
+<p>回　答　者：这个月已经有相关信息传出。以前胜宏在钛网和不溶性阳极方面主要使用铱创的产品，另外还有1家供应商，但采购量较少，70%以上使用铱创的产品。现在胜宏已经终止了与铱创的合同，后续基本上可以说100%会使用泰金的产品。</p>
+<p class="qq">提问者：您说的是哪个公司？</p>
+<p>回　答　者：泰金。</p>
+<p class="qq">提问者：不是，我是问原来的供应商，“一创”是哪2个字？</p>
+<p>回　答　者：铱创。“铱”是金字旁加衣服的“衣”，“创”是创造的“创”。铱创主要从事不溶性阳极业务，目前在市场上应该排名第1。</p>
+<p class="qq">提问者：明白。也就是说，胜宏已经结束了与铱创的合作，接下来的订单将交给泰金，是吗？</p>
+<p>回　答　者：是的。因为胜宏总裁赵启强入股了泰金，这应该是公司的行为。</p>
+<p class="qq">提问者：合作形式并不重要，关键还是有没有订单。</p>
+<p>回　答　者：订单一定会有，整个胜宏都会进行切换。</p>
+<p class="qq">提问者：但泰金不是做陶瓷基板的。</p>
+<p>回　答　者：对。</p>
+<p class="qq">提问者：这类设备的价值量是多少？</p>
+<p>回　答　者：这类设备每2年到3年需要更换1次。仅1条线的更换价值量就接近100万左右，如果产线规模较大，可能还不止这个数，因此整体价值量非常大。以AGDI为例，仅VCP在1处就有12条线，2处目前有14条线，这还不包括厂房10和厂房11后续的部分。就1条线而言，至少每2年、2到3年需要更换，价值量约为100万到150万左右。</p>
+<p class="qq">提问者：明白。对胜宏而言，可能需要更换的规模有多大？具体涉及多少条产线？</p>
+<p>回　答　者：刚才已经提到，仅AGDI就有20、26条。</p>
+<p class="qq">提问者：明白，这属于消耗性产品。</p>
+<p>回　答　者：对，是消耗性产品。其更换周期并非固定为2年或3年，行业通常标准是2到3年，实际使用寿命还可能根据具体情况缩短，相当于耗材。</p>
+<p class="qq">提问者：明白。所以泰金主要提供的就是阳极设备，对吗？</p>
+<p>回　答　者：是。</p>
+<p class="qq">提问者：我看到陶瓷基板业务似乎由其子公司赛尔电子负责，这方面您可能不太了解，是吗？</p>
+<p>回　答　者：所以你此前发给我并问我是否熟悉时，我说非常熟。</p>
+<p>回　答　者：我在19年时就与太极有过接触，之后也一直在使用这一块的设备。上个月，一位朋友找我帮忙推广，我了解后发现已经没有这种可能性了。</p>
+<p class="qq">提问者：太极旗下有一家子公司叫赛尔电子，您了解吗？</p>
+<p>回　答　者：不太了解。</p>
+<p class="qq">提问者：最近有一个传言，CPO使用的PCB将从M8降级到M4。您是否听说过，是否了解相关情况？</p>
+<p>回　答　者：听说过这个传言，但我认为可能性不大。采用CPO之后，光模块对板材的要求越来越高。最早做光模块时，大概使用M6、M7，也属于高频高速板材，而M4并不是高频高速板材。目前，800G基本使用M8；到1.6T、3.2T，后续基本需要使用M9及以上板材。</p>
+<p>如果将其改为M4，由于M4是传统FR4板材，很难满足相关传输要求。除非出现某种新技术，能够实现相应的传输性能，否则这相当于超越物理规律的尝试。</p>
+<p class="qq">提问者：虽然您不做ABF载板，但是否听说过ABF载板紧缺以及ABF膜涨价等情况？</p>
+<p>回　答　者：听说过。我目前在一家小型载板厂担任顾问。25年，ABF载板基本处于供大于求的状态；今年整体趋势基本持平；到明年，ABF载板产能可能出现20%左右的缺口。</p>
+<p>目前国内新增的ABF载板产能基本不具备批量生产能力。国内具备批量生产能力的企业只有3家：第1家是深南，第2家是新盛快捷，第3家是月亚，属于方正集团旗下。但这3家企业的产能都非常有限，基本在1.几万平方米左右。</p>
+<p>目前在国内生产的英伟达ABF载板，主要供应商包括以比的、Unimicron和奥特斯。Unimicron是台湾企业，以比的以前是日本企业，23年被新盛快捷收购。这些都是具有代表性的ABF载板厂商。</p>
+<p class="qq">提问者：您了解ABF载板出现缺口的原因吗？是扩产设备受限，还是ABF膜受限？</p>
+<p>回　答　者：两方面都受限。目前，95%的ABF膜由味之素供应，国内的莲花也参与了这一项目。华正新材、生益等企业也在参与相关膜材料的研发，但其产品并非ABF膜，而是CBF、NBF等性能相近的膜材料。</p>
+<p>回　答　者：国内一些厂家正在进行相应测试，但尚未具备替代ABF膜的能力。</p>
+<p class="qq">提问者：熊老师，我再确认几个问题。第1，圣红HDI高端产品的良率达到什么水平，出货量规模如何？</p>
+<p>回　答　者：圣红HDI 1处的良率达到85%。HDI 2处的良率最高为84%。即使采用较好的设备，良率最高也基本只有84%。正常情况下，每增加1阶，报废率预计会增加2个点到3个点。由于这里采用全新设备，工艺等各方面也使用最顶尖的方案，可能会弥补一部分损失，但良率仍不可能达到85%，目标最高为84%左右。</p>
+<p class="qq">提问者：请再梳理一下圣红HDI 1处、HDI 2处各自的产能、产值、良率和稼动率。之后再介绍厂房4、9、10、12的情况。以上产能均为月产能，对吗？</p>
+<p>回　答　者：是的，均为月产能。HDI 1处目前产能为45000平方米，稼动率已达到98%以上，目前良率为85%。</p>
+<p class="qq">提问者：能否再大致介绍一下对应的毛利率？</p>
+<p>回　答　者：毛利率需要根据产品型号判断。</p>
+<p class="qq">提问者：那就介绍产能等基础数据。</p>
+<p>回　答　者：HDI 2处的设计产能为12万平方米，其中3万平方米用于MSub，因此正常情况下有9万平方米用于生产HDI。目前稼动率为40%左右，具体为40%到45%，良率目前达到75%。</p>
+<p class="qq">提问者：HDI目前主要就是1处和2处，对吗？剩下的是厂房4？</p>
+<p>回　答　者：厂房4就是HDI 2处，MSub和HDI 2处都位于厂房4。</p>
+<p class="qq">提问者：还有厂房10的情况。</p>
+<p>回　答　者：厂房10是高德城，厂房11用于生产HDI。厂房11目前刚刚封底，进度没有那么快，预计要到明年第3、第4季度，至少也是第3、第4季度。</p>
+<p class="qq">提问者：国内还有其他产能吗？</p>
+<p>回　答　者：国内传统RCLC的1到6处目前产能为每月60万平方米。1到5处的稼动率基本达到95%，良率达到97。6处目前的稼动率约为83%，良率为70%，产能为16000平方米。</p>
+<p class="qq">提问者：刚才讨论的是产能。单平方米均价大概处于什么水平？传统产品的价格是多少？</p>
+<p>回　答　者：传统产品方面，1到5处的产品价格基本为每平方米2000到2500元。6处目前主要生产Maple link和手写产品，单价较高，估计接近每平方米10万元。</p>
+<p>HDI 1处的平均单价为每平方米2万元，高价产品可达每平方米28000元，主要是CB300。HDL 2处目前的NV产品采用26乘6阶方案，价格可达每平方米3万5。</p>
+<p class="qq">提问者：泰国和越南工厂目前进展如何？</p>
+<p>回　答　者：泰国1厂的高多层产品目前正常生产，规模约为3万平方米。2处目前处于工厂认证和小批量试产阶段，设计产能为6万平方米。越南目前尚未开始试产。</p>
+<p class="qq">提问者：泰国工厂产品的平均价格是多少？</p>
+<p>回　答　者：泰国工厂的平均价格目前不太清楚。RCLC产品价格应该不会太高。根据目前的供应能力判断，其价格水平预计与国内1到5处相近，约为每平方米2000到3000元。</p>
+<p class="qq">提问者：关于Rubin的Computer和Switch所使用的PCB板，请再详细介绍一下，包括层数、方案、CCL和电子铜箔等情况。</p>
+<p>回　答　者：Rubin Computer采用26乘5阶方案，目前使用M8材料，主要采用山和台光的产品。Switch目前采用32层高多层方案，主要也使用M8材料。</p>
+<h2>原文转译</h2>
+<p>参会人员应自主做出投资决策并自行承担投资风险。 九千咨询并非使用本此内容所导致任何损失承担任何责任。 嘉宾发言内容仅代表其个人观点,不代表本公司观点。 本次会议内容不得涉及国家保密信息、内幕信息、未公开信息、商业秘密、个人隐私,不得涉及可能引发负面导向或不加深互动的敏感信息,不得涉及影响社会或资本市场稳定的言论。 未经九千咨询事前书面许可,任何机构或个人不得以任何形式复制、录音、刊载、转载、转发,引用本次会议内容,否则将造成一切后果及法律责任由该机构或个人承担,本公司保留追究其法律责任的权利,感谢您的理解和支持。 欢迎参加九千咨询关于PCB主题的访谈,我是九千咨询的分析师王雨,将负责协调本次访谈。 非常荣幸邀请到专家参与此次访谈。 专家您好,在我们开今天的访谈前,请您再下陈述表明我同意或不同意,您知道保密信息的定义,并同意不会在访谈中透露任何此类信息或任何其他保密信息。 (Silence) 哎,喂,老师,能听到我声音吗? 听到。 嗯,好的老师,那我们就开始今天的一个访谈吧。 首先也是先跟您更新一下,就是现在的话这个胜宏在NVIDIA的这个Rubin这边最新的一个份额情况的一个更新,啊,这个要不您先帮我们介绍一下。 (Silence) Rubin这一代的是吧? 嗯。 Rubin这一代的话,那个的话份额的话是在75%,啊。 嗯。 对。 然后switch跟的话,份额的话是在25%。 (Silence) 嗯。 对。 这个份额的话是我们现在已经,就是怎么说呢,就是因为9月开始应该也已经有些出货了嘛,就是说是现在出货的份额实际上大概是这个水平是吗? 是,目前实际的,9月份。 对,因为这个问题好像就是嗯这两天公司有很多段子啊,就是这个有一个段子的说法,就是这个switch和的话还是一个一供,那如果你是25%的话,那你这个其实并不是一个一供的卡位啊。 三供嘛。 哦。 那您了解到的就是这个其他的主要的供应商是哪几个? 在Switch和Mithril这边。 Switch跟的话主要,呃,主要一供的话还是沪电。 啊。 但是中间新增加了一个,相当于是二供也算是二供嘛,啊。 就是也其实也算是一供,就是方正,方正的话在switch这一块的话,它的一个份额增加比较大,差不多将近30%左右。 啊。 嗯,所以就是一供沪电大概是40%以上? 35,38左右。 嗯。 啊,然后二供是方正,这是switch的这块,啊。 对对对对对对。 然后三供是上红。 对,胜宏的话因为在那个GB200这一块的话,它switch这一块的话,基本上只是一个小批量。 不到5%的一个份额了。 是今年的话在Rubin这一代的话才然后在这一块的话增加到了25%。 我预计,啊,预计的话可能的话到明年,明年的话这个份额的话可能会有重新的一个分配,为什么叫重新一个分配啊? 首先的话第一个,大家都知道的话,在GB300这一块的话,的话胜宏的话是占100%的份额了。 但今年的话它只占了75%,啊,到明年估计可能还会有变化。 变化的主要因素的话就是说一些以前的话就是说已经认任何格的一个供应商。 它的一个新的ATP工厂的一个产能的一个释放,啊,在这一块的话肯定会有所调整。 75,啊,这个估计是比较高的一个比例,到后面的话可能会降,降一些。 啊,就是讲这一块。 啊。 指这一块的话,因为在GB300这一块的话,胜宏的话基本上几乎是。 的话是没有太大的一个参与的。 啊。 只是小批量的一个样品啊，测试啊，这样小批量的工货。 啊，到了今年的话，这一块的话才上升到了一个25%，而且目前来说的话，HRC这一块的话，目前的话，现在主要的话是在六处生产。 嗯。 六处的话一个设备，包括它一个制程能力，包括它一个良率的话是远远满足不了客户的一个需求的。 所以说的话就是说，为什么说到明年，它会有变化？ 明年的话，厂房10这一块，因为厂房10这一块的话，基本上现在目前的话是在设备在安堆。 啊，安装过程当中。 等到明年估计Q2的时候，这个厂的话肯定会通过一个工厂的一个认证。 啊。 这个正常来说的话，市场厂房时的话要到今年第四季的话要开始开始试产了。 啊，如果顺利的话，到明年Q2。 Q2的话，厂房10投入生产之后的话，可能这个份额的话会会有相应的一个变化。 啊，因为厂房10主要主要的话，针对的话就是一些高多层，超高多层的话，一个一个一个板子的那个生产。 嗯，所以您觉得就是这个，呃，第一个是这个厂房10的话，它的那个年产值是多少？ 是不是今年已经投产了？ 就是在爬坡的过程中。 然后第二个就是说 厂房10没有投产。 没有投产。 我上个礼拜刚刚去过现场。 啊。 哦。 目前来说的话，这个脚手架都还没拆。 啊。 不可能投产的，啊。 知道吧？ 嗯嗯嗯。 目前的话是在厂房的装修跟设备的一个安装过程当中。 嗯，那预计什么时候能投产呢？ 我预计最快的话，可能Q4。 开始投产。 啊。 他对外的话，其实说已经早就在开始要试产了，啊，但是实际上的话，目前是在厂房装跟设备安装。 啊。 嗯。 对。 明白。 那它的这个产值是多少，然后爬产的话需要多长时间？ 产值这个东西还不好说，因为你说说做随起，啊，随起的板的话，它的一个价值量就不高，如果是做Maly和正交备板的话，这个价值量的话就高。 啊。 目前来说，它设计产能的话是3万平米。 啊。 嗯。 对，3万平米的话，如果按照正交备板的话，那这个金额就大了，但是如果只是一个M或者说只是一个随起这一块的话，那产值就不太高，啊，所以说的话这个最终的话要看明年市场之后的话，公司的一个定位。 啊就是说，说难听点的话，就是它能够拿到HLC这一块的份额的话能够拿到多少。 嗯。 嗯。 那它的那个3万的月产能吗？ 就是这个，如果是爬的话，这个要爬，就是要爬多长时间能爬到，从投产开始，然后到实现满产。 明年的话，估计的话都是一整年的话都是一个产能爬坡跟良业爬坡的一个时间段。 嗯。 就HRC这一块。 嗯。 对。 明白。 好。 然后就是您刚才说那个，您觉得今年的这个75%的份额到了明年，随着一些新玩家进来的话，这个有可能会下降是吧？ 啊，有可能会下降。 嗯。 但它依然是最大的共。 嗯，那如果下降或者是稳态的话，这个您觉得大概是在什么水平？ 我估计应该是在10%到15%左右。 下降10%到15%。 是。 目前最大的一个潜在的一个竞争对手的话是谁呢？ 是景旺。 嗯。 为什么这么说啊？ 首先的话第一个景旺的话，它是在25年的6月份的话拿到NV的一个HDI的一个合供应商的一个一个一个认证的。 啊。 嗯。 他在25年的话6月份的话就已经拿到了，他在8月份的话建了新的一个PCB工厂。 啊，到现在为止的话，它是没有给NV这边的话是批量供货的。 就相当于是圣宏去年，去年R41也是一个故事， 啊，它没有批量性的供货，因为它没有足够的一个产能空间释放出来的话，去配合到NV。 啊。 但是到那个的话，新的一个ARPC工厂的话，今年的话，现在的话，已经在市场的一个状态。 啊，这是第一个， 市场的状态。第二个的话，什么呢？大家都知道UniMichael的话，中国工厂的话已经卖给了一个，呃，景旺。 啊。 UniMichael的话一个原，那个原班的一个管理人员的话，被景旺的话挖到了一个， 呃，珠海工厂。 就是专门来 呃，负责这个新的ARTC，TCB工厂的一个一个一个市场啊、运营啊这一块。 啊，这是最大的一个竞争对手，因为当初圣宏之所以的话，能够从UniMichael的手上的话，把这个NV的话，那个GB200，GB300的话，这个AGDI把它抢过来，也是因为挖了一些团队过来的。 嗯。 对。 所以说的话就是说，你看啊，从综合几方面的原因，第一个，景旺的话25年的话已经拿到核供应商的一个，那个，资格，而且的话一直在配合的话，做相关的一个测试。 啊。 今年的话又新的，新的ARTG工厂的话投产，市场。 啊。 这个的话，到明年的话，它整个工厂的话，其实说白了的话就是为ARPC的话所建的， 啊。 它建，工厂建成之后的话，不可能的话不去争取到这些相关的一个订单，对不对？ 啊，但是刚开始不会，也不会太多， 啊，毕竟的话，它也要经历一个什么呢？就是产能爬坡跟良率爬坡的一个一个阶段。 啊。 嗯。 明白。 对。 嗯。 呃，对，这个地方其实也想正好请教您一下啊，就是说我们了解到像那个midplane这边，您说一共还是互电，然后二共是方正吗？ 我们了解到其实 哦，不不不，Switch，Switch，是微起的， 啊，一共是互电，二共是方正。 嗯。 对。 这就是所谓的经验嘛。 啊，没有普联的话一共，一共的话是那个互电， 啊，二共的话就是圣宏。 欸，但我们了解到的情况的话，就是景旺在这个switch和midplane的份额其实好像也还可以。 嗯，我不知道你们是从哪里得来的一个信息啊。 景旺的话，目前来说的话，能够生产没有普联的板的话，它的话，那个VP线的话只有两条。 两条，第一条线的话是在25年的11月份的话进的第一条。 刚开始的话是准备买宝德的一个VP，后面的话，计划更改，变成了TTPT。 这条线的话市场试了半年的话，没办法正常生产。 啊。 啊，完了之后，后面的话现在勉强能生产。 勉强能生产之后的话，现在的话又买了一条，总共才两条VP。 啊。 两条，两条VP线。 啊。 它目前来说的话，只是说小批量的话在供应测试，啊，明白不？ 嗯，明白。 因为我们也有就是跟景旺的一些老师去聊嘛。 那我大概明白您的意思了，就是咱们觉得跟景旺的竞争主要在computer PCB上是吧？ 嗯，在computer。 啊，而且的话，说难听点的话，景旺的话，目前来说的话，高多层板的话，HDI板的话，目前的话都不是目前这几个一供、二供的一个对手。 嗯，嗯。 对。 明白。 只能唯一的话就是说，可能在明年的话，它在computer这，HDI这一块的话，可能会有上升的话，这样一个空间。 因为综合方面的原因，第一个是新工厂的建成，第二个的话是UniMichael的话，原班管理人员，啊，这两块。 明白。 明白，好。 行，那明白了老师。 然后想问一下，就是那个，也有就是正交背板的一些传言啊，就是这个一直以来说法都很多，那么现在到底是... 一个怎么样的一个进展阶段,北美的这个客户有没有给下订单,方案确定没确定? 首先第一个啊,这要被板的话,目前来说的话,正常来说的话是三种方案,啊,第一种方案的话,基本上的话已经测试结束,就是看怎么样去定, 就是第一种方案的话就是M9加Coble的那个,啊,这个的话基本上的话测试已经结束了,啊,最终的话会不会采用这种方案的话,还要看MV这边的话最终的一个他们内部的一个讨论结果。 啊,我认为是要上的。 啊,为什么是要上?因为made a plane的话,目前的话就是纯M9加Coble的一个方案, 而且made a plane的话,它是部分的一个同揽替代, 啊,增教背板的话是全部的一个同揽替代嘛,他相是在给他做伏笔。 啊,所以说我去觉得他会上,只不过说可能的话他不会上到更高的一个机型,不会说像原始计划的话上到576的话这样一个机型, 对不对? 啊。 所以说的话就是说,这个的话最终还是要看NV的一个决定的一个结果,那 还有的话,我为什么说否定的话,胜红的话说拿到70%的一个份额呢? 第一个,目前的他的HLC六处,它是不具备78层增教背板平常生产能力的。 打样的时候的话,良率还不到50%, 啊, 现在目前所有的HLC高层的一个都要看着厂房时。 嗯。 对。 而且啊,我刚才讲的话,就是三种测试方案,增教背板三种测试方案,这是第一种,纯M9加Coble的,这个可能会上, 啊,但是最终的话要看啊,这个月或者下个月的话,NV的话一个决定的一个结果, 啊,这是第一个。 老师,我稍微查,稍微打断一下,所以就是说您觉得就是说那个最有可能上的这个方案,现在都还没有完全确定,所以也不存在市场传的那些订单之类的情况对吧? 是,啊,更不要说的话,后面的话大家说纯M9的方案达不到它一个信号传输的一个要求, 而采取的 M9加PDFE的方案,M9加PDFE的方案目前的话只是在第二阶段的一个测试当中,第三阶段测试的话要在线测试是六个月以上,也就是说基本上要到明年的, 啊, Q2季度末或者Q3季度初的话,这个测试结果才会出来。 嗯,明白。 对,啊,所以说的话,这个它所这个传出来的信息说胜红拿到70%一个份额,这个基本上的话是 是说估计的话是看最近的话这个股价太低的话,这个这个这个这个推最小小小作文了啊, 对啊。 嗯嗯嗯嗯,明白明白。 对 然后,呃,对,然后其实我想再明确一下,就现在比较明确的点是郑州背板只会用在开本上是吧,就NVL144。 呃,路边奥草这一代的话也会用。 的话... 嗯。 嗯,您说。 开本的话之后的话可能会上PDF1的,啊。 本来这背板不就是这一代吗?的话就是和这个这个这个这个开本嘛。 现在的预应该是的开本用吧。 跟开本的话都会用,啊,增家都会用,在这一代的话都会用到增家,啊。 呃 对。 好像有点那啥,明白,行老师,那那您继续说,啊。 嗯。 然后刚才讲到是两个方案,其中的话,第二个方案的话,它有两更有两种方案, 酷电的话是40加40的这样的一种方案, 啊,同井跟呃,圣红和深南的话是72加6的这样的一个方案。 啊, 这个方案的话也是跟刚才讲的话,第二个方案的话目前的话布设的话是差不多的,啊。 嗯。 明白,反正就 GGF1有兩個方案,明白嗎? 嗯,嗯嗯嗯。 嗯。 明白,反正就是這個還沒定,這個至少要到明年。 至少要到明年,如果按照業界所說說的一個傳聞的話, 從M9加的方案達不到的話,NV的一個要求,那更不可能 去現在的話就拿到份額。 啊。 嗯。 嗯。 對。 明白。 行,好老師,那那個,然後再問一下就是那個谷歌那邊的一個情況,就是這個谷歌的TPU配套的這個PCB,我們現在是怎麼樣的一個預期? 嗯,目前來說的話,嗯,HDI這一塊的話,基本上就是V8這一塊的話,那個 HDI的話是全部分額,00%的話是給到正。 啊。 啊? 嗯 我我我再跟您對一下數啊,因為之前咱們應該是有聊過這個谷歌的這個嘛,就是V7的話,它的那個就是PCB的方案是高多層對吧? 對,高多層,V7是高多層。 對,多少層,然後配的是馬幾的CCL? 嗯 V7的話,主要是22層跟44層的話,這樣的一個為主。 嗯。 啊,以馬七跟馬八的材料為主。 嗯。 它有兩個版本嘛,一個高配版的話,一個主力量產版嘛,啊。 嗯,那它單板是多少呢?然後多少塊板子呢? 這個就沒有太多的話去細算,啊。 哦,好。 嗯,然後那個這個就V7的話,我們是多少,有份額嗎? V7沒有,那V7沒有,只是只是認證。V7的話在 高多層這一塊的話,最早的話,它的一個主供的話是離速全唱,韓國的公司離速全唱,他佔的佔了差不多80%的份額。 明白,然後您說我們主要是V8這一代。 V8這一代。 V8的PCB方案是什麼? V8的話就是HDI的話加高多層,啊。 嗯。 大概有差不多30%左右的話是HDI,啊。 然後其餘的話高多層,高多層的話這個格局的話在V8這一代的話有很大的變化,離速全創的話以前在V7的話,它的份額是差不多80%,從V7到V8的話,它從80%降到了20%。 那聖紅的,聖紅的那個份額您說的是什麼?HDI00%? HDI00%。 掛電話。 電話糊塗了。 好。 哦,HDI00%,那高多層呢? 高多層的話,目前來說的話,爭取到的話是將近30%。 哦,明白。 那這樣如果就是拉通來看的話,我們這個,因為它涉及到一個就是可能高多層和HDI價值量用量都不太一樣嘛,就是如果拉通來看,整個聖紅在V8的這個份額預計能有多少?有沒有估算過嗎? 估計至少的話應該去到60% 甚至以上。 嗯,所以HDI雖然它量少,但是它價值量高,是這個意思嗎? 對,對。 嗯。 行吧。 好,然後那這個是V8這邊,那你那個V9呢? V9目前的話就還沒有那個吧,V8的話是7月份才才開始那個,啊。 嗯,明白。那它那個V8的話,就是它用的那個CCL是什麼? 呃,以M8和M9。 M8的話配合的話就是二代部,啊。 嗯。 对。 嗯，明白。 那这个谷歌，谷歌现在开始逐步有一些订单或者是有放量的这个预期了吗？ 已经在慢慢的放量，啊。 7月份提NPI的，交了NPI，然后8月份的话开始小批量交互，9月份的话正在，相当也也是相当于是中中小批量嘛，啊，在慢慢的爬坡。 因为现在目前来说的话，就是说整体的一个情况的话，基本的话Rubin跟 啊，TPU，啊，这边的话都是在一个产能爬坡阶段。 今年的一个整体的份额，在盛红这边来说的话，就Rubin加上那个TPU的话，总共的话应该不会超过20%，啊。 今年主要的圣红的一个AIPCB这一块的一个贡献度的话，主要还是以GB300为主，啊。 明白。 哎，老师，如果我们就是那个只是拉通来看的话，就是圣红这边在GB200，300和Rubin，啊包括我刚才说谷歌这个TPOV8，这个，您说的这个份额应该是指向价值量的份额，对吧？ 不是不是，呃 就讲板子的一个那个，就讲，比如说那个 HDI，HDI的话，那个它占，在GB300的话是占100%的份额嘛，啊，你不可能的话说价值量的话占到100%嘛，啊。 嗯，就还是没有，行。 那那个，那GB300这边的话，HDI其实就是compute那块PCB嘛，对吧？ 对对对对，computer方面。 然后呢那个，对，那GB300的那个switch的话，我们有多少份额？ 没多少吧？ 没多少，啊。 嗯。 5%左右。 哦，明白，然后200的话，这个应该也是，这个大概是什么情况？ 200的话，当初的份额的话是应该是在60%。 嗯。 对，最初的话200的话是在25年1月份开始交付的，那个时候的话主供 刚开始，主供的话是由Unimicron。 嗯。 这份订单的话是从Unimicron的手上的话抢过来的，啊。 嗯。 切换过来的。 对。 明白。 行，好，老师，这个就是，那我们就是这个谷歌这边的的一个份额的情况是超预期的吗？ 我们觉得比如说那个谷歌有没有给我们一些这个量的指引，他不是很喜欢给别人量的指引嘛，比如说今年可能大概是多少亿的一个这个需求，然后明年大概是多少亿的一个需求？ 这个我还没拿到手，啊，这个还没拿到手。 嗯，目前来说的话，因为刚刚放量，啊，刚刚放量，目前的话其实今年整个今年的话都相当于是中小批量的话一个供应，啊。 到了明年，这个这个基本上就明确了，啊。 嗯。 明白。 因为不是这里面不是市场也传嘛，就是说这个呃TPO的这边的PCB，这个圣红这边业绩指引上调两倍。 我也不太知道就是有没有这样的一个变化。 有这样一个可能性，为什么叫做有这样一个可能性呢？ 首先第一个，刚开始厂房时投产之后的话，它一定是要用拿到拿那个那个高多层板来去验厂的，啊，他设计了一个良率跟产能爬坡嘛，啊。 那首先的话，那基本上就是拿谷歌的一个那个TPO，啊。 因为那个时候的话，目前来说的话，啊，就是说现在的话，那MV这边的话只有metal，还没有正交背板的一个生产，啊。 你谷歌的TPO的话也是44层，啊，那个NV的话的话也是44层，啊，所以说的话在那在厂房时的话，这是最大可能性，而且那个时候的话你没有其他别的一个产能的话， 最大了一个可能性的话去找谷歌要这个。 這一塊的訂單。啊。 嗯,那給谷歌做的話, 哎,這個毛利等會一起問吧,我感覺。 就是 呃, 呃,所以就是 就是說那之前,比如說有沒有一個,就是這個大家的預期啊,就是說本來的話這個谷歌可能我們要坐它一年多少的收入,那你現在的話就是考慮到您剛才說的這個情況,那這個上修了之後是多少? 嗯,建議在第四季度末。 再來看這樣一個。 嗯嗯。 嗯嗯。 因為現在目前,說句實話,你講陸頂這一塊的話, 都只,只是預估的一個份額。 啊,因為在現在目前的話都是小批量。啊。 啊。 嗯嗯,是,明白。 好, 然後我們那個還有就是對於這個大家都很想,都都很,很不太清楚的,就是這個Q3的這個經營的一個展望啊,就是呃實際上咱們看到像Q3的一個收入起量大概能做到什麼水平,利潤能做到什麼水平? 因為這兩天的話大家也在傳嘛,就說這個呃環比有一個至少50%加的這麼的一個變化,所以我就想就是了解一下您這邊了解到的情況大概是怎麼樣的。 還比50%加的話,它這個數據不是說空閒來封,啊。 它是有一據的,啊。 為什麼是這麼說啊,首先的話第一個,咱們的話25年的話總體的話是192吧,對不對? 差不多193了。 嗯。 80多個億的話是IPPCB這一塊,啊,那就講到今年這一塊,今年的話 呃,你第二季度的話是61.1,啊, 61.1的話,那個時候,第二季度的話是完全還只是靠1處跟HC6處 在供應。 啊。 因為HD2處的話是在4月 通過一個認證的。 啊,5月這個工廠的話才開始慢慢的話市場開始準備交付的,6月的話小片的交貨。 啊。 就是說 整個貢獻的 新增的一個貢獻度來說的話,主要看廠房市的HD2處。 嗯。 對。 5月份的話他是做了1.2,1.2萬,1.2萬平米,啊,6月份的話差不多是將近2萬平米。 啊。 7月份的話已經去到3萬平米。 啊。 嗯。 對,8月份的話已經去到了3.8。 嗯。 對,現在目前廠房市,HD的話二處的話是在持續的一個產能爬坡跟量力爬坡,現在目前的話量力已經達到75%。 嗯。 嗯,嗯。 對,加動率的話相當於是達到50%。 哦,明白,哎,老師,我想問一下,就是按照您剛才說的,相當於是多少我看,5月份的話是1.2萬 平米。 對。 然後6月份的話是2。 那4月份是多少? 1.8。 4月份還多一點? 不是4月份沒有。 哦哦。 4月份沒有,6月份。 6月份。 對。 6月份1.8。 嗯。 對。 然後那個,欸,等一下。 5月份是1.2。 啊。 6月份是1.8。 對。 7月份是3。 對。 8月份是3.8。 3.8。 9月份預計能到多少? 9月份預計可能會去到5萬到5萬200。 哦。 這個部分全部都是HDI是吧?配,適配NV的HDI。 光是NV包括的話那個... 谷歌那个TPO的话也是在这边生产。 啊。 OK,那如果是这边的话,这个HDI的单屏的价格大概是什么水平,毛利能做多少? 毛利目前来说的话,其实光路宁这一代的话,一个毛利的话,它正常来说的话是可以达到42%左右。 啊。 但是因为设备的一个折旧,加上目前加动率跟良率的一个不足, 所以说的话,它拉低了一个整体的一个一个一个一个面力,也就是说它基本上话是在31%左右吧,啊。 这个是整体吗? 整体不止,整体的话,应该平均的话去到33,34吧。 哦,你说是是按照那个就财报口径是吧?用财报口径Q2了,对吧? 财报口径是32.1,32.1嘛。 哦哦。 所以你觉得到Q3就可以到33到34。 对。 嗯,明白,然后那个就是价格呢,就单平的价格大概在平均什么水平啊? 嗯,这一代的话,它基本上话去到了35000块钱左右。 嗯。 一个平米。 那,那如果就是单纯啊,就咱只是说看这个部分的增量,按照刚才我们的那个加法的话,它相当于季度3万平米到12万平米左右嘛,对吧?给你爬上来了。 那你多出来的这个就是9万嘛,对对对。Q3。 都打不到的话,12万的平米,啊。 哎,咱不是3+3.8+5嘛。 哦哦哦,你是讲一个季度,对不对?我是讲一个月,因为这个厂工厂的话设计产能一个月的话是12万的平米,啊。 我就是说一个季度,我是一个季度。 那你就那只只是看9,9,如果乘以这个3.5的话,那你这个地方也得有大概 30个亿的增量,对吧? 30个亿的增量,差不多。 嗯,那QR整个收入才60亿,那你收入这边至少也是50%以上的增长,环比。 所以说它它它那个数据的话不是空穴来风嘛。 嗯。有道理。 因为它目前来说,目前来说唯一的一个增量部分的话就在2。 这是唯一的一个增量是吧? 对,其他别的话你现在目前的话,不管厂房10,厂房11,啊,都还没开始生产,厂房12才开始铺线,对不对?在规划。 对。 其他别的地方没有那个,啊。 明白,那因为你至少你也是就是有在往上做爬坡嘛,所以它这个毛利应该带来的是增量。 对吧?就是你看从32到33。 一定是增量,啊。 哦。 对。 那单拿出来这一块应该还是可以达到40的毛利,能吗? 就单拿出来这个增量的HDI,在Q4,Q3。 Q3可能达不到40%的毛利,啊。 那能有多少? Q3的话,估计看能不能达到34%左右吧。 多一点点。 毛利的这个东西的话不是一下涨上去的,毛利的话它现在目前毛利的影响关键,第一个是设备折旧,第二个的话就是加动力不足,第三个的话就是良率,上个月的良率的话才72%,这个月增加了三个点的一个那个良率。 啊。 嗯。 嗯。 现在已经达到75%。 那如果是这样的话,Q2的利润是15.7嘛,大概。 没没没没没细的看过,啊对。 是是是,是,是10,10,10那个什么嘛,我我这边有数,大概就是15.7,那如果是这样的话,我们就假设其他的补太变化,然后你多出来的30个亿,30个亿的收入里面按照26%的净力去算。 看一下。 淨率的話,你需要把26嘛,淨率的話 嗯,之前就已經做到26%了,差不多25.7嘛。 你是講Q2嗎? 嗯,Q2。 啊。 25.7。 但你這樣,然後你如果再考慮良率多加一點,你按理來說,你的Q3大概23到25個億。 你 這個大概數嘛。 新增營收是吧? 呃,對,就是你Q3單季度嘛。 嗯。 這樣大概OK嗎老師? 50%嘛。 可以的,可以的,可以的,啊。 那其實還是確實是Q3,Q3對聖宏來講也出現了一些拐點,對吧? Q3一定是拐點,因為什麼?Q2是那個5月份的時候的話才一點幾萬比。 是是是。 那個加動率10%都不到。 嗯,嗯。 對。 明白。原有原有什麼全都是配齊的,對不對?啊。 嗯嗯,是。 那那個Q4呢?Q4會在這個基礎上再變化多少? 估計還有差不多將近30-40%的增量。 哦,還增是吧? 對。 明白。 這個一定要想辦法的話,看看年底能不能拉滿,啊。 年底估計拉不拉不滿的,啊。 因為現在目前的訂單沒有那麼多。 嗯。 嗯。 就還是看需求嘛。 哦。 等一下老師,我我看一下,如果是我們就按90,93。 93再乘以一個 93。 0.3。 你現在保守一點的話,你今年的收入應該在,我看一下。 300億。 目標是300是吧? 目標給的高,400億啊。 哦,我這麼算一下的話,大概能到300,330,340,這麼個水平。 對呀,差不多那個,但是你還要打個折扣嘛,打個折扣嘛。 嗯。 對。 明白了。那我們往明後年去展望呢? 就明後年有兩個問題啊老師,第一個就是說,呃,一個是說從我們自己的這個目標來看的話,我們這個應該有一個怎麼樣的增長。再一個就是明後年的話其實大家這個產能也都擴出來了,會不會就是競爭比較激烈影響這個毛利呢?還是說我們隨著這個就是良率和稼動率的爬坡,它這個還是能有所提升,就是我們總明後年怎麼去展望這個經營趨勢呢? 呃 Q3,Q4一定是拐點,啊,良率爬坡,產能爬坡到了一定的程度,啊,這個利潤率的話也是在不斷的增加,因為原有的原有人員的話,啊,他產能增加了嘛,對不對?良率提升了嘛,啊,這個的話是對利潤率的話貢獻最大的,這是這兩個點,啊,對。 折舊的話,這個的話它不會的,它就是五年八年的話,就是就是按照這樣的一個比例的話去折舊的,這個的話不用,基本上的話就不用不用去看了。 看的話最主要的話就是它的產能有沒有塞滿,它稼動率去到多少。 嗯。 在就是它的良率的話,看什麼時候能夠達到現在HD一出的話這樣的標準。 嗯。 明白,對,我的意思就是說那們就是一個公司內部的一個預期或者說我們怎麼去展望明後年嘛。 你比如說你還能保持一個50-60%的增速,還是說就是這個咱先說收入嘛,就這個增長我們怎麼去預測。 明年,明年預計的話應該是要去到450億左右。 啊,多100億左右。 嗯。 嗯。 那這個多出來的量主要就是... 全部的話就拿滿了。 吗? 啊。 明年的话,主要贡献度的话就是厂房四,但是厂房10的话,估计到下半年Q3,Q4的话,可能会有一部分的贡献。 啊。 嗯。 明白。 所以就是说这两块加起来,我们觉得大概要多出来个100多亿。 收入。 对。 对。 估计中风到时候给的可能还不止这个数。 啊,确实。 哎,他那个厂房四是不是还有一部分Msap的产能啊老师? 3万平米。 哦,3万平米月产能。 对。 他这个3万平米的话大概对应几条线呀?就是他这个数,因为我一直没有对对清楚,就是他一条线能对应多少万支光模块的需求? 没有讲多少万支光模块的需求,目前其实它给出来的信息的话,这个也是有误的。 啊,目前光模块这个只是小批量的话去生产,啊,小批量生产,目前还不能去大批量的一个那个,啊,首先第一个啊, Msap这个的话是在呃是在去年的8月份的话才开始上了。 这些设备。 嗯。 对。 设备完了之后的话要试产,Msap跟传统的PCB的话,它那个是完全不一样的,良率的话能够达到60%或者65%的话,就非常不错了。 啊。 就是正常来说的话,你如果是按3万平米来算的话,你算70%的良率,它的产能的话基本上也只有2万平米。 对不对? 嗯。 2万平米的话,2万平米的产能的话,目前来说它主要的一个那个的话还是在metal frame的一个生产,然后包含了了一个Rubin这一代的一个打样,包含了一个1.67的一个光模块的一个一个打样,啊,目前来说的话, 这些Msap这边的话还只是做800G的。 嗯。 对。 光模块真正生产的话是要靠厂房12。 嗯。 对,厂房12的话是,这个工厂设计就是专门做光模块的。 那厂房12现在是什么进展? 厂房12的话才刚刚买地没多久呢。 啊,好。 嗯。 行,明白。哎,老师,那我我还是说回刚才我们的那个预期啊,就如果说明年做到450,那它这个就像您说的嘛,这个厂房四要打满,然后那个厂房10要上一些量,那理论上讲它的这个毛利和净利是应该去提升的,对不对? 呃,正常来说是提升的。 对,然后就是我们觉得如果就考虑正常的,就你这个爬产的这个情况的话,你的毛利应该比较理想的情况下是多少水平,毛利和净利? 比较理理想的话应该37左右。 37的毛利。 对。 啊。 呃,那如果是说,还有就是因为大家现在都在这个扩产嘛,就有没有可能到明年的话,这个竞争格局是否就是产业会担心一下,就是明年的这个竞争格局导致这个价格的一个影响,就是毛利可能到不了这么高。 呃,这个有这样的可能性,但是上半年的话估计冲击不会那么大,他分出去的订单的话,估计也就是百分,像NV这边就是10%,15%左右,因为毕竟的话,新增的这些IPP工厂的话,他们也要面临一个产能跟良率爬坡的一个时间。 嗯。 对。 明白。 呃,那往后年去展望呢? 后年的话。 28,嗯。 好遥远呢。 按照,按照聖紅的設計後年的話,這個又是爆發了。 你廠方10跟廠方11一定是批量性增長的。 對不對? 按照他這個進度的話,估計有可能廠方12的話也是批量性增長的。 嗯。 對。 那可能那個時候就是看需求了,就是聖紅的產能都擴出來了,就看需求怎麼樣了。 嗯。 明白,好。 他現在目前多的,基本上你話,你像 呃像對標互電的廠房石,對不對? 然後的話,那個廠方11的話是用來做這一代的話,就是說PCB載板的話這這一類的話一個的。 就那邊的話也會大量上。 嗯。 然後到廠方12是專門針對光模塊的。 它唯一的話現在的話就是沒有佈局的話,BF載板。 啊,其餘的基本上話,這一塊的話全部都已經佈局完了。 嗯。 對。 明白。 好,這個很清楚啊老師,那我們那個再再講講就是說新技術吧,就是我們想說這個像包括現在陶瓷基板呀,這個PTFE啊,就您能不能幫我們講一講,就是聖在這些方面,它都是一個怎麼樣的佈局和準備,以及就是說有哪些合作夥伴,然後包括就是說這個,我也就是請教您的那個,就是那個太金新能,跟他是怎麼樣的一個關係啊。 嗯,首先第一個,PTFE跟 陶瓷機的話,這個它不是單純的PTFE跟陶瓷機。 啊。 PFM1的話主要是在正交背板,包含的話入點這一代的話,手機這一塊的話都可能,就現在都在測試,M9加PTFE的話這樣一個一個混合的一個混壓的一個一個方案,啊,這個是在測試跟認證當中沒那麼快,啊。 呃,陶瓷機的也是在測試當中,目前負責這個研發的是我之前的一個同事,他是由英偉達的人員推薦到聖紅的。 啊,所以說要想了解這個具體的一個方案的話,到時候的話,你可以列詳細的一個名路,我去找找他去私下溝通,啊。 對。 嗯,明白。 就是,啊,是那個,然後您講到那個太金其實,我都不知道你們哪來哪些哪些小道消息。 太金的話我是在19年的話跟他接觸的。 他以前是西的一個研究所,啊。 他主要是做金屬的一個這一塊的一個產品。 啊,什麼產品呢?就是像我們VCP所用的一個那個太網。 啥? 太網,陽極,不溶性陽極。 哦,就是那個PCB陽極那個什麼,那個但我不知道那是個啥設備。 那,咱們VCP裡面的話,你以前正常來說的話,以前的話傳統的方式的話是用銅球嘛,對不對? 嗯。 嗯。 它是可容性陽極嘛,但是為了為了的話就是我們現在的話,的話這個結束越來越高,我們反复要電度,它就對一個度層的一個均勻性要求比較高嘛。 啊。 嗯。 然後的話就是說均勻性要求高的話,那就不存在的話用可溶可溶性陽極,因為可溶性陽極的話怕有些地方的話陽極比較多,有些地方陽極比較少,它就會影響一個路程的一個均勻性。 到後面的話的話成熟提升了之後的話,現在都是用的不容性陽極,用氧化銅粉的話去補充這個同子。 嗯。 啊。 就原來的陽極是需要溶解掉的,從是銅球,是需要溶解掉,然後供應同粒子的,現在的話就是不溶性的一個陽極。 那以前的話就是療一太網。 啊,最早的時候我們用的是薄金太網,啊, 後面的話是用療一太網。 它就是放在缸裡面的話,只是起一個導電的作用。 然後加氧化銅粉去補充銅粒子,這樣的話是時時刻刻 课的话去保证这个钢里面同子在最佳的一个状态。 啊,所以说的话它能够保证,很有效的话去保证这个镀层的一个均匀性。 啊。 然后泰金呢,以前的话就是做 这一块的。 我告诉你一个小道消息吧。 嗯嗯。 我这边的话收到的信息的话是 呃,盛红的总裁,入股了泰金,明白吧? 当然这个应该是老板在后面那个的, 啊。 这个,嗯,明白老师,但是这个没关系,就是我们其实最主要的就是入股也好,怎么样也好,这个形式上商业合作也很正常啊,就是说他能不能拿到订单,如果说他能拿到持续性的订单去支撑他的业绩的话,这个都无所谓嘛,就我们主要还是想要看实质上有没有这种真实的这个合作和有没有这个订单下给他。 你已经有这样的信息传出来了,就在这个月,啊,以前他的一个泰网的话,这一块的话,不溶性阳极的话,全部是用了一创的。 还有另外一家,另外一家比较少。 70%以上的话用的一创。 啊。 现在的话,已经跟一创这边的话就已已经把合同的话都已已经终止了。 啊,后面基本上的话可以说百分之百的话要用 啊泰金的。 呃,您说是哪个公司? 泰金。 不是一,一什么? 一创。 哪两个字啊? 一一个金属的话,一个一吧,金属的那个那个那个金字旁的话那个,再加一个衣服的一,一创,创造的创,一创。 啊,这个是做不容性阳极,目前在市面上的话应该是排名第一的。 嗯。 明白,所以说现在就是说这个他们这边已经结束了,接下来的订单要下给这个泰金是吧? 对,这是因为的话, 呃,那个总裁赵启强, 在泰金入股, 然后这个应该是公司的一个行为。 啊,这个没关系老师,就还是那个问题,就是合作形式是合作形式嘛,主要就是有没有订单,嗯。 订单一定有了,嗯。 整个盛红的话全部要切换了。 嗯。 但是他不是做陶瓷基板的。 对,那他那个价值量,价值量是多少呢,这个设备? 这个设备的价值量的话,每两年到三年的话要更换一次,更换一次的话,光一条线的话差不多将近100万左右,如果是产线大的话,可能还不止这个数,啊。 所以说的话,这个价值量的话是非常大的,你像,我们就拿AGDI来说的话,AGDI的话,光,呃VCP的话,在这边的话,一处的话有12条线,二处的话目前有14条线,是吧,你还不讲那个厂房时跟厂房时一这一块后去的,啊。 就一条线的话,至少的话两年,两到三年的话,应该的话,它有一个价值量的话是在100到150万左右,啊。 明白,那对顺红来讲的话,就是这个可能要要换的这个量有多少呢? 就多少条产线吗? 对。 嗯。 就我刚刚跟你说了嘛,就光AGDI的话都有20,26条啊。 哦,哦,明白,反正这是一个消耗性产品。 嗯。 消耗的产品。 嗯。 它也不是固定的话是说两年要换,三年要换, 通常行业的一个标准的话是两到三年,实际上根据实际情况的话,可能,可能会寿命还会缩短,嗯。 嗯。 明白。 对。 这个相当于是一个耗材。 他那个, 嗯,是是是,明白。 所以他主要也就是这个,就是这个阳极设备嘛,对吧? 是。 是。 嗯,因为我看到这个陶瓷基板的话,好像是他的一个子公司,叫赛尔电子。 这个您可能就不太了解是吧? 所以说你发我的话,你问我的话熟不熟,我说非常熟。 因为我在19年的时候就跟太极有接触，啊，然后后续的话，因为我一直以来的话也是用这一块失去这一块的设备，而且刚好上个月，有个朋友的话找我帮他去推这个那个，后面我了解了一下，结果的话说 已经已经没这个这种可能性了。 嗯嗯，明白明白，好，那那个就是他底下那个子公司叫赛尔电子，这个您了解吗？ 这个不太了解， 好，没关系，明白了，那就是这个主要也是这个设备看上去确实是有合作，这个后面我再我再去学习一下。 行，唉老师，还有就是那个最近还有一个传言啊，就是那个就 CPO的那个说是这个PCB也从M8降级到M4，这个事情我不知道您有没有听说，就是有没有了解这个情况。 有传，有听说，但是我认为可能性不大，为什么呢？ 首先的话你CPO之后的话，基本上 的话，光模块的话是越来越那个那个对这个板块的要求是越来越高，从最早的时候，我们我们做光模块的话大概是是马六马七，也是高频高速，你马四的话就不是高频高速了，你到现在的话，800G的话，基本上是马马马八，然后到1.6T，到3.2T，后面的话基本是马九以及以上的。 你去把这一块的话去改变，你本身的你你马四的话，你是传统的FR4，嗯 你这个的话，一下子的话，不可能的话，难道是有什么新的一个技术的话能够实现这种传输的一个一个要求吗？ 我真不知道，这是超过物理的一个一个超越物理的一个那个尝试了， 嗯。 对。 明白。 嗯，所以就是可能这个还没有，哎，老师，就是那个虽然咱们不做那个ABF载板啊，但是咱们有没有听说关于就是这个ABF载板的一些紧缺呀，包括就是这个ABF膜的一些 这个涨价呀，就这些情况咱们有听说吗？ 有听说，我目前的话就在一家小的载板厂的话做顾问啊。 嗯嗯。 对，目前来说的话，在25年的话，基本上的话， ABF载板的话是供大于求的。 今年的话，整个趋势的话基本上的话是持平的。 到明年估计的话，可能的话就ABF载板的话一个产能的话，估计的话可能有20%左右的一个缺口，啊。 因为现在新增的，新增的部分的话，目前国内的， 基本上不具备批量生产的能力，目前的话，国内的就哪家呢？ 第一个是深南，它具备批量生产，第二个的话是新盛快捷，第三个的话就是月亚出海就方正集团下面的，就只有这三家具备批量生产的能力。 但他们的产能都都非常有限。 基本上的话是在1.几万平米左右。 啊，目前最主要的在国内生产的话，你像比如说英伟达的，ABF载板最主要的供应商的话就是以比的。 跟Unimicron，Unimicron是台湾的，以比的以前是日本的，23年的时候被新盛快捷给收购了。 再就是奥特斯。 这是几个拳头的做ABF载板的一个那个厂家，啊。 老师，我我想问就是说您了解就他的这个缺口是因为他扩产设备受限制呢，还是说他的这个ABF膜受限制呢？ 他总要卡一头，所以他才。 两个都受限制。 两个都受限制。 啊，ABF膜的话，目前来说95%的话是由位置来供应的。 对，但是目前国内的莲花的话也参与了这个项目。 就ABF膜啊，当然华正新才啊，包括生意啊，这些的话也都在参与这个膜的一个那个，但他们不是ABF膜，是CBF、NBF等等这些其他别的那个，就差不多相同性能的，目前只是在。 国内的一些厂家做相应的一个测试阶段。 但是它没有到达替代ABF膜这样的一个能力。 嗯，明白。 对。 嗯，可以。熊老师，后面的话就是还有几个问题，就是 我再跟您确认一下啊。 第一个就是那个 HDI高端产品良率去到什么水平，出货量规模如何？ 您是讲哪一家呢？ 应该是圣红。 圣红的话， 良率去到什么样的水平，呃HDI一处的话良率的话去到85%。 嗯。 啊。 HDI二处的话， 顶天的话84%。 嗯。 哪怕那个设备的话， 这方面的话都比较那个，顶天的话基本上就84%，正常来说，每增加一阶，预计的话是两个点到三个点左右的一个报废的增加。 啊。 嗯。 但是因为它这边的话是全新的设备，工艺的话各方面的话都是用的最顶尖的，所以说可能会弥补一些，但是也不可能达到85%这样的一个良率，顶天84%左右。 啊。 嗯。 对。 这是目标，基本上，嗯。 嗯嗯嗯，明白。 那老师，哎，正好老师，你这个要不帮我再梳理一下吧，我正好手头有一个那个小表，就是，呃现在的话，圣红的那个产能啊，就是这个HDI这个这个一二处，然后各自的这个产值，产能产值，良率，呃加工率，这个要不就是帮我整个念到一遍吧，啊。 好，您您您您您先讲，FCLC是吧？ 呃，先讲HDI嘛，就刚才就是我们比较成熟的这个先讲，然后就讲那个厂房什么4、9、10，包括这个12，就这个你帮我念到一遍吧，之前上次咱好像没念到这个数，嗯。 嗯。 呃HDI一处的话，目前产能的话是45000平米。 嗯。 加动率的话基本上。 都是月产能是吧老师？咱都说的月产能。 都是说的月产能。 嗯，好，您说。嗯。 嗯，目前加动率的话，基本上是已经达到98%以上。 嗯。 呃，良率的话目前是85%。 嗯。 对。 就是这几个指标嘛是吧？ 对对对，你就念到一遍。 呃老师能再大概讲一下它对应的毛利率也行，但我不知道我们拆不拆这么细啊这个毛利率。 毛利率的话要看产品型号，啊。 哦，那算了，那要不您就讲这个就行，嗯。 对对对对对对对，就说讲他们一个产能嘛，啊。 对，讲基础数值，嗯。 嗯。 而且二处的话，设计产能是12万平米。 但是它有3万平米的话是MSub，也就是说正常来说的话是9万平米就做HDI。 嗯。 目前的加动率的话在40%左右。 反正40到45%，嗯。 良率的话目前去到的话75%。 嗯。 这是HDI2处，啊。 还有哪哪个地方要说？ 呃，HDI主要现一处二处，就是两个是吧？ 然后剩下的就是厂房四。 厂房，厂房四的话就是HDI二处啊。 哦，它是一个。 对。 MSub跟跟HDI二处的话都在厂房四啊。 哦，明白。 然后还有哪个呀？ 还有厂房10，就剩厂房10了。 厂房10，厂房，你讲厂房10的话是高德城，厂房11是做HDI。 嗯，但是厂房11的话目前来说的话， 刚刚封底。 没那么快。 对，没那么快。 目前来说，基本上的话是，是展示，就是说要明年，估计的话第三第四季度了，至少，至少第三第四。 对。 嗯。 呃，国内还有别的吗？ 国内的就是传统的话，RCLC的话一到六处啊。 呃，多少？ RCLC一到六处目前产能是60万平米每月。 嗯。 对。 目前的稼动率的话，基本上的话去到95%。 嗯。 嗯。 啊。 良率的话，一到五处的良率去到的话97。 嗯。 对。 然后，六处目前的话，稼动率的话大概是在83%嘛，好像是。啊。 嗯。 六处。 啊，然后它的良率的话在70%。 嗯。 对。 明白。但凭价格这个，六处产能是16000平米。 嗯。 对。 哎，老师，那我们刚才这讲的是那个产能嘛，那就是单凭价格给个均价大概是什么水平啊？ 传统的话，传统这边能做多少？ 嗯，一到五处的产品，基本上的话是在，呃，差不多的话是在2000到2500块钱一个平米左右吧。 嗯。 嗯。 六处的话，目前来说的话，基本上应该去到的话，呃，现在目前的话是做 Maple link 跟手写这这一块。 啊，这个单价的话就比较高，啊，基本上的话应该估计差不多将近10万左右。 一个平米。 嗯。 嗯。 对。 HDI一处的话，平均单价的话是在2万，呃，28000。 嗯。 高的啊，不是，不是平均单价，高的话是在28000，是CB300的。 啊。 嗯。 然后，HDL二处的话，目前NV的话，这个26乘6阶的话，去到3万5。 嗯。 对。 明白。 那我们那个泰国和越南的怎么样了？ 泰国的话，一厂的话，高多层的话目前的话是正常生产的，大概3万平米左右吧。 嗯。 嗯。 二处的话是目前的话是在认证当中，工厂的一个认证当中跟小批量的一个试产当中。啊。 嗯。 对，这个的话会去到设计产能的话是6万平米。 啊。 嗯。 越南目前还没有开始试产。 嗯。 对。 明白。 好。那泰国那边的那个平均价格呢？ 泰国的平均价格我就不太清楚了。啊，做RCLC的话，价格的话应该不会太高。 啊。 嗯。 就目前的一个供应能力，估计跟一到五处的话这样的一个水准，差不多应该在两三千块钱左右样子吧。 嗯。 嗯，明白。 对。 还有老师，那个，这个，其实上次咱拆拆拆过，但我可能再跟您对对数，就是Rubin的那个Computer和Switch的那个PCB板子，这个我想再详细问一下，就是Rubin的Computer的那个板子的话，是多少层，什么方案，CCL电子不同博，这个要不再帮我说一下？ Rubin的话是26乘5阶，啊，目前来说的话是用的M8的一个材料。 嗯。 嗯。 主要的话是走山跟台光。 嗯。 然后，还来个？ Switch是吧？ 呃，Switch对对对。 Switch的话，目前的话是32层，32层的高多层，然后的话主要的话也是M8的材料。 啊。 嗯。 呃，Maple link的话目前</p>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,190 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.22 | AC | Hardware | AI Glasses Bottlenecks: Connect Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.22 | AC | Hardware | AI Glasses Bottlenecks: Connect Preview</h1>
+<p class="orig">原标题：AI眼镜市场迟迟打不开，卡在哪儿？ —— Meta Connect前瞻</p>
+<p class="tags">#hardware #consumer</p>
+<p class="meta">AceCamp · 2026-09-22 · article 70567264</p>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>AI眼镜降价为何换不来销量，瓶颈在哪；</li><li>无屏眼镜的价值能否超出手机配件；</li><li>Meta为何亏损铺量，利润流向哪些环节；</li><li>显示款为何放量慢，双目款如何改变光学供需；</li><li>哪些公司受益，Meta Connect该看哪些信号。</li></ol>
+<p>&gt; <b>Meta Connect将于9月23日开幕，Meta已预告会带来新款眼镜。发布会前夕，两组数据走向相反：扎克伯格称，每天使用Meta眼镜的人数一年增长到原来的3倍；而在Meta眼镜没有进入的中国内地，拍摄眼镜均价降了近六成，销量却少了近一半。同一个品类出现两种走势，原因并不在价格。</b></p>
+<h2><b>一、降价没有换来销量，AI眼镜的瓶颈不在价格</b></h2>
+<p><b>Meta眼镜没有进入中国内地，这使得中国市场成为观察AI眼镜真实需求的一个特殊窗口。</b>IDC数据显示，2026年二季度中国智能眼镜出货61.1万台，同比下降8%，这是该市场首次出现同比下滑。拆开来看，下滑全部来自不带屏幕的音频与拍摄类，同比下降35.4%；AR与VR类反而增长85.8%。同期全球出货354.7万台，同比增长35.3%，而一季度的增速还是130.1%，两个季度都按包含VR/MR头显的智能眼镜整体口径统计，前后可比。全球的增长主要来自Meta一家，它的一季度份额按IDC包含显示眼镜的口径为69.2%，按Counterpoint只统计无屏眼镜的口径约为84%，两家的统计范围不同，所以数字有差距。这说明全球出货的高增速，更多反映的是Meta一家的铺货节奏，并不能直接代表市场需求。</p>
+<p></p>
+<p><b>价格刺激已经给足了，销量却没有跟上。</b>洛图科技的线上监测显示，2026年7月三大电商平台的拍摄眼镜均价降到819元，同比下降58.5%，销量却同比减少46.6%，只有约2.8万台。一款售价不到300元的产品卖了约1.3万台，占当月拍摄眼镜销量的约45%，而主流品牌的同类产品仍在2000元上下。这说明低价只是把份额从一个品牌挪到另一个品牌，并没有带来新的用户。政策补贴也不缺位，智能眼镜从今年起纳入国家数码和智能产品购新补贴，单价6000元以内按售价的15%补贴，每件最高500元。同一个月里唯一增长的，反而是均价约2990元的带显示AR眼镜，销量同比增长72.7%。降价的品类在萎缩，贵的品类在增长，这与“价格是门槛”的常见说法正好相反。单月数据会受618透支和去年高基数的影响，但它与二季度的季度数据方向一致。由此可以推断，AI眼镜的问题不在价格，而在产品本身能提供多少价值。</p>
+<p></p>
+<h2><b>二、无屏眼镜只能靠语音交互，价值止步于手机配件</b></h2>
+<p><b>眼镜“看”的能力已经不缺，缺的是人和眼镜之间传递信息的方式。</b>摄像头、麦克风阵列加上多模态大模型，让眼镜已经能识别眼前的物体和环境。硬件方案也高度趋同，据虎嗅等媒体援引的行业估计，约八成产品采用同一套“高通AR1芯片加索尼IMX681摄像头”组合。问题出在交互上。没有屏幕的眼镜，用户下指令只能说话或触摸镜腿，得到的结果只能靠耳朵听。一句话能讲完的信息还好，比如报时、导航提示；一旦信息超过一两句，比如看一份清单、比较几个选项，用户最终还是要掏出手机看屏幕。这使得无屏眼镜的功能更接近带摄像头的蓝牙耳机，它相对于耳机和手机摄像头的增量，只有第一视角拍摄和不用手操作这两项，而愿意为这两项多付钱的用户，早期基本已经买过了。</p>
+<p><b>眼镜本身也装不下足够的算力，所以它很难靠自己变得更聪明。</b>据笔者了解，眼镜端若要运行200亿到300亿参数的模型，约需24GB内存，发热问题也无法解决，所以复杂计算只能交给云端或外接的计算盒。这与笔者此前在《存储争夺战下，端侧AI的真实投资价值在哪里》中的判断一致：数据中心正在挤占终端的存储资源，价值不会沉淀在终端的存储颗粒上。对眼镜来说，这意味着它更多是云端AI的收音和取景入口，而不是一台独立的计算设备。</p>
+<p><b>Meta自己的数据也显示，用户在变多，但每个人并没有用得更多。</b>扎克伯格在2026年一季度业绩会上称，每天使用Meta眼镜的人数同比增长到原来的3倍。但这个数字需要和分母一起看。依视路披露，截至2025年2月，Ray-Ban Meta累计售出约200万副；2025年一年，Ray-Ban Meta与Oakley Meta又合计售出逾700万副。按笔者粗略估算，累计销量同期至少增长到原来的3.5到4倍，高于日活人数3倍的增幅。也就是说，日活的增长主要来自新买眼镜的用户，单副眼镜的使用强度看不出提升，甚至可能略有下降。退货数据指向同一个方向：据XR Vision的监测，电商渠道的平均退货率约为三成，以直播带货为主的渠道达到40%到50%；洛图科技给出的退货率区间为30%到70%。</p>
+<p></p>
+<p><b>摄像头是无屏眼镜相对耳机唯一的硬差异，也是它最大的社会成本。</b>今年2月，《纽约时报》披露Meta计划为眼镜加入人脸识别；4月13日，美国公民自由联盟牵头75个组织联名，要求Meta放弃这项计划；此后又有集体诉讼指控用户拍摄的画面被转给海外外包人员审核，一些场所也开始张贴禁戴告示。Meta的应对之一，是据The Information 9月中旬报道将在Connect上亮相的无摄像头眼镜Luna，它配有六个麦克风，支持Meta AI与9月刚推出的Muse代理，计划10月出货。据彭博2025年的报道，Meta早年曾以降本和隐私为由取消过一款同样代号为Luna的无摄像头产品，如今又重新启用。这一反复本身说明了无屏眼镜的两难：拿掉摄像头，可以换回旁观者的接受度，但也拿掉了它相对耳机的唯一差异。笔者判断，无屏眼镜只能在“保留差异”和“获得社会接受”之间二选一，价值上限因此停留在手机配件这一级。由此推论，它的放量只能依靠愿意承担亏损的一方。</p>
+<h2><b>三、Meta靠亏损铺量，利润只留在镜片与渠道</b></h2>
+<p><b>无屏眼镜的规模，是Meta用亏损换来的入口。</b>Meta的Reality Labs在2026年二季度经营亏损46.19亿美元，收入只有4.31亿美元，上半年累计亏损约86.5亿美元。Reality Labs同时包含VR头显和眼镜，Meta没有单独披露眼镜的盈亏，但从收入与亏损的量级看，这项业务远谈不上自负盈亏。Meta愿意承担这笔亏损，原因在它的业务结构。笔者此前在《AI全栈竞逐：六大生态的"引力井"格局》中指出，Meta是巨头里唯一没有直接云收入入口的一家，AI投入只能通过提升广告效率间接变现。手机操作系统掌握在苹果和谷歌手里，眼镜是Meta自建入口的机会，亏损就是建立这个入口的成本。据产业链信息，Meta准备在2027年谷歌、苹果推出眼镜后以亏损价格应战，双目显示款维持单目款的售价，多出的约100美元成本由Meta自己承担。</p>
+<p><b>补贴要换来回报，前提是用户留得住，这一条眼下还不成立。</b>苹果那种“硬件让利、服务赚钱”的模式，成立的条件是用户留存率维持在85%以上。AI眼镜三到四成的退货率意味着，能留下来的用户最多只有六到七成，离这一门槛还有明显差距。Meta已经开始尝试向用户收费。据The Verge报道，眼镜的Meta One Premium订阅每月19.99美元，免费用户使用“对话聚焦”功能每月只有3小时，订阅后为15小时；而这项功能在眼镜本地的芯片上运行，断网也能使用，并不消耗云端算力。对已经卖出的硬件的本地功能设置使用上限，说明Meta还没有找到用户愿意持续付费的服务，只能先从已有功能里找收入。</p>
+<p><b>渠道一侧能赚到钱，靠的是镜片与处方，而不是出货量。</b>依视路2026年二季度按固定汇率增长8.7%，公司称AI眼镜收入同比接近翻倍，核心业务增速在中个位数的上沿。按这一口径粗略推算，智能眼镜对二季度增长的贡献约为3到4个百分点，低于一季度约5个百分点的贡献；考虑到二季度的收入基数更大，笔者推算，二季度智能眼镜收入的绝对额与一季度大致持平甚至略低，没有随太阳镜旺季明显抬升。公司没有披露季度绝对额，这一推算假设两个季度的贡献口径一致。公司自述智能眼镜的改善来自均价上升、处方镜片渗透率提高和生产效率提升，这恰好是它作为Meta眼镜独家镜片制造商的主业能力。价格策略上的分工也印证了这一点：今年6月，Meta推出起价299美元的自有品牌Meta Glasses，低于Ray-Ban Meta二代的379美元；据调研了解，新系列刻意不使用雷朋标识，是为了避免冲击依视路普通雷朋眼镜的定价。换句话说，Meta要的是用户规模，依视路守的是镜片与品牌的利润。</p>
+<p><b>中国品牌既缺少镜片与验配渠道，又要承受存储涨价和低价竞争的双重挤压。</b>与依视路相比，国内品牌大多没有自己的验光配镜网络，这是国内退货率偏高的原因之一。成本端同样不利，通用DRAM的价格高点尚未到来，预计2027年下半年之前难以释放新产能，而低端产品在产业链中缺乏定价权，只能被动吸收存储成本的上涨。在拍摄眼镜均价已跌至819元的情况下，上行的存储成本将进一步挤压低价产品的毛利空间。</p>
+<p><b>在无屏眼镜这条链上，毛利最高的环节同样是镜片。</b>明月镜片自2025年6月起成为小米AI眼镜的官方独家光学镜片供应商，线上线下全渠道承接配镜服务。截至2025年9月末，这项合作累计收入651万元，智能眼镜镜片的毛利率为78.6%，明显高于公司整体约60%的水平；2026年半年报没有再单列这项收入。毛利率高、体量小，是无屏眼镜链条上赚钱环节的共同特征。整机环节赚不到钱，产业链的利润只能到供给受限的环节去找，这就是带显示的眼镜。</p>
+<p></p>
+<h2><b>四、显示款卡在光学量产，双目款让光学部件用量翻倍</b></h2>
+<p><b>只有加上显示屏，眼镜才能摆脱手机配件的定位，但显示款的规模目前仍然很小。</b>屏幕解决的是信息输出的问题，导航箭头、翻译字幕、消息摘要可以直接出现在眼前，用户不用再掏出手机。但从出货量看，显示款还是小众产品。Omdia统计，2025年全球AI眼镜出货870万台，其中带显示的约73万台，占8.4%。IDC的二季度数据也是如此，全球AR/ER显示眼镜出货50.5万台，音频与拍摄类为249.4万台。TrendForce预计，2026年全球带显示的AR眼镜出货约95万台，同比增长53%。Meta自己的显示款同样量不大：IDC分析师在路透的报道中给出，Ray-Ban Display在首个销售季度（即2025年四季度）售出约1.5万副；Omdia统计其2025年出货约8.4万副。两家机构的口径不同，但数量级一致，都在十万副以内。Meta还在2026年1月以库存有限为由，暂停了原定在英国、法国、意大利和加拿大的上市。</p>
+<p><b>显示款的问题不是卖不动，而是造不出来、留不住人。</b>需求端并不弱，Ray-Ban Display在美国出现排队，中国线上的带显示AR眼镜在三季度前半段也逆势增长。卡住它的是供给和佩戴体验。据虎嗅的WAIC观察，带显示的AI眼镜单次续航普遍只有2到5小时，无屏产品可以达到8小时以上。业内测算，光机每再减重1克，研发与制造成本要上升15%以上，近视用户的定制镜片还会额外增加最多约10克重量。据笔者了解，显示款的退货率高于无屏款，主要原因是佩戴重量和视觉疲劳。独立品牌的数据也印证了这一点：XREAL的招股书显示，这家按营收计多年位居全球第一的AR眼镜厂商，2023到2025年的出货分别为13.72万、12.49万和13.37万台，三年基本持平，2025年毛利率为35.2%。</p>
+<p><b>正因为供给受限，波导、微显示和光机这几个环节握有定价权。</b>TechInsights的拆解显示，显示相关组件占Ray-Ban Display与神经腕带合计物料成本的50.8%，是最大的成本项，高通芯片占15.7%。TrendForce的供应链调查显示，Meta最初为Ray-Ban Display下单约8万片Lumus几何光波导，上市后半年内上调87.5%至约15万片，OmniVision的硅基液晶（LCoS）微显示、歌尔光学的光机组件和肖特的波导玻璃同步追加。订单在上调，产能却跟不上，议价权自然在供应商一侧。</p>
+<p></p>
+<p><b>双目款会让这几个卡点环节的单机用量翻倍，而且供应商不会变。</b>现款Ray-Ban Display只在右眼有显示。Meta首席技术官说过，做双目意味着零部件成本增加一倍以上，因为每一样部件都要做两份，还要解决两眼画面的对齐问题。据笔者了解，双目款年内还无法大规模量产，将在2027年推进，并沿用单目款的现有供应商。这意味着波导、微显示和光机的单机用量翻倍，而主控芯片笔者判断不必成对增加。供给端也在准备：水晶光电在9月成为继广达、肖特之后，Lumus第三家授权的反射光波导制造商；依视路与应用材料合作开发的光学系统预计2027年初上市。利润会集中在少数光学卡点，但体量要等双目款放量才能体现，落到具体公司需要按业务拆开来看。</p>
+<h2><b>五、受益的是光学卡点与镜片，不是无屏眼镜的品牌和组装</b></h2>
+<p><b>水晶光电与歌尔股份的受益集中在显示光学业务，节奏取决于2027年双目款的放量。</b>水晶光电受影响的是反射光波导制造，它刚获得Lumus的制造授权，同时也是Lumus的股东，弹性取决于双目款的出货节奏和自身产线的良率爬坡，原有的光学元件业务则不受这一变量影响。歌尔股份的光机组件会随双目款的用量翻倍，但无屏眼镜的整机组装处在低毛利区间，两块业务的方向相反，不宜合并看待。豪威集团的LCoS微显示同样随双目款翻倍，只是这项业务在它以图像传感器为主的收入结构中份量有限，对整体业绩的弹性不宜高估。</p>
+<p></p>
+<p><b>佰维存储常被归入AI眼镜概念，但它的业绩弹性主要来自存储涨价，而不是眼镜销量。</b>佰维是Meta AI眼镜存储芯片（ePOP）的国内主力供应商。2026年半年报显示，公司上半年营收155.75亿元，同比增长298.1%（其中一季度68.14亿元），净利润71.66亿元，上年同期为亏损。其中AI新兴端侧存储收入约28.6亿元，同比增长433.58%，这部分以AI眼镜使用的ePOP产品为主，客户包括Meta。对比来看，这部分收入一年增长到原来的5.3倍，而IDC统计的上半年全球智能眼镜出货只增长到原来的1.7倍，差额主要来自存储价格上涨和客户结构变化，眼镜出货量本身只能解释其中一小部分。这与笔者此前把佰维归入“纯价格弹性”一类的判断一致：它的眼镜业务收入跟着存储价格走，而存储越贵，眼镜厂商的成本压力反而越大。</p>
+<p><b>镜片环节毛利最高，显示款品牌则还需要证明出货能够增长。</b>明月镜片所处的处方镜片环节毛利率最高，但体量受限于小米等客户的眼镜销量和验配渠道的覆盖。已向港交所递表的XREAL三年出货基本持平，判断它的依据应是显示业务的毛利率和出货拐点，而不是“智能眼镜第一股”的定位。依视路的利润抓手在处方镜片的渗透率，而不在出货量；眼镜业务对Meta利润表的影响则较为有限。对这几家公司而言，Connect上真正需要关注的，是双目款的时间表和定价。</p>
+<h2><b>六、Connect重点看两件事：Luna定价与双目款时间表</b></h2>
+<p><b>Connect定于9月23日至24日举行，值得关注的不是又一副新眼镜，而是Meta如何处理无屏眼镜见顶与显示款量产之间的时间差。</b>第一，Luna的定价是否不高于299美元、是否作为走量主力，这决定无摄像头路线是主力产品，还是回应隐私争议的姿态。第二，双目显示款是否给出2027年上半年的出货时间，定价是否不高于现款的799美元。第三，Muse代理能否在眼镜上完成不看屏幕的任务，Meta是否给出使用数据。第四，首款智能手表Malibu 2是否承担通知、确认等轻量显示功能。第五，Meta是否首次披露累计销量、留存率或订阅数。</p>
+<p></p>
+<p><b>本报告的判断在以下情形下将被证伪。</b>如果双11期间拍摄眼镜在均价低于1000元的情况下恢复同比正增长，说明价格才是约束；如果Meta披露的日活增速持续高于累计销量增速，说明使用强度在加深；如果Luna的销量与带摄像头的款式相当，说明语音加代理已经够用；如果双目款在2027年上半年前以不高于799美元的价格出货、年化超过百万副，说明时间差收窄快于预期；如果依视路三季度智能眼镜对集团增长的贡献回升到5个百分点以上，说明无屏眼镜还没有见顶。检验这五条，需要依次跟踪洛图科技8月、9月和双11的线上数据，依视路与Meta的三季报，IDC的三季度出货，以及TrendForce的波导订单与DRAM合约价。</p>
+<h2><b>七、风险因素</b></h2>
+<p><b>上行风险来自AI代理的能力和系统级整合。</b>如果Muse这类代理能在不看屏幕的情况下完成订票、回复消息等任务，语音这一条交互通道就够用了，无屏眼镜的价值上限会随之上移；谷歌与苹果以操作系统级别的整合入场，也可能抬高眼镜作为手机配件的价值；处方款的推广则会扩大全天佩戴的人群。</p>
+<p><b>下行风险来自监管、成本和产能。</b>人脸识别争议和场所禁戴如果继续扩散，所有带摄像头的产品都会受到影响；存储价格如果在高位延续到2027年下半年，低价产品的毛利会继续被压缩；2027年的价格战也会压低品牌与代工厂的利润。据调研了解，Meta今年已付款锁定的备货约1280万副，而IDC预计今年全球无屏眼镜出货约1360万台，备货与产能超前于需求的风险需要跟踪。</p>
+<p class="qq">以上内容不构成任何投资建议，请风险自担。</p>
+</div>
+</main>
+</body></html>

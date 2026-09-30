@@ -1,0 +1,205 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.28 | AC | IoT | Module Maker: Memory Cost Pass-Through</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.28 | AC | IoT | Module Maker: Memory Cost Pass-Through</h1>
+<p class="orig">原标题：通信模组调研_ 存储涨价向下游传导的节奏与幅度, 车载单车价值量与智能模组占比的提升路径</p>
+<p class="tags">#memory #auto</p>
+<p class="meta">AceCamp · 2026-09-28 · article 70567560</p>
+<div class="body">
+<p>业务结构与增长预期：模组出货与PCBA、ODM等第二曲线业务对营收结构的影响，全年增长目标与长期营收规划的实现路径。 盈利与供应链策略：存储等原材料涨价下的备货安排与价格传导节奏，解决方案业务的毛利水平与议价逻辑，研发投入与人员调整方向。 车载与海外市场：车载客户覆盖、单车价值量与出货结构变化，海外市场的准入特点与收入占比，以及潜在制裁风险下的业务承接预案。</p>
+<h3><b>专家观点：</b></h3>
+<h3><b>Q&amp;A</b></h3>
+<h3><b>请介绍一下移远通信当前的整体业务、客户构成与产品情况？</b></h3>
+<p>2026年上半年已完成150多亿的营收，毛利水平相较2025年有所提升。毛利改善的原因主要有几点：首先，移远通信业务正从传统的模组生产制造向PCBA及ODM业务拓展。根据内部沟通，过去模组业务约占移远通信整体业务的80%至90%，而到202 6年上半年，模组的出货占比有所下降，这并非因为模组业务本身下滑，而是由于PCBA、ODM等新增的第二业务曲线增长显著，支撑了整体业绩。其次，受AI产业影响，存储和内存市场出现涨价，移远通信也将价格上涨传导至客户端，客户基于自身业务发展的考虑 接受了价格调整，这直接提升了移远通信的收入和毛利。移远通信在2026年上半年储备的生产元器件中包括大量存储芯片，因此尽管上游涨价，但在第一、二季度对移远通信毛利的冲击不大。进入第三季度，移远通信已将涨价信号有效传导至下游，预计毛利和利润将继 续增加。此外，车载业务也为移远通信贡献了三成的业务增长。当前新能源汽车销售占比已达六成左右，其更高的智能化水平带来了更多业务机会。移远通信业务已从过去主要集中在T-Box和车机，扩展到为车企提供包括Wi-Fi、车内娱乐、定位以及车主协同功能 在内的综合解决方案，以帮助车企降本增效。最后，除车载业务外，搭载安卓或Linux操作系统的智能模块业务也在放量，应用场景包括POS机、便利店自助结账设备、工业平板、仪表以及电动车的智能化相关产品，这些都支撑了移远通信的业务增长。</p>
+<h3><b>从业务板块来看，是否可以将移远通信的业务划分为“通信模组天线”和“解决方案”两大类，前者主要销售标准化的硬件产品，后者则提供以服务为主、定制化程度更深的方案？</b></h3>
+<p>可以这样理解。第一个板块的服务内容相对较轻，定制化程度偏弱；第二个板块则基本以服务为主，定制化程度更深。</p>
+<h3><b>移远通信在2026年上半年进行了元器件囤货，当这批库存消耗完毕后，是否会对移远通信的净利率产生较大影响？</b></h3>
+<p>影响肯定会有，但谈不上很大。首先，移远通信具备规模优势，议价能力远超一般友商或小企业。其次，在价格传导方面，移远通信不会简单地将上游10%的涨幅原样传导给下游，而是可能会有20%甚至30%的提价。在当前市场大趋势下，客户为保证自身产品的供应 稳定，通常会接受价格调整。因此，预计库存消耗后的影响有限。</p>
+<h3><b>考虑到目前产能利用率较高，移远通信当前的产能是否能满足2027年的需求？是否有相应的扩产计划？</b></h3>
+<p>目前常州工厂等部分产线的利用率确实稍高，但合肥工厂的产能利用率尚可。按照正常的交付周期，满足客户需求问题不大，但如果客户有紧急订单，可能会产生一些影响。移远通信计划在2027年根据业务增长预期，将产能进一步扩大30%至40%。扩产决策会依据 季度的需求预测进行综合评估，以避免盲目扩张带来的不确定性。</p>
+<h3><b>2027年三大运营商的物联网模组采购需求量大概是什么规模？</b></h3>
+<p>目前尚不好判断。根据往年情况，运营商的采购规模一直不是移远通信的主要营收与利润支撑，但其重要性在于证明了移远通信在供应链能力、品牌认知度与认可度方面，符合国内最严格的招投标要求。运营商每年的采购规模并不固定，其采购行为更多是为了通过模组补贴 和自费营销等方式，拉动其非主营业务收入。许多客户实际上只是通过运营商渠道进行交易，并非由运营商从设计导入阶段开始跟进开发的新客户，因为这并非运营商的业务强项。</p>
+<h3><b>预计2027年解决方案业务板块的收入增速？</b></h3>
+<p>预计解决方案业务的增速将高于移远通信整体的增速水平。增长的原因在于，越来越多的客户发现，与移远通信合作进行方案开发和代工，相比其自行组建团队、寻找生产代工，在综合成本和效率上更具优势。尽管移远通信会收取价格不低的定制开发费用，但与客户自行购 买设备仪器、招聘团队、进行产品认证等投入相比，综合成本效益依然显著。</p>
+<h3><b>车载业务目前在移远通信整体营收中的占比是多少？主要包含哪些具体产品？</b></h3>
+<p>车载业务目前对移远通信整体营收的贡献占比约为30%至35%。该业务板块包含的产品类型非常广泛，不仅限于智能座舱，还涵盖了T-Box、车机等多个部分。当前在智能驾驶领域的业务相对还比较薄弱。</p>
+<h3><b>移远通信在车载领域的定点项目情况如何？与哪些主要客户有合作？</b></h3>
+<p>目前已进入超过40家主流车企的供应链，并与超过60家Tier 1及部分Tier 2企业建立了重要的合作伙伴关系。例如，特斯拉在国内生产的Model Y和Model 3车型，其T-Box内的部分模组由移远通信供应。此外，比亚迪的部分车型，以及长城、奇瑞、蔚来、小鹏、理想等车企也都是移远通信的客户。</p>
+<h3><b>一款车型从项目确定到最终实现稳定量产，通常需要多长时间？</b></h3>
+<p>周期因车企而异。国内新势力车企的开发周期相对较短，过去可能在12个月、16个月或18个月左右。但随着国家强制性要求的出台，新车型的开发周期普遍会延长至18个月以上，因为必须完成“两冬两夏”的极寒和极高温测试。因此，一款稳定的车型从研发到量产 ，最短也需要约24个月。欧美车企的车型开发周期可能会更长。</p>
+<h3><b>移远通信提供的不同车载方案的单车价值量范围是怎样的？</b></h3>
+<p>不同车载方案的单车价值量差异巨大。如果仅提供一个T-Box，价值量较低，大约在60至70元。但如果方案整合了Wi-Fi、蓝牙、C-V2X（车路协同）以及车机系统，单车价值量至少可以达到3,000元。具体价值量还取决于配置，高端车型的车机配置 要求更高，若采用如8295等新款芯片，成本也会相应增加。</p>
+<h3><b>预计到2027年，车载方案的出货结构会呈现怎样的变化趋势？</b></h3>
+<p>预计车载方案将向中高端市场集中。从市场端看，2027年新能源汽车的销售比例预计将比2026年更高。新能源车，特别是其消费者，对车载娱乐系统的要求更高，这将对模组的整体售价产生积极影响。从智能模组的销售比例来看，目前其在车载业务中约占三成，预 计到2027年，这一比例可能提升至五成甚至六成。</p>
+<h3><b>对于非车载解决方案业务，2027年工业、端侧AI等领域的收入预期如何？</b></h3>
+<p>在非车载领域，工业物联网预计仍将是主要部分，其增速有望在30%的行业平均增长基础上有所提高。对于端侧AI，在玩具类和生产制造领域的应用前景较好。例如，用于识别产品良品率的AI摄像头已成为刚需，未来在生产环节会普及。而类似于计算中心的更高端业 务可能不多。在AI玩具领域，特别是结合云计算的陪伴式玩具，预计将有较大增长。不过，这类产品的硬件价值相对较低，其价值更多体现在后续的token续费及AI功能升级带来的溢价。</p>
+<h3><b>移远通信在农业领域的自有品牌业务目前的商业化进展如何？</b></h3>
+<p>移远通信在农业领域拥有自有品牌，其产品功能较为亮眼，但实现商业闭环仍需时间。整套方案成本较高，目前尚未确定由主机厂直接集成还是通过后装市场销售的理想商业落地模式，即由谁来为方案买单的问题尚待解决。</p>
+<h3><b>移远通信的解决方案业务，其收入确认的节奏是怎样的？</b></h3>
+<p>收入确认的节奏取决于项目的大小。对于小型定制开发项目，例如收费一两万元的项目，研发评估和开发周期通常在一至两周内即可完成，因此收入确认速度较快。而对于大型项目，可能涉及硬件设计、外观设计等多个环节，定制费用可达上百万元，其开发周期则需要四到 六个月甚至更长时间，相应的收入确认周期也较慢。</p>
+<h3><b>从移远通信的角度来看，业务是否存在季节性因素，例如下半年确认收入的比例是否会更高？</b></h3>
+<p>移远通信的业务存在一定的季节性，通常第三季度会出现集中采购现象。这主要是因为移远通信为减轻第四季度的业绩压力，会向销售团队分配更高的任务指标，并可能通过提供折扣促销等方式，促使订单尽可能在Q3完成。因此，一般而言，Q3的收入在全年当中是最高 的，而Q4的收入则可能相对较低。除非出现大规模涨价等负面消息，否则这种季节性模式不会轻易改变。</p>
+<h3><b>移远通信解决方案板块的毛利率和净利率水平及其未来的可持续性如何？</b></h3>
+<p>解决方案板块的毛利率水平相对较高。即使是功能相对简单的方案，其毛利也远高于单纯销售模组。对于客户而言，采购此类方案相比自行开发，也能节省5%至10%的成本。 这种较高的毛利率水平预计可以维持。与华勤、闻泰等为功能机或低端定制机提供服务的模式不同，物联网领域的客户单品体量通常在百万级，千万级的客户非常少。在百万级的订单规模下，移远通信的议价能力相对较强。除非未来客户的单品采购规模达到千万级别，否则这种高毛利状态在短期内将得以保持。目前接触到的单一客户中，很少有单品能达到千万级体量，部分POS机产品可能达到，但其本身利润已非常微薄。</p>
+<h3><b>移远通信研发人员占比较高，研发费用的投入是否会对净利润产生影响？</b></h3>
+<p>研发费用肯定会对净利润产生影响。不过，近几年移远通信一直在进行人员的收缩、压缩和调整。因此，从市场角度看，尽管研发费用有影响，但整体趋势是在收缩，并不会因为市场需求增长就大规模招聘高薪研发人员。目前，研发团队的工作强度已经很高，响应及时性也 面临挑战，但尚未达到必须大规模招聘的程度。</p>
+<h3><b>目前移远通信在手订单的能见度大概能看到多长时间？</b></h3>
+<p>移远通信通常以季度为单位进行订单的复盘和预测。每个季度，供应链会向销售经理提供订单预测。由于超过半年的预测准确性不高，基本都会进行调整，因此订单能见度主要看一个季度。</p>
+<h3><b>在模组行业，移远通信的市场占有率和话语权都比较高，如何看待行业内的价格战？</b></h3>
+<p>模组业务的盈利模式并非直接来自客户，而是通过竞争获取同行的市场份额。过去，西门子、U-blox等海外厂商的模组定价过高，为移远、广和通、芯讯通、美格智能等国内厂商提供了快速成长的空间。 当前，销售模组更多是一种表象。利润主要来源于几个方面：首先，通过大规模出货获得高通等上游芯片厂商的返点或折扣优惠；其次，通过提供增值服务盈利，例如客户委托的深度开发、OTA测试以及各类认证服务。模组业务本身不会主动提价，即便达到垄断地位也不会单纯为了利润而提价。模组价格的上涨通常是被动的，例如因高通等上游供应商涨价，或AI行业发展导致内存等原材料成本上升所致。</p>
+<h3><b>与高通合作是否享有较高的利润折扣或优势？</b></h3>
+<p>是的，在行业内，与高通合作的优势比较明显。高通会根据不同的合作阶梯提供不同梯度的返点。</p>
+<h3><b>移远通信与英伟达的合作现状及在车载领域的前景如何？</b></h3>
+<p>目前与英伟达的合作规模及营收贡献占比都非常小，尚未达到需要深入研究的阶段。英伟达主要提供边缘计算相关的产品，这类产品在特定场景下有较好的应用，例如生产制造领域的视觉机器人识别，通过摄像头判断产品良率。然而，想借此切入高端车载市场的门槛短期内 仍然很高。无论是特斯拉，还是华为、蔚小理等品牌的车载系统，其自动驾驶方案大多采用自研方案和芯片。因此，无论是通过移远切入市场，还是移远通过英伟达切入市场，都需要时间。当然，也不排除未来该方案能展现出优异的费效比，整合通信、自动驾驶、车内娱乐 等功能。但车企在选择方案时通常非常谨慎务实，不会轻易为了节省成本而牺牲整个系统的确定性和稳定性，需要有先行者来验证方案的可行性。不过，在农机自动化领域，例如在东北、河南等大平原地区的机械化作业场景，这类方案存在机会。但整个国内农机市场，包括 各类播种机、收割机在内，总规模大约在百万台级别，虽然单品溢价可能较高，但市场体量有限。</p>
+<h3><b>从车企订单的角度看，2026年及未来新能源车市场的景气度如何？</b></h3>
+<p>市场前景需要从两个层面来看。从宏观趋势看，市场是乐观的。新能源车替代传统燃油车是大势所趋，未来市场占比必将持续提高。同时，随着第一批新能源车和老旧燃油车的车龄增长，车辆的更新换代也会进一步推动市场需求。然而，从微观个体层面来看，情况则不那么 乐观。车企在市场竞争中会采取压价、打折促销等手段，而这些成本压力最终会传导至供应链。车企会通过压低采购价格和延长应收账款账期两种方式，将压力转移给供应商。因此，对于供应链企业而言，虽然业务规模有望实现肉眼可见的大幅增长，但可能面临“增量不增 收”的局面，即营收上升的同时，利润会变薄，应收账款周期也会拉长。</p>
+<h3><b>移远通信目前在国内与海外的收入占比情况如何，以及海外市场的战略地位和潜在风险是什么？</b></h3>
+<p>2025年，海外收入占比已经超过50%，预计2026年这一规模会进一步提升。海外客户的特点是准入门槛高，项目周期长。海外客户会对供应商进行全方位评估，包括员工福利与薪资待遇、企业认证、产品认证、服务能力、过往案例乃至企业的存续年限等。然而， 一旦成功进入其供应链体系，价格通常会保持长时间稳定，后续合作也较为顺畅。因此，海外市场是移远通信非常看重且会长期投入的市场。关于美国制裁的潜在影响，这需要观察未来的政策变化。长期来看，如果制裁发生，可能会产生一定影响。但移远通信已有应对准备 ，移远前海外业务SVP在美国成立了一家方案公司或物联网公司。若海外业务因不可抗力因素大幅收缩，这家美国公司将能全面承接相关业务，因此不必过分悲观。</p>
+<h3><b>移远通信与英伟达的合作是否需要获得授权？</b></h3>
+<p>是的，与英伟达的合作已经购买了相关授权。如果不购买授权，对方不会允许进行产品开发。这在行业内是通行的规则，包括华为等公司现在也采用类似的模式。计费模式有多种，一种是买断模式，然后基于此开发模组并进行模组授权；另一种是嵌入式方案，按整机价值的 一定比例收取费用。</p>
+<h3><b>存储价格向消费电子下游传导，是否会因需求下降而对移远通信业务产生影响？</b></h3>
+<p>消费电子整体景气度确实会产生影响，但预计影响不大。由终端价格上涨带来的影响，可能会改变商业模式而非简单地减少采购。例如，若新款手机价格上涨1,000元，对于单独购买的消费者而言成本确实增加了。但如果厂商配合运营商推出套餐合约机或其他市场组合 营销方案，价格上涨对消费者决策的影响就会小很多。因此，最终的影响是不确定的。</p>
+<h3><b>除了财务数据，移远通信的核心竞争力和内部运营有哪些值得关注的方面？</b></h3>
+<p>移远是一家有深厚技术沉淀和能力的公司。移远通信从初创时的七人团队发展至今，成为全球市场份额第一，这本身就验证了其技术和市场能力。移远通信的领导层，包括钱总及其他高管，大多是技术出身，对产品和市场有深刻的理解和执着，这使得移远通信比一些销售出 身领导的企业更具韧性。此外，近期高管郑雷的离职对移远通信影响不大。他主要负责金融及推动移远通信上市相关事务，不直接参与移远通信的产品和市场经营，因此他的离开对移远通信的市场和产品层面没有造成任何影响。</p>
+</div>
+</main>
+</body></html>

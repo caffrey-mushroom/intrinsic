@@ -1,0 +1,236 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.24 | 9K | ASIC | TPU Expert: Heterogeneous Inference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.24 | 9K | ASIC | TPU Expert: Heterogeneous Inference</h1>
+<p class="orig">原标题：谷歌TPU离职专家|随着 NVIDIA 将 GPU 预填充与 Groq 解码相结合，异构推理正在加速；CUDA 仍覆盖约 90% 或更少的模型训练并支持三天以内部署；OpenAI 的 Jalapeño 据称将 tape-out 缩短至九个月且每瓦性能比 Blackwell 高 50%；AI 驱动的设计周期可能降至四到五个月，随后代工产能成为关键制约</p>
+<p class="tags">#asic #llm</p>
+<p class="meta">Meritco 久谦 · 2026-09-24</p>
+<div class="body">
+<h2>摘要</h2>
+<p>推理正朝向异构 GPU 与 ASIC 系统发展，吞吐量主导大多数工作负载，低延迟则保留给编码和实时代理，快速推理五年内可能达到 500 亿美元，CUDA 在软件与部署上仍有显著优势，而 OpenAI 的 Jalapeño 显示出更快的定制硅竞争，Cerebras 具有三到四年的全晶圆级护城河但面临软件、模型架构与独立性风险，随着 AI 将芯片设计压缩到四到五个月，制造产能预计将成为主要瓶颈</p>
+<h2>要点</h2>
+<ol><li>推理正在向异构架构转变，该架构将用于 prefill 的通用 GPU 与用于 decode 的专用 ASIC 或 LPU 结合，这一趋势由 NVIDIA 与 Groq 的 acquihire 以及 AWS 的类似方向所体现</li></ol>
+<ol><li>CUDA 仍支持大约 90% 或更少的模型训练，并能在两到三天内或有时不到一天完成模型部署，而非 CUDA 部署可能至少需要四周并涉及大约五名工程师</li></ol>
+<ol><li>据称 OpenAI 将 Jalapeño 的规格到 tape-out 周期从传统的 18 个月缩短到约 9 个月，该芯片被认为每瓦性能比 Blackwell 高 50%，这表明前沿模型公司定制硅的竞争在加剧</li></ol>
+<ol><li>Cerebras 的晶圆级架构通过在整片晶圆上保持互联芯片，可能提供三到四年的防护期，但有限的软件覆盖、较慢的部署、客户集中度以及在 MoE 下每 token 的扁平化字节流都构成长期风险</li></ol>
+<ol><li>AI 辅助的 RTL 编码与验证可能将规格到 tape-out 的时间从 12–18 个月压缩到四到五个月，从而将主要瓶颈转向代工产能，并可能利好 TSMC 的替代者如 Samsung 和 Intel</li></ol>
+<h2>Q:您能分享一下对 GPU 和 ASIC 技术路线图与架构的看法吗？不同 GPU 与 ASIC 各有什么优缺点？</h2>
+<p>A:GPU 通常支持更广泛的工作负载，而不是针对某一种特定工作负载。ASIC 更具定制性、灵活性较差，但在相同成本下能提供更高的性能。它们主要为有针对性的特定工作负载设计。因此权衡在于硬件能支持的工作负载广度与在相同成本或功耗下的执行性能。</p>
+<h2>Q:不同的 ASIC 会不会越来越多地承担不同任务或更适合不同的工作负载？例如，Google 有用于推理和训练的 TPU，Groq 有可能用于解码的 LPU，Cerebras 有可能适合快速推理和解码的晶圆级系统。按工作负载的专业化是否将成为趋势？</h2>
+<p>A:这正是趋势。行业正朝着异构推理方向发展。NVIDIA、Groq、Cerebras 以及与云供应商如 AWS 合作的公司都说明了这一方向。</p>
+<p>例如，NVIDIA 已经有能够以非常高速度执行某些任务的 GPU。当用户提出问题时，第一阶段是将所有数据收集到内存中，这一点 GPU 能非常快地完成。然而，GPU 在某些其他任务上的表现不如用于解码的 LPU。将两者结合可以兼得优势。NVIDIA 已通过其对 Groq 的 acquihire 向这一方向迈进，包括雇佣了 Groq 的联合创始人兼总裁。AWS 也做了类似的事。更多公司可能会跟进，因为这涉及通用性与专业化之间的权衡。OpenAI 可能会是下一个，使用 Jalapeño，尽管我不确定。目前这主要涉及推理，但硅谷的人都预计这一趋势会持续。</p>
+<h2>Q:应该如何比较不同的 GPU 或 ASIC？有没有可以用来比较不同 ASIC 的通用基准、指标或规格？</h2>
+<p>A:针对同样的用户体验，一个指标是系统在相对功耗下每秒能产生多少 token，比如每秒 token 数除以瓦特数。吞吐量和总体拥有成本（TCO）也很重要，包括每个词或每个 token 的运行平台成本。TCO 是一个重要指标，因为电力大约可以占运营成本的 50%。一个系统可能拥有非常高的绝对性能，但每瓦性能和 TCO 更为关键。因此，每秒 token 数每瓦是当前判断哪个平台更好时使用的主要标准之一。</p>
+<p>比较还必须基于相同类型的用户体验。有些用户提交请求的速度很快，而普通不构建应用的用户可能并不那么在意速度。另一个判断标准是部署时间。Cerebras 可能有大型晶圆级系统，但客户要考虑能否快速在其上部署新模型。因此，部署时间也是一个基准。</p>
+<h2>Q:不同工作负载需要不同的特性和指标。在哪些场景下速度和每个用户的每秒 token 数最重要？什么时候吞吐量最重要，什么时候部署时间最重要？</h2>
+<p>A:对于类似 ChatGPT 的聊天机器人，首个 token 时间和延迟很重要。这也是 Groq 或 Cerebras 所针对的细分市场有意义的原因。如果客户有大量文档需要处理，延迟可能不那么重要，而每个 token 的成本变得重要，因为大量数据的处理与单个用户的感知延迟无关。部署时间在初创企业或企业采用诸如 Cerebras 或 Groq 这样的新提供商并需要判断其模型能否在新平台上运行时就变得重要。</p>
+<p>对于视频生成等应用，峰值每秒 token 数很重要。如果把 token 数随时间绘制，LLM 在生成视频时曲线会出现峰值。该峰值对实时视频以及可能的语音应用很关键。对于训练，主要考虑的是与 FLOPS 相关的指标。</p>
+<h2>Q:哪些指标对 AI 编码重要？另外，为什么同一家 AI 编码公司，如 Cognition，会从多个供应商购买云服务？</h2>
+<p>A:对 AI 编码来说，延迟是主要指标之一，因为用户在编写代码时需要快速响应，这是交互式延迟。大容量内存和上下文窗口也很重要，因为用户在编码过程中会来回切换。上下文容量——无论是 200,000 还是一百万 token——因此很关键。模型推理能力的质量也是编码场景中的另一个重要基准。</p>
+<h2>Q:当您说人们可能不知道自己想要编码什么时，您是什么意思？</h2>
+<p>A:以芯片设计师为例。他们会先让 LLM 写一段代码。LLM 可能返回多个备选或询问是否想用不同方式来完成任务。用户将 AI 生成的代码带入设计系统试验，例如在编写 Verilog 或 SystemVerilog 时。如果出现错误，用户会返回模型，复制粘贴输出，检查模型生成的内容，然后重复这一过程。由于这种持续的反复和用户工具与 AI 聊天机器人之间的复制粘贴，产生的上下文会很大。这就是为什么编码需要大内存或大上下文窗口的原因。</p>
+<h2>Q:在 AI 编码的场景中，延迟也重要吗？</h2>
+<p>A:是的。低延迟对该用例很重要。</p>
+<h2>Q:快速推理的当前和未来市场潜力如何？快速推理可能占总体推理市场的多少比例？</h2>
+<p>A:很难给出精确数字，但根据增长情况，它可能成为一个可观的市场——也许在五年内达到 500 亿美元。这也取决于整个市场规模。我能说的是它增长非常快，尤其是由于 AI 编码和实时代理的部署。Meta 推出其 Muse 代理表明对实时代理有相当大的需求；据报道其下载量在一周内超过了 OpenAI 当时的表现。</p>
+<h2>Q:Cerebras 和 Groq 宣称每个用户每秒超过 2,000 token 的速度，而 AI 编码可能每个用户每秒 300 到 500 token 就足够了。总体推理市场中实际上有多少份额需要超过 1,000 每秒 token 的超快推理？用户通常需要多大速度？</h2>
+<p>A:尽管他们宣称约 2,000 token/秒，但实际的通用性能目前可能更接近 400 或 500 token/秒。即便如此，这也可能远超用户所需，因为超出某个点后用户感受不到差别。非常高的速度主要在代理运行循环时变得重要。在企业生产规模上，当员工使用 AI 进行编码或整夜运行具有 agent 特性的 AI 解决方案并期望在早上完成任务时，2,000 token/秒就会很重要。</p>
+<p>对大多数推理市场而言，目前吞吐量比速度更重要。例外是实时代理，例如语音代理，此类场景要求响应快速。</p>
+<h2>Q:吞吐量与每个用户每秒 token 数之间的关键区别是什么？</h2>
+<p>A:吞吐量是系统在单位时间内产生的总 token 数。用户提交请求，系统在后端执行计算。每个用户每秒 token 数描述单个请求的结果被交付的速度，而吞吐量描述系统的整体容量以及它能为所有用户产生多少 token。用户会直接感知前者，但可能感知不到后者。并发请求和批处理会在两者之间产生权衡。</p>
+<h2>Q:Cerebras 的未来潜力和增长前景如何？它能否成为一家更大且更具商业成功的公司？</h2>
+<p>A:Cerebras 面临来自 NVIDIA 与 Groq 相关举动的竞争，但在投资者社区的普遍看法是它会表现良好。它的方案不易被复制。Cerebras 使用整片晶圆而不是将其切割为独立的芯片，并且这些芯片在晶圆上保持互联。我认为这是芯片物理设计方面最具创新性的进展之一。这为公司提供了至少三到四年的护城河或防御能力。</p>
+<p>Cerebras 仍需获取更多客户并证明其模型是高效的。根据华尔街和湾区人士的说法，前景不错，我相信它与 OpenAI 有某种形式的合作协议。然而，OpenAI 本身也在开发 Jalapeño。OpenAI 是否会继续与 Cerebras 合作，或是像 NVIDIA 在 Groq 相关举动中那样采取类似做法，还有待观察。这就构成了潜在的空头情景。</p>
+<h2>Q:鉴于 Cerebras 与 OpenAI 的大规模合作以及 OpenAI 发布了 Jalapeño，Cerebras 的晶圆级系统与 OpenAI 的 ASIC 之间会是怎样的关系？它们会竞争，还是有合作空间？</h2>
+<p>A:这取决于时间尺度。短期内，OpenAI 仍高度依赖外部的推理算力，而这正是它从 Cerebras 获得的，所以我不认为短期内会有问题。从长期来看，会出现竞争，尽管 OpenAI 可能仍会与 Cerebras 合作。Cerebras 可能在某个时候受到冲击。</p>
+<p>OpenAI 可能非常有创新力，且可能更快地自研芯片。然而，Cerebras 的晶圆级方案本身具有护城河。OpenAI 未必能独立复制 Cerebras 在晶圆端所实现的东西，所以最终结果仍不确定。</p>
+<h2>Q:从软件生态的角度看，Cerebras 与 CUDA 比较如何？Google 的 TPU 和 AWS 的方案又与 CUDA 相比如何？</h2>
+<p>A:总体上 CUDA 是最好的，因为它存在大约 10 到 20 年——也许约 15 年——许多客户经历了多次迭代使用它。我不能评论 TPU，但可以谈 AWS。在模型覆盖范围方面，AWS 排在 Cerebras 之上。Cerebras 适合相对简单的模型，且其支持的模型易于使用，但覆盖有限，熟悉其软件栈的人相对较少。我的排序是 CUDA 第一、AWS 第二、Cerebras 居后。</p>
+<p>CUDA 接近即插即用，使用户能够非常快速地运行所需内容。这也是 AMD 无法赶上 NVIDIA 的原因。问题不仅在于芯片，还在于 NVIDIA 的软件解决方案。AMD 的芯片在功耗、布局等硬件方面有时可能更好，但仍无法赶上，原因在于 CUDA。NVIDIA 的软件护城河会继续存在，因为它拥有大量人才并在该领域投入巨大。其他公司也通过收购来构建可比的软件栈。Cerebras 在这方面还有相当多的工作要做。</p>
+<h2>Q:从终端用户或开发者角度来看，CUDA 与其他软件栈在实际使用上的区别是什么？例如，CUDA 能否在第零天就支持新模型，而其他平台需要一周或一个月？</h2>
+<p>A:对于 CUDA，部署可能需要两三天，有时不到一天。对于 AWS Neuron 或 Cerebras，从用户角度看可能需要数天到数周。用户随后可能需要调试问题并与 IT 团队来回沟通。如果 CUDA 出现错误，可能已有解决方案，因为有人之前遇到过该问题。在 Cerebras 上，用户可能是第一次遇到该特定问题，可能会陷入困境。</p>
+<p>招聘也是一个差别。公司可以雇佣已经懂得 CUDA 的工程师，但很难雇到懂得 Amazon 或 Cerebras 软件解决方案的人。许多问题在 CUDA 上已经被解决，因此常见任务可能有现成的操作手册。所有这些因素对用户都很重要。</p>
+<h2>Q:是否所有前沿模型都在 CUDA 生态下训练或在 CUDA 软件栈下训练？</h2>
+<p>A:大约 90% 的模型使用 CUDA 进行训练。这个比例之前可能是 95% 左右，但现在约为 90% 或更低，因为 OpenAI 也与 AMD 合作且推理工作增长。CUDA 曾是首选平台并仍占多数，但其他公司开始赶上，因为客户越来越关注每瓦性能。</p>
+<p>企业正在意识到并不一定需要为每个模型采用一种通用方案。例如据报道 MetaX 的估值约为 100 亿美元，并声称正在开发最好的推理芯片。我认为它可能变得与 Groq 一样大甚至更大。该公司由前 Google 人员发起，包括 Google TPU 的主要架构师，并带来了其他 Google 员工。该公司在做大量定制工作，并以吞吐量为目标，试图打造其所宣称的最佳推理芯片。</p>
+<h2>Q:对于非 CUDA 平台要支持在 CUDA 生态中训练出的新前沿模型，AMD、Google、AWS 或其他 ASIC 需要多少时间和多少工程师？</h2>
+<p>A:我最初理解该问题是指训练与迭代。这些实验室可能每周或每两周迭代一次。在 AMD 和其他非 CUDA 平台上，该过程可能需要约两个月，而 CUDA 可能会快得多。</p>
+<h2>Q:澄清一下，我不是在问训练。部署一个新模型需要多少时间和多少工程师？CUDA 可能在一天内部署，但在 AWS Trainium、Google TPU 或 Cerebras 上需要什么？</h2>
+<p>A:可能需要四到五周，主要用于处理内核、获得模型支持所需的审批并进行微调。我估计至少大约四周，团队规模约为最多五名工程师。团队可能包括两到三名高级工程师和两名初级工程师，并具备内核和编译器方面的专长。</p>
+<h2>Q:不同平台之间的部署时间会有差别吗？例如 AMD 可能需要一周而 Cerebras 需要四周？</h2>
+<p>A:时间大致相似，尽管 AMD 可能最快。AMD 与 Cerebras 相对接近，因为在某些方面它们与 CUDA 接近，但 Cerebras 首先必须支持该模型。一旦模型被支持，部署可能需要两到四周或许四到六周，实际最低大约为四周，因为模型必须通过平台的支持流程。根据我听到的情况，AWS 需要更久。我无法对 Google TPU 发表评论。我的粗略排序是 AMD 最快，Cerebras 次之，AWS Trainium 最慢。</p>
+<h2>Q:NVIDIA 对 Groq 的 acquihire 可能产生何种影响？对 GPU 与 ASIC 市场的竞争格局意味着什么？</h2>
+<p>A:这是一次非常好的收购，会影响许多公司。NVIDIA 已经解决了其延迟问题。它本来就拥有用于预填充（prefill）表现最好的 GPU 解决方案之一，现在又可以将其与在解码（decode）方面最好的解决方案之一相结合。这造就了一个非常强大的产品。NVIDIA 还具备定价权，因此一个试图提供相同组合的新竞争者将很难在价格上竞争。NVIDIA 的部署速度也很快。</p>
+<p>这笔交易也验证了将 GPU 与 ASIC 结合的理念。其他公司会受到 NVIDIA 已经这么做的激励，而 AWS 似乎也在尝试类似与 Cerebras 的组合。从这个意义上讲，它支持这一整体概念，因为目前很少有公司提供这种组合。这仍可能伤害较小的参与者，但只要整体 AI 市场持续增长，就能惠及所有人。如果市场受限且不增长，较小的玩家将受到更大伤害。</p>
+<h2>Q:OpenAI 的 Jalapeño 将对当前的竞争格局产生什么影响？</h2>
+<p>A:该芯片的设计团队能力很强，有些成员来自 Google。他们使用自己的 AI 在大约正常时间的一半内完成了芯片设计。传统从规格到流片的周期大约为 18 个月，而据报道 OpenAI 大约在 9 个月内完成了这一过程。这意味着如果发现问题，OpenAI 能够快速重新设计芯片。</p>
+<p>我相信 OpenAI 将该芯片与 Blackwell 进行了比较，发现其每瓦性能提升了 50%。功耗与成本相关，大约有 50% 的 TCO 来自于电力。因此这是一个重要信号，表明前沿模型公司最终可能会自行制造硅片。他们拥有能加速芯片设计周期的具有代理能力的 AI 工具，类似于 Recursive Intelligence 正在尝试的方向。我预计 OpenAI 会给 NVIDIA，以及可能的像 Amazon 这样的公司带来强劲竞争。</p>
+<h2>Q:Anthropic 也在开发自有 ASIC 吗？</h2>
+<p>A:是的。Anthropic 最近聘请了 Amir Salek 担任硬件负责人。他曾在 Google 工作，是 TPU 项目中的主要参与者之一，尽管不是唯一的创造者。他现在正在组建团队。Anthropic 目前租赁计算能力，并未披露 ASIC 项目，但聘请曾经建立过此类项目的人强烈暗示它将自研芯片。</p>
+<h2>Q:博通（Broadcom）曾讨论过一笔非常大的 Anthropic 合约以及大约 5 吉瓦的需求。该需求与 Anthropic 自己的 ASIC 有关，还是与 Google 的 TPU 有关，鉴于 Anthropic 可能会使用 Google TPU？</h2>
+<p>A:我无法对 Google TPU 发表评论。我只能说 5 吉瓦是一个数据中心级别的数字，规模非常大。</p>
+<h2>Q:Cerebras 的关键竞争优势有哪些，包括专利、知识产权、专有技术、编译器技术和客户关系？</h2>
+<p>A:关键优势是 Cerebras 的晶圆级制造方法所形成的护城河。通常，代工厂例如 TSMC 会制造整片晶圆并将其切割成若干芯片核（dies）。这些芯片核随后作为 chiplets 在封装或电路板上组装。单一芯片核内部的通信延迟很低，因为所有连接都通过金属层完成。独立的 chiplet 必须通过互连来通信，例如铜互连或越来越多采用的光互连。Cerebras 研发了一种方法，将所有东西保留在单片晶圆上，并使用晶圆本身作为互连方式，这就是其主要护城河。</p>
+<p>这种架构使 Cerebras 能够映射非常大的模型并在大规模上部署。其商业协议表明该技术不仅仅是学术项目；它在工业层面可行、可扩展并且可以制造。专利不一定是其主要优势。其优势在于先入场并在其他人之前实现这一方法。</p>
+<h2>Q:哪些类型的 AI 模型架构变化可能会正面或负面影响 Cerebras 及其基于 SRAM 的晶圆级系统？</h2>
+<p>A:向大模型和大上下文窗口的趋势对 Cerebras 有利。如果未来内存变得不那么重要，例如行业更多依赖模型蒸馏（distillation），那将构成风险。如果行业转向更低的内存需求，Cerebras 的重要性可能会下降。目前还没有发生这种情况，但这是我看到的主要风险。</p>
+<h2>Q:为什么在总体趋势看来模型参数可能增长到万亿、三万亿、五万亿甚至十万亿参数时，内存会变得不那么重要？更大的模型不是需要更多内存吗？请详细说明模型规模趋势和蒸馏的情况。</h2>
+<p>A:表面上的参数量在增长，但对 Cerebras 更重要的是每个 token 所需流动的字节数（bytes streamed per token）。趋势显示每个 token 的字节数增长速度并不及总参数量快。这个度量比 token 数或单纯的模型大小更重要。因此模型可以变得更大，但每个 token 实际流动的数据量并不会按同样速率上升。那条曲线最终可能会趋于平缓。</p>
+<h2>Q:这种趋于平缓是否由专家混合（mixture-of-experts，MoE）架构促成，在该架构中模型变大但在一次推理中只激活少量专家？</h2>
+<p>A:是的。MoE 有助于保持容量或成本曲线相对平缓，因为并非模型的所有部分都会同时被激活。模型可以变得更大，而成本大致保持不变。这正是我在提到蒸馏时想表达的观点。</p>
+<h2>Q:在什么情况下 Cerebras 可能仅成为更广泛异构计算系统中的一个组件，而不是作为独立平台获取显著价值？考虑到其与 AWS Bedrock 的合作，它会成为 AWS 推理硬件的一个组成部分，还是仍将保持具有竞争力的独立推理平台？</h2>
+<p>A:Cerebras 最终可能成为更大生态系统中的一个较小组件，类似于 Groq 曾经的情况。Cerebras 目前是一家规模较大的公司，但它也有可能成为更广泛平台中的一个组成部分。此前讨论的模型架构趋势可能是导致这种情况的风险之一。</p>
+<p>与 AWS 的关系为 Cerebras 带来一定提升，但仍需观察其他超大云厂商是否采用其技术。它的护城河在于晶圆技术，但仅凭此难以保证长期独立，除非它实现多元化。仅凭当前业务，成为更大生态系统的一部分是有可能的。</p>
+<h2>Q:Cerebras 除了与 AWS 合作外，也披露了与 AMD 的合作。未来它会与更多 GPU 或 ASIC 厂商合作吗？</h2>
+<p>A:会的。除了最大厂商以外的公司都可能从与 Cerebras 合作中受益。Intel 有潜力受益，甚至在某些情况下 NVIDIA 也可能受益。Cerebras 也需要此类关系才能从现有规模继续增长。我相信它正在努力建立尽可能多的合作伙伴关系。</p>
+<h2>Q:在 AI 加速器芯片设计和内核开发中，定制 ASIC 客户能多快地迭代和演进他们的解决方案？据称 OpenAI 将设计到流片周期缩短到大约 9 个月。未来硬件迭代周期可能缩短到多短？</h2>
+<p>A:OpenAI 已经将周期缩短到大约 9 个月，不包括 bring-up（芯片调试与上线）。如果 bring-up 需要再加 5 到 6 个月，那么完整周期大约为 1.5 年。我预测设计周期最终会低于 5 个月，因为 AI 将使其极其快速。像由前 Google 和 DeepMind 人员创立的 Recursive Intelligence 等公司正致力于此领域。我有信心周期会降到 6 个月以下，因为 RTL 和 Verilog 编码已经部分实现自动化。具有代理能力的 AI 工具可以快速编写代码。</p>
+<p>以往需要大量人员完成的验证工作也正由 AI 代理执行。一个芯片项目过去可能仅设计验证就需要大约 20 个人，但现在可能需要的人远少且速度更快。因此瓶颈将转向制造端：TSMC、Samsung 或 Intel 是否能在短时间内完成所有请求的流片。从规范到流片的周期可能从 12 或 18 个月降到 4 或 5 个月，但代工厂不可能同时为所有芯片完成流片。制造产能将成为重要制约因素。NVIDIA 的黄仁勋在三年前就与 TSMC 建立了牢固关系，因为他意识到这一瓶颈将至。</p>
+<h2>Q:如果 TSMC 成为瓶颈，谁将从中受益？Samsung 和 Intel 会受益吗？</h2>
+<p>A:会的。这也是美国大量投资 Intel 的一个原因。原因有多重，包括为了在地缘政治上减少对台湾的依赖，但主要因素是预期的需求。即便在类人机器人成为主要市场之前，许多超大云厂商也将需要芯片。</p>
+<p>芯片行业可能会经历两轮浪潮。第一轮将由聊天机器人和具有代理能力的AI驱动，随后可能出现一到两年较为缓慢的时期。之后由于类人机器人的出现，需求可能会急剧上升。历史上对机器人的限制并非其机械能力，而是它们是否能执行像人类那样的任务。随着AI能力 不断增强，可能会部署数以百万计的机器人，这些机器人都需要芯片。英特尔和三星可能会大幅受益。我对特斯拉在机器人领域也持乐观态度，因为其已经拥有大量关于汽车如何在道路上行驶的FSD数据，这些数据有可能被应用到Optimus机器人上。</p>
+<h2>Q:Google 的 CXL 方案进展如何？是否已确定由 Marvell 还是 Astera Labs 的方案来做控制器和交换芯片？具体的架构是什么？</h2>
+<p>A:我不能在此次通话中讨论 Google。</p>
+<p>以上仅供交流探讨，不构成投资建议</p>
+</div>
+</main>
+</body></html>
