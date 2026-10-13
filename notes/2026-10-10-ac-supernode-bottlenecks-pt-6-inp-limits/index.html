@@ -1,0 +1,183 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.10 | AC | Optical | Supernode Bottlenecks Pt.6: InP Limits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.10 | AC | Optical | Supernode Bottlenecks Pt.6: InP Limits</h1>
+<p class="orig">原标题：超节点还能再堆一代吗｜篇六：互联的上限是磷化铟，不是光模块产能</p>
+<p class="tags">#optical #networking</p>
+<p class="meta">AceCamp · 2026-10-10 09:57 · article 70567515</p>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>224G代际无源铜能走多远，超节点何时跨柜用光；</li><li>光模块出货受产能还是磷化铟配额约束，何时缓解；</li><li>CPO减少激光器颗数后，稀缺转向何处；</li><li>超节点化率如何改变光模块需求；</li><li>哪些读数预示配额松动，利润落在哪些环节。</li></ol>
+<p class="qq">互联同时受物理与配额限制。224G代际的插损预算把无源铜锁在约1到1.5米，跨出机柜后，光的供给卡在磷化铟，高阶激光器订单比上游产出多约三成。CPO减少了激光器颗数，稀缺由芯片工艺转向衬底面积；需求侧的变量是超节点化率。</p>
+<p><b>英伟达宁可在一个机柜里塞进约5000根铜缆，也要把光留在机柜外面。</b>黄仁勋给出的理由是功耗：柜内若改用光互联，光电转换要多耗约20千瓦。这条铜与光的分界线，正随着超节点的规模一起向外移动。</p>
+<h2>一、铜只能走1到1.5米，超节点一跨柜就要用光</h2>
+<p><b>224G代际的插损预算，把无源铜缆压到了约1到1.5米。</b>GB200 NVL72柜内的NVLink背板由约5000根铜缆组成、总长约两英里，这是无源铜在机柜尺度上的极限用法。按IEEE 802.3dj与OIF的224G规范，单通道波特率约112G，奈奎斯特频率约56吉赫，封装到封装之间的插损上限约40分贝；封装走线、过孔、板材与连接器分走固定份额之后，留给无源铜缆的可用长度较112G代际缩短四到五成，约为1到1.5米。为了在这个预算内闭合链路，芯片端要引入最大似然序列检测等复杂均衡与内层前向纠错，代价是功耗与数十纳秒量级的延迟。</p>
+<p><b>有源铜缆延长了铜的寿命，但没有改变距离的约束。</b>带retimer芯片的有源电缆（AEC）把铜的可达距离延伸到数米，1.6T代际在机柜之间的短连接上与光模块竞争；代价是每条链路多出芯片功耗与成本，延伸的只是距离，插损的物理规律不变。到448G代际，若沿用四电平调制，奈奎斯特频率将升到约112吉赫，笔者预计无源铜会进一步退回到板级与机柜背板之内。按每代可达距离缩短四到五成粗略推算，448G代际的无源铜可达距离约为0.5到1米，恰好对应单个机柜内部的尺寸。</p>
+<p><b>超节点跨出单个机柜的那一刻，铜就开始让位。</b>英伟达网络业务负责人Gilad Shainer在4月接受HPCwire采访时表示，能用铜的地方都会用铜，限制在距离；Kyber机柜的Scale-up同时使用铜与CPO，Feynman一代的NVL1152超出了铜缆可达的尺寸，Scale-up转向CPO。按英伟达开发者博客的当前表述，Rubin Ultra的NVL576由八个机柜组成、共用一个NVLink域，Scale-up网络第一次大规模跨柜。这使得光进入Scale-up的时间点，由超节点跨出单柜的时间点决定。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567515_0a01af54e473b849.webp" alt="" loading="lazy"></p>
+<h2>二、光模块的出货量由磷化铟激光器的配额决定</h2>
+<p><b>高阶光模块的出货量，由光芯片配额决定。</b>1.6T真正的瓶颈在200G电吸收调制激光器与磷化铟产出，订单已比上游产出多约三成，客户认证决定的是准入资格，分到多少由配额决定。英伟达在2026年3月分别向Coherent与Lumentum投资20亿美元，附带采购承诺与产能优先权，头部买方已用股权锁定配额。配额的分配有明确的先后：Coherent与Lumentum优先供应北美头部客户，二线激光器厂商的出口集中在两家龙头供给不足的部分，这使得模块厂能拿到的激光器数量，取决于其客户结构与长协位置。</p>
+<p><b>衬底一端的集中度，决定了配额掌握在谁手里。</b>据调研，磷化铟衬底由住友电工与AXT两家合计供应近八成，中国自2025年2月起对铟相关物项实施出口管制，AXT中国工厂的出口需要逐单取得许可。衬底、外延、芯片三道工序都集中在少数厂商手中，下游模块厂的产能再大，能拿到多少合格激光器，取决于在这几家分配表上的位置。</p>
+<p><b>扩产在推进，但短缺的终点被一再后推。</b>Coherent在8月的财报电话会上表示，其内部磷化铟产出在财季末同比翻倍，2027年底前还将再翻一倍以上，6英寸产线的器件产出为3英寸的四倍以上、单颗成本不到一半，同时近期不外销磷化铟激光器、长协延续至本十年末。LightCounting的口径则在变化：4月预计短缺在2026年底前后缓解，7月把2026年增速上调到73%，并称磷化铟激光器的短缺可能延续到2027年年中，重复下单在全行业蔓延。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567515_aa094280cfe15d19.webp" alt="" loading="lazy"></p>
+<p><b>配额的松紧按档位分化，低功率一档先松。</b>笔者判断，率先释放的产能落在70毫瓦与100毫瓦连续光（CW）和100G电吸收调制激光器，这一档在2027年转向结构性宽松，预计在下半年；200G一档仍由良率与外延产能约束。国产厂商在100G电吸收调制激光器与70毫瓦、100毫瓦连续光上已批量供货，200G一档仍在导入，这决定了国产替代首先缓解的是低档位的缺口。据笔者了解，涨价集中在现货端，长协与大客户价年初以来基本平稳，缺货的价格弹性落在按现货采购的买方身上。这意味着1.6T的配额约束持续时间长于800G，而长协客户与现货客户在同一轮缺货里的成本差异明显。</p>
+<h2>三、CPO省下的是功耗，稀缺转向磷化铟衬底</h2>
+<p><b>CPO把功耗降下来，也改变了激光器的形态。</b>英伟达称其硅光CPO交换机的能效为可插拔方案的3.5倍，所需激光器减少至四分之一，电信号损耗由约22分贝降到约4分贝；InfiniBand版本已在2026年上半年商用，以太网版本在下半年进入量产。据公开报道，其供应链包括台积电、富士康、Lumentum、矽品与天孚通信，首批客户为CoreWeave、Lambda与甲骨文。CPO把调制移到硅光芯片上，激光器变成外置的连续光光源。外置光源的设计也是为运维考虑：激光器是光链路中寿命偏短的部件，放在可插拔的外置模块里，故障时可以单独更换，避免因一颗激光器失效而更换整台交换机。</p>
+<p><b>连续光降低了芯片工艺门槛，衬底面积的消耗未必同步下降。</b>连续光把调制移出激光器芯片，芯片工艺门槛随之下降，依靠自供光芯片形成的稀缺性会被削平。但CPO所需的是大功率连续光，单颗面积明显大于电吸收调制激光器，减少的是激光器颗数，磷化铟衬底的面积消耗未必同步下降。笔者判断，CPO普及之后，稀缺会从芯片工艺转向衬底与外延产能，这一环节的扩产周期以年计。</p>
+<p><b>也有绕开磷化铟的路线，但只覆盖短距。</b>笔者在9月22日报告中梳理，硅光路线的NPO与CPO，光子来自磷化铟连续光激光器；而VCSEL路线的NPO方案以砷化镓为衬底，不占用磷化铟产能，适用于多模短距。这使得机柜之间的短距链路有一条分流路径，长一些的链路仍要回到磷化铟。CPO的普及还受复合良率、热设计与现场运维三方面的工程约束，笔者预计2027年之前Scale-out网络仍以可插拔光模块为主力，CPO先在交换机侧放量。CPO的光引擎由交换芯片厂主导设计，光模块厂的角色随之向光引擎制造与外置光源模块转移，插座由谁定义，决定了模块厂在新架构里的位置。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567515_af317f3396eae042.webp" alt="" loading="lazy"></p>
+<h2>四、光模块需求看超节点化率，卡数与配比都在让位</h2>
+<p><b>光模块需求要按超节点化率重新推算。</b>光模块需求约等于卡数乘以超节点化率再乘以每卡配比，其中卡数受产能封顶、每卡配比在下滑，超节点化率是唯一还在剧烈变动的量。以GB200 NVL72为例，柜内NVLink的聚合带宽约130TB/s（英伟达产品资料），全部由铜背板承担，这一部分带宽对光模块没有需求，光的需求集中在跨柜的Scale-up与Scale-out网络上。</p>
+<p><b>每卡配比下滑、需求却仍在增长，靠的是超节点化率的上升。</b>单个超节点越大，柜内被铜消化的流量越多，每颗芯片对应的光模块数量随之减少；但超节点的规模一旦跨出单柜，新增的跨柜链路又要用光来承接。两股力量相抵之后，光模块需求的增速取决于跨柜组网的比例上升得有多快，芯片出货量只是其中一个乘数。这也解释了为何芯片出货翻倍的年份，光模块需求未必同步翻倍。</p>
+<p><b>每卡配比下滑的同时，单个光口的价值在上升。</b>华为9月发布的昇腾960超节点采用NPO，公司称每个超节点用约5500个NPO光引擎单元替代约48000个800G可插拔模块，单个单元速率约7.2Tbps。光口的数量大幅减少，单个光口承载的带宽与价值同步上移，价值向高速率、低功耗与插座定义权集中。谷歌在Scale-out网络中引入光路交换，减少了电交换的层级，同时提高了对光模块链路预算的要求，光模块在这一架构下呈现数量下降、规格上移的特点。Scale-out网络也在收缩层级：交换芯片单片带宽由51.2T翻倍到102.4T之后，两层网络即可覆盖十万卡级集群，光模块的数量与速率结构随之重排。对光模块厂而言，能效成为继产能之后的第二个考核指标。</p>
+<p><b>国产链条上，超节点化率对光模块需求的拉动表现得明显直接。</b>国产芯片以规模弥补单卡性能，同样的算力需要连接的芯片数量多，跨柜组网的比例高，超节点化率每上升一档，对光互联的需求随之放大。国产超节点的规模正从数百卡向数千卡扩展，每扩展一级，就新增一层跨柜互联。这也是国产光模块需求与国产芯片出货量走势出现背离的原因：芯片出货受制于制程与存储产能，光模块需求则跟随组网形态变化。</p>
+<h2>五、投资含义：利润落在配额、能效与插座定义上</h2>
+<p><b>对“超节点还能再堆一代吗”这一问题，互联侧给出的答案是：柜内连得上，跨柜的规模由磷化铟决定。</b>NVL72与NVL144仍在铜的可达距离之内，这一层的扩展没有障碍；NVL576由八个机柜组成，Scale-up第一次大规模跨柜，跨柜链路要靠光，光的供给又卡在磷化铟配额上。笔者判断，下一代超节点能做多大、能部署多少，受磷化铟产出翻倍的进度约束，这也是Coherent与Lumentum的产能扩张需要按季度跟踪的原因。</p>
+<p><b>互联段的约束何时变化，看衬底产出、预测修正、跨柜介质、超节点化率与长协价格。</b>第一，Coherent与Lumentum每季度披露的磷化铟产出与6英寸良率，这是配额松紧的一手读数；第二，LightCounting等机构对短缺结束时点的修正方向，4月到7月已后推一次；第三，NVL576跨柜链路与Feynman Scale-up的介质定案，这决定光进入Scale-up的规模；第四，国产超节点的部署节奏与超节点化率；第五，800G与1.6T光模块长协价格的年度调整，以及Coherent与Lumentum对激光器长协价格的表述。任何一项出现反向变化，互联段的排序都需要重估。</p>
+<p><b>互联段的利润落在配额、能效与插座定义三个位置上。</b>中际旭创上半年营收417.78亿元、同比增长182.49%，归母净利润136.51亿元、增长241.70%，海外收入占比近95%，其弹性来自高速率份额与能效，单位比特功耗的差距在机柜功率受电力约束时，会直接转化为可装机算力的差距；新易盛上半年营收209.10亿元、增长100.34%，归母净利润75.29亿元、增长90.98%，逻辑相同。光芯片一侧，源杰科技的高毛利来自连续光的良率与规模，200G一档仍在爬坡；纳真科技港股招股书显示，其光芯片业务毛利率由2025年的−121%转为2026年上半年的40.7%，主要来自75毫瓦连续光激光器芯片在一季度的规模量产；但这块业务上半年收入约8500万元，仅占公司收入的1.6%，利润受益于缺货，2027年低功率一档宽松后先承压；长光华芯的100G电吸收调制激光器仍处在让利导入头部客户的阶段。天孚通信对应CPO与光引擎的无源器件，其相关业务的放量节奏与CPO交换机的出货同步，时间上先于可插拔模块的代际切换，光迅科技布局VCSEL路线的NPO方案。云南锗业的磷化铟衬底，价值取决于认证进度。铜的一侧，兆龙互连与沃尔核材的高速铜缆绑定机柜内铜背板需求，与国产超节点分属两套组网逻辑，边界随速率上移而收缩；448G代际可达距离进一步缩短，是铜缆厂商的中期风险，而有源铜缆在机柜之间的短连接上提供了一段缓冲。</p>
+<p><b>上行风险来自超节点跨柜提前放量。</b>若NVL576与国产超节点的跨柜规模扩张快于预期，光在纵向扩展中的用量会提前放大，磷化铟配额的紧张程度随之上升。</p>
+<p><b>下行风险来自重复下单的回吐。</b>LightCounting已提示重复下单在全行业蔓延，若磷化铟产出如期翻倍而终端部署放缓，重复订单回吐会让缺货溢价迅速收窄，二线厂商先受影响。</p>
+<p><b>技术路线风险来自短距方案的分流。</b>若线性驱动可插拔光模块与VCSEL路线在短距链路上的份额扩大，磷化铟激光器的需求增速会低于笔者的判断，配额紧张的持续时间随之缩短，光芯片厂商的溢价窗口提前关闭。</p>
+<p><b>以上内容不构成任何投资建议，请风险自担。</b></p>
+</div>
+</main>
+</body></html>

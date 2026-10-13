@@ -1,0 +1,305 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.08 | GP | Security | Lumos Agentic Identity Management vs IGA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.08 | GP | Security | Lumos Agentic Identity Management vs IGA</h1>
+<p class="orig">原标题：Lumos: Can This Agentic Identity Management Disrupt Legacy IGA?</p>
+<p class="tags">#security #agents</p>
+<p class="meta">GuidePoint · 2026-10-08</p>
+<div class="body">
+<p>Primary:</p>
+<p>Lumos App, Inc.</p>
+<p>Associated:</p>
+<p>SAIL</p>
+<p>Saviynt, Inc.</p>
+<p>OKTA</p>
+<p>MSFT</p>
+<p>CYBR</p>
+<p>Ping Identity Corporation</p>
+<p>One Identity LLC</p>
+<p>Viewpoint:</p>
+<p>Former Executive</p>
+<p>Moderator: Niraj Sheth (NS)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Oct 08, 2026</td><td>31 Min Read</td></tr></tbody></table></div>
+<p>Aman Garg (AG), Former Head of Solutions - Lumos</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>Lumos began as an enterprise application marketplace designed to automate employee software requests and provisioning. Its core adoption remains concentrated in self-service access and joiner, mover, and leaver workflows. These products accelerate application access, automate approvals, revoke access when employees depart, and reduce accumulated permissions after role changes.</p>
+<p>The company later expanded into SaaS license optimization and identity governance. SaaS management has been deprioritized because of limited differentiation and cheaper alternatives. Identity governance is now the strategic growth area, including role analysis, access reviews, lifecycle management, and automated identity agents. However, governance remains a minority add-on rather than the primary customer deployment.</p>
+<p>Key Insights</p>
+<p>The expert considers Lumos strongest in intuitive, low-friction IT workflows rather than comprehensive identity governance. Lumos faces a strategic choice between maintaining its IT automation leadership and competing more directly in governance. Automated role analysis could address a major industry problem because determining appropriate application permissions remains highly manual. The company’s identity-agent vision is compelling, but publicly available customer evidence does not yet demonstrate broad success. Non-human identity support and developer capabilities are both Lumos’ largest weaknesses and most important growth opportunities. Net-new deployments and complementary use alongside existing governance systems are more realistic than replacing established platforms. Expanding compliance requirements and AI-driven identities should increase demand, particularly for governing non-human accounts.</p>
+<p>Competitive Landscape</p>
+<p>10/12/2026 at 06:04 AM UTC</p>
+<p>Company</p>
+<p>Positioning</p>
+<p>Advantages</p>
+<p>Limitations</p>
+<p>Lumos</p>
+<p>Mid-market IT automation and emerging governance</p>
+<p>Strong interface, rapid deployment, self-service access, lifecycle workflows</p>
+<p>Weaker APIs, limited large- enterprise proof, immature non-human identity capabilities</p>
+<p>ConductorOne</p>
+<p>Modern, developer-oriented governance</p>
+<p>Strong APIs, extensibility, detailed entitlement visibility</p>
+<p>Less focused on simple plug- and-play IT workflows</p>
+<p>SailPoint and Saviynt</p>
+<p>Full-scale enterprise governance</p>
+<p>Broad functionality and flexibility</p>
+<p>Complex deployments requiring substantial staffing and consulting</p>
+<p>Okta</p>
+<p>Governance integrated with an established identity platform</p>
+<p>Fast value for existing customers, integrated workflows and familiar ecosystem</p>
+<p>Less comprehensive than dedicated governance suites and potentially expensive</p>
+<p>Microsoft Entra</p>
+<p>Consolidated governance for Microsoft-oriented enterprises</p>
+<p>Strong ecosystem alignment</p>
+<p>Less attractive for buyers seeking independent best-of- breed tools</p>
+<p>Serval</p>
+<p>IT automation competitor</p>
+<p>Rapid integration creation and modern automation</p>
+<p>Primarily competes with Lumos’ IT use cases</p>
+<p>Veza</p>
+<p>Fine-grained access visualization</p>
+<p>Rich relationship mapping across users, resources, and permissions</p>
+<p>Often requires technical expertise to operationalize</p>
+<p>Quantitative Insights</p>
+<p>Metric</p>
+<p>Nearly 20 years</p>
+<p>Context</p>
+<p>Expert’s experience in software, security, and identity engineering</p>
+<p>Under 50 employees and under $5 million revenue</p>
+<p>Scale of a prior identity company when the expert joined</p>
+<p>6 hours</p>
+<p>Illustrative duration for temporary application or database access</p>
+<p>1,500 licenses, 900 active users, 600 removable licenses</p>
+<p>Example of SaaS license optimization potential</p>
+<p>Three primary identity functions</p>
+<p>Authentication, provisioning, and governance</p>
+<p>NS: Good morning. This is Niraj Sheth. I'm senior analyst here at Guidepoint Insights. Welcome to our call on Lumos. Our advisor for today's call is Aman Garg, who is the former head of solutions at the company. Aman, thank you for</p>
+<p>10/12/2026 at 06:04 AM UTC</p>
+<p>joining us today. It's a pleasure to have you on our call. Could you please start off by providing us with a brief summary of your professional background?</p>
+<p>AG: I have been in solutions engineering or sales engineering for a long time, 20 years almost. Started my career as a software developer, but went into problem solving with the very largest enterprises to mid-market, even SMB across different industries. I initially started out in the security industry. Intrusion detection and prevention, moved on to Okta where I was one of the first members of the go-to-market team when the whole company was 50 employees and less than 5 million in revenue. All the way to IPO, I led sales engineering there and then also worked in some other marquee companies like JFrog, Scale AI and Drata.</p>
+<p>NS: Great. Thank you so much, Aman, for the introduction and congrats on the great career. Let's just start understanding about Lumos. So can you give us a detailed overview of Lumos, its core capabilities and what problem it is trying to resolve?</p>
+<p>AG: So Lumos started out as an IT self-service company, almost like an enterprise app store. So the problem they wanted to solve initially was, hey, I'm an employee and I open a ticket and it takes X number of days to get an application assigned to me. Why can I not have an app store kind of experience where I go to the company app store, click download and the app shows up in my workspace immediately? So that was the desire. And they built the initial ticketing system, which was easy to use, Slack-based, email-based, all of those things, and company app store. And then they said, okay, you know, in order to actually get you the access, we need to build a connector to set up the user account in, let's say, Salesforce. So they started building all these connectors. Next, they said, okay, since we have all this data, why don't we solve the problem of cost optimization or SaaS optimization, which is how many licenses are all my employees using and are they even active? Are they even logging in? So that went into spend optimization, SaaS optimization. But that first use case of frictionless self-service app request remained and I think still remains the most popular use case for Lumos. So that's how it started. Right now, when I say right now, over the last 3, 2 years or so, there has been a heavy push to get into identity governance because if you peel out that story, right, you have users accessing apps. Now you know all their entitlements. You need to build the connectors in order to give them access to the apps. It leads into an identity solution somewhat, right? I say somewhat because identity governance is a very vast problem with the legacy of like SailPoint and Saviynt, and those solutions are very full-featured. Okta is trying to get into it. So that's a space they've been trying to bite on. I wouldn't say with 100% success. There are some inroads, companies are appreciating Lumos for that side of the spectrum, but it still remains. Yeah, so we can talk about the transition, but I just wanted to make sure that you understand where the company started and where early success and even success to date is in those use cases.</p>
+<p>NS: Yes, absolutely. Can you also talk about the identity governance where the company is transitioning into? So what all capabilities Lumos has and how it is trying to approach the market?</p>
+<p>AG: Yeah, so I'll give you an answer based on their future approach and then connect it to where some of the current success, at least based on some case studies that are published on their website, point to, right? The future approach is that they're positioning, and again, this is very clear, I'm just helping you navigate through their marketing material and website and so on, right? Like NS: Right.</p>
+<p>AG: There's nothing private information here. So their approach is there are tasks in the identity space. Let's say I run the identity program at a mid-tier enterprise or large-tier enterprise. And as such, I will have several functions that my team needs to do regardless of the tool that I have, right? And one of them will be role mining. Role mining is the concept of I make a list of all the apps, all the users, and all their entitlements. Entitlements are fine-grained permissions, not just the fact that you have access to Salesforce, but what permissions do you have, what data sets you can access inside of Salesforce. So all those fine-grained permissions are harvested, put into a big table, and then you</p>
+<p>10/12/2026 at 06:04 AM UTC</p>
+<p>start the exercise of, hey, should you have access to, first of all, this app? Second, what should your role be within the app? And then what are the fine-grained permissions you should have? Now, the problem is no one really knows, not the identity team, not the IT team, not an external consultant, not even your manager, what roles an individual employee should have. So they said, okay, let's correlate it with 3 categories. You have universal apps. These might be things like payroll and HR which everyone needs to have; then there are also called birthright apps sometimes. And then you have based on your group, so if you are part of the go-to-market team, then you get a certain list of apps based on your function within the organization. And the third might be self-service that, hey, you can request apps, but they're not assigned de facto to you. Like if you travel, you can request the expense control app. And then there is actually a fourth category which is just-in-time access. If I'm working on a special project, I just need an app for 6 hours or some access, like access to a database for 6 hours because I'm working on an escalation, then I would be assigned that just-in-time access. So you take this whole matrix of role mining, compare it with what type of access an employee should have. Breaking this whole down is a big, big process which takes human effort. So Lumos said, okay, why don't we break this into an agentic framework where... like a couple of years ago, I think if you look at it, they were doing it somewhat manually and now they said, okay, we'll roll out agents specifically for this function in the enterprise role mining. I'm just giving you an example of one function. We can go through some other examples too, but for this function, Can we unravel an agent which goes, picks out all the data from your identity provider, from your Active Directory and so on, and give you kind of a co-pilot for the identity team to work with? On paper, great concept, but I haven't seen many case studies on their website which point to this being a success. That's why I said this is the future vision where they are headed. Like, saying they are headed, I can't say if they are headed that way but to me as an identity professional I think this is meaningful if they are able to execute on this vision then there is definitely some success because I've seen this problem firsthand for the last 20 years where role mining is very, very convoluted, takes a lot of manual effort to do it right. Two other small things here. One, it's not just users. Now you have non-human identities and that's an area where Lumos has been a little bit behind. They are claiming they have some more functionality these days, but they were historically behind. Second is user access reviews. So the same role mining exercise has a compliance angle. So if your enterprise is going through their audit, you know, whether it's SOC 2 or ISO or whatever else, most of these certifications and audits require user access reviews, which is basically kind of like a rubber stamp. Your manager says, yes, I have these 10 employees on my team and they have all the correct access. And a lot of times it's either a rubber stamping exercise without the manager really knowing or having the confidence or it's reported by a system. It's very inefficient, I would say. But that also connects to the role mining exercise. I'll just pause here before seeing if you want to pick on one thread and go deeper in some direction.</p>
+<p>NS: So just overall wanted to understand. So currently, as you talk about, and even I see in their website, so Lumos has different sort of products which are currently offered to the clients like identity governance, lifecycle management, access request, and SaaS management.</p>
+<p>AG: Mm.</p>
+<p>NS: SaaS Management. So how is the adoption among the client? Do clients adopt all this product or is Lumos selling this as a bundle solution or is it sold as a point solution? And can you also give us some understanding in terms of how is the adoption across the clients? Are clients adopting one particular product or multiple products? How should we think about that?</p>
+<p>AG: I think the leading product is self-service access, which is called zero-touch IT. I think they keep on changing the names. Let me make sure this is what they're talking about. I think this is it. By zero-touch IT, it means that is probably the first product which also goes back to their roots, which is how the company started, right? The example I was giving, an employee requests access to an app or maybe even additional privileges within the app. I might have access to Lucidcharts or Figma to view but not to create diagrams, so I want to up-level my license for two weeks because I'm working on a special project. So that kind of access goes through this zero-touch IT where an IT admin</p>
+<p>10/12/2026 at 06:04 AM UTC</p>
+<p>creates all these rules on the back end. When a request comes in, it's evaluated against those rules and if it's pre- approved, the user will get access right away, like literally right away, or else it might go through an approval step, and that also might be very quick. The workflow behind the scenes is the automation on actually creating the provisioning, which may be a SCIM call, an API call, or something like that. So that is the first use case, which is most widely deployed. Connected with that is the JML workflow orchestration. JML stands for joiner, mover, lever. If a new employee enters the organization, there is a whole bunch of apps and assignments that need to be done, so that is the joiner workflow. Lever is when someone leaves; you have to cut out access to prevent any security incidents. Then the mover is, I change my job function. Usually what happens when someone changes their job function, the new access is granted, but the old access is never taken away. If I've been at the company for a long time, I just keep on getting super, more and more access. So the mover function is actually very poorly implemented across most organizations. Those two, I would say, are the first and the second. The third use case would broadly fall under identity governance which has a couple of different parts to it. Role mining is probably the biggest use case followed by user access reviews, and then I think Lumos... I haven't seen anything come out which indicates that ITDR is widely deployed or even ISPM for that matter. Are you familiar with those terms?</p>
+<p>NS: No, can you mention the full form?</p>
+<p>AG: ITDR is identity threat detection and response. Yeah. And ISPM is just like CIM. Sorry, I'm forgetting. What is ISPM? Identity Security Posture Management.</p>
+<p>NS: So can we say that currently majority of the clients are using the zero touch and the RLM model product?</p>
+<p>AG: The JML, yeah.</p>
+<p>NS: JML.</p>
+<p>AG: Yeah. That's pretty much all of the customers. The governance is an add-on, to answer your question. It's not like the whole bundle includes it. It's an add-on. SKU, so is the access reviews. Actually, let me check their pricing. How is it priced these days if they talk about it? Maybe not.</p>
+<p>NS: But during your time, what percentage of the clients have adopted this identity governance add-on products?</p>
+<p>AG: I can speak to that. I think that would be privileged information, I think.</p>
+<p>NS: Yeah, we don't need any specific numbers, but any rough percentage means the clients who are already using zero touch, any rough percentage in terms of or range in terms of that this many existing clients have adopted identity governance add-on product?</p>
+<p>AG: Yeah, so I think the best way would be to look at all the case studies on the website and the legacy ones. They were all App Store and also SaaS Spend Management. Keep in mind, SaaS Spend Management is a race to the bottom. There is no value or very little. There are a lot of cheaper alternatives available. So Lumos decided to not be in that space.</p>
+<p>NS: Right.</p>
+<p>AG: But there are still legacy customers that want spend management and SaaS management like, oh, I'm wasting 1,500 licenses on Salesforce, but only 900 people are logging in. So those 600 need to be removed. And then I can negotiate with the vendor for downgrading the license category or whatever. So that's SaaS management. That's been de-prioritized if you look at the. But I would say governance is definitely a minority or was a minority and still is. And I think it really, so my vision is you do what, you kind of peel out what a consultant at SailPoint or Saviynt does in</p>
+<p>10/12/2026 at 06:04 AM UTC</p>
+<p>their day-to-day job, right? And let's say you make a list of top 5 functions that an enterprise needs and does through SailPoint or Saviynt. It's almost like knowledge work. So like I gave you 2 examples already. The NS: Yeah.</p>
+<p>AG: role mining is the most important one. The second one is user access reviews. So let's stick with those 2 functions. If you make agents that do those functions, or help the individual doing those 2 functions as a co-pilot, then that's a very compelling value proposition to have, right? And that's where Lumos can really, or whoever, whichever vendor you're talking to, they can really shine. But how to do it is the question mark. And in case of Lumos, even though I see these Albus agent, Albus was basically, if you look at the demos, it's a chatbot on top of existing data inside of Lumos, but it doesn't do the work of actually automating the work that an identity person at an enterprise will need to do. So for that, I see that they are trying to have this concept of identity agent force, agents that continuously govern access. Yeah, this is a relatively new feature, but this is something to look out for.</p>
+<p>NS: Now, let's talk about the competitors. If we talk about, can you do a comparative analysis between Lumos and other players like SailPoint, Saviynt, Okta, and I guess even Microsoft has Entra? Can you do a comparative analysis of all these companies in terms of the strengths and weaknesses and how is Lumos differentiating?</p>
+<p>AG: I wouldn't say. I think there are 3 broad categories of competitors. If a company is looking for a full-fledged identity governance program and they have a team committed internally that's going to be working on identity governance because a tool cannot just give you governance just like that. They have a team committed, they will likely choose SailPoint or Saviynt because those are very flexible and, you know, old school; they have a lot of features, but they also need a lot of care and feeding, a lot of manual effort, right? If you're kind of in the middle ground and you already have a big investment with Okta or Entra ID from Microsoft, then you could take this approach of, okay, I don't need this full-on flexible governance program, but I'm willing to make some cuts and adopt, you know, a version like a... I won't say poor man's version, but a less fully functional version of governance program. And those customers will go with, and they want to consolidate everything under their identity provider. If I'm using Okta, I might just go with Okta governance. Although Okta governance is expensive from what I heard, so there is that to consider. If I'm looking for a new tool, best of breed, then that's where the companies like Lumos come into play. I would say ConductorOne is a really strong or coming up as a strong solution there. Have you heard of ConductorOne?</p>
+<p>NS: No, I've not heard.</p>
+<p>AG: Yeah, take a look. It was started by one of the Okta alumni, and they're actually doing pretty well. So hang on, let me go to ConductorOne's website to make sure it's updated. So the new breed of companies are, I think ConductorOne is more holistic. There is also Andromeda Security, which is more in user access reviews. There are specific companies just for, like, asterisk and others for just non-human identity, but that starts getting a little bit too fragmented. If you're looking for just non-human identity as a separate solution, user access review separate solution, then sure, you can go to that end of the spectrum. But I think ConductorOne is a pretty good middle ground, which has a solid product. And that might be worth examining when you're looking at Lumos.</p>
+<p>NS: So can you talk about each player's strengths and weaknesses in terms of how should we think about SailPoint, Saviynt, or Okta, because ultimately Lumos is trying to compete with them, right?</p>
+<p>AG: Yeah, yeah. And ConductorOne, don't forget. ConductorOne is super important because NS: Yeah, then ConductorOne as well.</p>
+<p>AG: Companies that are evaluating, customers that are evaluating Lumos are more than likely evaluating ConductorOne first, and Okta, Microsoft would be second, and SailPoint, Saviynt is only if they are legacy.</p>
+<p>10/12/2026 at 06:04 AM UTC</p>
+<p>NS: So let's start with ConductorOne. How to assess ConductorOne's strength and weaknesses in comparison to Lumos?</p>
+<p>AG: So on paper, it sounds like ConductorOne has a similar product as Lumos. So they have out-of-the-box connectors. Every company claims to have out-of-the-box connectors. But they position themselves more as a governance solution, whereas Lumos is... the 1 big differentiator is ConductorOne appeals to developers. If you want to build around your identity program, then those customers like going with ConductorOne because it has a lot of extensions, whereas Lumos comes across as a finished IT tool where it has a user interface. You go there, you take some actions, and the API was lacking in Lumos at least, till 6 months ago or 1 year ago when I checked online. And many more. Thank you very much. ConductorOne has a very solid API, so if you want to expand the product capabilities integrated with your own infrastructure, ConductorOne was the choice to go. And that is... it's not even an option in identity governance. You need those hooks. You cannot just do a CSV file dump, then do some other side code on the... write a Python script on the side. That was the world of Saviynt. You don't want to be doing that with a modern tool, right? So that's 1 of the biggest strengths. The other is, I would say they claim to have governance, PAM, and identity access management all in 1 solution. There is some truth to that, but I haven't really actually looked at or installed their product to be able to comment how effective those 3 integrations are with identity privileged access management and identity governance all in 1. I will say, though, if you look at Veza that was acquired by ServiceNow some while ago, Veza's strength was showing the graph of access. By graph I mean you have users, applications and roles, but then fine-grained roles and very fine-grained database access and all those things like resource access was something that Veza exposed to a governance user. So I could look at a database table and say exactly who has access and they implemented this graph of relationships which was very very fine-grained and it's almost like a technical user will find value, but it needed some work to build it into your governance program. So it was not just right there available. You'll be scratching your head like, what do I do with this information? It's very rich, but I don't know what to do with it. So only the very large financial banks found that information useful. So Veza was that extreme. Think of ConductorOne as a softer version of Veza, which every customer can use. So that's why ConductorOne is really good. Does that help with ConductorOne?</p>
+<p>NS: Yes, absolutely.</p>
+<p>AG: Okay, so developer speaks to developers and then a very rich graph entitlements-based system. So a bit more governance capabilities than Lumos is what I feel, right? And then they've raised quite a bit of money, so it seems like the traction is also there. Okta governance. Let me go to their website to make sure. Okta IGA, Okta governance. I mean, the marketing looks the same on every website, right? But it's almost like Apple, right? You go to Apple, it may not have all the best features, but the ecosystem experience is great because you already have an iPhone, so the watch just slides in. It feels very good. It may not capture your vitals like a Garmin or athletic watch might do, but you get the experience. So same way, if you are an Okta user, you may not get all the bells and whistles of a governance product, but it fits very nicely with the rest of your Okta plumbing. So for customers who are looking for a quick time to value and they're already an Okta customer, for them, governance is great, and Okta governance is great and the features behind. And you can do just the basic lifecycle management, privileged access, those 2 things from within the governance console. I believe they also have access reviews, but that's not super hard to implement. The manual processes are the harder part. Oh, and then Okta has Okta Workflows, which is across the whole product line. And governance can really benefit from the workflows. So that's the strength that Okta has to connect the legacy Okta identity product with the governance product through workflows. So that's where you can define. It's kind of equivalent to what Lumos calls these Albus agents. With Okta, you would do that through workflows. But keep in mind, workflows is still a little bit of a dated concept. The UI is not that great, so it is a hit or miss.</p>
+<p>NS: So is Lumos trying to replace Okta? Is that what Lumos is? This is how the Lumos is approaching the market?</p>
+<p>AG: No, just Okta governance. Okta governance is an add-on on top of Okta identity management. I don't see a world</p>
+<p>10/12/2026 at 06:04 AM UTC</p>
+<p>where Lumos wants to or can replace Okta. Because Okta is, you know, you connect your identity provider, you connect your apps, you give access to the users, users log in through Okta. Whereas Lumos is saying you already have your identity provider connections, your people are already logging to their apps through Okta. Let me give you more insights on top of that. And oh, by the way, if you don't have access, we can assign you access. That is provisioning. Now, Okta has provisioning too, but Lumos was playing in that provisioning space and then from provisioning going into governance. So you see there are broadly 3 parts to identity. There is how do you log in into apps? That's identity access. Second is identity provisioning. I need access to an app. I don't have an account in Salesforce. Can you create me an account in Salesforce? So that's the provisioning. That is also offered by Okta and Lumos both. And you could argue that Lumos wants to replace that part that customers might be using with Okta. And the third part is governance, which is, let me make sure your compliance program is in order, especially the identity compliance program, and let me help you there. So that's also where Lumos is trying to compete with Okta governance.</p>
+<p>NS: So if we talk about Okta's governance product, where is Lumos differentiating? Is there any differentiation? And why would a client prefer to go with Lumos compared to Okta Governance?</p>
+<p>AG: I think it comes on the platform. Like I said, a customer would go with Okta Governance if they're already heavily invested in Okta and they want a seamless connection between the two. It's not a head-to-head decision. And Lumos goes as a layer on top of Okta, not replacing Okta because Lumos is not an identity provider at all. Right. So in both cases, the customer would be doing some add-on; either they would add on Okta Governance on top or they would add Lumos on top of their existing Okta. Now, which one do they choose? If they are already familiar with the Okta user interface and I want to just go with that look and feel, then Okta Governance is an easy decision. And both solutions are not a full governance solution either. For full governance, I would go with SailPoint or Saviynt. But keep in mind those need a lot of care and feeding. So my OPEX bill will go up because now I need to hire consultants, people who know how to manage those platforms and they're not plug and play. So it's pick your poison, right? Also, make sure you understand this. Okta is more of an enterprise product. So if you're a large enterprise, chances are you will stick with Okta Governance. Lumos hasn't really proved themselves in the large enterprise. They are more of a mid-market SMB play. I think they have some enterprise customers, large enterprise customers, but not as many as Okta, obviously, right? So is that clear between the two?</p>
+<p>NS: Yeah. Yes, absolutely. So if we say during the deals, should we think that Lumos is competing more with ConductorOne rather than SailPoint, Saviynt, or Okta in the mid-market and the SMB?</p>
+<p>AG: In every segment, because companies that are solidly evaluating SailPoint, Saviynt, they are often the very large banks and they need a full-featured function. That cannot be done with Okta or Lumos or ConductorOne. They will stick with Saviynt or SailPoint. If I'm already an Okta shop or large enterprise, I don't have the appetite to look for a new solution, then I'll stick with Entra ID or Okta. But if I'm open to adopting a best-of-breed product, that's when I'm looking at Lumos or ConductorOne. So yeah, in that way, I would say the first, the primary competition is ConductorOne.</p>
+<p>NS: So if we think from a client perspective, why would a client prefer to go with Lumos or ConductorOne? Are there any specific reasons they would choose either one?</p>
+<p>AG: First of all, they are smaller companies which don't have a lot of baggage of complexity of deployment, so deploying the solutions is fairly easy and quicker. And they're smaller companies, right? So dealing with them, closing the deal, deploying it, just working with their engineers is much faster. So some companies, some customers just like that approach of dealing with a smaller company because things move faster that way. And then also, because they are smaller companies, they can often commit to features and deliver them in a faster turnaround time. If you tell Okta or Microsoft, hey, we want this new feature, chances are they'll just put it on the roadmap and never get to it. Whereas</p>
+<p>10/12/2026 at 06:04 AM UTC</p>
+<p>with ConductorOne, Lumos, smaller companies, they can. Prioritize and get it on the roadmap if it's not too much lift. I mean, they also cannot move just for 1 customer; they're not like a consulting shop for 1 customer, but chances are higher if I'm a customer. And then, second, being small also comes with a little bit of modern approach for how to solve the same problem, right? Sometimes customers like this partnership that will have access to modern plumbing and also be a design partner as we adopt this solution. So they have a seat on the table, they feel they have a seat on the table to influence the product roadmap and consume a bit more modern platform. That's why these customers choose ConductorOne / Lumos.</p>
+<p>NS: And between the 2, how are they making decisions if they are evaluating Lumos or Conductor? Why would they go with Lumos and not go with Conductor? Are there any specific set of clients who would prefer only Conductor or who would prefer only Lumos? Is that the case?</p>
+<p>AG: I think it comes down to how they run the POC and what success criteria they have in their evaluation process. I was going to look at ConductorOne's website to look at their; they have Zscaler, Instacart, Ramp, Brex, Klaviyo. So one of the biggest things, which I also mentioned previously, was this developer mindset.</p>
+<p>NS: Okay.</p>
+<p>AG: Customers who want to build an identity program, they like ConductorOne because it's more developer focused. I can expand the capabilities. So the developer API for Lumos was a little bit weaker, still is if I look at their website, and ConductorOne is more developer friendly. So if I'm trying to build around and expand my program, and I have some developers already on my team, then I'll go with ConductorOne. If I'm looking for just plug and play, implement solution, then Lumos is a better choice because it has a user interface which is nicer. However, the people who need the user interface are not governance guys, they are usually IT, like app assignment, the joiner, mover, leaver workflow, the self-service app request, the zero-touch IT. So that natural selection leads to IT preferring Lumos and identity governance people selecting ConductorOne. Is that distinction clear?</p>
+<p>NS: Yes, absolutely. That was helpful. Now, if you think from a client perspective, can you give us some numbers in terms of what is the ROI which client realize once they adopt Lumos? Is it mainly from a time-saving point of view or is it any operational cost saving which they realize?</p>
+<p>AG: Yeah, I think the biggest advantage is how soon employees get access to their apps. That's the legacy value that Lumos always had. That's been their differentiator, the easy self-service experience of app access. By the way, there are companies like Serval and also Console. I think Console got acquired by Palo Alto Networks, if I'm not wrong. But anyways, we're going into a different direction. So that IT user has a different competition. See, the challenge with Lumos is it's neither IT nor governance. In IT, their competition is probably the bigger competition is Serval and also Console. But Console got acquired, so maybe they are less of a competition. That's where automation really matters to the end user and that seamless experience of assigning apps. If you switch to the identity governance side, then ConductorOne is more of a competition for Lumos. So Lumos has to decide, should they stay in IT or switch head-on to governance? I think that's the question that is most important to them. They had a strength in IT because the finished product, the user interface was great, the frictionless experience was great. But now even in IT side, people are saying, I want to build more integrations. I cannot just wait on Lumos to give me more integrations. Serval says, oh, we can build integrations by just writing in plain text English and a new integration will be deployed in seconds. Same story with Console. Console used to say the same thing, right? So IT has very different needs than identity governance.</p>
+<p>NS: Understood. Although if we think from a pricing point of view, are pricings similar for all the players or is Lumos a premium product or a discounted product compared to what ConductorOne is or Okta Governance is?</p>
+<p>10/12/2026 at 06:04 AM UTC</p>
+<p>AG: See, pricing, there is no such thing as fixed pricing because it all depends on relationship and bundling and discounting and this and that, right? So, in enterprise or when I say enterprise, I don't mean just larger companies, even small companies of 200-person company trying to buy a solution, they will obviously negotiate and someone might pay 20 cents on the dollar less price. So there is no, I would say, standard guidelines that I can give you on pricing. I will not say Lumos is a premium product by any means. It's a product which appeals more to the IT decision maker because it's seamless and frictionless. But the moment you switch into a developer mindset, then ConductorOne becomes more interesting. And then on the IT side, even Serval becomes more interesting.</p>
+<p>NS: Just last 2 questions which I have. Firstly, AG: Mm-hmm.</p>
+<p>NS: how should we think from an opportunity standpoint? Let's say if an investor is currently looking at Lumos, do you think so there is a huge market for Lumos and is there a lot of white space opportunity for Lumos going forward? Or do you think so it is mainly displacing opportunities rather than the new? What is your activity there in the market?</p>
+<p>AG: Hmm. Displacing as in customer already has governance and they are displacing that solution.</p>
+<p>NS: Yeah.</p>
+<p>AG: Yeah. No, that is not a big market. Because I think customers that already have an existing governance solution will likely not be happy with Lumos' capabilities because they won't cover that surface area. So I would say a net new addition is probably a better customer segment for Lumos. That opportunity does exist. Or it would be complementing their existing governance program with new plumbing. So it's not like rip and replace, but additional on top.</p>
+<p>NS: Yeah.</p>
+<p>AG: So that's the opportunity. Is it a big market? I think compliance market overall is a big market and governance, identity governance gets attached to that compliance market overall. So if compliance market is expanding, then identity governance will also expand, I feel. There is a new focus on identity governance because of people thinking that AI will increase the surface area of attack vectors and so on. So I think that market will expand over time because identity is where tools get connected to AI agents. So especially the non-human identity is definitely going to expand, I feel.</p>
+<p>NS: If you have to point what are the limitations exist with Lumos and what do you think, where should Lumos focus on to grab a larger market share going forward?</p>
+<p>AG: I think non-human identities and developer experience.</p>
+<p>NS: And if you think from a limitation point of view?</p>
+<p>AG: Yeah, those two are exactly the limitations and the opportunity.</p>
+<p>NS: Also, recently I read that Lumos has launched non-human identities and AI agents. So are they moving in that direction?</p>
+<p>AG: Yeah, yeah. I mean, but keep in mind, right, marketing, just on saying that on the website doesn't mean that they are necessarily doing. I haven't evaluated the product recently, but from what I would do is go to the developer website and check what are the API endpoints they offer. And that will give you a clue whether this is just pure marketing or do they actually have APIs to make that work. Right? So I think it's still weak in that area, the agentic way</p>
+<p>10/12/2026 at 06:04 AM UTC</p>
+<p>to build, but I think agentic is still making some progress. Non-human identities are still behind.</p>
+<p>NS: Well, Aman, that was it from my side, but any final thoughts which you want to share with our clients which you feel so we might not have covered?</p>
+<p>AG: I think this is a good summary. It's an evolving space. I would definitely keep an eye on ConductorOne and even Serval. Those 2 are interesting solutions, 1 from IT side, the other for identity governance with a modern plumbing. Yeah, I think otherwise you covered a lot of ground and questions, so thank you for your time.</p>
+<p>NS: Great. Let's wrap it here, Aman. Thank you so much for your time and thank you so much for your thoughts on Lumos. It was really nice talking to you. Have a good day.</p>
+<p>AG: All right. I appreciate it. Bye now.</p>
+<p>NS: Thanks. Bye.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>10/12/2026 at 06:04 AM UTC</p>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,186 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.09 | AC | Packaging | Supernode Bottlenecks Pt.5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.09 | AC | Packaging | Supernode Bottlenecks Pt.5</h1>
+<p class="orig">原标题：超节点还能再堆一代吗｜篇五：板材与封装赚的是分配权，毛利先于收入见顶</p>
+<p class="tags">#packaging #pcb</p>
+<p class="meta">AceCamp · 2026-10-09 15:05 · article 70567513</p>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>板材与封装的高毛利来自物理稀缺还是分配权；</li><li>CoWoS与PCB扩产多快，合格产能受什么约束；</li><li>缺口收窄时，毛利与收入谁先见顶；</li><li>哪类产能先过剩，封装的卡点转向何处；</li><li>哪些读数预示毛利拐点，各公司处于分配链哪一环。</li></ol>
+<p class="qq">板材与先进封装的短缺，资本可以在一年半内补上。当前的高毛利来自产能分配权，而CoWoS缺口正从约两成收窄到一成，A股PCB扩产规划合计超过800亿元。这使得分配权回落时毛利先于收入见顶，过剩也分两层出现：通用产能先松，合格产能仍紧。</p>
+<p><b>胜宏科技上半年的收入还在涨，扣非净利润的增速却已不到收入增速的一半。</b>同一张报表里，在建工程堆到了上年同期的5倍左右。收入与利润开始分岔，正是板材与封装这一段利润结构的缩影。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567513_524e5b1f7f0e9913.webp" alt="" loading="lazy"></p>
+<h2>一、板材与封装的高毛利，是买方为抢产能付的钱</h2>
+<p><b>板材与封装当前的高毛利，是买方为抢占有限产能支付的对价。</b>笔者认为，本轮覆铜板调价幅度普遍高于可核算的成本增量，定价机制已由报价制切换为配额制，价格只是分配结果的表达方式。对云厂而言，一颗数万美元的GPU若因几百美元的高阶板缺货而无法出货，损失远超板材溢价，这使得买方愿意为确定的交付付费。</p>
+<p><b>在英伟达直供链里，分配权还被写进了份额与售价。</b>笔者在9月14日报告中梳理，英伟达M9采购中台光电子约占五成、松下约两成、生益科技约两成到两成半，三家在这一链条上的毛利率分别约为45%到50%、50%以上与35%到40%，差距主要来自售价；同一规格板材卖给ASIC厂商的价格约为卖给英伟达的五成半，ASIC链的毛利率上限约30%。直供链按半年议价，高阶板价格由谈价窗口决定。这意味着分配权的回落会集中出现在下一次议价窗口，日常报价的变化只起参考作用。</p>
+<p><b>分配权溢价的规模，可以从同一规格板材的两条价格链上看出来。</b>溢价集中在指定程度深的一条链上，这正是分配权定价的特征：同一种材料，进入指定清单的一侧享有溢价售价与高毛利率，未进入的一侧只能按成本加成定价。这也意味着，当缺口收敛、买方重新引入竞争时，首先受冲击的是指定链上的溢价部分，按成本加成定价的一侧反而相对稳定。</p>
+<p><b>区分分配权溢价与物理稀缺，看两个条件。</b>第一，扩产是否受设备与材料以外的约束，若新增产能只需要购买标准设备、建设洁净室，稀缺就会随资本到位而消退；第二，买方能否在一年左右扶持第二供应商，若可以，现有供应商的溢价就有明确期限。板材制造与晶圆级封装同时满足这两个条件，本系列第三篇讨论的上游专用设备则两条都不满足，这是两段利润持续时间不同的根源。</p>
+<p><b>分配权的载体是认证名额。</b>北美云厂的合格供应商名单每年只开放有限的窗口，进入名单的厂商在缺口期同时取得份额与定价；未进入的厂商即便产能充足，也只能在通用市场按成本加成报价。这使得认证名额本身成为分配权的载体，名单的开放节奏决定了分配权回落的速度。</p>
+<h2>二、资本正在补上缺口，CoWoS与PCB的产能都在翻倍</h2>
+<p><b>先进封装的缺口正在按季度收窄。</b>TrendForce在6月的报告中估计，台积电CoWoS的供需缺口将从约20%收窄至2026年底的约10%，其月产能到2026年底约12到14万片，叠加日月光、Amkor等外包厂的5到6万片，行业月产能接近20万片，缺口在2027年继续收窄；9月的报告进一步给出2028年底约26万片的目标。封装扩产依赖洁净室与标准设备，只要订单预测足够长，资本可以在9到15个月内把产能翻倍。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567513_83e3c7fc2d2fb4c2.webp" alt="" loading="lazy"></p>
+<p><b>资本能在一年半内补上的是名义产能，合格产能取决于认证。</b>压合、钻孔、曝光与电镀设备都可以按需采购，洁净室也能在一年内建成，这部分产能对资本的响应以季度计；决定一条产线能否进入头部客户供应名单的，是12到18个月的认证与良率爬坡。这使得中段的扩产在名义产能上跑得快，在合格产能上跑得慢，二者的时间差正是过剩分层的来源。</p>
+<p><b>板材的扩产规模以数百亿元计，进入门槛低。</b>根据披露信息，A股PCB厂商2026年公布的扩产规划合计超过800亿元，其中胜宏科技单家的投资上限约200亿元。这些产能多数在2026年底到2027年集中释放。笔者6月6日报告中判断，财务折旧约束与载板、高带宽存储、覆铜板等材料产能的集中释放，将在2027年年中形成共振，算力资本开支增速由当前的75%以上降到10%到17%。中段产能释放的时点，恰好落在需求增速换挡的窗口。扩产的资本开支首先流向设备与耗材：钻孔设备、激光直接成像设备与电镀线的订单在产能落地之前就已兑现，大族数控、芯碁微装处在这一位置，它们的收入拐点也早于板厂。</p>
+<h2>三、缺口一收，毛利将先于收入见顶</h2>
+<p><b>分配权溢价在缺口收敛到紧平衡时就会终结。</b>缺口从两成收窄到5%附近的紧平衡，买方的排队紧迫感就会消失，采购的降本要求随之启动；而在直供链里，这一变化会在下一次半年议价时一次性体现到售价上。与此同时，云厂按滚动预测下单，产业链各环节为抢产能普遍超额下单，缺口收窄时，订单的回落速度会快于终端需求。两股力量叠加，毛利率的拐点会早于收入的拐点。按半年议价的节奏换算，若CoWoS与高阶板的缺口在2026年底收敛到一成以内，2027年上半年的议价窗口就会率先反映出来，而收入的回落要等到新产能满产之后才会显现。</p>
+<p><b>二线板厂承受的是两头的挤压。</b>材料端约每月重定价、售价端按年锁定，这一期限错配决定了二线毛利的修复必然滞后，分配权在覆铜板厂手中，普通电子布的紧缺预计到2027年年中才缓解。上游材料仍在涨价，自身新产能又在2027年集中投产，二线厂的毛利率同时承受成本端与价格端的压力。胜宏科技的半年报是这一过程在龙头身上的早期信号：2026年上半年营业收入116.29亿元，同比增长28.77%，归母净利润28.57亿元，增长33.30%，扣除非经常性损益后的净利润24.18亿元，只增长12.50%；二季度毛利率33.22%，同比下降约5.6个百分点，在建工程增至52.23亿元。归母净利润增速高于扣非净利润增速，说明利润增长中有相当部分来自非经常性项目，主营的盈利能力已先于收入放缓。</p>
+<p><b>新产能的转固，会在缺口收窄的同时推高成本。</b>在建工程转为固定资产后立即开始计提折旧，而新产线的良率与稼动率需要两到三个季度才能爬坡到位。这段时间里，售价随议价窗口回落，单位折旧却在上升，两股力量同时压向毛利率，收入则因新增产能的出货继续增长。这正是毛利先于收入见顶的会计机制。</p>
+<h2>四、过剩分两层：通用产能先松，合格产能仍紧</h2>
+<p><b>过剩会先出现在未通过北美云厂认证的通用产能上。</b>认证通常需要12到18个月，二三线新产能在2027年释放时，若未能进入头部客户的供应名单，只能转向通用服务器与中低端AI板，普通覆铜板与通用板的价格竞争会率先加剧。合格产能则是另一种情形：笔者估计，高阶覆铜板的供需缺口在2026到2027年维持在两成左右，2028年才可能趋于平衡。</p>
+<p><b>单柜用板的层数与面积在代际之间明显上升。</b>据调研了解，Rubin平台的计算板为26层8阶HDI，交换托盘为32层，过渡背板为44层。这使得高阶板的单柜价值量随代际上移，也抬高了合格产能的门槛；高阶板材的钻针寿命由普通板材的约3000孔降到100到800孔，制程耗材的消耗随之上升，这部分收益落在钻针与设备厂，鼎泰高科是其中的代表。</p>
+<p><b>高阶板的壁垒在制程，正交背板代表了这组制程的门槛。</b>Rubin一代的背板采用40到44层的过渡方案，Rubin Ultra的正交背板为72到78层、三段压合，材料向PTFE演进。PTFE板材的难点集中在板厂的钻孔、活化与孔金属化制程上，能跨过这组制程的板厂数量有限。这使得同一轮扩产里，高阶板的合格产能仍然紧张，通用产能则先走向宽松。正交背板同时对高端铜箔与PTFE基材提出要求，合格产能是材料认证与制程能力的交集，两者任何一项缺位，名义产能都无法转化为合格产能。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567513_25e6167ae0fb3004.webp" alt="" loading="lazy"></p>
+<p><b>封装一侧的合格产能约束，正在从CoWoS转移到载板。</b>DigiTimes的报道显示，ABF载板厂普遍满产，交期在20到30周；本系列第三篇已指出，载板所需的真空压膜设备排到了2031年。CoWoS缺口收窄之后，先进封装的约束会转向载板与积层材料，这一段合格产能的宽松时点晚于晶圆级封装。</p>
+<h2>五、CoWoS翻倍扩产之后，面板级封装在2028年后接棒</h2>
+<p><b>台积电把CoWoS产能翻倍的时间，与面板级封装的量产时点前后衔接。</b>TrendForce在9月的报告中称，面板级封装CoPoS预计2027年年中试产，英伟达的Feynman平台为首个采用客户。试产时点比Feynman按路线图在2028年推出早约一年，二者前后衔接，前沿加速器在面板级封装上的量产窗口落在2028到2029年。CoWoS在2028年底扩到约26万片，承接的是CoPoS接棒之前的需求；笔者判断，CoPoS进入量产之后，新增的大尺寸封装需求会逐步转向面板级，CoWoS产能的利用率将在2029年以后面临检验。这一风险离当下较远，但它决定了当前CoWoS扩产的回收期需要按有限年限计算。笔者预计，首代面板级封装仍会采用有机ABF基板，玻璃基板的规模导入在其之后，这使得ABF载板的不可替代期随面板级封装的推迟而延长。</p>
+<h2>六、投资含义：看公司在分配链上的位置</h2>
+<p><b>对“超节点还能再堆一代吗”这一问题，板材与封装给出的答案是：供给跟得上，风险在利润。</b>CoWoS月产能到2028年底有望翻倍至约26万片，A股PCB扩产规划超过800亿元，资本可以在一年半内补上下一代所需的通用板材与晶圆级封装产能；合格产能中，高阶覆铜板与正交背板仍然偏紧，载板受压膜设备约束到2031年。这使得这一段的供给能够跟上再堆一代的节奏，需要关注的是缺口收敛之后毛利先于收入见顶。</p>
+<p><b>判断中段利润的拐点，要看先于收入变化的三组读数。</b>第一，二三线板厂的AI相关产线稼动率与交期，若稼动率上升而交期缩短，说明合格产能已经外溢、总量缺口正在填平；第二，英伟达直供链下一次半年议价的价格变化，这是分配权回落的直接体现；第三，头部厂商在建工程的转固节奏与折旧增速，若折旧增速持续高于毛利增速，毛利率的下行压力会加大。PCB设备通常按5到10年直线计提折旧，产线转固当期即开始计提，而新产线的良率与稼动率爬坡需要两到三个季度，这段时间差会在报表上表现为毛利率的阶段性下滑。封装一侧则看CoWoS缺口能否按期收窄到10%以内，以及ABF载板交期是否开始缩短。反向的信号同样需要留意：若直供链的半年议价出现价格上调，说明合格产能仍然紧张，毛利率拐点需要后移。</p>
+<p><b>中段的利润持续时间，取决于每家公司在分配链上的位置。</b>沪电股份属于分配锚定型，受益于高阶板的出货量，上半年营收同比增长61.17%、归母净利润增长73.72%，利润的持续性看其在直供链议价窗口中的位置；胜宏科技在建工程达52.23亿元，转固之后的折旧与稼动率是毛利率的关键变量，其PTFE与下一代板材的布局属于期权。生益电子依靠M8与M9世代的高阶板现金流，属于已经兑现的一层，PTFE的导入节奏越晚，这段现金流窗口越长。覆铜板一侧，台光电子与生益科技在英伟达M9采购中的份额由买方指定，售价在议价窗口重置；建滔积层板属于价格锚定型，利润跟随普通电子布的紧缺程度。二线板厂如景旺电子，毛利修复滞后于龙头，要等建滔的定价权回落；设备与耗材一侧，大族数控、芯碁微装与鼎泰高科的收入随扩产先行兑现，拐点也先于板厂出现。深南电路同时经营PCB与封装基板，前者跟随AI板周期，后者受载板满产支撑，两块业务的拐点时间各异。封装一侧，长电科技、通富微电的封装业务与CoWoS缺口的收敛不直接挂钩，利润变化需按各自的存储封装与海外客户订单分别跟踪。</p>
+<p><b>上行风险来自高阶板规格升级快于扩产。</b>若正交背板与PTFE材料提前放量，合格产能的稀缺会延长一年以上，分配权溢价随之延续，头部板厂的毛利率拐点后移。</p>
+<p><b>下行风险来自需求换挡与扩产叠加。</b>若2027年云厂资本开支增速回落与中段产能集中释放同时发生，价格竞争会从通用产能迅速蔓延到高阶产能，毛利率回落的幅度可能超过收入。</p>
+<p><b>另一项下行风险来自价格链的趋同。</b>若ASIC厂商的采购规模上升、议价方式向英伟达直供链靠拢，同一规格板材在两条链上的价差会收窄，指定链的溢价被成本加成的定价方式拉低，头部板厂与覆铜板厂的毛利率随之承压。</p>
+<p><b>以上内容不构成任何投资建议，请风险自担。</b></p>
+</div>
+</main>
+</body></html>

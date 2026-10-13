@@ -1,0 +1,456 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.09 | 9K | Cloud | Fast Inference Use Cases Channel Check II</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.09 | 9K | Cloud | Fast Inference Use Cases Channel Check II</h1>
+<p class="orig">原标题：Merit 快速推理应用场景调研II(2026-10-09 17:00:00)</p>
+<p class="tags">#cloud #llm</p>
+<p class="meta">Meritco 久谦 · 2026-10-09</p>
+<div class="body">
+<h2>音频信息</h2>
+<p>音频标题: 261009 - Merit 快速推理应用场景调研II</p>
+<p>相关标的：undefined</p>
+<p>议题：</p>
+<p>完整音频链接：http://mw-meeting.oss-cn-shanghai.aliyuncs.com/audio/1791541024032-261009%2520-%2520Merit%2520%25E5%25BF%25AB%25E9%2580%259F%25E6%258E%25A8%25E7%2590%2586%25E5%25BA%2594%25E7%2594%25A8%25E5%259C%25BA%25E6%2599%25AF%25E8%25B0%2583%25E7%25A0%2594II_20261009_181647.mp3</p>
+<h2>音频纪要总结</h2>
+<h2>专家访谈纪要</h2>
+<h2>1. AI推理需求与云计算市场趋势</h2>
+<h3>a) 当前AI需求侧呈现哪些总体趋势？市场是否需要更高速度和吞吐量？</h3>
+<ul><li><b>推理即服务成为云计算市场最显著的增长方向</b></li></ul>
+<ol><li>当前最主要的需求趋势来自开源模型及推理即服务（Inference as a Service）。</li><li>Nebius、Together AI、Fireworks、Baseten、Modal等新云厂商均在加速布局推理服务，年度经常性收入（ARR）快速增长。</li><li>Fireworks和Together AI去年的ARR约为1亿至2亿美元；Together AI今年ARR预计接近15亿美元，增速显著。</li><li>Nebius和CoreWeave原本以裸金属及GPU即服务为主，目前也在大规模发展模型即服务。</li><li>Nebius模型即服务ARR由去年的约2,500万美元增至今年预计6亿至8亿美元，并可能接近8亿美元。</li><li>CoreWeave相关业务当前ARR约为6亿美元，并可能向8亿美元增长。</li></ol>
+<ul><li><b>闭源模型成本过高，推动企业需求转向开源模型</b></li></ul>
+<ol><li>OpenAI、Anthropic及Google等闭源模型成本较高，许多企业难以长期承担。</li><li>原本可能流向头部闭源模型厂商的收入和算力需求，正在向开源模型及其推理服务迁移。</li><li>这一趋势对Nebius、Together AI、Fireworks等新云厂商较为有利。</li><li>受访者援引的OpenAI收入预测口径为700亿美元、实际完成约500亿美元，但该组数据的统计周期和定义未进一步说明。</li></ol>
+<h3>b) 前沿模型实验室的云计算需求是否正在减弱？</h3>
+<ul><li><b>大型前沿实验室的云合同增速可能放缓</b></li></ul>
+<ol><li>受访者判断，前沿模型实验室对外部云计算的新增需求正在减弱。</li><li>微软已经出现相关合同增速放缓的迹象。</li><li>OpenAI的大部分云合同实际由微软吸收，部分项目未能按照最初预期落地。</li><li>Anthropic仍在与合作伙伴推进云部署，但行业整体投资意愿正在下降，相关部署的融资难度也在上升。</li></ol>
+<ul><li><b>裸金属及GPU服务需求仍然较强</b></li></ul>
+<ol><li>即使前沿实验室需求有所减弱，裸金属服务和整体GPU算力需求仍在延续。</li><li>因此，云计算市场并非整体转弱，而是需求结构从大型长期合同逐步转向灵活、高价值的推理服务和中短期合同。</li></ol>
+<h3>c) GPU供需和租赁价格呈现怎样的变化？</h3>
+<ul><li><b>HBM短缺限制最新一代GPU供给</b></li></ul>
+<ol><li>Nvidia最新旗舰GPU Vera原计划具备约40万至60万块的生产能力。</li><li>由于HBM4存在供应及技术问题，受访者估计实际产能可能下降至约10万至20万块。</li><li>旧型号GPU仍可继续部署，但其推理效率低于Vera。</li><li>ASIC现阶段产量有限，市场上尚未出现能够全面替代Nvidia的方案。</li></ol>
+<ul><li><b>供给紧张推动GPU租赁价格上涨</b></li></ul>
+<ol><li>GPU持续处于供应紧张状态，10月租赁价格再次上涨约20%。</li><li>这对Nebius等新云厂商有利，因为其通常可以将新增硬件成本转嫁给客户。</li><li>但同时，新云厂商的资本开支和运营成本也在显著上升。</li></ol>
+<h3>d) Nebius等新云厂商将如何调整合同策略？</h3>
+<ul><li><b>从追求长期规模转向利润率和资本效率</b></li></ul>
+<ol><li>Nebius希望避免重演CoreWeave债务杠杆过高的问题。</li><li>公司不再像过去一样大量签署规模庞大、期限较长的裸金属合同。</li><li>当前更倾向选择期限为1至3年、定价较高的大型合同，而非期限长达5年的低回报裸金属合同。</li><li>战略重点正在从单纯扩张收入和算力规模，转向提高盈利能力、利润率及资本周转效率。</li></ol>
+<h2>2. Nvidia部署LPU的战略逻辑</h2>
+<h3>a) Nvidia为什么要将Groq LPU/LPX纳入自身体系？</h3>
+<ul><li><b>核心目标是实现推理解耦</b></li></ul>
+<ol><li>Nvidia GPU在Token效率、智能体响应速度和Token输出延迟方面仍存在不足。</li><li>LPU被纳入Nvidia整体推理战略，主要用于拆分和加速推理过程中的特定工作负载。</li><li>相关方案可能与D-Matrix等推理加速芯片共同部署，并与Vera GPU形成完整系统。</li></ol>
+<ul><li><b>缓解HBM带宽瓶颈</b></li></ul>
+<ol><li>D-Matrix和LPU均可以更多依赖SRAM，从而降低对HBM的访问压力。</li><li>D-Matrix与Vera组合后，预计可使Token输出能力提升至少20%。</li><li>LPU进一步参与后，可继续提高Token吞吐量并降低响应延迟。</li><li>该组合旨在同时解决智能体AI响应、Token输出效率及HBM过载问题。</li></ol>
+<h3>b) Vera、D-Matrix和LPU组合后的Token输出能力如何？</h3>
+<ul><li><b>不同方案的性能对比</b></li></ul>
+<ol><li>Etched Sohu ASIC针对单一模型优化，每颗芯片理论上每秒可处理约6万个Token。</li><li>Vera预计每秒可处理约4.5万个Token。</li><li>Vera引入D-Matrix后，按20%的提升幅度计算，可达到至少每秒5.4万个Token。</li><li>如果进一步由LPU辅助，Vera、D-Matrix与LPU组合方案预计可接近每秒7万个Token。</li></ol>
+<ul><li><b>经济性与规模化能力</b></li></ul>
+<ol><li>Nvidia组合方案的成本预计高于Etched。</li><li>但Nvidia具备更成熟的软件生态和更大的部署规模，可通过规模效应提高综合竞争力。</li><li>因此，LPU并非独立替代GPU，而是作为Nvidia推理系统中的加速组件。</li></ol>
+<h2>3. Etched纯推理ASIC的性能与商业化</h2>
+<h3>a) Etched为什么能达到每秒约6万个Token？</h3>
+<ul><li><b>从设计之初即专门面向推理</b></li></ul>
+<ol><li>Etched采用ASIC架构，而非传统通用GPU。</li><li>芯片从一开始就针对智能体AI、规模化推理及低延迟计算进行优化。</li><li>Etched移除了面向通用计算的部分，不设置传统的可编程层或复杂软件编译器。</li><li>其架构专注于单一类型工作负载，因此可以获得更高的硬件利用率。</li></ol>
+<ul><li><b>软硬件架构更加简化</b></li></ul>
+<ol><li>Etched采用144GB HBM3e，而非依赖HBM4。</li><li>系统采用液冷方案，并配有自主软件管理系统。</li><li>通过简化软件层和数据路径，Etched基本绕过部分内存带宽瓶颈。</li><li>其Transformer相关计算利用率可达到约90%的FLOPS利用率，显著高于通用产品。</li></ol>
+<ul><li><b>单位系统输出能力较高</b></li></ul>
+<ol><li>一套约8U的Etched系统，其推理输出能力约相当于20至40块GB200。</li><li>与Google TPU、Amazon Trainium、Cerebras、Maia等产品相比，Etched更加专注于纯推理场景。</li><li>其他产品虽然也具备较高推理效率，但通常仍保留训练或通用计算能力。</li></ol>
+<h3>b) Etched当前融资及客户情况如何？</h3>
+<ul><li><b>融资规模较大</b></li></ul>
+<ol><li>Etched近期完成约10亿美元融资。</li><li>另有约10亿美元资金预计即将到位。</li><li>主要投资方以金融机构为主。</li></ol>
+<ul><li><b>当前客户集中在金融服务领域</b></li></ul>
+<ol><li>Etched已在摩根大通部署，并向Jane Street直接交付产品。</li><li>华尔街金融机构是其主要目标客户。</li><li>由于制造能力有限，目前主要面向金融服务这一利基市场，尚无法进入大规模通用市场。</li><li>产品可直接部署在客户办公场所，无需额外建设微型数据中心。</li></ol>
+<h3>c) Etched当前主要运行哪些工作负载？</h3>
+<ul><li><b>目前重点并非通用大语言模型</b></li></ul>
+<ol><li>Etched当前实际运行的主要是高频交易算法，而非面向消费者的大语言模型。</li><li>相关工作负载通常具有内存密集、低延迟和实时计算等特征。</li><li>由于需要实现亚毫秒级延迟，设备必须部署在办公楼或交易场所内部，不能依赖远程数据中心。</li></ol>
+<ul><li><b>主要应用包括高频交易与预测智能体</b></li></ul>
+<ol><li>系统需要自主生成交易信号，并立即执行智能体操作。</li><li>高频预测智能体可直接预测证券短期走势。</li><li>Sohu能够在极低批量条件下保持实时处理能力，并结合完整上下文预测未来10秒至1分钟的情况。</li><li>相较标准Nvidia GPU等通用硬件，Etched在延迟套利场景中具有明显优势。</li></ol>
+<ul><li><b>关于架构定义的口径</b></li></ul>
+<ol><li>会议中受访者将此处的“Transformer”解释为硬件架构，而非公开披露的具体大语言模型。</li><li>Jane Street等客户的模型及算法属于机密，未披露具体名称和参数规模。</li></ol>
+<h2>4. 快速推理的定义、性能标准与应用场景</h2>
+<h3>a) 当前应如何定义快速推理？</h3>
+<ul><li><b>快速推理必须结合具体工作负载判断</b></li></ul>
+<ol><li>不同场景对Token吞吐量、首Token延迟和端到端响应时间的要求不同。</li><li>Groq目前侧重实时智能体AI及即时响应。</li><li>Cerebras同样布局智能体AI，但更偏向高吞吐推理输出。</li><li>Etched在性能上高于Cerebras和Groq，但由于仅服务少数金融客户，暂不能视为开放市场的通用基准。</li></ol>
+<ul><li><b>首Token延迟是重要指标</b></li></ul>
+<ol><li>Cerebras的首Token生成时间已低于80毫秒。</li><li>受访者将80毫秒视为现阶段开放市场中最快推理的重要参考线。</li><li>实时代码生成等场景未来希望将延迟由当前约200至300毫秒降至10至40毫秒。</li><li>快速推理并不存在统一Token速度门槛，核心标准是端到端响应是否能够快于实际交互需求。</li></ol>
+<h3>b) 为什么机器人和物理AI需要更快推理？</h3>
+<ul><li><b>不仅需要响应，还需要预测</b></li></ul>
+<ol><li>机器人和物理AI必须实时判断当前环境及下一步行动。</li><li>系统还需要预测未来事件及不同操作可能产生的后果。</li><li>未来最快推理的目标，不只是更快输出Token，而是预测未来1至2分钟内可能发生的情况。</li><li>系统应在事件发生前完成决策并立即行动。</li></ol>
+<ul><li><b>未来发展方向</b></li></ul>
+<ol><li>当前预测准确率据称约为99%，长期目标是接近100%。</li><li>推理价值将由“回答更快”逐步转向“提前预测并执行”。</li></ol>
+<h3>c) 当前最需要快速推理的应用有哪些？</h3>
+<ul><li><b>金融算法与预测分析</b></li></ul>
+<ol><li>高频交易是当前最成熟、最重要的应用之一。</li><li>其他场景包括低延迟算法、实时计算和预测分析。</li><li>这些场景已经接近或进入实际部署阶段，并非远期概念。</li></ol>
+<ul><li><b>智能体AI工作流</b></li></ul>
+<ol><li>智能体AI需要真实、自然且实时的交互。</li><li>当前OpenAI或Anthropic等服务往往存在5至10秒响应延迟，难以实现即时交互。</li><li>快速推理可以支持智能体实时完成任务、预测下一步操作，并在与用户交互时减少停顿。</li></ol>
+<ul><li><b>语音、通信与代码生成</b></li></ul>
+<ol><li>语音到语音交互和实时电话通信对响应延迟高度敏感。</li><li>AI编程需要从“建议代码”升级为实时预测和生成代码。</li><li>UI生成、实时软件操作和智能体编程也将成为重要场景。</li></ol>
+<ul><li><b>推测解码</b></li></ul>
+<ol><li>推测解码通过预测模型提前生成候选Token，再由主模型进行验证。</li><li>该技术可以直接提升大语言模型的生成速度和资源利用率。</li><li>随着预测能力提升，推测解码预计将成为快速推理的重要软件层应用。</li></ol>
+<h3>d) 快速推理能为现有AI应用带来多大价值？</h3>
+<ul><li><b>端到端体验将显著改善</b></li></ul>
+<ol><li>当前GPU生成Token及软件处理会带来明显等待感，部分场景整体延迟可达10至20秒。</li><li>快速推理的目标是让输入、计算、输出和智能体操作尽可能即时完成。</li><li>实时交互类应用将率先体现价值，通用模型和非实时应用随后跟进。</li></ol>
+<h2>5. 快速推理市场规模与渗透率</h2>
+<h3>a) 快速推理目前占整体推理市场多少？</h3>
+<ul><li><b>当前仍处于早期阶段</b></li></ul>
+<ol><li>专业快速推理目前约占整体推理市场的5%至10%。</li><li>占比较低的主要原因并非需求不足，而是ASIC产能有限、技术尚未形成大规模交付能力。</li><li>云厂商的生态合作关系也会影响专业芯片选择。</li></ol>
+<ul><li><b>未来渗透率将持续提升</b></li></ul>
+<ol><li>预计下一年度专业快速推理占比可能提升至10%至15%。</li><li>此后随着智能体AI、编程、算法交易、机器人及预测算法增长，渗透率有望继续显著提高。</li><li>受访者预计相关市场未来可能以约40%的幅度扩张，但未提供2027年和2030年的最终占比数据。</li></ol>
+<h3>b) 智能体AI是否比聊天机器人带来更多快速推理需求？</h3>
+<ul><li><b>智能体AI的需求强度更高</b></li></ul>
+<ol><li>聊天机器人主要关注生成内容，而智能体AI还需实时判断、规划和执行。</li><li>智能体需要与用户、软件和现实环境持续交互，因此对首Token延迟和实时响应要求更高。</li><li>编程、算法交易、机器人和预测算法均属于延迟敏感型专业工作负载。</li></ol>
+<ul><li><b>推理市场将出现分层</b></li></ul>
+<ol><li>对延迟不敏感的工作负载继续采用通用GPU推理。</li><li>对延迟高度敏感的专业工作负载将转向Groq LPU、Cerebras或Etched等专业推理方案。</li><li>专业推理不会完全替代通用推理，而是形成差异化市场。</li></ol>
+<h2>6. Groq LPU/LPX的产能、部署与生态</h2>
+<h3>a) Groq LPU当前最大的瓶颈是什么？</h3>
+<ul><li><b>核心瓶颈是制造能力，而非架构兼容性</b></li></ul>
+<ol><li>理论上，大部分开源和闭源大语言模型都可以部署在LPU上。</li><li>小规模模型部署通常不存在明显容量问题。</li><li>超大模型需要更多LPU协同，单个LPU的输出速度也会随模型规模增加而下降。</li><li>当前限制大模型部署的主要因素是芯片和机架产能，而非架构本身。</li></ol>
+<h3>b) LPU/LPX产能的最新判断是什么？</h3>
+<ul><li><b>会议中出现多次口径调整</b></li></ul>
+<ol><li>早期口径称2026年LPU产量约为4万，但受访者随后明确表示应删除该数字。</li><li>Groq依赖Samsung 4纳米制程，实际产量和产能爬坡均低于原先预期。</li><li>受访者后续给出的保守预测是，下一年度LPX机架产量约为2万至2.5万台。</li><li>会议另有“约400万至500万个组件、折合约2万个完整机架”的表述，但组件与机架的换算定义未详细说明。</li></ol>
+<ul><li><b>Nebius预计获得的数量</b></li></ul>
+<ol><li>Nebius预计到今年年底获得约5,000至10,000个LPU/LPX机架，但原始表述在“芯片”和“机架”单位上存在混用。</li><li>剩余产能主要交付Groq自有客户，包括Saudi Aramco等。</li><li>大部分合同预计仍由Groq直接签署，而非全部通过Nebius分销。</li></ol>
+<h3>c) 为什么Nebius更可能采用LPU，而非Cerebras或Etched？</h3>
+<ul><li><b>LPU能够融入Nvidia生态</b></li></ul>
+<ol><li>LPU可以配合Nvidia软件栈和GPU系统部署。</li><li>对已经使用Nvidia基础设施的云厂商而言，LPU的迁移成本相对较低。</li><li>因此，LPU具备未来规模化采用的潜力。</li></ol>
+<ul><li><b>其他方案的限制</b></li></ul>
+<ol><li>Nebius目前不太可能采用Cerebras。</li><li>Cerebras更多局限于自有生态及大型定制合同，尚未实现全生态部署。</li><li>Nebius曾考虑采用Etched，但Etched当前产能过于有限，无法满足通用云服务部署需求。</li></ol>
+<h3>d) 还有哪些公司可能采购LPU？</h3>
+<ul><li><b>目前公开客户有限</b></li></ul>
+<ol><li>除Nebius外，其余主要采购方包括Groq自己的直接客户。</li><li>Saudi Aramco被提及为潜在或已有直接客户之一。</li><li>其他客户暂未公开。</li><li>Amazon可能将Groq与Trainium结合部署，Anthropic可能通过Amazon体系使用相关能力，但会议未给出已正式落地的确认信息。</li></ol>
+<h2>7. LPU支持的模型、性能及定价</h2>
+<h3>a) 哪些模型可以部署在Groq LPU上？</h3>
+<ul><li><b>架构上兼容开源和闭源模型</b></li></ul>
+<ol><li>理论上，各类开源和闭源模型均可部署在LPU或Cerebras上。</li><li>当前公开信息较多的是Gemma约31B参数模型。</li><li>Llama等模型已进行少量测试。</li><li>Anthropic、OpenAI及其他前沿实验室模型理论上也可以使用LPU，实际限制主要来自容量和产能。</li></ol>
+<ul><li><b>Cerebras现有部署情况</b></li></ul>
+<ol><li>Cerebras与OpenAI签有合同。</li><li>Cerebras可能正在为Meta部署Llama、Muse等模型。</li><li>Cerebras还与阿联酋G42、Core42及Mohamed University合作部署主权AI模型。</li><li>部分模型尚未公开。</li></ol>
+<h3>b) 模型越大，LPU输出速度如何变化？</h3>
+<ul><li><b>输出速度随参数规模上升而下降</b></li></ul>
+<ol><li>较小模型在LPU上可以达到较高Token输出速度。</li><li>超大模型需要多个LPU协同，并调用更多内存资源。</li><li>受访者给出的单用户输出速度宽泛估算约为每秒50至200个Token，但该数据尚未公开验证。</li></ol>
+<ul><li><b>Kimi系列参考数据</b></li></ul>
+<ol><li>Kimi 1.5在LPU上预计可达到约每秒1,000个Token。</li><li>Kimi K2预计约为每秒400至450个Token。</li><li>Kimi 3无法直接在单个LPU上运行，需要至少2个LPU共同调用内存。</li><li>Kimi 3的估算速度约为每秒250个Token。</li><li>上述数据属于受访者估算或有限测试结果，并非统一公开基准。</li></ol>
+<h3>c) LPU服务将按什么方式收费？</h3>
+<ul><li><b>预计采用按Token收费</b></li></ul>
+<ol><li>LPX高速推理服务计划在年底按Token输出量计价。</li><li>相关服务可能通过Nebius Token Factory提供。</li><li>Token Factory预计只公布最终价格，不一定披露底层具体模型和硬件配置。</li><li>定价会根据模型大小、输入输出量、季度和预留使用量而变化。</li></ol>
+<h3>d) Groq当前参考定价如何？</h3>
+<ul><li><b>小型模型</b></li></ul>
+<ol><li>对8B至20B参数模型，受访者给出的参考输出价格约为每100万Token 0.05至0.08美元。</li><li>GPT-OSS 20B的参考输入价格约为0.07美元，输出价格约为0.30美元。</li></ol>
+<ul><li><b>中型模型</b></li></ul>
+<ol><li>对27B至70B参数模型，基础预测价格约为每100万Token输入0.59美元、输出0.79美元。</li><li>阿里巴巴相关模型的输出价格约为0.60至3美元，具体取决于模型。</li></ol>
+<ul><li><b>大型专家模型</b></li></ul>
+<ol><li>以GPT-OSS 120B为例，参考输入价格约为0.15美元、输出价格约为0.60美元。</li><li>Groq针对缓存提示、异步批处理API和预留批次可提供约50%的折扣。</li><li>客户若提前预留Token使用量，还可能获得更高折扣。</li></ol>
+<ul><li><b>Nebius加价情况</b></li></ul>
+<ol><li>Nebius基准价格据称比Groq自身高约20%。</li><li>会议中还出现Nebius输入0.55、输出0.75的报价，但原始记录存在“美元/美分”单位混用，需进一步核实后方可用于正式测算。</li><li>Groq LPU与Vera、GB300等传统GPU方案的成本对比尚未在本次会议中形成完整结论。</li></ol>
+<h2>8. 云厂商的软件优化与差异化能力</h2>
+<h3>a) 相同模型和硬件下，Nebius能否实现比其他云厂商更快的输出？</h3>
+<ul><li><b>可以，核心差异来自推理软件</b></li></ul>
+<ol><li>相同模型运行在相同硬件上，不同云服务商仍可能呈现不同的Token输出速度。</li><li>推理引擎、编译优化、批处理机制、缓存管理和调度策略都会影响性能。</li><li>因此，Nebius理论上可以通过软件优化，使同一模型的速度高于CoreWeave、Lambda等竞争对手。</li></ol>
+<ul><li><b>需要通过统一基准测试验证</b></li></ul>
+<ol><li>可对Nebius、CoreWeave、Crusoe、Together AI、Fireworks、Baseten等服务商进行横向测试。</li><li>测试需统一模型、硬件、批量大小、上下文长度及输入输出Token数量。</li><li>除Token吞吐量外，还应同时比较首Token延迟、单用户速度、并发能力及单位Token成本。</li></ol>
+<h2>结构化总结表格</h2>
+<div class="tbl"><table class="t wrap"><thead><tr><th>业务维度</th><th>核心指标/事项</th><th>当前状态</th><th>未来趋势/预测</th><th>关键限制</th></tr></thead><tbody><tr><td><b>推理即服务</b></td><td>新云厂商ARR</td><td>Together AI预计接近15亿美元；Nebius模型服务预计6亿至8亿美元；CoreWeave约6亿并向8亿美元增长</td><td>开源模型推动推理服务持续高速增长</td><td>数据统计周期及收入定义需进一步确认</td></tr><tr><td><b>云需求结构</b></td><td>前沿实验室需求</td><td>大型长期云合同增速放缓</td><td>向开源推理、中短期高价合同迁移</td><td>融资难度上升、资本开支较高</td></tr><tr><td><b>GPU供应</b></td><td>Vera产能</td><td>原计划40万至60万块，实际可能约10万至20万块</td><td>GPU持续紧缺，租赁价格上行</td><td>HBM4短缺、ASIC替代能力有限</td></tr><tr><td><b>Nebius策略</b></td><td>合同期限</td><td>更偏好1至3年高价合同</td><td>提高利润率和资本效率</td><td>避免长期合同及过高债务杠杆</td></tr><tr><td><b>Nvidia推理解耦</b></td><td>Token吞吐量</td><td>Vera约4.5万Token/秒；叠加D-Matrix约5.4万；再结合LPU接近7万</td><td>GPU、SRAM加速芯片与LPU协同</td><td>成本高于纯推理ASIC</td></tr><tr><td><b>Etched</b></td><td>Sohu性能</td><td>约6万Token/秒；8U系统约等于20至40块GB200</td><td>重点服务高频交易和预测算法</td><td>产能有限，仅覆盖金融利基市场</td></tr><tr><td><b>快速推理标准</b></td><td>首Token延迟</td><td>当前领先基准低于80毫秒</td><td>代码生成等场景目标降至10至40毫秒</td><td>缺乏统一行业口径</td></tr><tr><td><b>快速推理渗透率</b></td><td>推理市场占比</td><td>当前约5%至10%</td><td>下一年度预计10%至15%，此后继续提升</td><td>专业ASIC产能与云生态限制</td></tr><tr><td><b>核心应用</b></td><td>延迟敏感场景</td><td>高频交易、预测分析、智能体AI、实时语音、AI编程</td><td>机器人、物理AI和预测执行将成为增量市场</td><td>端到端软件延迟仍较高</td></tr><tr><td><b>Groq产能</b></td><td>LPX机架</td><td>早期4万口径已被修正</td><td>下一年度保守预计约2万至2.5万台</td><td>Samsung 4nm产能爬坡不及预期</td></tr><tr><td><b>Nebius采购</b></td><td>LPU/LPX数量</td><td>预计年底获得约5,000至10,000，单位口径待核实</td><td>用于智能体AI及开源模型推理</td><td>芯片与机架数量存在表述混用</td></tr><tr><td><b>大模型性能</b></td><td>LPU输出速度</td><td>Kimi 1.5约1,000 Token/秒；K2约400至450；Kimi 3约250</td><td>多LPU协同支持更大模型</td><td>模型越大，单设备速度越低</td></tr><tr><td><b>LPU定价</b></td><td>收费模式</td><td>计划按Token收费，并提供批处理、缓存及预留折扣</td><td>可能通过Nebius Token Factory提供</td><td>原始价格存在美元/美分口径混用</td></tr><tr><td><b>软件优化</b></td><td>云厂商差异</td><td>相同硬件下仍可实现不同推理速度</td><td>推理引擎和调度能力成为核心竞争点</td><td>需统一基准测试验证</td></tr></tbody></table></div>
+<h2>新版prompt提炼之后的转译</h2>
+<p><b>提问者：从您的角度来看，目前需求侧呈现出哪些总体趋势？市场是否需要更高的速度、更高的吞吐量？未来的大语言模型是否会进一步扩大？</b></p>
+<p>回　答　者：目前，我们观察到最主要的趋势来自开源模型，也就是推理即服务。从整体云计算市场来看，不仅是 Nebius，包括 Together AI、Fireworks、Baseten 和 Modal 等公司都在布局推理即服务，其年度经常性收入均出现快速增长。</p>
+<p>例如，去年 Fireworks 和 Together AI 的年度经常性收入约为100百万至200百万美元。今年，Together AI 的年度经常性收入将接近1十亿500百万美元，几乎是在1年内实现了这一增长，表现非常突出。</p>
+<p>Nebius 和 CoreWeave 最初都以传统裸金属服务及 GPU 即服务为主，近期也开始大规模发展推理即服务。以 Nebius 为例，其模型即服务业务的年度经常性收入从去年的25百万美元增长至今年预计600百万至800百万美元，并可能接近800百万美元。CoreWeave 的情况也较为相似，目前年度经常性收入为600百万美元，并可能向800百万美元迈进。</p>
+<p>目前，大力投资模型即服务已经成为行业中的普遍趋势。OpenAI 近期曾公布年度经常性收入预测为80十亿美元，准确数字应为70十亿美元，而实际完成的数字为50十亿美元。这也是我观察到的行业趋势。</p>
+<p>回　答　者：目前，闭源模型成本高昂，许多企业难以承受，因此开始直接转向开源模型。原本可能流向 OpenAI、Anthropic 或 Google 的收入和需求，也开始直接转向开源领域。这一趋势对新云厂商显然有利，但其长期影响仍需关注。</p>
+<p>大型前沿实验室对云计算的需求正在减弱，这意味着超大规模云服务商在相关领域的合同增速将会放缓。微软已经出现了这种情况，前沿实验室本身也有类似趋势。目前，OpenAI 的大部分合同实际上正被微软吸收，而非真正落地，原因在于结果不及预期。Anthropic 目前仍在与合作伙伴积极推进云计算部署，但行业意愿正在下降，相关部署的融资难度也在不断上升。</p>
+<p>与此同时，裸金属服务需求依然强劲。即使核心云计算需求有所减弱，整体需求仍在延续。此外，受 HBM 内存短缺等因素影响，GPU 目前仍处于供应紧张状态。以实际市场情况为例，Vera 是 Nvidia 最新的旗舰 GPU，今年原本具备生产约 400,000 至 600,000 块 GPU 的能力，但由于 HBM4 存在问题，目前实际产能可能仅接近 200,000 至 100,000 块。这显然限制了最新 GPU 的部署。虽然旧型号仍可部署，但其效率不及 Vera。</p>
+<p>目前市场上尚未出现真正能够替代 Nvidia 的方案，ASIC 的产量仍然有限。因此，GPU 供应持续紧张，租赁价格在 10 月又上涨了 20%。这对包括 Nebius 在内的新云厂商有利，因为它们会将成本直接转嫁给客户，而不会自行承担相关成本。</p>
+<p>主要问题在于资本支出正在大幅增加，新云厂商的运营成本也随之上升。Nebius 等新云厂商正在调整策略。为避免像 CoreWeave 一样出现债务杠杆过高的情况，同时提高盈利能力和利润率，Nebius 不再像过去那样签订多份规模庞大的裸金属服务合同，而是优先选择期限为 1 至 3 年、定价最高的大型合同，而非期限为 5 年的裸金属服务合同。</p>
+<p><b>提问者：英伟达为什么要部署 Nvidia Groq 3 LPX？快速推理的潜在市场规模如何？</b></p>
+<p>回　答　者：英伟达部署 Groq LPU，首先是为了实现推理解耦。目前，英伟达 GPU 在令牌效率、智能体响应以及令牌输出延迟等方面存在效率问题。LPU 已被纳入英伟达的整体战略，例如在 GPU 层面与 D-Matrix 部署相结合。这一方案尤其适用于从10月起部署的英伟达 Vera GPU。不过，目前 D-Matrix Vera 的产量尚未匹配，涉及40,000颗芯片。</p>
+<p>LPU 与英伟达 GPU 构成了一套完整系统。在这套系统中，D-Matrix 芯片利用 SRAM 来避免 HBM 过载，使英伟达 Vera GPU 的输出能力显著高于此前的型号，因为数据批处理过程中的 HBM 瓶颈得到缓解。这意味着令牌输出至少可以提升20%。</p>
+<p>结合 LPU 后，令牌数量还会进一步大幅增加，因为 LPU 同样能够解决这一问题：它可以完全绕过 HBM，主要依赖 SRAM。以目前市场上竞争力最强的推理芯片 Etched 为例，每颗 Sohu ASIC 针对1个模型，每秒可处理约60,000个令牌。Vera 目前每秒可处理约45,000个令牌，两者之间存在较大差距。引入 D-Matrix 后，令牌输出可提升20%，至少达到每秒54,000个。如果进一步使用 LPU 辅助 Vera，Vera、D-Matrix与LPU组合方案的输出将接近每秒70,000个令牌。</p>
+<p>从 GPU 的经济性来看，该方案的成本高于 Etched，但英伟达可以依靠更大的部署规模。因此，部署 LPU 并不是一项孤立的策略，而是为了同时解决智能体 AI 响应、令牌输出效率以及此前较为突出的 HBM 内存瓶颈问题。</p>
+<p>快速推理的市场需求非常庞大，尤其体现在边缘推理计算和本地化推理领域，也包括物理 AI、智能体 AI 等需要实时响应、无法容忍延迟的特定应用。</p>
+<p><b>提问者：您提到一家名为 Etched 的公司，其推理速度约为每秒60,000个 Token，对吗？</b></p>
+<p>回　答　者：是的。</p>
+<p><b>提问者：为什么其速度如此之高？这一水平远高于 Cerebras、Groq 等市场参与者，主要原因是什么？</b></p>
+<p>回　答　者：首先，Etched 从一开始就是专门针对推理进行优化设计的，因此不同于传统 GPU，而是采用 ASIC 架构。</p>
+<p>Etched 能够以较小规模进行部署。目前，一套约为8U的 Etched 系统，其推理输出能力大约相当于20至40块 GB200。此外，它从设计之初就专门针对智能体 AI 和规模化推理进行了优化。</p>
+<p>在软件和架构层面，主要区别在于 Etched 没有可编程层或软件编译器。它不依赖 HBM4，而是采用容量为144GB的 HBM3e。Etched 还拥有自己的生态系统，目前采用液冷方案，并具备自主的软件管理系统。同时，它基本绕过了内存带宽瓶颈，软件层也更加简化，且仅针对推理进行优化。</p>
+<p>Nvidia GPU 属于通用计算产品，Cerebras 的 ASIC 也具有通用属性，并非仅针对推理进行优化。目前市场上真正可以被视为纯推理芯片的产品并不多。Google TPU、Amazon Trainium、Cerebras 和 Maia 通常都属于通用型产品。它们在推理方面非常高效，但并非仅为推理而设计。</p>
+<p>Etched 实际上移除了架构中面向通用计算的部分，简化了 GPU 本身。通过这种方式，它能够提高 Transformer 的利用率，实现约90%的 FLOPS 利用率，而其他产品的 FLOPS 利用率和 Token 输出通常低得多。这也体现了 Etched 针对纯推理场景的优化程度。</p>
+<p>此外，Etched 目前的规模也相当大，刚刚完成了一轮10亿美元融资，另有10亿美元即将到位，主要投资者以金融类为主。</p>
+<p>回　答　者：华尔街的公司都属于目标客户。例如，Etched 已在摩根大通部署，也直接向 Jane Street 交付产品。该产品旨在成为市场上最高效的推理集群，同时无需配套微型数据中心即可部署。目前，Etched 面向的更多是利基市场，而非大众市场。由于制造能力非常有限，现阶段只能在金融服务领域进行部署。</p>
+<p><b>提问者：Etched 的硬件目前运行哪些类型的大语言模型？</b></p>
+<p>回　答　者：目前，Etched 的硬件并未运行大语言模型，实际运行的是高频交易算法。与其讨论大语言模型，不如从当前最重要的应用场景，以及摩根大通和 Jane Street 实际运行的工作负载入手，这样可以提供更清晰的概览。</p>
+<p>Etched 最初并非为大语言模型而设计，更多是为规模化推理而设计。这也是它的不同之处：通过去除无关处理并专注于特定应用场景，而不是面向整体的智能体 AI 部署或开源模型，Etched 主要针对需要在最短时间内完成最高强度计算的任务。</p>
+<p>目前公开披露的信息有限，尤其是 Jane Street 运行的大多数模型都属于机密，但相关应用场景可以说明。这些工作负载通常是内存密集型、低延迟的 Transformer 推理。出于延迟要求，设备必须部署在办公楼内部，不能放置在其他外部数据中心。</p>
+<p>其应用包括高频交易。所使用的特定大语言模型并未公开，需要实现亚毫秒级延迟，不仅服务于高频交易，还要以比现有高频交易算法更高效的方式，自主生成交易信号并立即执行独立的智能体操作。此外，还包括高频预测智能体，不仅能够直接预测证券的下一步走势。</p>
+<p>回　答　者：Sohu 能够在批大小为 0 时实现无性能衰减的处理，基本上属于实时处理。它可以结合全部上下文，直接预测未来10秒或1分钟内可能发生的情况。因此，与标准的英伟达 GPU 或其他硬件相比，它在直接延迟套利方面具有显著优势。</p>
+<p><b>提问者：我想确认一点：该模型仍然是 Transformer 模型吗？您提到它主要用于低延迟 Transformer 推理，那么在 Etched 上运行的是某种 Transformer 模型吗？</b></p>
+<p>回　答　者：不是，Transformer 指的是硬件架构。</p>
+<p><b>提问者：目前应如何定义快速推理？Cerebras 的输出速度可以超过每秒4,000个 Token，Groq 同样可以超过每秒3,000个 Token。在当前市场中，所谓的快速推理究竟需要达到怎样的速度？</b></p>
+<p>回　答　者：首先，我们需要对工作负载进行分类。稍等1秒，我们需要先明确快速推理将用于哪类工作负载，因为这是最重要的因素。</p>
+<p>例如，Groq 目前用于实时智能体 AI，以实现智能体 AI 的即时响应。Cerebras 目前也在部署智能体 AI，但主要侧重于推理输出。正如我之前提到的，目前性能领先的是 Etched，其表现优于 Cerebras 和 Groq，速度最快，输出能力也最强。不过，由于它目前不会向金融客户以外的客户开放，因此暂时只能将其视为市场之外的更高层级。</p>
+<p>就市场本身而言，Cerebras 的表现优于 Groq，尤其是在首个 Token 生成时间方面，已经低于80毫秒。</p>
+<p>至于快速推理为何重要，以及应如何界定，其基准就是速度越快越好，因为系统需要实现实时输入和输出。例如，在机器人和智能体 AI 场景中，系统的响应速度必须快于现实中的实时交互。</p>
+<p>其中首先需要考虑的是预测能力。如果讨论的是物理 AI 和机器人，它们不仅需要实时计算正在发生的情况以及需要采取的行动，同时还要预测未来将会发生什么。</p>
+<p>回　答　者：系统需要了解将会发生什么，以及相关行为可能带来的后果。因此，我们需要非常高的响应速度，同时也要缩短首个Token生成时间。这是利用层面的第1个重点。</p>
+<p>目前，最快推理的基准是80毫秒，未来还会进一步降低。在80毫秒的情况下，这已经是当前能够实现的最快速度。以Etched为例，其仍被视为快速推理方案，但未来最快的推理将是对至少未来1至2分钟内可能发生的情况进行预测。这样一来，机器人或算法不仅能够以接近100%的最高准确率进行预测，目前准确率约为99%，还能够在事件发生前立即作出反应。这将是最快推理的发展方向。</p>
+<p><b>提问者：能否进一步介绍目前的应用场景？机器人或物理AI可能距离实际应用还比较远，而当前已经出现了智能体AI、AI编程等应用。现阶段哪些应用场景最需要快速推理？快速推理能够为这些应用场景带来多大价值？</b></p>
+<p>回　答　者：不同场景确实存在差异。正如之前提到的，快速推理最适合应用于算法，而且相关应用并不遥远，目前已经非常接近实际落地。</p>
+<p>高频交易是当前最重要的应用之一。此外，快速推理也广泛应用于各类算法、计算和预测分析，这些是目前应用程度最高的场景。</p>
+<p>从现阶段来看，智能体AI工作流也是重要应用场景。交互不仅需要真实自然，还需要实时完成。目前，当用户与OpenAI或Anthropic进行交互时，通常会出现5至10秒的延迟，无法实时获得答案。快速推理的目标是让用户立即获得实时回应。</p>
+<p>因此，其应用不仅包括通用模型的输入与输出，还包括与智能体AI相关的各类场景，例如智能体AI的实时编程、语音到语音交互以及实时电话通信。智能体不仅能够以预测性方式实时执行被分配的任务，在开始与用户直接交互时也不会出现延迟。目前，消费者已经能够从实际体验的各类交互中感受到这种延迟。</p>
+<p>回　答　者：从基础设施角度看，目前始终存在延迟感，这是当前面临的问题。NVIDIA GPU 生成Token通常需要10至20秒，再加上软件处理时间，因此用户会感受到延迟。目标是让所有处理都能即时完成。当前的各类推理应用都可以通过快速推理得到显著改善。正如之前提到的，实时应用将率先落地，其他应用随后也会跟进。</p>
+<p>实时代码生成同样重要，因为目前从输入到输出仍存在延迟。现阶段，AI主要是建议代码，而最终目标是让AI能够预测代码，不仅提供建议，还能直接进行预测。目前代码生成的速度仍然较慢，尤其是在不使用Cerebras的情况下，延迟约为200至300毫秒，因此需要将延迟进一步降低至10至40毫秒。</p>
+<p>除代码生成外，应用场景还包括UI生成和推测解码，这些将直接应用于LLM。推测解码使用预测模型，通过Token构建模拟模型并消耗Token，以预测接下来将发生的内容。当前的开源和闭源模型也采用类似方式，即根据问题对数据进行三角分析，评估并预测可以向用户输出的答案。未来，这方面的能力将得到显著提升。以上就是相关应用场景。</p>
+<p><b>提问者：您能否估算一下，快速推理在整体推理市场中的占比？例如未来20……2030年，快速推理在整体推理市场中的占比大约是多少？</b></p>
+<p>回　答　者：目前这一占比相当小，不仅因为产量较为有限，也因为技术虽然已经成熟，但尚不足以支持大规模部署。如果没有记错，快速推理的占比应该低于10%。您希望比较的是推理市场，还是整体云计算市场？</p>
+<p><b>提问者：请以推理市场为比较范围。</b></p>
+<p>回　答　者：好的。我会提取2026年、2027年和2030年的数据。</p>
+<p>回　答　者：AI应用将呈指数级增长，市场规模也将大幅扩大，因为目前各方都在使用智能体AI和预测算法。</p>
+<p><b>提问者：与聊天机器人等生成式AI相比，智能体AI是否会带来更多快速推理需求？</b></p>
+<p>回　答　者：是的。智能体AI不仅带来了更多需求，而且由于需要实时交互，对快速推理的要求尤其突出。对于生成式AI，需要区分不同的应用场景。例如，编程仍然需要大量快速推理能力，智能体AI同样存在庞大的快速推理需求。</p>
+<p>当前市场正在向这一方向发展：低敏感度工作负载主要采用通用推理，而对延迟更敏感的专业工作负载则采用更专业的快速推理。此前提到的智能体AI、编程、算法交易、机器人和预测算法，都是需求增长的主要领域。</p>
+<p>目前，专业推理约占整体市场的5%至10%，未来预计将以约40%的幅度扩张。市场中还有其他推理ASIC，但其优化程度不及Groq和LPU，因此整体市场规模略小于表面上看到的规模。专业推理目前占比为5%至10%，预计明年将提升至10%至15%，此后还会继续大幅增长。随着越来越多工作负载对快速推理和延迟更加敏感，相关需求将显著增加。</p>
+<p>目前，快速推理的瓶颈在于生产。专业ASIC的产能相当有限，同时也受到云计算策略的限制。例如，如果企业是NVIDIA的合作伙伴，通常不会部署Cerebras，而会部署LPU。目前LPU的产量仅为40,000。NIBIUS可能会在今年采用LPU，并部署其中的10,000。NIBIUS将直接把这些LPU用于智能体AI和开源模型，同时继续将传统推理用于传统开源任务。</p>
+<p><b>提问者：您提到NIBIUS将部署10,000，而LPU的产能为40,000。那么，其余30,000将由谁采购？</b></p>
+<p>回　答　者：从技术上看，也包括Groq自身的客户，这一项可能与Groq本身有关。目前，除Groq客户外，其他客户尚未公开。</p>
+<p><b>提问者：40,000是每年还是每月的数量？</b></p>
+<p>回　答　者：目前是指2026年的数量。</p>
+<p><b>提问者：是2027年，对吗？</b></p>
+<p>回　答　者：不是，是2026年。</p>
+<p><b>提问者：目前有哪些大语言模型可以部署在Groq的LPU或LPX机架上？目前公开信息中似乎只有31 billion参数的Gemma模型。您是否了解还可以部署哪些其他模型？</b></p>
+<p>回　答　者：目前，LPU面临的主要问题之一是产能较为有限。理论上，几乎所有大语言模型都可以部署在LPU上；但在实际应用中，由于制造能力有限，部署会比较困难。</p>
+<p>Cerebras目前与OpenAI签有合同，因此OpenAI可以部署Cerebras。Anthropic可能也在与Amazon合作使用Groq，因为Amazon正在将Groq与Trainium一同部署，这种方式是可行的。</p>
+<p>所有开源模型均可部署在Cerebras和Groq上，在这些ASIC上进行部署不存在架构层面的问题。总体而言，无论开源模型还是闭源模型，都可以部署。差异主要在于模型类型和工作负载规模。例如，开源模型可以部署较小的工作负载，这种情况下不会出现容量问题；但对于大型模型，容量将成为问题。目前LPU无法部署非常大的模型，并非受架构限制，而是受制造能力限制。</p>
+<p>据我了解，Cerebras目前正在为Meta部署模型，可能包括Llama和Muse。此外，Cerebras还与阿联酋的G42、Core42开展了部署合作，也与阿联酋的Mohamed University合作部署主权AI模型，该模型目前尚未公开。除开源模型外，目前主要就是这些部署。</p>
+<p>从架构角度看并不存在问题。Anthropic以及其他模型，甚至第3、第4梯队的前沿实验室，都可以直接使用LPU和Groq。主要问题仍然是产量。目前我认为潜力最高的是LPU，因为它们运行在NVIDIA生态系统上。</p>
+<p>回　答　者：确实如此。例如，使用 Nvidia 软件栈时，可以部署 LPU。这意味着未来 LPU 将得到大规模采用。相比之下，Cerebras 目前更多局限于自身生态系统和大型合同，尚未实现全生态部署。</p>
+<p><b>提问者：根据我的理解，目前可部署的 Gemma 21、31B 参数规模并不大，只是31 billion参数模型。目前其他前沿模型或 Tier 1、Tier 2 模型已经达到1万亿参数。如果将1万亿参数的大模型部署在 LPU 上，运行速度是否会大幅下降？根据 Nvidia 和 Groq 披露的数据，Gemma 31B 在 Groq 上运行时，速度可以超过3,000 tokens per second。如果在 LPU 上运行1万亿参数模型，速度能达到多少 tokens per second？</b></p>
+<p>回　答　者：需要结合实际案例进行分析。我需要查看是否有 Anthropic 或 OpenAI 的相关数据，否则只能参考 Kimi，因为目前只有 Kimi 可以直接测试。LPU 要到年底才会部署，因此暂时无法进行外部测试。目前已有少量 LPU 使用 Llama 进行了测试，例如30 billion参数模型，我需要确认是否有相关数据。</p>
+<p>首先，模型规模越大，单个 LPU 的输出速度就越低。这与在小于 GB200 的设备上部署 Kimi 时遇到的问题相同。Kimi 在 B200 上的输出存在明显问题，Moonshot 团队正在大幅缩小模型，但模型只能缩小到一定程度。</p>
+<p>目前我掌握的测试数据是，LPU 面向每位用户的输出速度约为50至200 tokens per second。这项数据尚未公开，我需要从现有信息中进行计算。</p>
+<p><b>提问者：英伟达和 Grok 除了 Gemma 4 31B 之外，尚未披露其他模型。Gemma 4 31B 并不算大型模型，只有 31B 参数，而目前的前沿模型已达到约 1万亿参数。如果在 LPU 上运行 1万亿参数模型，其推理速度如何？</b></p>
+<p>回　答　者：以 Grok 上运行 Kimi 为例，Kimi 1.5 是其中较小的模型之一，在 LPU 上可以达到每秒 1000 个 Token。Kimi K2 可以达到每秒 400 至 450 个 Token。Kimi 3 目前无法直接在单个 LPU 上运行，需要使用多个 LPU，并调用 2 个 LPU 的内存。根据现有估算，Kimi 3 在 LPU 上的速度约为每秒 250 个 Token。</p>
+<p><b>提问者：Groq 的 LPX 所提供的高速推理服务价格是多少？是按 Token 计价，还是按 GPU 计价？这项服务是否会通过 Token Factory 提供？</b></p>
+<p>回　答　者：目前尚未提供，但计划在今年年底按 Token 输出量提供。届时不会披露具体使用的模型，因为 Nebius Token Factory 目前并未公开模型本身，只会公布最终价格。</p>
+<p>LPU 的定价也取决于所使用的模型。例如，Kimi 的输出量较低，但实际收费可以更高。此外，定价还取决于所考虑的季度。关于 Nebius 上 Kimi 部署的具体价格，目前还需要进一步核实相关估算。</p>
+<p><b>提问者：Nebius未来是否可能采用Cerebras？</b></p>
+<p>回　答　者：不会。目前Nebius不太可能采用Cerebras。实际上，Nebius曾考虑采用Etched，但目前Etched的产量过于有限。</p>
+<p><b>提问者：您能否估算2027年的LPU产量？您此前提到，2026年的产量为40,000。</b></p>
+<p>回　答　者：目前尚无相关数据，但我应该有相应的估算。关于LPU，根据不同模型，目前可见的定价基准为每100万token 5美分至每100万输入token 9美分，这些数据来自Groq。</p>
+<p>例如，对于参数规模在8 billion至20 billion之间的模型，每100万token的输出价格为0.05至0.08。目前测试的是OpenAI的GPT OS 20 billion，输入价格为0.07，输出价格为0.30。</p>
+<p>对于参数规模在27 billion至70 billion之间的中型模型，目前基础预测价格为每100万token输入59美分、输出79美分。例如，阿里巴巴目前的输出价格为60美分至$3，具体价格区间因模型而异。</p>
+<p>对于120 billion美元及以上的大型专家模型，以GPT OS 120B为例，目前输入价格为15美分，输出价格为60美分。需要注意的是，Groq目前针对缓存提示提供50%的折扣，也针对异步批处理API和预留批次提供50%的折扣。如果客户在特定时间段内预留token输出量和使用量，Groq将提供更高的折扣。</p>
+<p>Groq已部署在Nebius上，目前可见的基准价格为0.06，比Groq自身高20%。关于$120 billion美元的情况，目前以120为例，输入端……</p>
+<p>回　答　者：Nebius 的输入价格为每100万 Token 0.55美分，输出价格为每100万 Token 0.75美分。</p>
+<p><b>提问者：能否大致介绍一下 Groq LPU 的价格？具体而言，Groq LPU 的 Token 价格与纯 GPU 或传统 GPU 集群相比，是更高还是更低？</b></p>
+<p>回　答　者：关于传统 GPU，我们可以采用 Vera 和 GB300 进行计算，以便直接得出比较结果。</p>
+<p><b>提问者：Nebius 能否通过软件优化模型，使模型在 Nebius 硬件上的输出速度更快、每秒生成的 Token 数量更高？例如，同一模型运行在相同硬件上时，Nebius 的速度是否可能高于 CoreWeave、Lambda 等其他 Neo Cloud 服务商？</b></p>
+<p>回　答　者：可以。这主要取决于各家使用的推理软件。不同服务商采用不同的推理软件，其优化程度有高有低，因此会呈现不同的推理速度。可以通过推理速度基准进行比较，涵盖 Nebius、CoreWeave、Crusoe、Kimi、Together AI、Fireworks 和 Base10，并对不同模型进行测试。</p>
+<p>目前还有2个问题需要回答。关于 LPU 的产能，目前约为4至5百万个，粗略折合约20,000个完整机架，这是当前技术上可提供的产能。</p>
+<p>回　答　者：关于40,000这个数字，它实际上是目前对机架数量的预期。但从技术层面来看，Nebius到今年年底应该能够获得5至10,000个LPU，也就是LPX机架。这是我目前掌握的市场预测，但我也了解到其他数据。</p>
+<p>目前较为保守的预测是，到明年LPX机架产量将达到约20,000台。此前的产量原本可能更高，同时还需要考虑到今年正在额外交付的数量。</p>
+<p>可以确认的是，Nebius今年应该会收到5至10,000个LPU，也就是LPX机架。其余产品将交付给其他客户，包括Saudi Aramco等Groq已有的直接客户。因此，大部分合同将直接面向Groq自己的客户。到明年，LPX产量应该达到约20,000至25,000台。</p>
+<p>可以删除40,000这个数字。40,000原本是今年的预期，但目前存在产能限制。Groq依赖Samsung的4纳米芯片，但实际产量未达到预期，产能爬坡也未达到原先对2027年的预期，因此目标已经下调。</p>
+<p>回到GB300。目前已经确认了GB300的相关数据。关于GB300的问题，Groq的各项数据此前已经讨论过。具体到GB300本身，表现还取决于所讨论的模型。Groq的效率几乎是LPU的2倍，因为GB300大约可以生成28……</p>
+<h2>原文转译</h2>
+<p>投资决策并自行承担投资风险。九千咨询不因使用本次内容所导致的任何损失承担任何责任。专家发言内容仅代表专家个人观点，不代表本公司观点。本次会议内容不得涉及国家保密信息、内幕信息、未公开重大信息、商业秘密、个人隐私，不得涉及可能引发不当炒作或股价异常波动的敏感信息，不得涉及影响社会或资本市场稳定的言论。未经九千咨询事前书面许可，任何机构或个人不得以任何形式复制、录音、刊载、转载、转发、引用本次会议内容，否则由此造成的一切后果及法律责任由该机构或个人承担。本公司保留追究其法律责任的权利。感谢您的理解和支持。</p>
+<p>Okay, um, uh, so, uh, let's start the let's start our call and I mean I'll strictly follow the question list that uh my my colleagues have sent you. Uh so my my first question question is that um could you please share with us um um from your perspective what what is the uh general trend uh you see in the demand side? I mean like uh is the demand uh is is the demand for like more higher higher speed or like uh higher throughput uh or the uh uh uh large large LLMs uh will be larger will be will be larger in the future. Uh so yeah so so the first first question question is uh what trends in from the in the demand side do you do you see at the moment? Thank you.</p>
+<p>Mhm. Yes. So uh the trend at the moment we see with the major force uh um with the major strength is definitely the one from the open source models. So it means inference as a service basically. So to give you like a perspective not only Nebius but in general the cloud computing market at the moment that is betting on the inference as a service starting from Together AI, Fireworks, Baseten and Modal. They've seen their run rate revenue revenues explode. So to give an example like last year Fireworks also Together AI we were clocking about between 100 to 200 millions in ARR. This year Together AI will be able to actually get almost to 1 billion and 500 million dollars. And this is basically in a span then uh of one year basically almost. It's impressive. Also if you take into account Nebius in that case that like CoreWeave at the moment they start with the traditional bare metal as well GPU as a service and just recently they started also the inference as a service at scale. So at the moment for example Nebius from a 25 million dollars in ARR just for the model as a service last year now can close the year probably between 600 to 800 million dollars. Moving towards probably the 800. CoreWeave also similar numbers currently at 600 million dollars ARR and probably going towards uh the 800 as well. It's become quite common in the industry at the moment to invest heavily in the model as a service. Well first of all uh we had the announcement quite recently that OpenAI for example was announcing a forecasted 80 let's say billion dollars in ARR but um actually the apologies 70 but actually the numbers they close by the 50 billion dollars. And this is actually the trend that I've also seen it because The closed source models, they tend to be so expensive at the moment that basically they are cost prohibitive for many enterprises, but they started to shift directly to open source models. And beside we started to see that let's say revenues and demand that usually would have gone to let's say an OpenAI or let's say an Anthropic, a Google, going directly towards the open source. So this definitely it is beneficial for the neo clouds, but what does it mean in the long term? So first of all, having the large frontier labs basically diminishing the cloud computing demand, it means that we're going to see a slowdown in the actually the contracts from the hyperscalers in that regard, so first of all. Something that we've already seen it for example with Microsoft, but also from the frontier labs themselves. At the moment we see let's say that majority of the contracts from OpenAI actually are getting absorbed by Microsoft rather than like taking place because of the actually disappointing results. While Anthropic at the moment is driving quite an aggressive let's say deployment of cloud computing with partners, but at the same time we started to see that industry has increasingly less appetite, so it's becoming increasingly also more difficult to actually finance these deployments. The other trend that we currently see is that the bare metal demand is still quite strong. So it means that even if we can see that there is let's say a diminishing in the actually the core cloud computing demand, then actually the demand is still continue. Also we need to take into account that we are in a situation where the GPUs are in short supply because of HBM for example memory shortage. To give you like practical example, how bad it is for the market, so the Vera, technically it is the latest flagship GPUs from Nvidia, technically would have had the capacity of producing about between 400,000 to 600,000 GPUs this year. But because of the HBM4 problems, at the moment probably the actual capacity is going to be close to 200,000 to 100,000. This is definitely limiting the deployment of latest GPUs. So while for example older models they can be deployed, the problem is that they are not as efficient as the Vera. Alternatives to Nvidia at the moment is not really there, so the ASICs are still limited in production. That's why the GPU supply is quite tight and that's why the pricing we see are increased another 20% in October in rental pricing. And this one is all beneficiary to the neo clouds because the neo clouds, Nebius included, they just going to pass directly the cost to the customers. They are not going to bear any kind of cost. But of course the main problem comes with the capex because the capex is actually increasing quite substantially. So it means that for the neo clouds it's becoming increasingly expensive to operate. But this is also like same neo clouds like Nebius, what they are doing is that basically changing strategy. So instead of doing multiple let's say bare metal contracts and very large ones like it was doing in the past, in order to avoid overleveraged debt like CoreWeave, and at the same time increasing the profitability and the margins is prioritizing deals that tend to be large, between one to three years, and with the highest pricing, rather than for example the bare metal for five years. Please, if you have any questions.</p>
+<p>Okay, got it. Yeah, so maybe let's move to the to the to my next question. So Why is Nvidia going to deploy Nvidia Groq 3 LPX? And also, uh, what is the potential market size of, uh, fast in- fast inference? That's the question.</p>
+<p>Yes, well, uh, Nvidia is actually going to deploy the, the Groq LPUs first of all because of the actually disaggregated inference. So the Nvidia GPUs are not efficient at the moment. They have many issues from, let's say, token efficiency, agentic responses, and also delay for the token output. So at the moment, like, the LPUs are actually integrated in an overall Nvidia strategy. So the LPUs are integrated, for example, with the D-Matrix deployment at the GPU level. So that it means that at the moment the Nvidia GPUs, especially the ones getting deployed from October onward, and talking especially regarding the Vera, even though at the moment the production is not matching of D-Matrix Vera because we are talking about 40,000 in this case chips. So the problem that they are... Yeah, please.</p>
+<p>Oh yes, please go ahead. Please go ahead.</p>
+<p>Yes. So basically the problem how it is, so the system with the LPUs and Nvidia is a complete system. So it works with D-Matrix where basically the, in this case, the D-Matrix chip is using the SRAM in order to avoid overload of the HBM. So it means that actually the Nvidia GPUs Vera can have an output that is far superior than the previous models because the HBM bottleneck in the data batches processing is actually being reduced. So it means at least a 20% higher output in tokens. And then combine it with actually the LPUs that not only they are also solving the same problem because basically they bypass HBM completely and they rely mostly on the SRAM, you have an increase exponentially on the number of tokens. To give you like an example, Etched at the moment that is the most competitive inference chip on the market can at the moment deploy about 60,000 tokens per second per Sohu in this case ASIC per one model. Um, currently the Vera, they are able to deploy approximately 45,000 tokens, so there is quite a huge gap. But with the D-Matrix implementation, so we see that actually, like I mentioned before, there is a 20% increase, so we are going to reach at least 54,000 at the moment. And if also we take into account the LPUs that are going to assist the Vera, so definitely we are going to have almost 70,000 in this case output for the combined Vera D-Matrix LPUs. Of course, on regarding the GPU economics, they are more expensive than Etched, but of course Nvidia can rely that has a major scale of deployments. So that's why at the moment the strategy of deploying the LPUs is not just in isolated, it is tackling the problem of agentic AI responses, token output efficiency, and at the same time the bottleneck that before it is quite present of the HBM for memory. So that's the strategy. Is there demand for fast inference? Yes, massive demand for fast inference, especially regarding edge compute for inference, localized inference in that regards, especially for specific deployments like physical AI in that regards or agentic AI that they need basically the live responses, so they cannot have delays. Okay, got it. Um, I have a, I have a few follow-up questions here, here.</p>
+<p>Sure.</p>
+<p>Um, yeah, so, so you mentioned that, uh, I'm not, I'm not sure whether I hear, uh, uh, get it, get it, get it wrong. Uh, you said that there is a company called Etched, Etched, uh, its, its, yeah, its speed is about 60,000 tokens per second. Is that correct?</p>
+<p>Yes, correct.</p>
+<p>Oh, why, why it is so, like, so high? It is, like, so much higher than any other players, uh, like Cerebras, like Groq, uh, in, in this market. Why, why, why the number is so, so huge? Why, why the speed is so high?</p>
+<p>Yes, uh, well, because first of all, Etched was designed since the beginning to actually be optimized for inference in that case. So it means that it's not designed like the traditional GPUs, for example, and at the same order ASICs in that case. So the technology behind, uh, uh, Etched itself, just a moment that I'm going to, to pull it out directly because I have the comparison, one second.</p>
+<p>So what they do is that not only they can deploy at a smaller scale, so it means that, for example, the output at the moment of a system of Etched that is about 8U is approximately, uh, between 20 to actually 40 GB200 at the moment in inference. And also because it's been optimized specifically for agentic AI, so as well as inference scale, this is how it's been designed since the beginning. So, let's say that at the software and also architectural level, so the main difference is that they do not have the programmable layer or the software compiler. They do not rely on HB, if I remember correctly, they do not rely on HBM4 because they rely on actually HBM3e in this case on the 144 gigabytes. Uh, the other thing that they have is that, so they have their own ecosystem. It means that at the moment, so they are relying on liquid cooling, they have their own software management, and at the same time, they basically bypass completely, uh, the actually the memory bandwidth in this case problem. And also because the software level is more simplified and optimized just for inference. So it means that it's not like the Nvidia GPUs that are generalized compute, for example, or the Cerebras that are also a general in this case ASICs, it's not optimized. The only ones that, for example, at the moment you can consider, uh, let's say pure inference chip, you do not have so many at the moment in the market because when you look at truly like the Google TPUs, the Amazon Trainium, as well Cerebras and Maia, they tend to be general purpose. They're very efficient in inference, yes, but they are not designed for inference only. Basically, you are deleting all the part of the architecture that is normally for like the general purpose, you are simplifying the GPU as well itself. So, and by doing so, you can actually increase the utilization rate of the actually the transformers on Etched itself, basically having like a 90% FLOPS utilizations, while others also they achieve like a far lower in this case FLOPS utilization, token output, and also how much is actually optimized for inference only. And, uh, by the way, Etched is also quite large at the moment because they just closed a $10 billion funding round. They have another $10 billion that is coming. The main investors tend to be, uh, financial all the companies from Wall Street, so Jane Street for example, the company is deploying already at, in this case, JP Morgan, and also like is delivering directly to Jane Street. It has been designed to be the most efficient inference, in this case, cluster available on the market, and also the one that doesn't need, let's say, a micro data center to be deployed. So that's why at the moment you have Etched, but the main thing is that Etched is more a niche market than a mass market. So at the moment they can just deploy with the financial services simply because the manufacturing capacity is very limited.</p>
+<p>Okay, got it. Wow, that sounds like very amazing. I mean,</p>
+<p>It is, yes.</p>
+<p>Yeah, I have a very quick question and maybe after this call we will do more research on the, on Etched, I mean from our side. I have a very quick question. So, do you have any information on like what kind of LLMs are running on Etched's hardware?</p>
+<p>Well, at the moment there are not like LLMs that are running. Actually, Etched is running with algorithms for high-frequency trading. But let me give you, instead of LLMs, actually the use cases at the moment that are most important and the workloads that actually are running directly from, let's say, JP Morgan as well as Jane Street, so that I can give you definitely a better overview. One second, please.</p>
+<p>Yes.</p>
+<p>Because also like Etched was not designed for the LLMs initially. So it is more designed for actually the inference scale. And that's also the other difference because basically by deleting the noise and focusing on specific use cases rather than, for example, the overall, let's say, agentic AI deployments or open-source models, Etched is just targeting like the compute that needs the highest, for example, calculations in the shortest period of time. Let me see if I can actually, because I know that is not like, yes. So the one that I have here that is like, what is disclosed, because like I said, so at the moment, like most of the actually the models that are running, especially from Jane Street, they are classified. But I can say the use cases. So the use cases normally they tend to be memory-heavy, low-latency transformer inference, and also regarding the latency, it has to be in the building. So it cannot be, for example, outside in another data center. It has to be inside the building itself. So it means that it is, like I said, the high-frequency trading, definitely, that they're using. And the specific LLMs that do not exist publicly are the ones that are used for the sub-milliseconds latency, not only for the, let's say, the, what, the high-frequency trading in this case, but still like even at a more efficient level than the self-generation of trading signals and independent agent actions immediately. So even, let's say, a higher level than the current high-frequency trading algorithms. And on top of that, also high-frequency predictive agents. So it means that not only is possible directly to forecast where the actually the next movement of, let's say, the securities is going to be, but also because basically So cool is processing with zero batch size degradation basically is just live. So it's a kind of prediction with let's say all the context of what is going to happen for example in the next 10 second, one minute directly. So it gives like a massive advantage in direct latency arbitrage instead for example of the standard Nvidia GPUs or even other hardware for example.</p>
+<p>Okay. Okay, got it. I just want to confirm one thing. So is the model still like a transformer? Because you mentioned that it's is it transformer? Is it model yeah, because you mentioned that it's they tend to be like they tend to be low latency transformer inference. So the model that runs on on Etched is is a is a like a kind of transformer model?</p>
+<p>No, no, the transformer is the transformer is the hardware architecture.</p>
+<p>Okay, okay. Okay, cool. Okay, so yeah, so let's move to the next question. So yeah, so by the way, so how do we define like fast inference at this moment? Because like Cerebras can have a output speed over like over over 4,000 tokens per second. Similarly, Groq can have like over 3,000 tokens per second. Yeah, so at this moment in this market, what is how fast is is the so-called fast inference?</p>
+<p>Yes, well, first of all, we need to classify the one second, we need to actually understand workloads first. So what kind of workloads are we're going to use with the fast inference? Because that's actually the most important one. Because for example, Groq at the moment is getting used for agentic AI live, so it means that actually immediate response from the agentic AI. While instead Cerebras is actually currently also deploying the agentic AI, but it is mostly regarding for example the inference output. The one that is dominating, like I mentioned before, is definitely at the moment Etched that is dominating on top of Cerebras and Groq. So this is the fastest one and also with the highest output. But of course, because at the moment is not going to be available for let's say outside the financial customers, so at the moment we just keep it as as let's say the over layer. So for the market itself, just a moment, the figure. So the Cerebras is the one that actually is dominating on top of actually Groq, especially for the time to first token that is the one that is below the 80 milliseconds. So why actually the question is why does it matter and what is like fast inference considered? So the thing about the fast inference, the benchmark is that the faster it is, the better it is. And why? Because it has to have real-time inputs and also outputs. So for example, let's say for the robots, let's say as well for the agentic AI, basically you need to be faster than for example live. So it means that real live interactions. Why? Because first of all, you need to take into account the predictiveness. So if you're talking about physical AI and robotics, basically not only they are let's say calculating in real time what is going to happen, but at the same time or what kind of actions they need to take, but also at the same time they can predict like in the future what's going to happen, the consequences of their actions. And this is why we need such a high, let's say, um, we need such a high responsiveness and also time to first token. That's the first thing in the utilization. So like what is, let's say, the fastest inference? Like at the moment it is the benchmark, it's the 80 milliseconds. But of course it's going to go even lower in the case of the 80 milliseconds. It is the fastest that is possible to do because, um, if you consider for example Etched, that is still like considered like fast inference, um, this one is basically, uh, the fastest that is going to be is prediction of the future, basically, in what is going to happen in at least one to two minutes in front of us. So that for robots in that case, or as well algorithms, it's possible not only to create, uh, basically with the maximum accuracy, almost like 100%, at the moment it's about 99%, what is going to happen, but also to create an actually an immediate reactions before it's going to happen. So this is what is going to be the fastest inference.</p>
+<p>Okay, got it. Um, yeah, could, would it be possible to elaborate a little bit more on, um, like current use cases? Because I mean, maybe like robot or physical AI is a little bit, uh, a little bit far, far, uh, farther away. Like, like for currently there is agentic AI, uh, um, AI coding, etc. So what, what use cases are, like, uh, uh, need, need, uh, need fast in, fast inference most at this moment? What, what use cases and what, and how much value of fast inference can, can bring to those use cases?</p>
+<p>Of course. Well, in this case, they actually, uh, we have the difference. The best applicability, like I mentioned before, they tend to be algorithms. So that's, uh, the most, and we are not very far away at the moment. Actually, we are very close by. So you have the one from the high frequency trading, that definitely is the most important applications at the moment. Then you have all the algorithms, uh, in this case, calculations, for example, as well as predictive analysis. These are the most, let's say, implemented for fast inference. Then when we are talking about, uh, let's say, uh, at the current level, we have agentic AI workflow. So in this case, because, uh, like I mentioned before, not only the interactions will need to be real, but also because at the moment when you are, let's say, um, interacting with an OpenAI or also you are interacting with an Anthropic, you have five to ten seconds delays usually. So you do not have an answer in real time. The target of the fast inference is that you're going to have a live answer immediately. So not only, so basically the use case is not only for the generalist, um, in this case models, where in order to have the output from your input, but it's also regarding in this case everything that is connected to the agentic AI, the coding of the agentic AI in real time, and, uh, also regarding, for example, uh, the voice-to-voice and real-time telephony. So it means that the agentic at the moment, not only they're going to be able to perform in real time with a predictiveness the actually the tasks that have been assigned to, but also when they start to interact with you directly, there is no, let's say, um, latency. Because at the moment, if you take into account all the interactions you as a consumer that you've seen it, And then I can tell you from the infrastructure perspective, you have obviously always the perception that there is a delay. So that's the current problem. And because the NVIDIA GPUs, they tend to have, let's say, 10 to 20 seconds where they produce the tokens, and then there is the software involved, and that's why you have this perception of delay. So the goal is that everything is instantaneous. So everything, so that's why the application for the inference is, uh, fast inference is all the inference that you see at the moment can be, um, in, let's say, significantly improved with the fast inference. And of course, it goes with, uh, like I mentioned before, the live ones that are going to come first, and then all the others that, for example, are going to be followed. Uh, the real-time code generation is also important because still, like I mentioned before, um, you still have actually the delays when you're doing the input and actually the output. And still, the AI at the moment is suggesting the code, when instead the actually the main goal is that AI is going to predict the code. So it's not just going only to suggest to you, but also it's going to, let's say, predict directly. So, and also this one is at the moment, they are still like quite, let's say, slow because we are talking that for coding, especially if you are not going to use, uh, let's say, the Cerebras, we have like about, uh, 200 to 300 in this case milliseconds. That's why you need to have something that is going to be even more efficient of about between 10 to actually 40 milliseconds in this case. After the coding, we have the UI generation as well and the speculative decoding. So this one is definitely going to be used directly from the LLM perspectives. And regarding the speculative decoding instead is, uh, let's say, you are using, um, a predictive model directly where, let's say, the tokens, what they are going to do is that, um, uh, creating this simulation model that they're going to consume tokens in order to predict what is going to happen next. That is actually also what, uh, let's say, the current open source and closed source models they do. So basically, they do, um, an assessment, a prediction of the answer that they can actually output from for the user based on, uh, let's say, the triangulations of, uh, let's say, the data, uh, based on the actually the question. And this is going to significantly, let's say, improve in the future. So these are actually the use cases in this case.</p>
+<p>Okay, got it. Got it. Thank you. And, um, could you, could you, could you, could you give us an like an estimate of how much, uh, what is the percentage of fast inference like in the in the total inference market, like in maybe in in the future, maybe in in 20 2030, uh, what is the percentage of fast inference will be in the total inference market?</p>
+<p>Well, at the moment is quite small, not only because the production is quite limited, but also because the technology is mature, but not enough for the massive deployment. So the fast inference, let me check in this case the overall market because if I'm not mistaken, it should be like less than 10%, um, in comparison to, let's say, the actually, um, in comparison to the inference market you want or the overall cloud computing market?</p>
+<p>Um, uh, the, uh, inference market, please.</p>
+<p>Okay, yes. Uh, because, uh, let me see. Okay, let me, let me extract, um, the actually the 2026, the 2027, and then I also give you the 2030. The AI is going to increase exponentially and there's a massive growth because everyone now at the moment is using agentic AI and for also for the predictive algorithm. Um, to the general, okay, perfect. Let me do some triangulations. While I'm doing the calculations, um, do you have another question that I can answer?</p>
+<p>Yes, yes. Yes, and also, does does agentic AI drive more demand for fast inference than like, um, like chatbot like, uh, generative AI?</p>
+<p>Oh, yes, definitely. So, uh, it's not only made like more demand at the moment, especially because like I said, they need the live interactions. While generative AI at the moment, uh, let's say, well, uh, you need to differentiate between the, let's say, the coding, for example, that still require quite a massive demand for fast inference, and also agentic AI that requires also massive, uh, demand. So the current market is definitely moving towards that direction with, uh, like, uh, the general inference for the like the low sensitive workloads, while instead the more specialized inference for fast inference for the more, let's say, specialized sensible latency workloads. So like we mentioned before, the agentic AI, the coding, the algorithm tradings, that for example, the robots, predictive algorithms, so these are all the demand is going. So at the moment, uh, I'm trying to figure it out because I have, yes, so for let's say the, the market itself, so for the specialized inference at the moment is about between, just a moment, between 5 to 10% of the current market with approximately scaling in about 40% moving forward. Because you have also other, let's say, um, inference ASICs that they're not as optimized as for example the Groq and the LPUs. That's why the market overall it's a little bit smaller than the one that you see. So moving forward, uh, we see definitely that from between a 5 to 10% that we have today is going to be for example 10 to 15% moving forward next year and then is going to continue to increase massively because of course the workloads are becoming increasingly more, um, let's say, um, fast inference sensible and that's why they need in this case a massive amount. But the bottleneck for fast inference is at the moment the production. So the production of, uh, let's say these specialized ASICs is quite limited at the moment and not only about the production but we have also limits regarding, uh, let's say the cloud computing, uh, politics. Because as, uh, for example, as you are an NVIDIA partner, you are not going to deploy, let's say, Cerebras, but you're going to deploy the LPUs, for example. But the LPUs production at the moment is limited to 40,000, uh, of that number. And, uh, probably NIBIUS, that is the one that is going to adapt it this year, is going to deploy 10,000 of that. And no, NIBIUS is going to use them directly for agentic AI and open source models in that case, while it's going to keep the traditional inference more for traditional open source tasks.</p>
+<p>Okay, okay, got it. By the way, um, you said that, um, NIBIUS is going to deploy 10,000 and and, um, capacity of LPU is like, uh, 40,000. Uh, yeah, 40,000. So, uh, who will buy the other like three, 30,000? Uh well, that's actually a good question. So technically there is also the Groq itself customers. So this one is going to be probably about Groq itself. And the other customers at the moment, I think that have not been public yet outside the actually Groq customers.</p>
+<p>Okay. By the way, um, is the 40,000, is it, is it, uh, per year or per month? 40,000.</p>
+<p>No, it is for the 2026 at the moment.</p>
+<p>Uh, 20, it is, it is 2027, right?</p>
+<p>No, 2026.</p>
+<p>Oh, okay. 2026. Okay, got it.</p>
+<p>Yes.</p>
+<p>Okay. Yeah, and also, yeah, the next, next question is, oh, by the way, so, yeah, like currently, what, what is the large language models that, that can be deployed on, uh, Groq's LPU, LPUs or LPX, LPX racks? Because currently we only see that, uh, there is only like a, a 31 billion, uh, Gemma model that can be, uh, that is disclosed. Uh, so yeah, so, uh, do you know, do you have any information on what, what other, what other models that, uh, can be deployed on LPUs?</p>
+<p>Mhm. Well, on the LPUs at the moment, one of the major problem is that production rate is quite limited currently. So that's why, um, to say for example, which other models, in theory, basically all LLMs can actually be deployed on the LPUs. So that's the theory. But on practice, because the manufacturing capacity is so limited, it's going to be very difficult because Cerebras at the moment has a contract with OpenAI. So it means that actually OpenAI can actually deploy, uh, Cerebras. And, uh, probably also, um, Anthropic is actually using the Groq with Amazon. So that's also something that is possible because Amazon is deploying alongside Trainium, uh, Groq. So this is something that is definitely possible. Um, the other part that can actually be deployed, well, all the open source models, they can actually be deployed, uh, on Cerebras and Groq. So there is not actually a, a problem to deploy on these ASICs. So basically all the open source as well as the closed source models, they can deploy on that. But what is going to change is actually the modality because the open source models, for example, you can deploy smaller workloads. So in that case, there is no problem about, uh, capacity, for example. But in the case, for example, the large models, then the capacity is going to be an issue because the LPUs at the moment, like I said, they do not have the, the current capacity to deploy very large models, not because of the architecture, but because of the manufacturing capacity. Cerebras at the moment that I'm aware of is deploying Meta in this case, so probably Llama and Muse for in this case for Meta itself. Then it has deployments with G42, with Core42 from the UAE. Then they have as well the actually the deployments with the Mohamed University from UAE that is a sovereign AI model that at the moment is not public. And these are the ones that are beside, um, let's say the, the open source currently. But there is no problem in actually architecture. I do not see an issue for Anthropic as well and all the other models or even frontier labs tier three, tier four to actually use directly LPUs and Groq. The only problem, like I mentioned before, is mainly in the production rate. The one that I see with the highest potential currently is in this case the LPUs. Why? Because they're running on the NVIDIA ecosystem. So it means that usually if you're going to deploy the There are, and alongside LPUs, for example, or you're using the Nvidia, in this case, software stack, you are definitely able to deploy the LPUs. So it means that in the future we're going to see a mass adoption of LPUs in comparison to Cerebras, but at the moment is more limited to its own ecosystem and large contracts rather than, for example, let's say, whole ecosystem deployments.</p>
+<p>Got it, got it. Yeah, so here is a question. So, you know, you know, because from my understanding, based on my understanding, so, so currently the the model that can be, the Gemma 21, 31B is like the parameters is not quite, quite large. It is just a like 31 billion model. And currently, currently the other like the other like frontier model or tier one, tier two models are like trillion, trillion parameters model, right? So, yeah, so my question is, what if the the large, like the one trillion, trillion parameter models is deployed, are deployed on LPUs? Will the speed be much lower? Like, because as disclosed by Nvidia and and Groq, the Gemma 31B running on Groq, the speed can be up to over 3,000 tokens per second. And what if like a one trillion parameter model running on LPU, what what would be the what what is the tokens per second? What what is the speed?</p>
+<p>Well, we need to take into consideration, for example, practical cases. So let's say, let let let me see if I have something for Anthropic or OpenAI, because otherwise I'm going to rely directly on Kimi in that regards. Because this is the only one that actually can be tested directly, because also the LPUs, the main problem is that, so they are getting deployed by the end of the year, so it means that they are not like available for outside testing. They have a fewer ones that have been tested already with the Llama, for example, the 30 billion parameters. But let me check at the moment if I have this data as well.</p>
+<p>Yes, please.</p>
+<p>Yes. The the first thing that I know is first of all, because the larger are the models, then the lower is going to be the output in this case per single LPU. This is the same problem that, for example, you have when you are deploying Kimi on, let's say, something that is smaller than a GB200, for example. Kimi has substantial problems in output with a B200. The Moonshot team is actually working on that to miniaturize the models quite substantially. But at the same time, the the main problem is that you can miniaturize the model until a certain point. Let me see the one that I can actually have, if I have it. Yes. Okay, so the one that I have here, the test that I have here is about between 50 to 200 tokens per second per user with the LPUs. And at the moment, let me see. Yes. Just a moment. Let me see if I can actually do the calculations correctly. One second, please.</p>
+<p>Yes.</p>
+<p>Because this one is not public, so I need to to extract the calculations from here. No problem. One second, please. And you want the— yes, okay, one second, because I'm looking for Tism, because I have these parameters, but I need to check now one on the Excel file. One second, please. Yes, yes, no problem. Yeah, I ask you these questions because Nvidia and Grok have not disclosed any other models than Gemma 4 31B. And Gemma 4 31B is not a large model, it's not quite a large model. It's only like 31B. And currently the frontier models are like trillion parameter models. So I just want to get a sense: what is the speed if the trillion parameter model is running on LPUs? Yes. Well, at the moment, one can actually see, for example, if you are going to run on Grok, in this case, let's say the Kimi, and I take the Kimi 1.5, which is actually one of the smallest ones, it can go with a thousand tokens per second in this case on the LPUs. But if we take the Kimi K2, this one can actually go with between 400 to 450 tokens per second. And then if you are going to take the Kimi 3, at the moment it cannot work, that's why you do not see it, it cannot work immediately, actually, just a moment. It has to work on multiple, let's say, LPUs, so not on one only, so it has to use the memory of two. The only one that I have, for example, from Kimi at the moment is the one... Ah yes, is the one that, for example, this is just an estimated, ah. It is about 250 at the moment, token per second with the Kimi 3 on the LPUs. Got it, got it. That's very helpful. You're welcome, yes. Yeah, and, oh, okay, so let's move to the next question. So, yeah, so what do you think, what is the, like, the price for the fast inference services provided by Groq's LPX? You mean in this case, the token? Yeah, yeah, I mean, like, the price, how much price is the, like, tokens for tokens or for maybe, I don't know, maybe for GPUs. I think this service is provided in, like, in token factory, right? Yeah, it's going to be, at the moment not yet. So it's going to be provided, yes. Yeah, it's going to be provided by the end of this year as a token output, definitely. Yes, yes. But so you're not going to see which models, because at the moment it's not disclosed the model itself by the Nebius token factory. You're just going to see the final pricing. So let me see if I can actually get also the LPUs pricing itself, because it also depends on the model. So depending on the model that you actually are using, because, for example, Kimi has a lower output, but actually you can charge more. And also depending on the quarter that you are considering. Let me see if I can actually have, in this case, the estimate on Nebius. Just a moment, please. For the Kimi deployments, so that I can have something. Just a moment, please. Okay, if the LPUs, let me see whatever. In the meanwhile, while I'm looking for these uh these numbers because I'm using an Excel file calculations where I have like different parameters. Do you have another question? So while I'm</p>
+<p>Yeah, yeah. Yes, yes. Um, yeah, so um, like is is is Nebius likely to adopt Cerebras in the future?</p>
+<p>No. No, no, no. At the moment uh is not likely to adopt. Uh actually Nebius was considered to adopt Etched uh rather than a Cerebras, but uh the production uh numbers at the moment are too limited.</p>
+<p>Okay. And also, yeah, and also could you would it be possible for you to give us an estimate on the production of LPUs in in 2027? Because you have shared with us that it's it's 40,000 in 2026.</p>
+<p>Let me see in this case. Just a moment. Uh, LPUs. Uh, let me see the desk because at the moment there is no no, let's say there are no there is no data available, but I should have the estimate somewhere. In the meanwhile, I found like I I actually I tried to to find the answer to the question regarding the LPUs. So at the moment, for what I can see, so uh depending on the model, the pricing baseline is between 5 cents per per million tokens to 9 cents per million input tokens. So these are the one that I've seen it at the moment. On the case, this is from Groq itself. Okay. So for example, on model like uh the between 8 billions to 20 billions parameters, it can have uh let's say between 0.05 to 0.08 output per million token. The one that at the moment has been tested, it is the one from OpenAI, the GPT OS 20 billions. It costs 0.07 input and 0.30 in output. Then we have the medium models, 27 to 70 billions. It has currently, for example, a forecast a base forecast of between 59 cents per input and 79 uh cents per output per million token. For example, Alibaba at the moment is between 60 cents to $3 in output. Also where it's really wide depending on the models themselves. Then the other ones that I have, it is with the large model of experts, so 120 billion dollars and larger. So GPT in this case OS 120B, it has at the moment 15 cents in input, 60 cents in output. And Groq at the moment need to take into account that apply a a 50% discount on the cache prompt and a 50% discount for asynchronous batch APIs as well as reserved um batches. So if you're going to reserve let's say the the token output and the volume for specific period of times, Groq will provide you with the higher discounts. Then talking about on the Nebius, so basically Groq deployed at Nebius. The baseline that I can see at the moment is going to be 0.06. So as you can see, uh 20% higher than for example Groq itself. And regarding at the moment if we take in consideration the $120 billion dollars, so currently, for example, we have just a moment the 120. Yes, so at the moment the input from On the Nebius side is a 0.55 cents per million tokens input, a 0.75 in this case token output in this case per million. So this is the one from Nebius. And let me see this. Yeah, please, if you have any question.</p>
+<p>Yes. Can I have a like a rough rough idea on how much is is the price of Groq's LPU, I mean, I mean the the the token price of Groq's LPU higher or lower than the pure GPU or traditional GPU cluster clusters?</p>
+<p>Yes. Well, in this case, we are going to take, just a second. For traditional, I mean, let's use, we say the Vera and the GB300. So that in this case, I can give you directly the calculation. One second, please, that I'm doing the calculations over here. One moment.</p>
+<p>Yeah.</p>
+<p>And when that I have, okay.</p>
+<p>Maybe, yeah, please.</p>
+<p>Yeah, so, so also another question would be that, like, would you, like, is it a, I mean, can Nebius optimize the model by like, by, I don't know, by, by, by software so that the model running on Nebius hardware will be like, its output will be, will have higher speed, will have higher tokens per second, like, than maybe than other providers? I mean, for example, the same model on the same, running on the same hardware, I'm not sure, the speed at Nebius is higher than, than like, than, than at like another like Neo Cloud, CoreWeave or Lambda or et cetera. Is that possible?</p>
+<p>Yes, correct. This one is due in this case to the inference software that all of them are using. So each of them, they have a different inference software that is higher or lower in this case in optimization. That's why you see the different speeds. If you wait a moment, I can also find the inference benchmark for the speed in this case, and I can provide you directly, for example, from Nebius, then we have CoreWeave, which is the second one, and then we can do from Crusoe, and then to add it, we can do like with Kimi, and just a moment, I think it, then we go Together AI. One moment, please.</p>
+<p>Yes, please. Yes.</p>
+<p>So Together AI, then let's do Fireworks, and then we have Base10. We use the major ones. I don't consider the other ones. Yes, and then with the different models. Okay, so this one is done. And then for regarding in this case, yeah, I have two questions still to answer. So production capacity. So the production capacity of the LPUs at the moment, it is between 4 to actually 5 million units that roughly translate to about, let's say, 20,000 at the moment full racks currently for what it is available technically. So this is actually what I have. Yes. Yeah, the number regarding the 40,000 is actually the expectations of the racks at the moment, but I see that technically Nebius should be able to get between 5 to 10,000 in this case racks by the end of the year. Because I think also that these estimates are a little bit... So technically these are the market estimates that I have, but I'm aware also of other numbers technically. Let let me see just a moment.</p>
+<p>Um, yeah, so this is in fact the conservative one. So the conservative one that I have at the moment for the LPX racks is going to be for like 20,000 units by next year. But I'm also aware that before they could actually produce much more because we need also take into account that at the moment for this year, they are also delivering an additional numbers. Just a moment please because I'm trying to to check the possibilities.</p>
+<p>Yeah, because this is actually what is possible. Yes. Yeah, so to confirm, Nebius should receive between 5 to 10,000 LPUs, LPX racks this year. And the other ones are going to be with different clients that at the moment I do not have. I mean, they are like for Saudi Aramco. So these are more the established client base of Groq directly.</p>
+<p>So it means that majority of the contract is going directly to its own clients. And by next year technically they should reach about between 20,000 to 25,000 in this case LPX production. Yeah, so these are the numbers that I currently see at the moment for... So you can actually delete the 40,000. I feel that 40,000 was the expectations. Ah yes, it was the expectations for this year, but given that there were a limitation in the actually, yeah, and this I see where it is. There are a limitation at the moment because Groq is relying on the Samsung like 4 nanometers in this case chip, but the production has been let's say not has been not what was expected and also the ramp up has not been the one that is expected for 2027. They have reduced the targets. So now it makes sense. Yes, now I have it the correct one.</p>
+<p>Okay, got it.</p>
+<p>Yes. And I have at the moment the... and then I'm going back to the the actually the GB300... Ah yes, I have the GB300 now. Perfect. So for the GB300 to question. Uh the Groq we already talked about it in this case all the different numbers. But when we go for example on the actually the GB300 itself, so at the moment depending also on the the models that actually we are talking about. Definitely uh the Groq for example are almost double more efficient than the LPUs because the GB300 they can generate uh just one second uh for one moment. They can generate approximately 28...</p>
+</div>
+</main>
+</body></html>

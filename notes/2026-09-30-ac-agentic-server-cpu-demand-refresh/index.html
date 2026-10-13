@@ -1,0 +1,189 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.30 | AC | Semis | Agentic Server CPU Demand &amp; Refresh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.30 | AC | Semis | Agentic Server CPU Demand &amp; Refresh</h1>
+<p class="orig">原标题：Agentic拉动的服务器CPU增量：四成实际是被压抑的换机</p>
+<p class="tags">#semis #ai-demand</p>
+<p class="meta">AceCamp · 2026-09-30 17:04 · article 70567628</p>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>CPU收入增量中，单价与台数各占多少；</li><li>信骅高增速有多少来自服务器台数；</li><li>CPU颗数增量中，AI机头、Agent与换机各占几成；</li><li>企业端换机何时过峰，先降单价还是台数；</li><li>信骅、嘉泽与整机厂谁先承压，哪些指标可验证。</li></ol>
+<p class="qq">服务器CPU收入增量约三分之二来自单价。按本报告测算，颗数增量中AI机头约四成、Agent等新增负载约两成、换机约四成。企业端换机2027年上半年过峰，下半年先回落的是单价与企业端台数。信骅通用服务器BMC首当其冲，AI机柜端点受影响有限。</p>
+<p><b>信骅8月营收同比增长118%，英特尔二季度的服务器台数只增加了9%。</b>两组数字都来自服务器，读数却差了十几倍。市场习惯把信骅当作服务器景气的温度计，又把这一轮CPU紧缺归到Agent头上。两种读法都绕开了一笔旧账：前几年延后的换机正在集中兑现，而这笔账有自己的时间表。它在增量里占多大，决定了2027年下半年这条增长线的走法。</p>
+<h2>一、CPU收入增量里，三分之二来自单价</h2>
+<p><b>2026年二季度，按收入计的增速普遍在五成以上，按台数计的增速只有一到两成。</b>收入这一侧，英特尔数据中心与AI业务营收同比增长59%，其中服务器平均售价上涨48%；AMD在二季度电话会上表示，服务器CPU收入在云与企业两端均增长七成以上；IDC于9月10日发布的数据显示，全球服务器营收同比增长52%，非加速服务器的单台均价由约9,800美元升至约13,000美元，Dell'Oro把这部分涨幅主要归因于内存与存储涨价。台数这一侧，Mercury Research统计的服务器处理器出货同比增长20%，这一口径包含网络与存储用处理器；IDC统计的服务器台数增长15.4%，其中GPU服务器台数同比下降10.8%。两组读数之间的差距本身就说明，这一轮的钱主要花在了单价上。</p>
+<p><img src="https://image.acecamptech.com/article_image/50523361/0.7582117232235849.png" alt="" loading="lazy"></p>
+<p><b>把份额和台数对齐，可以算出x86服务器CPU的收入增量里，台数只贡献约三分之一。</b>Mercury数据显示，AMD的服务器处理器份额由一年前的27.3%升至34.5%。据此推算，AMD颗数增长约五成，英特尔约8%，后者与英特尔10-Q披露的9%基本吻合，说明这组份额可以和财报对上。需要说明的是，这一份额包含网络与存储用处理器，只计至强与EPYC时AMD份额为46.4%，所以五成是量级判断，精确值会随口径变化。粗略计算，两家合计的x86服务器CPU收入增长约65%；按台数乘以单价拆开，台数贡献约36%，单价与型号组合贡献约64%。前序报告中判断，英特尔均价上行的主力是型号升级。把视角扩大到整个x86市场，这一判断同样成立：英特尔的增长大半来自单价，AMD则以颗数和份额为主。这意味着，Agentic拉动CPU这一说法，在收入上读到的大部分是单价，结构性变化需要回到台数上检验。</p>
+<h2>二、剥掉AI机柜与涨价，服务器台数实际增长约一成五</h2>
+<p><b>信骅8月的118%，按两年复合计算只有约55%。</b>原因在于基数：2025年7月到10月，信骅月营收同比只增长6.5%到28%（公司月营收公告），今年下半年的同比读数正是建立在这段低基数之上。与此同时，信骅年内做了两轮两位数涨价：4月一轮据供应链消息为两位数，四季度一轮由董事长在9月初确认，理由是供应商提价。缺料递延的订单也集中在下半年交付，公司给出的四季度营收指引为66亿到68亿元新台币，接近上半年两个季度之和约70亿元。换句话说，下半年的高增速里同时叠加了低基数、涨价和补货三层因素。</p>
+<p><img src="https://image.acecamptech.com/article_image/50523361/0.9242443502890395.png" alt="" loading="lazy"></p>
+<p><b>更关键的是，AI机柜拆开了一台服务器配一颗BMC的对应关系。</b>以16个托盘的机柜为例，过去需要16颗完整BMC；改为分散式管理后，变成1到2颗完整BMC加16颗小型BMC；再算上网卡、交换、电源与散热模块，每个机柜的BMC总数在低、中、高三档分别约为20、50和70颗（产业调研口径）。信骅自己的规划也反映了这一点：公司在2026年3月把2030年BMC市场规模由4,650万颗上修至6,577万颗，其中传统通用服务器年增约5%到6%，为AI应用配套采购的通用服务器2026年增长约40%。资策会9月上修后的预测则显示，2026年全球服务器台数增长15.1%。管理芯片的颗数增速，已经脱离了服务器台数的增速。</p>
+<p><b>单价也在同步上移，这是信骅的读数需要剥掉的第二层。</b>新一代AST2700的单价约为25到28美元，上一代AST2600约为15到20美元（产业调研口径）；信骅也表示，公司将继续提高每片服务器主板的芯片价值。把四把尺子放在一起看：信骅营收、嘉泽服务器营收、Mercury处理器出货和整机台数的读数依次递减，前两者叠加了单价与新品，后两者基本对应颗数与台数。据此判断，2026年服务器台数的实际增速在一成五附近，主体在通用服务器。剩下的问题是，这一成五里有多少是新增需求，有多少是换机。</p>
+<p><img src="https://image.acecamptech.com/article_image/50523361/0.6181495332063015.png" alt="" loading="lazy"></p>
+<h2>三、CPU颗数增量：AI机头四成、新增负载两成、换机四成</h2>
+<p><b>AI机头的颗数，可以由AI服务器台数直接推出。</b>资策会预计2026年全球服务器约1,660万台，其中AI服务器约460万台，据此推算AI服务器约占台数增量的三成五。AI服务器每台大多配2颗CPU，HGX八卡机配两颗x86，NVL72的计算托盘配两颗Grace。粗略计算，折成CPU颗数后，AI机头约占颗数增量的四成。这一部分直接跟随GPU部署，属于结构性需求。</p>
+<p><b>通用服务器的增量里，信骅所说的AI相关部分约占三分之二。</b>据此推算，资策会口径下非AI服务器2026年增长约13%。把信骅的拆分套进去，传统通用服务器按5%到6%增长，AI相关通用服务器按40%增长，粗略计算，后者只占非AI服务器存量的两成左右，却贡献了约三分之二的台数增量。信骅在7月底表示，多数Agent工作负载可在一般服务器上运行，云厂的资本开支正由GPU服务器逐步转向一般服务器与ASIC服务器。市场据此把这一块整体读作Agent带来的结构增量，但这张采购单里实际装着两种需求。</p>
+<p><b>AI相关通用服务器的采购单里，混着新增负载与整合换机两种需求。</b>一种是Agent沙箱、推理调度与AI数据存储带来的新增负载；另一种是为GPU腾出电力而更换旧机的整合采购。后者的经济账很清楚：AMD的官方测算显示，100台服役5到7年的双路至强8280服务器，可由14台EPYC 9965服务器替代，总性能持平，功耗下降69%，腾出的容量用于承接GPU等新负载；Uptime Institute的研究显示，全球数据中心约四成服务器服役六年以上，消耗约三分之二的能耗，却只提供约7%的算力。信骅也把一般服务器需求回补单独列为三大动能之一。至于新增负载的规模，AMD在二季度电话会上称，Agent沙箱目前是三类CPU场景中最小的一块。据此，笔者把AI相关通用服务器按新增负载与整合换机各半处理。</p>
+<p><b>Meta Muse是目前规模最大的Agent沙箱案例，折成CPU颗数依然有限。</b>Muse为每位用户配一台常驻的专属虚拟机，规格为2个虚拟CPU、8GB内存与100GB固态硬盘。按市场流传的测算口径，Muse日活达到1亿时，需要约2,500万台在线虚拟机；由于虚拟机大部分时间在等待模型返回，DeepSeek的数据显示九成虚拟机只用到分配算力的5%，按每台0.3到0.75个物理核计，约需1,250万个物理核，对应约1吉瓦总功耗，其中CPU与虚拟机层只占约0.1吉瓦（wccftech）。按单颗64到192核折算，这相当于6.5万到19.5万颗CPU，约为本报告测算的2026年CPU颗数增量（约390万颗）的2%到5%，而且对应的是1亿日活的上限情形。CPU可以超配，内存与固态硬盘却随虚拟机数线性增长，所以Muse对内存的拉动会先于CPU显现，这会进一步收紧后文所说的内存约束。</p>
+<p><b>合起来看，按本报告测算，AI机头约四成，新增负载约两成，换机约四成。</b>换机又分两半：传统通用服务器的例行更换约两成，腾电力的整合与缺货回补约两成；折算到通用服务器内部，换机约占三分之二。这组比例建立在各半的假设上，若新增负载在AI相关通用服务器中的占比在三成到七成之间变动，换机占比会落在三成到五成之间，而AI机头与新增负载合计始终在五成以上。前序报告中判断，Agentic抬升的是承担编排的那一部分CPU，这与新增负载只占约两成的结果一致。另外，腾电力的整合在颗数上是缩量的，14台新机替代100台旧机，它主要体现为单价，对应英特尔10-Q所说的高端型号占比上升，所以按收入计，换机的权重在四成以上。两类换机的终点也不一样，这决定了2027年的走法。</p>
+<p><img src="https://image.acecamptech.com/article_image/50523361/0.6019456263183176.png" alt="" loading="lazy"></p>
+<h2>四、企业端换机2027年上半年过峰，下半年先降的是单价</h2>
+<p><b>企业端的换机有一张日历。</b>2019年到2021年是上一轮云投资高峰，TrendForce在1月指出，2026年的部分开支用于更换那一批通用服务器。云厂的服务器折旧年限多在五到六年：微软自2023财年、谷歌自2023年起按六年，Meta自2025年起按5.5年，亚马逊2025年把部分服务器由六年缩回五年并提前退役一批，甲骨文自2025财年起按六年（各公司10-K）。按这个年限推算，2020年到2021年采购的机型，集中在2026年到2027年到期。企业端还有一个硬节点：Windows Server 2016的扩展支持将于2027年1月12日结束。戴尔二季度传统服务器与网络业务营收同比增长122%，从客户结构看，这轮增长主要来自配置加码与操作系统到期，为规避涨价而提前采购的部分，产业调研口径下不超过两成。日历型的换机，到期之后就会自然退坡。</p>
+<p><b>供给延迟把一部分需求推到了2027年上半年，降档因此推迟到下半年。</b>英特尔在二季度电话会上表示，服务器供给的增量偏向三季度末和四季度，四季度仍补不上缺口；TrendForce在4月称未满足的需求将结转到2027年；信骅部分订单递延到明年，董事长称2027年在手订单已超过2026年全年营收。TrendForce在9月28日把服务器CPU列入周度雷达，交期为25到30周，平衡状态下为16到20周。按这个交期，现在下的订单要到2027年二季度前后才能交付，积压订单对上半年的支撑由此得到印证。交期偏长在Muse上线前已经存在，TrendForce在4月下修服务器出货预测时，已把CPU交期拉长列为主因之一。成本端同样在推高单价，产业调研显示，服务器成本价仍在按每季约一成上涨，预计还要持续四到五个季度。因此，2027年上半年仍有积压订单支撑，降档的时点落在下半年，而且先回落的是单价增速：英特尔均价的48%与信骅的两轮涨价，届时都会进入基数。</p>
+<p><img src="https://image.acecamptech.com/article_image/50523361/0.9804392869888658.png" alt="" loading="lazy"></p>
+<p><b>云端的整合跟着电力走，它延续的主要是单价，对台数的拉动有限。</b>只要GPU持续落地、电力仍是约束，整合就会延续。AMD Venice于2026年四季度推出，英特尔Diamond Rapids在2027年下半年（Hot Chips 2026口径），单颗核数继续抬高，整合比随之上升；嘉泽预计到年底Venice平台的渗透率达到20%到25%（公司5月法说会）。另一重约束来自内存：TrendForce在7月称，2027年服务器RDIMM的位元供给只增长15%到20%，落后于服务器CPU出货的增长。这意味着，台数可能因为内存受限而降速，外观上与需求降档相同，判读时需要把两者分开。</p>
+<p><b>所以2027年下半年降档的，是通用服务器台数与CPU单价的增速；AI机头与新增负载约六成的颗数，继续提供支撑。</b>资策会预计2027年全球服务器台数增长12.4%，AI服务器增长约18%，据此推算非AI服务器全年增长约一成。全年数字看上去平稳，但积压订单集中在上半年交付，预计下半年的同比读数明显回落，回落幅度取决于内存供给能放出多少台数。换句话说，2027年下半年的变化是增速降档，需求本身仍在延续。</p>
+<h2>五、投资含义：按台数计价的环节先降档，按机柜含量计价的环节延续</h2>
+<p><b>信骅受影响的是通用服务器主板BMC，AI机柜端点受影响有限。</b>市场对信骅的预期已经把换机外推成了趋势：市场consensus显示，信骅通用服务器BMC出货将由2025年的1,300万颗增至2026年的1,800万颗和2027年的2,700万颗，两年增速分别约为38%和50%。这组预期隐含2027年通用端点的增速继续抬升，与日历换机过峰的方向相反。再加上四季度营收指引接近上半年之和，两轮涨价也将在2027年进入基数，2027年下半年的预期落差集中在通用服务器BMC这一块。AI机柜端点则因每柜BMC颗数持续增加，叠加AST2700与小型BMC放量，受换机日历影响有限。</p>
+<p><b>嘉泽的插座按CPU颗数计价，但读数同样叠加了单价。</b>嘉泽二季度服务器营收同比增长71%（公司二季度法说会），同期服务器处理器出货只增长20%，差额来自新平台插座的单价与液冷快接头等新品。因此，颗数降档对嘉泽的影响，会被2027年的平台换代部分对冲。台达电的电源按机柜功率计价，受AI机柜与高功耗整合服务器支撑，属于结构部分。</p>
+<p><b>整机厂里，企业端业务直接受停保日历影响，大陆云厂与信创业务与这张日历关联有限。</b>联想集团本财年一季度基础设施方案业务营收同比增长98%至85亿美元，经营利润率约9.1%，其中的企业服务器与戴尔的传统服务器与网络业务同属企业端换机，2027年一季度之后面临降档，AI服务器与配置调整能力可以部分对冲。浪潮信息上半年服务器收入780.62亿元，同比增长3.7%，二季度公司口径营收同比增长约47%，节奏由国内云厂交付决定。工业富联的服务器收入以北美云厂的AI整柜为主，华勤技术正加速扩张国内AI基础设施业务，两者主要属于结构部分。中科曙光的国产服务器以信创采购为主，节奏由政策与国产CPU供给决定，与全球换机日历基本独立。</p>
+<h2>六、跟踪验证：六项数据分辨需求降档、结构偏大与内存约束</h2>
+<p><b>判断成立与否，要同时看台数、单价与内存三组读数。</b>下笔列出六项同口径指标，其中最关键的是英特尔10-Q中服务器单价与台数的拆分。若2027年下半年单价增速回到个位数、台数维持两位数，说明降档的是单价；若两者同时下行，说明周期部分大于本文的估计；若台数降速而服务器DRAM合约价续涨，则是内存在限制装机。</p>
+<p><img src="https://image.acecamptech.com/article_image/50523361/0.775598397613228.png" alt="" loading="lazy"></p>
+<p><b>以信骅同比跌破30%作为证伪条件，门槛过松。</b>信骅2026年一季度营收为31.47亿元新台币，2027年一季度同比低于30%，意味着营收低于约40.9亿元，相当于较四季度指引中值约67亿元环比下降约39%。更敏感的条件有两条：信骅2027年上半年任一季度营收较2026年四季度回落超过15%，同时英特尔服务器台数同比转负，说明周期部分大于本文估计；Mercury颗数在2027年下半年仍增长15%以上，且企业端OEM的传统服务器与网络业务在停保节点之后不放缓，说明结构部分大于本文估计。近端可以先看三件事：一是10月上旬公布的信骅9月营收；二是四季度涨价的实际幅度；三是TrendForce周度雷达里的CPU交期，回到16到20周，说明供给追上、单价回落会提前，维持在25周以上，说明积压订单延续到2027年年中。</p>
+<h2>七、风险因素</h2>
+<p><b>上行风险在于Agent沙箱转向独立的CPU集群。</b>目前国内算力运营方的AI服务器，CPU与GPU配比仍以1:2与1:4为主，产业调研显示1到2年内预计保持稳定。Meta Muse为每位用户配一台常驻虚拟机，是沙箱走向独立CPU集群的第一个大规模实例。若更多厂商跟进同类产品，新增负载的占比将突破两成，换机退坡留下的缺口会被填上。Diamond Rapids若在2027年下半年如期放量，也可能引发新一轮企业换机。前序报告中判断，Astra对CPU需求的净方向连正负都定不了，所以Agent对CPU的拉动，上行与下行两个方向都存在。</p>
+<p><b>下行风险在于内存约束收紧与重复下单回吐。</b>信骅的订单能见度在三个月内由2027年延至2028年，公司也表示客户下单时间大幅提前，这部分订单在供给恢复后存在回吐的可能。若AI资本开支放缓，腾电力的整合会随之减速；若英特尔与AMD的供给提前追上需求，单价回落也会提前到来。</p>
+<p><b>以上内容不构成任何投资建议，请风险自担。</b></p>
+</div>
+</main>
+</body></html>

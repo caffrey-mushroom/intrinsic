@@ -1,0 +1,429 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.04 | Substack | Semis | Practical Parametric Yield</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.04 | Substack | Semis | Practical Parametric Yield</h1>
+<p class="orig">原标题：Practical Parametric Yield</p>
+<p class="tags">#semis</p>
+<p class="meta">Substack · 2026-10-04</p>
+<div class="body">
+<ul><li>Irrational Analysis is heavily invested in the semiconductor industry.</li><li>Positions will change over time and are regularly updated.</li><li><b>Opinions are authors own and do not represent past, present, and/or future employers.</b></li><li>All content published on this newsletter is based on <b>public information and independent research</b> conducted since 2011.</li><li>This newsletter is not financial advice and readers should <b>always do their own research before investing in any security.</b></li><li>Feel free to contact me via email at: <i>irrational\_analysis@proton.me</i></li></ul>
+<p>Parametric yield is possibly the worst understood concept within semiconductors. It’s frankly surprising how many people work in this industry and are either clueless or have a very wrong view on how parametric yield works.</p>
+<p><b>Clock speed, power draw, and final product-level yield are an economic choice, not a design choice.</b></p>
+<p>Important background information is available here and highly recommended as a pre-requisite if you want to understand the technical matters properly.</p>
+<h2>A Background-Proof Guide on Process Development Kits</h2>
+<p>Irrational Analysis</p>
+<p>·</p>
+<p>January 24, 2025</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109533270-8.jpg" alt="" loading="lazy"></p>
+<p>Irrational Analysis is heavily invested in the semiconductor industry.</p>
+<p>Read full story</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109534303-9.jpg" alt="" loading="lazy"></p>
+<p>For this post, I will attempt to abstract out the technical details and keep things practical and intuitive. Will heavily rely on public examples and obfuscated first-hand experience. Sections 6.d, 6.e, and 6.f of the old PDK technical deep-dive are of particular interest.</p>
+<p><i>(please please read the old post it will help you understand this one so much)</i></p>
+<p>This parametric yield deep-dive has been sitting in drafts for over a year. Given that Cerebras is such a hot topic, I bumped this one to the top and re-wrote large portions around their chip.</p>
+<p>Parametric yield is an industry-wide issue. Cerebras is disproportionately effected by this problem.</p>
+<p><b>Understanding why Cerebras is disproportionately harmed by parametric yield and how they could mitigate this problem is key to understanding the stock.</b></p>
+<p><b>I would argue it is the only thing that matters for the next 12-18 months for them.</b></p>
+<p>Before jumping into the content, I want to finish this intro with a fun story.</p>
+<p>Two years ago, I managed to weasel my way into the private launch briefing for WSE3 with the help of a friend. It took place on March 12th, 2024 at Colovore, a local Bay-Area colocation hosting provider Cerebras used for some of their capacity at the time.</p>
+<p>I have been a huge fan of Cerebras since 2019. To be able to see the new WSE3 in real life was so exciting. Took a day off from dayjob to attend. Here are some of the pictures I took.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109535572-10.jpg" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109537099-11.jpg" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109539348-12.jpg" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109541296-13.jpg" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109544011-14.jpg" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109545197-15.jpg" alt="" loading="lazy"></p>
+<p>Sadly they did not let me hold it.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109546651-16.jpg" alt="" loading="lazy"></p>
+<p>I went into this event as a superfan but left somewhat depressed and concerend.</p>
+<p>The WSE3 was a little underwhelming. A minor update.</p>
+<p>What concerned me was the vibes. Andrew Feldman looked genuinely exhausted and somewhat demoralized. The Bloomberg reporter absolutely roasted Feldman. It was kind of funny but mostly sad and painful to watch.</p>
+<p>One week later (March 19th, 2024) Cerebras held their 2024 AI day (public launch event) as a “me too hey we exist” parasite event in parallel with GTC. <b>That event was a fucking disaster. Concentrated loser energy.</b> Every 5-10 minutes someone on stage would say something so pathetic, I wanted to get up and leave. Unfortunately, chose a seat that made early escape from copium huffing therapy session impossible.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109548319-17.png&quot;Thedelaybeforestillhasnodateon\&quot;Gameplay\&quot;.Ifyou...&quot;" alt="" loading="lazy"></p>
+<p>A few months later, someone gave me slides that indicated Cerebras was trying to raise and had failed. <b>This failed round is why the G42 deal+option happened two months later.</b></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109551092-18.jpg" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109551978-19.jpg" alt="" loading="lazy"></p>
+<p>This chart in particular from their March 2024 pitch deck is hilarious.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109552714-20.jpg" alt="" loading="lazy"></p>
+<p>Anyway, it was around summer 2024 that I had no choice but to conclude that one of my favorite semiconductor companies was dead.</p>
+<p>And yet, here they are today, very much alive.</p>
+<p>Cerebras is perhaps the most controversial semis/AI stock at the time of writing. I have friends who have large short positions and large long positions. Some contacts have small long positions but keep asking me for advice on if they should size up and make Cerebras a big position. Other contacts have no involvement with Cerebras and just shit on them because they think Nvidia or various startups are better.</p>
+<p>I would like all of you to set aside your biases, both positive and negative.</p>
+<p>Try to be fair and balanced like me.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109553857-21.png" alt="" loading="lazy"></p>
+<p>What if Cerebras the product is good, but the supply is very bad because parametric yield very bad?</p>
+<p>Can they fix parametric yield problem and make supply good?</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109555262-22.jpg" alt="" loading="lazy"></p>
+<h2>Contents:</h2>
+<ol><li>The real world is Gaussian.</li><li>Real-World Public Examples</li><li>Corners and Dartboards</li><li>Economic Choices</li><li>DVFS and TDP</li><li>Be first, be smarter, or cheat.</li><li>Cerebras unique situation, and possible outs.</li></ol>
+<h2>1] The real world is Gaussian.</h2>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109556067-23.jpg" alt="" loading="lazy"></p>
+<p>Semiconductor design and manufacturing depends on a lot of very complex physics/chemistry and material science phenomenon. And yet, this is all abstracted out in the process development kit (PDK).</p>
+<p>From a designers perspective, the real world (litho, etch, deposition, … variation) changes the numbers/attributes of core building blocks (devices). Transistor gate threshold, leakage power, rise time, capacitor parasitic resistance (ESR), ….</p>
+<p>All end up as numbers in their own normal/Gaussian distribution.</p>
+<p>Variation is natural. In order to maximize parametric yield the following typical flow is followed within industry.</p>
+<ol><li>Design simulates and margins circuits (analog+digital) at +/- 2 sigma process variation.</li><li>The leading-edge logic Fab (TSMC, Intel Foundry, Samsung Foundry) produces a special lot of chips called the</li></ol>
+<p>characterization lot. These chips are run through the manufacturing line slowly and intentionally over/under doped so the process corner (+/- 2 sigma variation) is known a-priori.</p>
+<ol><li>Post silicon validation (my job) takes the characterization lot and figures out a unified set of default</li></ol>
+<p>configuration parameters such that all corners pass.</p>
+<ol><li>Mass production begins where the process corner off each chip <b>is not known a-priori.</b></li><li>Assuming everyone did their job correctly, parametric yield will be ~95%. This is the yield after defective</li></ol>
+<p>(catastrophic yield) chips are discarded.</p>
+<p>Of course this is over-simplified. Voltage and temperature play a huge role. This is why the acronym PVT (process, voltage temperature) is used. But as a general idea, this is how semis work in the real world. Everyone is fighting the same problems which manifest themselves as Gaussian/normal distributions.</p>
+<h2>2] Real-World Public Examples</h2>
+<p>I think it would be helpful to cover some real examples to build your intuition before going further on the technical side. Just by looking at the SKU stack of major semiconductor companies you can see parametric yield in action.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109557617-24.jpg" alt="" loading="lazy"></p>
+<p>AMD offers four 64-core SKUs within the Turin family.</p>
+<p>Each has a slightly different base clock (minimum speed for each of the 64 CPU cores) and boost clock (highest speed of all CPU cores assuming thermal limits are not hit). The power draw also varies quite significantly. 33% more power in the 9575F versus the 9535.</p>
+<p><b>The silicon in all these products is the same design.</b></p>
+<p><b>What makes them different is parametric yield, not catastrophic yield.</b></p>
+<p>Catastrophic yield (defects, defect density) already determined how many cores are alive. Parametric yield determines how fast the cores run and how much power they draw.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109558408-25.jpg" alt="" loading="lazy"></p>
+<p>You can think about this in terms of Gaussian/Normal distributions. Made up numbers because this information is closely guarded secret internal to every company….</p>
+<p>Suppose only the top 30% of CPU core chiplet dice are “high enough quality” to make it into a high-frequency 9575F. Obviously throwing away the other 70% would be bad, so make slower/cheaper products like the 9535 with those.</p>
+<p>This concept is called “yield harvesting” and is very common within semis. Let me show you some more examples.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109560113-26.jpg" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109561141-27.jpg" alt="" loading="lazy"></p>
+<p>Nvidia’s gaming department (RIP does anyone care about them these days lol) has a tradition of releasing a “TI/Super” version of each GPU model around 6 months after the normal versions launch. TI/Super models are just higher bins, both in cores enabled and frequency. They need time to build up stock of the top X% of chips to supply the higher-end SKU.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109562772-28.jpg" alt="" loading="lazy"></p>
+<p>GP104 is the die codename. One chip design, two products.</p>
+<h2>3] Corners and Dartboards</h2>
+<p>Process corners look like this in chart form.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109563766-29.jpg" alt="" loading="lazy"></p>
+<p>The two types of transistors (N/P[MOS]) have varying speed in a Gaussian distribution, as all natural things should have.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109564304-30.jpg" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109565420-31.jpg" alt="" loading="lazy"></p>
+<p>Fast corners are… faster (obviously) but also kick out way more heat due to worse leakage power. So congratulations, your FF parts have a much easier time hitting target clock speed but overheat. I intentionally chose to make Gavin Baker the FF corner in thumbnail. Please clap at this clever detail.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109567542-32.png" alt="" loading="lazy"></p>
+<p>Process corners are typically at +/- 2 sigma as a reminder.</p>
+<p>Voltage is typically simulated at +/- 10% with respect to nominal but characterized at +/- 5%. In some cases companies choose to characterize at +/- 3% and require customers to design better power delivery to account for the tighter quoted tolerance. But designers always simulate at +/- 10%.</p>
+<p>Finally we have temperature where there is a lot of variation depending on the company and product end market.</p>
+<p>Standard corners are -20C and +110C.</p>
+<p>Extended corners (automotive, industrial, military) are -40C and +110C.</p>
+<p>A popular reduced range is 0C to 70C or 90C.</p>
+<p>Imagine all of this corner stuff as a dartboard.</p>
+<p>High-volume manufacturing is the logic Fab throwing darts while blindfolded. The system integrator (entity that buys the chips and makes motherboards, racks, laptops, smartphones, whatever) is responsible for power delivery and thermals. They too have their own dartboard due to variation in power delivery components and thermal/mechanical tolerances.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109570808-33.png" alt="" loading="lazy"></p>
+<p>TT, TT, TT, lets gooooo!</p>
+<p>If you build millions of something complex, there will be meaningful variation. The trick is to bake enough margin across the stack (PVT) such that your parametric yield (and thus economic outcome) is economically optimal.</p>
+<h2>4] Economic Choices</h2>
+<p>I find it very irritating when people take engineering sample leaks as gospel.</p>
+<p><b>At what corner is that engineering sample from…? You don’t know? Well then shut the fuck up this is useless information.</b></p>
+<p>At the end of the day, clock speed is a choice, not by the designers.</p>
+<p>This trips a lot of people up. It seems a lot of people have an intuition that designers target a clock speed and that is the goal.</p>
+<p><b>In reality, clock speed is an economic/business choice.</b> Post-silicon validation figures out what reality looks like and product management (business group) decides the final clock speeds and SKU stack.</p>
+<p>Sometimes things go wrong. Two famous examples are AMD RX Vega (which got Raja Koudori fired from AMD) and Nvidia Ampere Gaming (RTX 3000 series).</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109571781-34.png" alt="" loading="lazy"></p>
+<p>To understand what happened with these two product lines, you need to understand these two charts.</p>
+<p>First, the Schmoo chart.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109573382-35.png&quot;Transistorperformancefor\&quot;3nm\&quot;classnodesin2023andearly2024.|SemiWiki&quot;" alt="" loading="lazy"></p>
+<p>More voltage means more heat generated. Every chip has one of these curves.</p>
+<p>The same data can be plotted like this.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109574013-36.png" alt="" loading="lazy"></p>
+<p>In general, most chips have this three-region response in voltage versus frequency.</p>
+<p>First a linear region where you get good gains. Then a region where there are diminishing returns. Finally a region where you shove huge amounts of power and get almost nothing for it.</p>
+<p>In general, products are targeted at the edge between green and yellow region, with some opportunistic boosting into the yellow region.</p>
+<p>What Nvidia Ampere Gaming (3000 series) and AMD Rx Vega have in common is both were factory shipped deep into the yellow region and in some cases into the red region.</p>
+<p>Remember, clock speed is a choice. Design, marketing, product management, and competitive analysis groups had a set of goals. Gaussian reality, conveyed by post-silicon validation group, resulted in unexpected changes to the plan.</p>
+<p><b>When reality becomes severely disjointed from the original plan, it means someone fucked up badly. Modern EDA tools are quite good.</b></p>
+<p>In the case of Nvidia Ampere Gaming (3000 series) it was Samsung Foundry’s fault.</p>
+<p>In the case of AMD Rx Vega, it was Raja Koudori and his mis-managed design group’s fault.</p>
+<h2>5] DVFS and TDP</h2>
+<p>Dynamic Voltage Frequency Scaling (DVFS) is a very common strategy that has a lot of potential complexity in its implementation.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109574821-37.png" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109575598-38.png" alt="" loading="lazy"></p>
+<p>TDP stands for thermal design power. This is the maximum <b>sustained</b> power a chip can draw because the cooling is built around this maximum.</p>
+<p>I made “sustained” bold because peak/instantaneous power can (and regularly is) be much higher.</p>
+<p>Chips have many internal sensors. Only a small subset of which are exposed to end users. Lots of hidden goodies locked behind encrypted and obfuscated firmware and fused off registers.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109576242-39.png" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109577082-40.png" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109577682-41.png" alt="" loading="lazy"></p>
+<p>To help build your intuition, let’s look at a generalized scenario.</p>
+<p>You have a chip with the following attributes:</p>
+<ul><li>TDP of 100W</li><li>10 different blocks (CPU core, systolic array, polynomial engine, SIMD engine, whatever)</li><li>1000 sensors (temperature, voltage, counters, busy/open signals, utilization, …)</li></ul>
+<p>The objective is to maximize performance while staying within sustained power, peak voltage, and thermal limits.</p>
+<p>“Maximize performance” could mean absolute performance or performance/watt. Depends on your goal. Often this toggle is exposed to users or at least end customers.</p>
+<p>(See Nvidia MAX-Q vs MAX-P)</p>
+<p>This puzzle is a lot more complicated than you think.</p>
+<p>What if a workload stresses “block X” much more than the other blocks? You will get a hot spot.</p>
+<p>What if the system ends up more efficient in a “race to idle” scenario in which DVFS pushes the chip into an inefficient state but for a shorter period of time?</p>
+<p>How to allocate power budget across blocks?</p>
+<p>And remember… PVT variation (PARMATRIC YIELD) is still around, making this problem much more difficult and varied.</p>
+<h2>6] Be first, be smarter, or cheat.</h2>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109578964-42.jpg&quot;RiskManagementStrategy-BeFirst\&quot;Thereare3waystomakealivinginthisbusiness.Befirst,besmarterorcheat.Itsureisahellofaloteasier&quot;" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109579763-43.jpg" alt="" loading="lazy"></p>
+<p>Semiconductors is a ruthless industry. Miss a product window and the competition will cut your throat ear to ear.</p>
+<p>Much like one of my favorite Margin Call quotes, there are three ways to make a living in this [semis] business.</p>
+<p>Be first.</p>
+<p>Be Smarter.</p>
+<p>Or cheat.</p>
+<p><b>The thing about semis is, this world is largely self-policed because cheating is very easy and the only way to find out (for sure) if someone lied to you is to get volume samples to independently test.</b></p>
+<p>To understand what I am talking about, let me give you some real examples, some of which are heavily obfuscated for obvious reasons.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109580875-44.jpg" alt="" loading="lazy"></p>
+<p>Lasers are typically (almost always…) run at 40C die temp or higher. Lumentum’s public UHP demo at OFC 2026 was at 30C. This information was disclosed in their laptop monitoring tool in small font while the headline numbers (optical output power, efficiency, RIN, linewidth) were in big font and on the slideshow TV.</p>
+<p>At DesignCon 2025, Marvell had an optical DSP demo (3nm, 1.6T) that had very aggressive cooling.</p>
+<p>Same conference, Alpha wave had a PCIe 7 live demo showing 1e-12 BER (very good) but at a relatively short channel. Meanwhile the marketing materials discussed support for much more lossy channels.</p>
+<p>There was a time where I was debugging a performance issue and found a register that would juice a small sub-circuit bias voltage and deliver significant performance gains. The overall power draw of the chip and thermal dissipation were the same.</p>
+<p>When I shared my results with design, one of them had a visceral negative reaction and demanded I never use this register again. Apparently, it was included as an emergency debug feature. Leaving that register enabled would lead to catastrophic electromigration issues. Essentially the chip would fry itself after a few months.</p>
+<p>Think about what this kind of situation enables.</p>
+<p>I could have kept that register enabled and lied to my manager.</p>
+<p>My manager could have ordered me to use the register anyway for marketing and test reports but disable it in customer firmware. When the customer realizes performance is worse than the report, too late they already committed to purchasing the product and cannot switch.</p>
+<p><b>A single person, even a low-level IC, has the power to commit significant fraud.</b> <b>This is common simply because of how complex semis are and how easy it is to hide things from other internal departments and cheat.</b></p>
+<p>(we did not use the register… took me a couple weeks to find a safe solution)</p>
+<p>There was a time when a competitor was telling (shared potential) customers very unsafe and unethical things about undervolting.</p>
+<p>As a reminder, designs are almost always simulated at +/-10% and characterized at +/- 5%.</p>
+<p>The competitor (same product class, same process node) was quoting -18% voltage as safe and viable.</p>
+<p>Marketing and upper management of &lt;former employer&gt; placed enormous pressure. My former manager instructed me on how to safely determine what undervolt we could commit to without being unethical. After a month of work, the result was a -12% or -14% depending on some nuance. My former manager wanted to be safe and decided to pass along power numbers at -10% to be conservative.</p>
+<p>Word of advice, this industry is built on reputation. If you are consistently asked to do potentially unethical things its time to find a new job. It will greatly benefit your short-term sanity and long-term career opportunities.</p>
+<p>People know who worked at which company on which group/project.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109582471-45.jpg" alt="" loading="lazy"></p>
+<p>Word gets out.</p>
+<p>You will never sell anything to any of these people ever again.</p>
+<p><b>Remember that job interviews are you selling yourself (your labor).</b></p>
+<p>Cherry-picking is a common practice. If a company is demoing some chip at a conference, they are not going to pick an FF or SS part. Of course it will be a TT part.</p>
+<p>But suppose you have a tray of 100 TT parts. Are you going to pick a random one?</p>
+<p>No… you will pick a subset of TT parts to test and use the best one.</p>
+<p>Is testing 5 TT parts and picking the best ethical? Sure its marketing.</p>
+<p>How about testing all 100 TT parts?</p>
+<p>There exists a line between reasonable marketing/promotion, and cheating.</p>
+<p>There exists another line between cheating and fraud.</p>
+<p>Do I sound like someone who knows how to cheat and spot cheating? These are highly correlated skills.</p>
+<p>One of my (unusual) hobbies is to watch police interrogations. I sometimes copy their strategies. Start with some soft and friendly questions to make the target feel safe. Then abruptly pummel them with sharp, specific questions. Cut them off and don’t give them time to think. Latch on to their mistakes.</p>
+<p>You would be surprised at how many people crumble under pressure and give away key details.</p>
+<p>This brings me to the 25% B0 Jalapeno clock speed comment by Semianalysis.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109583503-46.png" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109584139-47.png" alt="" loading="lazy">SemiAnalysis</p>
+<p>OpenAI Jalapeño: Better Than Nvidia Blackwell</p>
+<p>OpenAI has spent the past couple years quietly building “Jalapeño,” an inference chip just announced at Hot Chips. Rumors of a successful tapeout had been swirling for a while. But now we have details. OpenAI invited us to look at their chip, go to their labs to check out how real it is, and…</p>
+<p>Read more</p>
+<p>a month ago · 275 likes · 2 comments · Bryan Shan, Myron Xie, Jordan Nanos, Wega Chu, Clara Ee, and Dylan Patel</p>
+<p>This is an absolutely massive red flag. It’s a red flag that is on fire in an incandescently bright manner.</p>
+<p>A 25% delta in perf/watt (optimum point on volt/freq curve) going from A0 to B0 means catastrophic failure. SA passing along this detail without realizing or discussing its significance is a huge miss. This detail is so huge, nothing else matters.</p>
+<p>Something went seriously wrong with Jalapeno. As far as I am concerned, A0 is broken and parametric yield must be an unmitigated disaster. This is the opposite conclusion/narrative of SA.</p>
+<p><b>Remember, designs are simulated at +/-10 voltage corners and +/- 2 sigma process corners.</b></p>
+<p>If your clock speed is off by 5-10% (A0 vs B0, or A0 vs target) after characterization and tuning, then that is a modest mistake.</p>
+<p>Off by 15% means something severely went wrong.</p>
+<p><b>Off by 25% is a disaster and might as well be off by 50%. Someone fucked up badly in this scenario.</b></p>
+<p><b>Catastrophic. Failure.</b></p>
+<p>In this case, the foundry is TSMC N3P, the worlds second best leading-edge logic process node and PDK. N5/N4P PDK is worlds best. N3E/N3P had some minor regressions in PDK quality two years ago which have since been mostly fixed.</p>
+<p>So either Broadcom fucked up or OpenAI (+ the AI agents who vibe-coded all the RTL in “record time”) fucked up. I will leave it to you to come to your own conclusion on who is responsible for the Jalapeno A0 disaster.</p>
+<h2>7] Cerebras unique situation, and possible outs.</h2>
+<p>Parametric yield is an industry-wide problem. <b>Cerebras is disproportionately affected.</b></p>
+<p>It’s not their fault. It is a logical and natural consequence of their core technology, wafer-scale compute.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109585158-48.jpg" alt="" loading="lazy"></p>
+<p>Engineering is about tradeoffs. Nothing is free.</p>
+<p>Most AI accelerators are built with reticle-sized dice that can be tested and characterized before advanced packaging. So most of parametric yield and tuning work can be done at a die level. Most, not all. There is some variation in advanced packaging parasitics.</p>
+<p>Cerebras has to effectively get good parametric yield on 84 reticles on the same wafer.</p>
+<p>Remember, the normal strategy’s every other semiconductor company uses for parametric yield are:</p>
+<ul><li>Throw away chips that are too slow or run too hot. <b>(Cerebras can’t do this)</b></li><li>Sell lower quality chips as a different SKU. <b>(Cerebras can’t do this)</b></li><li>Change various registers and settings of each chip to tweak and get most of them to pass spec. (Cerebras might be able to do this in a limited way… more on this later…)</li></ul>
+<p>What makes this situation much worst for Cerebras is test flow.</p>
+<p>Every logic wafer is tested at a wafer-level using ATE machines (Teradyne, Advantest). This stage of testing is really for basic diagnostics and to find out which chips are healthy enough to package. Packaging is expensive.</p>
+<p>System-level (packaged part) testing is absolutely critical for tuning and to figure out which devices are good enough.</p>
+<p>The penalty for throwing away a bad (failed parametric yield) packaged GPU/ASIC (normal ones) is bad but not disastrous. Yes it hurts throwing away 1-2 reticle-sized logic chips and 4-6 HBM stacks and some CoWoS-L wafer area. But you can set up a socketed test rig and avoid throwing away power delivery, PCB and other stuff and assembly cost (money and opportunity/time cost) is not that bad. Modern thermal heads and test rigs are pretty good.</p>
+<p>Cerebras gets killed by all of this. They have to package the wafer with all the expensive custom vertical power delivery and bespoke cooling into the final product. There is no real test rig. At least no test rig with economics and usability anywhere close to those for normal chips.</p>
+<p>You can see this from the OpenAI Jalapeno test rigs.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109586449-49.jpg" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109588017-50.jpg" alt="" loading="lazy"></p>
+<p>Socketed PCB. Easy access to jumpers and diagnostic pins. Over-built power delivery to run DVFS experiments. Easy IO diagnostics with Samtec Bullseye connectors. And an automated vertical thermal head (not shown, I am assuming) for thermal sweeps.</p>
+<p><b>It matters a lot having the ability to set chips to specific temperatures to evaluate performance and debug timing issues.</b></p>
+<p>Cerebras is so limited in how they can test and deal with parametric yield. It’s a very difficult problem I am not criticizing them. Just pointing out how severe the problem is because of… reality.</p>
+<p>I want to frame this section is a particular way.</p>
+<p>Cerebras was founded in 2015.</p>
+<p>The first WSE was released in 2019.</p>
+<p>The current generation WSE3 was released in 2024.</p>
+<p>An updated enclosure for WSE3 (significantly better power delivery and cooling) was released in 2026.</p>
+<p>Suppose you reduced Cerebras down to 10 “dangerous/existential” problems.</p>
+<p>How to get cross-reticle stitching to work?</p>
+<p>Vertical power delivery and cooling.</p>
+<p>Graph compiler.</p>
+<p>…</p>
+<p>…</p>
+<p>…</p>
+<p>blah blah blah.</p>
+<p>Obviously, they had to prioritize which dangerous problems to work on. What to fix first and how much effort.</p>
+<p><b>I believe that parametric yield is the problem that has gotten the least attention from Cerebras.</b></p>
+<p>Again, this is not a criticism. These guys had to prioritize and deal with limited resources.</p>
+<p>From my conversations with Sean and JP, it really seems like after all these years, they have only just started to seriously look into parametric yield.</p>
+<p>One of the most obvious strategies is to give each reticle on the WSE it’s own voltage or even go further and give parts of each reticle their own voltage domain.</p>
+<p>Sean has been repeatedly <b>very evasive</b> when I ask about this. My guess is the entire WSE3 has a unified power grid and there is no ability to voltage-tune their way out of parametric yield issues.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109588607-51.png" alt="" loading="lazy"></p>
+<p>It is very suspicious that the CS-4 (with overclocked WSE3-turbo) doubled the clocks of everything. IO and core clock.</p>
+<p>My conspiracy theory is they were operating at a hilariously low section of the volt/freq curve and managed to double because of improved cooling and reduced power supply ripple.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109589844-52.jpg" alt="" loading="lazy"></p>
+<p>Ignore the absolute voltage and frequency numbers. I am using this chart because lazy.</p>
+<p>Every chip has a volt/freq response that looks like this. Some threshold voltage to turn on at all, a linear region, a not so great region, then the asymptotic region where giving 20-25% more juice gives you 3-5% more speed.</p>
+<p>I think Cerebras WSE3 and WSE3-turbo are at the purple Xs. The gain going from CS-3 to CS-4 is purple arrow. Red arrow and red X is where they would like to be but can’t for a variety of reasons where I can only speculate.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109590654-53.jpg" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109591694-54.jpg" alt="" loading="lazy"></p>
+<h2>Cerebras Supernova 2026: Irrational Recap</h2>
+<p>Irrational Analysis</p>
+<p>·</p>
+<p>Aug 19</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109592802-55.jpg" alt="" loading="lazy"></p>
+<p>Irrational Analysis is heavily invested in the semiconductor industry.</p>
+<p>Read full story</p>
+<h2>Hot Chips 2026: Irrational Recap</h2>
+<p>Irrational Analysis</p>
+<p>·</p>
+<p>Sep 6</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109593688-56.jpg" alt="" loading="lazy"></p>
+<p>Irrational Analysis is heavily invested in the semiconductor industry.</p>
+<p>Read full story</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791109594473-57.jpg" alt="" loading="lazy"></p>
+<p>Note how JP called out resistive and inductive parasitics.</p>
+<p>Parasitic resistance = power/efficiency loss</p>
+<p>Parasitic inductance = power supply ripple = stability issues</p>
+<p>Skewed corners (SF, FS) generally hate power supply ripple.</p>
+<p>So on the enclosure, cooling, and power delivery fronts, Cerebras has made great progress.</p>
+<p>I think the parametric (product-level) yield of this new system will be significantly better. They have supply issues now because this CS-4 product is only just starting to ramp. Probably have to wait until H1 2027 to see hardware revenue and gross margin inflection.</p>
+<p>So the question is what can the next-gen WSE4 do to help with parametric yield?</p>
+<p>Remember the WSE-3-turbo is the same silicon. Just doubled all clocks because of better thermal headroom and power supply stability.</p>
+<p>Here is my list of ideas. All made up. I have no info just guesses based on experience.</p>
+<ul><li>Add granular voltage control by splitting up the power grids. The CS-4 renders look like the power delivery was modularized both for serviceability and for adjusting voltage of the WSE at a reticle or possibly more granular level.</li><li>Go a step further and add DVFS for the compute cores.</li><li>De-couple compute, SRAM, and NoC clocks.</li><li>New custom cells that are more tolerant to PVT. I suspect Cerebras used mostly standard PDK cells. Might be wrong on this.</li></ul>
+<p>As a summary // TLDR;</p>
+<ul><li>I believe Cerebras is getting killed by parametric yield issues which destroy hardware gross margins and severely limit supply.</li><li>Also believe CS-4 enclosure is great progress and should make their financials/numbers much better H1 2027.</li><li>There exist many possible vectors to drastically improve parametric yield further by making (admittedly significant) design changes in WSE4. Lot of potential here.</li></ul>
+<p>Subscribe for engineering-driven investment analysis.</p>
+<p>Pledge your support</p>
+<p>Share?</p>
+<p>Share</p>
+</div>
+</main>
+</body></html>

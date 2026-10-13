@@ -1,0 +1,200 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.01 | AC | China AI | DeepSeek TileLang Undercuts CUDA Compatibility</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.01 | AC | China AI | DeepSeek TileLang Undercuts CUDA Compatibility</h1>
+<p class="orig">原标题：DeepSeek开源六件套：TileLang削弱的是“兼容CUDA”卖点——寒武纪受益，摩尔线程承压</p>
+<p class="tags">#semis #software #china</p>
+<p class="meta">AceCamp · 2026-10-01 09:15 · article 70567723</p>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>DeepSeek开源昇腾六件套中TileLang的定位；</li><li>TileLang替代CUDA的范围及与cuBLAS等厂商库的性能差距；</li><li>英伟达CUDA Tile的应对，以及兼容CUDA与自建指令集两条国产路线受到的不同影响；</li><li>寒武纪、摩尔线程、海光信息等公司受到的影响，以及国产算力约束变化的投资含义。</li></ol>
+<p class="qq">TileLang替掉的是手写内核这一层人力，不是CUDA整栈。它在英伟达硬件上编译成PTX、矩阵乘仍调CUTLASS，净效应偏加固。被削弱的是“兼容CUDA”这个卖点：自建指令集一方拿到对接通道，靠翻译层求生的一方失去差异化。</p>
+<h2>导读：一门编程语言改变了什么，又没有改变什么</h2>
+<p>本部分为非技术类读者准备，旨在以通俗易懂的语言解释本文逻辑。专业读者可跳过此部分。</p>
+<p><b>本文讨论的是一门名为TileLang的编程语言，以及它将让谁受益、让谁受损。</b>2026年9月30日，DeepSeek开源了六个面向华为昇腾芯片的软件组件，其中包括TileLang的编译工具。市场普遍将其视为国产软件生态成形的标志，不少解读称之为“国产CUDA”，并由此推断英伟达的护城河将被削弱。本文的结论并非如此：TileLang削弱的不是英伟达，而是部分国产芯片厂商主打的“兼容CUDA”路线。</p>
+<p><b>AI芯片只能识别自己的一套底层指令，可以将其比作一名只懂一门母语的工人。</b>把某一类计算拆成芯片可执行的步骤、并设法让它运行得更快的小程序，业内称为“算子”或“内核”，相当于写给这名工人的操作手册；把手册译成芯片指令的工具称为“编译器”，相当于翻译。CUDA是英伟达为自家芯片搭建的整套编程平台，包括语言、编译器和约二十年来反复打磨的现成计算库，主流AI软件普遍首先为它编写，客户若改用其他芯片，往往需要把大量程序重写一遍，这便是英伟达的护城河。</p>
+<p><b>TileLang的作用，是让编写算子这件事更为省力。</b>高性能算子过去大多由熟悉芯片细节的工程师逐行手写、反复调优，耗时长、门槛高。TileLang由北京大学与微软亚洲研究院背景的团队开源，名称取自分块（tile），即把大计算切成小块、分给芯片上的众多计算单元同时处理；工程师只需写清每一小块怎么算，底层细节交由编译器自动处理，同一种写法还能以较低的成本移植到英伟达、AMD与华为昇腾等不同厂商的芯片上。尽管DeepSeek在V4模型中已用它取代了此前绝大多数手写算子，但在最追求速度的环节，手工代码尚未退场。</p>
+<p><b>本文的第一个判断是，在英伟达芯片上，TileLang非但没有绕开CUDA，反而建立在CUDA之上。</b>它在英伟达芯片上生成的程序，仍要转换成英伟达的中间指令格式PTX、交由英伟达的编译器处理，最核心的矩阵乘法更是直接调用英伟达提供的矩阵计算模板库CUTLASS。这意味着TileLang替代的只是手写算子这一层人力，而非CUDA整套体系，它让更多工程师能够高效使用英伟达芯片，净效应更接近加固；真正的替代效应，只在英伟达之外的芯片上成立。英伟达亦已于2025年12月4日推出自家的分块编程工具CUDA Tile，把这一新的编程方式收进了自己的工具链。</p>
+<p><b>本文的第二个判断是，CUDA护城河真正承重的部分不在编程语言，而在约二十年积累下来的调优经验。</b>英伟达的计算库之所以快，是因为它们在庞大的装机量之中见过各种规模的真实计算，并在多种硬件上反复验证过最优做法；新语言能压缩写程序的时间，却无法凭空补上这些经验。据得克萨斯大学达拉斯分校研究者的第三方复测，在英伟达芯片上做最基础的大规模矩阵乘法，TileLang的速度仅为英伟达成熟计算库cuBLAS的约60%到78%，研究将差距主要归因于代码生成与自动调优的覆盖不足；而在注意力这类近年才兴起、尚无二十年积累可供对标的计算上，据TileLang团队自测，它已贴近手写水平。</p>
+<p><b>上述判断合起来，指向本文的核心结论：真正被削弱的是“兼容CUDA”这条路线。</b>国产芯片厂商应对英伟达护城河的做法大体有两种：兼容路线在自家芯片上加一层翻译，让客户原有的CUDA程序不必重写即可运行，卖点是迁移成本低，摩尔线程、沐曦股份等以此为主；自建路线则打造一套完整、公开的自有指令集与算子语言，华为昇腾与寒武纪属于此类。TileLang这类工具普及之后，不走兼容路线也能较快拿到可用的算子，“兼容”就不再是客户选型时非有不可的条件，只是一项便利；与此同时，编译器恰好需要稳定、公开的底层指令作为对接界面，这是自建路线才有、翻译层给不了的资产。同一件工具由此对两条路线产生相反的作用，自建一方拿到了接入通道，兼容一方则失去了差异化，进而在客户选型中的分量逐步下降。</p>
+<p><b>落到投资层面，软件门槛下移之后，国产AI芯片的主要约束正从软件转向制造与存储。</b>笔者判断，在有厂商团队配合的条件下，单个模型迁移到国产芯片上的适配周期已从半年到十个月的量级缩短到两到三个月，但这份节省不会平均分配，拿到最多的是拥有自主指令集与自有算子语言的一方。对应到公司层面，寒武纪受益，摩尔线程承压，海光信息在这条主线上受益有限，增量主要来自服务器处理器这条独立业务线。当软件迁移不再是第一道关口，竞争将回到先进制造产能、存储芯片供给与Token的综合成本上，评判一颗新芯片的标准也应随之从纸面算力，转向指令集是否开放、与开源编译工具对接后还能保留多少性能。</p>
+<h2>一、DeepSeek开源了六件套，TileLang是关键</h2>
+<p><b>9月30日DeepSeek一次性开源了面向昇腾的六件套。</b>按官方披露，这批组件是TileLang编译工具、DeepGEMM-Ascend、DeepEP-Ascend、TileKernels、FlashMLA与DeepSelect，与此前面向英伟达平台开源的组件一一对应。市场把这件事读成国产软件生态成形，“国产CUDA”的说法也随之而来。但这份清单本身传递的信息，与这个读法并不完全一致。</p>
+<p><b>先看清单的结构，再看结论。</b>一门号称能替代CUDA的高级语言，旁边同时摆着一套手写的矩阵乘库、一套手写的通信库和一套手写的注意力内核。如果这门语言已经能覆盖全部场景，后面三件就没有必要单独开源、单独维护。因此合理的读法是：TileLang承担的是覆盖面与迁移速度，守住峰值性能的仍然是手工代码。这两件事在同一批组件里分工明确。</p>
+<p><b>这条分工在DeepSeek自己的文档里有连续记录，而且能看到升级的痕迹。</b>V3.2-Exp发布时，官方仓库把TileLang版本定位为可读性好、面向研究原型的实现，把高性能内核指向DeepGEMM。到V4，公开论文第3.2节的表述升级为用TileLang开发一组融合内核、替代此前绝大多数手写实现。但在SGLang的首日集成记录里，低时延解码场景下前置矩阵乘的TileLang内核仍会成为瓶颈，需要额外的融合路径绕开。从研究原型到开发主力，TileLang走完了两级台阶；从开发主力到唯一实现，它还没有走完。本文要回答的核心问题，就是这半级台阶的位置在哪里，以及谁会因为它移动而受益、谁会因此受损。</p>
+<h2>二、TileLang只替代手写内核，CUDA的其余六层没有动</h2>
+<p><b>把CUDA按功能拆成七层，TileLang真正触及的只有最外那一层。</b>语言与编译器、驱动与运行时、通信库、推理运行时、调试与性能分析工具这几层，TileLang都没有提供替代品。在英伟达硬件上，它还要反过来依赖这些层：TileLang生成的仍是CUDA C与PTX，由NVCC编译、由CUDA运行时装载，官方调试文档在涉及带宽、占用率与硬件瓶颈的分析时直接指向Nsight Compute一类厂商工具。框架默认路径这一层的占位者是Triton，torch.compile经由TorchInductor默认生成的是Triton内核，这块地盘与TileLang无关。</p>
+<p><b>矩阵乘这一层的实现方式，把问题说得最直接。</b>据TileLang论文披露，其T.gemm原语在CUDA后端直接调用英伟达的CUTLASS，在AMD后端调用composable kernel与手写HIP代码。换句话说，TileLang在英伟达卡上的矩阵乘峰值本身就建立在CUDA库之上。由此可以得到本文的第一个判断：<b>在英伟达的硬件上，TileLang是CUDA的上层封装，它扩大的是能够高效使用英伟达GPU的开发者人数；替代效应只在英伟达之外的硬件上成立。</b>同一件工具在两类硬件上方向相反，这是后面所有推论的起点。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567723_d9e1a1faa34cc3ce.webp" alt="" loading="lazy"></p>
+<h2>三、性能缺口落在大矩阵乘和卷积，护城河在调优库不在语言</h2>
+<p><b>一项第三方复现给出了与论文自报完全不同的读数，两组数字都成立，差别在于测的是什么。</b>得克萨斯大学达拉斯分校的Li、Rathnasuriya与Yang在2026年7月的预印本《Correct but Slow》中，用A100与GH200上五类共22个内核做对照测试，发现一个符合惯用写法、且通过KernelBench正确性校验的TileLang层归一化内核，在A100上比PyTorch基线慢约299倍（97.0毫秒对0.324毫秒）；把串行归约改成原生归约原语、去掉多余的精度转换之后，同一硬件上可以恢复约1347倍。这一类缺口属于写法问题，改得掉。</p>
+<p><b>难改的是另一类，而它的位置正好落在厂商库最成熟的地方。</b>同一项研究测得，TileLang的大矩阵乘相对cuBLAS在A100上约为78%、在GH200上约为60%，卷积在A100上约为44%到59%；不计注意力类算子，中位库效率约为67%到68%，同口径下Triton约为98%。研究把这部分残差归因于代码生成与自动调优覆盖不足，厂商库的算法选择只是次要因素。这个归因很关键：如果差距来自算法选择，补上算法即可；如果来自调优覆盖，要补的就是数据量。</p>
+<p><b>顺着这条归因往下推，可以得到本文的第二个判断：CUDA护城河的承重结构不在语法，在调优数据库。</b>cuBLAS与cuDNN的价值来自它们见过多少种真实形状、在多少种硬件配置上回归过，这是二十年装机量沉淀出来的资产。高级语言压缩的是人写内核的时间，压缩不了调优样本的数量。装机量小的一方即便拿到同样的语言，也补不上同样的样本。这也解释了一个看似矛盾的现象：TileLang在注意力这类新算子上能贴近手写实现，在传统的大矩阵乘与卷积上反而落后。新算子没有二十年积累可以对标，老算子有。</p>
+<p><b>国产硬件上的情形还要复杂一层，有一组数字把这层说清楚了。</b>TileLang主线的一份昇腾后端提交自报，在昇腾950PR上其稀疏注意力实现比开源手写Ascend C基线快约1.95倍到2.13倍，但同一份提交给出的算力利用率只有约46%到56%。这两个数字要放在一起读：DSL赢了手写基线，两者却都离硬件峰值很远。需要说明的是，这属于单一未合并提交的自报结果，未经独立复现，但方向清楚——在国产硬件上，制约性能的关键不是谁来写算子，是编译器把高级描述映射到这套硬件的成熟度。国产侧的缺口因此不在有没有高级语言，在高级语言到国产硬件之间的那一段编译器。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567723_f7cd0a02ca2a85be.webp" alt="" loading="lazy"></p>
+<h2>四、英伟达已经把tile编程收进自家工具链</h2>
+<p><b>英伟达在2025年12月发布的CUDA 13.1里推出了CUDA Tile，把tile级编程纳入自有栈。</b>按英伟达官方说法，这是CUDA诞生二十年来最大的一次平台更新。CUDA Tile包含两件东西：CUDA Tile IR是面向英伟达GPU的tile级虚拟指令集，官方把它类比为SIMT编程里的PTX；cuTile是它的Python前端。IR部分已在GitHub以Apache 2.0协议开源。编程范式正在从SIMT向tile迁移，这一点由英伟达自己确认。</p>
+<p><b>架构覆盖的推进节奏，说明这不是一次试探性投放。</b>CUDA 13.1首发只支持Blackwell；2026年3月的CUDA 13.2把支持范围扩展到计算能力8.x的Ampere与Ada；到CUDA 13.3，tile编程进入C++、加入编译器自动调优，开源仓库同步补上Hopper支持。此外，英伟达在2026年1月发布了把CUDA Tile IR接到OpenAI Triton的后端。三个季度之内，英伟达把tile抽象从一款新品的专属特性铺回了三代在用架构，并且主动去接第三方DSL的上游。这是收编，不是防守。</p>
+<p><b>同期的一份独立评测显示，掌握全部硬件细节的一方做tile语言，同样做不到一次编写、跨架构最优。</b>该测试在H100、B200与RTX PRO 6000三种架构上测cuTile：矩阵乘仅达cuBLAS的52%到79%，代码量为22行、对照WMMA写法的123行；融合注意力内核在B200上达到1007 TFLOP/s、较FlashAttention-2高约2.5倍，同一内核换到sm\_120架构后只剩FlashAttention-2的53%，跨架构缺口约5.6倍。英伟达对自家三代架构尚且如此，换成另一家厂商的指令集，这道缺口只会加宽。“换个后端就能拿到高性能”这句话，在现阶段并不成立。</p>
+<p><b>同一社区的另一个项目提供了一条方向相反的证据，值得单独拿出来看。</b>tile-ai社区的TileRT把整张解码图静态编译成单个常驻内核，据SemiAnalysis的InferenceX评测，在八卡B200服务器上做到单用户约494.2 TPS的交互速度，其官方发布页把初版定位为实验性运行时。这个成绩服务的是单用户场景，不是整机吞吐，但它说明的事情很清楚：tile技术这一次是在帮英伟达的通用GPU对抗专用推理硬件。把TileLang一类工具单向理解成“削弱英伟达”，会漏掉这条线。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567723_ad2cc1b9d29c9917.webp" alt="" loading="lazy"></p>
+<h2>五、被削弱的是“兼容CUDA”这条路，不是英伟达</h2>
+<p><b>前面三节的判断合起来，指向一个市场还没有充分定价的结论。</b>如果高级语言能让任何后端在数周内拿到可用的高性能算子，那么“兼容CUDA”这件事本身的稀缺性就下降。兼容路线的立身之本是迁移成本低，客户原有的CUDA代码不必重写。这条路现在同时承受三重挤压。第一，节奏上始终落后一拍——新硬件特性先在CUDA与PTX暴露，翻译层只能等其稳定后再追。第二，靶子在移动——SIMT层面的兼容还没有追平，英伟达已经把主线挪向tile抽象，追赶方要同时对付两套范式。第三，卖点被稀释——当不走兼容路线也能较快拿到可用算子，“兼容”就从必要条件退回成一项便利。</p>
+<p><b>自建路线拿到的是相反的东西：有完整的指令集与自有内核语言，编译器才有可以对接的界面。</b>昇腾版TileLang的做法是对Ascend C底层指令做高级封装；昇腾同时支持Triton路线，triton-ascend是Triton官方社区接纳的首个国产加速后端，已支持约85%的Triton Python接口。据华为披露，CANN自2025年8月宣布全面开源以来，已适配PyTorch、vLLM、SGLang、Megatron、Triton、TileLang等九十余个主流开源项目，TorchNPU也成为PyTorch官网首个获得官方支持的中国芯片硬件。编译器需要的是稳定、公开、可寻址的底层指令，这恰好是自建路线才有的资产。翻译层给不了这样的界面，因为它自身就是一层转换。</p>
+<p><b>证据上的落差在同一个开源组织内部就能看到，不需要另找口径。</b>tile-ai组织下同时存在面向摩尔线程MUSA、沐曦MACA与海光加速卡的适配分支，但这些分支的公开性能数据与维护节奏都比较有限；昇腾方向则有独立仓库、主线后端提交与模型厂的深度绑定。同一套工具放出来，两条路线接到手里的东西并不一样：一边是可以进主线的后端，一边是挂在组织下的分支。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567723_afb9430c75ef29d7.webp" alt="" loading="lazy"></p>
+<h2>六、寒武纪受益，摩尔线程承压，海光的增量在另一条线</h2>
+<p><b>寒武纪的位置由独立性决定，硬件中立的算子语言对它偏正面。</b>国产卡的部署普遍采用昇腾为主、第二供应商为辅的双集群结构，买方要的是不被单一供应商绑死。算子语言与硬件解耦之后，第二供应商的切换成本下降，被强化的正是这个结构。半年报把生态建设的篇幅进一步加大，新增BANG C算子开发挑战赛与高校人才培养，并明确提出实现DeepSeek等国内主流开源模型的Day 0适配。钱和人投向的是自有内核语言的开发者规模。</p>
+<p><b>这份半年报还给出了另一个信号，它与本文第七节的结论方向一致。</b>期末存货账面价值82.48亿元、占总资产比例45.32%，2025年末为36.79%；预付款项29.14亿元、较上年末增长291.37%；经营性现金流净额3.11亿元、同比下降65.83%。公司把现金压在原材料、委托加工与预付采购上。笔者判断，这组数字说明寒武纪当前的约束在产能与供应链，不在软件生态。软件侧需要跟踪的变量只剩一个：它与tile级DSL的对接程度，这一项在半年报里没有单独披露。</p>
+<p><b>摩尔线程的研发投入强度很高，但这笔钱买到的东西正在贬值。</b>公司2026年上半年营业收入17.36亿元、毛利总额9.89亿元；研发投入7.69亿元、占营业收入44.30%，研发人员1019人、占74.16%，2022年以来累计研发投入接近59亿元。MUSA生态对外的口径是兼容核心数学库、支持三千余个PyTorch算子，并已获得vLLM与SGLang的官方支持。笔者认为，受影响的是“兼容”这一项在客户选型中的权重，图形渲染与通用计算业务不在本文讨论的影响范围之内。对兼容路线实际的问题是：当迁移成本不再由翻译层决定，这套生态的定价依据要换成什么。</p>
+<p><b>海光信息在这条主线上的受益有限，真正的增量在另一条线上。</b>笔者判断，其加速卡在DeepSeek V4上的适配深度约在两到三成、限于特定场景，短期内难以进入主力推理位次；而GPU机柜配套带动的x86服务器处理器需求是一条独立逻辑，与算子语言之争没有直接关系。沐曦股份与燧原科技同在科创板、壁仞科技已在港交所上市，这三家在tile级DSL上或有分支、或尚无动作，共同的短板是缺少公开可验证的性能数据，兑现节奏靠后。</p>
+<h2>七、投资含义：门槛下移之后，约束会换位</h2>
+<p><b>对英伟达，需要盯住的不是TileLang，是两项更靠近底层的指标。</b>其一，torch.compile的默认代码生成后端是否仍然是Triton；其二，新一代硬件特性是否仍在CUDA与PTX首发。这两项不变，DSL层面的竞争就停留在开发效率，不进入定价。公司最近一个财季数据中心业务收入890亿美元、毛利率75.0%，管理层给出的下一财年毛利率指引区间为72%到73%。这个区间能否守住，是护城河状态的直接读数，比任何一组跑分都贴近生意本身。</p>
+<p><b>对国产算力，软件适配正从人力密集转为编译器密集，但这层节省不会平均分配。</b>笔者判断，在有厂商团队配合的条件下，单个模型的迁移适配周期已从半年到十个月的量级缩短到两到三个月。适配速度不等于性能覆盖率，性能覆盖率也不等于集群综合成本。三段链条同时成立，软件门槛的下降才会转化为硬件份额。按本文第五节的分析，拿到这层节省最多的是有自主指令集与自有内核语言的一方。</p>
+<p><b>笔者判断，门槛下移之后，真正的约束会换位。</b>笔者3月9日报告中提出，CUDA护城河在训练侧仍深不可测，解码环节是结构性薄弱点，现实路径是用Triton与vLLM绕道。本文在此之上推进一步：绕道的工具已经到位，但绕过去之后会发现墙不在语言上。与之衔接的是9月18日报告的结论——2026年卡住国产算力卡出货的已经换成高带宽存储。寒武纪半年报里占总资产四成五的存货与增长近三倍的预付款，正是这条结论在报表上的投影。当软件迁移退出第一约束的位置，竞争回到先进制造与存储供给，以及单位Token的综合成本。</p>
+<p><b>评判一颗新芯片的维度也应当随之调整。</b>前序报告中提出，洗牌释放的真实价值不在芯片设计本身，而在包括推理软件栈在内的隐形基础设施。按本文的分析，这部分价值不会平均落到所有厂商头上。可以替代纸面峰值算力的判断维度有两项：指令集的开放度，以及同开源tile级编译栈对接时的性能损耗。前者决定编译器有没有东西可以接，后者决定接上之后还剩多少算力。</p>
+<p><b>上行风险在于覆盖率的修复快于预期。</b>前文引用的昇腾后端提交若被第三方在多算子、多形状上复现，且更多模型厂在发布日同步提供昇腾实现，替代进程会快于本文的预期。寒武纪半年报已明确提出Day 0适配目标，若这一目标在下一代主流开源模型上兑现，国产第二供应商的位置会比本文的假设更早坐实。</p>
+<p><b>下行风险在于工具链稳定性与英伟达的节奏控制。</b>前述第三方复现的样本仅22个前向内核、硬件集中在A100与GH200，结论有边界；TileLang与运行时版本不匹配导致推理引擎崩溃的问题已有公开记录，部署成熟度仍在波动。若英伟达通过cuTile与新指令的暴露节奏持续收紧主动权，tile化带来的可移植性红利会更多留在其自有生态内部。</p>
+<p><b>以上内容不构成任何投资建议，请风险自担。</b></p>
+</div>
+</main>
+</body></html>

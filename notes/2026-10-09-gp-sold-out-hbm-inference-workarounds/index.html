@@ -1,0 +1,316 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.09 | GP | Memory | Sold-Out HBM &amp; Inference Workarounds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.09 | GP | Memory | Sold-Out HBM &amp; Inference Workarounds</h1>
+<p class="orig">原标题：Micron and SK Hynix: Sold-Out HBM, Spot Contracted Prices at Four to Five Times Higher, and Inference Workarounds — Perspectives From a d-Matrix SoC Architect</p>
+<p class="tags">#memory #semis</p>
+<p class="meta">GuidePoint · 2026-10-09</p>
+<div class="body">
+<p>Primary:</p>
+<p>NVDA</p>
+<p>AVGO</p>
+<p>MU</p>
+<p>Associated:</p>
+<p>INTC</p>
+<p>AMD</p>
+<p>MRVL</p>
+<p>AMZN</p>
+<p>2330:TT</p>
+<p>SambaNova Systems, Inc.</p>
+<p>Viewpoint:</p>
+<p>Competitor</p>
+<p>Moderator: Dan Kaplan (DK)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Oct 08, 2026</td><td>28 Min Read</td></tr></tbody></table></div>
+<p>Zhimin Ding (ZD), Senior Principle SoC Architect - D Matrix Inc</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The discussion examined how AI inference architectures can address scarce and costly high-bandwidth memory. The expert argued that token generation remains heavily constrained by memory bandwidth, making high-capacity, high-bandwidth memory difficult to replace. SRAM accelerators, memory pooling, cache offload and software optimization can improve utilization, but primarily complement rather than displace HBM.</p>
+<p>The expert expects vertically integrated 3D DRAM to become the most important architectural advance, delivering substantially greater bandwidth and better energy efficiency through denser packaging and tighter integration with compute.</p>
+<p>Key Insights</p>
+<p>3D DRAM could transform inference economics. First-generation products may provide fivefold to tenfold bandwidth improvement over advanced conventional HBM, improving throughput and cost per token. The initial rollout is likely two to three years away. A publicly targeted 2027 introduction was considered aggressive, with meaningful scale likely taking longer. Current GPU systems appear overprovisioned. The expert estimated that inference uses less than half of installed HBM capacity and under 10% of available compute during decoding because bandwidth is the primary bottleneck. Reducing HBM stack counts is sensible for inference. Lower capacity could better reflect actual utilization until next-generation memory improves the bandwidth-to-capacity balance. Software and auxiliary hardware offer meaningful efficiency gains but limited substitution. Combined optimization could increase performance by roughly 50%, yet directly reduce HBM requirements by less than 10%. Chinese memory suppliers are not viewed as an immediate global threat. Domestic supply could become meaningful earlier, while global competitiveness may require at least five years.</p>
+<p>Competitive Landscape</p>
+<p>10/12/2026 at 06:00 AM UTC</p>
+<p>Participant</p>
+<p>Positioning</p>
+<p>Advantages</p>
+<p>Challenges</p>
+<p>Two leading Korean memory suppliers</p>
+<p>Most visible leaders in 3D DRAM</p>
+<p>Scale, advanced packaging and customer partnerships</p>
+<p>Yield, thermal control and integration complexity</p>
+<p>Major US memory supplier</p>
+<p>Strong conventional HBM position</p>
+<p>Large patent portfolio and established capability</p>
+<p>Limited public evidence of a defined 3D DRAM roadmap</p>
+<p>Tier-two memory suppliers</p>
+<p>Potential customization partners</p>
+<p>Greater agility and tailored designs</p>
+<p>Lower scale and fewer resources</p>
+<p>Leading GPU supplier</p>
+<p>Dominant HBM-based platform</p>
+<p>Strong compute ecosystem and supplier qualification</p>
+<p>Inference systems may contain excess memory and compute</p>
+<p>Chinese DRAM supplier</p>
+<p>Emerging domestic competitor</p>
+<p>State-backed investment and large home market</p>
+<p>SRAM accelerator vendors</p>
+<p>Specialized inference providers</p>
+<p>High speed and strong efficiency for smaller models</p>
+<p>Yield, equipment access, management experience and regulation</p>
+<p>Limited capacity and continued dependence on HBM systems</p>
+<p>CXL memory providers</p>
+<p>Niche capacity expansion</p>
+<p>Sharing, pooling and improved memory management</p>
+<p>Lower bandwidth and added access overhead</p>
+<p>Quantitative Insights</p>
+<p>Metric</p>
+<p>Expert assessment</p>
+<p>Reported HBM spot premium</p>
+<p>Fourfold to fivefold above contracted pricing</p>
+<p>3D DRAM bandwidth potential</p>
+<p>Fivefold to tenfold improvement initially</p>
+<p>Production timing</p>
+<p>Aggressive range of 1.5–2 years; conservative range of 2–3 years</p>
+<p>Software-led memory utilization gain</p>
+<p>Up to roughly threefold for selected cache workloads</p>
+<p>Broad system optimization</p>
+<p>About 50% higher performance and around 30% lower infrastructure cost</p>
+<p>Direct HBM reduction from complementary methods</p>
+<p>Less than 10%</p>
+<p>Chinese global competitiveness</p>
+<p>At least five years; potentially serious within 8–10 years</p>
+<p>DK: Hi, everyone. My name is Dan with Guidepoint, and thank you very much for joining today's call. Micron and SK</p>
+<p>10/12/2026 at 06:00 AM UTC</p>
+<p>Hynix sold out HBMs, spot-contracted prices at 4 to 5 times higher, and inference workarounds. Perspectives from a d-Matrix systems and chip architect. If you have any questions, please email me at ask@guidepoint.com, and I will work your questions into the call. And it is my pleasure to introduce Zhimin Ding, who is the Senior Principal Architect at d-Matrix. Zhimin, thank you very much for being with us today. To start, if you could please give us a few words about your background and your role.</p>
+<p>ZD: Yes, I have spent nearly 30 years working in the semiconductor industry. In the last 8 years, I focused almost exclusively on AI accelerator technology, and I worked for several startups as well as some big companies. In my career, I also worked at memory companies as well. So, currently I'm at d-Matrix as a Senior Principal Architect, and my responsibility is for a newer generation of AI inference accelerators utilizing 3D DRAM technology.</p>
+<p>DK: Got it. Wonderful. So your concentration is a DRAM, if I heard you correctly.</p>
+<p>ZD: I would say it's more a system-on-chip solution that DRAM is an important part of the differentiation.</p>
+<p>DK: Right. That's really helpful. Thank you so much for going over your background. So Micron reported that most of the 2027 HBM supply is contracted while HBM3 spot prices reportedly run 4 to 5 times higher than when they were contracted. Which inference architectures could reduce dependence on HBM?</p>
+<p>ZD: Yeah, so I think in general, AI inference really could benefit from high bandwidth memory. And particularly during inference, there's the decoding phase where the tokens are actually being generated after the prefill phase and that's entirely memory bound, in fact, memory bandwidth bound. But with bandwidth, capacity is important too.</p>
+<p>DK: So, especially with some of the architectures that you see that are, of course, reducing the dependence on HBM?</p>
+<p>ZD: Right. That's a good question because HBM is currently the best memory technology for AI because it has both high bandwidth as well as a large capacity. There are alternatives to HBM, but as we build functionality, right? There are SRAM-based AI inference chips and those are, in my view, more transition products where you suddenly have even much higher bandwidth than HBM, but the capacity is very limited. So those serve as a kind of a niche for things like smaller models, but with very fast token rates, or it can be paired with GPUs with HBM to perform speculative decoding kind of inference, which improves token rates. So in a sense, it doesn't replace HBM, but it kind of helps with the utilization of HBM in a more system-kind of approach. Then in the future, 3D HBM could potentially surpass today's traditional 2.5D HBM in that it can have even better bandwidth. And even with the same capacity, it can generate even much higher token rates so that the system can get more work done with the same amount of memory. So in a sense, it kind of saves memory.</p>
+<p>DK: Would that 3D HBM require hybrid bonding?</p>
+<p>ZD: Yes, you will require the same kind or even more advanced bonding technology, packaging technology as HBM.</p>
+<p>DK: So, sorry, would it be just more advanced packaging or would it be actual hybrid bonding?</p>
+<p>ZD: Yeah, so it will be more advanced, so you will have different bonding technologies involved, like TSVs and face- to-face packaging with micro-bumps and those kind of technologies which, you know, that's used in HBM as well, but with even higher scale of density.</p>
+<p>DK: Mm-hmm.</p>
+<p>ZD: Yeah.</p>
+<p>10/12/2026 at 06:00 AM UTC</p>
+<p>DK: And the reason I ask is because my understanding is that with hybrid bonding, you can have a much bigger number of connectors which could increase bandwidth as well. Is that beyond 3D HBM or would that coincide? My understanding is that with hybrid bonding, you could have a much higher number of connectors, which would potentially significantly increase bandwidth. Is that, first of all, is that correct? And second, would such hybrid bonding be part of the 3D HBM transition or would that be additional?</p>
+<p>ZD: Yeah, so with 3D DRAM, the kind of bonding is... It's customized to have, you know, even smaller bump size and then even better bump density, right? So with this kind of... And that's more advanced than the current conventional HBM, so it's what they call microbumps, and it requires, you know, even higher precision in packaging and both thermal and... How do I say yield management?</p>
+<p>DK: Got it. How much can that increase bandwidth and what is the timing of, you said, when 3D DRAM becomes mainstream?</p>
+<p>ZD: So I'll say even with the current generation of 3D, that's... it works, it can provide 10x improvement over HBM and also significantly better energy density. And we are considering, again, HBM is a mature technology that has gone through many generations and 3D DRAM is just starting, so the potential is potentially even higher. However... As any engineering exploration, it goes into stages where companies do it step by step, and it goes through a couple of generations to make sure that product is fully mature and we can control quality. So I would say that the first generation of 3D DRAM, which I would project in the next 2 to 3 years to high-volume production, will have anywhere from 5x to 10x improvements over the current HBM, the latest, most advanced HBM technology, which means the token rates and the dollar per token will significantly improve over HBM and then that trend will continue.</p>
+<p>DK: And what do you think is the timing? I understand you mentioned that it would be in stages, but can you describe perhaps what's the current thinking in terms of when those stages would occur and what would be achieved at the stages?</p>
+<p>ZD: Why? So I'll just quote 1 number, a more aggressive number. I think that Qualcomm has recently made announcements and they are working on their memory-centric computing platform, and they have partnership with SK Hynix and Samsung, and they are projecting 2027 release or introduction of their products. I would say that that's kind of very aggressive, so it's likely that's going to take longer than that. So, I would say 2 years, maybe 1.5 to 2 years, it's probably the most aggressive first-generation rollout of 3D DRAM-powered AI inference chips, and I would say maybe 2 to 3 years for that to be more conservative estimates of the first-generation rollout.</p>
+<p>DK: And who's best positioned for that?</p>
+<p>ZD: What was that, sir?</p>
+<p>DK: Which of the producers are ahead on 3D DRAM? Are they all similarly positioned or is somebody leading the pack?</p>
+<p>ZD: Right. Yeah, so based on public information, at least, both Samsung and SK Hynix have made some announcements about those kinds of technologies. Samsung, they have the Z-HBM, and SK Hynix has a similar type of technology. And they are the most visible, obviously, because they are the tier 1s, but there are also many tier 2 vendors who may have, you know, not necessarily the same scale or strength of SK Hynix or Samsung, but they may be able to even move faster and offer better customization. So, we'll see. But currently, yes, I would say, from what's visible... from outside, Samsung and SK Hynix are definitely showing the most promising kind of at-scale deployment of 3D DRAM-based solutions in collaboration with the customers who develop the computers.</p>
+<p>10/12/2026 at 06:00 AM UTC</p>
+<p>DK: Where is Micron on that? Are they behind? Are they in the race? Because I think that they were claiming that they have as many patents on 3D DRAM as SK Hynix and Samsung combined, but at the same time, that doesn't mean they're ahead of the race, right? So where do you see them?</p>
+<p>ZD: Yeah, I have to say that at least I haven't heard from public sources of the clear movement from my group, but it doesn't mean they are not working behind the scenes with some key partners.</p>
+<p>DK: Yeah, okay. That's very helpful. All right. Thank you.</p>
+<p>ZD: I haven't heard of that yet.</p>
+<p>DK: What about if you, let's say, maybe easier technologies? Such as KV cache offload or perhaps quantization, memory pooling or more SRAM or near-compute type of memory configurations. What do you think of those?</p>
+<p>ZD: I would say that technology will always be there and will complement other fundamental memory technologies depending on the workload. Because AI fundamentally is very unforgiving when it comes to memory utilization, there is not much locality. That is one of the reasons memory becomes such a bottleneck for deployment of AI, but that does not mean there are no smart ways to have different tiers of memory and then hot memory, warm memory, cold memory, and then have some intelligent software to manage that. I would consider that as a part of the total solution, but I do not think that will just eliminate the need for high-bandwidth, high-capacity memory that is always available, always hot. For example, with vLLM and SGMAIN and those kinds of software frameworks, you can manage memory more intelligently depending on the model, the workload, and the user interaction with the AI models. Then you can extract maybe several X, let's say 3x improvement in terms of memory utilization, especially for KVCache. You can reuse a system prompt KVCache; it can be reused so you do not have to use multiple chunks of memory for multiple queries, and you can just share 1 chunk of memory and that sort of thing. Those things will always exist and then, of course, a mixture of expert models where you could have some experts that are maybe less frequently used and then they can be swapped out to off-memory. But I think there are challenges in doing that; not every workload can utilize that, and there are also a lot of complexities in terms of how you manage that, so more CPU cycles, more human intelligence in managing memory. I think that will exist, be part of the ecosystem, and it will grow, but it will not eliminate or even meaningfully reduce our dependency on high capacity, high bandwidth memory.</p>
+<p>DK: Got it. What about CXL? Does that reduce DRAM needs or perhaps reduces the growth of such needs or neither?</p>
+<p>ZD: I would say that remains a niche. So for certain type of workload or certain type of usage model, you can expand the memory of your system with CXL connected to memory. But because now you're thinking about maybe the memory itself will become cheaper, right? You can use LPDDR, those kind of memory, and then you're networking. But then the cost of access the data from that memory will be higher because you have less bandwidth that has to go through all the hops, the PHY, the networking, to reach the compute. So I would consider that to be a niche solution to complement today's compute system, but I don't see that can in any meaningful way reduce our reliance on something like HBM or DRAM.</p>
+<p>DK: But because you could share that memory between different CPUs, does that perhaps mean that you could have a reduction in future growth? So instead of adding, say, another terabyte, right, perhaps people could choose to add it in CXL or add a half a terabyte in CXL and then be able to use another half a terabyte from another CPU if more memory is needed?</p>
+<p>ZD: For example, let's say we have a specific use case workload where there are ways to extract some kind of reuse opportunity of memory. Let's say if your HBM is limited, especially for KV cache, then the CPU would need to participate in managing the memory. And then the main memory might be more involved in managing AI</p>
+<p>10/12/2026 at 06:00 AM UTC</p>
+<p>acceleration. Having memory that CPU and accelerator can share even coherently—that is what CXL offers to add the overall intelligence to the system so that it can run more efficiently. The goal is that you want to take advantage of any opportunities in the workloads to make the memory use more efficient or avoid the fragmentation of memory when you try to store KV cache into your HBM. You essentially consider that the HBM is a VRAM, in the case of the GPU, it's such a precious resource. So adding intelligence to manage it so that it's better utilized is definitely a worthy investment. But that sort of intelligence or the kind of shared memory needed to perform that by itself doesn't substitute or replace HBM in terms of having that fast and quick access storage to the AI compute.</p>
+<p>DK: Got it. All right. We'll move on. That's very helpful. How might SRAMs have near-term compute designs compared to, say, HBM-based GPUs in terms of cost per token?</p>
+<p>ZD: Right. Yeah, so I'm very intimately familiar with the SRAM-based computes as I was involved in some of the products. I would say that, as I've mentioned earlier, it's more a niche or a transition product because this whole concept of in-memory computers or near-memory computers, right? It's not only just a semiconductor technology, but it's also a kind of a compute card or architecture. So for a lot of vendors, including d-Matrix, whom I work for, that's kind of a natural first step to first thing to try the low-hanging fruit to build something that's very fast, very efficient. And it's substantially different from the traditional GPU architecture. It has severe limitation, which means because the capacity is very limited and there's no way to grow the SRAM capacity because it's mixed together with logic on the same die. So there will remain to be a niche kind of solution for fast inference of smaller models. And then more recently is speculative decoding, or SpecDec for short, where you can do speculative decoding to offload the GPU from having to process tokens one by one, but the GPU can be used to process a bunch of tokens at once to validate if the speculatively decoded tokens are correct or not. And that actually can bring meaningful improvements in inference performance. So I think that's the most compelling use of an SRAM-based approach. But as you can see, this needs to work in conjunction with GPUs running traditional HBM to provide a complete solution. So I think that's the kind of value that an SRAM-based approach could offer.</p>
+<p>DK: Well, can I, is there any way to mention numbers, say, a system without it would need X much HBM while a system with that could cut that HBM needs in half? Or is there some way to quantify its effect?</p>
+<p>ZD: Yeah. I would say that by being smart about how to manage tiers of memory or utilizing SRAM-based very fast memory to do speculative decoding, that sort of thing, you can maybe reduce the dependencies on HBM only by a small percentage, let's say less than 10%. But on the other hand, you'll make HBM work more efficiently, right? With the same amount of HBM, you get more work done. So I think that's the main advantage. If you look at it that way, if I have 10 terabytes of HBM in my rack to do my work by introducing additional, even more advanced memory technology and better software, maybe you can have higher token rates so that your HBM works more efficiently or is more productive in producing tokens. By doing that, you don't have to buy so many racks, right? So in a sense, you are saving your investment, not only in HBM, but it should be about the whole rack, like the CPUs, the GPUs, and all the networking and all the cooling, that sort of thing. So in a sense, yeah, you could say that advanced memory technology and advanced software could reduce reliance on HBM in the same way that it reduces reliance on everything or just be higher throughput.</p>
+<p>DK: But is there some way to say, okay, it's going to work twice as efficiently or 10% more efficiently or 50%? Is there, or at least some range where we could say, okay, if previously in order to get the same amount of work you needed 10 terabytes, now you only need 5, or is there some number like that?</p>
+<p>ZD: Oh, I see. Yeah. I would think, when people are advertising their solution, they will pick a use case that will make their solution shine. Sometimes they can say as much as like 3x or 300% improvement because they did this and that. I would say that, if we combine all the latest technology but using the same TPU, same HBM, there's potential across the board, maybe 50% more improvement that can be made. That allows, let's say, if you normalize on your output,</p>
+<p>10/12/2026 at 06:00 AM UTC</p>
+<p>that means you can reduce the cost of the infrastructure by 30% or something like that. Yeah, so I think that opportunity does exist today. But then if the industry starts moving more into 3D DRAM technology or 3D HBM... as Samsung calls it... you could have multiple improvements in throughput over the board, across different workloads, across different scenarios, which means that you can normalize on output. That means you could have much more reduction in the total cost, or you can just overall improve the user experience or user-serving capability by, let's say, 3x or more.</p>
+<p>DK: Got it. So, again, that's really helpful. Just going back to the same HBM and the TPU and getting to 50% improvement, again, what does it take? Is that mostly software, or do you actually need hardware as well?</p>
+<p>ZD: Yeah, I would say basically you need some hardware, either offload memory or fast SRAM-based. You need something and then software tools, or even more CPUs, to ease the bottlenecks so that you can run the software to mix and match and best match the workload to the hardware that you have provisions. Yeah, so I would say.</p>
+<p>DK: Gotcha.</p>
+<p>ZD: Yeah, some advanced or unconventional hardware and then software tools to manage that.</p>
+<p>DK: So if a transition to 3D HBM gives you such a significant improvement, essentially a huge step up, is it possible that when that happens, you could actually have a significant reduction in the supply crunch where people struggle to get capacity?</p>
+<p>ZD: Right. Yeah, I think capacity is still going to be needed or even more capacity will be needed. But I would say today's HBM capacity is overinflated, because if you look at the specs from NVIDIA like the Vera Rubin, I think they are putting 20 terabytes of VRAM in a rack. I think it's like 200-something gigabytes per GPU. But with today's power budgets and the HBM bandwidth, that will probably most likely be underutilized in a significant way. So I would say with today's HBM shortage, one thing those people can immediately do is to trim back on the HBM spec in their system because they are underutilized anyway. But with 3D DRAM, you will have a much more balanced bandwidth to capacity ratio so that you would, even with the same capacity as today's HBM, be able to be much more token efficient. And then there will be a time where maybe not immediately, but maybe after some number of years, then the capacity demand may also increase. But I would imagine that the 3D DRAM will be more expensive than today's HBM anyway, so that will be a factor. So I guess what I'm trying to say is that with today's HBM capacity, it's going to remain pretty flat or even reduce a little bit because bandwidth is the bottleneck. But then once the bandwidth problem is solved, then it will start to grow again.</p>
+<p>DK: I see. So the stack that we're talking about for NVIDIA, Rubin Ultra, going from 12 stack to 8 stack and maybe even to 4 stack. Does that make sense? Is that the right amount? Or do you think 8 stack is the right amount or do you think even 4 stack would work as well?</p>
+<p>ZD: Yeah, it definitely makes sense for inference, right? So let's say if we consider inference or at-scale deployment of NVIDIA GPUs, the current utilization of HBM capacity is definitely less than 50%. So that kind of reduction is a sensible. I would say NVIDIA over-provisioned that in their original spec, and then now they are just putting it back to more of the reality. I may also add, if you look at like Vera Rubin, Rubin Ultra, they have also enormous amount of compute petaflops, and that compute may be needed for training or even for pre-fill, but for most part of AI inference, the decoding phase, their utilization is less than 10%. So you're talking about a few percent, right? So in other words, more than 90% of that compute is sitting there idle because not enough bandwidth to feed the data as well as maybe power also, heat, thermal also plays some limits, but mostly it's the bandwidth. So, yeah, so I would say with today's HBM bandwidth, however impressive it is compared to any other memory technology, it's still not enough to justify today's compute and capacity spec in a system, and 3D DRAM will eventually rebalance that out.</p>
+<p>10/12/2026 at 06:00 AM UTC</p>
+<p>DK: Yeah, that sounds like it's most likely 3 years before that balance is achieved.</p>
+<p>ZD: Yeah, I mean, obviously, between now and the 3 years, there will be things happening, but, you know, as meaningful scale, yes, it will take that some time, yeah.</p>
+<p>DK: Actually, one question I had on the 3D DRAM that I didn't ask, can it be done on the 1-gamma or 1C nodes, or do you need to transition to the 1D? Do they need to move to the 1D node from the current 1B or 1C in order to be able to produce 3D DRAM?</p>
+<p>ZD: Yes, so I'm not quite familiar. What do you mean by 1D? So for memory, there are currently, or at least Micron is currently transitioning to the 1-gamma node, and others are transitioning to the 1C node. Is that good enough to produce 3D DRAM, or do you need to transition to the next node? Yeah, I don't think there's an immediate need to transition to a more advanced node. It's really, I think for 3D DRAM, many of the challenges are in packaging, yield, the thermal, and also the fact that the layouts of the memory and the layout of the compute die need to be, you know, somewhat matched. So the suppliers and the compute developers will have to collaborate in a tighter way than it was before, that sort of thing.</p>
+<p>DK: Got it.</p>
+<p>ZD: Right.</p>
+<p>DK: How could custom HBM dies change the memory makers, foundries, and chip designers' split value?</p>
+<p>ZD: Right. Is that your question about whether they're... okay, I think I understand your question. Yeah, this one, I would say, it's kind of beyond technology, that business culture and that sort of thing, right? I definitely worked for a memory company before and a computer company, of course, right now. It does mean that when memory and compute are so tightly coupled, it feels like either the compute or ASIC people are getting into memory business or memory companies are getting into compute business. And I would say that's something that hasn't been done successfully in history, so there are definitely some cultural barriers. It's kind of when memory people think about compute or think about doing compute in the base style of HBM, I think they tend to be very naive about what that means. And whereas companies who make compute processors or ASICs, they would rather like memory to become a supplier and be able to customize the memory to their specific needs instead of just following, let's say, JEDEC standards. I would say that remains a challenge of who's playing what role and what would be the interface, right? So let's say if the memory is also doing some compute, then what would be the interface standard between the memory and the main compute side because the memory is not just... so that remains to be seen, and I definitely see some challenges of just traditional memory companies are not really structured both in terms of their core competence or their culture to be innovative in designing a compute chip and vice versa. If I have to bet, I would say that for the foreseeable future, it's not going to be a standard memory with computes embedded, but rather a specialized product where the compute chip supplier would have to kind of work with memory vendor to customize the memory for each chip. So maybe for some foreseeable future until maybe new standards are defined, and even with that, I would say the memory vendors can increase the value of their memory products by some amount, but maybe not significantly. So even if you put a lot of multipliers into a 3D stack HBM, it's still a memory; it just does a little bit more. Most of the intelligence and the risks are in the main compute side that's actually processing the AI work modes and communicating with the CPUs and with the other part of the system on the management network as well. Thank you.</p>
+<p>DK: Got it. If I understand correctly, NVIDIA has qualified Micron, SK Hynix, and Samsung for their HBM4E. So doesn't that create a de facto standard?</p>
+<p>ZD: Yeah, I mean, that is a memory standard, right? But I was saying that if you embed compute into the memory and</p>
+<p>10/12/2026 at 06:00 AM UTC</p>
+<p>make that a more commodity product, that will require even more kind of standards work.</p>
+<p>DK: All right. I'd love to talk about some of the Chinese memory supply. How do you view it? Is that especially with CXMT starting limited production of HBM3E and YMTC saying that they are planning on entering the DRAM market? Of course, I forgot to mention that. CXMT is also producing LPDDR6. How much of a threat is that to Western suppliers?</p>
+<p>ZD: Right. I am not quite following what they are doing other than through some people that I know who happen to be friends or colleagues in the past. My view of the China semiconductor industry may be a little bit outdated, but I think they have a long way to go to catch up and even they do still, they have to... their priorities is to supply their own domestic markets and be proven there first before they would even venture into competing globally and then... When they do, then there will be regulatory barriers and all that. I do think that over a very longer term, they will eventually catch up with their electric cars. But that's probably quite some years into the future. So for now, what I heard is they still struggle with yield, fundamental equipment issues, and also the management, the skills to manage those kind of ventures. There are a lot of learning involved. I mean, they are willing to obviously invest in that learning. So I would say that before they would ever become competitive at a global scale, many other things will have to happen first, like they improve their yields and then they be able to supply their domestic markets. Those are the things. And I don't think that has happened yet even.</p>
+<p>DK: That's really helpful. Is there a timeline on which you would say you would start worrying about that? Like, will it take them a couple of years to get there, or is that longer than that? Or can they be there in 6 months?</p>
+<p>ZD: Oh, yeah. I would say that they can probably meaningfully improve the yields. It depends on which one, right? So let's say they have this first DRAM company, CXMT, I guess, in China, semiconductor. So they are further along. I think they have... there still have some yield issue, but not too far. So I think it's very possible that CXMT will start to supply its domestic partners like Huawei or ByteDance maybe in the next 2 to 3 years, and probably continue to try to stabilize the domestic supply. I would say at least 5 years before they have the strength to compete globally and as a lower-cost alternative, and then even then they may have a lot of regulatory issues and those kind of things. Yeah, I would say at least 5 years, but let's say in 10 years they're definitely going to catch up because that's just, they are determined and they fundamentally, there's no barrier for China to eventually catch up. It's just a matter of time, but it's definitely 5 years or beyond. Hello, are we still on?</p>
+<p>DK: Oh yeah, I'm sorry, I somehow went on mute. I apologize for that. So I was asking, could it actually be on the contrary, with all of the major memory suppliers, of course, Western ones, deploying high-end EUV and without Chinese having access to that, could the capabilities gap actually grow?</p>
+<p>ZD: Oh, let me see if I understand the question. In terms of how to access the...</p>
+<p>DK: So I believe Samsung and SK Hynix and Micron are all deploying High-NA EUV, which is the next generation, of course, of EUV machines, right? And China doesn't have access to either EUV or High-NA EUV. Does that mean that perhaps the capabilities gap would actually increase as opposed to decrease over time?</p>
+<p>ZD: Yeah, but I think China, let's assume that they remain stable politically. So under that assumption, they will eventually overcome this issue. Maybe they are developing their domestic equipment. The reason that I would spend a longer time also making the blanket assumption that they're going to have a stable economy is that fundamentally, they are no different from Japan or from Korea or from Taiwan in terms of the quality of life and quality of education. There's no fundamental reason that they cannot catch up, but they have to learn. They are a bit late with the learning, both in terms of their management style as well as just let's say if they do one thing and then they find that they don't have the right equipment and then they cannot buy it from elsewhere, then they have to develop that too. They have</p>
+<p>10/12/2026 at 06:00 AM UTC</p>
+<p>to go back to the drawing board. That's the fundamental engineering problem. Sometimes you run into a problem, you discover that it's deeper than you thought, and then you have to go back to the drawing board. That's where all that time gets spent. They have done it many times in other spaces like electric cars or battery technology, so they could definitely do that sort of thing. It's just it will take time. So I would say.</p>
+<p>DK: Sure.</p>
+<p>ZD: But if you can get 10 years horizon or 8 to 10 years horizon, anything could happen.</p>
+<p>DK: I hear you. Just I guess Zeiss, of course, it could be self-serving, but Zeiss has said that they're 25 years behind in technology. So does that introduce risks to the 10-year time horizon or could it take them significantly longer to catch up?</p>
+<p>ZD: Yeah, well, I mean... Yeah, if you consider them to be 5 years behind, maybe they are 5 years behind, but the thing is the other guys are moving forward. So I think they are probably only 3 years behind. But like you said, you know, companies like Samsung, SK Hynix, or Micron, they are also marching forward and they probably... you know in terms of management style they're probably more mature and everything so catching up is not easy, but eventually, I would still say 8 or 10 years and they could be a serious contender because since they've moved faster there and they are younger and hungry.</p>
+<p>DK: Right.</p>
+<p>ZD: It's not just, yeah.</p>
+<p>DK: Yeah, that's appreciated. That's all I really have for today. Is there anything that perhaps we didn't discuss that you think is also important?</p>
+<p>ZD: I cannot think of anywhere now.</p>
+<p>DK: Wonderful. Really appreciate your time and thoughts. So it was a wonderful call. So thank you so much and hope you get to enjoy the rest of your day and everyone who was able to join again. Thank you and have a wonderful day. Take care.</p>
+<p>ZD: Yeah, thank you.</p>
+<p>DK: Cheers.</p>
+<p>ZD: Bye.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>10/12/2026 at 06:00 AM UTC</p>
+</div>
+</main>
+</body></html>

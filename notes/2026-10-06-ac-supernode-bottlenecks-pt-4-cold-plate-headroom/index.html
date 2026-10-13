@@ -1,0 +1,185 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.06 | AC | Thermal | Supernode Bottlenecks Pt.4: Cold Plate Headroom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.06 | AC | Thermal | Supernode Bottlenecks Pt.4: Cold Plate Headroom</h1>
+<p class="orig">原标题：超节点还能再堆一代吗｜篇四：散热卡不住，冷板还有两代余量</p>
+<p class="tags">#thermal #datacenter</p>
+<p class="meta">AceCamp · 2026-10-06 16:54 · article 70567512</p>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>散热会不会卡住这一代超节点，冷板还有几代余量；</li><li>金刚石何时进入封装，本代增量落在哪类材料；</li><li>哪些散热部件留得住溢价，每吉瓦价值量如何分化；</li><li>电源侧液冷与氮化硅衬板的需求从何而来；</li><li>哪些读数预示散热会提前卡住。</li></ol>
+<p class="qq">散热排在超节点卡住顺序的后段。冷板流道正从200微米向80微米以下推进，之后还有两相冷板，系统侧至少还有两代余量。封装内的增量集中在石墨与铟基界面材料，金刚石的窗口不早于Feynman；电源侧液冷与氮化硅衬板是新增的位置。</p>
+<p><b>从GB300到Vera Rubin，GPU整卡功耗由约1,400瓦升至1,800到2,300瓦，整柜散热成本却只多了约5,850美元。</b>这笔钱花在了哪几个部件上，决定了散热在这一代超节点里的位置。</p>
+<h2>一、散热卡不住这一代：冷板还有两代余量</h2>
+<p><b>本系列第一篇</b><b>的排序没有单列散热，原因在于系统侧的工程问题已经成体系。</b>冷量分配单元（CDU）、歧管、快接头都已进入英伟达MGX机架生态，黄仁勋在2026年1月的CES上确认Vera Rubin采用45°C温水进液。中国数据中心工作组（CDCC）按30千瓦机柜测算的每IT千瓦建设成本，风冷约2.6万元、冷板约2.1万元、单相浸没约3.1万元，冷板路线在成本上占优。系统部件也在走向标准化，开放计算项目（OCP）社区已陆续发布冷量分配单元与歧管的参考规范，标准化进一步降低了系统侧的扩产门槛。系统侧的扩容主要取决于厂房与供电，这一部分已计入本系列第二篇的电力约束。进液温度提高到45°C之后，机房可以用干冷器替代冷水机组，排热投入由建筑侧转向服务器侧的冷板与冷量分配单元，建筑侧的制冷设备需求反而下降。</p>
+<p><b>预算的增幅本身，就是散热并不紧张的证据。</b>如果散热是卡住交付的环节，买方会像对待电力与上游设备那样，为确定的交付支付溢价，整柜散热成本会随功耗同比例上升。实际情况是功耗上升三到六成，散热成本只增加数千美元，这说明现有技术路线仍能以较低的边际成本消化新增热量，散热这一段没有形成稀缺溢价。</p>
+<p><b>封装附近的冷板仍有明确的技术代际可用。</b>笔者在9月6日报告中梳理，现役GB系列冷板流道普遍在200微米以上，Rubin采用约100到120微米，80微米以下的真正微通道要等到Rubin Ultra一代，再往后还有两相冷板。按这一节奏，冷板至少还有两代余量，散热成为首批卡住环节的时间点预计晚于电力与上游设备。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567512_2f202c20d72c7345.webp" alt="" loading="lazy"></p>
+<p><b>两相冷板作为下一级余量，也有自己的前提。</b>两相方案依赖氟化工质，而3M已在2022年12月宣布于2025年底前退出全部全氟及多氟烷基物质的制造，工质供给与环保合规同时收紧。这使得两相冷板预计在单相微通道确实不够用时才会引入，余量的释放节奏由单相冷板的代际决定。</p>
+<h2>二、金刚石还要等Feynman，这一代的增量在界面材料</h2>
+<p><b>热量离开芯片的第一段路，决定了哪种材料真正被需要。</b>按一维稳态导热，扩热层两侧的温差等于热流密度乘以厚度再除以热导率。粗略计算显示，1毫米厚的纯铜在每平方厘米800瓦的热流下产生约20°C温差，金刚石铜按500到1000瓦每米开尔文计为8到16°C，能省出4到12°C；氮化铝的热导率约170到230瓦每米开尔文，同样条件下温差约35到47°C。按每封装两颗约800平方毫米的计算裸片粗略计算，整卡2,300瓦的Rubin平均热流密度约为每平方厘米140瓦，局部热点高于平均值，但距离需要金刚石铜才能收住的区间仍有距离。微通道冷板降低热阻的方式，是缩短热量在铜中横向扩散的距离、增加冷却液与金属的接触面积，这一路径在材料不变的前提下仍有工程余量，这也是本代选择微通道、暂不引入新材料的原因。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567512_d2e60876aa03a089.webp" alt="" loading="lazy"></p>
+<p><b>金刚石的窗口推迟到Feynman，本代的增量在界面材料。</b>英伟达公开材料只写45°C温水液冷与全液冷托盘，没有写界面材料、盖板或冷板材料。笔者判断，Rubin Ultra取消四芯片封装之后，金刚石铜的热膨胀匹配不再是刚需，本代改动集中在界面材料，受益的是石墨与铟，先受益者为海外既有供应商。国内厂商中，中石科技同时布局石墨类导热材料与铟片，飞荣达也有导热界面材料业务，二者能否进入英伟达链尚未公开披露。两类界面材料各有适用条件：石墨类适合大面积、低装配压力的界面，铟基材料导热率高，对镀层与装配压力控制的要求也高。预算同样构成约束：粗略计算显示，若72个封装全部换成金刚石铜盖板，按每件较铜件溢价50到200美元计，需多付约3,600到14,400美元，与整柜约5,850美元的散热成本增量相当，甚至超出。按英伟达路线图，Feynman在2028年推出，若单封装功耗继续上升、局部热流密度越过每平方厘米数百瓦，金刚石铜嵌件与两相冷板会同时进入评估，这是散热从余量状态转向约束状态的时间窗口。</p>
+<p><b>热膨胀匹配的需求随封装方案而变。</b>金刚石的热膨胀系数约为1.0，硅约2.6，铜约17（单位为百万分之一每开尔文）。四芯片大封装的翘曲风险高，需要与硅匹配的刚性盖板，金刚石铜的价值主要在这里；Rubin Ultra取消四芯片封装之后，这一刚需随之消失，封装内的改动转向界面材料。</p>
+<p><b>微通道盖板把冷板与盖板合为一体，省掉一层界面材料。</b>热量从裸片出发，依次穿过裸片与盖板之间的界面材料、盖板、盖板与冷板之间的界面材料，再进入冷板；微通道盖板直接在盖板内走冷却液，去掉了盖板与冷板之间的那一层界面。这使得盖板供应商在下一代方案中的位置随之上移，金刚石若进入封装，预计以盖板内局部嵌件的形式出现。</p>
+<h2>三、利润留在与GPU绑定的盖板和快接头上</h2>
+<p><b>散热链条上能留住溢价的，是与GPU责任绑定、无法多方比价的部件。</b>如笔者在9月25日报告中分析，当期利润分配取决于责任界面能否切开：独立冷板、快插、歧管与CDU可以多方比价，封装内的均热片与盖板则留得住独家溢价。原因在于盖板与价值数万美元的GPU耦合，一旦变形或渗漏，整颗芯片报废，封装厂与芯片厂不会轻易引入竞价。这也解释了健策的处境：当期受Rubin上盖降规、单价下移影响，但持有微通道盖板的先发位置。远端冷板则是另一种格局，奇鋐、双鸿、台达等多家厂商同时供货，买方可以按份额分配订单，材料升级带来的溢价难以留在冷板厂手中。</p>
+<p><b>按每吉瓦价值量看，散热内部的走势并不一致。</b>本系列第一篇把供电与散热容量归为随功率同步增长的一类部件，但散热链条内部需要再分一层：CDU、干冷器这类容量型部件随功率同步增长，按机柜配置的歧管、结构件与标准冷板则随机柜数量变化，在电力锁定园区规模之后，后者的每吉瓦用量随单柜功率上升而下降。价值量随代际上移的，是用量与规格同步提升的快接头，以及与芯片责任绑定的盖板和界面材料。</p>
+<p><b>快接头是远端部件里用量随代际明显上升的一类。</b>据笔者8至9月的产业调研，GB200升级到GB300后单柜快接头用量由108对升至252对，单个Rubin机柜预计约300个；快接头需要跨平台互换认证，英伟达3月对快接头内部设计的调整，就让英维克重新走了一遍设计、测试与送样。用量上升叠加认证门槛，使快接头的毛利率结构区别于冷板这类多供应商部件。</p>
+<p><b>CDU的门槛在逼近温差。</b>45°C进液把排热投入推向服务器侧，冷量分配单元需要在接近冷却水温的条件下完成换热；谷歌在2025年OCP峰会公开的Project Deschutes冷量分配单元规范，容量2兆瓦，逼近温差低至3°C。能在这一指标上稳定交付的厂商有限，这使得CDU的确定性高于冷板，英维克与申菱环境同处这一环节。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567512_b872ad87f141521f.webp" alt="" loading="lazy"></p>
+<h2>四、新增的散热需求出现在电源侧</h2>
+<p><b>电源模块的液冷化，是散热链条里新增的位置。</b>据笔者了解，电源模块的液冷化是供给格局尚未成形的新环节，单个电源模块的功率由19千瓦向Rubin Ultra世代规划的33千瓦上移；模块功率上到数十千瓦之后，风冷的散热能力逐步不足，液冷成为电源架的标准配置。电源侧的散热正是这类容量型部件里单位价值量上升的部分。</p>
+<p><b>电源侧的热负荷随800伏直流一起上移。</b>整流环节从机房配电移向机柜附近以后，功率转换产生的热量随之进入机柜与电源架，碳化硅器件的开关与导通损耗集中在衬板上，衬板既要导热又要承受高压绝缘。这正是氮化硅衬板的工作场景，也是电源架需要液冷的原因。</p>
+<p><b>电源侧之所以成为新位置，是因为功率转换的损耗随功率同步放大。</b>机柜功率从一百多千瓦走向数百千瓦，即便电源效率维持在较高水平，损耗的绝对值也随功率同比例增加，这部分热量集中在电源架与功率器件上。与GPU侧不同，电源侧的散热方案还没有定型，供应商格局也未成形，这使得新增需求有机会落到新进入的厂商手中。</p>
+<p><b>陶瓷基板的AI增量主要在电源侧，GPU顶部的主传热路径对它没有刚性需求。</b>GPU从裸片到冷板的路径不需要电气绝缘，氮化铝的热导率约为铜的一半，放在这一路径上反而增加温差；需要高热导兼电气绝缘的，是800伏直流与固态变压器中的碳化硅功率模块。据调研了解，光通信对氮化铝基板的年需求只有30到50吨级，而氮化硅的热导率约90到120瓦每米开尔文，断裂韧性明显高于氮化铝，综合制造成本低三到四成，功率模块的衬板因此偏向氮化硅。笔者判断，陶瓷基板在AI链条上的增量落在功率器件衬板，时间上跟随800伏直流的放量节奏。固态变压器同样使用碳化硅功率模块，但它只在单体规模较大的园区才具备经济性，其放量节奏决定了氮化硅衬板在数据中心侧的第二块需求。</p>
+<h2>五、投资含义：钱集中在少数责任切不开的部件</h2>
+<p><b>对“超节点还能再堆一代吗”这一问题，散热给出的答案是：这一代的热量能够消化。</b>Rubin Ultra一代依靠80微米以下的微通道冷板与界面材料升级即可应对，两相冷板与金刚石铜仍留作下一步的余量，散热成为卡住环节的时间点预计不早于Feynman一代。这使得再堆一代的约束落在电力、上游设备与互联上，散热一段的投资价值体现为少数部件的增量，它本身不决定节奏。</p>
+<p><b>散热会不会提前卡住，看冷板代际、两相导入与Feynman的封装定案。</b>第一，80微米以下微通道冷板能否在Rubin Ultra一代按期量产，若量产推迟，热流密度上升会提前触及冷板能力；第二，头部云厂是否公开两相冷板的量产订单，两相提前导入意味着单相余量被判定为不足；第三，按英伟达路线图2028年推出的Feynman，其封装方案是否写入金刚石铜盖板或独立热沉片。另外两个读数反映价值的去向：快接头单柜用量与认证名单的变化，以及电源架液冷化的订单与供应商名单。界面材料的供应名单与盖板规格的代际变化，则决定封装内的增量落在谁手里。</p>
+<p><b>散热段的价值集中在少数与GPU责任绑定、或随功率链新增的部件上。</b>中石科技已有铟片供货，受益程度取决于是否进入英伟达链，公开信息尚未披露；英维克的看点在CDU与快接头的认证位置，冷板业务与其他供应商同处比价格局；飞荣达对应冷板与快插环节，弹性来自整包供货的份额。金刚石方面，四方达离海外GPU链最近，兑现取决于Feynman的封装定案，黄河旋风受影响的是与英伟达相关的预期，其超硬材料主业不依赖这一规格。陶瓷方面，三环集团的氮化铝不属主业，受相关预期变化的影响有限；中瓷电子的氮化铝光通信基板对应的市场体量有限。台湾厂商中，健策持有盖板的先发位置，奇鋐处在远端冷板位置，材料溢价难以留存。按时间排列，2026到2027年可以确认的是界面材料与快接头的增量，2027年起看微通道冷板与盖板的量产，2028年以后看Feynman是否导入金刚石铜，电源侧液冷与氮化硅衬板则跟随800伏直流的放量节奏。</p>
+<p><b>上行风险来自热流密度提前越过冷板能力。</b>若Rubin Ultra或Feynman的局部热流密度上升快于冷板代际的推进，两相冷板与金刚石铜嵌件会提前导入，封装内材料与盖板的价值量随之提前跳升。</p>
+<p><b>下行风险来自降规与价格压力。</b>若英伟达继续压缩散热预算，盖板降规与冷板比价会进一步压低单价；电源侧液冷若由整机厂内部消化，外部供应商的新增空间也会收窄。</p>
+<p><b>技术路线风险来自两相冷板提前成为主流。</b>若两相冷板在Rubin Ultra之后迅速普及，单相冷板与冷量分配单元的供应格局会重排，工质供应商与两相系统集成商成为新的受益方，现有单相供应链的份额面临再分配。</p>
+<p><b>以上内容不构成任何投资建议，请风险自担。</b></p>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,189 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.09 | AC | Memory | Japanese HDD Expansion Channel Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.09 | AC | Memory | Japanese HDD Expansion Channel Check</h1>
+<p class="orig">原标题：日系HDD扩产调研_ 新增产能已全额售出且增量低于竞对, 供给默契未破; 新合约价已显著上行并锁定至2028年; 新产线良率的兑现风险, HAMR路线落后竞品的追赶方式</p>
+<p class="tags">#memory</p>
+<p class="meta">AceCamp · 2026-10-09 10:55 · article 70567840</p>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>日本HDD扩产与行业供给纪律的关系，单盘容量升级和增加出货量对产能的不同贡献。</li><li>新增产能的长约承接、新旧合同价差，以及锁定未来价格的客户成本取舍。</li><li>菲律宾新增产线、HAMR路线图与良率风险，以及中国头部客户的新增配额。</li></ol>
+<p>\<i>\*专家观点\</i>\*</p>
+<p><b>东芝近期宣布投资600亿日元以实现2024财年前存储容量翻倍，并设定了30%市占率的中期目标，这是否是全新的扩张计划，还是对此前规划的延续或升级？</b></p>
+<p>该计划与原先的规划基本一致，并无实质性变化。根据预测，全球近线硬盘（Nearline HDD）市场容量在2027财年结束时将比2025年翻一番。2025年，全球近线硬盘出货总容量约为1,600 EB，其中东芝占据约10%，即160 EB。按照计划，到2028年第一季度，东芝的产能将比2025年翻倍，达到320 EB。相较之下，预计到2026年底，全球总出货容量约为1,890至2000 EB。若以2000 EB计算，东芝占比10%即200 EB，产能从160 EB增长至200 EB，增幅约为25%至30%，这符合行业内硬盘厂商普遍的产能增长逻辑。在此市场格局下，希捷和西部数据各占约50%份额，即900 EB。若它们计划在2027年实现25%至30%的增长，每家将增加近300 EB的产能。因此，东芝到2028年第一季度增加约150 EB的产能，其增量低于竞争对手，不会对市场格局产生显著影响。</p>
+<p><b>此次600亿日元（约3.8亿美元）的投资计划是如何制定的，其产能扩张的准备情况和市场消化能力如何？</b></p>
+<p>这项投资计划实际上是原有规划的延续。在2021年疫情前，公司已完成上一轮产线扩张，并有进一步增加产线的计划，但因疫情、2023年存储需求下降以及公司退市等因素而暂停。退市过程消耗了大量现金，导致投资资金不足。然而，厂房、无尘室等基础设施当时或已准备就绪，因此重启扩产只需采购设备和调整上游零部件供应，阻力较小。该投资计划于2026年10月2日获得投资方JIP的批准，但内部准备工作自2025年同期便已启动并基本完成。过去一年的准备工作包括与上游零部件厂商沟通采购计划、部署产线规划以及确保产能消化。新增的产能，已通过与客户签订的长期协议全部售出，意味着公司已获得最终用户的全部订单。</p>
+<p><b>针对2027年和2028年的长期协议，其单TB定价与当前水平相比有何变化，成本端是否存在潜在波动？</b></p>
+<p>2027年和2028年签订的LTA价格保持一致。相比之下，2026年的价格约为30美元。成本方面的一个变量是内存价格，近期内存价格出现上涨。目前，硬盘中使用的内存容量约为1GB，其价格约为35美元，占最高容量硬盘成本的5%左右。若内存价格上涨10%，预计将导致硬盘总成本增加1到2个百分点，传递至客户端的价格影响仅为几美分，总体影响不大。</p>
+<p><b>公告中提到新产线可使单盘容量最高提升40%，并减少40%的新增人力，这具体对应哪种产品技术？同时，公司为何选择在当前节点高调宣布扩产计划？</b></p>
+<p>上述性能提升指标是基于最高规格的产品来计算的，具体指的是公司计划于2028年量产的HAMR（热辅助磁记录）产品。届时，采用HAMR技术的最高端硬盘相较于现有产品，实现40%的容量提升是正常的技术迭代。目前公司没有将HDD业务独立上市的计划。</p>
+<p><b>关于公司的技术路线图，公告中提及2030年量产65TB、远期目标100TB，这是否为公司内部确定的正式路线？</b></p>
+<p>这是公司内部的正式技术路线。从2028年开始，容量超过36TB至40TB的硬盘产品将必须采用HAMR技术。相较而言，这一路线图的进度比竞争对手要慢。</p>
+<p><b>菲律宾工厂扩产的产能爬坡节奏是怎样的？</b></p>
+<p>菲律宾工厂的产能扩张将从2027年第二季度开始，计划每个季度增加一条产线。</p>
+<p><b>您提到的当前30美元/TB的价格是指即期价格（spot price）还是合约价？此前市场有传闻合约价仅为15美元/TB。</b></p>
+<p>15美元/TB是2025年的价格水平。目前所说的30美元/TB是2026年的价格。</p>
+<p><b>近期有报道称希捷可能加入对TDK磁头业务的收购竞争，这对东芝可能产生何种影响？</b></p>
+<p>该消息不属实，官方已通过日经新闻等渠道进行辟谣，明确表示公司不会收购TDK，且TDK也无意出售其业务。相关报道可能是基于对信息的误解。实际情况是，希捷在2026年三四月份已开始测试TDK的磁头，因为其此前并不使用TDK的产品。与此同时，TD K已有计划扩张其磁头产能。在东芝未来的扩产计划完全敲定前，可能未能向TDK确认足量的采购需求。这导致了市场供需关系的变化：例如，若TDK总产能为100，原先东芝采购80，希捷采购20；现在希捷提出要采购40，并可能以更高的价格竞价。</p>
+<p><b>东芝与竞争对手争夺TDK产能是否会导致供应不足？</b></p>
+<p>应该不至于出现供应不足的情况。</p>
+<p><b>当前HDD行业扩产是否存在瓶颈？</b></p>
+<p>目前来看，现有的扩产计划并未面临实质性的瓶颈。只要希捷和西部数据不进行大规模扩产，行业供需格局便能维持稳定。根据目前观察到的情况，这两家公司已确认没有直接扩产的计划。</p>
+<p><b>行业普遍存在不扩产的默契，东芝此次的扩产计划是否打破了这一格局？</b></p>
+<p>东芝的扩产行为并未打破行业默契。首先，东芝在技术迭代上落后于竞争对手，例如原计划推出的28TB产品最终只能实现26TB，单盘容量的迭代增速不及对手。因此，为弥补技术迭代带来的容量增长不足，东芝需要通过增加出货量来提升总产能。其次，东芝的产能扩张计划符合市场整体约25%-30%的增长预期。从绝对数量上看，即使东芝每年产能增长30%，也仅增加约100多EB，而竞争对手每年30%的增长对应约300EB的增量。东芝的市场份额仍维持在10%多，其扩产规模尚未触及竞争对手的敏感底线，不会构成实质性威胁。</p>
+<p><b>根据财报，希捷和西部数据在2026年第二季度的HDD平均售价约为15-16美元/TB，但这与当前市场流传的30美元/TB存在差异，原因是什么？</b></p>
+<p>2026年第二季度财报反映的是基于2025年签订的合约价格。硬盘厂商的财年通常在6月底结束，新财年从7月1日开始。因此，从2026年7月1日到2027年6月底的新财年，新的合约价格已经上涨至25-30美元/TB。预计在2027年7月至202 8年6月的财年，价格将进一步上涨至30-35美元/TB。</p>
+<p><b>各家硬盘厂商的定价策略和合同周期是怎样的？东芝的定价策略是否比希捷更为强硬？</b></p>
+<p>各家厂商的合同签订方式略有不同，可能按年或按两年签订。由于东芝的产能相对较小，其倾向于锁定未来两年的价格。这种策略下，初始价格可能略高于当前市场价，但从两年平均成本来看，对客户而言可能更低。</p>
+<p><b>东芝历史上扩产计划的执行情况不佳，此次扩产的成功率有多大？若无法达成目标，可能的原因是什么？</b></p>
+<p>无法保证100%执行成功。按照日本企业的习惯，计划100%的目标，最终能实现80%已属不易，例如本代产品原计划从24TB直接升级到28TB，最终只实现了26TB。此次扩产最大的风险可能在于良率问题。在新产线与新产品线的结合下进行增产，最终产线的实际良率可能无法达到预期。例如，一条原计划年产1,000K单位的产线，可能最终只能生产出800K的合格品，从而导致实际产出打折扣。</p>
+<p><b>东芝此次扩产所需的上游关键零组件供应是否已经锁定？测试产能是否会成为瓶颈？</b></p>
+<p>碟片和基板等关键零组件已基本锁定与Resonac和豪雅的供应，至少目前扩产计划所需的部分已经确保。配套的测试机台等设备也已准备就绪，这些环节不会构成瓶颈，否则公司不会如此高调地公布扩产计划。</p>
+<p><b>既然行业默契不扩产，那么如果希捷和西部数据未来决定扩产，难度大吗？</b></p>
+<p>扩产的难度不大。以西部数据为例，其当前市值约1,520亿美元，投入3亿多美元建设产线并非难事。然而，尽管资金和技术上不存在障碍，但它们扩产的可能性很低，主要因为北美资本市场目前不倾向于投资这类重资产业务。</p>
+<p><b>为何中国企业没有进入HDD行业？</b></p>
+<p>中国企业进入HDD行业面临较高的技术壁垒和时间窗口问题。在2000年前后，中国曾有硬盘厂商，但未能跟上技术发展。以东芝为例，其从2012-2013年左右通过收购富士通和日立的相关技术及产线进入企业级硬盘市场，至今已迭代约12代产品（最新为M G12），但直到第8代产品（MG08）才被数据中心客户广泛接受，这个过程花费了近八年时间。一家新的中国公司进入该领域，即便有技术积累，也需要至少五到六年的时间才能推出被市场接受的成熟产品。届时，当前由AI驱动的市场需求是否依然存在，具有很大的不确定性，因此企业不敢贸然入局。</p>
+<p><b>东芝新增产能将如何在全球市场进行分配？中国区的配额是否会增加？</b></p>
+<p>目前，三家主要硬盘厂商约80%的产能被北美CSP（云服务提供商）获取。东芝分配给北美CSP的比例稍低，约为75%。中国及其他区域能获得总产能的20%-25%。在中国市场，字节跳动是当前最大的客户，其需求量巨大。新增产能中，预计至少一半以上会分配给BAT（百度、阿里巴巴、腾讯）等头部客户。此外，无论在中国还是美国市场，产品的销售价格是统一的。</p>
+</div>
+</main>
+</body></html>

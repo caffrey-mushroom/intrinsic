@@ -1,0 +1,232 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.09 | AC | Optical | Driver &amp; TIA Channel Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.09 | AC | Optical | Driver &amp; TIA Channel Check</h1>
+<p class="orig">原标题：Driver_TIA调研_ 1.6T份额年底有望升至30%-40%, 2027年锗硅产能计划翻倍, NPO项目进展, CPO量产瓶颈和时间线 - 聚焦Marvell_Macom_Tower_GlobalFoundries_博通</p>
+<p class="tags">#optical #semis</p>
+<p class="meta">AceCamp · 2026-10-09 · article 70567855</p>
+<div class="body">
+<h2>摘要</h2>
+<ul><li>800G/1.6T TIA市场的竞争格局及与Marvell等厂商的产品组合差异；</li><li>NPO项目进展以及CPO的量产节奏和技术挑战；</li><li>TIA的工艺制程演进与Tower/GlobalFoundries产能供给情况；</li><li>2027年业务增长驱动因素。</li></ul>
+<p><b>以下是专家观点：</b></p>
+<p><b>对于1.6T TIA市场，年底（2026年）的市场份额预期是多少？明年的目标是什么？</b></p>
+<p>预计到今年（2026年）年底，在1.6T TIA市场的份额将在30%至40%之间。具体来看，情况较好时能接近40%，稍差则在30%左右。市场份额的爬坡是逐步的，不会瞬间从两成跃升至五成。对于明年（2027年），如果上半年能达到50%的市场份额，就已经是一个非常理想的结果。由于公司的Driver产品预计在年底才会推出，与Marvell相比，短期协同效应相对较弱，可能影响TIA在部分项目中的导入速度；同时，Marvell的交付能力也是份额变化的重要影响因素之一。</p>
+<p><b>在800G市场中公司处于领先地位，为何在1.6T市场中Marvell的产品周期似乎更快？</b></p>
+<p>这主要是由项目周期和产品组合策略决定的。回顾历代高速TIA的发展历程可以发现，Marvell和Macom等厂商在每一代新产品初期的样机验证和项目导入阶段通常占据先机。其核心原因在于，在800G和1.6T这类高速模块中，DSP是关键器件，并且集成了Driver。Marvell能够提供包含DSP、Driver和TIA的整体方案，其中DSP的价值量远高于独立的TIA，这使其在项目初期对云厂商和模块厂商拥有更强的话语权和影响力。相比之下，Semtech只提供独立的TIA产品，不包含PD或Driver，因此在项目启动阶段的话语权相对较弱。然而，随着项目进入成熟量产阶段，市场规模扩大，客户的选择逻辑会转向寻求性价比更高、性能优越且产能有保障的供应商进行长期战略合作。此时，捆绑销售的优势会减弱，因为客户为了增强自身的议价能力，不愿意长期被单一供应商绑定。Semtech的策略是“以价换量”，致力于成为一个可靠、诚信的长期合作伙伴，例如今年（2026年）至今未对Tier 1大客户涨价，赢得了客户的信任与配合。因此，历史上每一代TIA产品，只要Semtech有相应布局，其市场份额最终都会逐步提升。在产能供给充分的正常情况下，Semtech的TIA产品通常能占据约50%的市场份额。800G市场是一个特例，由于当时产能极其紧张，且Marvell采取了优先保障200G产品的策略，这为Semtech创造了获得更多市场份额的机会。1.6T市场预计也将遵循类似的发展规律。</p>
+<p><b>在1.6T市场中，公司的TIA与Marvell的TIA在价格和性能上如何比较，特别是考虑到Marvell的捆绑销售策略？</b></p>
+<p>在TIA层面，Semtech的产品在性能和价格上具有全面领先优势。如果将TIA产品拆分单独比较，例如都搭配博通的DSP，Marvell的TIA在性能和价格上均处于劣势。相较于Marvell单独销售的TIA，公司的价格优势大约在10%。Marvell的竞争优势在于其捆绑策略。他们可以将TIA与自家的高价值DSP打包销售。DSP一旦被客户选定，更换的难度很大，这为Marvell捆绑销售TIA创造了条件。在打包方案中，价格的构成可以灵活调整。从客户整体采购成本来看，这种打包策略使得直接比较变得复杂。但从制造成本角度分析，Marvell的TIA成本高于公司，在正常的商业逻辑下，其单独销售的意愿和降价空间有限。</p>
+<p><b>在性能方面，TIA的关键指标有哪些？</b></p>
+<p>TIA作为一款高速芯片，其性能评估涉及多个技术指标，并非简单的被动器件。关键性能指标包括信号完整性、抗噪声能力、补偿能力以及线性度等。在不同项目的模块调试过程中，这些性能指标的差异会显现出来，直接影响模块的整体表现。</p>
+<p><b>公司和Marvell的TIA产品分别由哪些晶圆代工厂生产？</b></p>
+<p>Semtech的TIA产品主要在Tower Semiconductor生产，而Marvell的TIA产品大部分在GlobalFoundries生产。</p>
+<p><b>对于市场份额的判断，是否可以理解为：当前约20%的份额是由于1.6T尚未大规模放量，Marvell产能尚可应对；而到今年（2026年）底，随着Marvell在1.6T上面临产能瓶颈，Semtech的份额将提升至30%-40%；到明年（2027年），随着Driver等产品的协同效应显现，1.6T TIA的份额有望达到50%？</b></p>
+<p>大体逻辑接近，但存在一些偏差。TIA市场份额的提升并非完全源于竞争对手的产能短缺，根本原因在于Semtech的TIA产品在性价比方面一直保持全面领先。Marvell初期凭借其产品协同优势占据了部分项目的导入窗口，导致公司初期份额较低。但随着时间推移，即使在产能对等的情况下，公司的市场份额也会自然增长。Marvell相对更紧张的产能状况，则会加速公司TIA份额的提升速度。今年（2026年）TIA份额大幅增长主要由新项目的陆续导入和竞争对手的产能限制共同驱动。到明年（2027年），如果Driver产品进展顺利，其带来的协同效应将推动TIA份额更快地接近50%。Driver本身作为一项全新的业务增量，虽然其自身份额不一定能达到同样水平，但也会为明年（2027年）的整体业务带来显著增长。而Driver的上量周期会更长，因为它需要客户进行更谨慎的验证，并且最终取决于今年（2026年）第四季度样品的性能表现。</p>
+<p><b>客户是否会因为不希望被单一供应商（如Marvell）通过DSP与TIA、Driver的捆绑策略锁定，而主动引入更多供应商以保障供应链安全，尤其是在产能紧张的情况下？</b></p>
+<p>客户始终有引入多元化供应商以确保供应链安全的需求。在今年（2026年）的市场环境下，模块厂商的采购部门面临着严峻挑战，几乎每周都会遇到交付跳票和缺货问题。因此，当前的市场格局是以产定销，产能成为决定性因素。拥有产能的供应商在价格谈判和未来市场份额分配上拥有更大的话语权。这种产能为王的趋势预计至少会持续到明年（2027年）上半年。在这种背景下，对于采购方而言，任何形式的捆绑销售或限制使用其他供应商物料的行为都是不切实际的。然而，从供应商的角度，利用自身优势产品（如DSP）来最大化商业利益也是一种必然的博弈策略。</p>
+<p><b>Macom在800G电芯片市场的份额表现如何？</b></p>
+<p>Macom的电芯片产品，尤其是在高速应用领域，其性能与主流产品存在明显差距。因此，只要Marvell和Semtech两家的总产能尚未达到市场绝对瓶颈，Macom获得的市场机会就非常有限。其在800G市场的份额占比相对较低。</p>
+<p><b>关于NPO产品，其单价相较于传统可插拔光模块中的芯片有何变化？如果以3.2T NPO为例，其芯片价值量相比1.6T模块会如何提升？</b></p>
+<p>NPO方案中使用的芯片，在与传统方案中同为四通道、同等单通道速率（如单波100G或200G）的芯片进行比较时，其单价至少会上浮30%。例如，相较于1.6T模块中约10美元的四通道芯片，NPO中同规格芯片的单价将达到13美元。由于NPO方案的速率更高（如3.2T或6.4T），其所需芯片的通道数量也会相应翻倍。以3.2T NPO为例，其速率是1.6T的两倍，因此芯片用量翻倍，同时单价上浮30%，综合来看，其整体芯片价值量大约是1.6T方案的2.5倍左右。</p>
+<p><b>请问当前NPO项目的进展如何，有多少个项目在同时推进，以及Semtech在其中的市场地位是怎样的？</b></p>
+<p>在NPO 3.2T项目中，这是今年（2026年）国内最接近量产的项目，预计到年底前市场就会有正式发布。在单波100G的NPO项目中，Semtech的TIA市场份额目前接近100%。这主要是因为NPO项目虽然取消了DSP，但在近光学封装的应用环境中，留给TIA和Driver的板级面积非常有限，对封装尺寸要求更为严苛。目前Semtech的TIA能够满足今年（2026年）绝大多数接近量产项目的尺寸要求，因此目前单波100G、3.2T的相关方案基本采用Semtech TIA。对于单波200G的项目，进度相对较晚，大部分仍处于验证阶段。尽管近期在一些行业大会上已有厂商展示6.4T样机，但尚未进入成熟量产方案定版阶段，因此200G TIA的市场格局仍存在变数，客户在验证阶段会同时评估Semtech和Marvell等供应商的方案，最终量产方案需待定版结果。预计在今年（2026年）10月或11月，明年（2027年）率先启动的新项目将基本确定方案选型。Driver产品进度会更晚，Semtech样品预计要到今年（2026年）第四季度推出，届时客户将进行验证并最终敲定方案。</p>
+<p><b>在海外客户的NPO项目中有哪些进展？是否参与了大部分海外项目？</b></p>
+<p>Semtech几乎参与了每一个进展较快的海外云服务厂商的NPO项目，覆盖面相当全面。可以说，绝大部分相关的项目都有Semtech的参与。</p>
+<p><b>如何判断在NPO市场的份额？客户是选择单一供应商还是与Marvell等厂商共同开发？</b></p>
+<p>当前阶段准确判断NPO的市场份额较为困难。不过，可以参考市场惯性，Semtech在TIA领域已凭借NPO项目更早地取得了领先优势。与1.6T项目不同，NPO项目不涉及DSP的绑定策略，只要TIA产品准备就绪，客户就可以直接采用。因此，在3.2T项目中，Semtech已建立绝对领先优势。对于200G TIA，市场份额预计能较快地上升。相较于800G和1.6T市场，Semtech在NPO TIA领域取得市场领先优势的速度可能会更快、时间点会更早。至于Driver产品，其市场表现将取决于第四季度的验证情况，如果一切顺利，与TIA的协同效应会更强。综合来看，目前情况非常有希望，但最终量产要到明年（2027年），所以仍存在不确定性。</p>
+<p><b>Marvell在配合客户进行NPO项目研发方面的投入力度如何？云厂商在选择供应商时是倾向于单一来源还是多方合作？</b></p>
+<p>Marvell的投入力度同样会很大。当前市场竞争格局是：已量产的项目比拼1.6T的交付能力，而NPO项目则比拼前期的预研能力。Semtech正在帮助客户进行定制化开发，例如配合客户开发用于6.4T和7.2T的5通道和9通道定制化产品。Marvell很可能也在进行类似的投入。这表明云厂商和模块厂商都在培养战略合作伙伴，为未来的产能进行备份或战略性布局。可以确定的是，客户不会只选择一家供应商。虽然某些云服务商可能在合作关系上有所倾向，导致部分厂商前期导入更顺利或用量更大，但在现阶段，他们不敢完全采用单一供应商（single source）的策略。</p>
+<p><b>除了Marvell，NPO市场还有哪些其他参与者？</b></p>
+<p>市场上还有MaxLinear、Broadcom等厂商也希望进入NPO领域，但最终竞争核心仍是性价比、产品性能和产能。在锗硅供应链的产能方面，Semtech具备较强优势。Tower Semiconductor已承诺，明年（2027年）提供给Semtech的总产能将比今年（2026年）至少翻一倍，届时Semtech将占据Tower锗硅产能的40%以上。锗硅也用于PIC等其他领域，例如中际旭创等客户也会占用相关产能，留给其他市场参与者的供给有限。相比之下，GlobalFoundries的产能弹性相对更弱，计划外产能调整可能造成交付波动，而Tower在这方面相对稳定。此外，在产品开发层面，尽管Semtech在GlobalFoundries也有备份方案，但根据经验，对于设计相同的同类产品，在Tower完成从开发、性能调通、稳定到良率提升至可量产水平的全过程，所需时间比在GlobalFoundries短约10%至20%，从而带来更高的产品迭代效率和产能弹性。</p>
+<p><b>提到明年（2027年）在Tower的锗硅产能份额将提升至40%，那么今年（2026年）的大致份额是多少？</b></p>
+<p>今年（2026年）的份额数据目前还不清楚。</p>
+<p><b>关于Tower在锗硅工艺上的产能分配，目前市场份额情况如何？</b></p>
+<p>具体的年度比例尚不清楚，至于Tower的总产能以及如何分配给其他厂商或客户（如中际旭创、MaxLinear等），难以获得一个完全清晰的全局视图。</p>
+<p><b>对于明年（2027年）及以后NPO的出货量有何预判？</b></p>
+<p>目前很难对NPO的出货量做出精确估计，市场对其在2027年的预期，尤其是NPO本身，存在一定模糊性。主要原因是各家Driver芯片的最终版本尚未完全定型，预计要到今年（2026年）第四季度才能看到明确结果，因此云厂商也未给出精确的用量预测。不过，可以参考今年（2026年）1.6T产品的上量节奏，预计明年（2027年）NPO的出货量将超过千万级别，但具体能否达到两三千万尚不确定。NPO的放量符合行业逻辑。</p>
+<p><b>明年（2027年）NPO的出货量在国内和海外市场将如何分布？</b></p>
+<p>国内市场在3.2T产品上可能会启动得早一些，但放量速度不会非常迅猛，预计将是一个温和增长的过程。因此，判断明年（2027年）下半年的出货量仍将以海外市场为主。</p>
+<p><b>CPO的市场前景、量价以及发展趋势如何？</b></p>
+<p>CPO市场存在较大的不确定性，目前公司参与的相关项目不多。从商业和生意的角度看，短期内其市场份额会非常小，至少在未来三年内可以暂时不用过多关注。预计其出货量规模不会很大，可能维持在几十万台的水平。相较之下，800G模块的生命周期比原先预期的要长。根据市场最新预测，明年（2027年）800G模块的出货量可能较今年（2026年）翻倍，超过1亿颗，乐观预测甚至达到1.2亿至1.4亿颗，保守估计1亿颗是比较合理的。800G市场的持续增长也延长了1.6T产品的生命周期。NPO预计从明年（2027年）下半年开始放量，并在后年及大后年成为市场增长最快的主流解决方案。在此背景下，CPO作为一种颠覆现有产业生态的产品形态，尽管在技术理论上具备优势，但考虑到项目执行、产业生态格局等现实因素，短期内不太可能成为主流方案。因此，建议更多关注NPO的发展。</p>
+<p><b>CPO技术实现大规模量产主要面临哪些技术瓶颈和工程挑战？</b></p>
+<p>CPO面临的挑战是全方位的，并非简单的功能性堆叠。首先，除了电气性能问题，散热是一个重大的挑战。其次，在物理层面，需要工艺和材料科学的共同突破。为了实现通用的解决方案，CPO在产能、制造工艺、技术成熟度等各个环节都必须相互匹配，而不仅仅是做出一个样机概念。目前，从工程角度看，每个环节都存在瓶颈。例如，在封装过程中，不同部件键合时会产生寄生效应；随着未来速率的提升，若要将光电集成在一起而非简单堆叠，工艺本身的频率能否达到未来标准也是未知数。因此，从技术实现到大规模量产之间还有相当大的距离。</p>
+<p><b>TIA芯片通常采用何种制程工艺？未来的技术演进方向是怎样的？</b></p>
+<p>TIA芯片并非采用特别先进的制程工艺，大约在四十多纳米级别。其特殊之处在于对产品本身频率有特定要求，因此长期沿用锗硅工艺。展望未来，单波速率达到400G及以上时，技术路径可能会发生变化。目前行业正沿着两条路径探索：一是工艺水平本身在针对不同产品进行改良和提升；二是产品设计也在结合工艺特点进行优化。目前的技术储备已经能够支持400G TIA，并尝试了两种工艺方案：一种是延续使用锗硅，另一种是采用氮化镓。这表明，随着速率的每一代提升，所面临的问题和不确定性会呈指数级增加，技术复制的难度远超想象。</p>
+<p><b>预计今年（2026年）800G TIA的出货量及主要客户构成是怎样的？</b></p>
+<p>预计今年（2026年）800G TIA的出货量为6,000万颗。主要客户群体包括旭创、新易盛、索尔思、华工科技、光迅科技、海信、联特科技以及菲尼萨。目前市占率已接近七成。</p>
+<p><b>在1.6T产品方面，哪些客户的导入进度比较领先？</b></p>
+<p>1.6T产品导入较快的客户主要是几家大型企业，目前项目进度比较靠前的是旭创、新易盛、菲尼萨以及光迅科技。这几家公司在订单量和项目进度上均处于领先地位。</p>
+<p><b>1.6T产品目前在各家客户中的份额分布情况如何？</b></p>
+<p>现阶段1.6T产品的具体份额尚不明确。由于一些新项目尚未最终确定，目前只能依据客户给出的订单下单指引进行大致判断，但这些指引在实际发货时可能会调整。客户现阶段会接收所有发出的货物，但这并不代表其能在当季完全消化，因此精确的数字还难以呈现。</p>
+<p><b>单通道100G（四通道）和单通道200G（1.6T）产品的价值量分别是多少？</b></p>
+<p>单波100G的四通道产品价值量大约在4到5美金之间，接近5美金。1.6T（单波200G）的四通道产品价值量大约为10美金。</p>
+<p><b>如何评价国内TIA及Driver厂商，例如中盛微和优迅等公司的竞争力？</b></p>
+<p>业界对中盛微的设计能力评价尚可，其在高速800G领域的设计在国内应属第一梯队，与国内其他头部设计团队等处于较高水平。然而，其产能以及产品与工艺结合的成熟度仍需时间验证。对于优迅，其原先主营接入网业务，在400G及更高速率的TIA/Drive r领域表现一般，从客户测试反馈看，短期内实现大规模应用的可能性不高。主要原因是大部分成熟工艺产能，如Tower和GlobalFoundries的产能，已被Semtech、Marvell、MACOM以及中际旭创等客户锁定。国产厂商可能只能使用中芯国际等晶圆厂，或者仅能获得Tower、GlobalFoundries在前期验证开发和小批量样品阶段的支持，难以保障大规模量产。因此，预计未来两到三年内，国产公司尚难实现大规模起量。</p>
+<p><b>公司未来的产能规划是怎样的，预计何时能达到稳定状态？</b></p>
+<p>明年（2027年）的月产能规划将达到8,000片晶圆。产能提升是逐步进行的过程。公司从2024年开始与Tower讨论新增产能，Tower在2025年年底确认从今年（2026年）开始逐步释放。当前产能最紧张的阶段是今年（2026年）第三季度，从第四季度开始将陆续得到释放并持续提拉。预计到明年（2027年）年中，产能将达到一个相对稳定的状态。</p>
+<p><b>展望明年（2027年），800G和1.6T模块市场的规模？</b></p>
+<p>预计明年（2027年）800G模块市场总量在9,000万至1亿只之间，1.6T模块市场规模略小，预计在8,000万只左右。公司有信心在明年（2027年）的800G市场中获得六到七成的份额，具体取决于Marvell等竞争对手的供给情况。净利润率方面，公司已于2026年第三季度剥离一条利润率较低的硬件产品线，该业务将从第四季度财报中剔除，预计整体净利水平将有所提升，具体仍需以后续官方财报为准。</p>
+<p><b>目前生产主要采用何种尺寸的晶圆，未来是否有转向12英寸晶圆的计划？</b></p>
+<p>当前生产主要以8英寸晶圆为主。从8英寸转向12英寸并非简单的工艺平移，涉及诸多变化，且12英寸工艺本身也需要时间成熟。因此，未来两到三年内规划的产能将基本维持在8英寸。</p>
+<p><b>在光芯片制程方面，当前及未来几年是否存在技术瓶颈？单通道400G技术预计何时应用，其制程方案是怎样的？</b></p>
+<p>目前单通道100G和200G（包括NPO方案中主流的单通道200G）的制程不存在技术瓶颈。预计在2026年、2027年及2028年这三年内，市场不会应用到单通道400G的产品，因此制程不会成为卡点。对于单通道400G技术，目前正在探索两种不同的工艺方案：一种是延续当前100G/200G所使用的锗硅工艺，该方案现已取得技术突破；另一种是氮化镓工艺，该方案虽然更容易实现单通道400G的性能指标，突破频率限制，但其成本相较于同等性能和面积的锗硅工艺要高出很多。考虑到市场对单通道20 0G技术在1.6T和NPO产品形态中的应用将持续很长一段时间，目前阶段的关注重点仍在200G。</p>
+<p><b>在LPO、NPO等无DSP方案中，对TIA和Driver的性能要求有何变化？</b></p>
+<p>在传统的含DSP方案中，DSP承担了大量的信号补偿功能。当去掉DSP后，这部分功能压力便转移至TIA和Driver上。因此，在LPO或NPO方案中，对TIA和Driver的信号完整性及补偿能力要求会显著提高。这构成了一个主要的设计难点，意味着不能简单地将原有产品直接迁移过来，而需要在产品形态和内部设计上进行相应的调整和优化。</p>
+<p><b>用于硅光方案和EML方案的TIA与Driver在设计上是否存在显著差异？</b></p>
+<p>对于单模应用场景，无论是用于硅光方案还是EML方案，TIA和Driver在底层的核心结构上是相似的，性能和功能上的差异不大。尽管针对不同方案会存在多个型号进行微调，但这些调整不构成根本性的区别。</p>
+<p><b>TIA芯片与其他光器件（如PD或光源）的集成封装方式是怎样的？</b></p>
+<p>在1.6T等高速率应用中，TIA的封装形式通常为倒装焊（Flip Chip）。目前主要有两种典型的集成封装形态：第一种是将TIA与光电探测器一同倒装封装在一起，例如供应给旭创等模块厂商的产品即采用此种方式；第二种是将TIA与光源进行合封，一些光源厂商会采购TIA，将其与光源封装成一个组件后，再销售给光模块公司。不同的客户或方案会采用不同的集成形态。</p>
+<p><b>公司产品在各家光模块厂商中的具体市场份额是怎样的？</b></p>
+<p>难以精确判断在单一光模块厂商中的市场份额，因为各家客户每月的提货量波动较大，且无法获知竞争对手在同一客户的同期销售数据。因此，评估市场地位更适宜从整体市场的出货量和市占率角度进行宏观分析，这样得到的数据会相对更准确。</p>
+<p><b>在800G和1.6T光模块领域，公司给不同客户的出货量情况如何？</b></p>
+<p>在800G光模块市场，出货量较大的主要包括中际旭创、新易盛、索尔思和菲尼萨，其次是华工科技、光迅科技、海信和联特科技。其中，索尔思与Semtech合作已久，其产品中超过90%采用Semtech的方案，接近100%，因此尽管其整体用量不及旭创和新易盛，但其单一产品的采购量相当可观。在1.6T光模块市场，旭创、新易盛和Coherent是起步较早的三家，项目启动早且合作紧密，因此这三家的出货量明显领先于其他厂商。国内厂商中，光迅科技表现相对突出，其2026年在海外项目上投入显著，是除前述三家之外较为进取的一家模块厂商。</p>
+<p><b>国内在硅光/高速模拟工艺方面做得比较好的晶圆代工厂有哪些，其工艺成熟度如何，以及短期内实现大规模量产的可能性？</b></p>
+<p>在国内，中芯国际是硅光工艺方面的主要厂商，其他厂商也在进步中。然而，目前国内的工艺要达到成熟，尤其是在高速场景下，面临较大挑战。工艺模型的构建非常复杂，通常需要达到百万级别的量产规模才能逐步摸索成熟。即便某些工艺达到了千万级量产，其模型库在高速场景下，对于噪声敏感参数和寄生参数的处理仍然非常困难。这需要通过市场上大量的良率数据进行反向验证，以倒推真实的模型参数，是一个漫长的过程。因此，预计国内工艺在短期内仍将停留在样品阶段，未来两到三年内可能还无法承受大规模量产的要求。</p>
+<p><b>对于Driver产品的市场份额有何预期？此外，公司2026年和2027年的整体业绩指引以及主要的增长驱动力是什么？</b></p>
+<p>关于Driver产品的具体市场份额，建议在2026年第四季度末再进行评估。届时最终版本的产品将在客户端完成验证，届时对其性能和与竞品的比较会有更清晰的了解，从而能做出相对准确的预估。在不考虑Driver产品增量的情况下，公司业绩有明确的增长预期。2026年光通信领域的整体营收预计在5.5亿至6亿美元之间。展望2027年，预计营收将实现翻倍以上的增长。主要的增长驱动力来自以下几个方面：</p>
+<ol><li>800G产品的持续放量。</li><li>1.6T产品的规模化上量。</li><li>ACC铜缆业务中的Cable Equalizer（有源铜缆均衡器）产品，预计2027年将有四到五倍的增幅，营收规模将从2026年的较小体量增长至约1亿至1.2亿美元，贡献约1亿美元的营收增量。</li><li>Driver产品将是完全额外的增量，其具体贡献取决于2026年第四季度的产品验证情况。目前市场对这一生态的预期尚未完全充分。</li></ol>
+<p><b>收购的HieFo公司在CW光源业务上有何进展，预计何时能贡献营收？2027年公司的主要增长点将聚焦于哪些方面？</b></p>
+<p>在短期内，即2026年、2027年乃至2028年上半年，CW Laser业务预计不会有任何营收贡献。收购的这家公司目前仅具备磷化铟外延的生产能力，其衬底仍需向住友和另一家供应商采购，因此当前只能生产一些相干产品，尚无法制造CW Laser。公司计划在2028年投入自研衬底的研发和生产，届时才可能开始制造CW Laser。因此，该业务的增量需要到2028年之后才能体现。</p>
+<p>2027年的主要增长驱动力将聚焦于以下四个方面：</p>
+<ol><li>1.6T产品的规模化上量。</li><li>NPO（近封装光学）产品的上量，以及Driver在NPO应用中的发展。</li><li>800G产品的持续增量。</li><li>公司在上述产品领域的市场份额提升。</li></ol>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,223 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.08 | AC | PCB | AI PCB Leader Channel Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.08 | AC | PCB | AI PCB Leader Channel Check</h1>
+<p class="orig">原标题：算力PCB龙头调研：NVIDIA认证突破与全球产能布局</p>
+<p class="tags">#pcb #china</p>
+<p class="meta">AceCamp · 2026-10-08 · article 70567792</p>
+<div class="body">
+<h2>摘要</h2>
+<p>·泰国工厂2026年产值目标上调，系承接广州成熟高毛利订单所致，未来毛利率将回归。·高端PCB材料（M6/M7/M8）供应紧张，交期延长，公司通过维持2-3个月订单储备对冲产能风险。·Google项目因地缘因素进展缓慢，需通过2026年初量产的泰国工厂切入。·黄石工厂已于2025年扭亏，主要承接国内算力及广州溢出的复杂/低利润订单。</p>
+<p><b>以下内容来自资深行业专家：</b></p>
+<p><b>Q&amp;A</b></p>
+<p><b>请介绍一下公司PCB业务的产品、客户结构以及各生产基地的定位分工？</b></p>
+<p>公司目前有广州、泰国、黄石三个生产基地。广州和泰国基地主要服务海外算力客户，黄石基地则以国内客户为主。在海外算力业务中，排名前五的客户包括戴尔，其业务占比较高；亚马逊，主要供应主板；甲骨文，涉及其部分GPU产品；以及Meta，目前占比不高但正在逐步开发。此外，公司也通过ODM厂商进行配套，例如联想、纬创、英业达以及富士康的台湾事业部等。海外业务构成了公司业务的绝大部分。</p>
+<p><b>公司与谷歌和英伟达的业务合作进展如何？</b></p>
+<p>公司目前尚未与谷歌建立直接业务。自2025年开始，公司曾尝试通过与英伟达和富士康的接触来切入谷歌供应链，因为富士康是公司在算力领域合作的主要客户之一。谷歌不仅对其TPU产品有需求，对16层、14层到22层等中低阶产品同样有需求。然而，谷歌对于在中国大陆设有工厂的供应商并非优先选择，而是倾向于海外工厂，这一点与微软的要求相似，导致了项目进展缓慢。公司泰国工厂于2026年初开始量产，目前正尝试通过该工厂逐步切入，但进度偏慢，预计可能比切入英伟达的进度更慢。</p>
+<p><b>公司与戴尔合作供应的产品类型以及双方的合作模式是怎样的？</b></p>
+<p>公司目前主要为戴尔供应CPU相关的传统服务器主板，包括其AI CPU服务器产品。在合作模式上，公司既有与戴尔的直接合作，也通过ODM厂商进行合作。一部分产品由戴尔直接进行测试、评估和认证，但最终仍会交由贴片厂处理。另一部分产品则由ODM厂商掌握自主权，戴尔会进行信息数据了解和监控。在整体份额管理上，戴尔会在每个季度的QBR（Quarterly Business Review）中将直接合作与通过ODM合作的份额合并进行综合评估。</p>
+<p><b>目前供给戴尔的PCB产品主要采用何种技术规格？</b></p>
+<p>供给戴尔的CPU主板中，传统通孔板仍占多数。部分产品会使用到HDI技术，具体包括非对称结构的小背钻设计，以及一阶（1+N+1）的任意层互连设计，例如1通3或1通4的结构。这两种技术规格的产品均占有一定比例。</p>
+<p><b>公司为亚马逊、Meta和谷歌供应的产品主要是CPU还是GPU相关？</b></p>
+<p>公司目前尚未与谷歌建立直接供应关系，但其需求主要是TPU和GPU产品。对于亚马逊，公司目前仅供应其CPU主板。过去两年曾有机会参与其主板项目，并已准备相关材料，但由于地缘政治因素错过了时间窗口，后续因产品价格下降及公司产能有限等原因，最终未能进入其GPU产品线。对于Oracle，公司主要供应的是GPU相关的主板，这是公司较早开始做的GPU项目之一。</p>
+<p><b>公司为Oracle供应的GPU主板具体情况如何，其芯片方案是否来自英伟达？</b></p>
+<p>Oracle自身不生产芯片，其GPU方案采用了英伟达的GPU。公司主要为Oracle供应承载GPU的服务器主板，并未涉及加速卡本身。公司从Oracle第一代产品开始便持续供应其主板，但未参与其老版本的项目。基于与Oracle在GPU主板方面的合作经验，公司曾希望借此切入亚马逊的GPU主板业务，但未能成功。</p>
+<p><b>请问公司为戴尔供应的CPU PCB具体规格是怎样的，例如层数和材料等级？是否属于高速PCB？</b></p>
+<p>公司为戴尔供应的CPU PCB属于高速板，材料等级介于M6至M7之间，尚未达到M8级别。这类用于AI CPU的PCB，其对线路、材料、信号完整性等方面的要求比传统产品高很多，类似于PCIe从5.0升级到6.0带来的技术提升。因此，其整体产品难度和价格均有所上升，已接近GPU主板的水平。</p>
+<p><b>请问公司当前（2026Q3）的整体产能和产值情况如何？</b></p>
+<p>目前（2026Q3），广州基地一厂和二厂的月产能合计超过9万平方米，月产值在6.5亿至7亿之间。产能统计的意义相对有限，因为产品的层数和结构对产能影响很大，产值是更核心的衡量指标。公司计划在明年（2027年）随着部分交换机等产品导入特殊材料，进一步提升一厂的产品定位和价值。</p>
+<p><b>针对2026年PCB行业的价格上涨，公司对海外算力产品的价格策略是怎样的？</b></p>
+<p>行业内的价格上涨存在差异。对于海外算力订单，由于其原有的毛利和单价较高，且大多指定使用M6、M7或更高级别的高速材料，因此并未出现大面积的涨价。这类高端材料本身利润空间较好，CCL厂商在涨价周期中优先保障其供应，价格波动相对较小。公司的策略是每月根据CCL和贵金属的价格波动更新成本报价系统，新报价的型号会采用新价格，而旧型号订单的价格基本维持稳定。相比之下，国内部分低端产品（如FR-4材料）由于原先利润微薄，在成本上涨和产能向高端转移的背景下，价格上涨压力更大。</p>
+<p><b>请问广州一厂和二厂在产品类型、工艺能力和客户定位上有何区别？</b></p>
+<p>广州一厂主要定位于高端产品的NPI（新产品导入）和中小批量生产，专注于处理工艺流程复杂、附加流程多的产品，例如涉及分级分段接收、HDI等特殊工艺的订单。产品以M7材料为主，并有少量M8材料。在大批量生产阶段，订单可能会转移至泰国或二厂。广州二厂则主要承接海外算力产品的批量生产订单，产品以M6材料为主，部分为M7材料。随着一厂产能饱和，二厂已将原有的部分国内算力及其他产品转移至黄石基地。目前，二厂仍保留少量因客户指定而无法转移的海外汽车电子等产品，但这部分业务占比仅为一到两成。</p>
+<p><b>当前月度产值水平如何，是否已达到满产状态？</b></p>
+<p>当前月度产值约为6.5亿元，并且每月仍有百分之几的增长。对于现有工厂而言，6至7亿元的月度产值即为满产状态。</p>
+<p><b>目前在覆铜板等物料供应方面是否存在瓶颈？</b></p>
+<p>整体而言，物料的供货周期目前处于比较紧张的状态。</p>
+<p><b>请问公司主要的CCL（覆铜板）供应商有哪些？</b></p>
+<p>公司的主要CCL供应商包括台光电子、生益科技和联茂电子。其中，台光电子和生益科技是最大的供应商。原先联茂电子的供应量较多，但近期因PP（半固化片）供应不足等问题，其份额有所下降，这部分份额主要被上海南亚所获取。目前，第二梯队的供应商主要为上海南亚、联茂电子和台燿科技。</p>
+<p><b>这些CCL供应商所使用的电子布主要来自哪些厂家？</b></p>
+<p>CCL供应商通常会为同一种材料指定一家主供应商和一家备用供应商。其电子布来源多样，涵盖了国内、台系及日系厂商。国内供应商主要有泰山玻璃纤维（泰山玻纤）和光远新材；台系供应商则包括台玻和宏和电子材料科技；此外，部分产品也会采用日本的电子布。例如，生益科技会使用泰山玻纤和光远新材的产品，而宏和电子材料科技与台玻的电子布也有被采用。</p>
+<p><b>对于明年（2027年）的毛利率走势有何预期？</b></p>
+<p>对于明年（2027年）的展望，预计毛利率大幅提升的可能性不大，能够维持在当前区间内已是较好的表现。毛利率的变动将主要受到订单结构调整以及客户产品线配置优先级的影响。</p>
+<p><b>在当前成本上涨的背景下，公司向客户传导价格的能力如何，尤其是在高端产品领域？</b></p>
+<p>高端产品在此轮涨价潮中对利润增长的贡献有限。首先，高端材料本身价格较高，叠加CPI因素后，其涨价幅度相对不大，在订单总成本中占比较低，因此难以通过涨价大幅提升既有高毛利订单的利润水平。其次，无论是CCL厂商还是PCB板厂，都会优先将资源倾斜给高端产品，部分中低端厂商为了抢占高端市场份额，甚至会采取让利策略。因此，高端产品的利润提升更多依赖于产品结构的优化，即提升高端产品在整体业务中的占比。对于新开案的型号，公司可以通过更新报价来传导CCL的涨价成本，但这部分传导对整体利润率的提升作用有限。</p>
+<p><b>国内算力相关业务的成本传导情况如何，以及公司在与客户进行价格谈判时通常面临怎样的周期和挑战？</b></p>
+<p>国内算力业务在2025年底至2026年初已经历过一轮价格上调，以改善部分亏损或低利润项目的情况。然而，PCB行业的价格传导存在明显的滞后性。通常情况下，从CCL厂商宣布涨价到公司成功向上游客户调整价格，存在3到6个月的延迟。当公司刚完成一轮价格调整时，CCL供应商可能已经进行了两到三轮新的涨价，导致公司的利润空间持续受压。这种滞后主要是因为公司在产业链中话语权较弱。CCL供应商通常执行“按出货日期计价”的强势政策，而公司向客户调价则需经过招标等流程，最快也需要三个月，部分客户的招标周期甚至长达半年。虽然理论上可以通过停止供货来应对，但这可能导致将市场份额让给三、四线厂商，并可能培养出新的竞争对手，因此在实际操作中较为被动。</p>
+<p><b>从近期来看，CCL（覆铜板）的涨价趋势是否有所放缓？</b></p>
+<p>目前观察到，高端CCL产品已不再提及涨价，低端产品的涨价声音也有所减少，但整体价格仍在上涨。例如，生益科技这类厂商并未出现价格放缓的迹象。部分规模较小、级别较低的CCL产品，其产能紧张状况可能有所缓解。</p>
+<p><b>预计从当前到2026年底，CCL价格的涨幅会是多少？</b></p>
+<p>供应紧张的局面预计将持续到年底。尽管如此，高端PCB板厂所用的CCL材料，其供应商的涨价频率和幅度预计会降低，涨价可能更多地针对非目标客户。公司认为，未来三个月内再出现多轮（如两三轮或三四轮）涨价的可能性不大。部分产品可能不会再涨价，而另一部分产品预计会有5%至10%的温和涨幅。</p>
+<p><b>泰国工厂目前的产能、扩产进度以及未来的预期是怎样的？</b></p>
+<p>泰国工厂一期已实现满产，月产值超过1亿元。目前正在建设二期，其主要目的之一是解决一期存在的瓶颈工序产能不足问题。由于一期规划时的订单结构与当前实际生产的产品存在差异，导致钻孔等工序成为瓶颈，且在当地缺乏外协资源，限制了整体产能的有效释放。二期建成后，将首先用于补充一期的瓶颈产能。</p>
+<p>截至目前，上半年产值较低，但近两个月有所提升，预计2026年全年产值约为15-16亿元，最终能否达到目标取决于第四季度的提产情况。对于2027年，预计产值具体取决于二期建设进度，较为精准的预测将在第四季度进行。</p>
+<p><b>泰国工厂在产能提升方面主要面临哪些难点？</b></p>
+<p>泰国工厂产能提升的主要挑战在于扩产进度缓慢，包括二期工厂自身的建设进度以及工厂本身有限的扩产空间。2026年第二、三季度的产值提升，并非完全依赖于自身的产能扩张，而是通过优先生产高单价、高利润的优质订单来实现的。这种模式依赖于将已成熟的大批量订单转移过去，如果需要工厂自主进行NPI（新产品导入）、打样和生产，则无法达到当前的产出水平。这种运营方式包含一些不可持续的成本因素，长期来看，尤其是在引入新的海外客户后，将难以为继。</p>
+<p><b>泰国工厂主要生产哪些类型的产品，其利润率水平如何？</b></p>
+<p>泰国工厂目前主要承接从广州基地转移过去的高端服务器主板订单，层数普遍在14到16层之间，客户包括戴尔、亚马逊和Meta，产品型号覆盖M6和M7。这些都是已经成熟、可进行大批量生产的型号。</p>
+<p>在利润率方面，2026年第二、三季度，泰国工厂的毛利率是最高的，甚至一度超过广州基地。但这种高利润水平是不可持续的。预计未来其毛利率会回归到与广州基地相当的水平。</p>
+<p><b>黄石工厂自转型以来的运营状况和当前的产能水平如何？</b></p>
+<p>黄石工厂在2019年至2024年底期间一直处于亏损状态。从2024年底至2025年，工厂进行了转型，包括调整管理人员、优化订单结构和工厂布局，并于2025年5月开始实现盈利。在盈利的同时，工厂也在进行扩产。进入2026年，目前第三季度的月产值在1.6亿至1.8亿元之间，预计到第四季度月产值进一步提升。</p>
+<p><b>当前工厂是否处于满产状态？</b></p>
+<p>目前工厂接近满产状态，稼动率约在八至九成。该工厂最初的设计并非针对算力产品，从2024年底至2025年初才开始逐步转型调整。当前，算力相关产品（包括服务器主板及配套产品）已占到一半以上。由于转型初期生产不顺，产线调整后产能是逐步释放的。到2 026年第四季度，目标是实现单月产值超过20亿元。</p>
+<p><b>利润率水平2027年是否有改善空间？</b></p>
+<p>利润率的改善主要取决于几个因素：首先，2026年第一、二季度国内算力产品的价格上涨，可能对下半年的毛利率有正面贡献，但同时也面临物料涨价的压力。其次，订单结构的优化将是关键，如果能将订单结构调整得更好，例如超过三分之一的订单结构能达到泰国工厂的水平，毛利率就会提升。此外，公司内部存在产能协同，例如将结构复杂或利润较低的订单转移至黄石工厂处理，以优化整体盈利能力。</p>
+<p><b>如果引入新客户或新产品，产值会有何变化？</b></p>
+<p>如果未来有新客户的订单导入，可能会使一厂的产能饱和，溢出的订单将依次转移至二厂和黄石工厂。在这种情况下，虽然总产量可能不变，但由于产品价值提升，整体产值将大幅增长。新产品（如M7、M8）的单价显著更高，例如M8产品的单价可能接近2万元/平方米，这可能带来30%以上的产值增长。</p>
+<p><b>公司与NVIDIA的合作进展如何？</b></p>
+<p>公司与NVIDIA的合作正在进行中，进展可能比与Google的合作稍快。自2025年NVIDIA方面前来考察后，公司已进行了两轮打样。目前，总计四款送测的样板中，已有两款通过了测试，并通过富士康方面释放了部分信息。这两款样板的通过时间在20 26年第二、三季度（约5月至7月），目前正在进行小批量试生产。另外两款样板仍在测试中，尚未有正式结果。</p>
+<p><b>关于NVIDIA项目，公司目前通过了哪些具体产品的认证？CCL（覆铜板）供应商是哪家？</b></p>
+<p>目前公司使用的是台光的CCL。在NVIDIA的项目中，Switch主板中量产规模较大的那一款已经通过了认证。具体来说，有两款Switch交换主板，层数大约在28层或30层左右，这两款大批量的产品已经通过。另外一款中板产品需要重新进行认证。</p>
+<p><b>在CCL供应紧张的背景下，公司如何保障产能？</b></p>
+<p>目前CCL的供应确实紧张，交期正在变长。例如，广州工厂的订单交期已经延长至三到五个月，这导致CCL的备料周期从二十多天延长到了四十五至六十五天。公司的应对策略是维持足够长的订单储备，例如，如果CCL供应商需要两个月的备料周期，公司就需要确保有两到三个月的订单储备来对冲风险。只要订单储备充足，目前的状况对公司生产影响不大。然而，如果未来CCL交期进一步延长或公司订单储备缩短，则会构成产能风险。</p>
+<p><b>公司与谷歌的业务合作进展如何？与NVIDIA项目相比，其进度有何不同？</b></p>
+<p>谷歌项目的整体进度比较缓慢，预计会慢于NVIDIA项目。主要原因在于，与谷歌、微软这类客户合作，认证过程必须通过其海外工厂进行，例如泰国的工厂。如果能通过国内的广州一、二、三厂进行认证，速度会快很多，但目前的客观条件不支持。因此，必须遵循海外认证的路径，导致整个流程变慢。</p>
+<p><b>如何评估公司在工艺稳定性、管理水平以及技术能力方面的综合竞争力？</b></p>
+<p>公司的竞争力需要根据具体产品来评估。</p>
+<p>在CPU领域，公司拥有多年的制造经验，对于传统CPU的迭代生产具备优势。新一代AI CPU在技术上与GPU日益趋近，未来甚至可能采用相似的高阶工艺，这与公司在材料、信号处理、过程管控和良率方面的现有优势相契合。</p>
+<p>在GPU和TPU领域，技术难度显著提升，尤其是在高阶HDI方面构成主要挑战。公司以往在此类产品上的产能不多，因此在加速卡、光模块等高阶HDI产品的生产上，需要经历一个爬坡过程。相比之下，单纯增加PCB层数的难度并不算大。</p>
+<p>与行业第一梯队（如沪电股份）相比，公司在品质管控方面仍有学习和提升的空间，但优势在于运营灵活性、反应速度和工厂效率更高。此外，在技术和质量水平相当的前提下，公司具备成本优势，这在未来放量生产时，将与交期、效率共同构成核心竞争力。</p>
+<p><b>鉴于谷歌2027年TPU出货将带动其PCB采购额大幅增长，如何看待这一市场机会？</b></p>
+<p>谷歌项目确实是一个重要的市场机会，其TPU升级将同时带来产品结构优化和订单量的增长。从长远来看，许多观点认为谷歌的市场潜力甚至比NVIDIA更为可观。谷歌的一个显著优势在于，其在商务谈判中不过分关注价格和成本。根据市场信息，谷歌明年的PCB采购金额预计将实现翻倍增长，而NVIDIA的增幅可能在20%左右，因为后者的出货量已相对稳定。</p>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,311 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.06 | Substack | Memory | Next Memory Race Beyond Scaling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.06 | Substack | Memory | Next Memory Race Beyond Scaling</h1>
+<p class="orig">原标题：The Next Memory Race Will Not Be Decided by Scaling Alone</p>
+<p class="tags">#memory</p>
+<p class="meta">Substack · 2026-10-06</p>
+<div class="body">
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791282323656-7.png" alt="" loading="lazy">Subscribed</p>
+<h3>Where the conversation began</h3>
+<p>Does a lead in HBM translate into a lead in the next generation of memory technology? This conversation made me reconsider that question.</p>
+<p>The expert I spoke with develops next generation DRAM processes at SK hynix’s future technology research institute. We began with 3D DRAM, where the cell structure itself is built in multiple layers, then moved to fabricating cells and peripheral circuits separately and bonding them together, HBM manufacturing and customer support, and the role memory companies want to play in AI systems.</p>
+<p>What stood out was that the basis of competition differed by technology. In 3D DRAM, fabricating structures laterally inside the stack was closely tied to identifying which internal layer had a problem. With cell and peripheral circuit separation, increasing cell density and improving peripheral circuit performance had to be considered separately.</p>
+<p>The expert expressed confidence in the company’s collaborative culture and customer support, while also discussing the limitations of a strategy focused on scaling and the difficulties of new bonding technologies. This report includes not just those conclusions, but the reasoning and practical examples behind them.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791282323921-8.png" alt="" loading="lazy">Subscribed</p>
+<h3>Key takeaways</h3>
+<p><b>01 | 3D DRAM faces bottlenecks in both fabrication and validation.</b> Alongside the difficulty of lateral etching and film formation, the speed of detecting internal defects constrains how quickly the next process conditions can be determined.</p>
+<p><b>02 | Separating cells and peripheral circuits changes the basis of competition.</b> Freeing up cell area and developing peripheral circuits independently creates performance and cost options beyond moving to a smaller node.</p>
+<p><b>03 | Start by distinguishing what is being bonded.</b> Bonding cell and peripheral circuit wafers and stacking individual dies for HBM begin from different foundations and face different mass production challenges.</p>
+<p><b>04 | AI memory strategy depends on design, process, and collaboration capabilities.</b> Proposing a memory tier, designing it, and connecting it to other processes or companies are tasks that have to be prepared together.</p>
+<p><b><i>Editorial note</i></b></p>
+<p><i>This is a thematic edit of the original interview, not a verbatim transcript. Questions and answers have been edited for clarity, and related remarks have been connected. The expert’s answers reflect personal views at the time of the interview and do not represent the company’s official position. Background beyond the transcript appears separately, with sources, under ‘Technical background, Editor’s supplement.’ ‘Damnang’s interpretation’ represents the editor’s assessment. Generative AI was used to assist with wording and editing.</i></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791282324176-9.png" alt="" loading="lazy">Subscribed</p>
+<h2>01. What does 3D DRAM change?</h2>
+<p><b>Damnang:</b> Could you start by introducing your work?</p>
+<p><b>Expert:</b> I work in process development at SK hynix’s future technology research institute, where I study next generation processes such as 3D DRAM. To understand this technology, it helps to start with what is becoming difficult in conventional DRAM.</p>
+<p>Conventional DRAM has evolved by making capacitors taller to achieve the required capacitance within a small area. As the process scales down, the lateral area occupied by each cell has to shrink, while its ability to store charge must be maintained. That is why capacitors keep getting taller within an increasingly narrow footprint.</p>
+<p>But this approach is becoming more difficult. As the area shrinks further, maintaining capacitance and controlling leakage current become simultaneous challenges. These are not problems that automatically disappear by moving to the next node. The question becomes how much further the existing structure can scale.</p>
+<p>That led to the idea of changing the cell arrangement from vertical to horizontal and stacking that structure in multiple layers, rather than continuing to make each cell smaller. It applies the NAND idea of increasing capacity through cell stacking to DRAM. Instead of simply making an existing capacitor taller, the aim is to increase capacity by changing the cell structure and the direction in which it is stacked.</p>
+<p><b>Damnang:</b> I understand 3D DRAM has been researched for a long time. When do you think it could actually be used?</p>
+<p><b>Expert:</b> A report last year mentioned 2033 as the timing for mass production. That is not an officially confirmed production schedule, however, and there are efforts to accelerate development.</p>
+<p><b>Damnang:</b> What is driving the push to develop it faster? Is it customer demand, or is there another reason?</p>
+<p><b>Expert:</b> The underlying issue is that scaling conventional DRAM keeps getting harder. Until now, progress has come from making cells smaller and moving to the next node. Whether that same approach can continue is a separate question. We therefore have to prepare not just the node currently in development, but also the structure that comes after it.</p>
+<p>Vertical gate structures are another way to extend conventional DRAM. My understanding is that Samsung and SK hynix are considering vertical gate structures in the 4F² category. I do not work directly in that area, but the assessments I have heard suggest that the structure may be usable for one or two nodes, rather than continuing to scale across many generations.</p>
+<p>That leaves the question of how to increase capacity and density after vertical gates. In that sense, 3D DRAM is not simply a research project for the distant future that we pursue when we have spare resources. If the existing structure reaches its scaling limit, we need something to follow it. That makes it a technology we have to develop, even though it is difficult.</p>
+<p><b>Technical background | Editor’s supplement: What do 1T1C and 4F² mean?</b></p>
+<p>1T1C describes a DRAM cell made up of one capacitor that stores charge and one transistor that controls access. In 4F², F refers to the minimum feature size of the technology, and 4F² expresses the cell area. It does not mean a stack of four layers.</p>
+<p><b>Terminology | Three different forms of stacking in this report</b></p>
+<p>3D DRAM refers to building the cell structure itself in multiple layers. In this conversation, 3D stacked DRAM refers to stacking memory and logic dies. The separation of cells and peripheral circuits discussed later means fabricating a cell wafer and a peripheral circuit wafer separately, then bonding them together. What is stacked and what is separated differ across these approaches.</p>
+<h2>02. China and the three major memory makers are taking different paths</h2>
+<p><b>Damnang:</b> I have heard that China is also preparing for 3D DRAM. What do you know about its development progress or the technology gap?</p>
+<p><b>Expert:</b> What I encounter directly is patents. When we analyze relevant patents internally, we see YMTC and CXMT filing very actively in 3D technologies. I am not describing how far they have progressed toward mass production, but I get the impression that they are doing a great deal of preparation to establish a position in new structures.</p>
+<p>My personal interpretation is that the major memory companies already hold extensive patent portfolios in conventional 2D DRAM. Following structures that the incumbents have developed over many years means getting past not just the technology, but also that patent base. By contrast, 3D DRAM is still at an early stage. I think the Chinese companies may be trying to secure patents and technology in new structures before the field becomes established.</p>
+<p>Their bonding experience is also relevant. China has experience with approaches such as Xtacking that use bonding in NAND. Since bonding is also involved in 3D DRAM, there may be an effort to bring that NAND experience and confidence into a different memory structure.</p>
+<p>When the conventional scaling path is constrained, there is a stronger reason to pursue a change in structure rather than simply follow that path. That is why I do not see China’s activity solely as an effort to catch up to the next conventional DRAM node. I see it as a search for a separate opportunity in new structures.</p>
+<p><b>Damnang:</b> Samsung is also developing 3D DRAM, as I understand it. How does its approach compare with SK hynix?</p>
+<p><b>Expert:</b> As far as I know, the three companies differ even in how they form the patterns. They may all use the term 3D DRAM, but they appear to be making different choices about how to build the structure and extend it to taller stacks.</p>
+<p><b>Damnang:</b> Oh, so even though they are all developing 3D DRAM, the manufacturing approaches are different?</p>
+<p><b>Expert:</b> I cannot discuss the details, but my understanding is that Samsung and SK hynix use different approaches to building up the hardmask layers.</p>
+<p>I have heard that Micron is researching a different approach as well. From what I hear through equipment suppliers, it is working actively on 3D DRAM and intends to move directly to it without going through the vertical gate stage. It seems to have internal expertise in building multiple layers, but I do not know the specific method it uses.</p>
+<p>That makes it difficult to put all three companies on a single process roadmap and say that one is a certain number of steps ahead. What I can say is that their manufacturing approaches and the paths they are taking to extend them are somewhat different.</p>
+<h3>Damnang’s interpretation</h3>
+<p>The important point in this discussion was not to choose a winner before one had been established. It was that the same technology label can cover different manufacturing paths and different limits on how high the structure can be stacked. Patent activity, implementing a structure, extending the stack, and achieving competitive mass production should not be treated as a single milestone. The next section on cleaning and metrology shows how these differences translate into practical development challenges.</p>
+<h2>03. Lateral etching and metrology constrain development speed</h2>
+<p><b>Damnang:</b> What has to change in the existing processes or equipment as we move to 3D DRAM?</p>
+<p><b>Expert:</b> Etching was extremely important in conventional 2D DRAM. A major challenge was how deeply and precisely a structure could be formed within a small area. Deep etching has also remained important in NAND.</p>
+<p>But in the 3D structures we are looking at, the cleaning side is becoming much more difficult. An area once considered relatively less challenging has become one of the most difficult. Here, cleaning does not simply mean washing a surface clean.</p>
+<p><b>Damnang:</b> Why does the cleaning side become so difficult?</p>
+<p><b>Expert:</b> We use chemicals to etch laterally inside the structure, and that work sits within the cleaning process area. Companies that previously made cleaning equipment are developing tools for this process. Work that would once have been considered part of etching is now being performed within the cleaning area.</p>
+<p>The difficulty is therefore not just removing contamination. We have to etch horizontally inside the structure, and forming films in that space is also difficult. In addition to etching deeply from top to bottom, we now have to work sideways and form the required structures within those spaces.</p>
+<p>This explanation is based on the process strategy we are considering. Since each company uses a different manufacturing approach, the process step and equipment used to perform a given function can differ. It does not mean that every company’s 3D DRAM will use the same cleaning process.</p>
+<p>I also think metrology is one of the main reasons development is not moving faster.</p>
+<p><b>Damnang:</b> What makes metrology difficult?</p>
+<p><b>Expert:</b> If we build multiple layers and a problem occurs, we need to know which layer is affected and what went wrong. In the development work I see today, we rely heavily on cutting samples and examining them with TEM to see the interior.</p>
+<p>Having a process that can build the structure does not mean we also have a way to validate it quickly. To find out which internal layer is wrong, we have to prepare another specimen and inspect a cross section. That process itself takes time, increases the number of wafers used in evaluation, and slows down how quickly we can see the results.</p>
+<p>In process development, we need to examine the result before choosing the next set of conditions. The problem is that seeing the result takes a long time. So the challenge is not only how to fabricate the structure, but also how to measure and validate the defects inside it. I think we need metrology methods suited to these new structures.</p>
+<p><b>Damnang:</b> Could established metrology equipment companies such as KLA solve this problem?</p>
+<p><b>Expert:</b> An established company such as KLA could address it, but we should distinguish conventional inspection from metrology of these internal structures. The existence of inspection equipment suppliers does not mean that all the methods needed for this internal validation are already available. Within what I have encountered, there is still not much information on these new metrology approaches.</p>
+<p>For 3D DRAM to advance, the equipment and methods for evaluating its structures have to develop alongside it. In that sense, I see a growing need and opportunity for new metrology equipment.</p>
+<p><b>Technical background | Editor’s supplement: Seeing a cross section versus understanding a 3D structure</b></p>
+<p>TEM stands for transmission electron microscopy. NIST explains that TEM and STEM are widely used in process development and failure analysis, but conventional imaging alone becomes less effective at characterizing shapes and defects in complex semiconductor structures. It is researching electron tomography methods that reconstruct structures in three dimensions.</p>
+<p>This is general research background for understanding the metrology challenges discussed in the call. It does not mean that SK hynix has adopted these methods for 3D DRAM or that they have already solved the validation speed problem described by the expert.</p>
+<h3>Damnang’s interpretation</h3>
+<p>More important than the difficulty of fabrication alone was the fact that fabrication and validation belong to the same development cycle. Building the structure, examining its interior, finding problems, and adjusting process conditions all contribute to development time. When looking at equipment, I would start with the fabrication and measurement tasks required by a new structure, rather than with existing categories such as etching, cleaning, and inspection.</p>
+<h2>04. A different path: separating cells and peripheral circuits</h2>
+<p><b>Damnang:</b> Are there any technologies besides 3D DRAM that you are following closely?</p>
+<p><b>Expert:</b> There is another technology attracting more attention alongside 3D DRAM. It is the approach I have been referring to as 2D POC.</p>
+<p><b>Damnang:</b> 2D POC? Is that a different structure from 3D DRAM?</p>
+<p><b>Expert:</b> POC stands for Peri on Cell. The terminology may differ by company, so it is better to describe it here as separating the cells and peripheral circuits.</p>
+<p>Conventional DRAM puts the cells and peripheral circuits on the same wafer. This approach separates them: one wafer is made for the cells and another for the peripheral circuits, and the two wafers are then bonded together. It brings to DRAM the idea of fabricating cells and peripheral circuits separately and connecting them, as has been done in NAND.</p>
+<p>That can free up more area for the cells and create a path to higher density and bit capacity. At the same time, the peripheral circuits can evolve independently of the cells. The important point is that we can retain existing cell technology and improve other parts without rebuilding the cells themselves into an entirely new 3D structure.</p>
+<p>I think there is still considerable room to improve the peripheral circuits. Memory companies have developed cell technology for a long time, but some technologies used in advanced logic processes have not yet been fully brought into the peripheral circuits. That means improving the peripheral circuits alone can raise memory performance, rather than relying only on making the cells smaller.</p>
+<p>From what I have heard, Samsung, Micron, and CXMT are actively pursuing this approach. Samsung has foundry and logic technology that it can draw on. Alongside research into 3D DRAM, these companies are preparing a path that further develops capabilities they already have in conventional DRAM. Recently, I have started to think this could become just as important as scaling to the next node.</p>
+<p><b>Technical background | Editor’s supplement: Why not use the latest logic process directly for peripheral circuits?</b></p>
+<p>Peripheral circuits include decoders that select addresses, sense amplifiers that read small differences in charge, and output buffers. imec explains that these circuits have different requirements, including speed, analog characteristics, operating voltage, and leakage current.</p>
+<p>Process sequencing is another constraint. If the peripheral circuits are fabricated first on the same wafer, they must withstand the high temperature treatments used later to form the memory cells. In the conventional process example described by imec, they can be exposed to temperatures of 550 to 600°C for several hours. This makes it difficult to transfer an ordinary logic process directly.</p>
+<p>Fabricating the peripheral circuits on a separate wafer can relax the thermal constraints imposed by cell fabrication. It also requires additional fabrication and bonding steps. This is general technical background on why separation creates an opportunity for independent optimization, not a description of a process adopted by a specific company.</p>
+<p><b>Damnang:</b> I see. The cells and peripheral circuits are made separately and then bonded. Could the hybrid bonding technology or equipment being prepared for HBM also be used here?</p>
+<p><b>Expert:</b> Hybrid bonding or fusion bonding are possible approaches to the joining step. The central point I am making is that the cells and peripheral circuits are made separately and then bonded. But we should not treat this as exactly the same problem as HBM bonding.</p>
+<p>HBM involves handling and stacking individual dies. The separation of cells and peripheral circuits that I am describing uses wafer to wafer bonding. The unit being bonded is different, as is the experience behind the technology. I think bonding at the wafer level may be relatively less difficult.</p>
+<p>Wafer to wafer hybrid bonding has already been used extensively in areas such as Sony’s image sensors. Memory companies also have experience with bonding in NAND. That gives this approach an existing foundation to draw on, compared with developing a completely new cell structure and manufacturing method from scratch.</p>
+<p>The attraction is that a new DRAM can be built by combining existing cell technology, bonding that companies already have experience with, and peripheral circuits that still have room to improve. Rather than treating everything under the same bonding label, it makes more sense to distinguish what is being bonded and which existing capabilities can be used.</p>
+<h3>Terminology note</h3>
+<p>Hybrid bonding and fusion bonding were mentioned above as examples of joining approaches. This does not mean that their processes or electrical interconnect configurations are the same.</p>
+<p><b>Damnang:</b> How is SK hynix preparing for this approach?</p>
+<p><b>Expert:</b> My personal view is that SK hynix began paying more attention to this area a little late. Other companies were already preparing for it, while we placed more emphasis on scaling conventional DRAM. I felt there was a strong inclination to keep pushing toward 1d and beyond because further scaling was still possible.</p>
+<p>But being able to scale a technology and producing it at a viable unit cost are different things. If further scaling requires better EUV tools, such as High NA EUV, and substantially higher process costs, we have to ask again whether shrinking the node that far is the best approach.</p>
+<p>If separating the cells and peripheral circuits offers another route to improvement, we have to compare the two. Retaining existing cells and improving performance through the peripheral circuits could be more suitable than pushing the existing structure to its scaling limit. That is why it is becoming harder to regard one path as the only answer.</p>
+<p>Of course, scaling work that is already well advanced cannot simply be abandoned. My understanding is that it continues while new approaches, including cell and peripheral circuit separation and 3D DRAM, are prepared in parallel. More people are being assigned to these areas, but staff and resources are finite. There is a decision to make between maintaining every option and choosing where to concentrate.</p>
+<p>The attitude toward process transitions also feels somewhat different. Previously, the emphasis was on how quickly we could move to the next node. Now, because new investments in etch and EUV equipment are so expensive, there seems to be more emphasis on making the most of the existing base. That does not mean stopping development. It means weighing the benefits of a node transition against the additional cost.</p>
+<p><b>Damnang:</b> Is this technology only for conventional DRAM, or could it also be used in HBM?</p>
+<p><b>Expert:</b> I see a strong possibility of using cell and peripheral circuit separation in HBM because it does not require a cell structure that is completely different from conventional DRAM. The technology used to make conventional DRAM is connected to the DRAM technology inside HBM. An approach that retains existing cells is therefore relatively straightforward to consider for HBM as well.</p>
+<p>3D DRAM, in which the cells themselves are built in multiple layers, requires more thought. We have to consider whether it makes sense to form TSVs through a structure whose cells are already stacked in 3D, and then stack those structures again to make HBM. A way to increase capacity at the cell level does not automatically determine the packaging that follows.</p>
+<p>That is why I am paying attention to the potential of approaches such as separating cells and peripheral circuits when considering both the cell structure and the package. Moving to an entirely new 3D cell structure and improving conventional DRAM for use in HBM are different paths.</p>
+<p>The DRAM technology inside HBM also has to keep advancing. From that perspective, my personal view is that separating cells and peripheral circuits could become more important next year than 1d itself. There is increasingly more to examine than the name of the node.</p>
+<h3>Damnang’s interpretation</h3>
+<p>This changed the question. We need to ask not only who reaches the next node first, but also which part of the memory benefits most from being changed: the cells or the peripheral circuits. Separation does not mean abandoning scaling, nor does it necessarily replace 3D DRAM. It means distinguishing the paths to better area efficiency and peripheral circuit performance, then comparing them alongside fabrication and bonding costs and the implications for HBM packaging.</p>
+<h2>05. SK hynix draws strength from collaboration and customer support</h2>
+<p><b>Damnang:</b> From your perspective as an employee, what is the atmosphere at the company like these days?</p>
+<p><b>Expert:</b> The atmosphere feels positive. People work hard and care about the company. But what I see as particularly relevant to competitiveness is not just morale; it is how people collaborate.</p>
+<p>Information is shared readily when we work with other teams. When we ask for material, they do not just provide a small part of the result. They also share the evaluation data behind it. There is a tendency to see the work as something we need to solve together, rather than drawing a strict line between my job and another team’s job.</p>
+<p>In process development, you need to know what another team has tried and what results it obtained before you can move forward. Being able to get that material quickly, including the evaluation details, helps the work progress. That is something I appreciate in day to day development.</p>
+<p>It would be difficult to explain SK hynix’s lead in HBM through one specific technology alone, but I believe this collaborative culture has contributed to development speed and competitiveness. That is my personal assessment based on the organization I have experienced.</p>
+<p><b>Damnang:</b> What matters most in meeting the needs of customers such as NVIDIA?</p>
+<p><b>Expert:</b> I feel SK hynix has a strong commitment to adapting to the customer. Working hard on the technology is a given. When a customer raises a problem, the approach is to stay close to the customer and keep working until it is resolved.</p>
+<p>In one example I heard about, quality engineers were sent to the customer site and support continued through rotations every two weeks, rather than ending after a single business trip. The next group would take over until the problem was solved. I think that kind of sustained, close customer support is a strength.</p>
+<p>It is also important to ask what the customer needs and look for what else we can do. Delivering the requested specifications and seeing problems through to resolution in actual use are connected. I think we should consider that approach to support alongside the technology itself.</p>
+<p><b>Damnang:</b> What about working with other companies, such as TSMC? Does that generally work well?</p>
+<p><b>Expert:</b> I do not work directly with TSMC, but I have not heard much from the design side about major difficulties. I hear more about the challenges of meeting NVIDIA’s requirements. The relationships are different: NVIDIA is our customer, whereas SK hynix is the customer from TSMC’s perspective.</p>
+<p><b>Damnang:</b> How are requests from customers who want 4 high HBM received?</p>
+<p><b>Expert:</b> I heard from the design side that there are circuits that allow groups of four layers to be validated separately. For example, suppose a problem occurs in one group of four layers while making an 8 high product. If the usable group of four can be identified and sold as a product with fewer layers, the outcome is different from having to discard the entire stack.</p>
+<p>The explanation was that this could be positive if customers want such a product, because it would generate revenue from material that previously could not be sold. I do not know whether other companies use the same approach.</p>
+<p><b>Damnang:</b> Have you noticed any other changes inside the company recently?</p>
+<p><b>Expert:</b> Yes, I have noticed changes. Around this summer, I felt a stronger push to become a global company. English began appearing first in internal emails, and everyday information such as cafeteria menus was also being changed to English.</p>
+<p>It is not just a change in wording. I see international interns in the research institute. That gives me the impression that the company is preparing to hire and work with more people from outside Korea.</p>
+<p>There are also efforts to recruit talent in the United States. Bringing in the people you need and creating an environment in which they can actually work have to go together. That is how I interpret these changes.</p>
+<h3>Damnang’s interpretation</h3>
+<p>In the same interview, the expert expressed confidence in the company’s collaborative culture while saying earlier that its strategic response to cell and peripheral circuit separation had been late. Those views are not contradictory. Organizational strengths and the challenges remaining in individual technologies need to be considered together. Customer support also came through as concrete behavior, including data sharing and a sustained presence by quality engineers at customer sites, rather than as an abstract cultural claim.</p>
+<h2>06. Hybrid bonding: a gap in sample development progress</h2>
+<p><b>Damnang:</b> Where does SK hynix stand in developing hybrid bonding for HBM?</p>
+<p><b>Expert:</b> From what I have heard, SK hynix is still facing technical difficulties in developing hybrid bonding for HBM. My understanding is that samples using hybrid bonding have not yet been produced.</p>
+<p>By contrast, there have been reports that Samsung has already sent samples to customers. Internally, people are watching Samsung’s progress closely, with a sense of concern about falling behind.</p>
+<h3>Damnang’s interpretation</h3>
+<p>At the time of the interview, my understanding was that Samsung had produced HBM4 and HBM4E samples using hybrid bonding. The expert, meanwhile, said that SK hynix’s hybrid bonding samples had not yet been produced. Taken together, these points suggest a technology gap between Samsung and SK hynix in HBM hybrid bonding development at that time.</p>
+<p>Competitiveness built through mass production of existing HBM and readiness for a new bonding process are separate matters. SK hynix’s lead in existing HBM does not, by itself, establish the same lead in hybrid bonding.</p>
+<p>This is a judgment about sample development progress. The discussion also included reservations about the performance of Samsung’s samples, so I would not extend that judgment directly to an advantage in production yield or customer qualification.</p>
+<p>Interview reference: original transcript, 00:45 to 00:50. Comparison based on the expert’s comments and Damnang’s understanding of sample availability at the time of the interview.</p>
+<h2>07. From process roadmaps to the AI memory hierarchy</h2>
+<p><b>Damnang:</b> I attended the forum as well. How is the company discussing its future direction internally?</p>
+<p><b>Expert:</b> There is an annual future forum where the company shares its direction. In the past, there was a lot of discussion about which technology nodes to pursue and which roadmaps to prepare. This year, I felt much more attention was being given to what SK hynix should do within AI architectures.</p>
+<p>For example, the discussion includes proposing new memory tiers and establishing a role within them. There seems to be more discussion of what a memory company can propose within the architecture of AI infrastructure, including a tier such as HBF between DRAM and NAND. That is a broader area of interest than developing the next DRAM node.</p>
+<p>I also see active recruitment of design engineers in connection with that direction. There was a posting for hundreds of entry level design roles, which struck me as a different scale from before. I hear that the design organization is running short of space, and experienced hiring also seems active.</p>
+<p>I interpret these changes as efforts to fill capability gaps so that the company can take on new roles. From what I can see, its focus is expanding beyond competition in process nodes to the question of what kinds of structures it can propose within AI infrastructure.</p>
+<p><b>Damnang:</b> This is just my own thought, but what about working with Intel?</p>
+<p><b>Expert:</b> SK hynix does not have a foundry business alongside its memory operations in the same way Samsung does, so I think there is a lot to consider in securing the necessary logic technology and manufacturing capabilities through collaboration. Being strong in memory and implementing the required designs on another company’s process are capabilities that have to be prepared together.</p>
+<p>Regarding Intel, I heard from someone on the design side that there was an evaluation of whether its process could be used for the base die. The explanation was that an evaluation request had come from the base die team. My understanding is not that a decision had been made, but that the feasibility was being examined.</p>
+<p>I understand that moving a design already developed for a TSMC process to another foundry requires considerable effort. It is not simply a matter of changing factories; there are many things the design team needs to reassess. So the key point in what I heard was not that Intel would be used, but that its use was being evaluated.</p>
+<h3>Damnang | The difference between evaluating a process and adopting it</h3>
+<p>From a design perspective, changing foundries also changes the PDK. It is not a matter of sending the existing design files to another factory. Design work and validation specific to the target process are required. That is why evaluating a candidate process and adopting it in an actual product should be distinguished.</p>
+<h3>Technical background | Editor’s supplement: What does a change in PDK mean?</h3>
+<p>The public SkyWater PDK documentation covers design rules, device models, standard cell and input/output libraries, interconnect parasitic extraction, and physical verification. It illustrates that a PDK is not merely a document naming a process, but a concrete technical foundation for design and validation.</p>
+<p>The point that a process change also changes the design work can be understood in terms of that underlying foundation. The public PDK is used here to explain the general concept, not to compare Intel’s or TSMC’s private PDKs or quantify the effort required to move between them.</p>
+<h3>Damnang’s technical question | What would customers need to change to use HBF?</h3>
+<p>Later in the conversation, I distinguished the need for HBF from its actual adoption. Even in a use case dominated by reads with relatively predictable access, would the benefits be large enough for a customer to change the operating system or system behavior to accommodate a new memory tier? This was a usage scenario and question I raised, not a statement of confirmed HBF specifications or validation results.</p>
+<h3>Damnang’s interpretation</h3>
+<p>Proposing a new memory tier has to be followed by investment in design talent and external collaboration. Expanding the workforce, evaluating a candidate process, and adopting it in a product are different stages, but they support the same direction. Understanding a memory company’s ambition to play a larger role in AI systems requires looking beyond the concepts it announces to how it builds the capabilities needed to implement them.</p>
+<h2>08. Solidigm NAND and continuity in process development</h2>
+<p><b>Damnang:</b> I am also curious about Solidigm. How do you view it as someone who develops processes?</p>
+<p><b>Expert:</b> Solidigm and SK hynix use different technology foundations to manufacture NAND. Solidigm’s NAND, inherited from Intel, uses floating gate technology, while SK hynix uses a CTF approach. Intel developed technology that differed from other NAND manufacturers, so being in the same NAND business does not mean that process development experience can simply be shared without changes.</p>
+<p>That was the point that concerned me. Having people who developed NAND processes on one side does not mean they can immediately support a different kind of NAND technology. SK hynix’s existing process development capabilities and the technology Solidigm has carried forward need to be considered separately.</p>
+<p>When I heard about expanding production, my first question was less about the factory itself than about who would develop the next process upgrade. Producing with the technology available today and advancing that technology into later generations are different tasks. Even if the current product can be manufactured, people and an organization are still needed to continue development.</p>
+<p>That is why I thought a production expansion based on a different technology would also require consideration of a dedicated development team. Since the processes differ, we should not assume that the existing development organization at headquarters can simply take over. The question I had was how to ensure continuity in technology development, not just how to increase production capacity.</p>
+<h3>Damnang’s interpretation</h3>
+<p>I read this as a question from a process development perspective rather than as a judgment on a specific factory plan. Increasing production capacity and preparing the next generation of technology are not the same task. Even within the same corporate group, NAND businesses with different technology foundations need to be assessed not only by the scale of their facilities but also by the development organizations that will keep advancing those technologies.</p>
+<h2>Closing. Evaluate the same memory company technology by technology</h2>
+<p>It is difficult to reduce this conversation to either optimism or concern about SK hynix. The expert identified collaboration and customer support as strengths while also discussing the strategic choices around separating cells and peripheral circuits and the challenges of hybrid bonding.</p>
+<p>The criteria for evaluating the technology also changed. For 3D DRAM, the issue was not just the idea of stacking cells, but how quickly the interior of a structure formed through lateral processing could be examined. For cell and peripheral circuit separation, the question was which part to develop independently, rather than simply which smaller node to pursue. Connecting either approach to HBM required looking further ahead to TSVs and packaging.</p>
+<p>The same applies to company competitiveness. A statement that a company’s process technology is strong encompasses structural choices, development speed, equipment investment, collaboration across departments, and customer support. A lead in one technology does not automatically explain its readiness in another.</p>
+<p>What I want to examine more closely from here is which structures companies choose, whether methods to evaluate those structures are ready, and where the cost and performance benefits arise relative to existing processes. I thought I knew something about memory, but this call helped me break those questions down much more precisely.</p>
+</div>
+</main>
+</body></html>

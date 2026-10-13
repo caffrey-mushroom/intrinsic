@@ -1,0 +1,193 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.08 | AC | Datacenter | Power-Constrained AIDC Buildout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.08 | AC | Datacenter | Power-Constrained AIDC Buildout</h1>
+<p class="orig">原标题：电力约束下的AIDC建设：算电协同选址、投资与供应链分析</p>
+<p class="tags">#datacenter #power #china</p>
+<p class="meta">AceCamp · 2026-10-08 21:50 · article 70567833</p>
+<div class="body">
+<h2>摘要</h2>
+<p>1.AI训练负载具有高功率密度、长时运行和高可靠性要求，使电力从配套工程变成影响选址、建设节奏和项目经济性的关键前置约束。2.对于大型新建AIDC，土建和机电可以通过模块化、预制化和并行施工压缩周期，而外部电源接入涉及供电方案、变电站、线路走廊、审批和电网建设等环节，其周期更容易成为项目关键路径之一。3.绿电直连主要解决新能源电源与特定负荷之间的直接供能和绿电溯源问题；绿电聚合更多解决多个新能源电源与集中负荷之间的聚合供应和市场交易问题；源网荷储进一步解决供需时序错配和系统调节问题。</p>
+<p><b>Q1:AI数据中心建设为什么把电力从配套条件提升为关键前置约束？这一变化如何重塑选址和投资逻辑？</b></p>
+<p>A1:AI训练负载具有高功率密度、长时运行和高可靠性要求，使电力从配套工程变成影响选址、建设节奏和项目经济性的关键前置约束。2026年公开项目中，110kV、220kV变电站、绿电直连、源网荷储和跨省算电协同明显增多；四部门行动方案也提出统筹能源资源与算力设施布局。对大规模训练中心，电力容量和绿电机制尤为关键；对金融推理、实时工业AI和智能体服务，网络时延、数据属地、客户距离和合规同样可能构成硬约束。项目前期应把容量、电价、时延、土地和客户合同纳入联合测算；若电力等关键变量无法按计划落地，项目可能出现延期、成本上升和交付窗口错失。</p>
+<p><b>Q2:数据中心建设速度与电力工程建设速度为何容易错配？错配会带来哪些交付和财务影响？</b></p>
+<p>A2:对于大型新建AIDC，土建和机电可以通过模块化、预制化和并行施工压缩周期，而外部电源接入涉及供电方案、变电站、线路走廊、审批和电网建设等环节，其周期更容易成为项目关键路径之一。公开案例中，韶塘1期同步建设220kV供配电工程，和林格尔火山引擎二期配套220kV线路计划10月开工。若签约后才启动电力方案，项目容易出现机房等电、设备等电和客户交付窗口错配。管理重点是把并网时间、机房交付和设备到场排成同一关键路径；业主、电网、EPC和设备供应商应在设计阶段共享接口、负载曲线、里程碑、违约责任、变更流程、更新机制和预警阈值。</p>
+<p><b>Q3:算电协同的政策目标是什么？其与单纯为数据中心供电有何本质差异？</b></p>
+<p>A3:算电协同不是让数据中心自己发电，而是把规划、建设、交易、调度和算力任务编排放到同一套时空优化框架中。政策强调加强算力资源监测调度、骨干网络建设和算电设施规划衔接，推动绿电直连、源网荷储项目落地，并探索算力作为灵活可调资源参与电网运行。与传统配套供电相比，算电协同要求负荷曲线、电源出力、储能配置、网络时延、价格信号和调度机制同时设计。算电协同的落地质量，取决于规划、建设、交易、调度、运维和市场结算能否共享数据并同步决策；否则容易出现配套投资重复、错时、责任不清和利益分配失衡，也难以形成可核算、可追溯的全链路运行闭环。</p>
+<p><b>Q4:绿电直连、绿电聚合、源网荷储和跨省算电协同各自解决什么问题？又有哪些边界？</b></p>
+<p>A4:绿电直连主要解决新能源电源与特定负荷之间的直接供能和绿电溯源问题；绿电聚合更多解决多个新能源电源与集中负荷之间的聚合供应和市场交易问题；源网荷储进一步解决供需时序错配和系统调节问题；跨省算电协同则把时序优化扩展到算力任务本身。多用户绿电直连还需明确以荷定源、内部平衡、公共电网界面、计量结算和小时级匹配，不能与绿电聚合混同。设计时应先明确绿电时段、负荷曲线、备用容量和结算责任，再决定电源组合与储能配置，避免只以年均比例掩盖时段缺口。对项目方而言，更关键的是把绿电比例、调度责任、违约成本和计量颗粒度写入合同与运行预案，而不只是在招商口径中呈现年度均值。</p>
+<p><b>Q5:在AIDC选址模型中，电力、网络、土地、水、客户和绿电应如何权衡？权重是否固定？</b></p>
+<p>A5:选址宜分为三层：先做硬约束过滤，再做经济性权重评分，最后进行情景压力测试。电力容量不足、无法接入、时延不满足业务要求、合规风险不可控，通常先作为硬约束；电价差异、绿电比例、运维成本和扩容空间则进入权重评分。训练类、推理类和行业智能体项目的约束不同，权重也随客户合同、电价机制、水源、设备交期和地方资源禀赋变化。选址团队还应把静态清单转化为情景模型，检验客户负荷、电价、水源、设备交期、政策周期、融资和再谈判机制变化下的交付、成本与可靠性约束。若关键假设变化，应同步更新选址结论和分期节奏，并为走廊、水源和备用容量保留可核查余地。</p>
+<p><b>Q6:西部绿电区、东部需求区和中部枢纽在算电协同上分别适合什么任务？为何不能互相替代？</b></p>
+<p>A6:西部绿电区更适合承接部分高时延、可迁移型训练和批处理任务，利用风光资源和低成本土地摊薄单位算力成本；东部对低时延、强交互的金融、制造、政务和实时推理任务仍具有区位优势，但能耗和土地约束更强。中部节点可根据网络、电力和产业条件承担区域算力承接、网络互联和跨域调度等功能。具体布局仍需依据任务时延、数据安全、网络成本和客户要求确定。区域互补价值取决于跨域网络、数据安全、结算机制、模型资产保护、运维协同、故障恢复、服务连续性、迁移成本和合规要求。报告不宜用西部训练、东部推理概括全部需求，应以任务可迁移性和商业合同作为判断依据。</p>
+<p><b>Q7:庆阳绿电聚合直供项目的关键价值是什么？其对西北AIDC建设有哪些可复制经验？</b></p>
+<p>A7:庆阳东数西算产业园区的官方口径是全国首个1000MW级专供数据中心集群的绿电聚合项目，不应写成绿电直连项目。2026年1月首批机组并网后，项目落地并稳定运行，庆阳电网总装机容量突破10GW，其中新能源装机超8GW。其价值在于把多个新能源资源、专供机制和数据中心集群绑定，降低绿电获取不确定性。可复制经验是提前统筹电源、电网、负荷和园区时序。其他西部园区还需验证本地消纳、调峰资源、客户结构和网络通道，不能把专供规模简单等同于算力需求或客户订单。项目比较研究还应披露电源类型、调度关系、计量方式和电价期限，避免只比较装机规模。</p>
+<p><b>Q8:中卫、东台和韶塘项目分别展示了哪些算电协同工程路径？这些案例有何共同趋势？</b></p>
+<p>A8:中卫移动B区规划总负荷245.2MW、约13624个物理机柜，B07机房楼EPC工期123天，体现规模化与快速交付；东台300MW智算中心距离220kV变电站1.5km、距离新能源集控中心27km，随后启动绿电直连方案编制招标，体现沿海风光协同；按开工报道，韶塘1.1期建成后规划具备约200MW机架功率运营能力，并同步建设220kV供配电工程。共同趋势是电力工程与机房主体同步设计。这些案例说明，电源、电网、土地、网络和客户应在选址阶段形成闭环；项目越大型，越需预留分期、扩容、再评估、融资和退出安排，并保留证据更新机制。</p>
+<p><b>Q9:闽宁等跨省算电协同模式有何探索价值？其规模化还需突破哪些机制？</b></p>
+<p>A9:2026年9月15日-17日，闽宁首次完成跨省算电协同实操演练，验证算力任务随电力供需和新能源出力变化进行跨省转移的可行性。官方表述聚焦算力负荷跟着绿电走、电力负荷协同调节和算网平台联动调度，尚不是成熟常态化商业机制。规模化仍需完善网络、数据安全、绿电核算、结算、责任分配、故障回切和调度规则。从工程角度看，跨省协同还需建立任务清单、数据分级、网络监测、故障回切、结算对账、责任主体、告警阈值、演练周期和客户通知流程。在商业化前，还应明确客户授权、任务可中断范围、服务等级、数据跨境与安全边界、演练成本分摊和异常补偿机制。</p>
+<p><b>Q10:110kV与220kV变电站为何成为大型AIDC的关键门槛？电力接入应如何前置管理？</b></p>
+<p>A10:对于大规模AIDC，110kV、220kV乃至更高电压等级的专用或自建供配电设施，往往成为关键工程接口，但不存在200MW对应220kV的统一阈值。接入电压等级应依据接入系统规模、电网结构、供电可靠性、电能质量、备用需求和扩容规划综合确定。管理上应在选址阶段锁定容量，明确并网时间、供电方案、辅助服务责任和二期扩容走廊。接入管理还应覆盖电能质量、备用电源、扩建走廊和调度责任，并把接入方案与训练集群、推理平台、测试环境等负荷分级绑定。在可研和投资决策中，接入批复、走廊协议、分期容量和电能质量要求应形成书面附件，避免后期以口头承诺推进。</p>
+<p><b>Q11:高密GPU机柜为什么推动液冷和预制化加速普及？</b></p>
+<p>A11:高密AI负载正在推动液冷和模块化交付加速应用。GPU功耗和单机柜功率提升后，传统风冷在单位空间散热能力上面临约束，风液混合和冷板式液冷的应用增多；GB/T 48023-2026和GB/T 48097-2026也分别对冷板式液冷系统和液冷机柜作出规范。企业披露的140kW级液冷集群和4个月交付属于项目目标或方案，不能视为行业普遍水平。工程方需在工厂测试、现场调试、水质管理和故障响应之间建立标准接口；采购方应要求供应商提供部分负载效率、维护窗口、备件承诺和恢复演练记录。交付考核还应覆盖满负载温升、漏液告警和运维培训等验收项。</p>
+<p><b>Q12:算电协同将带动哪些供应链环节？设备企业的竞争指标发生了什么变化？</b></p>
+<p>A12:供应链可分三层观察：确定性基础设施包括变压器、开关柜、母线、继保、柴发、UPS、电缆、机电、液冷、CDU、制冷设备、EPC和调试；快速增长环节包括高压直流、储能、能量管理系统、需求响应和虚拟电厂接口；前沿路线包括800VDC、SST和构网型储能等。竞争指标从单设备参数转向系统效率、交付周期、集成能力、可靠性记录和全生命周期碳足迹。设备企业若能提供集成方案、全周期能效数据和金融配套，其竞争位置会强于单一部件供应商；招标评价应从初始报价转向全周期成本。供应链评估还要跟踪产能排期、关键备件属地化、测试认证、供应商财务稳健性和跨项目交付承诺。</p>
+<p><b>Q13:AIDC项目经济性应如何拆解？为什么上架率比投资额更能说明项目质量？</b></p>
+<p>A13:对已投运AIDC而言，投资额主要反映建设规模，上架率、IT负载利用率、订单覆盖率和爬坡速度更直接反映资产从建成向经营现金流转化的效率。建设规模、IT负载、上架机架、实际利用率、算力服务收入也不能混同。2026年度国家绿色算力设施推荐要求连续稳定运行1年以上，大型设施上架率60%以上，算力资源使用率处于行业先进水平。财务模型还需把建设期利息、空置期固定成本、扩容选择权、合同期限、再融资约束、税率变化、担保结构、退出折价和保险责任纳入现金流表。分析时应把这些运营指标与客户合同、服务等级、续约率、坏账准备和资本开支节奏交叉核验，识别纸面供给与现金流的差异。</p>
+<p><b>Q14:电力约束下的AIDC建设有哪些主要风险？不同主体应如何设置防线？</b></p>
+<p>A14:风险宜分为资源、工程、市场、运营和政策机制五层：接入容量不足属于资源风险；变电站和线路延期属于工程风险；电价上涨和客户不足属于市场风险；液冷故障和运维响应属于运营风险；绿电口径与标准变化属于政策机制风险。政府应把算力负荷预测纳入电网规划；企业应以预签订单和分阶段建设控制节奏，并采用可核查的小时级绿电匹配和碳足迹核算。防线应前移到选址、合同和设计阶段；金融机构和业主应要求接入批复、负荷预测、客户合同、运维预案、第三方核验、设备供应计划和完工里程碑。风险清单应注明责任人、触发阈值、证据来源、升级路径、复盘频率和更新时间。</p>
+<p><b>Q15:面向2027年至2030年，中国AIDC竞争力会取决于哪些算电协同能力？各方应怎样布局？</b></p>
+<p>A15:2027年-2030年，AIDC竞争重点可能从建设规模进一步转向可交付电力、绿电组织、算力利用率、高密交付和跨域调度的综合效率。政府宜以可交付电力容量、绿电时段匹配率和时延圈作为招商指标；企业宜建立电力、网络、客户和技术方案联合评估机制；设备与工程企业宜强化系统集成和快速交付；运营方则需把资源、调度、模型服务和行业场景连接起来。数据透明度、接口标准化、跨域互认、客户迁移成本、运维责任划分、结算规则、安全审计和异常处置，将成为降低交易成本的关键。过渡节奏还会受电力接入、客户订单、标准落地和跨域调度规则影响，宜按年度运行数据校准判断。</p>
+<p><b>数据来源汇总</b></p>
+<p><i>1.《福建能源监管办积极推动闽宁算电协同创新实践》（国家能源局福建监管办公室，2026年9月22日，）</i></p>
+<p><i>2.《工业和信息化部等五部门关于组织开展2026年度国家绿色算力设施推荐工作的通知》（工业和信息化部等，2026年9月8日）</i></p>
+<p><i>3.《数据中心冷板式液冷机柜通用规范》（国家市场监督管理总局，2026年8月28日）</i></p>
+<p><i>4.《中国电信韶塘项目开工打造粤港澳大湾区一体化数据中心》（中国日报网，2026年9月21日）</i></p>
+<p><i>5.《东台抢跑算电协同新赛道》（东台市人民政府，2026年8月25日）</i></p>
+<p><i>6.《和林格尔火山引擎内蒙古算力中心二期配套220kV供电线路工程社会稳定风险评估信息公示》（和林格尔县人民政府，2026年8月18日）</i></p>
+<p><i>7.《数据中心冷板式液冷系统技术规范》（国家市场监督管理总局，2026年7月30日）</i></p>
+<p><i>8.《关于有序推动多用户绿电直连发展有关事项的通知》（国家发展改革委、国家能源局，2026年5月14日）</i></p>
+<p><i>9.《关于促进人工智能与能源双向赋能的行动方案》（国家发展改革委等四部门，2026年5月8日）</i></p>
+<p><i>10.《庆阳数据中心集群实现绿电直供》（庆阳市人民政府，2026年2月10日）</i></p>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,223 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.10 | Substack | LLM | LLMs Going the Way of Go</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.10 | Substack | LLM | LLMs Going the Way of Go</h1>
+<p class="orig">原标题：Column|LLM: Going the Way of Go</p>
+<p class="tags">#llm</p>
+<p class="meta">Substack · 2026-10-10</p>
+<div class="body">
+<p>Just two years ago, leading AI models were still making embarrassingly basic mistakes. They fumbled arithmetic and confidently told users that 9.11 was larger than 9.9. Today, mathematicians are examining whether AI-generated proofs settle problems that have resisted decades of human effort. It has been a short journey from the schoolroom to the research frontier.</p>
+<p>Earlier this month, a rumor went around Silicon Valley that OpenAI was about to release some 400 mathematical proofs worthy of a Fields Medal, one of mathematics’ highest honors. On October 6, the papers arrived, and there were more of them than the rumor suggested: 722 manuscripts, grouped into 372 research families, all produced by an internal OpenAI model. The company says it put roughly 4,000 open problems to the model. The reported average compute per result was equivalent to roughly three hours of ChatGPT Pro thinking; a small number of results used different procedures.</p>
+<p>Sam Altman, OpenAI’s chief executive, singled out four results as the most important: a proof of the quasi-Riemann hypothesis, a proof of the Unique Games Conjecture from theoretical computer science, the Hodge conjecture for CM abelian varieties (a special case of one of the seven Millennium Prize problems), and an answer to a question about “free group factors” that has been open since the 1940s. He was careful to call them claims that outside mathematicians have yet to confirm. Many of the proofs, though not all, come with versions written in Lean, a language that lets a computer check a formal proof step by step. The formal statement must still be checked against the original problem.</p>
+<p>Before anyone writes the profession’s obituary: “Fields Medal–level” is hardly a recognized unit of measurement, and this release still awaits independent scrutiny. Still, the trajectory is hard to miss.</p>
+<p><b>We see this as mathematics’ AlphaGo moment: the field advances, the reference point becomes the machine, and practitioners learn to live with that the way Go players already do.</b></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791596725777-6.png" alt="" loading="lazy">Subscribed</p>
+<p>What interests us is what happens next if those results hold up. A mathematician goes back to the office the next morning, opens a laptop. What does the day’s work now involve?</p>
+<p>The world of Go has had nine years to get used to that question.</p>
+<h3>The game goes on. The teacher has changed.</h3>
+<p>For centuries, Go, the board game played with black and white stones, was taught through an intimate apprenticeship. You studied old games, replayed your own, and listened to stronger players explain why a move felt right. Some of that knowledge resisted explanation. A move was right because Go Seigen, one of the game’s great masters, had played it that way, and because your teacher approved. Given enough time, you began to see it too.</p>
+<p>Then came AlphaGo. In 2016, it beat the South Korean champion Lee Sedol 4–1. A year later, it swept China’s Ke Jie, then the world’s top-ranked player, 3–0. The score was only part of the shock. There was also the way it played. Its famous Move 37 against Lee looked so strange that experts initially struggled to understand it. It became one of the most studied moves in the match. The machine had found something where the experts had scarcely thought to look.</p>
+<p>Next came AlphaGo Zero. Without studying human games, it learned through self-play and, after three days of training, beat the version that had defeated Lee by 100 games to none. It had skipped the entire reading list.</p>
+<p>Today, professionals reviewing a game will often have KataGo, a powerful Go engine, running beside them. They can argue about a move, then check what the software thinks. A teacher might once have told you that a position “felt wrong” and left you to puzzle over it. Now the win-probability graph on the screen dips. The verdict arrives immediately; understanding it can take much longer.</p>
+<p>This has not reduced professional Go to a test of memorization. Calculation, judgment, and nerves still separate great players from merely good ones. <b>But the authority to pronounce on a move has shifted.</b> An amateur with an engine running can watch a world champion play and announce that the move was a mistake. Ask the amateur to explain why, without the software, and the conversation may dry up.</p>
+<p>You can still be better than almost everyone else. People can still admire you. They will just check your work with the computer.</p>
+<p>Ke Jie has since built a following as a livestreamer. Other Chinese professionals have also found an audience well beyond people who can follow a game of Go. Viewers come for their jokes, personalities, and reactions as much as their play. Sports fans have never watched solely to see the best possible sequence of decisions. If they did, we could let two computers play and stop watching live Go or chess.</p>
+<p>The game survives. What is gone is the suspense that surrounded Ke’s match with AlphaGo in the Chinese town of Wuzhen: could the best of us still hold out against a machine?</p>
+<h3>Mathematicians did not sign up to check the answers</h3>
+<p>Mathematicians had good reasons to expect a happier coexistence with AI. Mathematics has plenty of tedious work that could use an assistant: searching the literature, working through examples, checking an argument. Terence Tao, the Fields Medalist and an enthusiastic experimenter with AI, had described it as a kind of universal translator. Let the machine handle more of the labor, and people would have more time to think. In March 2026, Tao sat down with OpenAI’s Mark Chen at UCLA for a public conversation about how reasoning models were changing mathematical research.</p>
+<p>The awkward part is that the AI assistant keeps taking on more of the job.</p>
+<p><b>Once AI starts submitting complete proofs, the division of labor needs renegotiating.</b> Before the mathematician has finished breaking a problem into tasks for an assistant, the assistant has handed in a paper. The human may then spend weeks trying to understand what it has done. With 722 manuscripts in a single release, the queue of papers waiting for a human reader has grown very long.</p>
+<p>From outside the profession, this looks like excellent news. A problem has resisted generations of effort, and now a person or a machine has solved it. Pop the champagne. But mathematicians care about more than getting to the answer. They want to understand why an approach works, what new methods it yields, and what a student might learn by following it. Much of their working life consists of detours that look unproductive until they turn out to matter.</p>
+<p>On September 11, six months after that UCLA conversation, Tao and 24 other Fields Medalists, including Pierre Deligne, Peter Scholze, Maryna Viazovska, and Martin Hairer, signed a statement criticizing the direction of AI in mathematics. It emphasized understanding, the transmission of ideas, and the development of young mathematicians. It also raised concerns about proper credit for earlier work when new results are announced in a rush.</p>
+<p>It is easy to dismiss this as a profession getting defensive. But spending several months learning how to think about a problem has educational value. Sharing and collegiality may also suffer if a peer can use your ideas and AI to quickly close a gap in a proof.</p>
+<p>Still, there is an uncomfortable question for the profession: what if the machine also gets good at explaining its proofs, extending them, and proposing worthwhile new questions? What does the division of labor look like then?</p>
+<p>This is where the Go comparison becomes unsettling. It once seemed reasonable to concede calculation to computers while keeping intuition for ourselves. Then players began learning new intuitions from the machines’ strange moves. A task reserved for humans today may need to be reassigned tomorrow.</p>
+<p>Mathematics is much broader than a board game, and its practitioners’ objections deserve more attention. Even so, having to explain afresh every few months what your particular contribution is must get tiring.</p>
+<h3>Programmers felt it first, but the kernel specialist is still at work</h3>
+<p>Mathematicians could also turn to programmers to see what the future holds.</p>
+<p>On September 14, Shengyu Liu, an engineer at the Chinese AI lab DeepSeek, published an essay about saying goodbye to his craft. Liu came through Peking University’s Turing program in computer science and captained its student supercomputing team. He had just delivered a key attention kernel, a specialized routine that helps DeepSeek V4.1 run efficiently on GPUs. His colleagues have a nickname for him that translates roughly as “the kernel wizard.”</p>
+<p>Liu’s work involves getting down to the level of individual GPU instructions: finding out why execution stalls, deciding where data should sit, and squeezing out a little more speed. It demands considerable skill, and being good at it can be addictive. Everyone else thinks a piece of code is already as fast as it can get. You find a way to make it faster.</p>
+<p>He expects AI to match or exceed his ability to write these kernels within six months to a year. There is some dark comedy here. The better he makes the code, the faster the models run, and the sooner they may master his craft.</p>
+<p>Should he ease off? He has considered that too. But slowing down his own work would do nothing to slow down the models at other labs. So he keeps writing kernels, while bringing AI agents into the process.</p>
+<p><b>The revealing part of his essay is that he does not expect to become unemployable.</b> He believes he can learn new tools and continue doing valuable work. What he will miss is a particular way of spending his time: sitting quietly with a piece of code, finding an approach nobody else has tried, and finally watching it run faster.</p>
+<p>He may end up supervising more agents, delivering more kernels, and making his employer very happy. He may also have fewer opportunities to spend an afternoon doing the thing that drew him to the job.</p>
+<p>Telling him that productivity is improving would be an odd form of consolation. He is the one improving it.</p>
+<h3>Who is next?</h3>
+<p>Silicon Valley reads these stories with a different kind of interest. If mathematics and GPU kernels are within reach, what else is?</p>
+<p>There is a technical reason to ask. Go has wins and losses. A mathematical proof, once formalized, can be checked by a system such as Lean. A kernel’s speed can be measured and its correctness tested. When a machine can reliably assess how well an attempt worked, it has a much better basis for trying again. Parts of programming and chip design offer similar conditions. Progress in biology and materials science is harder to extrapolate, because physical experiments take time and money.</p>
+<p>AI companies have another reason to care: some of these tasks help them build the next generation of AI. A model can optimize code, improve training, and assist with research on its successors. That is the prospect behind recursive self-improvement, or RSI. <b>A batch of math papers does not by itself establish that such a process is underway.</b> But Liu’s daily work gives the idea a more concrete form.</p>
+<p>Call it going the way of Go. A field keeps advancing, its practitioners remain at work, and gradually everyone gets used to looking to a machine to see how well the job can be done. People learn from it and use it to do more. When colleagues meet, “What are you working on?” may soon need a follow-up: “Which model are you using?”</p>
+<h3>Google is back in the game</h3>
+<p>The choice of model is becoming less predictable. A few months ago, much of the investor conversation about Google concerned who was leaving. Jeff Dean departed, and Demis Hassabis stepped back from running DeepMind day to day. The prevailing interpretation was brain drain. Google might still sell the infrastructure and distribute the applications, the argument went, but its place at the frontier looked increasingly doubtful.</p>
+<p>We were early to argue that the reorganization could be good for Google, giving it a chance to regain focus and execution speed. Gemini 4 has put the company back in the game and made the gloom look overdone. Its training run began before the reshuffle, so the result is better evidence of Google’s continuing ambition than a verdict on its new management. But a company supposedly preparing to retreat has produced a substantially stronger model.</p>
+<p>It did so on its own TPUs, the chips Google designs for machine learning. Our industry checks suggest that Gemini 4 has roughly 6 trillion total parameters, with around 500 billion active for each token it processes. Its looped architecture makes three passes through the model. We estimate that the resulting depth approaches that of a conventional model with nearly 20 trillion parameters. <b>Reusing the same weights does not create 20 trillion distinct parameters;</b> it lets the model do more computation with the ones it has.</p>
+<p>For us, the result suggests that scaling still works. A larger training effort has given Google a much stronger base model. There is considerable post-training ahead: the work that teaches a model to follow instructions, use tools and turn its underlying capabilities into something dependable. That makes Gemini 4.1 the more important release to watch. The next test is how much better the model becomes at writing code, carrying out a long task, and getting through an ordinary working day without needing to be rescued.</p>
+<p>Google’s return also changes the incentives for everyone else. We expect OpenAI, Anthropic, Google, Meta and xAI to keep investing aggressively. The leaders have positions to defend, and the challengers have gaps to close. Products such as Meta’s Muse give that competition a practical urgency. People may try a personal agent because the demonstration looks remarkable. They keep using it if it can reliably do something useful. Better models matter to retention as well as to the next leaderboard.</p>
+<p>We think this is the beginning of a new training cycle. Our estimates put the frontier race in the 20–30-trillion-parameter class, with 50–100-trillion-parameter models potentially arriving in 2027. <b>Those are estimates and forecasts, and comparisons depend on whether one counts distinct weights or the effective scale of a looped model.</b> The direction matters more than the precision of the numbers: the labs are attempting much larger training runs, requiring larger clusters and substantially more compute.</p>
+<p>That is why we have consistently been bullish on networking and optical interconnects. Adding accelerators only helps if they can exchange data fast enough to stay busy. As training spreads across larger clusters, the connections between chips become increasingly important to performance and utilization. Behind every model that appears on a laptop screen sits a growing physical system of chips, switches and fibers. With five well-funded competitors pushing ahead, we expect another substantial round of investment in that system.</p>
+<h3>What we stand to gain</h3>
+<p>Liu’s predicament offers a further reason to think the progress may continue. A faster kernel makes it cheaper to train and run a model; a more capable model may then help write the next kernel. Parts of AI research lend themselves to the same process of trying an idea, measuring the result, and trying again. The experiments can be expensive, and a gain on one test does not always carry over to the next. Still, recursive self-improvement seems a less remote prospect when the people building AI are already asking how much of their own work the next model will take on.</p>
+<p>The prospect becomes more appealing when we look beyond AI itself. We are particularly optimistic about AI for science, where a discovery can lead to a drug that works where existing treatments fail, a better material, or a cheaper way to produce energy. <b>Physical experiments and clinical trials will still take time.</b> But AI could expand the range of ideas researchers can test and help them draw on work far outside their own specialties. In May, OpenAI reported that its model had used algebraic number theory to settle a problem in plane geometry. It is the sort of connection a scientist in another field would be glad to have pointed out.</p>
+<p>Go players have had to get used to the fact that the deepest understanding of their game no longer belongs to them. They have also learned things about it that generations of human play had missed. Mathematicians may now face a similar adjustment, with other professions following. We can regret the loss of the working life Liu describes and still want to see what comes next. The discoveries could matter to people who will never read a proof or write a kernel. For someone waiting for a treatment that does not yet exist, that is a future worth hoping for.</p>
+<p><b><i>Disclaimer and Terms of Use</i></b></p>
+<p><b><i>Analyst Independence Statement</i></b></p>
+<p><i>The views expressed in this report accurately reflect the personal and independent views of the analyst(s) regarding the securities and issuers discussed herein. No part of the analyst’s compensation was, is, or will be directly or indirectly related to the specific recommendations or views expressed in this report. The Company adheres to strict compliance procedures to ensure the integrity, security, and legality of the data sources and information utilized.</i></p>
+<p><b><i>About FUNDA</i></b></p>
+<p><i>Consensus AI Technology Pte. Ltd. (the “Company” or “FUNDA”) is an independent research firm incorporated in Singapore. The Company is not affiliated with any securities dealer, investment bank, or asset management firm, nor is it registered as an investment advisor or broker-dealer in any jurisdiction. The Company does not have any investment banking or underwriting relationship with the companies covered in this report, and does not accept sponsorship or funding from publicly listed companies.</i></p>
+<p><b><i>No Investment Advice and Report Neutrality</i></b></p>
+<p><i>The contents of this report and the information contained herein are for informational purposes only and do not constitute investment advice or a basis for business decisions. The views expressed herein represent solely the personal opinions of the respective authors at a specific point in time and do not reflect the position of FUNDA. As an independently operated platform, FUNDA maintains a neutral third-party status and makes no express or implied warranties regarding the accuracy, completeness, or applicability of such views.</i></p>
+<p><b><i>No Offer or Solicitation:</b> This report does not constitute an offer, solicitation, recommendation, or advice to buy, sell, or hold any securities or financial instruments, nor does it provide any legal, tax, or accounting advice.</i></p>
+<p><b><i>Third-Party Data:</b> All third-party data cited in this report is derived from public or authorized sources. The Company makes no representations or warranties, express or implied, as to the accuracy or completeness thereof.</i></p>
+<p><b><i>Non-Participation in Decision-Making:</b> The Company does not participate, directly or indirectly, in the investment decision-making process of its clients or readers. Readers should make independent investment decisions based on their own investment objectives and financial circumstances, and consult professional financial or legal advisors prior to executing any transactions.</i></p>
+<p><b><i>Timeliness Statement</i></b></p>
+<p><i>Given the rapid changes in market environments and technological trends, this report reflects market conditions as of the date prior to its publication. Relevant information may become outdated over time. FUNDA has no obligation to update the contents of this report in real-time.</i></p>
+<p><b><i>Intellectual Property, Confidentiality, and Restrictions on Commercial Use</i></b></p>
+<p><i>All reports, data, models, and content provided by the Company constitute its exclusive proprietary intellectual property and are protected by copyright and intellectual property laws.</i></p>
+<p><b><i>Ownership of Rights:</b> Unless otherwise expressly stipulated in a written agreement, all intellectual property rights (including copyrights) arising from or relating to this report are exclusively owned by the Company.</i></p>
+<p><b><i>Authorized Use:</b> Institutional clients may use this report internally within the scope permitted by their internal compliance policies; however, disclosure or sharing with any third party is strictly prohibited.</i></p>
+<p><b><i>Prohibition on Commercial Use:</b> Without the prior express written consent of the Company, no individual or entity may reproduce, republish, distribute, resell, repackage, or otherwise use this report or any part thereof for any commercial or profit-making purpose.</i></p>
+<p><b><i>Legal Recourse:</b> The Company reserves the right to pursue all available legal remedies and claims against any unauthorized commercial use, redistribution, or infringement of its intellectual property rights.</i></p>
+<p><b><i>Forward-Looking Statements and Disclaimer</i></b></p>
+<p><i>This report may contain forward-looking statements, including forecasts, estimates, and analyses of industry trends. Such statements are subject to risks and uncertainties that may cause actual results to differ materially from those anticipated. The Company shall not be liable for any direct, indirect, or consequential losses arising from the use of or reliance on the contents of this report.</i></p>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,185 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.01 | AC | Materials | Supernode Bottlenecks Pt.3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.01 | AC | Materials | Supernode Bottlenecks Pt.3</h1>
+<p class="orig">原标题：超节点还能再堆一代吗｜篇三：卡住上游的是做材料的机器</p>
+<p class="tags">#materials #semicap #china</p>
+<p class="meta">AceCamp · 2026-10-01 15:44 · article 70567509</p>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>上游材料的扩产上限由什么决定；</li><li>单点设备商靠提价还是排期分配稀缺；</li><li>铜箔、电子布与载板各卡在哪台设备，缺口何时收敛；</li><li>设备国产化之后，光芯片、光纤与MLCC的卡点转向何处；</li><li>产能释放看哪些读数，收益落在哪些公司。</li></ol>
+<p class="qq">铜箔、电子布与载板的扩产上限由设备决定：表面处理机交期24到30个月，喷气织机排产至2029到2030年，载板用压膜机排到2031年。设备商按排期分配、提价克制，这使得稀缺的收益落在锁定设备配额的材料厂；设备国产化之后，卡点转向良率与认证。</p>
+<p><b>据笔者了解，日本三船制作所的高端铜箔表面处理机，全球一年只造出约8到12台。</b>根据各家公司披露统计显示，A股PCB厂商2026年公布的扩产规划合计超过800亿元，而它们需要的高端铜箔，要先排队等这几台机器。资本与设备之间的这道落差，在电子布与载板上同样存在。</p>
+<h2>一、上游材料能扩多少，由做材料的机器决定</h2>
+<p><b>上游材料的有效产能，取决于生产材料的专用设备能否到厂。</b>资本可以在一年内建好厂房、买到原料，但铜箔表面处理机、高端喷气织机、ABF真空压膜机、磷化铟外延用的MOCVD，供应都集中在少数厂商手中，这些厂商扩产态度保守，交期普遍在一年以上。设备到厂之后，还要经过配方调试、良率爬坡和下游认证，有效产能再往后推一段。这使得上游材料的扩产节奏，由设备商的排产表决定。</p>
+<p><b>设备商自身的扩产同样受零部件与熟练工约束。</b>铜箔表面处理机依赖精密导辊与电镀槽体的配套加工，高端喷气织机依赖精密零件与整机调校，压膜设备依赖真空腔体与温控系统，这些环节都需要长期积累的工艺人员。设备商即便愿意扩产，新增一条装配线也要一到两年，扩产节奏因此由设备商自身的供应链决定，买方的资本难以直接传导过去。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567509_3a6279fa79c6694a.webp" alt="" loading="lazy"></p>
+<p><b>单点设备商分配稀缺的方式是排期，价格只做有限调整。</b>丰田自动织机在今年5月停止接受高端喷气织机的新订单，选择的是停单。据笔者了解，长广精机的客户已主动提出支付溢价以换取缩短交期，这在上一轮半导体上行周期中没有出现过，而公司的分配原则是优先供给规模大、合作深并已拿到味之素ABF膜配额的载板厂；公司8月法说会的资料也显示，其合约负债半年内增加约186%，客户在用预付款锁定机台。笔者认为，单点卡口大幅提价会加快下游扶持第二供应商，按排期分配则能守住份额，这使得稀缺的租值主要落在已经拿到排期的下游厂商手中。</p>
+<p><b>单点设备商克制提价，是在权衡一次性收益与长期份额。</b>设备是一次性销售，大幅提价带来的收益只兑现一次，而一旦促使下游扶持第二供应商，失去的是之后多年的订单与服务收入。长广精机自己的发展史就是例证：它当年正是凭借一台新机型超越老牌日本设备厂，才做到今天的份额。这使得单点设备商倾向于用排期守住份额，价格上行的空间则留给了拿到排期的下游材料厂。</p>
+<p><b>这些设备卡口大多难以直接投资，价值映射落在下游与国产替代上。</b>三船制作所是非上市企业；丰田集团在2025年6月宣布以每股16300日元对丰田自动织机发起私有化要约，纺织机械只占其营收的小部分，扩产决策服从集团整体安排；长广精机2026年1月在台湾上市，长兴材料持股约六成，2025年营收约19亿新台币，体量不大，但它在全球载板用真空压膜机中的市占约95%，是一个典型的单点卡口。这使得A股投资者接触这条约束的方式，主要是锁定了设备配额的材料厂，以及在同类设备上通过认证的国产厂商。</p>
+<h2>二、铜箔：三船的表面处理机决定高端铜箔能多出多少</h2>
+<p><b>铜箔的卡点在HVLP4这一档，决定变量是表面处理机的交期。</b>笔者在中测算，中性假设下HVLP4月需求约3000吨，有效供给约2000吨，2026到2028年的缺口维持在三到四成；表面处理机八成以上出自三船，交期24到30个月，德福科技的订单已排至2028年。存量产线改做HVLP4同样受限：由HVLP1切换到HVLP4，产出要缩水三到四成，锂电铜箔产线的改造又受阴极辊幅宽约束。据笔者8至9月的产业调研，HVLP铜箔的加工费年初以来上涨约三成，价格的上行反映的正是设备交期造成的有效供给缺口。</p>
+<p><b>铜箔的窗口期长度，由海外新增产能的投产时间表确定。</b>据公司公告，三井金属台湾厂在2026年3月与9月分别把月产能提升至600吨与720吨，马来西亚新厂要到2031年才投产；金居开发云林三厂2027年一季度起投，满产后月增600吨要等到2027年四季度。三船设备在2027到2028年陆续到厂之后，HVLP4的缺口才会开始收敛，这意味着铜箔厂的超额收益窗口大致对应2026到2028年，与设备交期的长度基本一致。铜箔厂能分到这段收益，原因在于它握有设备排期：覆铜板厂想要高端铜箔，只能找已经排上三船设备的铜箔厂，而铜箔厂在谈判时可以把设备的稀缺转化为加工费的上涨。</p>
+<p><b>生箔段阴极辊已实现国产替代并平稳出货，决定数量的瓶颈依然集中在表面处理段。</b>目前国产阴极辊技术已相当成熟，交期大幅缩短，生箔设备的国产化采购通道顺畅。但在高端HVLP铜箔领域，产业依然面临双重门槛：阴极辊精度与电镀配方决定能否做出这一等级，属于资格；表面处理设备的交期与等级切换良率决定能做多少，属于数量。前一道工序的设备供应已趋于充沛，后一道的表面处理机仍需排队，导致HVLP4的实际增量主要取决于三船设备的到货节奏。这表明分析设备约束时需按工序拆解，前后工序的国产化进展差异显著。</p>
+<h2>三、电子布：织机限制的是产量，T-glass的价格由日东纺决定</h2>
+<p><b>织机约束的是织造量，直接受影响的是普通布与超薄布。</b>据调研，丰田高端喷气织机的交期为18到24个月，排产已到2029到2030年。同样生产1亿米，厚布约需450台织机，极薄布约需1300台；国产织机在7628上的替代率已达六到七成，7628价格仍由约4元/米涨到11到12元/米。布越薄，所需织机越多，超薄布的扩产节奏随之跟着丰田的交付走。织机约束在价格上的体现是普通布的持续涨价：7628的国产织机替代率已高，价格仍然上涨，说明决定价格的是整体织造产能的松紧，单台织机的来源影响有限。</p>
+<p><b>特种布的价格顶点，由日东纺的定价决定。</b>笔者分析，日东纺在T-glass仍缺货时主动暂停追加提价、以扩产维持份额，公司在5月即表示不再上调T-glass价格、转向加速扩产，福岛新布厂投资约150亿日元，全部用于T-glass时产量约为当前的三倍；织机决定的是价格见顶之后回落的节奏。单点卡口在缺货时停止提价，是本文判断的一个直接例证：它用产能与排期守住份额，把价格上行留给了下游的配额争夺。</p>
+<p><b>两岸已披露的特种布扩产，可计入T-glass有效供给的只是一小部分。</b>按公司公告，中材科技4月披露三个新项目合计9400万米，其中低介电与超低损耗低介电布合计5900万米；国际复材8月调整募投后为年产2513万米低介电一代与二代布；两家以米数披露的特种布扩产合计约1.19亿米，笔者估计其中可计入T-glass的不到三成。这使得T-glass的供给增量，在2027年之前主要取决于日东纺自身的扩产节奏。</p>
+<h2>四、载板：长广精机的压膜机排到2031年，先拿到膜的配额才能排上机器</h2>
+<p><b>封装载板的设备卡口，在ABF膜的真空压膜机上。</b>据笔者了解，长广精机90吨三段式真空压膜机的订单交期已由2028到2029年延长至2031年，2022到2025年四年累计出货约600台。估算显示，按其满产节奏推算的在手订单约1500台，约为这一累计出货量的2.5倍。产能方面，公司8月法说会披露，日本子公司Nikko-Materials的月产能正由18台提升到28台；日本产能约占集团的八成半，据此推算，集团年产能将升至约400台，另有日本新厂计划2029年投产。</p>
+<p><b>压膜机的分配以ABF膜配额为前提，两道配额串联。</b>味之素在积层膜领域的份额超过95%，笔者在中梳理，味之素岐阜第三基地2028年动工、2032年投产，2023到2030年ABF累计投资250亿日元，而且味之素自己只做清漆，涂布、裁断与仓储都外委，膜的扩产同样取决于外委涂布线；国产积层膜产线约一年可以建成，认证则要走约一年半。载板厂要扩产，先要拿到味之素的膜，再凭这份配额排上长广精机的机器，新增产能的落地时间以两道配额中较晚到位的一道为准。笔者判断，载板厂的扩产需要提前两到三年同时锁定膜与设备，签约节奏本身就把载板的扩产周期拉长到了三年左右。载板的低膨胀芯板同样用到日东纺的T-glass，电子布与载板两条链条在日东纺处交汇，日东纺的扩产节奏同时影响两者。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567509_731f2b3f5bf8cd92.webp" alt="" loading="lazy"></p>
+<p><b>载板设备排到2031年，意味着先进封装的约束有一部分藏在载板上。</b>台积电CoWoS的供需缺口正在收窄，这一点将在本系列第五篇展开；但每颗加速器所需的载板面积与层数仍在上升，而压膜设备的交期已排到2031年。笔者判断，封装环节的约束会从晶圆级封装产能逐步转移到载板与积层材料上，时间上晚于CoWoS缺口的收敛。</p>
+<h2>五、光芯片、光纤与MLCC：设备国产化之后，卡点转向良率与认证</h2>
+<p><b>设备国产化之后，瓶颈会迁移到良率与认证。</b>据笔者8至9月的产业调研，磷化铟外延用的MOCVD由Aixtron占约七成、Veeco约两成，新订单交期超过14个月，到厂后还需3到4个月调试。上游的7N红磷则是另一种情形：多晶设备约两个月即可交货、三个月内投产，国内通过认证、能稳定商用的7N有效供给约45到50吨，追赶窗口约两年。设备买得到的环节，约束落在纯度与认证上。晶圆尺寸是另一条提效路径：Coherent在8月的电话会上表示，其6英寸磷化铟产线的器件产出为3英寸的四倍以上、单颗成本不到一半，设备数量不变而产出放大，是外延产能扩张的主要方式。国产MOCVD方面，中微公司等厂商的设备以氮化镓与LED为主，磷化铟外延仍主要依赖进口设备。</p>
+<p><b>光纤与高端MLCC的约束同样落在建设周期与良率上。</b>按行业通行口径，预制棒新产线从设备采购到量产出棒通常需要18到24个月，拉丝塔需要数十米高的专用厂房与深基坑地基，这部分时间难以用资本压缩。MLCC方面，据调研了解，高精度流延机由日本厂商主导，交期约16个月，叠层机约一年，高温烧结炉在10个月以上，国内设备商目前能做中低端机型；AI服务器对高容MLCC的需求抬升与这组交期同时发生，高端MLCC的扩产节奏同样由设备与介质膜片良率决定，高端介质粉体也由日本厂商主导，设备与粉体两道约束叠加在同一条产线上。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567509_fe93d6e243dfb6f3.webp" alt="" loading="lazy"></p>
+<h2>六、投资含义：收益落在锁定设备配额的材料厂</h2>
+<p><b>对“超节点还能再堆一代吗”这一问题，上游材料侧给出的答案是：堆得出来，放量节奏由设备到厂决定。</b>下一代机柜需要的HVLP4铜箔、超薄电子布与高层数载板，技术上都已具备量产条件，差别在于能供应多少。三船表面处理机在2027到2028年陆续到厂，丰田织机排产至2029到2030年，载板用压膜机排到2031年，这使得再堆一代在材料上可行，但前两年的出货节奏受设备台数约束，高端材料的价格与配额会一直偏紧，直到设备到位。</p>
+<p><b>判断上游产能何时释放，看设备到厂台数与认证节点。</b>铜箔看三船设备在2027到2028年对德福科技等厂商的到货进度，以及国产表面处理机能否在HVLP4上通过头部客户的连续批量认证；电子布看日东纺福岛新厂的爬坡与丰田织机的到厂台数；载板看长广精机的产能扩充与合同负债变化；光芯片看MOCVD到厂后的外延试产进度与7N红磷的认证数量。另外两个读数值得同步跟踪：一是日东纺暂停提价的状态能否维持，二是长广精机客户为缩短交期支付的溢价是否继续扩大，前者反映单点卡口的定价克制，后者反映排队位置本身的价格。任何一个环节的国产设备通过头部客户认证，都会让该环节的租值窗口提前关闭。直接的读数仍是设备商自己的交期表：三船与丰田的交期若缩短到一年以内，意味着设备约束开始松动。</p>
+<p><b>上游的租值落在锁定了设备配额的材料厂，以及通过认证的国产设备商。</b>德福科技的HVLP弹性取决于三船设备的到货与良率，铜冠铜箔的看点在份额兑现，两者赚的都是设备交期造出的窗口期；泰金新能对应生箔段设备的国产替代，收入随铜箔行业整体扩产，覆盖范围超出AI高端铜箔。电子布方面，宏和科技的关键变量是能否在日东纺福岛新厂满产之前进入头部客户的指定清单；中国巨石的特种电子布尚未形成收入，利润仍由普通布价格决定。光芯片方面，云南锗业的磷化铟衬底与三安光电的6英寸外延，价值取决于认证进度与现金承诺；长飞光纤受益于预制棒到光纤的垂直整合。国产设备商一侧，泰金新能与中微公司的机会取决于各自设备能否进入高端材料产线，时间上晚于材料厂的窗口。</p>
+<p><b>上行风险来自需求继续上修而设备商维持保守扩产。</b>若AI服务器对HVLP4与超薄布的需求继续上修，而日本设备商维持现有扩产节奏，锁定配额的材料厂的窗口期会延长到2028年以后。</p>
+<p><b>下行风险来自窗口提前关闭或需求回落。</b>若国产表面处理机或高端织机提前通过头部客户认证，或日本设备商启动激进扩产，窗口会提前关闭；若终端需求回落，此前签下的锁量长约反而会成为材料厂的负担。</p>
+<p><b>以上内容不构成任何投资建议，请风险自担。</b></p>
+</div>
+</main>
+</body></html>

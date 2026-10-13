@@ -1,0 +1,618 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.09.29 | FUNDA | Hardware | Wistron AI Server Ramp &amp; Bottlenecks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.09.29 | FUNDA | Hardware | Wistron AI Server Ramp &amp; Bottlenecks</h1>
+<p class="orig">原标题：纬创 — AI 服务器放量经济效益与交付瓶颈</p>
+<p class="tags">#hardware #datacenter</p>
+<p class="meta">Funda · 2026-09-29</p>
+<div class="body">
+<p>DELL</p>
+<p>Expert · Executive, Leading AI server ODM Leo Guest</p>
+<h2>Summary</h2>
+<ul><li><b>Vera Rubin 量产仍取决于第二次试产</b> — 据该行业专家回忆，第一次试产出现严重问题，第二次试产仅完成 PCB 制造和元器件插装，功能测试、长期可靠性测试及客户正式批准仍未完成。其个人判断是，戴尔 L10 批量交付很可能较原定排期推迟数周、或落到 2026 年 10 月内，且原出货预测因硬件、软件和散热调通问题而难以实现。</li><li><b>AI 服务器出货规模估计</b> — 据该行业专家估计，纬创 2026 年 AI 服务器出货量约 22 万台，全球市占率约 8%。该数字混合了GB200、GB300 及少量 Rubin，并非单一配置。</li><li><b>北美制造本地化路线</b> — 据该行业专家回忆，弗里蒙特团队曾负责对接北美一级超大规模数据中心客户、协调核心零部件供应及整机交付。纬创曾希望从亚洲制造模组的北美最终组装，逐步扩展至北美PCB采购、表面贴装和整机制造；初步技术能力已经具备，主要限制是更高成本及客户是否愿意承担。</li><li><b>利润率口径未获澄清</b> — 该行业专家给出的是未拆分的全流程口径，访谈者引用的则是 L10 分阶口径、且水平明显更低。该行业专家随后将其口径解释为从 L0 到出货的全流程口径，但双方未澄清折旧摊销在毛利率与净利率中的处理，分阶利润率的具体水平也未提供。</li><li><b>GB300 整机价格区间较宽</b> — 基于该行业专家此前兼顾采购和客户对接的职责，戴尔 GB300 整机报价存在一个大致的平均水平、且区间较宽。配置差异、L10 或 L12 交付、客供料或非卖模式、海运或空运、北美生产、采购量及高带宽内存交付变化都会影响价格，纬创曾按季度复核价格。</li><li><b>Dell份额计划主动下降</b> — 据该行业专家估计，纬创目前在戴尔通用服务器和存储设备代工中仍占大头，且有意在 2027 年主动下调该份额。其所述策略是保留高出货量和高利润率项目，并放出需要更低报价、更长账期或更长保修的订单。</li><li><b>客户类型决定采购经济性</b> — 在超大规模云项目中，客户通常直接向 Nvidia 订购 CPU 和 GPU，因此这些部件不进入纬创的报价和成本。高带宽内存由 Nvidia 指定供应商与价格，纬创形式上下单并掌握返利和激励后的实际价格；传统品牌客户项目则采用买卖模式。</li><li><b>零部件缺货的成本影响不一</b> — 该行业专家将高带宽内存和 PCB 列为较明显的紧缺项目，此前覆铜板和载板也曾缺货。MLCC 价格有时上涨百分之十几或20%，且仍在上涨，但长期协议限制了纬创承受的涨幅，而该部件占整体物料清单成本的比例仍较小。</li><li><b>电力不足导致服务器延迟交付</b> — 据该行业专家观察，超大规模云服务商自建数据中心自 2026 年第二季度前后开始因规划电力不足而严重延期。客户有时会将整机系统交付推迟数周，可能的解决方案包括自建电厂、电池备用单元及柴油发电机。</li><li><b>L10客户范围不止戴尔和惠普</b> — 该行业专家称，戴尔和惠普是 L10 大批量出货中规模最大的两家客户，宏碁、华硕和联想的系统也处于开发流程。其任职期间，Dell L10组装曾为独家供应，但纬创宁愿让出部分份额，也不愿在价格、保固或付款条件上过度让步。</li><li><b>戴尔仍居于 neocloud 客户与制造商之间</b> — 据该行业专家回忆，CoreWeave 和 Lambda 等客户逐步直接与原始设计制造商沟通技术要求，但价格仍由戴尔经手，并按 3%、5%、8% 或 10% 等比例抽取分成。根据其个人判断，客户不太可能完全绕开戴尔，但分成比例可能随时间或项目下降。</li><li><b>Microsoft 与 Meta 主导专用芯片项目</b> — 该行业专家称，在纬创接触的四大云服务商中，微软和 Meta 目前的专用芯片出货量较大。其也确认纬创参与了微软 Maia 300 从 L6 至 L10 的环节，并称 2027-2028 年的项目策略将优先考虑高出货量或相对较高利润率。</li></ul>
+<h2>Key Takeaways</h2>
+<ul><li><b>出货兑现面临两重门槛</b> — 戴尔 L10 在第二次试产后仍须通过功能测试、长期可靠性测试和客户批准；与此同时，超大规模云服务商数据中心的电力不足又独立造成了数周的交付延期。</li><li><b>份额下降属于主动组合调整</b> — 据该行业专家估计，戴尔通用服务器和存储制造份额目前占较大比重、纬创拟于 2027 年主动下调，体现了纬创重视出货量和利润率而非独家地位的策略。</li><li><b>北美本地化取决于客户接受成本</b> — 该行业专家认为，纬创在技术上可以于北美复制亚洲的生产流程，包括 PCB 和表面贴装工序。剩余限制主要是经济性，因为即使计入亚洲运输费用，北美生产仍然更贵。</li><li><b>AI服务器经济性取决于制造与采购范围</b> — 超大规模云项目的 CPU 和 GPU 由客户直接采购，未进入纬创成本基数；品牌客户项目则采用买卖模式，而整机报价还包含材料、人工、开发、模具、折旧、物流和利润。不同模式之间的利润率并不具有直接可比性。</li><li><b>利润率数据的可比性有限</b> — 该行业专家所述的全流程毛利率口径、与访谈者引用的 L10 分阶毛利率口径，两者水平差距明显且并未得到统一解释。折旧处理在分阶段利润率间未澄清，因此两者不能视为同一口径。</li><li><b>出货估计缺少机柜口径核对</b> — 约 22 万台AI服务器的估计混合了 GB200、GB300 和 Rubin 配置。该行业专家未提供相应机柜数量或统一换算系数。</li><li><b>戴尔的中介角色仍具持续性但可能收窄</b> — 新兴云客户与制造商之间的技术沟通正转为直接进行，但价格仍须经过戴尔。该行业专家预计，戴尔在部分项目中的分成比例可能下降，但不会完全消失。</li></ul>
+<p>LE</p>
+<p>Leo</p>
+<p>您之前在这个行业经手过哪些业务？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>我当时主要有几项核心职责。第一，我负责维护北美 Tier 1 超大规模数据中心客户关系。第二，许多关键制造组件来自北美，例如 GPUs 和 CPUs，而 HBM 则由 NVIDIA 以客户提供的客供料形式直接供应。除了系统交付外，我还主要负责确保这些核心组件的供应、分配数量以及安排交付日期。</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>我曾经所在的团队也负责组装好的 AI 服务器整机何时、以何种方式交付给北美超大规模客户。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>你是否了解该公司弗里蒙特和普莱诺这两个厂，各自的分工大概是怎么划分的？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>公司加州厂建立得比较早，也相对陈旧，产能比较小；后续会向其他地方扩建，比如德州或其他地区。当然，主要客户的对接方面，因为所有超大规模云厂商的重要办公室都在北加州，所以我当时所在的团队这边负责对接客户关于数量、交货日程以及主要规格等需求。此外，如果客户要来审查工厂，也是由我的团队对接，大致是这么个情况。当然，其中有很多业务会逐步把一部分产能转移到北美来。这背后有很多复杂因素，比如地缘政治因素或其他考量，客户希望在当地进行组装和交付等。因此，公司会逐步稳健地扩充北美的产能。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>哦，所以弗里蒙特那边大概 L6 到 L10 都在做，是这样吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>最终的目标应该是从更前端开始，比如从 PCB 等环节切入，公司希望如果可以的话在北美完成整机制造。过去主要是从亚洲运送一些半成品或模组，北美这边只负责最终的组装、测试和交付。未来公司希望北美的功能能够对标亚洲工厂；只要在亚洲能做的，公司都希望在北美的工厂能一步步建立起来，包括最前端比如采购 PCB 进行 SMT 贴片等工序。公司在北美已经初步具备了这部分的生产能力。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>Vulcan 是什么板子？我想知道它对应的是哪一款板卡，比如它是 HGX 吗？具体搭载的是哪一款芯片？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>无法当场回答的部分，我会在会后整理并跟进会议中未解答的问题。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>Viking 和 Umbrel 这两个有什么差别？具体来说，它们的 B200、B300 这两个板有什么差异？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>同一个系列的产品基本上都是前代机种的延伸。比如之前的 H100、H200，接着是 B200、B300；代号首位字符相同，代表是旧机种的延伸，所以既有相似之处，也有差异。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>我想了解这两个型号有什么不同。因为我看到该公司列了 Viking 和 Umbrel 这两个不同的代号，名称不一样。不过我觉得应该差异不大，毕竟 Viking 的量并不大。另外，关于 Strata 板卡，该公司分了 L6 900 和 PFG，这里的 PFG 是指半成品吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>对。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>所以那个 PFG 是供该公司自己组装 L10 使用的，对吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>是的，这么说是合理的。目前，尤其是在北美，公司尚不具备完整的整机系统端到端制造能力。换句话说，目前许多零部件、半成品和模块仍在亚洲生产，然后运往北美工厂进行最终组装。当然，公司最终希望将目前在亚洲开展的所有生产工序都转移到北美。成本确实会更高，但如果客户愿意为此买单，从技术上讲，公司完全可以从PCB阶段开始在北美本地采购。因此，目前剩下的主要障碍基本上就是价格。除此之外，凡是在亚洲能够完成的生产环节，基本上都可以在公司的美国工厂复制，而目前该工厂已初步具备了这样的能力。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>了解。所以比如 Strata L6 900 板卡，应该是该公司生产的 Strata 主板用于外供、卖给外部客户的？目前是该公司和鸿海各做一半吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>对，是这样。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>PFG 就等于说是该公司出货给戴尔、CoreWeave 自己要做 L10 组装时，把那一块留给自己用，是这样吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>对的。公司外供的部分分为两种：一种是整机，另一种是模块。大致是这样一个状态。因为有些模块属于低敏感度且具有通用共享性质，在取得客户理解的前提下，公司目前也可以外供半成品或模块。鸿海的情况也是一样，他们部分半成品同样可以外供，并不局限于整机。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>我这里还有四个代号，您可以讲一下您了解的情况，分别是 Neutrino、Fangio、Scout 和 Delta。这四款板子分别对应什么？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>虽然公司面向不同客户和平台，目前有 Nvidia、AMD 和 ASIC，但最大的差异在于主板架构。主板搭配不同的 CPU、GPU、HBM 组合，对应不同客户和世代。Nvidia 方面有 Blackwell，后续切换到 Rubin、Rubin Ultra，这是很大的变化。但在同一个世代和平台内，公司尽量实现平台共享、客户共享，而不是为每个客户重新设计主板。否则首先是成本问题，其次平台划分越多、越细、越复杂，物料管理就越困难。因此，无论面对不同的大型云厂商，还是同时承接大型云厂商和 HP、Dell 等 OEM 业务，公司都希望尽量实现平台和资源共享，最大化共用 BOM 物料。</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>这是公司的构想，也已经在实施。不同客户、不同世代的平台不可能有完全相同的 BOM，但可以尽量提高共用程度。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>ASIC 方面该公司现在主要在做哪一家的案子？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>ASIC 方面，公司做比较多的是微软和 Meta 的。不过严格来说，这四大云服务商公司都有接触，而且都是公司的既有客户。只是单纯以出货量来看，目前做得比较多的是微软和 Meta。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>微软的 Maia 和 Meta 的 MTIA，也就是 Santa Barbara 那款，不是都在广达做吗？我记得 L6 不都由广达负责吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>对，公司现在讲的是整机部分，另外往后看 2027、2028 年的需求预测，公司的考量是不同的 ASIC 项目在数量和利润率上各有不同。因此策略上，公司希望优先承接两类项目：第一是走量的，第二是利润率相对较好的。目前大概是这样一个考量。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>所以该公司现在确定已经拿下了微软的具体哪个案子吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>对，微软和 Meta 的案子都有拿到。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>微软 Maia 300 的案子，是拿到了 L10，还是 L6、L10？具体是哪一个级别？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>对，是的。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>意思是 L6 到 L10 都拿下了？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>对。</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>其实情况是这样：客户并不希望公司全包。他们希望自己保留一部分，比如像 L12，客户一直非常希望留给自己做。但从公司的角度，肯定是希望能多做就尽量多做，因为包揽的工序越多，单价和营收就越高。在这一点上公司和客户的想法不太一致，客户会非常坚持至少把 L12 这类保留在自己手里；但作为 ODM，公司的想法当然是最好能从 L0 一直包揽到 L12。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>不过 ASIC 这块跟我的认知有些出入。因为对于 Meta，我一直了解的是他们找天弘和广达在做，比如 Santa Barbara 以及后来的 Apollo 项目。那该公司现在从 Meta 拿到的是哪一颗芯片或哪一个案子？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>具体细节我也需要调取 BOM、SKU 和型号名称。如果你想了解更详细的信息，我可以做进一步拆解。在不违反保密要求的前提下，我会尽量提供稍微详尽一些的说明。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>北美客户戴尔的部分，您对那边可能比较了解，方便聊聊戴尔吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>戴尔是纬创几十年的老客户。最近比较受关注的是服务器，包括非 AI 和 AI 服务器。戴尔的单价、SKU 和 BOM 成本等无法跟大型云厂商相比，但毕竟合作了几十年，对于他们的需求，公司会在能力范围内尽量支持。不过公司会挑项目，不是所有案子都接，要看有没有量、利润率怎么样。如果只是来压价，拿公司跟鸿海比价，公司就不太愿意，因为跟鸿海比成本很困难。公司会评估某个戴尔项目是否符合公司典型的目标客户类型，再决定接不接。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>纬创现在帮戴尔做 L10 组装，按照我的理解，它应该是独家供应，对不对？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>对。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>所以这个情况到明年会改变吗？因为有听到像仁宝可能也想要进来做二供，不知道该公司那边怎么看？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>对，因为戴尔在台湾的供应链，大概叫得出名字的基本上都认识，而且也都在合作当中。如果有新的ODM想通过拼价格或其他条件来跟公司抢单，公司目前的策略是会放出一部分份额，不会想要全吃。因为全吃的代价是要压低报价、改变保固条款，付款账期也会被拉得很长，这不符合公司当前的策略。所以只要是需要拼价格、拉长账期或延长保固的订单，基本上公司会适度放一些量给同业。这里的竞争对手其实不仅包括仁宝，像和硕或者其他厂商现在都很有兴趣抢这种单。从出货量来看，无论是通用服务器还是AI服务器，他们都属于新进入者，而公司深耕得更久，所以他们想从公司这里抢一些订单也是合理的。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>目前戴尔明年的预测大概会落在什么区间？比如以GB300和Vera Rubin来说，他们现在的量大概在什么水平？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>大概来说，我上次看到的数字差不多在几万台到几十万台之间。当然，如果你需要更精确、准确度更高的数据，我可以调另一个版本给你，说明公司针对GB200、Rubin甚至是后续的Rubin Ultra，如何规划2027年和2028年的产能。在合理合规的限度内，也可以就明后年出货的分配方向提供方向性说明。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>我看您的背景似乎偏向工程、架构方面，而不是供应链管理或需求规划。所以聊的方向是要聚焦在整体架构上吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>我最初确实是研发背景出身，但后期负责两个领域：一是供应链管理，二是对接Tier 1客户，比如超大规模云服务商、北美OEM或是新型云服务商（neoclouds），这些是我目前对接比较多的客户群体。所以我实际上兼具采购与销售两端，一方面需要对接GPU、CPU、HBM等上游供应商，另一方面也要对接超大规模云厂商以及戴尔、惠普等北美大型OEM客户。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>纬创的的公开渠道也会提到今年戴尔大概的订单量，我们主要用于财务模型估算。所以大致是一万多柜还是两万柜。目前 Vera Rubin 的研发制造进度如何？L6 板卡已经拿到或生产了吗？L10 组装的状况怎样？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>在 EVT、DVT、PVT、目前进行的试产和即将开始的量产过程中，公司确实遇到了一些阻力。测试、验证和组装发现了意料之外的 bug，目前正在积极调试。其中可能有硬件、软件、散热等方面的问题，会影响整体进度和原本的出货预测。今年只剩最后三个月，以目前情况看，达成那一版预测数字的可能性恐怕不高，因为调试很耗时间。物料已经采购进来，也有必须交付的数量目标。出货量下滑会影响财务报表，说得更直接一点，也会影响股价，这些环环相扣。目前确实遇到了一些棘手的调试问题。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>那目前对该公司影响最大的是什么，或者说现在的进度具体到了哪个阶段？如果是针对L10系统，该公司目前是在DVT还是PVT？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>现阶段的情况应该这样说：公司处于第二次试产。严格来讲，第一次试产出现了比较严重的问题，因此客户要求公司进行第二次试产，也就是重新跑第二轮。第二轮的预期是大部分主要bug基本上都能解决完毕。不过目前第二轮仍在进行中，PCB 制板已经完成，元器件插装也完成了，但后续流程尚未进行，比如功能测试以及长期可靠性测试都还没做。必须等这些测试全部完成、验证通过并获得客户正式批准之后，公司才会进入量产阶段。目前的进度大致是这样。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>公司目前量产的目标时间大概定在什么时候？希望给戴尔交付第一批产品是在什么时候？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>很可能要较原定排期推迟数周，或落到 10 月内了。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>较原定排期推迟数周、或落到 10 月内。这是 L10 整机系统的交付时间，对吧?</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>对。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>回到客户划分的问题。该公司跟纬颖的分工是这样切分的吧：OEM客户归该公司，超大规模云服务商归纬颖。所以该公司目前主要的客户应该就只有戴尔和惠普。惠普的订单量是不是相对少一些，没有那么多？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>对，戴尔的量比较大。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>所以该公司直接对接的客户，先不谈最终终端客户，在AI服务器这一块主要就是戴尔和惠普吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>不止这两家。只要是叫得出名字的品牌，比如宏碁、华硕、联想、美超微，包括一些新型云服务商客户都有。只要纬颖接单后做不出来或开发不出来——毕竟纬颖在组织规模和资源上都没法跟纬创相比——如果接单后缺乏开发或生产能力，有时就会转交给纬创来做。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>但那些是部件级别的（比如L6），比如向他们提供基板。我指的是L10整机系统，已经做成系统的客户目前都有谁？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>大批量出货的毫无疑问是戴尔和惠普，这两家肯定是量最大的。但前面提到的宏碁、华硕、联想等，其实也都在开发流程中了。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>所以纬创也为联想出L10系统吗？也就是Vera Rubin架构的L10系统。</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>对，但你也清楚联想的情况比较敏感，所以公司不能采用较先进的或者美国政府管制的AI芯片去生产。针对中国市场，无论是英伟达还是AMD，都会提供所谓的特供版、特规版或降规版AI芯片，专供中国市场使用。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>但有消息称联想已经拿到相关许可，他们的 Vera Rubin 项目已经可以开始做了。</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>如果是销往北美、欧洲、日本或韩国市场，那完全没有问题。但如果最终整机是要交付给中国客户在中国境内使用，甚至是在中国大陆的工厂投产，根据目前掌握的信息，这仍然属于禁止范围之内。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>那我们聊一下戴尔那边现在的利润率大概是怎样的？就是L10的利润率。</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>戴尔方面，我知道的也是未拆分的口径，针对整机AI服务器，没有细拆L7是多少、L8是多少，当然这后续可以进一步拆分。目前戴尔这块业务在公司标准毛利率口径下大体维持在一个相对稳定的水平。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>这个毛利率水平，算高的吗?</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>这是毛利率；如果是净利率，还要按另一套口径再算。公司对毛利率的定义是：比如一件东西成本是 100，卖 110，毛利率就是 10%。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>这里的成本是包含了物料、人工和折旧吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>对，包含所有的成本。比如BOM成本、开发费用、工厂折旧摊销，甚至连良率损耗都算进去了；还有人工成本、模具费等等。所有只要能折算成资金的项目全都计入进去了，这被称为毛利率。净利率就是必须把折旧摊销和厂房这两块扣除掉。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>我们刚才不是已经把工厂折旧算进毛利率里面了吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>是的，但在核算净利率时，必须把这些非直接费用剔除掉。因为客户其实看得到我的厂房是新是旧、是哪一年建的、总共要摊销多少年，这些客户都能看到。所以严格来说，客户在某种程度上对毛利率和净利率是看得见的。客户唯一看不到的是，比如人工成本加价了多少、模具费加价了多少，这些他是看不到的。比如我实际上投入了三名电子工程师（EE engineer），但向他报价投入了五名，这他也看不到。但其他大部分成本他是看得到的。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>但如果把工厂折旧拿掉，不就意味着净利率应该更高吗？因为成本降低了，如果是拿掉的话，净利率难道不应该更高吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>不是这样的。在核算净利率时，必须剔除这种非直接产生的费用。因为严格来说，比如厂房使用8年、10年还是20年，整个生产台数是500万台还是800万台，公司更清楚。虽然我在这里面掺的水分并不多，但严格讲起来，我必须把所有这些项目全部计入，才是我的真实成本。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>所以净利率是全包、把所有成本都算进去，而毛利率没有全包？因为我们从该公司 IR（投资者关系/发言人）那里获取的数据显示，L10 的毛利率处于明显更低的水平。听起来那个更低的数字是不是更接近公司所谓的净利率?</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>我刚才提到的毛利率口径，是指整机全制程，从L0阶段一直到出货阶段，比如当前出货L10或未来出货L11，把每一道关卡发生的所有成本全部计入，这才是公司在计算毛利率时的标准公式。净利率则是另一套公式。而在计算成本时，发生的每一分钱都会完整计入。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>所以这样计算可能会在 L6 部分重复计算，因为 L6 是自供的。把全部算进去是 9.5%，但会计准则不能重复计算同一笔项目。因此拆出 L10，就需要单独看 L10 的利润率，对吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>可以。不只是 L6，即使从 L1 一直拆到 L10，各阶段产生的利润率是多少，公司也有数据。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>定价方面，现在把 GB300 的 L10 卖给戴尔，大概是什么价格区间？我是指一层、一个 GB300 计算托盘。</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>是指整台 GB300 AI 服务器，对吗？不是拆分到 L10？</p>
+<p>LE</p>
+<p>Leo</p>
+<p>该公司现在是出 L10，但装在机柜里交给他们，对吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>对，公司对外基本上是整机报价，不是逐项报板子、线缆、开发、模具多少钱。各项数字都有，对外是一整包，包括人工、研发费用、服务和保固，报一个总价。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>所以现在 GB300 整机出给戴尔，大致是什么价格区间？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>这个范围有点大。差距来自几种不同的报价方式。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>所以是客供料（consignment）和buy-and-sell模式的区别吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>对，因为有些东西是客供料。如果只需要很粗略的概念，可以说整机报价有一个大概的平均水平，但该水平会随内存等零部件价格变动。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>报价到了这个量级？是内存涨价之后吗？原本似乎没那么高。</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>最低可能也要接近此前区间的高位。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>对，我印象中大概也是这个量级。</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>还有其他变动因素，内存是其中之一。另外，哪些东西包含在内、哪些不包含，也会使报价区间很大。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>所以纬创交给戴尔的产品有很多种出货规格？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>对，L10 或 L11 出货会影响成本，交付条件也会影响。现在主流出货将近一半走空运，另一半走海运。还有一个较大的变动因素是，有些客户开始要求北美当地生产、当地交货，这会稍贵一些。亚洲生产即使加上运费，仍比北美生产便宜。因此不同交付方式对应一个报价区间。采购量也有关系，买得多会给一点折扣，但不多。HBM 和其他零部件的价格都在变动，不过 HBM 的影响比较大。</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>虽然涨价涨得凶，可是因为本身单价低，所以影响并不大。比如说MLCC和PCB，虽然也涨得厉害，但毕竟它们的成本无法跟HBM这种价格变动巨大的零部件相比。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>这家公司的内存全部都是buy-and-sell模式吗？也就是它向Nvidia采购整颗芯片，再把整颗芯片卖给该公司这样？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>HBM是这样的：如果是大型云厂商的项目，是由 Nvidia 出面采购的，准确地说是 consign vendor、consign price，但订单是由公司发出的。为什么？因为公司采购的内存总量肯定比 Nvidia 多得多。公司在下单时具有一定优势，能够把其他项目采购内存的量累计起来打包统包，最后争取到一个折扣。因为公司还有PC、智能手机等很多其他产品都会用到内存，所以 Nvidia 采购的价格其实没有公司便宜。最终订单是由公司这边开出，货物也是交付到公司这里进行组装。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>这样他们就看不到实际价格，那公司是不是就有空间可以多赚一些利润？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>他们能看到的只是表面价格。但公司每个季度或每个月累计了多少采购量，后续能拿到多少返利和激励，这些是 Nvidia 看不到的。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>所以本质上仍然算是客供料模式？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>可以这么说，没错。因为向谁采购、采购多少数量、按什么价格，基本上都由 Nvidia 事先敲定，公司只是在形式上配合跟进开出订单而已。但真实的成交价，也就是扣除返利和激励之后的价格，只有公司自己掌握，Nvidia 是看不到的。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>与其他 ODM 相比，这种模式是所有 ODM 通行的做法，还是只有该公司采用 consignment？因为据我了解，很多其他 ODM 采用的都是 buy-and-sell。</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>如果是大型云厂商的项目，HBM 都是由 Nvidia 统一处理的。但如果是传统 OEM 的项目，比如戴尔、惠普、宏碁、华硕，这些就确实是你说的 buy-and-sell 模式。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>这跟我之前的理解不太一样。我原先以为大型云厂商都是 buy-and-sell，虽然不确定资金流是否走他们自己，但最终是无法额外多赚利润的，因为价格全都被锁死了。但听起来该公司似乎还有空间可以操作调整。</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>比如说 CPU、GPU 这类核心部件，实际上都是大型云厂商直接向 Nvidia 下单，然后送到公司工厂来进行系统设计与组装。因此公司在报价和核算成本时，严格来说并没有把这些部件计入其中。这就是为什么按这种计算方式，AI服务器的毛利率其实还不如非AI服务器高，因为非AI服务器是由公司全权掌控所有零部件的采购。但对于AI服务器，只要是大型云厂商的项目，CPU 和 GPU 基本上都是大型云厂商直接向 Nvidia 下单，再由 Nvidia 交付到公司工厂。当然，芯片级组装可能是在台积电完成，将所有元件做好集成在一块基板上，包括 HBM 也封装上去，之后送到公司工厂，公司最终负责整机设计与组装，流程是这样的。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>公司有向戴尔调涨过价格吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>公司基本上每季度复核一次报价，因为很多物料都在变动，不只是 HBM。部分 PCB 缺料，MLCC、ABF 载板和光学器件也是主要的变动成本。公司按季度复核，再拆到各个月份，三个月的价格可能不同，单是 BOM 成本就是很大的变动因素。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>我们可以简单谈一下 BOM。公司采取的是成本加成的定价方式，也就是说成本构成中包括 BOM 加上 MVA，还有什么？折旧？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>主要有几大部分。BOM，也就是材料成本，占很大一块。此外，公司还会收取人工、开发、模具以及 NRE 等费用。</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>还有厂房和设备的折旧或摊提。开发过程中，也会为项目购买专用治具、模具及其他物品。此外还有一些较小的费用，例如公司大部分是门到门交付，会产生运费、清关费和物流费用。最后再加上利润率，报价主要由这些部分构成。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>戴尔最近股价涨非常多，我们觉得应该主要是通用服务器那边的需求非常好。公司有帮他们做通用服务器的哪个环节吗？或者公司在他们那里的市场份额大概是多少？从 L6 到 L10 大概是如何区分的？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>应该这样讲，戴尔跟纬创集团配合的产品其实非常多。服务器公司跟他们合作了很久，应该算排名前两大的服务器 ODM 代工厂。现在的情况是，公司在策略上不想跟他们绑得太死，因为他们是一个蛮会杀价的客户。所以公司在策略上会把一些利润率比较低或者没有量的案子适当地放出去，让他们找其他的 ODM 厂商做。公司只守住比较有量和高利润率的这两大块。公司不想做他们独家的非 AI 服务器供应商，这不是公司长远追求的目标。因为现在产能有限，工程资源也有限，所以不会像以前那样，戴尔塞什么案子给公司都接。以前确实是有赚没赚的案子全都接，现在策略改变后，公司会守住利润率和最小起订量，量太少的案子基本上就不太想碰了。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>所以大概能估算一下，目前在他们出货的通用服务器或存储设备中，由纬创代工的部分大概处于什么样的量级吗?</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>我推测来估计的话，今年2026 年可能大约还有 60%-70%，但明年的目标应该是要降下来，降到 50%-55%，甚至更低一点。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>比例到了这个水平。那他们剩下的可能就是找仁宝代工吧？仁宝是不是有帮他们做?</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>仁宝，另外也许鸿海或广达也有可能。因为广达跟戴尔也合作很久了，大概有 25 到 30 年了。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>那公司出货他们通用服务器是出到 L 几？主要出 L6 还是 L10？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>策略上公司虽然想全包，但客户不同意，所以可能暂时会集中在 L6 到 L10 这一块。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>公司代工出货的部分能分得清 Dell 是出给 CoreWeave 还是出给 SpaceX 吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>可以区分，因为不同终端客户的软件不一样。除非是特殊情况，否则戴尔向公司拿货时，公司能分辨最终交付给谁。公司有这个能力，firmware 也是公司做的。</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>对，software、firmware、BIOS 那些东西都看得出来他最终要出到哪里去。因为它也不想拿公司的半成品去再加上自己的东西，搞得公司 ODM 根本不知道要出到哪里去，他觉得没有必要。首先公司跟他合作比较久，其次公司都签了 NDA 或其它文件，这些都会充分保护他，所以基本上他后面的客户是谁公司都知道。公司跟谁拿货、零部件这些，其实他也都知道。他唯一比较不知道的是，比如我的 BOM，买 HBM 或买什么东西公司加价多少，他要不是没看到，要不就是睁一只眼闭一只眼，但其他东西公司基本上对他都是透明的。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>之后也请帮忙拆分终端客户的占比。您提到负责供应链，目前哪些零部件缺料最严重？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>除了 HBM，PCB 的缺料也逐渐明显，之前有 CCL 的问题，载板也曾经缺货。MLCC 现在涨价很厉害，涨百分之十几、二十的都有，比如公司向村田采购的 MLCC 就有很大的涨幅。但它们毕竟是低单价、批量采购的零部件，摊到 BOM 成本中的百分比并不明显。目前明显缺料和涨价的主要是这些。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>我们有看到说 MLCC，比如那些高容的 MLCC，大概下半年或第四季度还会再涨价吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>会，它还在涨价当中，还在涨。只是作为 Tier 1 客户，公司被涨的幅度算是比较小的，因为公司跟供应商有 LTA 的保护。他们不能涨得太凶，也不能不出货给公司，毕竟公司的采购量还是比较大的。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>我想请教一下 HGX 的 UBB，也就是下面那块大基板。</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>公司两个都做。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>我记得纬创几乎是独供，鸿海可能有一点份额。看鸿海那边 HGX 的 R200——纬创 UBB 的量比它 OAM 的量大很多。这是交期的关系吗，也就是纬创 UBB 出货与它产出 OAM 之间有时间差？这个时间差大概多久？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>这个时间差通常差不多在四到五周左右。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>所以该公司做完大板子后，他们四到五周之后做完模组，再插上去组装到 L10，大概是在四到五周之后，是吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>其实他们那边本身的组装并不耗时间，但组装完成后还需要做测试、验证以及一些调整等等，比较花时间的是那个部分。比如像开关机测试以及老化测试，这些环节比较耗时。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>您最近有看到数据中心延期的情况吗？比如 SpaceX 的需求非常好，他们在建数据中心有看到延期吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>现在的延期主要是数据中心端的问题。因为他们当初做规划时，没有跟电力公司等部门做好沟通，导致电厂周边目前的供电存在一定比例的缺电状况。这导致客户在提货时出现延期。目前的替代做法是客户必须自己投资建设电厂，或者采购备用发电机、BBU、柴油发电机等来解决供电问题。公司这边的物料短缺公司自己可以把控，但客户那边缺电公司就无能为力了。一旦他们缺电，就算公司把货送过去他们也没法用，因为没有电根本无法开机。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>所以这对纬创有影响吗？纬创目前有被延期交付吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>会的，客户会通知公司某个数据中心项目因为缺电，整机系统可能需要延后几周交付。这种情况大约从今年第二季度就开始出现了。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>所以主要是 SpaceX 还是 CoreWeave？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>不是的，主要都是大型云服务商自建数据中心的项目，这些项目延期得非常严重。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>但纬创不是没有大型云厂商客户吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>因为公司跟纬颖之间有一些合作，所以理论上大型云厂商案子是纬颖在接。但它接单之后，能够自己设计、自己组装的就自己做；做不来的还是会转交到公司这里来。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>可是它NV平台那边的客户不就只有马来西亚一个，然后是 Oracle？但 Oracle 后来好像也没了。它现在还有什么做 Nvidia 的大型云厂商客户？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>并不是很多，但还是有的，比如谷歌或者AWS。虽然这不是主力，但它依然有在做。因为这些大客户都不希望过度集中在某一家 ODM，否则那些 ODM 有时就会摆架子，不肯降价，或者产生其他问题。因此在策略上，现在大型云厂商也是尽量将供应链分散，也就是每家大型 ODM 都分配一点份额，大概是这样的考量。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>这跟我之前的认知有些差距，因为我的理解是纬颖几乎没有在出英伟达的产品，应该主要都是 ASIC，比如 Trainium，或者其他类似芯片……</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>从占比上来说，ASIC 确实是大头，没错。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>戴尔在新型云服务商领域的需求很强劲。我的理解是，neocloud 不像大型云厂商那样拥有自己的工程团队，所以更倾向于采购戴尔的全套方案，尤其在通用服务器方面，将软件、固件、硬件打包，不必自己配备团队对接 ODM Direct。2013、2014 年互联网时代也有类似情况：戴尔最初在通用服务器市场份额很高，后来逐渐被 ODM Direct 取代。您认为 neocloud 的需求也会转向 ODM Direct，从 OEM 手中取得更多份额吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>最开始的模式是，戴尔带着neocloud客户（例如 CoreWeave 或 Lambda）一起来找公司 ODM 谈项目。最终由公司 ODM 负责设计和组装，将产品交付给戴尔，再由戴尔交给 neocloud 客户。但后来发现这种沟通效率相当低，因为戴尔仅仅是将 neocloud 的需求收集起来转交给公司；公司完成后，再将测试报告或方案提案交给戴尔，由戴尔转交给 neocloud。换句话说，戴尔并非没有价值，但他更多扮演的是“信使”的角色，在产品或功能本身所增添的实际价值并不多。他更大的价值可能仅在于品牌叫“戴尔”，因而要抽取3%、5%甚至10%的提成。后来公司采用了一种改进模式：戴尔象征性地让背后的 neocloud 客户直接与 ODM 对接洽谈，包括规格、功能、需求、软件以及BIOS等全部由双方直接敲定。那戴尔做什么呢？戴尔就是抽取一定百分比的分成。毕竟客户确实是由戴尔引入的，而且有戴尔的品牌价值背书，所以双方约定抽取3%、5%、8%等比例。但在技术沟通和产品设计方面，已经逐渐转为 neocloud 直接对接 ODM 沟通洽谈。唯一敏感且不能直接谈的就是价格，价格仍由戴尔经手转手，从中赚取固定的提成比例。目前大致演变成了这样一种新的沟通模式。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>Neocloud 以后有机会绕过戴尔吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>不太可能。首先，公司跟戴尔之间，也不算默契，毕竟大家合作几十年了。第二，针对这件事公司有一些协商，不会让 neocloud 100% 直接对接 ODM。毕竟这个客户是 Dell 带进来的，就算戴尔扮演的是转售商或分销商，也有其价值所在。所以不太可能完全绕开戴尔，只是它抽佣的比例可能会随着时间和项目逐步下调，这是有可能的，但不会彻底绕过它。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>以纬创本身、不包括纬颖来看，明年的预算大致情况出来了吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>你是说，这家公司明年预计要做多少出货量的大致状况是吗？</p>
+<p>LE</p>
+<p>Leo</p>
+<p>营收或者出货量，还有毛利率目标大致落在什么区间。</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>我目前手头的数字显示，比如今年的 AI 服务器出货量是 22 万台，全球市占率大约 8%。至于明年的量，我可以整理一个更详细的版本，拆分为 AI 服务器与非 AI 服务器，以及明年平均利润率水平的方向性预估，这些是可以整理的。虽然我不确定这是否属于公开信息，但业界普遍都清楚各家明年预估的出货量、对应哪些客户、以及平均利润率大概在什么水平，我也能看到其他厂商的数据。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>您刚才提到的 22 万台，是不分 AI 和非 AI 的总量吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>这是 AI，仅指今年的 AI 服务器。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>噢，纯 AI。那 22 万台的单位是机架还是 compute tray？比如若是 GB 系列，我是不是需要除以 18？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>对，如果要拆成 GPU 的数量，就需要乘以一个数字。</p>
+<p>LE</p>
+<p>Leo</p>
+<p>我除以 18 大概折合 12,000 个机柜。如果按每柜 GB300 来算就是 12,000 柜，这个数字大致准确吗？</p>
+<p>EX</p>
+<p>Expert · Executive</p>
+<p>当然，这里面是混合配置的，包含 GB200、GB300，甚至还有一小部分 Rubin 等等，实际情况是这样的。</p>
+</div>
+</main>
+</body></html>
