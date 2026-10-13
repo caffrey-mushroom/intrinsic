@@ -109,6 +109,8 @@ a.row:hover::before{opacity:1}
 .tagbar button:hover{color:var(--text)}
 .tagbar button[aria-pressed="true"]{color:var(--text); border-bottom-color:var(--slate-500); font-weight:600}
 .tagbar .c{color:var(--faint); margin-left:3px; font-weight:400}
+.tagbar.src{margin-top:var(--s2)} .tagbar.src + .tagbar{margin-top:6px}
+.tagbar .lb{font-size:12.5px; color:var(--faint); padding:4px 0; margin-right:-6px; letter-spacing:.02em}
 .count{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s2)}
 .row .tags span{cursor:pointer}
 .row .tags span:hover{text-decoration:underline; text-underline-offset:3px}
@@ -131,6 +133,7 @@ a.row:hover::before{opacity:1}
 
   <div class="filter">
     <input class="q" id="q" type="search" placeholder="#标签 或关键词，如 #memory" aria-label="搜索 notes" autocomplete="off">
+    <div class="tagbar src" id="srcbar" role="toolbar" aria-label="按来源筛选"></div>
     <div class="tagbar" id="tagbar" role="toolbar" aria-label="按标签筛选"></div>
     <div class="count" id="count"></div>
   </div>
@@ -8404,41 +8407,50 @@ a.row:hover::before{opacity:1}
 <script>
 (function(){
   var rows=[].slice.call(document.querySelectorAll('#notes .row')), q=document.getElementById('q'),
-      bar=document.getElementById('tagbar'), cnt=document.getElementById('count'), active=null;
+      bar=document.getElementById('tagbar'), sbar=document.getElementById('srcbar'), cnt=document.getElementById('count'), active=null, src=null;
   function esc(s){return s.replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]});}
-  // read each note's tags, turn them into clickable spans
-  var counts={};
+  // read each note's tags (clickable spans) and its source code from the kicker "date · SRC · sector"
+  var counts={}, scounts={};
   rows.forEach(function(r){
     var el=r.querySelector('.tags'), tags=el.textContent.trim().split(/\s+/).map(function(t){return t.replace(/^#/,'').toLowerCase()}).filter(Boolean);
     r._tags=tags; r._text=r.textContent.toLowerCase();
+    r._src=((r.querySelector('.kick')||{}).textContent||'').split('·')[1]; r._src=r._src?r._src.trim():'';
     el.innerHTML=tags.map(function(t){return '<span data-t="'+esc(t)+'">#'+esc(t)+'</span>'}).join(' ');
     tags.forEach(function(t){counts[t]=(counts[t]||0)+1});
+    if(r._src) scounts[r._src]=(scounts[r._src]||0)+1;
   });
   var tags=Object.keys(counts).sort(function(a,b){return counts[b]-counts[a]||a.localeCompare(b)}).slice(0,24);
-  bar.innerHTML='<button type="button" data-t="">全部<span class="c">'+rows.length+'</span></button>'+
+  bar.innerHTML='<span class="lb">主题</span><button type="button" data-t="">全部<span class="c">'+rows.length+'</span></button>'+
     tags.map(function(t){return '<button type="button" data-t="'+esc(t)+'">#'+esc(t)+'<span class="c">'+counts[t]+'</span></button>'}).join('');
+  var order=['AC','TB','GP','9K','Substack','FUNDA','SA'];
+  var srcs=Object.keys(scounts).sort(function(a,b){var i=order.indexOf(a),j=order.indexOf(b);i=i<0?99:i;j=j<0?99:j;return i-j||scounts[b]-scounts[a]});
+  sbar.innerHTML='<span class="lb">来源</span><button type="button" data-s="">全部<span class="c">'+rows.length+'</span></button>'+
+    srcs.map(function(t){return '<button type="button" data-s="'+esc(t)+'">#'+esc(t)+'<span class="c">'+scounts[t]+'</span></button>'}).join('');
 
   function apply(){
     var s=q.value.trim().toLowerCase(), words=s.split(/\s+/).filter(Boolean), n=0;
     rows.forEach(function(r){
-      var ok=(!active||r._tags.indexOf(active)>=0) && words.every(function(w){
-        return w.charAt(0)==='#' ? r._tags.some(function(t){return t.indexOf(w.slice(1))===0}) : r._text.indexOf(w)>=0; });
+      var ok=(!active||r._tags.indexOf(active)>=0) && (!src||r._src===src) && words.every(function(w){
+        return w.charAt(0)==='#' ? (r._tags.some(function(t){return t.indexOf(w.slice(1))===0}) || r._src.toLowerCase()===w.slice(1)) : r._text.indexOf(w)>=0; });
       r.hidden=!ok; if(ok) n++;
       [].forEach.call(r.querySelectorAll('.tags span'),function(sp){sp.classList.toggle('on',sp.dataset.t===active)});
     });
     [].forEach.call(bar.querySelectorAll('button'),function(b){b.setAttribute('aria-pressed',String((b.dataset.t||null)===active))});
+    [].forEach.call(sbar.querySelectorAll('button'),function(b){b.setAttribute('aria-pressed',String((b.dataset.s||null)===src))});
     document.getElementById('empty')&&(document.getElementById('empty').hidden=rows.length>0);
-    cnt.textContent=(active||s)?('显示 '+n+' / '+rows.length+' 篇'):('共 '+rows.length+' 篇');
-    var u=new URL(location.href); u.search=''; if(active) u.searchParams.set('tag',active); if(s) u.searchParams.set('q',q.value.trim());
+    cnt.textContent=(active||src||s)?('显示 '+n+' / '+rows.length+' 篇'):('共 '+rows.length+' 篇');
+    var u=new URL(location.href); u.search=''; if(src) u.searchParams.set('src',src); if(active) u.searchParams.set('tag',active); if(s) u.searchParams.set('q',q.value.trim());
     history.replaceState(null,'',u);
   }
   function setTag(t){active=(t&&t!==active)?t:null; apply();}
+  function setSrc(t){src=(t&&t!==src)?t:null; apply();}
   bar.addEventListener('click',function(e){var b=e.target.closest('button'); if(b) setTag(b.dataset.t);});
+  sbar.addEventListener('click',function(e){var b=e.target.closest('button'); if(b) setSrc(b.dataset.s);});
   document.getElementById('notes').addEventListener('click',function(e){
     var sp=e.target.closest('.tags span'); if(!sp) return; e.preventDefault(); setTag(sp.dataset.t); window.scrollTo({top:0,behavior:'smooth'});
   });
   q.addEventListener('input',apply);
-  var p=new URLSearchParams(location.search); if(p.get('tag')&&counts[p.get('tag')]) active=p.get('tag'); if(p.get('q')) q.value=p.get('q');
+  var p=new URLSearchParams(location.search); if(p.get('tag')&&counts[p.get('tag')]) active=p.get('tag'); if(p.get('src')&&scounts[p.get('src')]) src=p.get('src'); if(p.get('q')) q.value=p.get('q');
   apply();
 })();
 </script>
