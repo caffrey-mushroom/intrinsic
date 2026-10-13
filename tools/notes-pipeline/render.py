@@ -1,7 +1,7 @@
 """Write note pages + update notes/index.html and the home Notes block (handover sec. 5/7).
 usage: render.py <repo_root> <records.json> <meta.json>   (meta: [{id,name,sector,tags}])
 """
-import os, re, sys, json, html
+import os, re, sys, json, html, shutil
 repo, rec_f, meta_f = sys.argv[1:4]
 recs = {r['id']: r for r in json.load(open(rec_f))}
 meta = {m['id']: m for m in json.load(open(meta_f))}
@@ -22,6 +22,17 @@ def kebab(name):
 tpl = open(f'{repo}/notes/2026-09-29-ac-supernode-bottlenecks-pt-2/index.html', encoding='utf-8').read()
 head = tpl[:tpl.index('<title>')] + '<title>{title}</title>' + tpl[tpl.index('</title>') + 8:tpl.index('<body>') + 6]
 
+# PDF-sourced notes (FUNDA/SA) embed the original PDF instead of extracted text
+PDF_CSS = '''<style>
+.pdfwrap{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.pdfbar{display:flex; gap:var(--s3); font-size:13.5px; margin-bottom:var(--s2)} .pdfbar a{color:var(--muted)}
+.pdfwrap iframe{display:block; width:100%; height:calc(100vh - 120px); min-height:640px; border:var(--hair); background:#fff}
+.pdfwrap .note{font-size:13px; color:var(--faint); margin-top:var(--s1)}
+</style>'''
+PDF_BODY = ('<div class="pdfwrap"><div class="pdfbar"><a href="doc.pdf" target="_blank" rel="noopener">在新窗口打开 PDF</a>'
+            '<a href="doc.pdf" download>下载</a></div><iframe src="doc.pdf#view=FitH&amp;toolbar=1" title="PDF 原文"></iframe>'
+            '<p class="note">手机浏览器若只显示第一页，点上面"在新窗口打开 PDF"。</p></div>')
+
 existing = set(d for d in os.listdir(f'{repo}/notes') if os.path.isdir(f'{repo}/notes/{d}'))
 new_rows = []
 for i, r in sorted(recs.items(), key=lambda kv: (kv[1]['date'], kv[1].get('time', ''))):
@@ -40,15 +51,20 @@ for i, r in sorted(recs.items(), key=lambda kv: (kv[1]['date'], kv[1].get('time'
         if r.get('article'):
             mt += f" · article {r['article']}"
     title = f"{d} | {r['src']} | {sector} | {name}"
-    page = head.replace('{title}', E(title)) + '\n' + '\n'.join([
+    is_pdf = r['path'].lower().endswith('.pdf')
+    h0 = head.replace('</head>', PDF_CSS + '</head>') if is_pdf else head
+    body = [PDF_BODY] if is_pdf else ['<div class="body">', r['body'], '</div>']
+    page = h0.replace('{title}', E(title)) + '\n' + '\n'.join([
         '<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>',
         '<main class="page">',
         f'<h1>{E(title)}</h1>',
         f'<p class="orig">原标题：{E(r["orig"])}</p>',
         f'<p class="tags">{E(tags)}</p>',
         f'<p class="meta">{E(mt)}</p>',
-        '<div class="body">', r['body'], '</div>', '</main>', '</body></html>', ''])
+        *body, '</main>', '</body></html>', ''])
     os.makedirs(f'{repo}/notes/{slug}')
+    if is_pdf:
+        shutil.copyfile(r['path'], f'{repo}/notes/{slug}/doc.pdf')
     open(f'{repo}/notes/{slug}/index.html', 'w', encoding='utf-8').write(page)
     row = (f'    <a class="row" href="./{slug}/">\n      <div>\n'
            f'        <div class="kick num">{d} · {r["src"]} · {E(sector)}</div>\n'

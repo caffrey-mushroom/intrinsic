@@ -6,6 +6,7 @@ Sources and codes: AC (AceCamp, incl. the `acecamp 2/` mirror), TB (Third Bridge
 9K (MeritForum + top-level `YYMMDD - Merit ...` audio transcripts), Substack (incl. top-level copies
 not yet in `Substack/`), FUNDA (`Funda/` md + pdf, slug prefix `funda`, meta `Funda · date`),
 SA (`SemiAnalysis/` pdf, slug prefix `sa`, meta `SemiAnalysis · date`).
+PDF-sourced notes (FUNDA/SA) embed the original as `doc.pdf` in an iframe (render.py copies it from the record `path`); md-sourced FUNDA notes stay as text.
 Not published: FactSet, Tegus, VIC, 医药周报, own expert calls (`(audio)` files), research-output.
 
 1. Stage the window's source files from the Knowledge Base into `<kb>` (same relative layout).
