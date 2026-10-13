@@ -7,6 +7,12 @@ from md2html import md_to_html, pdftext_to_html
 
 kb, repo, since, new_since, times_f, out_f = sys.argv[1:7]
 ac_times = json.load(open(times_f)) if os.path.exists(times_f) else {}
+# AceCamp publish times also come from any staged mirror files
+for _p in glob.glob(f'{kb}/acecamp 2/*/*.md'):
+    _h = open(_p, encoding='utf-8', errors='replace').read(800)
+    _a = re.search(r'articleId:\s*(\d+)', _h); _t = re.search(r'时间:\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2})', _h)
+    if _a and _t:
+        ac_times.setdefault(_a.group(1), _t.group(1))
 _CONF = re.compile(r' \d+(\.md)$')
 class _Conf:
     # a Nutstore conflict copy is "name N.md" whose sibling "name.md" exists
