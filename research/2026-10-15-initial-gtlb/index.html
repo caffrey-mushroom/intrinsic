@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.15 | Initial Review | GitLab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Noto+Serif+SC:wght@500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+
+:root{--gray-250:#BFBFBF}
+
+/* GitLab initial review additions — Rota v2 shell; charts: single series slate-500, context slate-100 + ink outline */
+.tags{font-family:var(--sans);font-size:13.5px;color:var(--slate-500);margin:6px 0 2px;letter-spacing:.01em;word-spacing:.35em}
+.layout{display:grid;grid-template-columns:220px minmax(0,912px);gap:56px;justify-content:center;max-width:1240px;margin:0 auto}
+.layout .page{margin:0;max-width:none;min-width:0;padding-left:0;padding-right:0}
+.side{position:relative}
+.side-in{position:sticky;top:calc(env(safe-area-inset-top,0px) + 32px);max-height:calc(100vh - 64px);overflow-y:auto;padding:var(--s6) 0 24px}
+.side-t{font-size:12px;letter-spacing:1.5px;color:var(--muted);margin:0 0 14px 12px}
+#tocnav{display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--rule)}
+#tocnav a{display:block;white-space:pre;overflow:hidden;text-overflow:ellipsis;text-decoration:none;color:var(--muted);font-size:13.5px;line-height:1.5;padding:6px 12px;margin-left:-1px;border-left:1px solid transparent}
+#tocnav a:hover{color:var(--text)}
+#tocnav a.l3{padding:3px 12px 3px 24px;font-size:12.5px}
+#tocnav a.l3[hidden]{display:none}
+#tocnav a.on{color:var(--text);border-left-color:var(--text)}
+#tocnav a.l2.cur{color:var(--text)}
+.page h2[id],.page h3[id]{scroll-margin-top:24px}
+@media (max-width:1100px){.layout{display:block}.side{display:none}.layout .page{margin:0 auto;max-width:var(--page-w);padding-left:var(--s3);padding-right:var(--s3)}}
+@media (max-width:760px){.layout .page{padding-left:var(--s2);padding-right:var(--s2)}}
+
+table.t td.l, table.t th.l{text-align:left; white-space:normal}
+table.t td.wrap{white-space:normal; min-width:180px}
+.tg{font-size:12px; font-weight:600; white-space:nowrap}
+.tg.v{color:var(--text)} .tg.p{color:var(--slate-600)} .tg.t{color:var(--muted); font-weight:400; font-style:italic}
+.tg.e{color:var(--slate-500)}
+.formula{font-size:13.5px; background:var(--soft); border-radius:var(--radius); padding:var(--s2); margin:var(--s2) 0; overflow-x:auto; white-space:pre; line-height:1.7}
+.one{margin-top:var(--s2); padding-left:var(--s2); border-left:2px solid var(--slate-300); max-width:72ch}
+.two{display:grid; grid-template-columns:1fr 1fr; gap:var(--s4); margin-top:var(--s2)}
+.two h4{font-family:var(--sans); font-size:var(--fs-body); font-weight:600; margin:0 0 var(--s1)}
+.two ul{margin:0; padding-left:1.2em} .two li{margin:.35em 0}
+.chart-wrap{margin-top:var(--s2)}
+.chart-wrap svg text{font-family:var(--sans)}
+.src{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.calc{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s2) var(--s3); margin-top:var(--s2)}
+.calc label{display:block; font-size:var(--fs-note); color:var(--muted)}
+.calc input{width:100%; font:inherit; font-size:var(--fs-body); color:var(--text); background:var(--bg); border:var(--hair); border-radius:var(--radius); padding:6px 10px; margin-top:4px; font-variant-numeric:tabular-nums}
+.calc-out{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s3); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.calc-out .l{font-size:var(--fs-note); color:var(--muted)}
+.calc-out .v{font-family:var(--serif); font-weight:500; font-size:32px; line-height:1.15; font-variant-numeric:lining-nums tabular-nums; margin-top:4px}
+.verdict{margin-top:var(--s3); padding:var(--s3) 0 var(--s3) var(--s3); border-left:2px solid var(--navy)}
+.verdict p{margin:0 0 .6em; max-width:72ch} .verdict p:last-child{margin:0}
+.sources{font-size:var(--fs-note); color:var(--muted)} .sources li{margin:.25em 0}
+@media (max-width:760px){
+  .two{grid-template-columns:1fr}
+  .calc{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .calc-out{grid-template-columns:1fr}
+}
+.fix{margin-top:var(--s3); padding:var(--s2) 0; border-top:var(--hair); border-bottom:var(--hair); font-size:13.5px}
+.fix b{font-weight:600}
+.fix ul{margin:var(--s1) 0 0; padding-left:1.2em} .fix li{margin:.3em 0}
+</style>
+</head>
+<body>
+<div class="layout"><aside class="side" aria-label="目录"><div class="side-in"><div class="side-t">目录</div><nav id="tocnav"></nav></div></aside>
+<main class="page">
+
+<h1>2026.10.15 | Initial Review | GitLab</h1>
+<p class="tags">#gtlb</p>
+<p class="meta">v1 · 内部 · 在 2026.10.15 Primer 基础上深化 · 复查 2026.12 (Q3 FY27 财报之后)</p>
+<p class="meta">股价 $53.16 (2026.10.14 收盘) · 最新已报季度 Q2 FY27 (截至 2026.07.31，2026.09.01 发布；财年截至每年 1 月 31 日) · 下次财报 Q3 FY27，预计 12 月初 (日期未公布)</p>
+
+<p class="summary">GitLab 是一家按人头卖“软件流水线”的公司，正在试着改成按用量收钱，现价已经把这次转型的基本情景算进去了。$53 的股价约等于卖方平均目标价 $55.7，对应 FY28 一致预期收入 5.8 倍、我们估算的 FY28 non-GAAP EPS 约 50 倍；扣掉股票薪酬，公司几乎不产生自由现金流。值得 deepdive，因为答案会在未来两个季度的用量收入里出现；现价不建议追，合理区间 $39–70，$45 以下更舒服。</p>
+
+<div class="kpis">
+  <div class="kpi"><div class="l">Q2 FY27 收入</div><div class="v">$286M</div><div class="n"><span class="ar up">▲</span>21% YoY，高于指引中值 4.9%</div></div>
+  <div class="kpi"><div class="l">按用量收费的承诺收入</div><div class="v">$40M</div><div class="n">Q1 末 $15M，年底目标 &gt;$100M</div></div>
+  <div class="kpi"><div class="l">FY26 自由现金流 − SBC</div><div class="v">$5M</div><div class="n">FCF $219.6M，SBC $215.0M</div></div>
+  <div class="kpi"><div class="l">EV / FY28E 收入</div><div class="v">5.8x</div><div class="n">EV $7.6B，一致预期 $1,310M</div></div>
+</div>
+
+<div class="fix">
+<b>和 Primer 相比，这一版核实和改动了什么</b>
+<ul>
+<li>Q2、Q3 FY26 收入指引已对原文：$226.0–227.0M、$238.0–239.0M (各季 8-K)，和 Primer 一致；补上了当时的 EPS 指引 $0.16–0.17、$0.19–0.20</li>
+<li>FY24 期末 NRR 是 <b>130%</b> (FY24 8-K)，不是 Primer 转引 Guggenheim 的 133%；FY25 是 123%，已对原文</li>
+<li>Q2 FY27 的 $14.0M 极狐 (JiHu) 付款，8-K 写明是“与极狐成立相关的非经常性付款”，对应成立时税款的最终结算 (同季还确认了 $3.5M 间接税和 $5.9M 所得税的相关收益)。公司把它从调整后 FCF 里加回；不加回的话 Q2 经营现金流是 <b>−$3.1M</b></li>
+<li>同业倍数改成按当天股价和一致预期自己算，并补上 FY28、FY29 一致预期 (MarketScreener)</li>
+<li>新发现一处冲突：极狐 FY27 费用，财报幻灯片写约 $15M，电话会记录写约 $50M，列入 deepdive 待核实</li>
+</ul>
+</div>
+
+<section class="sec">
+<h2>Follow-up</h2>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">跟踪项 · 时间点</th><th class="l">为什么跟踪</th><th class="l">结果意味着什么</th></tr></thead>
+<tbody>
+<tr><td class="l wrap"><b>Paid CRR (按用量的承诺收入)</b><br>Q3 财报 (12 月初)、Q4 财报 (2027 年 3 月)</td><td class="l wrap">管理层目标年底 &gt;$100M，Q2 末 $40M。这是“AI 让 GitLab 多收钱”唯一能直接量的数，也决定它能不能被当成用量公司估值</td><td class="l wrap">Q3 到 $65M 以上、年底过 $100M：FY28 收入有机会比一致预期高 3% 左右，估值倍数可能上移。Q3 低于 $55M：用量故事要往后推一年</td></tr>
+<tr><td class="l wrap"><b>Q3 FY27 收入 vs 指引 $281–283M</b><br>12 月初财报</td><td class="l wrap">Q2 超指引 $13M，靠的是创纪录的大单和首单。Q3 指引比 Q2 还低，管理层假设下半年订单回到正常水平</td><td class="l wrap">超过 $292M (超 3.5% 以上)：Q2 不是一次性。只超 1–2%：大单集中，账面增速会掉到十几</td></tr>
+<tr><td class="l wrap"><b>美元净留存率 (NRR)</b><br>每季</td><td class="l wrap">FY24 末 130%，此后每季下降，Q2 FY27 117% 是 2024 年以来第一次环比没降</td><td class="l wrap">回到 120% 以上：老客户在 AI 时代愿意多付钱。跌破 115%：AI 让企业少招开发者的担心在兑现</td></tr>
+<tr><td class="l wrap"><b>Non-GAAP 毛利率</b><br>每季，全年指引 85–87%</td><td class="l wrap">FY25 91% → Q2 FY27 86.5%。管理层说是 SaaS 占比上升，不是 AI 推理成本</td><td class="l wrap">稳在 86% 左右：解释成立。跌破 84%：用量业务在吃毛利，用量收入的价值要打折</td></tr>
+<tr><td class="l wrap"><b>GitHub 的定价和打包</b><br>Microsoft 每季财报、GitHub Universe</td><td class="l wrap">GitHub Copilot 也已改成按用量计费。GitLab 最贵的 Ultimate 版靠安全和合规功能卖，GitHub 若把同类功能和 Copilot 打包降价，升级逻辑受压</td><td class="l wrap">GitHub 继续单独收费：GitLab 有价格空间。GitHub 打包降价：Ultimate 增速 (约 35%) 会先受影响</td></tr>
+<tr><td class="l wrap"><b>SBC 占收入比例与股本</b><br>每季</td><td class="l wrap">Q2 为 26% (含重组)。这是 non-GAAP 利润和股东真实所得之间的差</td><td class="l wrap">降到 20% 以下且总股本继续减少：利润质量改善。继续 25% 以上：non-GAAP EPS 高估股东所得</td></tr>
+</tbody></table></div>
+</section>
+
+<section class="sec">
+<h2>1. 行业科普</h2>
+<div class="prose">
+<p><b>一句话：</b>软件公司写代码像工厂造东西，GitLab 卖的是这条“软件流水线”：代码放在哪、谁改了什么、改完自动跑测试、扫安全漏洞、审批后发布上线。行业叫 DevOps，加上安全叫 DevSecOps。</p>
+<p>以前这条流水线由很多小工具拼起来：存代码用 GitHub 或 Bitbucket，自动化用 Jenkins，安全扫描用 Snyk 或 Checkmarx，存安装包用 JFrog。GitLab 的卖点是一个产品全包，企业少管几家供应商，审计时只看一套记录。</p>
+<p><b>空间多大。</b>真正已经发生的收入比 TAM 小得多：</p>
+<ul>
+<li><span class="tg v">实际数据</span> GitLab FY26 收入 $955M，管理层说年化收入已超过 $10 亿</li>
+<li><span class="tg v">实际数据</span> GitHub (Microsoft) 2024 年 7 月披露整体年化收入 $20 亿。2026 年 1 月 Microsoft 披露 Copilot 付费订阅 470 万，同比约 +75%；之后 Copilot 改为按用量计费。Copilot 的绝对收入从未单独披露 (二手整理，未逐条对 Microsoft 原文)</li>
+<li><span class="tg v">实际数据</span> JFrog TTM 收入 $6.0 亿；Atlassian TTM $65.7 亿，但大部分来自 Jira / Confluence，Bitbucket 只是一小块</li>
+<li><span class="tg t">管理层口径</span> GitLab 过去给过约 $400 亿的 TAM (未核实最新口径)。这是“所有开发者、安全人员都按 GitLab 价格付费”的终端市场价值，不是它能收到的钱。几家主要平台今天加起来的实际收入约 $50 亿 (估算)</li>
+</ul>
+<p><b>钱怎么分。</b>开发者数量上 GitHub 远大于 GitLab，开源项目几乎都在 GitHub。GitLab 的地盘是受监管的大企业和政府，它们在意能装在自己机房 (self-managed)、权限和审计一体化。2024 年以后，新增的钱主要流向 AI 写代码工具 (Copilot、Cursor、Claude Code、OpenAI Codex)，这一层 GitLab 不占优。GitLab 在电话会上只说“我们仍然只有一个主要对手”，没有点名 GitHub。</p>
+</div>
+
+<h3>竞争格局</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">阵营</th><th class="l">玩家</th><th class="l">模式</th><th class="l">对 GitLab 的威胁</th></tr></thead>
+<tbody>
+<tr><td class="l">一体化平台</td><td class="l wrap">GitHub (Microsoft)</td><td class="l wrap">代码托管 + Actions + Advanced Security + Copilot，能和 Azure / M365 一起打包，Copilot 已改按用量</td><td class="l wrap"><b>最大。</b>分发和 AI 都领先，大企业谈判时常被拿来压价。GitLab 说自己在赢单率上占优，理由是对手的稳定性和安全问题 (管理层口径)</td></tr>
+<tr><td class="l">一体化平台</td><td class="l wrap">Atlassian (Bitbucket + Jira)</td><td class="l wrap">项目管理强，代码托管弱</td><td class="l wrap">中等。Jira 用户多，Bitbucket 份额在流失</td></tr>
+<tr><td class="l">AI 写代码</td><td class="l wrap">Cursor、Claude Code、OpenAI Codex、Copilot</td><td class="l wrap">按席位或按 token 收费，只管“写”，不存代码也不管上线</td><td class="l wrap">对 Duo (GitLab 自己的 AI) 威胁大；对存代码和流水线反而是需求来源，写出来的代码总要进某个仓库过检查</td></tr>
+<tr><td class="l">单点工具</td><td class="l wrap">JFrog、Snyk、Checkmarx、Harness、Jenkins (开源)</td><td class="l wrap">各管一环，按用量或席位</td><td class="l wrap">中等。单项上常比 GitLab 强，大客户会混用。GitLab 的制品管理进入公开测试，开始正面碰 JFrog</td></tr>
+</tbody></table></div>
+
+<h3>上下游</h3>
+<div class="prose">
+<ul>
+<li><b>客户：</b>大企业研发团队，金融和政府占比高。82% 收入来自美国 (Q1 FY27 10-Q)。年付费超 $10 万的客户 FY24 955 家、FY25 1,229 家、FY26 1,571 家。一半以上的收入来自首单不到 $5,000 的客户，说明“先小单进门、再扩张”这条路走得通</li>
+<li><b>供应商：</b>GitLab.com 跑在 Google Cloud 上；AI 功能调用第三方大模型 (Anthropic、Google 等)，管理层说很多客户自己付推理费，不经过 GitLab</li>
+<li><b>渠道和伙伴：</b>AWS、Google Cloud 云市场；中国由合资公司极狐 (JiHu) 经营，GitLab 并表，目标是将来出表</li>
+</ul>
+</div>
+<p class="one">GitLab 拿的是“流水线”那一环的钱。最大那份 (开发者入口和 AI 写代码) 在 Microsoft 手里；GitLab 的赌注是 AI 写的代码越多，流水线这一环越值钱。</p>
+</section>
+
+<section class="sec">
+<h2>2. 商业模式</h2>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">产品</th><th class="l">客户拿到什么</th><th class="l">怎么收钱</th><th class="l">状态</th></tr></thead>
+<tbody>
+<tr><td class="l">Free (开源版)</td><td class="l wrap">基础代码托管和流水线</td><td class="l">不收钱，拉新</td><td class="l">成熟</td></tr>
+<tr><td class="l">Premium</td><td class="l wrap">团队协作、审批、更强的流水线</td><td class="l wrap">按人头年费，公开牌价 $29 / 人 / 月</td><td class="l">成熟</td></tr>
+<tr><td class="l">Ultimate</td><td class="l wrap">在 Premium 上加安全扫描、合规审计</td><td class="l wrap">按人头年费，多为谈判价</td><td class="l wrap">成熟，占 ARR 59%，增速约 35%；Q2 前十大单有八单买的是它</td></tr>
+<tr><td class="l">Duo Agent Platform</td><td class="l wrap">AI agent 写代码、审代码、修漏洞、跑流水线</td><td class="l wrap">GitLab Credits，按用量扣</td><td class="l wrap">新业务，Q2 用量收入环比 +50%，管理层说 FY27 贡献有限</td></tr>
+<tr><td class="l">其他用量产品</td><td class="l wrap">计算分钟、存储、Secrets Manager、专用 Runner、制品管理 (测试中)</td><td class="l">按用量</td><td class="l">新业务，今年上了 3 个</td></tr>
+<tr><td class="l">GitLab Dedicated</td><td class="l wrap">单租户云版，给受监管客户</td><td class="l">按人头，有溢价</td><td class="l">增长中</td></tr>
+<tr><td class="l">Flex (收费方式)</td><td class="l wrap">一份年度承诺金额，每月在席位和 credits 之间自由分配</td><td class="l wrap">年度预付现金，按实际使用确认收入</td><td class="l wrap">2026 年 6 月推出，6 周 130 多家、超 $2,000 万</td></tr>
+</tbody></table></div>
+
+<h3>收入怎么拆</h3>
+<div class="formula">收入 = 付费席位数 × 平均席位单价 (由 Premium / Ultimate 比例决定)
+     + 用量收入 (AI credits、计算、存储、Secrets、Runner)
+
+增长 = 新客户 (Q2 首单约 1,700 笔，同比翻倍；首单 net ARR +近 40%)
+     + 老客户净扩张 (NRR 117% = 加人头 + 升级 Ultimate + 涨价 + 用量)
+     − 流失 (毛留存 &gt;90%)</div>
+
+<figure class="chart" style="margin-top:var(--s3)">
+<div class="title">Q2 FY27 收入构成</div>
+<div class="chart-wrap" id="ch-mix"></div>
+<p class="src">Source: Q2 FY27 8-K (订阅 $258.3M、license $27.9M)；SaaS 占 34% 来自电话会，self-managed 订阅为倒算 (估算)。</p>
+</figure>
+<div class="prose" style="margin-top:var(--s3)">
+<p>SaaS (GitLab.com 和 Dedicated) 同比 +36%，比整体快 15 个点，是毛利率下降的主要原因：自己机房装的版本几乎没有服务器成本，云版要付 Google Cloud 的钱。报表里的 license 收入是 self-managed 合同里一次性确认的部分，大单多的季度会把收入推高，Q2 就是这样。</p>
+<p><b>Flex 的会计要单独看。</b>Flex 合同现金仍是年初一次收，但收入按实际使用确认，所以 self-managed 续约转成 Flex 会把收入往后推：每 $5,000 万转换约后移 $500 万，FY27 最多 $1,300 万。Flex 承诺也不计入 cRPO (未来 12 个月的已签合同)，Q2 cRPO $744.7M (+20%) 因此少算了 3 个点，总 RPO $12 亿 (+16%) 里包含它。全年指引没有计入 Flex 的影响。</p>
+</div>
+
+<h3>是不是不可或缺</h3>
+<div class="prose">
+<ul>
+<li><b>受监管的大企业和政府、装在自己机房：</b>很难替代。迁移要搬仓库、重写流水线、重做合规流程；毛留存 &gt;90%，FY26 末客户流失四年最低 (Guggenheim 转述管理层)</li>
+<li><b>中小企业、纯云用户：</b>只是“最好的选择之一”，GitHub 随时可替代。4 月管理层承认中小和中端客户 (约 20% ARR) 加公共部门 (约 12% ARR) 承压；Q2 说这两块已企稳，公共部门明显反弹</li>
+<li><b>AI 写代码助手：</b>已经有更强的替代品。GitLab 把 Duo 定位成“管 agent 的平台”，不和它们比谁写得好</li>
+</ul>
+</div>
+
+<h3>毛利率在下降</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">期间</th><th>FY25</th><th>FY26</th><th>Q2 FY26</th><th>Q2 FY27</th><th>FY27 指引</th></tr></thead>
+<tbody>
+<tr><td class="l">Non-GAAP 毛利率</td><td class="pct">91%</td><td class="pct">89%</td><td class="pct">90%</td><td class="pct">86.5%</td><td class="pct">85–87%</td></tr>
+<tr><td class="l">Non-GAAP 营业利润率</td><td class="pct">10%</td><td class="pct">17%</td><td class="pct">17%</td><td class="pct">15%</td><td class="pct">13%</td></tr>
+</tbody></table></div>
+<p class="note">Source: Q2 FY27 财报幻灯片；FY27 营业利润率 = 指引中值 $150M ÷ $1,131M。</p>
+
+<h3>利润质量</h3>
+<figure class="chart" style="margin-top:var(--s2)">
+<div class="title">FY26：non-GAAP 营业利润到 GAAP 营业利润 ($M)</div>
+<div class="chart-wrap" id="ch-bridge"></div>
+<p class="src">Source: GitLab Q4 FY26 8-K (EX-99.1)。“其他”为倒算差额，包括无形资产摊销、重组等。</p>
+</figure>
+<div class="prose" style="margin-top:var(--s3)">
+<ul>
+<li><b>股票薪酬吃掉了全部利润。</b>FY26 SBC $215M，占收入 22.5%；Q2 FY27 SBC $75.0M，占收入 26%。FY26 non-GAAP 营业利润 $163M，GAAP 亏 $71M</li>
+<li><b>自由现金流约等于 SBC。</b>FY26 调整后 FCF $219.6M，减 SBC $215.0M 只剩约 $5M</li>
+<li><b>Q2 现金流比看起来更弱。</b>Q2 经营现金流 −$3.1M；加回 $14.0M 极狐成立相关的一次性税款结算、减去 $1.0M 税款退回，才得到调整后 FCF $9.8M。管理层把弱势归因于收款时点，上半年合计调整后 FCF $156.5M</li>
+<li><b>回购在抵消稀释。</b>H1 FY27 回购约 584 万股，总股本从 1.701 亿降到 1.673 亿 (−1.6%)；但 non-GAAP 摊薄股数仍有 1.739 亿。$400M 授权还剩 $245M</li>
+<li><b>利息收入撑着 EPS。</b>$12.6 亿现金按 4% 约 $50M / 年利息 (估算)，约等于 FY27 non-GAAP 净利润的三分之一</li>
+</ul>
+</div>
+<p class="one"><b>一句话：</b>每多卖 $1，non-GAAP 口径留下约 $0.13–0.15 营业利润、约 $0.20 自由现金流；但其中约 $0.22 是用股票付给员工的，股东真正拿到的接近零，靠回购把稀释补回来。</p>
+</section>
+
+<section class="sec">
+<h2>3. 成长史、资本结构与风险</h2>
+<figure class="chart" style="margin-top:var(--s2)">
+<div class="title">年度收入 ($M) 与同比增速</div>
+<div class="chart-wrap" id="ch-annual"></div>
+<p class="src">Source: GitLab 各年 8-K；FY27 为公司指引中值，FY28 为一致预期 (MarketScreener，2026.10.02)，均为浅色。</p>
+</figure>
+
+<div class="tbl" style="margin-top:var(--s3)"><table class="t">
+<thead><tr><th class="l">时间</th><th class="l">事件</th><th class="l">今天的意义</th></tr></thead>
+<tbody>
+<tr><td class="l">2011–2014</td><td class="l wrap">Dmitriy Zaporozhets 写出开源 GitLab；Sid Sijbrandij 加入，推出收费企业版，走“开源核心 + 付费功能”</td><td class="l wrap">免费版至今是最大的拉新渠道；一半以上收入来自首单不到 $5,000 的客户</td></tr>
+<tr><td class="l">2015</td><td class="l wrap">进入 YC；从一开始就全员远程</td><td class="l wrap">能低成本在几十个国家招人；2026 年重组时一次退出 22 个国家</td></tr>
+<tr><td class="l">2018.06</td><td class="l wrap">Microsoft 以 $75 亿收购 GitHub，大批项目迁到 GitLab</td><td class="l wrap">GitLab 最好的一段增长来自对手被收购；GitHub 背后的分发和 Copilot 至今是它最大的威胁</td></tr>
+<tr><td class="l">2021.03</td><td class="l wrap">成立中国合资公司极狐 (JiHu)</td><td class="l wrap">至今并表，每年费用 $1,000 万以上；2026 Q2 付了 $14.0M 成立时的税款结算，公司目标是出表</td></tr>
+<tr><td class="l">2021.10</td><td class="l wrap">Nasdaq 上市，发行价 $77，11 月冲到 $130 以上</td><td class="l wrap">现价比发行价仍低约 30%</td></tr>
+<tr><td class="l">2023</td><td class="l wrap">推出 AI 助手 Duo，按人头附加收费</td><td class="l wrap">按人头卖 AI 卖得不好，2026 年改成按用量 (credits)</td></tr>
+<tr><td class="l">2024</td><td class="l wrap">媒体报道公司曾探讨出售，Datadog 被提及为潜在买家 (未核实细节)；12 月 Sid 因健康原因卸任 CEO，前 New Relic CEO Bill Staples 接任</td><td class="l wrap">现任管理层是职业经理人团队；被收购的可能性是股价的一层潜在支撑</td></tr>
+<tr><td class="l">2025</td><td class="l wrap">全年股价 −33%：增速放缓、NRR 从 130% 一路降、AI 是福是祸说不清</td><td class="l wrap">市场从这时开始把它当“AI 受害者”交易</td></tr>
+<tr><td class="l">2026.03</td><td class="l wrap">FY26 收入 $955M (+26%)；FY27 指引只给约 16% 增长；首次授权 $400M 回购</td><td class="l wrap">低指引给后面两次上调留了空间</td></tr>
+<tr><td class="l">2026.04.09</td><td class="l wrap">股价跌到 $19.67。Guggenheim 降级，理由是 AI 冲击核心业务、管理层承认 30% 以上 ARR 承压</td><td class="l wrap">“AI 杀死 SaaS”情绪的底部；股价此后半年涨了约 2.7 倍</td></tr>
+<tr><td class="l">2026.05</td><td class="l wrap">重组：裁员约 14%、退出 22 国、研发拆成约 60 个小组。Sid 把 1,513 万股 B 股转成 A 股</td><td class="l wrap">降本换利润率；创始人超级投票权基本放弃，B 股只剩约 110 万股</td></tr>
+<tr><td class="l">2026.06–09</td><td class="l wrap">推出 Flex；Q2 收入超指引 5%，net ARR 同比 +42%，全年指引上调到 $1,129–1,133M</td><td class="l wrap">故事从“AI 受害者”变成“AI 代码的管理者”，股价回到 $50 以上</td></tr>
+</tbody></table></div>
+
+<h3>资本结构</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">项目</th><th>数字</th><th class="l">说明</th></tr></thead>
+<tbody>
+<tr><td class="l">总股本</td><td>166.6M</td><td class="l wrap">2026.07.31 A 股 166.2M + B 股 1.1M = 167.3M；stockanalysis 最新 166.6M。non-GAAP 摊薄股数 173.9M</td></tr>
+<tr><td class="l">现金 + 短期投资</td><td>$1,257M</td><td class="l">无有息负债，每股约 $7.5</td></tr>
+<tr><td class="l">机构持股</td><td>约 95%</td><td class="l wrap">MarketBeat 转述 13F</td></tr>
+<tr><td class="l">内部人减持</td><td>$104M</td><td class="l wrap">近三个月合计卖出约 218 万股，多为 10b5-1 计划</td></tr>
+<tr><td class="l">空头 / 流通盘</td><td>9.9%</td><td class="l">偏高，股价弹性大</td></tr>
+<tr><td class="l">Beta (5 年)</td><td>0.99</td><td class="l">—</td></tr>
+<tr><td class="l">卖方评级</td><td>18 / 28 持有</td><td class="l wrap">8 强烈买入、1 买入、1 卖出；平均目标价 $55.71，区间 $45–70 (S&amp;P Global，2026.10)</td></tr>
+</tbody></table></div>
+
+<div class="two">
+<div><h4>Pros</h4><ul>
+<li>受监管大客户粘性强：毛留存 &gt;90%，$10 万以上客户三年从 955 家到 1,571 家</li>
+<li>平台用量在涨：流水线和推送各 +40% 以上、安全仓库 +60% (管理层口径)</li>
+<li>Ultimate 占 ARR 59%，增速约 35%，产品结构在变贵</li>
+<li>用量承诺收入一个季度从 $15M 到 $40M</li>
+<li>连续 6 个季度收入超指引，近 5 季平均超 3.8%</li>
+<li>$12.6 亿净现金，回购已在减少股本</li>
+</ul></div>
+<div><h4>Cons</h4><ul>
+<li>收入增速 29% → 21%，指引隐含下半年约 15%</li>
+<li>NRR 从 130% 降到 117%，按人头收费的天花板随开发者人数变化</li>
+<li>Non-GAAP 毛利率一年降 3.5 个点，到 86.5%</li>
+<li>SBC 占收入 22–26%，FCF 扣 SBC 约等于零</li>
+<li>GitHub + Copilot 的分发和打包能力远强于 GitLab</li>
+<li>股价半年涨 2.7 倍，近三月内部人卖出 $1 亿</li>
+</ul></div>
+</div>
+<p class="one">今天还在起作用的历史包袱，是 2023 年按人头卖 AI 没卖动：它让市场在 2026 年初把 GitLab 归为“AI 受害者”。现在的股价修复，赌的是第二次 (按用量) 能卖动。</p>
+</section>
+
+<section class="sec">
+<h2>4. 当前 Set up</h2>
+<h3>过去 6 个季度的执行</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">季度</th><th>收入指引</th><th>实际</th><th>超指引</th><th>YoY</th><th>NRR</th><th>EPS 指引 → 实际</th><th class="l">评价</th></tr></thead>
+<tbody>
+<tr><td class="l">Q1 FY26 (25.04)</td><td>$212–213M</td><td>$214.5M</td><td><span class="ar up">▲</span>0.9%</td><td class="rate">27%</td><td>122%</td><td>— → $0.17</td><td class="l wrap">超幅最小，Q2 指引低于预期，股价下跌</td></tr>
+<tr><td class="l">Q2 FY26 (25.07)</td><td>$226–227M</td><td>$236.0M</td><td><span class="ar up">▲</span>4.2%</td><td class="rate">29%</td><td>121%</td><td>$0.16–0.17 → $0.24</td><td class="l wrap">超预期，但全年收入指引没动，股价跌</td></tr>
+<tr><td class="l">Q3 FY26 (25.10)</td><td>$238–239M</td><td>$244.4M</td><td><span class="ar up">▲</span>2.5%</td><td class="rate">25%</td><td>119%</td><td>$0.19–0.20 → $0.25</td><td class="l wrap">利润超得多，收入超幅偏小</td></tr>
+<tr><td class="l">Q4 FY26 (26.01)</td><td>$251–252M</td><td>$260.4M</td><td><span class="ar up">▲</span>3.5%</td><td class="rate">23%</td><td>118%</td><td>$0.22–0.23 → $0.30</td><td class="l wrap">利润超得多，但 FY27 只指引约 16%</td></tr>
+<tr><td class="l">Q1 FY27 (26.04)</td><td>$253–255M</td><td>$264.2M</td><td><span class="ar up">▲</span>4.0%</td><td class="rate">23%</td><td>117%</td><td>$0.20–0.21 → $0.23</td><td class="l wrap">稳定超预期，宣布重组</td></tr>
+<tr><td class="l">Q2 FY27 (26.07)</td><td>$272–274M</td><td>$286.3M</td><td><span class="ar up">▲</span>4.9%</td><td class="rate">21%</td><td>117%</td><td>$0.17–0.18 → $0.24</td><td class="l wrap">超幅最大，来自大单和首单；NRR 首次环比没降</td></tr>
+<tr class="dim"><td class="l">Q3 FY27 指引</td><td>$281–283M</td><td>—</td><td>—</td><td class="rate">15–16%</td><td>—</td><td>$0.19–0.20</td><td class="l wrap">比 Q2 环比还低</td></tr>
+</tbody></table></div>
+<p class="note">指引来自前一季 8-K，已逐条核对；超指引按区间中值计算。Q1 FY26 EPS 指引未查到原文，实际 EPS $0.17 来自二手报道 (未核实)。</p>
+
+<figure class="chart">
+<div class="title">季度收入 ($M) 与同比增速</div>
+<div class="chart-wrap" id="ch-rev"></div>
+<p class="src">Source: GitLab 各季 8-K。Q3 FY27 为指引中值 (浅色)。</p>
+</figure>
+
+<div class="prose" style="margin-top:var(--s3)">
+<p><b>判断：</b>指引可靠，而且偏保守，近五个季度平均超 3.8%。Q2 超得最多，来自创纪录的总订单、$50 万以上大单同比 +150%、首单翻倍、销售人数 +30% 且人效 +10%。质量在变好的一面是 NRR 止跌、账单增速从 12% 回到 24%；变差的一面是毛利率和 Q2 现金流都在下降。</p>
+</div>
+
+<figure class="chart">
+<div class="title">美元净留存率 (NRR，期末)</div>
+<div class="chart-wrap" id="ch-nrr"></div>
+<p class="src">Source: FY24、FY25 年报 8-K；之后各季 8-K。纵轴从 100% 起。</p>
+</figure>
+
+<h3>核心 driver：已验证 vs 理论</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">Driver</th><th class="l">已经被数据证明的</th><th class="l">仍然只是目标或推测的</th><th class="l">标签</th></tr></thead>
+<tbody>
+<tr><td class="l wrap">AI 让代码变多 → 平台用量变多</td><td class="l wrap">流水线、推送各 +40% 以上，安全仓库 +60%，部分客户代码库扩大到 5 倍 (管理层口径)</td><td class="l wrap">用量增长能按比例变成收入；今天收入主要还是按人头</td><td class="l"><span class="tg p">部分</span></td></tr>
+<tr><td class="l wrap">按用量收费 (Flex / credits)</td><td class="l wrap">Paid CRR $15M → $40M；Flex 6 周 $2,000 万；一家美国前 20 大银行 AI 额度扩大近 10 倍</td><td class="l wrap">年底 &gt;$100M；用量业务的毛利率；是否集中在少数大客户</td><td class="l"><span class="tg p">部分</span></td></tr>
+<tr><td class="l wrap">升级到 Ultimate</td><td class="l wrap">Ultimate 占 ARR 升到 59%，增速约 35%，前十大单八单</td><td class="l wrap">—</td><td class="l"><span class="tg v">已验证</span></td></tr>
+<tr><td class="l wrap">开发者席位不被 AI 压缩</td><td class="l wrap">毛留存 &gt;90%，流失率四年最低，NRR 环比止跌</td><td class="l wrap">NRR 已从 130% 降到 117%；AI 让企业少招开发者的长期影响还看不到</td><td class="l"><span class="tg p">部分</span></td></tr>
+<tr><td class="l wrap">Agent 规模的代码托管</td><td class="l wrap">Orbit 知识图谱测试版 2,200 家组织开通，80% 查询来自外部 agent</td><td class="l wrap">下一代 Git 底层能收多少钱</td><td class="l"><span class="tg t">理论</span></td></tr>
+<tr><td class="l wrap">重组带来利润率</td><td class="l wrap">FY27 non-GAAP 营业利润指引中值从 $133M 上调到 $150M</td><td class="l wrap">长期利润率目标没有公布 (未查到)；一致预期 FY29 仅 16%</td><td class="l"><span class="tg p">部分</span></td></tr>
+</tbody></table></div>
+
+<h3>往下多想一层</h3>
+<div class="formula">① 下半年指引隐含了什么
+全年指引中值 $1,131M − 上半年实际 $550.4M = 下半年 $580.6M
+Q3 指引中值 $282M → 隐含 Q4 ≈ $298.6M，同比 Q4 FY26 $260.4M 只增 14.7%
+若 Q3、Q4 像过去一样各超指引约 4%：FY27 ≈ 550.4 + 293 + 311 ≈ $1,154M，+20.8%
+再扣 Flex 后移 (最多 $13M，不在指引里)：账面约 $1,141–1,154M
+
+② 用量收入要做到多少，才能让 FY28 回到 20% (估算)
+FY27 用量收入 ≈ 各季平均 CRR ÷ 4 之和 ≈ 3 + 7 + 14 + 21 ≈ $45M   (假设 CRR 按 15 → 40 → 70 → 100 走)
+席位业务 FY27 ≈ 1,131 − 45 = $1,086M，按 12% 增长 → FY28 $1,216M
+用量收入 FY28 若 CRR 从 $100M 走到 $160M，确认约 $130M
+FY28 ≈ 1,216 + 130 = $1,346M，同比 +19%   vs 一致预期 $1,310M (+15.8%)
+
+席位只长 10%、用量只到 $90M：FY28 ≈ $1,285M，+13.6%，低于一致预期</div>
+<figure class="chart">
+<div class="title">FY28 收入怎么来 (估算，$M)</div>
+<div class="chart-wrap" id="ch-fy28"></div>
+<p class="src">Source: 估算，假设见上方算式 ②。一致预期 $1,310M 来自 MarketScreener (2026.10.02)。</p>
+</figure>
+<p class="one">真实需求大约还是 20% 左右，一致预期的 15.8% 基本没算进用量收入。但报表上，下半年会因为保守指引和 Flex 后移显得只有十几。市场在 Q3 会不会因为“账面减速”卖出，是短期最大的变数；用量收入能不能过 $100M，是中期唯一重要的数。</p>
+
+<h3>市场在问什么</h3>
+<div class="prose"><ol>
+<li>AI 写代码对 GitLab 是需求放大器 (更多代码要管)，还是席位杀手 (更少开发者)?</li>
+<li>按用量收费能不能把收入增速拉回 20% 以上，代价是不是毛利率?</li>
+<li>GitHub 会不会把安全和 agent 功能打包降价，削掉 Ultimate 的卖点?</li>
+</ol></div>
+
+<h3>预期差</h3>
+<div class="prose"><ul>
+<li><b>正向：</b>一致预期 FY28 增速 15.8%，和指引隐含的下半年增速差不多，基本没给用量收入留位置。如果 Paid CRR 年底过 $100M，FY28 收入可能在 $1,340M 以上，比一致预期高约 3%。更大的变化是估值方法：按用量收费的 JFrog、Datadog 是下一年收入 15–17 倍，GitLab 是 5.8 倍</li>
+<li><b>负向：</b>18 / 28 家卖方是持有，平均目标价约等于现价，股价已经不便宜。Q2 的超预期集中在大单和那家银行，如果不可重复，下半年账面增速掉到 15% 左右，在约 50 倍 FY28E P/E 下，股价承受不了“看起来在减速”</li>
+</ul></div>
+
+<h3>要做的判断</h3>
+<div class="prose"><ol>
+<li>用量收入的单位经济：毛利率多少、推理成本谁出、是否集中在前 10 个客户</li>
+<li>按客户类型 (受监管大客户 / 中小 / 公共部门)，席位数在 AI 时代是增是减</li>
+<li>合理价值区间，以及被收购时的估值底在哪里</li>
+</ol></div>
+<p class="one">下一次财报最该盯的一个数：<b>Paid CRR 从 $40M 走到多少</b>。$65M 以上说明年底目标可信。</p>
+</section>
+
+<section class="sec">
+<h2>5. 估值与结论</h2>
+<h3>当前估值</h3>
+<div class="formula">股价 $53.16 (2026.10.14 收盘) × 股本 166.6M = 市值 $8.86B
+EV = $8.86B − 现金及短投 $1.26B = $7.60B
+
+EV / TTM 收入 $1,060M                 = 7.2x
+EV / FY27 指引中值 $1,131M            = 6.7x
+EV / FY28E 一致预期 $1,310M           = 5.8x
+P/E  FY27 指引中值 non-GAAP EPS $0.86  = 61.8x
+P/E  FY28E non-GAAP EPS ~$1.05        = 50.6x   (估算：一致预期 EBIT $190M + 利息 $50M，税率 25%，172M 股)
+P/E  FY29E non-GAAP EPS ~$1.28        = 41.5x   (估算：一致预期 EBIT $245M，同上)
+EV / TTM 调整后 FCF $214M             = 35.6x
+EV / FY28E FCF 一致预期 $281M          = 27.0x
+EV / (FCF − SBC)                      ≈ 无意义 (TTM 约为零)</div>
+
+<h3>同业对比</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">公司</th><th>股价</th><th>EV</th><th>EV / TTM 收入</th><th>EV / 下一财年收入</th><th>下一财年收入增速</th><th>下一财年 P/E</th><th class="l">收费方式</th></tr></thead>
+<tbody>
+<tr class="key"><td class="l">GitLab (FY 1 月)</td><td>$53.16</td><td>$7.6B</td><td>7.2x</td><td>5.8x</td><td class="rate">15.8%</td><td>51x</td><td class="l">按人头为主，开始加用量</td></tr>
+<tr><td class="l">Atlassian (FY 6 月)</td><td>$204.66</td><td>$51.8B</td><td>7.9x</td><td>6.0x</td><td class="rate">14.9%</td><td>30x</td><td class="l">按人头</td></tr>
+<tr><td class="l">JFrog (FY 12 月)</td><td>$99.28</td><td>$11.4B</td><td>19.1x</td><td>14.9x</td><td class="rate">18.0%</td><td>86x</td><td class="l">订阅 + 用量</td></tr>
+<tr><td class="l">Datadog (FY 12 月)</td><td>$269.33</td><td>$93.0B</td><td>23.4x</td><td>17.0x</td><td class="rate">22.5%</td><td>91x</td><td class="l">用量</td></tr>
+</tbody></table></div>
+<p class="note">按当天股价自己算。“下一财年”：GitLab FY28 (至 2028.01)、Atlassian FY28 (至 2028.06)、JFrog 和 Datadog CY2027，口径不完全对齐。一致预期来自 stockanalysis (S&amp;P Global) 和 MarketScreener；GitLab FY28 EPS 为估算。JFrog 为 10.13 收盘，其余 10.14。</p>
+<figure class="chart">
+<div class="title">EV / 下一财年收入</div>
+<div class="chart-wrap" id="ch-peers"></div>
+<p class="src">Source: stockanalysis.com、MarketScreener，2026.10.13–10.14，本文计算。</p>
+</figure>
+<p class="one">GitLab 和 JFrog 下一年增速只差 2 个点，估值差了 2.6 倍。差别主要是收费方式和市场对增长持续性的信心，不是增速本身。这就是 GitLab 的估值弹性：它能不能被重新归类。</p>
+
+<h3>反推现价隐含了什么</h3>
+<div class="formula">隐含目标年 EPS = (股价 − 每股现金) × (1 + r)^n / 终值 P/E
+               = (53.16 − 7.54) × 1.10^4 / 30
+               ≈ $2.23   (FY31，non-GAAP)
+FY27 指引 $0.86 → FY31 $2.23，EPS 年复合增长约 27%
+
+对照一致预期：FY29E EPS ~$1.28 (估算)
+  按 30 倍、10% 回报折回今天 = 1.28 × 30 / 1.10^2 + 7.54 ≈ $39
+  现价 $53 相当于按 10% 折现后给 FY29E 约 43 倍</div>
+<div class="prose">
+<p><b>这个数算得通吗？</b>拆开看 (估算)：收入年增 17% → FY31 约 $21 亿；non-GAAP 营业利润率从 13% 升到 22% → 约 $4.7 亿；加利息约 $5,000 万，扣 25% 税，除以 1.7 亿股 ≈ $2.3。也就是说，现价要求 GitLab 未来四年保持约 17% 增长，同时利润率提高约 9 个点。一致预期给的路径是 FY29 利润率只到 16%，比这条路慢。现价已经比卖方的利润预测乐观一档。</p>
+<p><b>GAAP 视角：</b>如果 SBC 届时仍占收入 20%，non-GAAP 22% 的利润率对应 GAAP 只有约 2%。管理层没有公布长期利润率目标，所以没法用“管理层目标兑现值多少”来反算。</p>
+</div>
+
+<h3>计算器</h3>
+<div class="calc">
+  <div><label for="c-eps">目标年 EPS ($)</label><input id="c-eps" type="number" step="0.05" value="2.23"></div>
+  <div><label for="c-pe">终值 P/E (x)</label><input id="c-pe" type="number" step="1" value="30"></div>
+  <div><label for="c-r">要求回报 (%)</label><input id="c-r" type="number" step="0.5" value="10"></div>
+  <div><label for="c-n">距目标年 (年)</label><input id="c-n" type="number" step="0.5" value="4"></div>
+  <div><label for="c-px">股价 ($)</label><input id="c-px" type="number" step="0.5" value="53.16"></div>
+  <div><label for="c-cash">每股净现金 ($)</label><input id="c-cash" type="number" step="0.1" value="7.54"></div>
+</div>
+<div class="calc-out">
+  <div><div class="l">隐含今日价值</div><div class="v" id="o-val">—</div></div>
+  <div><div class="l">现价隐含的目标年 EPS</div><div class="v" id="o-eps">—</div></div>
+  <div><div class="l">相对现价</div><div class="v" id="o-up">—</div></div>
+</div>
+<p class="note">今日价值 = EPS × P/E ÷ (1 + r)^n + 每股净现金。默认值：FY31 non-GAAP EPS、终值 30 倍、10% 回报、4 年。试一下：EPS 1.28、n = 2，得到按一致预期的价值。</p>
+
+<h3>情景</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">情景</th><th>FY28 收入</th><th>增速</th><th>EV / FY28 收入</th><th>每股价值</th><th>相对现价</th></tr></thead>
+<tbody>
+<tr><td class="l wrap">悲观：用量收入没起来，席位增长放慢</td><td>$1,285M</td><td class="rate">14%</td><td>4x</td><td>$38</td><td>−28%</td></tr>
+<tr class="key"><td class="l wrap">基本：一致预期</td><td>$1,310M</td><td class="rate">16%</td><td>6x</td><td>$55</td><td>+3%</td></tr>
+<tr><td class="l wrap">乐观：Paid CRR 过 $100M，被当成用量公司</td><td>$1,346M</td><td class="rate">19%</td><td>8x</td><td>$72</td><td>+36%</td></tr>
+</tbody></table></div>
+<p class="note">估算：每股价值 = (倍数 × FY28 收入 + 现金 $1.26B) ÷ 166.6M 股。</p>
+
+<div class="verdict">
+<p><b>是否值得 deepdive：</b>值得。GitLab 是“AI 让代码变多，谁来管”最直接的上市标的，答案会在未来两个季度的 Paid CRR 里看出来，一致预期还没算进去。</p>
+<p><b>现价能不能建仓：</b>不建议追。$53 约等于一致预期下的基本情景 (FY28E 6 倍 EV/Sales)，也约等于卖方平均目标价；下半年报表增速还可能因为 Flex 显得更慢。</p>
+<p><b>合理区间：</b>$38–72，中枢约 $55。$45 以下 (约 5 倍 FY28E EV/Sales) 可以开始建仓；如果 Q3 Paid CRR 过 $65M 且毛利率守住 86%，可以接受更高的价格。</p>
+</div>
+
+<h3>Deepdive 要做什么</h3>
+<div class="prose">
+<p><b>模型</b></p>
+<ul>
+<li>收入按 席位 (Premium / Ultimate × 席位数 × 单价) + 用量 (credits、计算、存储、Secrets、Runner) 两块拆；再按 self-managed / SaaS / Dedicated 拆</li>
+<li>单独建 Flex 的收入确认节奏：承诺金额、每月消耗率、后移收入、cRPO 与 RPO 的差</li>
+<li>毛利率按 SaaS 和 self-managed 分开；AI 推理成本由谁承担单列</li>
+<li>SBC、回购、股本三者联动，算扣 SBC 后的每股 FCF</li>
+</ul>
+<p><b>要核实的数据</b></p>
+<ul>
+<li>Q2 FY27 10-Q：Flex 预收的拆分和合同条款 (保底比例 80% 以上指什么)</li>
+<li>极狐 FY27 费用：幻灯片约 $15M 还是电话会约 $50M；出表的时间表和对利润的影响</li>
+<li>Q2 FY27 10-Q：前十大客户占比，Q2 大单是否集中</li>
+<li>Q1 FY26 的 EPS 指引原文</li>
+<li>Sid 转换 1,513 万股 B 股之后的 Form 4：是否减持、节奏</li>
+<li>2024 年出售传闻的原始报道 (买家、报价)，作为收购估值底的参照</li>
+<li>GitHub Copilot 的付费席位和计费方式变化，对照 Microsoft 电话会原文</li>
+</ul>
+<p><b>专家访谈</b></p>
+<ul>
+<li>大型银行 DevOps 平台负责人：AI credits 扩大 10 倍具体花在哪，会不会把一部分搬到 GitHub 或直接用 Claude Code / Cursor</li>
+<li>前 GitHub 企业销售或产品经理：GitHub 对 GitLab Ultimate 客户的打包报价怎么做，赢单率如何</li>
+<li>Cursor / Claude Code 企业部署负责人：agent 写的代码进哪个仓库、走谁的 CI，安全和审计的钱付给谁</li>
+<li>美国联邦政府 IT 采购人员：公共部门预算恢复能不能持续，self-managed 在政府里的地位</li>
+</ul>
+</div>
+</section>
+
+<section class="sec">
+<h2>数据来源</h2>
+<ol class="sources">
+<li><a href="https://www.sec.gov/Archives/edgar/data/1653482/000162828026059820/gitlab-ex99120260731fy27.htm">GitLab Q2 FY27 8-K EX-99.1</a> (2026.09.01)；<a href="https://s204.q4cdn.com/984476563/files/content_files/GTLB-Q2-FY2027-Earnings-Slides.pdf">Q2 FY27 财报幻灯片</a></li>
+<li><a href="https://www.fool.com/earnings/call-transcripts/2026/09/08/gitlab-gtlb-q2-2027-earnings-call-transcript/">Q2 FY27 电话会记录 (Motley Fool)</a></li>
+<li><a href="https://www.sec.gov/Archives/edgar/data/1653482/000162828026013795/gitlab-ex99120260131fy26.htm">Q4 FY26 8-K</a>；<a href="https://www.sec.gov/Archives/edgar/data/0001653482/000162828025054895/gitlab-ex99120251031fy26am.htm">Q3 FY26 8-K</a></li>
+<li><a href="https://www.businesswire.com/news/home/20250903199105/en">Q2 FY26 财报 (含 Q3 FY26 指引)</a>；<a href="https://www.businesswire.com/news/home/20250610758814/en/GitLab-Reports-First-Quarter-Fiscal-Year-2026-Financial-Results/">Q1 FY26 财报 (含 Q2 FY26 指引)</a></li>
+<li><a href="https://www.sec.gov/Archives/edgar/data/1653482/000162828025009422/gitlab-ex99120250131fy25.htm">Q4 FY25 8-K (NRR 123%)</a>；<a href="https://www.sec.gov/Archives/edgar/data/1653482/000162828024008503/gitlab-ex99120240131fy24.htm">Q4 FY24 8-K (NRR 130%)</a></li>
+<li><a href="https://www.stocktitan.net/sec-filings/GTLB/8-k-gitlab-inc-reports-material-event-960dc99c48b2.html">Q1 FY27 8-K 摘要及重组细节 (StockTitan)</a></li>
+<li><a href="https://finance.biggo.com/news/x9cQc50BrdTHlKtC32Mh">Guggenheim 降级 (2026.04.09)</a>；<a href="https://www.fool.com/investing/2026/01/20/why-gitlab-stock-lost-33-in-2025/">2025 年股价回顾 (Motley Fool)</a></li>
+<li><a href="https://www.defenseworld.net/2026/10/12/gitlab-nasdaqgtlb-sets-new-52-week-high-heres-why.html">持股与内部人交易 (MarketBeat 转载)</a></li>
+<li><a href="https://stockanalysis.com/stocks/gtlb/statistics/">GTLB 股价、市值、空头</a>、<a href="https://stockanalysis.com/stocks/gtlb/forecast/">卖方评级与目标价</a>、<a href="https://stockanalysis.com/stocks/gtlb/history/">历史股价</a> (stockanalysis.com)；<a href="https://www.marketscreener.com/quote/stock/GITLAB-INC-128192404/finances/">FY28–29 一致预期 (MarketScreener)</a></li>
+<li>同业：<a href="https://stockanalysis.com/stocks/team/forecast/">TEAM</a>、<a href="https://stockanalysis.com/stocks/frog/forecast/">FROG</a>、<a href="https://stockanalysis.com/stocks/ddog/forecast/">DDOG</a> 一致预期与统计页</li>
+<li><a href="https://aibusiness.vc/b2b/github-copilot-2b-arr">GitHub Copilot 付费订阅与计费变化 (二手整理)</a></li>
+</ol>
+</section>
+</main></div>
+
+<script>
+// Inline SVG bars. Colors come only from CSS variables so dark mode follows the theme.
+function svgBars(id, items, o){
+  o = o || {};
+  var W = 560, H = o.h || 250, top = 30, bot = o.sub ? 46 : 30, left = 8, right = 8;
+  var lo = Math.min(0, Math.min.apply(null, items.map(function(d){return d.lo}))),
+      hi = Math.max.apply(null, items.map(function(d){return d.hi}));
+  if (o.min != null) lo = o.min;
+  var ph = H - top - bot, y = function(v){ return top + (hi - v) / (hi - lo) * ph; };
+  var slot = (W - left - right) / items.length, bw = slot * 0.6;
+  var FILL = {
+    main:'fill:var(--slate-500)', est:'fill:var(--slate-200)', ctx:'fill:var(--slate-100);stroke:var(--text);stroke-width:.8',
+    add:'fill:var(--slate-300)', neg:'fill:var(--gray-250)', end:'fill:var(--navy)'
+  };
+  var s = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+(o.aria||'')+'">';
+  s += '<line x1="'+left+'" x2="'+(W-right)+'" y1="'+y(lo<0?0:lo)+'" y2="'+y(lo<0?0:lo)+'" style="stroke:var(--rule);stroke-width:1"/>';
+  items.forEach(function(d, i){
+    var x = left + slot * i + (slot - bw) / 2, y1 = y(d.hi), y2 = y(d.lo), hgt = Math.max(1, y2 - y1);
+    s += '<rect x="'+x.toFixed(1)+'" y="'+y1.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+hgt.toFixed(1)+'" style="'+FILL[d.c||'main']+'"/>';
+    var ly = d.below ? y2 + 16 : y1 - 8;
+    s += '<text x="'+(x+bw/2).toFixed(1)+'" y="'+ly.toFixed(1)+'" text-anchor="middle" style="fill:var(--text);font-size:13px;font-weight:600">'+d.lab+'</text>';
+    var cy = H - bot + 18;
+    s += '<text x="'+(x+bw/2).toFixed(1)+'" y="'+cy+'" text-anchor="middle" style="fill:var(--muted);font-size:12px">'+d.l+'</text>';
+    if (d.sub) s += '<text x="'+(x+bw/2).toFixed(1)+'" y="'+(cy+16)+'" text-anchor="middle" style="fill:var(--muted);font-size:12px;font-style:italic">'+d.sub+'</text>';
+  });
+  s += '</svg>';
+  document.getElementById(id).innerHTML = s;
+}
+
+// 100% stacked bar: deep slate, light slate, gray; labels inside
+function svgMix(id, parts){
+  var W = 560, H = 86, x = 0, s = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="收入构成">';
+  var FILL = ['fill:var(--slate-700)','fill:var(--slate-300)','fill:var(--gray-250)'];
+  var INK = ['fill:#FFFFFF','fill:var(--text)','fill:var(--text)'];
+  parts.forEach(function(p, i){
+    var w = W * p.v / 100;
+    s += '<rect x="'+x.toFixed(1)+'" y="8" width="'+w.toFixed(1)+'" height="44" style="'+FILL[i]+';stroke:var(--bg);stroke-width:1"/>';
+    s += '<text x="'+(x+8).toFixed(1)+'" y="35" style="'+INK[i]+';font-size:13px;font-weight:600">'+p.v+'%</text>';
+    s += '<text x="'+(x+2).toFixed(1)+'" y="74" style="fill:var(--muted);font-size:12px">'+p.l+'</text>';
+    x += w;
+  });
+  document.getElementById(id).innerHTML = s + '</svg>';
+}
+
+svgMix('ch-mix', [
+  {l:'Self-managed 订阅', v:56},
+  {l:'SaaS (.com + Dedicated)', v:34},
+  {l:'License', v:10}
+]);
+
+svgBars('ch-annual', [
+  {l:'FY22', lo:0, hi:252.7, lab:'253', sub:'+66%'},
+  {l:'FY23', lo:0, hi:424.3, lab:'424', sub:'+68%'},
+  {l:'FY24', lo:0, hi:579.9, lab:'580', sub:'+37%'},
+  {l:'FY25', lo:0, hi:759.2, lab:'759', sub:'+31%'},
+  {l:'FY26', lo:0, hi:955.2, lab:'955', sub:'+26%'},
+  {l:'FY27 指引', lo:0, hi:1131, lab:'1,131', sub:'+18%', c:'est'},
+  {l:'FY28 一致', lo:0, hi:1310, lab:'1,310', sub:'+16%', c:'est'}
+], {sub:true, h:260, aria:'年度收入'});
+
+svgBars('ch-rev', [
+  {l:'Q1 FY26', lo:0, hi:214.5, lab:'215', sub:'+27%'},
+  {l:'Q2 FY26', lo:0, hi:236.0, lab:'236', sub:'+29%'},
+  {l:'Q3 FY26', lo:0, hi:244.4, lab:'244', sub:'+25%'},
+  {l:'Q4 FY26', lo:0, hi:260.4, lab:'260', sub:'+23%'},
+  {l:'Q1 FY27', lo:0, hi:264.2, lab:'264', sub:'+23%'},
+  {l:'Q2 FY27', lo:0, hi:286.3, lab:'286', sub:'+21%'},
+  {l:'Q3 指引', lo:0, hi:282, lab:'282', sub:'+15%', c:'est'}
+], {sub:true, aria:'季度收入'});
+
+svgBars('ch-nrr', [
+  {l:'FY24', lo:100, hi:130, lab:'130%'},
+  {l:'FY25', lo:100, hi:123, lab:'123%'},
+  {l:'Q1 FY26', lo:100, hi:122, lab:'122%'},
+  {l:'Q2 FY26', lo:100, hi:121, lab:'121%'},
+  {l:'Q3 FY26', lo:100, hi:119, lab:'119%'},
+  {l:'FY26', lo:100, hi:118, lab:'118%'},
+  {l:'Q1 FY27', lo:100, hi:117, lab:'117%'},
+  {l:'Q2 FY27', lo:100, hi:117, lab:'117%'}
+], {min:100, h:220, aria:'净留存率，纵轴从 100% 起'});
+
+svgBars('ch-bridge', [
+  {l:'Non-GAAP', lo:0, hi:162.8, lab:'163'},
+  {l:'SBC', lo:162.8-215.0, hi:162.8, lab:'(215)', c:'neg'},
+  {l:'其他', lo:-70.5, hi:-52.2, lab:'(18)', c:'neg', below:true},
+  {l:'GAAP', lo:-70.5, hi:0, lab:'(71)', c:'end', below:true}
+], {h:270, min:-100, aria:'利润桥'});
+
+svgBars('ch-fy28', [
+  {l:'FY27 指引', lo:1000, hi:1131, lab:'1,131'},
+  {l:'席位 +12%', lo:1131, hi:1261, lab:'+130', c:'add'},
+  {l:'用量增量', lo:1261, hi:1346, lab:'+85', c:'add'},
+  {l:'FY28 估算', lo:1000, hi:1346, lab:'1,346', c:'end'},
+  {l:'一致预期', lo:1000, hi:1310, lab:'1,310', c:'ctx'}
+], {h:250, min:1000, aria:'FY28 收入拆分，纵轴从 1000 起'});
+
+svgBars('ch-peers', [
+  {l:'GitLab', lo:0, hi:5.8, lab:'5.8x', sub:'+16%'},
+  {l:'Atlassian', lo:0, hi:6.0, lab:'6.0x', sub:'+15%', c:'ctx'},
+  {l:'JFrog', lo:0, hi:14.9, lab:'14.9x', sub:'+18%', c:'ctx'},
+  {l:'Datadog', lo:0, hi:17.0, lab:'17.0x', sub:'+23%', c:'ctx'}
+], {h:240, sub:true, aria:'同业 EV / 下一财年收入，下方为下一财年收入增速'});
+
+// calculator
+(function(){
+  var ids = ['c-eps','c-pe','c-r','c-n','c-px','c-cash'];
+  function v(id){ return parseFloat(document.getElementById(id).value) || 0; }
+  function run(){
+    var eps=v('c-eps'), pe=v('c-pe'), r=v('c-r')/100, n=v('c-n'), px=v('c-px'), cash=v('c-cash');
+    var disc = Math.pow(1+r, n);
+    var val = eps*pe/disc + cash, imp = (px-cash)*disc/(pe||1), up = px ? val/px-1 : 0;
+    document.getElementById('o-val').textContent = '$' + val.toFixed(2);
+    document.getElementById('o-eps').textContent = '$' + imp.toFixed(2);
+    document.getElementById('o-up').textContent = (up<0?'−':'+') + Math.abs(up*100).toFixed(1) + '%';
+  }
+  ids.forEach(function(id){ document.getElementById(id).addEventListener('input', run); });
+  run();
+})();
+
+// sidebar TOC
+(function(){
+  var nav=document.getElementById('tocnav');
+  var hs=[].slice.call(document.querySelectorAll('.page section h2, .page section h3'));
+  hs.forEach(function(h,i){ if(!h.id) h.id='s'+i; });
+  var S=[['Follow-up','Follow-up'],['1. 行业','1  行业'],['2. 商业','2  生意'],['3. 成长','3  历史'],['4. 当前','4  Set up'],['5. 估值','5  估值'],['数据来源','来源'],
+    ['竞争格局','竞争'],['上下游','上下游'],['收入怎么拆','收入拆分'],['是不是不可','不可或缺'],['毛利率','毛利率'],['利润质量','利润质量'],['资本结构','资本结构'],
+    ['过去 6','执行'],['核心 driver','Driver'],['往下多想','多想一层'],['市场在问','争议'],['预期差','预期差'],['要做的判断','判断'],
+    ['当前估值','倍数'],['同业对比','同业'],['反推','反推'],['计算器','计算器'],['情景','情景'],['Deepdive','Deepdive']];
+  var short=function(t){var m=S.filter(function(x){return t.indexOf(x[0])===0})[0];return m?m[1]:t;};
+  var grp=null;
+  nav.innerHTML=hs.map(function(h){ if(h.tagName==='H2') grp=h.id; var t=short(h.textContent.trim());
+    return '<a href="#'+h.id+'" class="'+(h.tagName==='H3'?'l3':'l2')+'" data-id="'+h.id+'" data-g="'+grp+'" title="'+t+'">'+t+'</a>'}).join('');
+  var links=[].slice.call(nav.querySelectorAll('a'));
+  function upd(){ var cur=hs[0].id; for(var i=0;i<hs.length;i++){ if(hs[i].getBoundingClientRect().top<140) cur=hs[i].id; else break; }
+    var g=links.filter(function(a){return a.dataset.id===cur})[0].dataset.g;
+    links.forEach(function(a){ a.classList.toggle('on',a.dataset.id===cur); if(a.classList.contains('l3')) a.hidden=a.dataset.g!==g; if(a.classList.contains('l2')) a.classList.toggle('cur',a.dataset.id===g); }); }
+  addEventListener('scroll',upd,{passive:true}); upd();
+})();
+</script>
+</body>
+</html>
