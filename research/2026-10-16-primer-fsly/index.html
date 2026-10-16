@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.16 | Primer | Fastly</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Noto+Serif+SC:wght@500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+
+:root{--gray-250:#BFBFBF}
+
+/* GitLab primer additions — Rota v2 shell; charts: single series slate-500, context slate-100 + ink outline */
+.tags{font-family:var(--sans);font-size:13.5px;color:var(--slate-500);margin:6px 0 2px;letter-spacing:.01em;word-spacing:.35em}
+.layout{display:grid;grid-template-columns:220px minmax(0,912px);gap:56px;justify-content:center;max-width:1240px;margin:0 auto}
+.layout .page{margin:0;max-width:none;min-width:0;padding-left:0;padding-right:0}
+.side{position:relative}
+.side-in{position:sticky;top:calc(env(safe-area-inset-top,0px) + 32px);max-height:calc(100vh - 64px);overflow-y:auto;padding:var(--s6) 0 24px}
+.side-t{font-size:12px;letter-spacing:1.5px;color:var(--muted);margin:0 0 14px 12px}
+#tocnav{display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--rule)}
+#tocnav a{display:block;white-space:pre;overflow:hidden;text-overflow:ellipsis;text-decoration:none;color:var(--muted);font-size:13.5px;line-height:1.5;padding:6px 12px;margin-left:-1px;border-left:1px solid transparent}
+#tocnav a:hover{color:var(--text)}
+#tocnav a.l3{padding:3px 12px 3px 24px;font-size:12.5px}
+#tocnav a.l3[hidden]{display:none}
+#tocnav a.on{color:var(--text);border-left-color:var(--text)}
+#tocnav a.l2.cur{color:var(--text)}
+.page h2[id],.page h3[id]{scroll-margin-top:24px}
+@media (max-width:1100px){.layout{display:block}.side{display:none}.layout .page{margin:0 auto;max-width:var(--page-w);padding-left:var(--s3);padding-right:var(--s3)}}
+@media (max-width:760px){.layout .page{padding-left:var(--s2);padding-right:var(--s2)}}
+
+table.t td.l, table.t th.l{text-align:left; white-space:normal}
+table.t td.wrap{white-space:normal; min-width:180px}
+.tg{font-size:12px; font-weight:600; white-space:nowrap}
+.tg.v{color:var(--text)} .tg.p{color:var(--slate-600)} .tg.t{color:var(--muted); font-weight:400; font-style:italic}
+.tg.e{color:var(--slate-500)}
+.formula{font-size:13.5px; background:var(--soft); border-radius:var(--radius); padding:var(--s2); margin:var(--s2) 0; overflow-x:auto; white-space:pre; line-height:1.7}
+.one{margin-top:var(--s2); padding-left:var(--s2); border-left:2px solid var(--slate-300); max-width:72ch}
+.two{display:grid; grid-template-columns:1fr 1fr; gap:var(--s4); margin-top:var(--s2)}
+.two h4{font-family:var(--sans); font-size:var(--fs-body); font-weight:600; margin:0 0 var(--s1)}
+.two ul{margin:0; padding-left:1.2em} .two li{margin:.35em 0}
+.chart-wrap{margin-top:var(--s2)}
+.chart-wrap svg text{font-family:var(--sans)}
+.src{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.calc{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s2) var(--s3); margin-top:var(--s2)}
+.calc label{display:block; font-size:var(--fs-note); color:var(--muted)}
+.calc input{width:100%; font:inherit; font-size:var(--fs-body); color:var(--text); background:var(--bg); border:var(--hair); border-radius:var(--radius); padding:6px 10px; margin-top:4px; font-variant-numeric:tabular-nums}
+.calc-out{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s3); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.calc-out .l{font-size:var(--fs-note); color:var(--muted)}
+.calc-out .v{font-family:var(--serif); font-weight:500; font-size:32px; line-height:1.15; font-variant-numeric:lining-nums tabular-nums; margin-top:4px}
+.verdict{margin-top:var(--s3); padding:var(--s3) 0 var(--s3) var(--s3); border-left:2px solid var(--navy)}
+.verdict p{margin:0 0 .6em; max-width:72ch} .verdict p:last-child{margin:0}
+.sources{font-size:var(--fs-note); color:var(--muted)} .sources li{margin:.25em 0}
+@media (max-width:760px){
+  .two{grid-template-columns:1fr}
+  .calc{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .calc-out{grid-template-columns:1fr}
+}
+
+/* DDOG / TEAM primer additions: text tabs (2px underline), scatter, price line */
+.tabs{display:flex; gap:var(--s3); margin-top:var(--s2); border-bottom:var(--hair); flex-wrap:wrap}
+.tabs button{font:inherit; font-size:13.5px; color:var(--muted); background:none; border:0; border-bottom:2px solid transparent; padding:var(--s1) 0; margin-bottom:-1px; cursor:pointer}
+.tabs button.on{color:var(--text); border-bottom-color:var(--text)}
+.tabs button:hover{color:var(--text)}
+.chart-wrap:not(.sc-wrap){max-width:640px}
+.sc-wrap svg{display:block; width:100%; height:auto}
+.sc-wrap svg text{font-family:var(--sans)}
+.analog{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s2)}
+.analog .h{font-weight:600}
+.analog p{margin:4px 0 0; font-size:13.5px; color:var(--muted)}
+@media (max-width:760px){ .analog{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="layout"><aside class="side" aria-label="目录"><div class="side-in"><div class="side-t">目录</div><nav id="tocnav"></nav></div></aside>
+<main class="page">
+
+<h1>2026.10.16 | Primer | Fastly</h1>
+<p class="tags">#fsly #fastly #software #primer #cdn #edge #net #akam</p>
+<p class="meta">v1 · 内部 · 复查 2026.11.05 (Q3 2026 财报之后)</p>
+<p class="meta">股价 $25.07 (2026.10.15 收盘，IBKR) · 财年 = 自然年 · 最新已报季度 Q2 2026 (2026.08.05 发布) · 下次财报 Q3 2026，2026.11.04 美股盘后 (公司公告)</p>
+
+<p class="summary">Fastly 是互联网的“就近缓存”：把网站的图片、网页、视频片段提前存到离用户最近的机房，用户访问时不用每次回到网站自己的服务器，同时在这一层挡掉攻击和恶意机器人，按流量和请求量收费。2026 年它被市场改判了一次：2024 年三次下调指引、2025 年初最大客户 TikTok 转走流量，股价跌到 $7.7；之后收入增速从 8% 一路加速到 23%，安全产品 +43%，股价最高到 $34.8，现在 $25。生意确实变好了，但股东现金没有：过去 12 个月自由现金流 $0.34 亿，发给员工的股票 $1.36 亿，扣完是 −$1.0 亿；连管理层 2029 年的目标 (FCF 利润率 12–15%) 都盖不住今天约 19% 的 SBC 比例。它的市值约 $40 亿，低于 mapping 的 $50 亿门槛，所以不在 mapping 里。按 $25.07，基本情景 (收入 5 年每年 +16%、扣 SBC 利润率升到 7%、终值 30 倍) 价值约 $13.5，现价买入年回报约 −4%；10% 年回报的位置在 $12–15。我的判断：不做 deepdive，不建仓，放在 watchlist 后排，把它当作“AI 流量到底给 CDN 带来多少钱”的观察窗口。</p>
+
+<div class="kpis">
+  <div class="kpi"><div class="l">TTM 收入</div><div class="v">$687M</div><div class="n"><span class="ar up">▲</span>20%；Q2 单季 +23%</div></div>
+  <div class="kpi"><div class="l">Q2 2026 安全收入增速</div><div class="v">43%</div><div class="n">占收入 23%，网络服务 +17%</div></div>
+  <div class="kpi"><div class="l">TTM 自由现金流 vs SBC</div><div class="v">$34M</div><div class="n">股票薪酬 $136M，扣完 −$101M</div></div>
+  <div class="kpi"><div class="l">EV / NTM 收入</div><div class="v">5.0x</div><div class="n">EV 约 $40 亿；2026E P/E 48x</div></div>
+</div>
+
+<section class="sec">
+<h2>Follow-up</h2>
+<div class="tbl"><table class="t">
+<thead><tr><th>跟踪项</th><th class="l">为什么跟踪</th><th class="l">结果意味着什么</th></tr></thead>
+<tbody>
+<tr><td class="l">Q3 2026 收入和网络服务增速<br><span class="note">2026.11.04 盘后</span></td><td class="l wrap">指引 $1.84–1.90 亿 (中点 +18%)，non-GAAP 营业利润 $0.20–0.24 亿。Q2 实际比指引中点高 $1,000 万 (6%)，管理层说这 $1,000 万主要来自最大客户的流量和世界杯等一次性赛事；世界杯 2026.06.11–07.19，Q3 里还有约三周</td><td class="l wrap">收入 ≥ $1.92 亿、网络服务 ≥ +15%：去掉世界杯后底层流量仍在加速，FY26 上修到 $7.5 亿以上。收入 &lt; $1.86 亿或网络服务回到 +11% (Q1 的水平)：Q2 的超预期主要是一次性的，5 月那次 −38% 的担忧回来</td></tr>
+<tr><td class="l">前十大客户占比<br><span class="note">每季</span></td><td class="l wrap">Q2 前十大占收入 37% (一年前 31%)，同比 +48%；其余客户只 +12%。一个“受共同控制的客户群”占 Q2 收入 11% (10-Q，未点名；10-K 点名 TikTok 是 2025 年最大客户之一)。2025 年初正是这批大客户转走流量导致指引大砍</td><td class="l wrap">前十大以外的客户增速回到 15% 以上：增长变得更分散、更可持续。前十大继续升到 40% 以上：增长越来越依赖少数几家流媒体和社交平台的采购决策，波动和压价风险都在放大</td></tr>
+<tr><td class="l">资本开支和全年 FCF<br><span class="note">Q3、Q4</span></td><td class="l wrap">FY26 capex 指引从约 5% 提到 10–12% (内存涨价、提前锁定设备)，Q2 单季 17%。全年 FCF 指引 $0.40–0.50 亿不变，但上半年只做了 $770 万，下半年要做约 $0.37 亿</td><td class="l wrap">下半年 FCF 达到 $0.35 亿以上、2027 年 capex 回到 10% 以下：FCF 利润率开始走向 2029 年的 12–15% 目标。FCF 指引下调：说明网络扩容比收入跑得快，每多一块收入要先多花一块设备钱</td></tr>
+<tr><td class="l">SBC 金额<br><span class="note">每季</span></td><td class="l wrap">上半年 SBC $0.70 亿，比去年同期 +35%，比收入增速 (+22%) 快。占收入 19.7%，和 2024–25 年 (19–20%) 没有下降。投资者日没有给 SBC 目标</td><td class="l wrap">SBC 占比降到 17% 以下：扣 SBC 现金流转正的路径开始可信。SBC 继续 +20% 以上：扣 SBC 的股东现金到 2029 年仍为负，估值逻辑不成立</td></tr>
+<tr><td class="l">安全收入和 NRR</td><td class="l wrap">安全 Q2 +43% (Q1 +47%)，DDoS 和机器人管理三位数增长；NRR 从一年前 104% 升到 117%，管理层提示 Q4 基数更高</td><td class="l wrap">安全维持 35% 以上、NRR 守住 115%：交叉销售是真的，Fastly 在从“卖流量”变成“卖平台”。安全回到 20% 左右：AI 机器人防护只是一波需求高峰</td></tr>
+<tr><td class="l">行业定价</td><td class="l wrap">Akamai 2026.04 起加收 3% 临时附加费、续约最多涨 10%，理由是服务器和内存成本上涨；Fastly 说不跟进，同口径价格每年降中个位数</td><td class="l wrap">Fastly 在 2027 年续约里也开始提价、或价格降幅收窄到低个位数：行业定价从“每年降价”转向“稳定”，毛利率目标 67–71% 有余量。继续降价同时成本上涨：毛利率会被挤压</td></tr>
+</tbody></table></div>
+</section>
+
+<section class="sec">
+<h2>1. 行业科普：CDN 和“边缘”是什么</h2>
+<div class="prose">
+<p><strong>一句话：</strong>你在上海打开《纽约时报》网站，网页上的图片如果每次都要从纽约的服务器传过来，要走半个地球，又慢又贵。CDN (内容分发网络) 的做法是在全世界的数据中心放上自己的服务器，把常用的内容提前复制一份放在离你最近的那台机器上，你访问时就近取。Fastly 卖三样东西：</p>
+</div>
+<div class="analog">
+  <div><div class="h">网络服务 = 就近送货</div><p>缓存和分发网页、图片、视频、软件下载、API 请求。按流量 (GB) 和请求次数计费，大客户签年度最低消费合同。2025 年收入 $4.78 亿，占 77%。这是 Fastly 起家的业务</p></div>
+  <div><div class="h">安全 = 门口的保安</div><p>Web 应用防火墙 (WAF，挡黑客攻击)、DDoS 防护 (挡流量洪水)、机器人管理 (分辨真人和爬虫)。主要来自 2020 年收购的 Signal Sciences。按应用和请求量订阅收费。2025 年 $1.25 亿，占 20%，增长最快</p></div>
+  <div><div class="h">计算 = 门口的小厨房</div><p>让客户把一小段自己的代码放在 Fastly 的机器上运行 (例如按用户所在地改写页面、做 A/B 测试、验证 AI agent 身份)，不用回到客户自己的服务器。2025 年 $0.21 亿，占 3%，还很早</p></div>
+</div>
+<div class="prose" style="margin-top:var(--s3)">
+<p><strong>给半导体背景的类比：</strong>CDN 之于互联网，就是 L2/L3 cache 之于 CPU。网站自己的服务器 (行业里叫“源站”) 相当于 DRAM，又远又慢；CDN 节点相当于离核心最近的 SRAM cache。CDN 的核心指标也和 cache 一样：命中率 (多少请求不用回源)、延迟、以及“失效”有多快 (网站改了内容，旧缓存多快被清掉)。Fastly 最早的卖点正是“150 毫秒内全球清除缓存”(Instant Purge)，对新闻、电商这种内容随时在变的网站很重要。和 cache 不同的是，CDN 是按用量卖给外部客户的，所以它的收入 ≈ 客户的流量 × 单价，而单价每年都在降。</p>
+<p><strong>“边缘” (edge) 是什么：</strong>指这些离用户最近的机房。过去它们只存东西，现在越来越多地也在“门口”做安全检查和跑小段代码。Fastly 自称“边缘云平台”，就是想从卖带宽升级成卖安全和计算，因为纯带宽是大宗商品。</p>
+</div>
+
+<h3>空间和增速</h3>
+<div class="prose"><ul>
+<li><span class="tg v">实际数据</span> 纯分发 (送货) 收入全球 (不含中国) 约 <strong>$50 亿</strong>，2023–2026 年基本不增长，甚至小幅下降。来源是 CDN 行业分析师 Dan Rayburn 按各家公司收入自下而上估算的 (2026.07)，他预计 2026–28 年每年只增 2–3%。原因：视频和大文件占了绝大部分流量，而最大的视频平台 (Netflix、YouTube、Meta、Amazon) 都自建了 CDN；单价每年降</li>
+<li><span class="tg t">第三方预测</span> 研究机构给的“CDN 市场” $270–370 亿 (2025–26)、年增 10–24%，把安全、边缘计算都算进去了，口径太宽，不用来估 Fastly 的空间</li>
+<li><span class="tg p">管理层口径</span> 2026.09 投资者日给出现有产品的可服务市场 <strong>$220 亿</strong>，大部分在安全。Fastly 2025 年收入 $6.24 亿，约占 3%</li>
+<li><span class="tg e">估算</span> Rayburn 估计 2025 年分发收入份额：AWS CloudFront 约 $15 亿 (29%)、Akamai $12.5 亿 (25%)、Cloudflare 约 $5 亿 (10%，它的流量大部分不是视频)、<strong>Fastly 约 $4 亿 (8%)</strong>、CDN77 $2.2 亿、Google 约 $1.75 亿，其余是区域性小厂</li>
+</ul></div>
+<div class="prose"><p><strong>这意味着：</strong>Fastly 网络服务 2026 年上半年 +14% (Q1 +11%、Q2 +17%)，在一个不增长的池子里，靠的是抢份额 (2024–25 年 Edgio 破产、Lumen 和 StackPath 退出) 和少数大客户放量，不是行业在长。管理层也承认 AI 主要带来的是安全和计算需求，不是带宽：AI agent 不看视频、不下大文件，按字节算它们的流量很小。</p></div>
+
+<h3>竞争格局</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">阵营</th><th class="l">玩家</th><th class="l">最新状态</th><th class="l">对 Fastly 的威胁</th></tr></thead>
+<tbody>
+<tr><td class="l">平台型对手</td><td class="l">Cloudflare (NET)</td><td class="l wrap">Q2 2026 收入 $6.96 亿，+36%；$10 万以上客户 4,698 家 (+27%)，NRR 120%；348 个城市；免费版获客 + 套餐定价；还卖零信任 (企业员工上网安全)、开发者平台 (Workers、R2 存储)、AI 爬虫收费。市值 $1,126 亿，EV/NTM 收入 34x</td><td class="l wrap"><strong>最大。</strong>收入是 Fastly 的 3.8 倍、增速更快、产品线更宽、开发者生态 (740 万) 大一个数量级。在中小客户和“网络 + 安全 + 零信任”打包上 Fastly 基本没法正面竞争</td></tr>
+<tr><td class="l">老牌对手</td><td class="l">Akamai (AKAM)</td><td class="l wrap">Q2 收入 $11.0 亿，+5%：安全 $6.04 亿 +10%，分发 $3.96 亿 −6%，云计算 $0.99 亿 +39%。正在把资本开支提到收入的约 40%，建 GPU 推理云；9.24 和 Anthropic 签了最多 $116 亿、7 年的算力合同。市值 $133 亿，EV/收入约 4x</td><td class="l wrap"><strong>中等，且在减弱。</strong>分发业务在主动收缩、涨价 (3% 附加费 + 续约最多 10%)，这给了 Fastly 抢大客户份额的空间；但它的安全业务规模是 Fastly 的 14 倍</td></tr>
+<tr><td class="l">云厂商自带</td><td class="l">AWS CloudFront、Google Cloud CDN / Media CDN、Azure Front Door</td><td class="l wrap">CloudFront 分发收入约 $15 亿，最大；从 AWS 源站回源免费，CDN 消费可以抵扣客户和 AWS 签的年度承诺；2025.11 推出 $0–1,000/月的包月套餐，直接对标 Cloudflare</td><td class="l wrap"><strong>中等。</strong>对已经在 AWS 上的客户，“够用、打包、抵承诺”很难拒绝。Fastly 要靠性能、可编程性和多云中立来赢</td></tr>
+<tr><td class="l">自建</td><td class="l">Netflix、YouTube、Meta、Apple、Amazon Prime Video、TikTok</td><td class="l wrap">Netflix 在 1,000 多家运营商机房放了自己的缓存设备；Rayburn 称 TikTok 越来越多用自己的 CDN，并在把流量重新分配给供应商时压价</td><td class="l wrap"><strong>高，而且直接。</strong>Fastly 的前十大客户 (占 37%) 里有这类平台。它们是“既是最大客户、也是最大的潜在流失”</td></tr>
+<tr><td class="l">已退出</td><td class="l">Edgio (原 Limelight + Edgecast)、Lumen、StackPath</td><td class="l wrap">Edgio 2024 年破产，Akamai 以约 $1.25 亿买走部分客户合同；Azure 上的 Edgio CDN 2025.01 关闭</td><td class="l wrap">说明二线纯 CDN 很难活下去：规模不够时，价格战加固定成本会把公司拖垮。Fastly 2024 年也站在这个边缘</td></tr>
+</tbody></table></div>
+
+<h3>AI 争论：AI 流量是加项还是噱头</h3>
+<div class="two">
+<div><h4>多头：AI 让“门口”更重要</h4><ul>
+<li>管理层说 AI 流量的增速是人类流量的 6.5 倍；MCP (agent 调用工具的标准接口) 流量今年 11 倍，代码生成相关流量 34 倍</li>
+<li>Cloudflare 6 月数据：机器人请求首次超过一半 (57%)。网站越来越需要分辨“真人、好爬虫、坏爬虫、付费 agent”，这正是机器人管理和 WAF 的生意；Fastly 的 DDoS 和机器人管理 Q2 三位数增长</li>
+<li>9 月推出 AI 防火墙和 AI 运行时控制；和 Skyfire 合作在边缘验证 agent 身份和支付</li>
+<li>投资者日：大客户里同时用 4 个以上产品的比例从两年前 7% 升到 30%</li>
+</ul></div>
+<div><h4>空头：钱主要不在 Fastly</h4><ul>
+<li>管理层自己说 AI 流量占总流量“相对不大”，不单独披露。CTO Artur Bergman 在投资者日说大模型近期仍会在中心化的数据中心跑</li>
+<li>真正的 AI 大钱是 GPU 算力合同 (Akamai 和 Anthropic 的 $116 亿)，需要每年把收入的 40% 投进设备，Fastly 没有这个资产负债表 (现金 $3.4 亿)</li>
+<li>Cloudflare 有 AI 爬虫收费、agent 支付这些新收费方式；Fastly 的“计算”收入一个季度只有 $770 万</li>
+<li>Q2 超预期的 $1,000 万主要来自大客户和世界杯，不来自 AI</li>
+</ul></div>
+</div>
+<p class="one">我的判断：AI 对 Fastly 是加项，但加在安全 (机器人管理) 上，而不是流量上；目前规模还小，无法从财报里单独拆出来。真正推动 2025–26 年加速的是三件更“老”的事：竞争对手退出后的份额、前十大客户放量、安全交叉销售。</p>
+
+<h3>上下游</h3>
+<div class="prose"><ul>
+<li><strong>上游 (成本)：</strong>服务器 (内存、SSD 是大头)、机房托管 (Equinix 这类)、和运营商之间的带宽和互联。2026 年内存价格是行业最大的成本冲击：Akamai 说服务器成本比 2025 上半年高 75–200%、内存价格 2025.10 以来翻倍以上。Fastly 因此把 capex 前置到上半年，Q2 capex 占收入 17%</li>
+<li><strong>网络：</strong>114 个城市、166 个节点、622 Tbps 容量 (2026.06)。Fastly 的设计是“少而大”的节点 (Cloudflare 是 348 个城市)，单点效率高、软件定义，但在新兴市场覆盖薄；正在印度、中东、东南亚、拉美加节点</li>
+<li><strong>客户：</strong>没有披露总客户数，最后一次披露的“企业客户”628 家 (2025 年底)。官网列的客户有《纽约时报》、Reddit、《卫报》、BuzzFeed、Yelp、SpaceX、JetBlue、Shutterstock 等；10-K 点名 TikTok 是 2025 年最大客户之一，2025 年首次有单一客户群超过收入 10%。美国占收入 70%。2026.10 扩大和印度 Jio 的合作，Fastly 的平台支撑 JioCDN (JioHotstar、板球联赛)</li>
+<li><strong>渠道：</strong>直销为主，大客户由销售团队签年度承诺合同；2025.08 起由 Scott Lovett 任“市场总裁”统管销售</li>
+</ul></div>
+<p class="one">一句话：这个行业的钱分三层：送货 (约 $50 亿，不增长、被云厂商和自建挤压)、安全 (大得多、在增长、Akamai 和 Cloudflare 是龙头)、边缘计算 (还很小)。Fastly 在送货层是第四五名，在安全层是追赶者，它能不能值钱，看它把送货客户转化成安全客户的速度。</p>
+</section>
+
+<section class="sec">
+<h2>2. 商业模式：卖什么，怎么收钱</h2>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">产品</th><th class="l">客户拿到什么</th><th class="l">怎么收钱</th><th class="l">状态</th></tr></thead>
+<tbody>
+<tr><td class="l">CDN / 网络服务</td><td class="l wrap">就近缓存和分发、Instant Purge (秒级清缓存)、用 VCL 语言配置缓存规则、图片优化、视频分发</td><td class="l wrap">按流量 (GB) 和请求数，量越大单价越低；大客户签 12 个月以上最低承诺</td><td class="l"><span class="tg v">成熟</span>，Q2 $1.34 亿，+17%</td></tr>
+<tr><td class="l">Next-Gen WAF</td><td class="l wrap">在应用前面挡 SQL 注入、撞库、API 滥用；可以部署在 Fastly 边缘、也可以装在客户自己的机房或其他云上</td><td class="l wrap">按应用或请求量订阅</td><td class="l"><span class="tg v">成熟</span>，2026.10 入选 IDC WAAP 领导者</td></tr>
+<tr><td class="l">DDoS 防护、机器人管理</td><td class="l wrap">挡流量洪水；识别爬虫、刷单、AI agent</td><td class="l wrap">订阅 + 用量</td><td class="l"><span class="tg p">新</span>，三位数增长</td></tr>
+<tr><td class="l">Compute (边缘计算)</td><td class="l wrap">用 WebAssembly 在边缘跑客户代码，启动快、隔离好</td><td class="l wrap">按请求和计算时间</td><td class="l"><span class="tg p">早期</span>，Q2 $770 万 (含可观测性)，+69%</td></tr>
+<tr><td class="l">AI 防火墙、AI 缓存</td><td class="l wrap">过滤发给大模型的恶意提示词；缓存相似问题的模型回答以省推理钱</td><td class="l wrap">尚未披露</td><td class="l"><span class="tg t">尚无收入数据</span>，2026.09 发布</td></tr>
+</tbody></table></div>
+
+<h3>收入怎么拆</h3>
+<div class="formula">网络服务收入 = 客户流量 × 单价
+      增长 ≈ 流量增长 (2026 Q2：低 20% 区间) − 同口径降价 (中个位数，主要是客户用量升档拿到更低单价) ≈ +17%
+
+安全收入 = 安全客户数 × 每客户产品数 × 每产品单价
+      增长 ≈ 交叉销售 (过去四个季度一半新签订单带安全) + 新产品 (DDoS、机器人) → +43%
+
+总收入 = 网络服务 (Q2 73%) + 安全 (23%) + 其他 (4%)
+从 2027 年起公司只报一个总收入数，不再分三块 (投资者日公告)</div>
+<div class="prose">
+<p><strong>两个关键点：</strong>第一，网络服务是“量 × 价”的生意，单价每年降，增长全靠流量涨得比价格降得快。Fastly 2024 年的崩盘就是反过来：最大客户把流量挪走、续约时大幅压价，同时流量增速放缓，网络服务收入几乎不增长。第二，安全是订阅生意，增长靠在老客户身上多卖产品，单价不会每年自动降。所以安全占比每升 1 个点，收入质量就好一点。安全从 2024 年的约 19% 升到 Q2 的 23%。</p>
+<p><strong>停止分项披露要注意：</strong>2027 年起只报总收入，外部投资者将看不到网络服务 (低质量、受大客户影响) 和安全 (高质量) 各自的增速。这本身不是坏消息，但会让“安全占比在提升”这个最重要的论点更难验证。</p>
+</div>
+
+<h3>是不是不可或缺</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">客户 / 场景</th><th class="l">判断</th><th class="l">原因</th></tr></thead>
+<tbody>
+<tr><td class="l">大型流媒体、社交平台 (前十大客户)</td><td class="l"><span class="tg t">可替代</span></td><td class="l wrap">它们同时用 3–5 家 CDN 加自建，按价格和性能每月调配流量；Rayburn 引用的一次招标里，Akamai、Fastly、CloudFront、Google、CDN77 的北美报价相差不到 $0.0001/GB。这部分是大宗商品</td></tr>
+<tr><td class="l">内容常变、要求可编程的网站 (新闻、电商、开发者平台)</td><td class="l"><span class="tg p">最好的选择之一</span></td><td class="l wrap">VCL 配置、秒级清缓存、边缘逻辑深度嵌进了客户的发布流程，迁走要重写配置和测试；但 Cloudflare 和 Akamai 都能做，迁移不是不可能</td></tr>
+<tr><td class="l">已经用了 Fastly 安全产品的客户</td><td class="l"><span class="tg v">较难替代</span></td><td class="l wrap">WAF 规则、机器人策略是按客户业务调出来的，换供应商有安全风险；年度收入留存 (ARR，衡量流失) 2023 年就在 99% 以上</td></tr>
+<tr><td class="l">中小网站</td><td class="l"><span class="tg t">已有替代品</span></td><td class="l wrap">Cloudflare 免费版和 CloudFront 包月套餐更便宜、更省事，Fastly 基本不在这个市场</td></tr>
+</tbody></table></div>
+
+<h3>利润质量：每卖 1 美元，股东拿到多少</h3>
+<div class="chart-wrap" id="ch-bridge"></div>
+<p class="src">Source: Fastly 8-K (Ex. 99.1) Q3 2025–Q2 2026。TTM (2025.07–2026.06)，$M</p>
+<div class="prose"><ul>
+<li><strong>毛利率是这次改善的核心。</strong>non-GAAP 毛利率从 2024 年 57.8% 升到 Q2 2026 的 65.8%，过去 12 个月新增收入的毛利率高达 96% (管理层口径)：网络是固定成本，流量涨上来以后，多出的收入几乎全是毛利。但要注意 Q1 有约 1.9 个点来自把服务器折旧年限拉长的会计调整，不是经营改善</li>
+<li><strong>non-GAAP 第一次赚钱，GAAP 还在亏。</strong>2025 年 non-GAAP 营业利润 $0.22 亿 (上市后第一个盈利年)，GAAP 营业亏损 $1.19 亿；差额几乎全是 SBC $1.17 亿。2026 上半年 non-GAAP 营业利润 $0.46 亿，GAAP 亏 $0.38 亿</li>
+<li><strong>FCF 很薄，而且 2026 年被 capex 压住。</strong>上半年经营现金流 $0.68 亿，capex $0.61 亿，FCF 只剩 $770 万。全年指引 $0.40–0.50 亿，FCF 利润率约 6%</li>
+<li><strong>SBC 吃掉的远多于 FCF。</strong>2021–2025 五年累计 FCF −$3.2 亿，累计 SBC $6.5 亿。SBC 占收入：2021 年 40% → 2022 年 34% → 2023 年 27% → 2024 年 20% → 2025 年 19% → 2026 上半年 20%。2024 年以后就降不动了，而上半年金额 +35%</li>
+<li><strong>没有回购，股本一直在涨。</strong>加权股本 2021 年 1.16 亿 → 2025 年 1.47 亿，年均约 +6%；现在 1.593 亿股。两笔可转债按现价都会转股，再加约 1,550 万股 (第 3 节)</li>
+</ul></div>
+<div class="chart-wrap" id="ch-annual"></div>
+<p class="src">Source: Fastly 8-K (FY2021–FY2025)；2026E = FCF 指引中点 $0.45 亿 − SBC 约 $1.42 亿 (<span class="tg e">估算</span>：上半年 $0.70 亿 × 2 + 小幅增长)。扣 SBC 自由现金流，$M</p>
+<p class="one">一句话：每多卖 1 美元，报表上的自由现金流 2026 年约 6 美分，扣掉股票薪酬后股东拿到的是 −13 美分。和 DDOG (+6 美分)、TEAM (约 0，FY27 约 +7 美分) 比，Fastly 是三家里最差的。</p>
+</section>
+
+<section class="sec">
+<h2>3. 成长史、资本结构与风险</h2>
+<div class="chart-wrap" id="ch-px" style="max-width:none"></div>
+<p class="src">Source: IBKR 月线收盘价，2021.10–2026.10。标注为当月收盘或关键日收盘</p>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">时间</th><th class="l">事件</th><th class="l">今天的意义</th></tr></thead>
+<tbody>
+<tr><td class="l">2011</td><td class="l wrap">Artur Bergman (前 Wikia CTO) 和 Simon Wistow 在旧金山创立，基于开源缓存软件 Varnish 改造</td><td class="l wrap">工程师文化、产品为开发者而做。Bergman 至今是 CTO，在投资者日讲技术路线；他 9.26 卖了约 38 万股</td></tr>
+<tr><td class="l">2019.05</td><td class="l wrap">纽交所上市，发行价 $16 (区间上限)，募资 $1.8 亿，首日涨 50% 以上</td><td class="l wrap">现价 $25 只比发行价高 57%，七年年化约 6%，期间股本从约 1 亿扩到 1.6 亿</td></tr>
+<tr><td class="l">2020</td><td class="l wrap">疫情流量暴涨；2 月总裁 Joshua Bixby 接任 CEO，Bergman 转任执行董事长；8 月披露 TikTok 占上半年收入 12%，同月以约 $7.75 亿 (现金 $2 亿 + 股票 $5.75 亿) 收购 WAF 公司 Signal Sciences</td><td class="l wrap">Signal Sciences 就是今天安全业务的底子，也是 Fastly 唯一一笔改变了公司的收购。TikTok 依赖从这时起就是风险</td></tr>
+<tr><td class="l">2020.10</td><td class="l wrap">10.13 收盘最高 $128.83；10.14 把 Q3 收入指引从 $7,350–7,550 万砍到 $7,000–7,100 万并撤回全年指引，原因是特朗普政府要封禁 TikTok 后 TikTok 用量下降，次日跌 28%</td><td class="l wrap">第一次“最大客户一动、指引就崩”。现价比高点低 81%</td></tr>
+<tr><td class="l">2021.03</td><td class="l wrap">发行 $9.49 亿 0 息可转债，2026 年到期，转股价 $102.80</td><td class="l wrap">高位融到了便宜的钱，2022–2025 年分四次以折价回购，最后 $3,860 万在 2026 年上半年到期还清。这笔债没有造成稀释</td></tr>
+<tr><td class="l">2021.06.08</td><td class="l wrap">全球大宕机：一个客户的正常配置变更触发了 5 月埋下的软件 bug，85% 的网络报错，亚马逊、Reddit、英国政府网站、《纽约时报》、BBC 都打不开，49 分钟内恢复 95%</td><td class="l wrap">“韧性”从此是大客户招标的第一项。Fastly 现在反过来用竞争对手的故障抢客户 (Q2 一家教育公司因对手 WAF 失效转来)</td></tr>
+<tr><td class="l">2022.09</td><td class="l wrap">Todd Nightingale (思科企业网络负责人、前 Meraki 掌门) 接任 CEO</td><td class="l wrap">市场当时期待一个“会卖企业软件”的 CEO；结果他任内股价从约 $9 跌到 $7，2024 年连砍三次指引</td></tr>
+<tr><td class="l">2024.02–08</td><td class="l wrap">2024 年首次指引 $5.80–5.90 亿 (2 月，次日 −30%)；5 月砍到 $5.55–5.65 亿 (−32%，RPO 同比下降)；8 月再砍到 $5.30–5.40 亿 (−20%)，原因是“部分最大客户的需求问题”，NRR 从 114% 降到 110%，随后裁员 11%。全年实际 $5.44 亿</td><td class="l wrap">全年实际比首次指引低 7%。这是理解今天估值的关键：市场记得这家公司的指引曾经完全不可靠，所以现在每个季度的超预期都被打折</td></tr>
+<tr><td class="l">2025.02</td><td class="l wrap">2025 年首次指引 $5.75–5.85 亿，只增约 7%，且假设 Q1 之后没有美国 TikTok 流量；前十大客户占比从 40% 降到 32%，大客户续约降价更狠，NRR 102%，毛利率 56.5%。次日 −19%，到约 $8</td><td class="l wrap">这是底部。之后两年的“加速”很大一部分是从这个被压低的基数反弹，而 TikTok 流量后来并没有真正离开 (Q2 2026 一个客户群占 11%)</td></tr>
+<tr><td class="l">2025.06–08</td><td class="l wrap">6.16 Nightingale 突然卸任 (公司只说他“寻求外部机会”)，产品负责人 Kip Compton (前思科网络战略负责人，2024.01 加入) 接任 CEO，当时股价约 $7.2、市值约 $10.5 亿。8 月 CFO Ron Kisling 离职，前 Benchling、Houzz CFO Rich Wong 接任；销售负责人 Scott Lovett 升任市场总裁</td><td class="l wrap">新团队上任后连续五个季度超指引、上调全年指引。市场在意 Compton 是因为他是产品出身：今天“安全交叉销售 + 多产品”的打法就是他的路线</td></tr>
+<tr><td class="l">2025.11.05</td><td class="l wrap">Q3 2025：收入 $1.58 亿 (+15%)，比指引中点高 4.8%；毛利率 62.8% (一年前 58.6%)；全年指引上调到 $6.10–6.14 亿。次日 +36%</td><td class="l wrap">第一次让市场相信“利润率拐点”是真的</td></tr>
+<tr><td class="l">2025.12</td><td class="l wrap">发行 $1.8 亿 0 息可转债 (2030 年到期，转股价 $15.26，配上限 $23.04 的 capped call)，用于回购 2026 年债；从纽交所转到纳斯达克</td><td class="l wrap">在 $11.5 的股价上发了转股价 $15 的债，现在股价 $25，这笔债注定转股，带来约 1,180 万股稀释 (capped call 抵消一部分)</td></tr>
+<tr><td class="l">2026.02.11</td><td class="l wrap">Q4 2025：收入 $1.73 亿 (+23%)，比指引中点高 6.9%；2026 年首次指引 $7.00–7.20 亿，比一致预期 $6.68 亿高 6%，EPS 指引 $0.23–0.29 (一致预期 $0.13)。次日 <strong>+72%</strong>，上市以来最大单日涨幅；当时空头约占流通股 10%</td><td class="l wrap">改判的起点。指引第一次明显高于市场预期，加上空头回补</td></tr>
+<tr><td class="l">2026.03–04</td><td class="l wrap">没有新的财报，股价从 $19 涨到 4.08 盘中 $34.82 (年初至今 +233%)，驱动是“agent 流量 + 边缘”的叙事、RSA 安全大会新品、空头回补 (空头 11% 以上)；4.09–4.14 四个交易日跌 36%，没有公司层面的坏消息，主要是获利了结，CEO 等高管也在高位卖股</td><td class="l wrap">说明这只股票的价格大部分时候由叙事和仓位决定，不由季度数据决定。峰值时 NTM 市销率约 7x</td></tr>
+<tr><td class="l">2026.05.06</td><td class="l wrap">Q1 2026：收入 $1.73 亿 (+20%)，只比指引中点高 1.2%；网络服务只增 11%；Q2 指引 $1.70–1.76 亿 (环比持平或下降)；全年只上调到 $7.10–7.25 亿；capex 从约 5% 翻倍到收入的 10–12%。次日 <strong>−38%</strong>，从 $32.4 到 $19.5</td><td class="l wrap">财报前因同业 DigitalOcean 的 AI 财报先涨了 18%，预期被推得很高。这次暴跌暴露了两个真实问题：核心 CDN 增长没有叙事说的那么快，网络扩容要先花钱</td></tr>
+<tr><td class="l">2026.08.05</td><td class="l wrap">Q2 2026：收入 $1.83 亿 (+23%)，比指引中点高 6%；毛利率 65.8% 创新高；全年收入指引上调到 $7.32–7.46 亿、non-GAAP 营业利润 $0.88–0.96 亿 (原 $0.58–0.68 亿)。次日 −13% (Q2 FCF 只有 $360 万，capex 占 17%，前十大升到 37%，同时提交了新的通用融资备案 <span class="tg e">推断</span>)，8.10 又 +21%</td><td class="l wrap">盈利指引一次上调约 45%，是这一年最实在的改善。但市场的第一反应是盯住现金流和集中度</td></tr>
+<tr><td class="l">2026.09.22</td><td class="l wrap">投资者日：2029 年收入 $11–13 亿 (2026–29 年复合 14–21%)，non-GAAP 毛利率 67–71%，营业利润率 20–22%，FCF 利润率 12–15%，capex 10–12%。<strong>没有给 SBC 目标</strong>。前后几天股价 +15% / −5% / +14% / −10% 来回震荡</td><td class="l wrap">第一次有了长期框架，下面第 5 节用它来检验现价。最关键的缺口是 SBC</td></tr>
+<tr><td class="l">2026.10</td><td class="l wrap">10.09 Oppenheimer 上调到“跑赢大盘”，目标价 $35，当天 +16%；10.13 扩大和印度 Jio 的合作；10.14 入选 IDC WAAP 领导者</td><td class="l wrap">卖方平均目标价约 $28，评级以“持有”为主 (12 家：6 买、5 持有、1 卖)</td></tr>
+</tbody></table></div>
+
+<h3>资本结构</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">项目</th><th>数值</th><th class="l">说明</th></tr></thead>
+<tbody>
+<tr><td class="l">普通股</td><td>1.593 亿股</td><td class="l wrap">2026.07.24，单一类别 A 股，没有双重投票权</td></tr>
+<tr><td class="l">2028 年可转债</td><td>$1.5 亿</td><td class="l wrap">7.75% 票息，转股价 $19.74，到期前不可赎回；现价下价内，约 760 万股</td></tr>
+<tr><td class="l">2030 年可转债</td><td>$1.8 亿</td><td class="l wrap">0 息，转股价 $15.26，约 1,180 万股；capped call 上限 $23.04，股价在上限以上，capped call 约抵消 370 万股 (<span class="tg e">估算</span>)。2026 Q3 曾触发持有人可转股条件</td></tr>
+<tr><td class="l">现金和投资</td><td>$3.375 亿</td><td class="l wrap">2026.06.30；债务面值 $3.3 亿，按债务算净现金约 $750 万</td></tr>
+<tr><td class="l">估值用股本</td><td>约 1.75 亿股</td><td class="l wrap">1.593 亿 + 两笔可转债转股 1,940 万 − capped call 370 万 (<span class="tg e">估算</span>)。可转债按转股处理，现金 $3.4 亿全部算股东的</td></tr>
+<tr><td class="l">回购</td><td>无</td><td class="l wrap">上市以来没有回购普通股；8 月新提交通用融资备案</td></tr>
+<tr><td class="l">空头</td><td>流通股 13.9%</td><td class="l wrap">2026.10 中旬 (MarketBeat)，回补天数约 2 天；年内一直在 10–14%</td></tr>
+<tr><td class="l">内部人</td><td>净卖出</td><td class="l wrap">过去三个月内部人卖出约 $3,440 万；没有看到买入</td></tr>
+</tbody></table></div>
+
+<div class="two">
+<div><h4>Pros</h4><ul>
+<li>收入从 2025 Q1 的 +8% 加速到 2026 Q2 的 +23%，连续五个季度超指引中点 (1.2–6.9%)</li>
+<li>毛利率两年提升 8 个点到 65.8%，增量毛利率 96%：固定成本网络开始有经营杠杆</li>
+<li>安全 +43%，占收入升到 23%；NRR 从 102% (2024 Q4) 升到 117%</li>
+<li>行业出清：Edgio 破产、Lumen 和 StackPath 退出、Akamai 主动收缩分发并涨价</li>
+<li>按收入估值 (EV/NTM 5.0x) 比全体软件回归线低约 25%；按毛利算约低 12%</li>
+</ul></div>
+<div><h4>Cons</h4><ul>
+<li>上市七年 GAAP 从未盈利；扣 SBC 自由现金流每年为负，2025 年 −$0.72 亿，2026E 约 −$1.0 亿</li>
+<li>前十大客户占 37%，一个客户群占 11%；2020 年和 2024–25 年两次因大客户崩盘</li>
+<li>核心分发是不增长、降价的大宗商品市场，对手是 AWS、Cloudflare 和自建</li>
+<li>2026 年 capex 翻倍，内存涨价；FCF 指引只有收入的约 6%</li>
+<li>没有回购，股本年增约 6%，可转债再加约 9% 稀释</li>
+<li>股价高度由叙事和空头仓位驱动：一年内单日 ±10% 以上的波动超过 20 次</li>
+</ul></div>
+</div>
+</section>
+
+<section class="sec">
+<h2>4. 当前 Set up</h2>
+<h3>过去 4 个季度的执行</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">季度</th><th>收入指引 $M</th><th>实际 $M</th><th>YoY</th><th>网络服务</th><th>安全</th><th>毛利率</th><th>营业利润 指引 → 实际 $M</th><th>次日股价</th><th class="l">评价</th></tr></thead>
+<tbody>
+<tr><td class="l">Q3 2025</td><td>149–153</td><td>158.2</td><td class="rate">15%</td><td class="rate">11%</td><td class="rate">30%</td><td class="pct">62.8%</td><td>−1–3 → 11.6</td><td>+36%</td><td class="l wrap">beat 4.8%；毛利率比一年前高 4 个点，利润远超指引</td></tr>
+<tr><td class="l">Q4 2025</td><td>159–163</td><td>172.6</td><td class="rate">23%</td><td class="rate">19%</td><td class="rate">32%</td><td class="pct">64.0%</td><td>8–12 → 21.2</td><td>+72%</td><td class="l wrap">beat 6.9%，网络服务也加速；2026 指引比一致预期高 6%</td></tr>
+<tr><td class="l">Q1 2026</td><td>168–174</td><td>173.0</td><td class="rate">20%</td><td class="rate">11%</td><td class="rate">47%</td><td class="pct">65.1%</td><td>14–18 → 19.1</td><td>−38%</td><td class="l wrap">beat 只有 1.2%；网络服务回落到 11%；毛利率含约 1.9 个点会计调整；capex 翻倍</td></tr>
+<tr><td class="l">Q2 2026</td><td>170–176</td><td>183.3</td><td class="rate">23%</td><td class="rate">17%</td><td class="rate">43%</td><td class="pct">65.8%</td><td>12–16 → 27.0</td><td>−13%</td><td class="l wrap">beat 6%，但约 $1,000 万来自大客户流量和世界杯；前十大 +48%，其余 +12%</td></tr>
+<tr class="dim"><td class="l">Q3 2026</td><td>184–190</td><td>11.04 公布</td><td class="rate">约 18%</td><td></td><td></td><td class="pct">65% ± 0.5</td><td>20–24 → ?</td><td></td><td class="l wrap">一致预期 2026 全年收入 $7.41 亿 (指引中点 $7.39 亿)</td></tr>
+</tbody></table></div>
+<p class="src">Source: Fastly 8-K (Ex. 99.1) Q3 2025–Q2 2026 和电话会；毛利率为 non-GAAP；次日股价为 IBKR 日线收盘对比</p>
+<div class="chart-wrap" id="ch-rev"></div>
+<p class="src">Source: Fastly 8-K。季度收入 $M，斜体为同比增速；最后一根为 Q3 2026 指引中点</p>
+<div class="prose"><p><strong>判断：</strong>新管理层的指引是保守的 (五个季度都超中点)，但超出的质量参差不齐。毛利率和营业利润的改善是高质量的、可持续的；收入超出则一半靠前十大客户和一次性赛事，网络服务的季度增速在 11% 和 19% 之间来回跳，说明“底层流量加速”还没有被稳定验证。Q1 和 Q2 次日股价都跌，说明市场现在看的是网络服务增速和现金流，不再是收入 beat 本身。</p></div>
+
+<h3>核心 driver：已验证 vs 理论</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">Driver</th><th class="l">已验证</th><th class="l">仍是目标或推测</th><th class="l">状态</th></tr></thead>
+<tbody>
+<tr><td class="l">安全交叉销售</td><td class="l wrap">安全 +43%，占比 23%；一半新签订单含安全；72% 客户用两个以上产品，大客户里用 4 个以上的从 7% 升到 30%</td><td class="l wrap">2027 年起不再分项披露，之后只能从管理层口头指标验证</td><td class="l"><span class="tg v">已验证</span></td></tr>
+<tr><td class="l">毛利率经营杠杆</td><td class="l wrap">non-GAAP 毛利率 57.8% (2024) → 65.8% (Q2 2026)；增量毛利率 96%</td><td class="l wrap">2029 年 67–71%：取决于内存成本和行业价格能否稳定</td><td class="l"><span class="tg v">已验证</span></td></tr>
+<tr><td class="l">网络服务抢份额</td><td class="l wrap">上半年 +14%，在不增长的行业里；对手退出、Akamai 涨价</td><td class="l wrap">有多少来自前十大客户的一次性放量 (Q2 前十大 +48%)，无法拆分</td><td class="l"><span class="tg p">部分</span></td></tr>
+<tr><td class="l">AI 流量和 agent</td><td class="l wrap">AI 流量增速是人类的 6.5 倍；机器人管理三位数增长</td><td class="l wrap">AI 流量占比、AI 相关收入都没有披露；AI 防火墙、AI 缓存还没有收入</td><td class="l"><span class="tg t">理论</span></td></tr>
+<tr><td class="l">现金流和 SBC</td><td class="l wrap">连续六个季度 FCF 为正</td><td class="l wrap">2029 年 FCF 利润率 12–15%；SBC 下降完全没有目标和证据</td><td class="l"><span class="tg t">理论</span></td></tr>
+</tbody></table></div>
+
+<h3>往下多想一层 (1)：Q2 的增长从哪里来</h3>
+<div class="formula">Q2 2026 收入 $183.3M，前十大占 37% → $67.8M；其余 $115.5M
+Q2 2025 收入 $148.7M，前十大占 31% → $46.1M；其余 $102.6M
+   前十大：67.8 / 46.1 = +47%   (公司口径 +48%)
+   其余：  115.5 / 102.6 = +13%  (公司口径 +12%)
+同比新增 $34.6M 里，前十大贡献 $21.7M = 63%
+
+再去掉管理层说的约 $10M 一次性 (大客户流量 + 世界杯)：
+   底层收入 ≈ $173M，同比 ≈ +16%；Q3 指引中点 $187M = +18%</div>
+<div class="prose"><p>结论：Fastly 2026 年的“23% 增长”有接近三分之二来自十家客户，而这十家里有自建 CDN、每月调配流量的社交和流媒体平台。前十大以外的客户增长 12–13%，这个数更接近 Fastly 作为一个“平台”的真实增速。这和 2024 年是同一类风险的反面：当年是前十大减少，指引被砍了三次。</p></div>
+
+<h3>往下多想一层 (2)：管理层 2029 目标能不能盖住 SBC</h3>
+<div class="formula">2029 年收入目标 $11–13 亿，中点 $12 亿；FCF 利润率 12–15%，中点 13.5% → FCF ≈ $1.62 亿
+SBC：2026E 约 $1.42 亿 (占收入 19%)
+   如果 SBC 金额每年 +5%  → 2029 年 $1.64 亿 = 收入的 13.7%  → FCF − SBC ≈ −$0.02 亿
+   如果 SBC 金额每年 +10% → 2029 年 $1.89 亿 = 15.8%         → FCF − SBC ≈ −$0.27 亿
+   如果 SBC 金额不增长    → 2029 年 $1.42 亿 = 11.8%         → FCF − SBC ≈ +$0.20 亿 (收入的 1.7%)
+
+对照：SBC 金额 2024 → 2025 +9%，2026 上半年同比 +35%</div>
+<div class="prose"><p>结论：就算管理层目标全部兑现，2029 年股东扣 SBC 后拿到的现金也大约是零。要让它变成有意义的正数，SBC 金额必须基本冻结三年，或者 FCF 利润率做到目标上限以上。投资者日没有讨论这一点，这是我认为市场最可能算错的地方。</p></div>
+
+<h3>市场在问什么</h3>
+<div class="prose"><ol>
+<li><strong>加速是可持续的，还是几个大客户的一次性放量？</strong>前十大 +48%、其余 +12% 的差距是关键证据。2027 年起不再分项披露会让这个问题更难回答</li>
+<li><strong>AI 会不会给边缘带来真正的收入？</strong>多头看 AI 流量 6.5 倍，空头看 AI 的大钱都在 GPU 算力合同里 (Akamai)，而 Fastly 没有资本去做</li>
+<li><strong>capex 上升是暂时的还是结构性的？</strong>内存涨价叠加扩容，2026 年 capex 翻倍。如果 2027 年还在 10% 以上，FCF 利润率目标就要往后推</li>
+</ol></div>
+
+<h3>预期差</h3>
+<div class="two">
+<div><h4>正向：利润杠杆比一致预期快</h4><p>一致预期 2027 年收入 $8.51 亿 (+15%)、EPS $0.64，只比 2026 年的 $0.53 高 21%。但过去 12 个月增量毛利率 96%、营业利润指引半年内上调了约 70% (从 $0.50–0.60 亿到 $0.88–0.96 亿)。如果 2027 年收入做到 +18% (投资者日中点)、增量营业利润率保持在 40% 以上 (管理层长期目标是 25–40%，过去 12 个月实际 79%)，2027 年 non-GAAP 营业利润可以到 $1.4 亿以上，比一致预期隐含的高约 20% (<span class="tg e">估算</span>)。</p></div>
+<div><h4>负向：non-GAAP 利润和股东现金之间隔着 SBC</h4><p>按 2026 年 non-GAAP EPS $0.52 (指引中点)，现价是 48 倍 P/E；但同一年扣 SBC 的自由现金流约 −$1.0 亿，每股 −$0.56。卖方的 DCF 和目标价基本都建立在 non-GAAP 利润上 (例如 TIKR 用 44 倍 P/E 得到 $28)。如果市场开始像对 DDOG、TEAM 那样用扣 SBC 的口径看软件，Fastly 是这组里受影响最大的，因为它的 SBC 比例和它的 FCF 利润率差得最远。</p></div>
+</div>
+
+<h3>要做的判断</h3>
+<div class="prose"><ol>
+<li>前十大客户以外的收入增速能否维持在 15% 以上？这决定 5 年收入复合增速是 10% 还是 18%</li>
+<li>SBC 能否在 2029 年降到收入的 12% 以下？这是估值区间最大的变量，比收入增速更重要</li>
+<li>安全收入在 2027 年后 (不再分项披露) 能否通过 NRR 和多产品客户占比得到持续验证？</li>
+</ol></div>
+</section>
+
+<section class="sec">
+<h2>5. 估值与结论</h2>
+<h3>当前估值</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">倍数</th><th>数值</th><th class="l">算式 (股价 $25.07，2026.10.15)</th></tr></thead>
+<tbody>
+<tr><td class="l">市值 (普通股)</td><td>$39.9 亿</td><td class="l">$25.07 × 1.593 亿股</td></tr>
+<tr><td class="l">市值 (含可转债转股)</td><td>$43.9 亿</td><td class="l">$25.07 × 约 1.75 亿股</td></tr>
+<tr><td class="l">EV</td><td>$39.8 亿</td><td class="l">$39.9 亿 − 现金 $3.4 亿 + 可转债面值 $3.3 亿 (两种口径算出来几乎一样)</td></tr>
+<tr><td class="l">EV / TTM 收入</td><td>5.8x</td><td class="l">$39.8 亿 / $6.87 亿</td></tr>
+<tr><td class="l">EV / 2026E 收入</td><td>5.4x</td><td class="l">$39.8 亿 / $7.39 亿 (指引中点；一致预期 $7.41 亿)</td></tr>
+<tr><td class="l">EV / NTM 收入</td><td>5.0x</td><td class="l">$39.8 亿 / $7.96 亿 (mapping 口径：2026E 与 2027E 一致预期的平均)</td></tr>
+<tr><td class="l">EV / NTM 毛利</td><td>7.6x</td><td class="l">5.0x / 65.5% 毛利率</td></tr>
+<tr><td class="l">P/E (2026E, non-GAAP)</td><td>48x</td><td class="l">$25.07 / $0.52 (指引中点；一致预期 $0.53)</td></tr>
+<tr><td class="l">P/E (2027E, non-GAAP)</td><td>39x</td><td class="l">$25.07 / $0.64 (一致预期)</td></tr>
+<tr><td class="l">P / TTM FCF</td><td>116x</td><td class="l">$39.9 亿 / $0.344 亿 (收益率 0.9%)</td></tr>
+<tr><td class="l">P / 2026E FCF</td><td>89x</td><td class="l">$39.9 亿 / $0.45 亿 (指引中点，收益率 1.1%)</td></tr>
+<tr><td class="l">TTM (FCF − SBC) 收益率</td><td>−2.5%</td><td class="l">($0.344 亿 − $1.356 亿) / $39.8 亿</td></tr>
+<tr><td class="l">2026E (FCF − SBC) 收益率</td><td>约 −2.4%</td><td class="l">($0.45 亿 − 约 $1.42 亿) / $39.8 亿 (<span class="tg e">估算</span>)；没有回购，扣回购口径相同</td></tr>
+</tbody></table></div>
+
+<h3>同业对比</h3>
+<div class="chart-wrap" id="ch-peers"></div>
+<p class="src">Source: Software mapping 估值数据 (MarketScreener 一致预期，2026.10.14–15 股价)；FSLY 按 10.15 收盘和同一口径自行计算。EV / NTM 收入</p>
+<div class="tbl"><table class="t">
+<thead><tr><th>公司</th><th>市值 $B</th><th>最新季度增速</th><th>EV/NTM 收入</th><th>non-GAAP 营业利润率</th><th>SBC/收入</th><th>capex/收入</th><th>扣 SBC FCF 收益率</th><th class="l">为什么比 FSLY 差 / 好</th></tr></thead>
+<tbody>
+<tr class="key"><td>Fastly</td><td>4.0</td><td class="rate">23%</td><td>5.0x</td><td class="pct">14.7%</td><td class="pct">约 20%</td><td class="pct">10–12%</td><td>−2.5%</td><td class="l wrap">利润率拐点刚开始；SBC 比例和 Cloudflare 一样高，但增速、规模、生态都小得多</td></tr>
+<tr><td>Cloudflare</td><td>112.6</td><td class="rate">36%</td><td>34.1x</td><td class="pct">13.8%</td><td class="pct">约 20%</td><td class="pct">14–15%</td><td>−0.2%</td><td class="l wrap">同样“扣 SBC 现金流为负”，市场却给了 7 倍的收入倍数：它的增速快 13 个点、客户 NRR 120%、平台更宽 (零信任、开发者、AI 收费)。比 FSLY 好，但贵得多</td></tr>
+<tr><td>Akamai</td><td>13.3</td><td class="rate">5%</td><td>3.7x</td><td class="pct">25%</td><td class="pct">约 9%</td><td class="pct">约 40% (2026)</td><td>3.3% (TTM)</td><td class="l wrap">SBC 只有 FSLY 一半、利润率高 10 个点，但分发在萎缩；2026–27 年为 GPU 云把 FCF 打成大幅负数。mapping 评“无预期差”</td></tr>
+<tr><td>软件中位数</td><td>—</td><td>—</td><td>5.2x</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="l wrap">mapping 全部 91 家的中位数。FSLY 的收入倍数和中位数差不多，但毛利率 (65%) 比典型软件 (75–80%) 低 10–15 个点</td></tr>
+<tr><td>AWS CloudFront</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="l wrap">不单独披露；分发收入约 $15 亿，是 FSLY 网络服务的 3 倍，靠和 AWS 打包而不是性能赢</td></tr>
+</tbody></table></div>
+<p class="src">Source: /mnt/project-files/software-mapping/valuation/*.json、research/B_security.md；Cloudflare、Akamai Q2 2026 8-K；收益率 = (FCF − SBC) / EV，TTM。Akamai 的 TTM FCF 还没有反映 2026 下半年的 GPU 资本开支</p>
+
+<h3>Mapping 为什么没有 FSLY</h3>
+<div class="prose">
+<p>mapping (2026.10.15) 的入选门槛是市值约 $50 亿以上。<strong>Fastly 普通股市值 $39.9 亿 (含可转债转股约 $44 亿)，低于门槛，所以不在 91 家里，也没有打分。</strong>同一赛道的 Cloudflare 和 Akamai 在 mapping 里，被归到安全子行业：NET 评“已定价”(约 41 倍毛利，SBC 约 20%，扣 SBC 收益率 −0.3%)，AKAM 评“无预期差”(分发萎缩、GPU 云资本开支把 FCF 打成负数)。</p>
+<p><strong>如果把 FSLY 放进 mapping，我会怎么评：</strong>AI 风险 3/5 (分发是大宗商品、被云厂商和自建挤压，但 AI 本身不替代 CDN)、AI 受益 3/5 (机器人管理和 agent 验证是真需求，但规模小、Cloudflare 领先)，结论“已定价”。和 NET 一样是“好故事、股东现金为负”，但没有 NET 的规模和平台优势；和 AKAM 比，利润质量更差，增长更好。</p>
+</div>
+
+<h3>放在估值 × 增长框架里</h3>
+<div class="prose"><p>和 mapping 第 3 节同一套方法：横轴是一致预期未来约 3 年的年化增长，纵轴是倍数 (对数刻度)，虚线是全组软件公司回归出来的“这个增速对应的平均倍数”。FSLY 不在 mapping 里，这里按同一口径补一个点，<strong>不参与回归</strong>，回归线和 mapping 完全一样。</p></div>
+<div class="tabs" id="vtabs"><button data-k="s" class="on">收入：EV/Sales × 收入增长</button><button data-k="f">现金流：P/(FCF − SBC) × 增长</button></div>
+<div class="chart-wrap sc-wrap"><svg id="vs" viewBox="0 0 900 460" role="img" aria-label="估值和增长散点图"></svg></div>
+<p class="cap" id="vcap"></p>
+<div class="prose" style="margin-top:var(--s2)"><ul>
+<li><strong>收入图：</strong>FSLY 的增长用 mapping 的公式算：(2028E 收入 / TTM 收入)^(1/2.5) − 1。2028E 用一致预期 2027 年 $8.51 亿 × 1.15 = $9.79 亿 (<span class="tg e">估算</span>：2028 年一致预期金额没有拿到，按 +15% 估)，算出约 15%。回归线在这个增速对应约 6.7x，FSLY 是 5.0x，<strong>比线低约 25%</strong>。但 FSLY 毛利率比典型软件低 10–15 个点，换成毛利倍数比，差距缩小到约 12%。同一增速区间：AKAM 3.7x (比线低 49%)，ESTC (4.1x)、NTNX (5.1x)、GTLB (6.5x) 和它差不多</li>
+<li><strong>现金流图 (扣 SBC)：</strong>FSLY <strong>画不出来</strong>：TTM、2026E 和按 2027E 推算的扣 SBC FCF 都是负数，倍数和增长率都没有意义。NET 和 AKAM 也因为同样原因 (一个是 SBC，一个是 GPU 资本开支) 不在这张图上。这本身就是结论：按股东现金看，整个 CDN / 边缘组目前都不在“可以比较”的范围里</li>
+<li>和 DDOG、TEAM 一样的格局：按收入看不贵，按股东现金看没法算。差别在于 TEAM 有清楚的改善路径 (回购大于 SBC、薪酬改革)，FSLY 没有</li>
+</ul></div>
+
+<h3>反推现价隐含了什么</h3>
+<div class="prose"><p>和 DDOG、TEAM primer 同一个口径：用“扣 SBC 后的自由现金流”(股东真正拿到的钱) 反推，5 年，要求回报 10%。起点用 2026 年收入 $7.39 亿 (指引中点)，终点是 2031 年。</p></div>
+<div class="formula">今日每股价值 = [2026 收入 × (1 + g)^5 × (FCF 利润率 − SBC 占比) × 终值倍数 / (1 + r)^5 + 现金] / 稀释股本
+
+反推：要在 $25.07 拿到 r = 10%
+  2031 年需要的 (FCF − SBC) = ($25.07 × 1.75 亿 − 现金 $3.4 亿) × 1.1^5 / 终值倍数 = $65.2 亿 / 终值倍数
+  终值 30x → $2.17 亿；FCF 利润率 17%、SBC 10% (扣完 7%)  → 2031 年收入要 $31 亿 → g ≈ 33%
+  终值 30x → $2.17 亿；FCF 利润率 22%、SBC 8%  (扣完 14%) → 2031 年收入要 $15.5 亿 → g ≈ 16%
+  终值 35x → $1.86 亿；扣完 14%                              → 2031 年收入要 $13.3 亿 → g ≈ 12.5%
+
+对照：一致预期 2027 年 +15%；投资者日 2026–29 年 14–21%</div>
+<div class="prose"><p><strong>敏感性几乎全在 SBC。</strong>同样 $25，扣 SBC 利润率 7% 需要 33% 的增速 (不可能)，14% 只需要 12–16% (合理)。所以现价隐含的不是“高增长”，而是“利润率做到 Akamai 的成本结构 (SBC 8–9%) + 投资者日目标以上的 FCF 利润率”。<strong>管理层目标兑现会怎样：</strong>2029 年 FCF 利润率 13.5%，如果 SBC 同时降到 10%，扣完 3.5%；外推到 2031 年收入约 $15 亿、扣完利润率 5–7%，按 30 倍值 $10–13 / 股。也就是说，管理层目标本身只支持 $10–13，现价要求的比目标更多。</p></div>
+
+<h3>计算器</h3>
+<div class="prose"><p>拖动参数，看隐含价值和现价隐含的增速。默认值是“基本”情景。</p></div>
+<div class="calc">
+  <div><label for="c-g">2026–31 收入年化增速 %</label><input id="c-g" type="number" step="1" value="16"></div>
+  <div><label for="c-fm">2031 FCF 利润率 %</label><input id="c-fm" type="number" step="1" value="17"></div>
+  <div><label for="c-sbc">2031 SBC 占收入 %</label><input id="c-sbc" type="number" step="1" value="10"></div>
+  <div><label for="c-pe">终值倍数 (× FCF − SBC)</label><input id="c-pe" type="number" step="1" value="30"></div>
+  <div><label for="c-r">要求年回报 %</label><input id="c-r" type="number" step="0.5" value="10"></div>
+  <div><label for="c-px">股价 $</label><input id="c-px" type="number" step="0.5" value="25.07"></div>
+</div>
+<div class="calc-out">
+  <div><div class="l">隐含今日价值 / 股</div><div class="v" id="o-val">—</div></div>
+  <div><div class="l">相对现价</div><div class="v" id="o-up">—</div></div>
+  <div><div class="l">现价隐含的收入年化增速</div><div class="v" id="o-g">—</div></div>
+</div>
+<p class="note">固定假设：2026 年收入 $7.39 亿，现金 $3.4 亿，稀释股本 1.75 亿 (含可转债转股；SBC 已作为成本扣除，不再另算稀释)，5 年。“现价隐含增速”沿用上面的利润率、倍数和回报率。</p>
+
+<h3>情景</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th>情景</th><th>收入年化增速</th><th>2031 收入</th><th>FCF 利润率</th><th>SBC</th><th>2031 (FCF − SBC)</th><th>终值倍数</th><th>今日价值 (r = 10%)</th><th>现价买入的年回报</th></tr></thead>
+<tbody>
+<tr><td class="l">悲观：大客户转走流量 + 价格战</td><td class="rate">10%</td><td>$11.9 亿</td><td class="pct">12%</td><td class="pct">13%</td><td>−$0.12 亿</td><td>—</td><td>约 $1 (只剩现金)</td><td>−50% 以下</td></tr>
+<tr class="key"><td class="l">基本：投资者日中低端 + SBC 慢慢降</td><td class="rate">16%</td><td>$15.5 亿</td><td class="pct">17%</td><td class="pct">10%</td><td>$1.09 亿</td><td>30x</td><td>$13.5</td><td>−4%</td></tr>
+<tr><td class="l">乐观：安全占比过半 + 成本结构向 Akamai 靠拢</td><td class="rate">20%</td><td>$18.4 亿</td><td class="pct">22%</td><td class="pct">8%</td><td>$2.57 亿</td><td>35x</td><td>$33.9</td><td>16%</td></tr>
+<tr><td class="l">现价</td><td colspan="8" class="l">$25.07：在基本 ($13.5) 和乐观 ($33.9) 之间，比基本情景高约 85%</td></tr>
+</tbody></table></div>
+
+<div class="verdict">
+<p><strong>要不要 deepdive：</strong>不做。它低于 mapping 的市值门槛，扣 SBC 的股东现金到 2029 年都看不到转正的明确路径，和 mapping 里已经被判为“已定价”的 NET、DDOG、TEAM 比，没有更好的风险回报。放在 watchlist 后排，每季读一遍，作为“AI agent 和机器人流量给边缘网络带来多少钱”的观察窗口 (Fastly 是这组里唯一一个流量和安全都单独披露、而且收入小到 AI 能看得出影响的公司，直到 2026 年底)。</p>
+<p><strong>现价能不能建仓：</strong>不能。$25 在基本情景下年回报约 −4%；要拿到 10%，需要 SBC 降到 8% 左右、FCF 利润率做到 22%，这已经超过了管理层自己的 2029 年目标。</p>
+<p><strong>合理区间：</strong>$13.5–34 (基本到乐观)，范围很宽，因为扣 SBC 利润率从 7% 到 14% 的差别就值一倍半。<strong>$12–15 开始有意思</strong>：那是 2026 年 2 月财报前后 ($9–16) 和 6 月低点 ($15.7，盘中) 附近的价位，在那里基本情景就能拿到 10% 左右，不需要乐观假设。</p>
+<p><strong>什么会改变判断：</strong>公司给出 SBC 目标 (例如 2028 年降到收入的 12% 以下) 或开始回购抵消稀释；或者 2027 年在只报总收入的情况下仍维持 18% 以上增长、前十大占比回落到 33% 以下。两件事同时发生，基本情景要上移到 $20 以上。反过来，任何一个前十大客户公开转走流量，悲观情景的概率会明显上升，2020 年和 2024 年都是这样开始的。</p>
+</div>
+
+<h3>Deepdive 要做什么 (如果价格到了)</h3>
+<div class="prose"><ol>
+<li><strong>模型：</strong>收入按“前十大客户 / 其余客户”和“网络服务 / 安全 / 计算”两个维度拆。网络服务 = 流量增长 × (1 − 降价)，前十大单独建，按每家的自建比例和多 CDN 份额假设；安全按客户数 × 渗透率 × 产品数。成本端单列带宽、托管、折旧 (服务器寿命调整要还原)，capex 按“扩容 / 维护”拆，内存价格做敏感性。利润端单列 SBC 金额 (按人头 × 人均授予)、可转债稀释，算扣 SBC 的 FCF / 股</li>
+<li><strong>要核实的数据：</strong>2025 10-K 里 TikTok 相关的风险披露和那个 10% 客户群的具体构成；Q2 10-Q 里 11% 客户群是否就是 TikTok USDS 合资公司；2026 Q1 折旧年限调整的金额和对毛利率的影响；capex 里扩容和维护的比例、以及 2027 年是否回落；投资者日 CFO 部分的完整假设 (这次没有拿到全文)；RPO $3.41 亿里前十大的占比；Bergman 和 CEO 的减持计划 (10b5-1)；8 月通用融资备案的规模和用途</li>
+<li><strong>专家访谈：</strong>
+  (a) 一家大型流媒体或社交平台的 CDN 采购负责人：如何在多家 CDN 之间分流量、Fastly 的份额怎么变、2026 年续约价格和 Akamai 涨价后的行为；
+  (b) 一家从 Cloudflare 或 Akamai 迁到 Fastly (或反向) 的电商 / 媒体公司的平台工程负责人：迁移的原因和成本、安全产品是否决定性；
+  (c) 一位 WAF / 机器人管理的安全采购负责人：Fastly 和 Cloudflare、Akamai、Imperva 在 AI 爬虫识别上的差别，预算是从哪里来的；
+  (d) 一位服务器和内存供应链人士：2026–27 年 DRAM 和 SSD 价格对 CDN 节点成本的影响</li>
+</ol></div>
+</section>
+
+<section class="sec">
+<h2>数据来源</h2>
+<ul class="sources">
+<li>公司财报 8-K Ex. 99.1：Q4 2023、Q4 2024、Q2–Q4 2025、Q1–Q2 2026 (sec.gov/Archives/edgar/data/1517413)；2026 Q2 10-Q (fsly-20260630)；2025 10-K (fsly-20251231)；2022 年度业绩 (Business Wire)</li>
+<li>电话会和投资者日：Q2 2026 电话会记录 (Motley Fool, 2026.08.12)；Q1 2026 电话会摘要 (Investing.com)；投资者日 2026.09.22 (StockAnalysis 记录，CFO 部分未取得全文；Yahoo Finance / MarketBeat 目标摘要；TIKR；Parameter)</li>
+<li>Q3 2026 财报日：公司公告 (经 Finviz)，2026.11.04 盘后</li>
+<li>股价：IBKR 月线 (2021.10–2026.10)、日线 (2025.10–2026.10)、实时快照；历史最高收盘 $128.83 (Macrotrends)</li>
+<li>历史与人物：Wikipedia；TechCrunch、Fastly 新闻稿 (IPO、Signal Sciences、可转债)；SEC 8-K (CEO、CFO 任命)；CNBC (2020.08 TikTok)；Motley Fool (2020.10、2024.02、2024.05)；Investing.com (2024.08、2025.02、2025.06)；Fastly 宕机说明 (2021.06)</li>
+<li>2026 年股价事件：SiliconANGLE、Schaeffer's (2.12)；Money Morning、Futuriom (3–4 月)；IBTimes (4.09)；Yahoo Finance、Motley Fool (5.07)；TIKR、Simply Wall St (8 月)；24/7 Wall St、StockStory (9 月)；StockStory / Financial Content (10.09)</li>
+<li>行业：Dan Rayburn, StreamingMediaBlog (2026.07 CDN 市场规模、2026.03 Akamai 调价、2024.11 Edgio)；Grand View Research、MarketsandMarkets (仅作对照)；Microsoft Learn (Edgio 关闭)；Netflix Open Connect；AWS CloudFront 定价页</li>
+<li>同业：Cloudflare Q2 2026 8-K、StockAnalysis；Akamai Q2 2026 新闻稿、Constellation Research 和 MarketBeat (Anthropic 合同)；Cloudflare Radar 和二手汇总 (机器人流量)</li>
+<li>一致预期和目标价：StockAnalysis (2026.10)、MarketBeat；估值框架：Software Sector Mapping (research/2026-10-15-mapping-software) 的 valuation × growth 数据，/mnt/project-files/software-mapping/valuation/</li>
+<li>未核实项：IPO 当日估值；2028E 收入一致预期 (用 +15% 估算)；投资者日的 SBC 和资本配置表述；11% 客户群是否为 TikTok；Q2 财报次日下跌的原因 (推断)；Nightingale 离职原因；Shopify、GitHub、Stripe 等 2019 年前后的客户是否仍在；投资者日日期 (Quartr 写 9.29，其余来源 9.22)；Q2 网络服务一处转录写成 $1.039 亿，以 8-K 的 $1.339 亿为准</li>
+</ul>
+</section>
+
+</main></div>
+<script>
+// Inline SVG bars. Colors come only from CSS variables so dark mode follows the theme.
+function svgBars(id, items, o){
+  o = o || {};
+  var W = 560, H = o.h || 250, top = 30, bot = o.sub ? 46 : 30, left = 8, right = 8;
+  var lo = Math.min(0, Math.min.apply(null, items.map(function(d){return d.lo}))),
+      hi = Math.max.apply(null, items.map(function(d){return d.hi}));
+  if (o.min != null) lo = o.min;
+  var ph = H - top - bot, y = function(v){ return top + (hi - v) / (hi - lo) * ph; };
+  var slot = (W - left - right) / items.length, bw = slot * 0.6;
+  var FILL = {
+    main:'fill:var(--slate-500)', est:'fill:var(--slate-200)', ctx:'fill:var(--slate-100);stroke:var(--text);stroke-width:.8',
+    neg:'fill:var(--gray-250)', end:'fill:var(--navy)'
+  };
+  var s = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+(o.aria||'')+'">';
+  s += '<line x1="'+left+'" x2="'+(W-right)+'" y1="'+y(lo<0?0:lo)+'" y2="'+y(lo<0?0:lo)+'" style="stroke:var(--rule);stroke-width:1"/>';
+  items.forEach(function(d, i){
+    var x = left + slot * i + (slot - bw) / 2, y1 = y(d.hi), y2 = y(d.lo), hgt = Math.max(1, y2 - y1);
+    s += '<rect x="'+x.toFixed(1)+'" y="'+y1.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+hgt.toFixed(1)+'" style="'+FILL[d.c||'main']+'"/>';
+    var ly = d.below ? y2 + 16 : y1 - 8;
+    s += '<text x="'+(x+bw/2).toFixed(1)+'" y="'+ly.toFixed(1)+'" text-anchor="middle" style="fill:var(--text);font-size:13px;font-weight:600">'+d.lab+'</text>';
+    var cy = H - bot + 18;
+    s += '<text x="'+(x+bw/2).toFixed(1)+'" y="'+cy+'" text-anchor="middle" style="fill:var(--muted);font-size:12px">'+d.l+'</text>';
+    if (d.sub) s += '<text x="'+(x+bw/2).toFixed(1)+'" y="'+(cy+16)+'" text-anchor="middle" style="fill:var(--muted);font-size:12px;font-style:italic">'+d.sub+'</text>';
+  });
+  s += '</svg>';
+  document.getElementById(id).innerHTML = s;
+}
+
+
+
+svgBars('ch-rev', [
+  {l:"Q1'25", lo:0, hi:144.5, lab:'144.5', sub:'+8%'},
+  {l:"Q2'25", lo:0, hi:148.7, lab:'148.7', sub:'+12%'},
+  {l:"Q3'25", lo:0, hi:158.2, lab:'158.2', sub:'+15%'},
+  {l:"Q4'25", lo:0, hi:172.6, lab:'172.6', sub:'+23%'},
+  {l:"Q1'26", lo:0, hi:173.0, lab:'173.0', sub:'+20%'},
+  {l:"Q2'26", lo:0, hi:183.3, lab:'183.3', sub:'+23%'},
+  {l:"Q3'26 指引", lo:0, hi:187, lab:'187', sub:'+18%', c:'est'}
+], {sub:true, aria:'季度收入 $M'});
+
+svgBars('ch-bridge', [
+  {l:'自由现金流', lo:0, hi:34.4, lab:'34'},
+  {l:'股票薪酬', lo:-101.2, hi:34.4, lab:'(136)', c:'neg'},
+  {l:'FCF − SBC', lo:-101.2, hi:0, lab:'(101)', c:'end', below:true}
+], {h:260, min:-130, aria:'TTM 自由现金流扣 SBC，$M'});
+
+svgBars('ch-annual', [
+  {l:'2021', lo:-240.3, hi:0, lab:'(240)', c:'neg', below:true},
+  {l:'2022', lo:-317.8, hi:0, lab:'(318)', c:'neg', below:true},
+  {l:'2023', lo:-195.3, hi:0, lab:'(195)', c:'neg', below:true},
+  {l:'2024', lo:-143.6, hi:0, lab:'(144)', c:'neg', below:true},
+  {l:'2025', lo:-71.5, hi:0, lab:'(72)', c:'neg', below:true},
+  {l:'2026E', lo:-97, hi:0, lab:'约 (97)', c:'est', below:true}
+], {h:240, min:-360, aria:'扣 SBC 后自由现金流，$M'});
+
+svgBars('ch-peers', [
+  {l:'Fastly', lo:0, hi:5.0, lab:'5.0x'},
+  {l:'Akamai', lo:0, hi:3.7, lab:'3.7x', c:'ctx'},
+  {l:'软件中位数', lo:0, hi:5.2, lab:'5.2x', c:'ctx'},
+  {l:'GitLab', lo:0, hi:6.5, lab:'6.5x', c:'ctx'},
+  {l:'Datadog', lo:0, hi:18.5, lab:'18.5x', c:'ctx'},
+  {l:'Cloudflare', lo:0, hi:34.1, lab:'34.1x', c:'ctx'}
+], {h:240, aria:'同业 EV/NTM 收入'});
+
+// monthly close line, 2021.10–2026.10 (IBKR). Single series slate-500, 2px; annotations in ink.
+(function(){
+  var T=["2021-10", "2021-11", "2021-12", "2022-01", "2022-02", "2022-03", "2022-04", "2022-05", "2022-06", "2022-07", "2022-08", "2022-09", "2022-10", "2022-11", "2022-12", "2023-01", "2023-02", "2023-03", "2023-04", "2023-05", "2023-06", "2023-07", "2023-08", "2023-09", "2023-10", "2023-11", "2023-12", "2024-01", "2024-02", "2024-03", "2024-04", "2024-05", "2024-06", "2024-07", "2024-08", "2024-09", "2024-10", "2024-11", "2024-12", "2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"], C=[50.61, 40.76, 35.45, 28.66, 18.6, 17.38, 15.9, 13.05, 11.61, 11.37, 9.35, 9.16, 8.49, 9.66, 8.19, 10.35, 13.89, 17.76, 14.78, 16.28, 15.77, 18.37, 23.79, 19.17, 14.67, 16.61, 17.8, 20.12, 14.22, 12.97, 12.65, 7.84, 7.37, 8.1, 6.02, 7.57, 7.23, 8.48, 9.44, 10.47, 6.81, 6.33, 5.75, 7.28, 7.06, 6.79, 7.61, 8.55, 8.29, 11.66, 10.18, 9.25, 19.12, 29.06, 25.25, 17.77, 18.36, 22.66, 22.79, 25.67, 25.07];
+  var NOTE={'2021-10':['2021.10 $50.6','above'],'2024-05':['2024.05 三次砍指引','below'],'2025-04':['2025.04 $5.75','below'],'2026-03':['2026.04.08 盘中 $34.8','above',34.82],'2026-05':['5.07 −38%','below',19.5],'2026-10':['10.15 $25.1','above']};
+  var W=900,H=300,m={l:44,r:24,t:28,b:34}, n=T.length, ymax=60;
+  var x=function(i){return m.l+i/(n-1)*(W-m.l-m.r)}, y=function(v){return m.t+(1-v/ymax)*(H-m.t-m.b)};
+  var g='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Fastly 月收盘价">';
+  [10,20,30,40,50].forEach(function(v){ g+='<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+y(v)+'" y2="'+y(v)+'" style="stroke:var(--rule)"/><text x="'+(m.l-8)+'" y="'+(y(v)+4)+'" text-anchor="end" style="fill:var(--muted);font-size:12px">$'+v+'</text>'; });
+  g+='<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+y(0)+'" y2="'+y(0)+'" style="stroke:var(--rule)"/>';
+  T.forEach(function(t,i){ if(t.slice(5)==='01') g+='<text x="'+x(i)+'" y="'+(H-10)+'" text-anchor="middle" style="fill:var(--muted);font-size:12px">'+t.slice(0,4)+'</text>'; });
+  var d=''; C.forEach(function(v,i){ d+=(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1); });
+  g+='<path d="'+d+'" fill="none" style="stroke:var(--slate-500)" stroke-width="2"/>';
+  T.forEach(function(t,i){ var a=NOTE[t]; if(!a) return; var v=a[2]||C[i], cx=x(i), cy=y(v);
+    g+='<circle cx="'+cx+'" cy="'+cy+'" r="3.5" style="fill:var(--slate-500)"/>';
+    var anc=i<2?'start':(i>n-3?'end':'middle'), ty=a[1]==='above'?cy-10:cy+18;
+    g+='<text x="'+cx+'" y="'+ty+'" text-anchor="'+anc+'" style="fill:var(--text);font-size:12.5px;font-weight:600">'+a[0]+'</text>'; });
+  g+='</svg>';
+  document.getElementById('ch-px').innerHTML=g;
+})();
+
+// valuation x growth scatter — same data, filter and fit as the Software mapping §3; FSLY added, kept out of the fit
+const V=[["MSFT",1,9.45,0.242,94.3,147.8,0.175,0.159],["ORCL",1,4.86,0.456,null,null,null,null],["IBM",1,3.87,0.044,13.5,15.4,0.114,0.124],["SNOW",1,15.63,0.297,67.6,null,0.405,null],["DDOG",1,18.47,0.237,71.3,229.4,0.23,0.41],["MDB",1,7.91,0.191,42.0,372.8,0.181,0.572],["DT",1,6.74,0.197,27.6,56.1,0.247,0.367],["NTNX",1,5.1,0.167,18.9,31.7,0.149,0.189],["FROG",1,16.62,0.181,70.1,3783.0,0.185,0.904],["ESTC",1,4.08,0.166,20.4,58.6,0.241,0.963],["GTLB",1,6.49,0.155,36.7,1375.5,0.268,null],["CRWD",2,36.91,0.226,118.8,360.3,0.294,0.741],["PANW",2,19.89,0.211,51.3,76.3,0.304,0.404],["NET",2,34.1,0.289,250.0,null,0.473,null],["FTNT",2,15.15,0.123,41.3,45.6,0.078,0.074],["OKTA",2,10.1,0.102,37.3,84.0,0.092,0.211],["ZS",2,8.07,0.202,34.9,279.3,0.227,1.63],["RBRK",2,12.5,0.21,62.7,null,0.306,null],["CHKP",2,4.1,0.051,11.7,13.4,0.056,0.083],["AKAM",2,3.67,0.169,null,null,-0.438,null],["SAIL",2,7.69,0.185,44.8,null,0.398,null],["NTSK",2,8.07,0.207,147.9,null,null,null],["S",2,5.7,0.179,59.1,null,0.909,null],["QLYS",2,7.73,0.081,20.6,26.8,0.041,0.056],["VRNS",2,6.17,0.172,40.2,null,0.201,null],["SNPS",6,9.56,0.117,32.6,49.6,0.09,0.126],["CDNS",6,13.62,0.141,44.0,58.7,0.202,0.269],["ADSK",6,5.43,0.116,16.6,22.0,0.094,0.121],["DSY",6,4.04,0.061,18.0,19.7,0.054,0.053],["PTC",6,7.93,0.024,22.5,29.5,0.072,0.12],["TRMB",6,3.77,0.081,16.0,19.6,0.164,0.183],["BSY",6,6.72,0.109,19.0,22.8,0.136,0.177],["NEM",6,5.45,0.191,20.1,21.1,0.184,0.183],["SAP",3,5.19,0.124,20.8,24.5,0.165,0.178],["CRM",3,4.82,0.1,12.9,17.1,0.082,0.09],["NOW",3,8.76,0.193,24.3,39.6,0.285,0.405],["WDAY",3,4.25,0.105,13.9,27.5,0.175,0.341],["ADP",3,4.79,0.069,22.3,23.5,-0.054,-0.061],["PAYX",3,6.11,0.059,16.4,17.0,0.128,0.132],["SGE",3,3.72,0.093,16.7,18.7,0.127,0.131],["PAYC",3,4.97,0.074,17.3,20.4,0.04,0.038],["PCTY",3,4.21,0.089,17.9,25.7,0.03,0.026],["PEGA",3,2.86,0.103,10.8,15.5,0.018,-0.008],["ADBE",4,3.56,0.081,9.0,11.2,0.06,0.061],["TEAM",4,6.76,0.179,25.4,116.6,0.363,null],["ZM",4,4.14,0.042,15.3,24.7,0.031,0.07],["DOCU",4,3.76,0.079,11.5,22.3,0.083,0.156],["FIG",4,5.99,0.252,56.3,null,0.173,null],["HUBS",4,2.72,0.139,14.2,41.7,0.163,0.299],["DBX",4,4.22,-0.003,7.9,11.3,0.018,0.042],["BOX",4,3.95,0.079,13.6,36.6,0.013,0.028],["MNDY",4,2.0,0.15,12.3,27.2,0.175,0.231],["WIX",4,1.88,0.115,7.8,17.6,0.135,0.215],["RELX",5,5.32,0.075,18.0,18.6,0.083,0.083],["CSU",5,3.6,0.151,15.6,15.6,0.11,0.11],["VEEV",5,10.49,0.125,27.9,39.7,0.111,0.134],["TRI",5,5.68,0.08,20.7,22.0,0.055,0.054],["ROP",5,5.42,0.064,13.4,14.4,0.06,0.06],["AXON",5,8.07,0.3,55.6,null,1.298,null],["VRSK",5,8.56,0.064,21.3,22.5,0.029,0.028],["WKL",5,3.24,0.055,11.7,11.9,0.049,0.048],["FICO",5,8.05,0.101,15.0,18.2,0.109,0.109],["TYL",5,5.74,0.096,20.4,26.4,0.094,0.107],["GWRE",5,7.39,0.186,28.5,48.9,0.245,0.342],["MANH",5,10.37,0.082,31.6,44.5,0.058,0.054],["CSGP",5,2.97,0.115,19.1,28.6,0.698,1.982],["JKHY",5,3.94,0.082,21.8,23.4,-0.06,-0.07],["PCOR",5,4.77,0.137,24.0,93.4,0.173,0.658],["APPF",5,5.73,0.172,22.4,29.8,0.19,0.202],["TTAN",5,5.39,0.153,46.5,null,0.241,null],["TOI",5,2.73,0.131,11.3,11.3,0.068,0.068],["DOCS",5,6.73,0.072,18.7,36.9,0.004,0.007],["WAY",5,4.72,0.117,15.5,18.5,0.24,0.271],["SHOP",7,12.36,0.271,68.6,85.7,0.345,0.372],["INTU",7,3.65,0.108,9.5,12.4,0.037,0.026],["PYPL",7,1.44,0.043,7.8,9.7,0.002,-0.001],["XYZ",7,1.68,0.109,12.3,17.0,0.122,0.145],["ADYEN",7,7.05,0.216,18.4,20.2,0.245,0.246],["CPAY",7,6.08,0.095,14.9,16.1,0.092,0.092],["FISV",7,2.63,0.0,6.7,7.3,0.03,0.031],["AFRM",7,5.21,0.312,11.4,15.5,0.563,0.786],["GPN",7,3.15,0.123,6.2,6.6,0.886,1.06],["TOST",7,1.9,0.184,22.6,33.3,0.283,0.371],["GLBE",7,3.86,0.311,17.1,23.0,0.329,0.368],["ACN",8,1.71,0.057,11.4,14.0,0.04,0.037],["TCS",8,2.42,0.073,14.7,14.7,0.089,0.089],["INFY",8,1.97,0.068,13.1,13.5,0.013,0.011],["CTSH",8,1.29,0.051,10.4,11.7,0.057,0.057],["CAP",8,0.97,0.037,9.2,10.2,0.096,0.104],["WIT",8,1.43,0.069,11.4,11.9,0.103,0.105],["EPAM",8,0.92,0.037,10.4,15.4,0.153,0.236],["FSLY",2,5.0,0.152,71.0,null,0.53,null]];
+
+(function(){
+  // V row: [t, sector, evs, g, pf, pfa, fg, fga]
+  var MINUS='−', svg=document.getElementById('vs'), W=900, H=460, m={l:60,r:24,t:28,b:52}, mode='s';
+  var ME='FSLY', SHOW={FSLY:1,NET:1,AKAM:1,GTLB:1,DDOG:1,ESTC:1,CRWD:1};
+  // TEAM has no mapping value for (FCF − SBC) growth (TTM negative): plot an estimated point, kept out of the fit
+  var EST={};
+  function gv(v,i){ return (EST[v[0]] && EST[v[0]][i]!=null) ? EST[v[0]][i] : v[i]; }
+  var pct=function(v){return (v<0?MINUS:'')+Math.abs(Math.round(v*100))+'%';};
+  document.getElementById('vtabs').addEventListener('click',function(e){var b=e.target.closest('button'); if(!b)return; mode=b.dataset.k;
+    [].forEach.call(this.querySelectorAll('button'),function(x){x.classList.toggle('on',x===b)}); draw();});
+  function draw(){
+    var C = mode==='s' ? {xi:3,yi:2,sec:6,xmin:-0.05,xmax:0.35,ymin:0.8,ymax:40,fitmax:40,yt:[1,2,3,5,10,20,40],xl:'未来约 3 年收入年化增长 (一致预期)',yl:'EV / NTM Sales'}
+                       : {xi:7,yi:5,sec:7,xmin:-0.1,xmax:0.6,ymin:5,ymax:400,fitmax:150,yt:[5,10,20,50,100,200,400],xl:'未来约 3 年 (FCF − SBC) 年化增长 (一致预期)',yl:'市值 / NTM (FCF − SBC)'};
+    var pts=V.filter(function(v){return v[1]<=C.sec && gv(v,C.xi)!=null && v[C.yi]!=null && v[C.yi]>0 && v[0]!=='ORCL';}).map(function(v){var w=v.slice(); w[C.xi]=gv(v,C.xi); w.est=!!(EST[v[0]]&&EST[v[0]][C.xi]!=null); return w;});
+    var xs=function(x){return m.l+(Math.max(C.xmin,Math.min(C.xmax,x))-C.xmin)/(C.xmax-C.xmin)*(W-m.l-m.r);};
+    var ly=Math.log, ys=function(y){return m.t+(ly(C.ymax)-ly(Math.max(C.ymin,Math.min(C.ymax,y))))/(ly(C.ymax)-ly(C.ymin))*(H-m.t-m.b);};
+    var fp=pts.filter(function(p){return !p.est && p[0]!==ME && p[C.xi]>C.xmin&&p[C.xi]<C.xmax&&p[C.yi]>C.ymin&&p[C.yi]<C.fitmax*1.5;});
+    var n=fp.length, mx=0, my=0; fp.forEach(function(p){mx+=p[C.xi];my+=ly(p[C.yi]);}); mx/=n; my/=n;
+    var sxy=0,sxx=0; fp.forEach(function(p){sxy+=(p[C.xi]-mx)*(ly(p[C.yi])-my); sxx+=(p[C.xi]-mx)*(p[C.xi]-mx);});
+    var b=sxy/sxx, a=my-b*mx, ss=0, st=0; fp.forEach(function(p){ss+=Math.pow(ly(p[C.yi])-a-b*p[C.xi],2); st+=Math.pow(ly(p[C.yi])-my,2);});
+    var r2=1-ss/st, res=function(p){return p[C.yi]/Math.exp(a+b*p[C.xi])-1;};
+    var g='';
+    C.yt.forEach(function(v){ g+='<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+ys(v)+'" y2="'+ys(v)+'" style="stroke:var(--rule)"/><text x="'+(m.l-8)+'" y="'+(ys(v)+4)+'" text-anchor="end" style="fill:var(--muted);font-size:12px">'+v+'x</text>'; });
+    for(var x=Math.ceil(C.xmin*10)/10; x<=C.xmax+1e-9; x+=0.1){ g+='<text x="'+xs(x)+'" y="'+(H-m.b+20)+'" text-anchor="middle" style="fill:var(--muted);font-size:12px">'+pct(x)+'</text>'; }
+    if(C.xmin<0) g+='<line x1="'+xs(0)+'" x2="'+xs(0)+'" y1="'+m.t+'" y2="'+(H-m.b)+'" style="stroke:var(--rule)"/>';
+    g+='<text x="'+((m.l+W-m.r)/2)+'" y="'+(H-8)+'" text-anchor="middle" style="fill:var(--muted);font-size:12.5px">'+C.xl+' →</text>';
+    g+='<text transform="translate(14 '+((m.t+H-m.b)/2)+') rotate(-90)" text-anchor="middle" style="fill:var(--muted);font-size:12.5px">'+C.yl+' (对数)</text>';
+    var d=''; for(var i=0;i<=40;i++){ var xx=C.xmin+(C.xmax-C.xmin)*i/40, yy=Math.exp(a+b*xx); if(yy<C.ymin||yy>C.ymax) continue; d+=(d?'L':'M')+xs(xx).toFixed(1)+' '+ys(yy).toFixed(1); }
+    g+='<path d="'+d+'" fill="none" style="stroke:var(--slate-500)" stroke-width="1.5" stroke-dasharray="6 4"/>';
+    var order=pts.slice().sort(function(p,q){return (p[0]===ME)-(q[0]===ME) || (SHOW[p[0]]?1:0)-(SHOW[q[0]]?1:0);}), placed=[];
+    order.forEach(function(p){
+      var x=xs(p[C.xi]), y=ys(p[C.yi]), me=p[0]===ME, sh=SHOW[p[0]];
+      var fill=me?'var(--navy)':sh?'var(--slate-500)':'var(--slate-300)', rad=me?7:sh?5:3.6;
+      var tip=p[0]+(p.est?' (估算)':'')+' | 增长 '+pct(p[C.xi])+' | '+p[C.yi].toFixed(1)+'x | 偏离回归线 '+pct(res(p));
+      g+='<circle cx="'+x+'" cy="'+y+'" r="'+rad+'" style="fill:'+fill+'"><title>'+tip+'</title></circle>';
+      if(sh){ var dy=4; [4,-8,16,-20,28].some(function(o){ if(!placed.some(function(q){return Math.abs(q[0]-x)<46&&Math.abs(q[1]-(y+o))<12;})){dy=o;return true;} return false;});
+        placed.push([x,y+dy]); var lf=x>W-90;
+        g+='<text x="'+(lf?x-9:x+9)+'" y="'+(y+dy)+'" text-anchor="'+(lf?'end':'start')+'" style="fill:'+(me?'var(--text)':'var(--muted)')+';font-size:'+(me?13:12)+'px;font-weight:'+(me?600:400)+'">'+p[0]+(me?' '+p[C.yi].toFixed(0)+'x':'')+'</text>'; }
+    });
+    svg.innerHTML=g;
+    var dd=pts.filter(function(v){return v[0]===ME})[0];
+    document.getElementById('vcap').textContent='虚线 = 回归线 ('+n+' 家，R² '+r2.toFixed(2)+')，范围与 mapping 第 3 节默认设置相同。'+(dd?'深色大点 = FSLY (按同一口径补算，不参与回归)，'+(res(dd)<0?'比回归线低 '+pct(-res(dd)):'比回归线高 '+pct(res(dd))):'FSLY 扣 SBC 后的 FCF 为负，无法计算倍数，不在图上')+'；中蓝 = 文中提到的同业；浅色 = 其他软件公司。悬停看数值。'+(mode==='f'?'扣 SBC 后 FCF ≤ 0 的公司 (FSLY、NET、AKAM、SNOW、GTLB 等) 不在图上；超出坐标范围的点画在图边上。':'');
+  }
+  draw();
+})();
+
+// calculator: owner FCF (FCF − SBC) in FY32, discounted 5 years
+(function(){
+  var REV=0.739, NC=0.337, SH=0.175, N=5, ids=['c-g','c-fm','c-sbc','c-pe','c-r','c-px'];
+  function v(id){ return parseFloat(document.getElementById(id).value) || 0; }
+  function run(){
+    var g=v('c-g')/100, fm=v('c-fm')/100, sbc=v('c-sbc')/100, pe=v('c-pe'), r=v('c-r')/100, px=v('c-px');
+    var disc=Math.pow(1+r,N), own=REV*Math.pow(1+g,N)*(fm-sbc);
+    var val=(own*pe/disc+NC)/SH, up=px?val/px-1:0;
+    var need=(px*SH-NC)*disc/(pe||1)/((fm-sbc)||1e-9), ig=Math.pow(Math.max(need,1e-9)/REV,1/N)-1;
+    document.getElementById('o-val').textContent='$'+val.toFixed(1);
+    document.getElementById('o-up').textContent=(up<0?'−':'+')+Math.abs(up*100).toFixed(0)+'%';
+    document.getElementById('o-g').textContent=(fm-sbc)>0?(ig*100).toFixed(1)+'%':'—';
+  }
+  ids.forEach(function(id){ document.getElementById(id).addEventListener('input', run); });
+  run();
+})();
+
+// sidebar TOC
+(function(){
+  var nav=document.getElementById('tocnav');
+  var hs=[].slice.call(document.querySelectorAll('.page section h2, .page section h3'));
+  hs.forEach(function(h,i){ if(!h.id) h.id='s'+i; });
+  var S=[['Follow-up','Follow-up'],['1. 行业','1  行业'],['2. 商业','2  生意'],['3. 成长','3  历史'],['4. 当前','4  Set up'],['5. 估值','5  估值'],['数据来源','来源'],
+    ['空间和增速','空间'],['竞争格局','竞争'],['AI 争论','AI 争论'],['上下游','上下游'],['收入怎么拆','收入拆分'],['是不是不可','不可或缺'],['利润质量','利润质量'],['资本结构','资本结构'],
+    ['过去 4','执行'],['核心 driver','Driver'],['往下多想一层 (1)','增长来源'],['往下多想一层 (2)','2029 目标 vs SBC'],['市场在问','争议'],['预期差','预期差'],['要做的判断','判断'],
+    ['当前估值','倍数'],['同业对比','同业'],['放在估值','估值 × 增长'],['Mapping','不在 mapping'],['反推','反推'],['计算器','计算器'],['情景','情景'],['Deepdive','Deepdive']];
+  var short=function(t){var m=S.filter(function(x){return t.indexOf(x[0])===0})[0];return m?m[1]:t;};
+  var grp=null;
+  nav.innerHTML=hs.map(function(h){ if(h.tagName==='H2') grp=h.id; var t=short(h.textContent.trim());
+    return '<a href="#'+h.id+'" class="'+(h.tagName==='H3'?'l3':'l2')+'" data-id="'+h.id+'" data-g="'+grp+'" title="'+t+'">'+t+'</a>'}).join('');
+  var links=[].slice.call(nav.querySelectorAll('a'));
+  function upd(){ var cur=hs[0].id; for(var i=0;i<hs.length;i++){ if(hs[i].getBoundingClientRect().top<140) cur=hs[i].id; else break; }
+    var g=links.filter(function(a){return a.dataset.id===cur})[0].dataset.g;
+    links.forEach(function(a){ a.classList.toggle('on',a.dataset.id===cur); if(a.classList.contains('l3')) a.hidden=a.dataset.g!==g; if(a.classList.contains('l2')) a.classList.toggle('cur',a.dataset.id===g); }); }
+  addEventListener('scroll',upd,{passive:true}); upd();
+})();
+</script>
+</body>
+</html>
