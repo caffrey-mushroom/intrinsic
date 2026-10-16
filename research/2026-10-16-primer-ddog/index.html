@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.16 | Primer | Datadog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Noto+Serif+SC:wght@500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+
+:root{--gray-250:#BFBFBF}
+
+/* GitLab primer additions — Rota v2 shell; charts: single series slate-500, context slate-100 + ink outline */
+.tags{font-family:var(--sans);font-size:13.5px;color:var(--slate-500);margin:6px 0 2px;letter-spacing:.01em;word-spacing:.35em}
+.layout{display:grid;grid-template-columns:220px minmax(0,912px);gap:56px;justify-content:center;max-width:1240px;margin:0 auto}
+.layout .page{margin:0;max-width:none;min-width:0;padding-left:0;padding-right:0}
+.side{position:relative}
+.side-in{position:sticky;top:calc(env(safe-area-inset-top,0px) + 32px);max-height:calc(100vh - 64px);overflow-y:auto;padding:var(--s6) 0 24px}
+.side-t{font-size:12px;letter-spacing:1.5px;color:var(--muted);margin:0 0 14px 12px}
+#tocnav{display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--rule)}
+#tocnav a{display:block;white-space:pre;overflow:hidden;text-overflow:ellipsis;text-decoration:none;color:var(--muted);font-size:13.5px;line-height:1.5;padding:6px 12px;margin-left:-1px;border-left:1px solid transparent}
+#tocnav a:hover{color:var(--text)}
+#tocnav a.l3{padding:3px 12px 3px 24px;font-size:12.5px}
+#tocnav a.l3[hidden]{display:none}
+#tocnav a.on{color:var(--text);border-left-color:var(--text)}
+#tocnav a.l2.cur{color:var(--text)}
+.page h2[id],.page h3[id]{scroll-margin-top:24px}
+@media (max-width:1100px){.layout{display:block}.side{display:none}.layout .page{margin:0 auto;max-width:var(--page-w);padding-left:var(--s3);padding-right:var(--s3)}}
+@media (max-width:760px){.layout .page{padding-left:var(--s2);padding-right:var(--s2)}}
+
+table.t td.l, table.t th.l{text-align:left; white-space:normal}
+table.t td.wrap{white-space:normal; min-width:180px}
+.tg{font-size:12px; font-weight:600; white-space:nowrap}
+.tg.v{color:var(--text)} .tg.p{color:var(--slate-600)} .tg.t{color:var(--muted); font-weight:400; font-style:italic}
+.tg.e{color:var(--slate-500)}
+.formula{font-size:13.5px; background:var(--soft); border-radius:var(--radius); padding:var(--s2); margin:var(--s2) 0; overflow-x:auto; white-space:pre; line-height:1.7}
+.one{margin-top:var(--s2); padding-left:var(--s2); border-left:2px solid var(--slate-300); max-width:72ch}
+.two{display:grid; grid-template-columns:1fr 1fr; gap:var(--s4); margin-top:var(--s2)}
+.two h4{font-family:var(--sans); font-size:var(--fs-body); font-weight:600; margin:0 0 var(--s1)}
+.two ul{margin:0; padding-left:1.2em} .two li{margin:.35em 0}
+.chart-wrap{margin-top:var(--s2)}
+.chart-wrap svg text{font-family:var(--sans)}
+.src{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.calc{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s2) var(--s3); margin-top:var(--s2)}
+.calc label{display:block; font-size:var(--fs-note); color:var(--muted)}
+.calc input{width:100%; font:inherit; font-size:var(--fs-body); color:var(--text); background:var(--bg); border:var(--hair); border-radius:var(--radius); padding:6px 10px; margin-top:4px; font-variant-numeric:tabular-nums}
+.calc-out{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s3); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.calc-out .l{font-size:var(--fs-note); color:var(--muted)}
+.calc-out .v{font-family:var(--serif); font-weight:500; font-size:32px; line-height:1.15; font-variant-numeric:lining-nums tabular-nums; margin-top:4px}
+.verdict{margin-top:var(--s3); padding:var(--s3) 0 var(--s3) var(--s3); border-left:2px solid var(--navy)}
+.verdict p{margin:0 0 .6em; max-width:72ch} .verdict p:last-child{margin:0}
+.sources{font-size:var(--fs-note); color:var(--muted)} .sources li{margin:.25em 0}
+@media (max-width:760px){
+  .two{grid-template-columns:1fr}
+  .calc{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .calc-out{grid-template-columns:1fr}
+}
+
+/* DDOG primer additions: text tabs (2px underline) and scatter */
+.tabs{display:flex; gap:var(--s3); margin-top:var(--s2); border-bottom:var(--hair); flex-wrap:wrap}
+.tabs button{font:inherit; font-size:13.5px; color:var(--muted); background:none; border:0; border-bottom:2px solid transparent; padding:var(--s1) 0; margin-bottom:-1px; cursor:pointer}
+.tabs button.on{color:var(--text); border-bottom-color:var(--text)}
+.tabs button:hover{color:var(--text)}
+.chart-wrap:not(.sc-wrap){max-width:640px}
+.sc-wrap svg{display:block; width:100%; height:auto}
+.sc-wrap svg text{font-family:var(--sans)}
+.analog{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s2)}
+.analog .h{font-weight:600}
+.analog p{margin:4px 0 0; font-size:13.5px; color:var(--muted)}
+@media (max-width:760px){ .analog{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="layout"><aside class="side" aria-label="目录"><div class="side-in"><div class="side-t">目录</div><nav id="tocnav"></nav></div></aside>
+<main class="page">
+
+<h1>2026.10.16 | Primer | Datadog</h1>
+<p class="tags">#ddog #observability #software #primer #dt #estc #snow</p>
+<p class="meta">v1 · 内部 · 复查 2026.11.05 (Q3 2026 财报之后)</p>
+<p class="meta">股价 $266.25 (2026.10.15 收盘，IBKR) · 最新已报季度 Q2 2026 (截至 2026.06.30，2026.08.06 发布；财年 = 自然年) · 下次财报 Q3 2026，2026.11.04 盘前 (公司 10.14 公告)</p>
+
+<p class="summary">Datadog 是给软件系统装“仪表盘和黑匣子”的公司：企业的网站和 App 一出问题，工程师靠它在几分钟内找到哪台机器、哪段代码坏了。这是一门好生意，而且在变好：收入增速连续 5 个季度加快到 36%，剔除 AI 公司后也在 20% 后段。问题在价格：每卖 1 美元，报表上的自由现金流是 27 美分，扣掉发给员工的股票后股东只剩约 6 美分；按 $266，要拿到 10% 的年回报，未来 5 年收入要每年涨约 30% 而且利润率还要明显提高。我同意 mapping 的判断：现在不值得做以买入为目的的 deepdive，但它是理解可观测性和 AI 基础设施用量的最好样本，值得跟踪，等更好的价格。</p>
+
+<div class="kpis">
+  <div class="kpi"><div class="l">Q2 2026 收入</div><div class="v">$1.12B</div><div class="n"><span class="ar up">▲</span>36% YoY，第 5 个加速季度</div></div>
+  <div class="kpi"><div class="l">Non-GAAP 营业利润率</div><div class="v">23%</div><div class="n">GAAP 口径约 0%</div></div>
+  <div class="kpi"><div class="l">TTM 自由现金流 vs SBC</div><div class="v">$1.07B</div><div class="n">股票薪酬 $0.82B，扣完剩 $0.25B</div></div>
+  <div class="kpi"><div class="l">EV / NTM 收入</div><div class="v">18x</div><div class="n">EV 约 $96B；FY26 P/E 106x</div></div>
+</div>
+
+<section class="sec">
+<h2>Follow-up</h2>
+<div class="tbl"><table class="t">
+<thead><tr><th>跟踪项</th><th class="l">为什么跟踪</th><th class="l">结果意味着什么</th></tr></thead>
+<tbody>
+<tr><td class="l">Q3 2026 收入<br><span class="note">2026.11.04</span></td><td class="l wrap">指引 $1.135–1.145B (+28–29%)，只比 Q2 多 1.7%，因为最大客户 (普遍认为是 OpenAI) 从 Q3 开始减少用量，公司说已把它“完全去风险”。过去 6 个季度每次都比指引上限高 $21–45M</td><td class="l wrap">超过 $1.18B (+33% 以上)：说明除最大客户外的业务还在加速，指引确实保守。低于 $1.16B：最大客户的缺口比管理层说的大，或其他 AI 客户也在压价</td></tr>
+<tr><td class="l">非 AI 客户增速<br><span class="note">每季电话会</span></td><td class="l wrap">这是最干净的“基本盘”指标：Q2 2025 18% → Q4 2025 23% → Q2 2026 20% 后段。它代表普通企业把系统搬上云、用更多 Datadog 产品</td><td class="l wrap">维持 25% 以上：支持“长坡”逻辑，估值可以靠时间消化。回到 20% 以下：说明 2025–26 的加速主要是周期性的</td></tr>
+<tr><td class="l">FY2027 指引<br><span class="note">2027 年 2 月</span></td><td class="l wrap">一致预期 FY27 收入约 $5.5B (+23%)，低于当前 36% 的实际增速。去年 2 月首次指引 +18–20%，最后做到约 +30%</td><td class="l wrap">首次指引 ≥ +22%：按过去的保守习惯，全年大概率做到 28–30%，一致预期要上修。≤ +18%：市场会把 2026 看成高点</td></tr>
+<tr><td class="l">毛利率</td><td class="l wrap">Q4 2025 81.4% → Q2 2026 79.6%，跌到管理层“80% 上下”区间的下沿。原因是大客户折扣和 AI 功能的算力成本</td><td class="l wrap">稳在 80% 附近：定价权没问题。连续两季低于 79%：说明为了留住大客户在让价，或者 AI 功能在吃利润</td></tr>
+<tr><td class="l">SBC 占收入</td><td class="l wrap">FY25 22%，1H26 20%。公司不回购，股本每年增加约 3–4%。这是股东回报的最大扣项</td><td class="l wrap">降到 15% 以下并开始回购：股东拿到的现金会明显变多，估值逻辑会变。停在 20%：现价很难算得通</td></tr>
+<tr><td class="l">AI 运维 agent 收费<br><span class="note">DASH 2027 (6 月)</span></td><td class="l wrap">Bits AI SRE 2025.12 正式上线，按“AI credits”收费 ($500/500 credits)。还没有披露收入</td><td class="l wrap">披露 ARR 或客户数快速增长：AI 是加项。AI SRE 创业公司 (Resolve AI 估值 $10 亿) 拿走大客户：Datadog 会被压成“存数据的地方”</td></tr>
+</tbody></table></div>
+</section>
+
+<section class="sec">
+<h2>1. 行业科普：可观测性 (observability) 是什么</h2>
+<div class="prose">
+<p><strong>一句话：</strong>企业的软件跑在成千上万台云服务器上，任何一个环节出错，网站就慢了或者挂了。可观测性软件持续收集这些机器和程序的“体征数据”，出问题时告诉工程师哪里坏了、为什么坏。</p>
+<p>它收集三类数据，用三个比喻最好懂：</p>
+</div>
+<div class="analog">
+  <div><div class="h">指标 (metrics) = 仪表盘</div><p>每隔几秒采一次的数字：CPU 用了 80%、每秒 2,000 个请求、错误率 0.5%。数据量小、便宜，用来画图和报警。Datadog 2012 年就从这里起家</p></div>
+  <div><div class="h">链路追踪 (traces / APM) = 快递追踪</div><p>跟着一个用户请求走完它经过的几十个服务，记下每一步花了多久。用来回答“结账为什么慢了 3 秒，卡在哪一步”。Datadog 2017 年推出</p></div>
+  <div><div class="h">日志 (logs) = 黑匣子</div><p>每个程序自己写的文字记录，比如“用户 123 付款失败：卡被拒”。数据量最大，查故障和审计都要用。Datadog 2018 年推出</p></div>
+</div>
+<div class="prose" style="margin-top:var(--s3)">
+<p><strong>给半导体背景的类比：</strong>可观测性之于软件，有点像量测检测 (KLA) 之于晶圆厂。工序越复杂，越需要在每一步检测；检测本身不生产任何东西，但不检测良率就失控。两个区别也要记住：KLA 卖设备，按台一次性收钱；Datadog 按用量月月收钱，客户多开一台服务器、多写一 GB 日志，账单就自动变大。所以它的收入跟着客户的云用量走，好的时候自动变多，客户省钱的时候也会很快变少。</p>
+<p><strong>为什么企业愿意付钱：</strong>宕机直接损失收入，没人敢不装。现代软件拆成很多小服务，跑在随时开关的云容器里，自己搭监控需要一个专门的团队。Datadog 卖的是“装上就能用”：1,000 多个现成接口，三类数据在一个界面里互相关联。在一张图里看到 CPU 飙高，点一下就能跳到同一时刻的慢请求和报错日志。这种关联是它和“自己用开源工具拼一套”的主要区别。</p>
+</div>
+
+<h3>空间和增速</h3>
+<div class="prose">
+<ul>
+<li><span class="tg p">第三方预测</span> Gartner 2025 年 Magic Quadrant 给出的可观测性软件市场：2028 年约 $142 亿，2021–28 年复合增速 11.1%。这个口径很窄，Datadog 自己 2025 年收入 $34 亿 (含安全等产品)，按这个口径算已经占 25–30%，所以这个数字低估了它实际能卖的范围</li>
+<li><span class="tg p">管理层口径</span> 公司不给单一 TAM 数字，而是说：目标客户约 50 万家公司，现有约 3.3 万家，渗透率约 7%；企业平均只有 25–30% 的工作负载在云上 (CFO David Obstler，2026.06 美银会议)。这个说法的意思是：客户越往云上搬，Datadog 自然长大</li>
+<li><span class="tg p">卖方口径</span> BMO 2023 年估核心 TAM 2026 年约 $240 亿，含相邻市场约 $580 亿；DA Davidson 估 $620–700 亿。这些都是“如果所有相关预算都归它”的上限，不是能收到的钱</li>
+<li><span class="tg v">实际数据</span> 行业里规模最大、增长最快的独立公司就是 Datadog：2026 年指引收入 $44.6 亿 (+30%)；最接近的上市对手 Dynatrace 约 $23 亿 (+15%)，Elastic 约 $20 亿 (+15%)</li>
+</ul>
+</div>
+
+<h3>竞争格局</h3>
+<div class="prose"><p>过去三年行业在整合：Splunk 卖给 Cisco，New Relic 被私募收购，Chronosphere 卖给 Palo Alto，Observe 卖给 Snowflake。剩下的独立大玩家里，只有 Datadog 还在 30% 以上增长。真正的威胁不在这些老对手，而在“便宜的数据库 + 开源标准 + AI agent”这条新路线。</p></div>
+<div class="tbl"><table class="t">
+<thead><tr><th>阵营</th><th class="l">玩家</th><th class="l">模式和规模</th><th class="l">对 Datadog 的威胁 (判断)</th></tr></thead>
+<tbody>
+<tr><td class="l">上市独立对手</td><td class="l">Dynatrace (DT)</td><td class="l wrap">ARR $21.4 亿，+17%；FY27 收入指引 $23.1 亿 (+14–15%)。主攻全球 2000 强，自动化强，回购是 SBC 的 2.4 倍</td><td class="l wrap"><strong>中。</strong>在大型传统企业里正面竞争，Gartner 评它“执行力最高”。但增速只有 Datadog 一半，在云原生和中型公司里明显弱</td></tr>
+<tr><td class="l"></td><td class="l">Elastic (ESTC)</td><td class="l wrap">FY26 收入 $17.4 亿，+17%。搜索和日志起家 (ELK)，可观测只是一部分</td><td class="l wrap"><strong>低到中。</strong>在“自己部署、对日志成本敏感”的客户里有优势，产品广度和一体化体验不如 Datadog</td></tr>
+<tr><td class="l">被大公司收购</td><td class="l">Splunk (Cisco)</td><td class="l wrap">2024.03 被 Cisco 以每股 $157、约 $280 亿收购。日志和安全 (SIEM) 老牌</td><td class="l wrap"><strong>低。</strong>在 Cisco 里是交叉销售工具，定价贵是出名的，Datadog 一直在抢它的客户</td></tr>
+<tr><td class="l"></td><td class="l">New Relic</td><td class="l wrap">2023.11 被 Francisco Partners 和 TPG 以每股 $87、约 $65 亿私有化。APM 的开创者</td><td class="l wrap"><strong>低。</strong>私募持有重利润轻投入，Datadog 管理层常说在从它那里拿份额</td></tr>
+<tr><td class="l"></td><td class="l">Chronosphere (Palo Alto)</td><td class="l wrap">2025.11 Palo Alto 宣布以 $33.5 亿收购，ARR 超过 $1.6 亿 (约 21 倍 ARR)。专门解决超大规模客户的数据量和成本问题</td><td class="l wrap"><strong>中到高，集中在 AI 实验室。</strong>UBS 报告称 OpenAI 在用 Chronosphere 和 Datadog 并行监控 GPU 负载。它争的正是 Datadog 最大的那几个客户</td></tr>
+<tr><td class="l"></td><td class="l">Observe (Snowflake)</td><td class="l wrap">2026.01 Snowflake 宣布收购，价格未披露 (此前估值约 $10 亿)。把遥测数据直接存在数据仓库里</td><td class="l wrap"><strong>中。</strong>打的是“长期保存很便宜”。Snowflake 有大企业的数据预算</td></tr>
+<tr><td class="l">开源 / 自建</td><td class="l">Grafana Labs</td><td class="l wrap">私有。ARR 超过 $4 亿，7,000+ 客户 (2025.09)；2024 年估值 $60 亿，据报在谈 $90 亿。Prometheus / Loki / Tempo 是“自己搭”的默认组合</td><td class="l wrap"><strong>中。</strong>收入只有 Datadog 一成，但它是所有客户谈价时的备选。Coinbase 2022 年和 Deductive AI 2025 年都拿它做退路</td></tr>
+<tr><td class="l"></td><td class="l">ClickHouse / ClickStack</td><td class="l wrap">私有。2026.01 以约 $150 亿估值融资 $4 亿，ARR 同比 +250%，客户含 Anthropic、Cursor、Meta、Tesla；收购了 HyperDX (变成 ClickStack) 和 LLM 监控工具 Langfuse</td><td class="l wrap"><strong>高，在超大客户。</strong>列式数据库存日志极便宜，市场估计只写不改的数据成本约为 Datadog 的 1/20。AI 实验室自建监控多半用它</td></tr>
+<tr><td class="l">云厂商自带</td><td class="l">AWS CloudWatch / Azure Monitor / Google Cloud</td><td class="l wrap">和云一起捆绑，不单独披露收入</td><td class="l wrap"><strong>低。</strong>便宜但只看自家云，界面和跨云关联弱。Datadog 反而是 AWS、Azure 的合作伙伴，通过它们的应用市场卖</td></tr>
+<tr><td class="l">AI 运维 agent</td><td class="l">Resolve AI、Traversal 等</td><td class="l wrap">Resolve AI (前 Splunk 高管创办) 2026.02 以 $10 亿估值融资 $1.25 亿；Traversal 估值约 $3 亿 (未核实)</td><td class="l wrap"><strong>理论上高，目前小。</strong>如果是 agent 而不是人在看数据，漂亮的界面就不值钱，agent 可以去查任何便宜的后台。Datadog 2025.12 切断了 AI SRE 创业公司 Deductive 的访问，说明它自己也把这当威胁</td></tr>
+</tbody></table></div>
+
+<h3>开放标准 OpenTelemetry 改变了什么</h3>
+<div class="prose">
+<p>OpenTelemetry (简称 OTel) 是一个开源的“数据采集标准”：程序按这个标准埋点一次，数据可以发给任何厂商。以前换监控厂商要把所有程序的埋点重做一遍，这是 Datadog 的一层锁定；OTel 普及后这层锁定变薄。最极端的例子：Deductive AI 被 Datadog 切断后，48 小时内在 OTel + Grafana 上重建了监控。</p>
+<p>但锁定没有消失，而是往上移了：客户在 Datadog 里积累的仪表盘、报警规则、值班流程和多种数据之间的关联，才是迁移成本的大头。Datadog 自己也全面支持 OTel，有大支付公司用 OTel 埋点、数据仍然发给 Datadog。这和 mapping 里讲数据仓库时的结论一样：锁定从“格式”移到了“平台层”。</p>
+</div>
+
+<h3>上下游</h3>
+<div class="prose">
+<ul>
+<li><strong>上游 (Datadog 的成本)：</strong>它自己不建数据中心，主要租 AWS、Google Cloud 和 Azure 的算力和存储。所以毛利率 (约 80%) 里最大一块成本是付给云厂商的钱。2025 年 5 月 Datadog 下调过全年利润指引，主要原因之一就是云托管成本突然上涨</li>
+<li><strong>客户：</strong>约 33,400 家，从创业公司到大银行。年付费 $10 万以上的 4,720 家贡献了约 91% 的 ARR；年付费 $100 万以上 603 家 (2025 年末)，$1,000 万以上 34 家。最大的单一客户是一家 AI 公司，公司从未点名，分析师和媒体普遍认为是 OpenAI</li>
+<li><strong>渠道和伙伴：</strong>AWS、Azure 应用市场；和 Snowflake、Databricks、ClickHouse 做“联合查询”，客户可以把日志放在自己的数据仓库里、在 Datadog 界面里查</li>
+</ul>
+</div>
+<p class="one">一句话：钱主要花在“出问题时多快能找到原因”。Datadog 拿走了独立厂商里最大的一份；它最怕的不是老对手，而是最大的那些客户发现用便宜数据库自己搭也够用。</p>
+</section>
+
+<section class="sec">
+<h2>2. 商业模式：卖什么，怎么收钱</h2>
+<div class="tbl"><table class="t">
+<thead><tr><th>产品</th><th class="l">客户拿到什么</th><th class="l">怎么收钱 (年付标价)</th><th class="l">规模和状态</th></tr></thead>
+<tbody>
+<tr><td class="l">基础设施监控</td><td class="l wrap">每台服务器、容器、数据库的体征和报警</td><td class="l wrap">每台主机每月 $15 (Pro) / $23 (Enterprise)；自定义指标每 100 个 $5/月</td><td class="l wrap"><span class="tg v">已验证</span> ARR 超过 $16 亿，起家产品</td></tr>
+<tr><td class="l">APM + 用户体验监控</td><td class="l wrap">请求链路追踪；真实用户在浏览器和手机上的体验 (RUM)；机器人模拟测试</td><td class="l wrap">APM 每台主机每月 $31；RUM 每 1,000 次会话 $3</td><td class="l wrap"><span class="tg v">已验证</span> 合计 ARR 超过 $10 亿；RUM 单项超过 $2 亿，增长 50%+</td></tr>
+<tr><td class="l">日志管理</td><td class="l wrap">收集、搜索、长期保存日志</td><td class="l wrap">摄入每 GB $0.10；建索引 (可秒搜) 每百万条 $1.70 (保留 15 天)；Flex Logs 只存不建索引，每百万条 $0.05</td><td class="l wrap"><span class="tg v">已验证</span> ARR 超过 $10 亿；Flex Logs 接近 $1 亿</td></tr>
+<tr><td class="l">安全</td><td class="l wrap">云安全、SIEM (安全事件分析)、代码安全</td><td class="l wrap">SIEM 每百万条分析事件 $5</td><td class="l wrap"><span class="tg v">已验证</span> ARR 超过 $1 亿 (2025 Q2)，增长 40–50%；在 $100 万以上客户的支出里只占约 2%</td></tr>
+<tr><td class="l">LLM / AI 监控</td><td class="l wrap">监控大模型应用的调用、成本、质量；GPU 集群监控</td><td class="l wrap">每 1 万个 LLM span $3.50</td><td class="l wrap"><span class="tg p">部分</span> 1,000+ 客户 (2025 Q4)，未披露收入</td></tr>
+<tr><td class="l">Bits AI (运维 agent)</td><td class="l wrap">出故障时 AI 自动排查、给出原因</td><td class="l wrap">AI credits：500 credits $500</td><td class="l wrap"><span class="tg t">理论</span> 2025.12 正式上线，2,000+ 客户试用；无收入数据</td></tr>
+</tbody></table></div>
+<p class="src">Source: datadoghq.com/pricing/list (2026.10)；公司电话会 Q4 2025、Q2 2026</p>
+
+<h3>收入怎么拆</h3>
+<div class="prose">
+<p>Datadog 一共 26 个产品，5 个 ARR 超过 $1 亿。它的增长可以写成：</p>
+</div>
+<div class="formula">收入增长 ≈ 新客户 (约占增量 25–30%) + 老客户用量自然增长 (多开机器、多写日志) + 老客户多买产品 (交叉销售) − 客户优化和压价
+
+净收入留存 (NRR，老客户今年比去年多花多少)：2026 年“120% 出头”
+毛留存 (GRR，老客户流失后剩多少)：90% 中高段
+多产品渗透：用 4 个以上产品的客户 58%，6 个以上 37%，10 个以上 13% (一年前 7%)</div>
+<div class="prose">
+<p>一个具体例子 (按标价估算)：一家中型公司 500 台主机，开基础设施 Enterprise + APM，每月 10TB 日志。主机费 500 × ($23 + $31) = $2.7 万/月；日志摄入只要 $0.1 万/月，但给 100 亿条日志建索引要约 $1.7 万/月。合计约 $4.5 万/月，一年约 $50 万，还没算自定义指标、RUM 和安全。<strong>日志的钱主要花在“建索引”上，不在“收进来”上</strong>，这也是 Flex Logs、BYOC 这些“便宜方案”会自我蚕食的原因。</p>
+<p>按用量收费的两面：客户业务好、云用量涨，Datadog 不用重新谈合同就多收钱，这是 NRR 能到 120% 的原因；客户要省钱，账单也会在一两个季度内下来。最出名的例子是 Coinbase：2021 年加密货币牛市里它的 Datadog 账单约 $6,500 万 (2022 Q1 一次性预付，CFO 2023.05 在电话会上提到“一家加密公司的大额预付”，后被确认是 Coinbase)。Coinbase 随后组建团队在 Grafana / Prometheus / ClickHouse 上搭了一套备份，同时写两份数据好几个月；最后 Datadog 重签了便宜很多的合同，Coinbase 留下了。这个故事同时说明了风险 (大客户会狠狠压价) 和护城河 (认真准备迁移的客户最后也没走)。</p>
+</div>
+
+<h3>是不是不可或缺</h3>
+<div class="prose">
+<ul>
+<li><strong>中型和云原生公司：基本不可替代。</strong>它们没有能力自己搭一套，Datadog 是事实标准；58% 的客户用 4 个以上产品，换掉要同时换掉几套工作流程</li>
+<li><strong>大型传统企业：最好的选择之一。</strong>Dynatrace、Splunk 在这里有老关系，Datadog 靠产品广度和云原生体验在抢份额，但要打价格战</li>
+<li><strong>超大规模的 AI 公司和互联网公司：已经有替代。</strong>数据量大到每年账单上亿美元时，自建一个团队用 ClickHouse 搭的成本只是零头。OpenAI 一边续约一边减量、同时用 Chronosphere，就是这一类客户的典型做法</li>
+</ul>
+</div>
+
+<h3>利润质量：每卖 1 美元，股东拿到多少</h3>
+<div class="row">
+<div class="chart-wrap" id="ch-bridge"></div>
+<p class="src">Source: 公司 8-K (Q3 2025 – Q2 2026 四个季度合计)，单位 $M</p>
+</div>
+<div class="prose">
+<ul>
+<li><strong>Non-GAAP 到 GAAP：</strong>过去四个季度 non-GAAP 营业利润 $918M (23%)，GAAP 营业利润只有 $16M (0.4%)。中间差的 $824M 是股票薪酬 (SBC)，另有约 $78M 是并购无形资产摊销和股权相关的雇主税。FY2025 全年 GAAP 营业利润是 −$44M</li>
+<li><strong>FCF 和 SBC：</strong>过去四个季度 FCF $1,073M (收入的 27%)，SBC $824M (收入的 21%)。FCF 减 SBC 只剩 $249M，约收入的 6%</li>
+<li><strong>为什么要扣 SBC：</strong>Datadog 从不回购，发给员工的股票全部变成稀释：加权稀释股本从 Q2 2025 的 3.587 亿股增加到 Q2 2026 的 3.710 亿股，一年 +3.4%。如果公司想维持股本不变，就得每年花约 $8 亿回购，FCF 就几乎没了</li>
+<li><strong>好的一面：</strong>SBC 占收入在下降 (FY25 22% → 1H26 20%)，资产负债表很干净：现金和投资 $49.9 亿，只有 $10 亿 0% 利息的可转债 (2029 年到期)，净现金约 $40 亿</li>
+<li><strong>和 mapping 数据的差别：</strong>mapping 表里 DDOG 的“FCF TTM”写的是 $11.8 亿，和 2026 全年一致预期相同；按 8-K 加总最近四个季度是 $10.7 亿。结论不受影响：扣 SBC 后的 FCF 收益率都在 0.3% 左右，列入 deepdive 待核实</li>
+</ul>
+</div>
+<p class="one">一句话：每卖 1 美元，报表 FCF 27 美分，扣掉员工股票后股东拿到约 6 美分。这不是生意不赚钱，而是公司把利润的大部分用股票付给了员工。</p>
+</section>
+
+<section class="sec">
+<h2>3. 成长史、资本结构与风险</h2>
+<div class="row">
+<div class="chart-wrap" id="ch-annual"></div>
+<p class="src">Source: 公司年报；2026E 为 2026.08 指引中点。增速 = 年收入 YoY</p>
+</div>
+<div class="tbl"><table class="t">
+<thead><tr><th>时间</th><th class="l">事件</th><th class="l">今天的意义</th></tr></thead>
+<tbody>
+<tr><td class="l">2010.06</td><td class="l wrap">Olivier Pomel 和 Alexis Lê-Quôc 在纽约创办。两人都毕业于巴黎中央理工，之前在教育软件公司 Wireless Generation 共事，一个管开发、一个管运维，亲历了“开发和运维互相甩锅”。名字来自他们当年最怕的一台 Oracle 数据库 “datadog 17”</td><td class="l wrap">16 年后两位创始人仍然是 CEO 和总裁兼 CTO，工程师文化、产品一个接一个自己做，是它能从 1 个产品扩到 26 个的原因</td></tr>
+<tr><td class="l">2012–2016</td><td class="l wrap">推出基础设施监控；A 到 D 轮共融资约 $1.5 亿 (Index、OpenView、ICONIQ)</td><td class="l wrap">非常省钱的成长：IPO 前后就有正 FCF</td></tr>
+<tr><td class="l">2017–2018</td><td class="l wrap">2017.02 APM 正式上线；2017.09 收购巴黎的 Logmatic.io，2018 年推出日志管理</td><td class="l wrap">今天的三大支柱 (基础设施、APM、日志) 各自 ARR 都过了 $10 亿</td></tr>
+<tr><td class="l">2019</td><td class="l wrap">彭博报道 Cisco 出价超过 $70 亿收购，被拒。2019.09.19 纳斯达克上市，发行价 $27，首日收 $37.55 (+39%)</td><td class="l wrap">今天市值约 $1,000 亿。拒绝 Cisco 说明创始人想做独立平台。双重股权结构让收购更难</td></tr>
+<tr><td class="l">2020–2022</td><td class="l wrap">一路扩产品：SIEM、应用安全 (收购 Sqreen)、数据管道 Vector (收购 Timber)、CI 可见性等。收入增速 2020 年 66%、2021 年 70%、2022 年 63%。股价 2021.11.09 收 $196.56</td><td class="l wrap">低利率时代的云繁荣，企业花钱不看账单。这也给下一阶段的“优化”埋了伏笔</td></tr>
+<tr><td class="l">2023.02–08</td><td class="l wrap"><strong>云优化周期。</strong>2023.02 给出 FY23 指引 $20.7–20.9 亿，低于一致预期 $21.9 亿；2023.08 再把指引下调到 $20.5–20.6 亿，Q2 增速掉到 25%，股价当天跌约 20%。原因：利率上升后客户集中压缩云支出，用量收费的收入一个季度内就反映出来</td><td class="l wrap"><strong>最重要的历史包袱。</strong>它证明了用量收费在下行时有多快。市场至今用这段历史给它的增速打折，也是为什么最大客户一减量股价就跌 20%</td></tr>
+<tr><td class="l">2024.05</td><td class="l wrap">总裁 Amit Agarwal (原首席产品官，被看作 Pomel 的二号人物和多产品战略的设计者) 宣布年底卸任转任董事，没给原因。当天虽然业绩超预期，股价仍跌超 10%</td><td class="l wrap">接班人风险。之后 Lê-Quôc 兼任总裁，没有新的二号人物出现；2025–26 年没查到其他 C 级离职。CFO David Obstler 2018 年起在任，没有变化</td></tr>
+<tr><td class="l">2025.01–05</td><td class="l wrap">收购 Quickwit (Rust 写的开源日志搜索引擎)、Metaplane (数据质量监控)、Eppo (A/B 实验和功能开关，报道价约 $2.2 亿；10-K 显示 2025 年三笔并购合计对价 $1.78 亿，两者矛盾)</td><td class="l wrap">Quickwit 是对 ClickHouse 式低成本日志的防守；Eppo / Metaplane 是从“监控”往“软件开发全流程”延伸</td></tr>
+<tr><td class="l">2025.07</td><td class="l wrap">7.09 进入标普 500。7.08 Guggenheim 降级到卖出、目标价 $105：认为 OpenAI 是最大客户，正在自建日志和指标系统，模型里 OpenAI 的 ARR 从约 $2.4 亿降到 Q4 的 $0.8 亿，2026 年增速会掉到约 15%。股价盘中跌 6.3%，收于约 $146。同月有报道称在谈以约 $10 亿收购以色列云安全公司 Upwind，最后没成交</td><td class="l wrap">“AI 客户集中”的空头逻辑从这里开始。事后看 Guggenheim 的增速判断错了 (2026 年实际约 30%)，但减量本身在 2026 Q3 发生了</td></tr>
+<tr><td class="l">2025.11</td><td class="l wrap">Q3 2025：公司宣布和最大客户<strong>提前续约</strong>，用更低的单价换更高的承诺量。股价当天涨约 24%</td><td class="l wrap">打消了“OpenAI 要走”的担心，但也意味着单价下降，后面的减量是在更低单价上再减</td></tr>
+<tr><td class="l">2025.12</td><td class="l wrap">Bits AI SRE (AI 运维 agent) 正式上线，之前在 2,000 多个客户环境里测试。同月切断 AI SRE 创业公司 Deductive AI 的访问</td><td class="l wrap">Datadog 押注“AI agent 用的也是我的数据”，同时开始防守数据入口</td></tr>
+<tr><td class="l">2026.02</td><td class="l wrap">FY26 首次指引 $40.6–41.0 亿 (+18–20%)，假设“除最大客户外增长不低于 20%”，最大客户按非常保守处理。随后软件股因“AI 颠覆 SaaS”恐慌和关税冲击大跌，2.23 单日 −11.6% 到约 $102，52 周低点 $98.01，距 2025.11 高点回撤约 49%</td><td class="l wrap">低点离现在只有 8 个月，股价从 $98 到 $266 涨了 1.7 倍，大部分是估值修复，不全是业绩</td></tr>
+<tr><td class="l">2026.04–06</td><td class="l wrap">注册地从特拉华迁到内华达。5.07 Q1 2026 季度收入首次过 $10 亿 (+32%)，非 AI 客户增速加速到 20% 中段，拿到两家大科技公司 AI 研究部门的七位数和八位数合同，FY 指引上调到 $43.0–43.4 亿，股价单日 +31%。6 月 DASH 大会发布 100 多项功能，包括 BYOC (数据放在客户自己的云账号里)、Bits Agent Builder；收购 Adaptive ML (强化学习运维)</td><td class="l wrap">增长加速被证明，而且来自 AI 以外。迁到内华达对管理层和控股股东更友好</td></tr>
+<tr><td class="l">2026.08.06</td><td class="l wrap">Q2 2026 收入 $11.2 亿 (+36%)，环比 +$1.15 亿创纪录；FY 指引上调到 $44.5–44.7 亿。但最大客户续了一份九位数的多年合同、同时从 Q3 起减少用量，Q3 指引只有 +28–29%。Pomel：“我们把这个客户在今年剩下时间的风险完全去掉了。”股价当天跌 17–19% 到约 $230，8.10 反弹 11.5% 到 $260.78</td><td class="l wrap">当前争论的起点：超预期 + 上调指引仍然大跌，说明市场在为“最大客户减量会不会传染”定价</td></tr>
+<tr><td class="l">2026.10</td><td class="l wrap">10.09 收 $293.26 创新高 (CIBC 上调目标价)，盘中高点 $300.68；10.15 收 $266.25，年初至今 +96%</td><td class="l wrap">现价离高点约 11%，已经把 8 月的跌幅全部收复</td></tr>
+</tbody></table></div>
+
+<h3>资本结构</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th>项目</th><th>数值</th><th class="l">说明</th></tr></thead>
+<tbody>
+<tr><td class="l">股本</td><td>3.56 亿 (基本) / 3.76 亿 (稀释)</td><td class="l wrap">Q2 2026 基本股本；稀释股本按公司 FY26 指引。A 类 3.308 亿股 (1 票)，B 类 0.252 亿股 (10 票)，B 类占约 43% 投票权 (按 2026.04 代理声明计算)</td></tr>
+<tr><td class="l">市值</td><td>$950 亿 / $1,001 亿</td><td class="l wrap">$266.25 × 基本 / 稀释股本</td></tr>
+<tr><td class="l">现金和投资</td><td>$49.9 亿</td><td class="l wrap">2026.06.30</td></tr>
+<tr><td class="l">负债</td><td>$10 亿</td><td class="l wrap">0% 可转债，2029 年到期；2025 年到期的那笔已还清</td></tr>
+<tr><td class="l">EV</td><td>约 $961 亿</td><td class="l wrap">稀释市值 − 净现金 $39.9 亿 (mapping 用基本股本算的是 $919 亿)</td></tr>
+<tr><td class="l">稀释速度</td><td class="rate">+3.4% / 年</td><td class="l wrap">无回购</td></tr>
+<tr><td class="l">股价波动</td><td>52 周 $98.01 – $300.68</td><td class="l wrap">一年内最高是最低的 3 倍；财报日单日 ±20–30% 是常态</td></tr>
+</tbody></table></div>
+
+<div class="two">
+<div><h4>Pros</h4><ul>
+<li>行业里规模最大、增长最快的独立平台：2026 年 +30%，对手 Dynatrace、Elastic 约 +15%</li>
+<li>增长在加速，而且来自 AI 以外：非 AI 客户增速 18% (2025 Q2) → 20% 后段 (2026 Q2)</li>
+<li>交叉销售还在深化：10 个以上产品的客户一年从 7% 到 13%；安全在 $100 万以上客户的支出里只占 2%</li>
+<li>指引一贯保守：过去 6 个季度收入每次超出指引上限 $21–45M</li>
+<li>资产负债表干净：净现金 $40 亿；FCF 利润率 25–30%</li>
+</ul></div>
+<div><h4>Cons</h4><ul>
+<li>扣 SBC 后 FCF 只有收入的 6%，扣 SBC 的 FCF 收益率约 0.3%；不回购，每年稀释约 3.4%</li>
+<li>客户集中：AI 原生客户 2025 Q3 占收入 12%，之后公司不再披露；最大客户正在减量</li>
+<li>单价下行压力：OTel + ClickHouse 让大客户自建越来越便宜；Datadog 自己推的 Flex Logs、BYOC 也在降低单价</li>
+<li>毛利率从 81.4% 降到 79.6%</li>
+<li>估值：FY26 P/E 106x，EV/NTM 收入 18x，在 mapping 回归线之上 87%</li>
+</ul></div>
+</div>
+<p class="one">一句话：2023 年的云优化证明用量收费下行很快，所以市场对最大客户减量反应很大；今天的历史包袱主要是这一条和 SBC 稀释。</p>
+</section>
+
+<section class="sec">
+<h2>4. 当前 Set up</h2>
+<h3>过去 6 个季度的执行</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th>季度</th><th>收入指引 ($M)</th><th>实际</th><th>超上限</th><th>YoY</th><th>Non-GAAP 利润率</th><th>EPS 指引 → 实际</th><th>FCF</th><th class="l">评价</th></tr></thead>
+<tbody>
+<tr><td>Q1'25</td><td>737–741</td><td>761.6</td><td>+21</td><td class="rate">25%</td><td class="pct">22%</td><td>0.41–0.43 → 0.46</td><td>244</td><td class="l wrap">稳定；首次提示 AI 客户集中</td></tr>
+<tr><td>Q2'25</td><td>787–791</td><td>826.8</td><td>+36</td><td class="rate">28%</td><td class="pct">20%</td><td>0.40–0.42 → 0.46</td><td>165</td><td class="l wrap">AI 原生占收入 11%，贡献约 10 个点增长</td></tr>
+<tr><td>Q3'25</td><td>847–851</td><td>886</td><td>+35</td><td class="rate">28%</td><td class="pct">23%</td><td>0.44–0.46 → 0.55</td><td>214</td><td class="l wrap">最大客户提前续约；之后不再披露 AI 占比</td></tr>
+<tr><td>Q4'25</td><td>912–916</td><td>953</td><td>+37</td><td class="rate">29%</td><td class="pct">24%</td><td>0.54–0.56 → 0.59</td><td>291</td><td class="l wrap">非 AI 增速 23%；FY26 指引只给 +18–20%</td></tr>
+<tr><td>Q1'26</td><td>951–961</td><td>1,006</td><td>+45</td><td class="rate">32%</td><td class="pct">22%</td><td>0.49–0.51 → 0.60</td><td>289</td><td class="l wrap">非 AI 加速到 20% 中段，RPO +51%</td></tr>
+<tr><td>Q2'26</td><td>1,070–1,080</td><td>1,121.5</td><td>+42</td><td class="rate">36%</td><td class="pct">23%</td><td>0.57–0.59 → 0.65</td><td>279</td><td class="l wrap">非 AI 20% 后段；最大客户减量，毛利率 79.6%</td></tr>
+</tbody></table></div>
+<p class="src">Source: 各季度 8-K Ex. 99.1；指引取自前一季度财报。单位 $M，EPS 为 non-GAAP</p>
+<div class="row">
+<div class="chart-wrap" id="ch-rev"></div>
+<p class="src">Source: 公司 8-K；Q3'26 为指引中点 (浅色)。下方斜体为 YoY</p>
+</div>
+<div class="prose">
+<p><strong>判断：</strong>指引可靠而且一贯保守，每季超出上限 3–5%。超预期的来源在变好：2025 年主要靠 AI 原生客户 (贡献 6–10 个点增长)，2026 年非 AI 客户成了主力，新客户贡献的增量也从约 20% 升到约 30%。质量上唯一变差的是毛利率，从 81.4% 降到 79.6%。全年指引从 2 月的 $40.8 亿 (中点) 上调到 8 月的 $44.6 亿，抬了 9.6%。</p>
+</div>
+
+<h3>核心 driver：已验证 vs 理论</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th>Driver</th><th class="l">已被财报证明的部分</th><th class="l">仍然只是目标或推测的部分</th><th class="l">标签</th></tr></thead>
+<tbody>
+<tr><td class="l">企业上云</td><td class="l wrap">非 AI 客户增速连续加速到 20% 后段；客户数 +7%，$10 万以上客户 +23%</td><td class="l wrap">“企业只有 25–30% 负载在云上”是管理层口径，搬迁速度没有数据</td><td class="l"><span class="tg v">已验证</span></td></tr>
+<tr><td class="l">交叉销售</td><td class="l wrap">4+ 产品客户 51% → 58%，10+ 产品 7% → 13%；NRR 回到 120% 出头</td><td class="l wrap">安全能不能做大：ARR 刚过 $1 亿，在 SIEM 上要和 Splunk、CrowdStrike、Palo Alto 竞争</td><td class="l"><span class="tg v">已验证</span></td></tr>
+<tr><td class="l">AI 原生客户</td><td class="l wrap">占收入从 2024 Q1 的 3.5% 升到 2025 Q3 的 12%；750+ AI 客户，前 10 大 AI 公司全是客户</td><td class="l wrap">最大客户在减量；其他 AI 公司规模变大后会不会走同一条“压价 + 自建”的路</td><td class="l"><span class="tg p">部分</span></td></tr>
+<tr><td class="l">LLM 和 GPU 监控</td><td class="l wrap">LLM 监控客户 1,000+；Q1 2026 拿到两家大科技公司 AI 研究部门的大合同 (训练集群)</td><td class="l wrap">没有披露收入；Pomel 自己说 LLM 监控“还早，差异化不大”</td><td class="l"><span class="tg p">部分</span></td></tr>
+<tr><td class="l">AI 运维 agent</td><td class="l wrap">Bits AI 调查次数 2025.12 → 2026.03 翻倍；MCP 工具调用比 2025 Q4 多 22 倍</td><td class="l wrap">能不能收钱、收多少，没有数据；也可能是给客户的免费留存工具</td><td class="l"><span class="tg t">理论</span></td></tr>
+<tr><td class="l">利润率扩张</td><td class="l wrap">SBC 占收入 22% → 20%</td><td class="l wrap">长期 25%+ 营业利润率和 80% 毛利率来自 2026.02 投资者日的二手报道 (MarketBeat)，公司 IR 上未核实；FY26 指引只有 23%</td><td class="l"><span class="tg t">理论</span></td></tr>
+</tbody></table></div>
+
+<h3>往下多想一层：Q3 指引里藏了多少保守</h3>
+<div class="prose"><p>公司说最大客户已经“完全去风险”，但没说减了多少。可以用已披露的数字反推一个范围 (以下最大客户的金额都是<span class="tg e">估算</span>)：</p></div>
+<div class="formula">Q3 指引中点 $1,140M − Q2 实际 $1,121.5M = 环比只增 $18.5M (+1.7%)
+过去 4 个季度环比增量：$59M、$67M、$53M、$115M，平均约 $74M
+
+假设最大客户 Q2 季度收入约 $60–70M (Guggenheim 估它 2025 Q2 ARR 约 $2.4 亿，之后提前续约降了单价)
+如果 Q3 减到合同保底，比如减少 $25–35M：
+  其余业务在指引里只增长 $18.5M + $25–35M = $44–54M，环比 +4–5%
+  而 Q2 其余业务的环比增速约 +10%
+
+如果其余业务按 +8% 环比增长：Q3 ≈ $1,051M × 1.08 + $35M ≈ $1,170–1,180M，YoY +32–33%</div>
+<div class="prose"><p>结论：Q3 指引里大约有 $30–40M 的保守空间，和过去每季超出上限 $35–45M 的习惯一致。11.04 的数字如果在 $1.17–1.18B，说明“其余业务在加速”成立；如果只是略超指引，说明 AI 客户的减量比公司暗示的大。</p></div>
+
+<h3>市场在问什么</h3>
+<div class="prose"><ol>
+<li><strong>最大客户减量会不会传染？</strong>OpenAI 一边续约一边减量，同时在用 Chronosphere。下一批规模变大的 AI 公司 (Anthropic 是 ClickHouse 的客户) 会不会也在年账单过亿时自建</li>
+<li><strong>遥测数据的单价会不会持续下跌？</strong>OTel 降低迁移成本，ClickHouse、Snowflake 让存储变便宜；Datadog 自己推 Flex Logs、BYOC 也是在主动降价。用量涨得能不能比单价跌得快</li>
+<li><strong>AI agent 会把 Datadog 变成“存数据的地方”吗？</strong>如果排查故障的是 agent，不是人，那 Datadog 最值钱的界面和工作流就不值钱了，剩下的竞争只有每 GB 多少钱</li>
+</ol></div>
+
+<h3>预期差</h3>
+<div class="prose"><ul>
+<li><strong>正向：一致预期可能低估了 2027 年收入。</strong>FY27 一致预期约 $55 亿 (+23%)，FY28 约 $67.6 亿；而 2026 年实际增速约 30%，非 AI 业务在加速。如果 2027 年再做 28%，收入约 $57 亿，比一致预期高约 4%。mapping 的数据备注里也写了“当前 36% 的增速高于一致预期的远期路径，后者可能过时”</li>
+<li><strong>负向：市场在看 non-GAAP，没在看股东拿到的现金。</strong>即使收入超预期 4–5%，扣 SBC 的 FCF 也只有 $3–4 亿量级，股价对应约 250–300 倍。要让股东现金追上估值，必须 SBC 占收入大幅下降，或者开始回购，这两件事公司都没有承诺</li>
+</ul></div>
+
+<h3>要做的判断</h3>
+<div class="prose"><ol>
+<li>非 AI 业务 20% 后段的增速，是“企业上云 + 交叉销售”的长期趋势，还是 2025–26 年的周期反弹</li>
+<li>大客户 (年账单过亿) 的“压价 + 自建”会不会从 OpenAI 一家扩散到前 20 大客户，单价下跌能否被用量抵消</li>
+<li>SBC 占收入能不能在 5 年内降到 10–12%，让扣 SBC 后的 FCF 利润率到 20% 以上</li>
+</ol></div>
+</section>
+
+<section class="sec">
+<h2>5. 估值与结论</h2>
+<h3>当前估值</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th>倍数</th><th>数值</th><th class="l">算式 (股价 $266.25，2026.10.15)</th></tr></thead>
+<tbody>
+<tr><td class="l">市值 (稀释)</td><td>$1,001 亿</td><td class="l">$266.25 × 3.76 亿股</td></tr>
+<tr><td class="l">EV</td><td>$961 亿</td><td class="l">$1,001 亿 − 现金 $49.9 亿 + 可转债 $10 亿</td></tr>
+<tr><td class="l">EV / TTM 收入</td><td>24.2x</td><td class="l">$961 亿 / $39.7 亿 (Q3'25–Q2'26)</td></tr>
+<tr><td class="l">EV / FY26 收入</td><td>21.5x</td><td class="l">$961 亿 / $44.6 亿 (指引中点)</td></tr>
+<tr><td class="l">EV / NTM 收入</td><td>约 18x</td><td class="l">$961 亿 / 约 $53 亿 (<span class="tg e">估算</span>：Q4'26 约 $11.9 亿 + 3/4 × FY27 一致预期 $55 亿)</td></tr>
+<tr><td class="l">P/E (FY26, non-GAAP)</td><td>106x</td><td class="l">$266.25 / $2.52 (指引中点)</td></tr>
+<tr><td class="l">P/E (FY28, non-GAAP)</td><td>71x</td><td class="l">$266.25 / $3.75 (一致预期)</td></tr>
+<tr><td class="l">P / TTM FCF</td><td>93x</td><td class="l">$1,001 亿 / $10.73 亿 (FCF 收益率 1.1%)</td></tr>
+<tr><td class="l">P / TTM (FCF − SBC)</td><td>402x</td><td class="l">$1,001 亿 / $2.49 亿 (收益率 0.25%)</td></tr>
+<tr><td class="l">GAAP P/E</td><td>无意义</td><td class="l">TTM GAAP 营业利润 $16M</td></tr>
+</tbody></table></div>
+
+<h3>同业对比</h3>
+<div class="row">
+<div class="chart-wrap" id="ch-peers"></div>
+<p class="src">Source: Software mapping 估值数据 (MarketScreener 一致预期，2026.10.15 前后股价)。EV / NTM 收入</p>
+</div>
+<div class="tbl"><table class="t">
+<thead><tr><th>公司</th><th>市值 $B</th><th>最新季度增速</th><th>EV/NTM 收入</th><th>EV/NTM 毛利</th><th>SBC/收入</th><th>扣 SBC FCF 收益率</th><th>扣回购后收益率</th><th class="l">为什么比 DDOG 差 / 好</th></tr></thead>
+<tbody>
+<tr class="key"><td>Datadog</td><td>95</td><td class="rate">36%</td><td>18.5x</td><td>21.9x</td><td class="pct">21%</td><td>0.4%</td><td>0.4%</td><td class="l wrap">增速最高，没有回购</td></tr>
+<tr><td>Dynatrace</td><td>18</td><td class="rate">16%</td><td>6.7x</td><td>8.6x</td><td class="pct">14%</td><td>1.6%</td><td>3.3%</td><td class="l wrap">增速一半，倍数三分之一，回购是 SBC 的 2.4 倍。“便宜的 Datadog”，但在云原生客户里输</td></tr>
+<tr><td>Elastic</td><td>9.7</td><td class="rate">15%</td><td>4.1x</td><td>5.6x</td><td class="pct">17%</td><td>0.5%</td><td>4.0%</td><td class="l wrap">最便宜；cRPO +21% 领先收入，但产品广度和品牌弱</td></tr>
+<tr><td>Snowflake</td><td>114</td><td class="rate">35%</td><td>15.6x</td><td>22.7x</td><td class="pct">30%</td><td>−0.4%</td><td>0.8%</td><td class="l wrap">增速相同、SBC 更高；买下 Observe 后直接竞争日志</td></tr>
+<tr><td>JFrog</td><td>12.6</td><td class="rate">29%</td><td>16.6x</td><td>19.9x</td><td class="pct">27%</td><td>0.1%</td><td>0.1%</td><td class="l wrap">同样“AI 赢家”定价，规模小得多</td></tr>
+<tr><td>MongoDB</td><td>28.6</td><td class="rate">30%</td><td>7.9x</td><td>11.0x</td><td class="pct">20%</td><td>0.4%</td><td>2.5%</td><td class="l wrap">增速接近，倍数不到一半，被市场当成 AI 输家</td></tr>
+<tr><td>CrowdStrike</td><td>247</td><td class="rate">26%</td><td>36.9x</td><td>43x</td><td class="pct">24%</td><td>0.1%</td><td>0.2%</td><td class="l wrap">更贵；安全是 Datadog 想进的市场</td></tr>
+</tbody></table></div>
+<p class="src">Source: /mnt/project-files/software-mapping/research/A_data_infra.md、valuation/metrics.json。收益率 = (FCF − SBC) / EV，TTM</p>
+
+<h3>放在估值 × 增长框架里</h3>
+<div class="prose"><p>和 mapping 第 3 节同一套方法：横轴是一致预期未来约 3 年的年化增长，纵轴是倍数 (对数刻度)，虚线是全组软件公司回归出来的“这个增速对应的平均倍数”。线下方 = 按增长算便宜，线上方 = 市场在为增长以外的东西付溢价。</p></div>
+<div class="tabs" id="vtabs"><button data-k="s" class="on">收入：EV/Sales × 收入增长</button><button data-k="f">现金流：P/(FCF − SBC) × 增长</button></div>
+<div class="chart-wrap sc-wrap"><svg id="vs" viewBox="0 0 900 460" role="img" aria-label="估值和增长散点图"></svg></div>
+<p class="cap" id="vcap"></p>
+<div class="prose" style="margin-top:var(--s2)"><ul>
+<li><strong>收入图：</strong>DDOG 的 3 年收入复合增速一致预期是 23.7%，回归线对应约 9.9x EV/Sales，实际 18.5x，<strong>比线高 87%</strong>。同一象限里 CRWD (+293%)、NET (+173%)、PANW (+127%)、FROG (+117%) 更贵；DT (−18%)、ESTC (−43%)、MDB (−1%) 在线上或线下</li>
+<li><strong>现金流图 (扣 SBC)：</strong>DDOG 的“市值 / NTM (FCF − SBC)”是 229x，一致预期的 3 年增长是 41%，回归线对应约 48x，<strong>比线高约 380%</strong>。mapping 的图把纵轴截在 150x，DDOG 在图外；这里把纵轴放到 400x，回归线和 mapping 完全一样</li>
+<li>不扣 SBC 时 DDOG 是 71x、比线高 167%。三种口径都在线上方，区别只是贵多少</li>
+</ul></div>
+
+<h3>Mapping 为什么没把 DDOG 放进 deepdive，我同意吗</h3>
+<div class="prose">
+<p>mapping (2026.10.15) 给 DDOG 的结论是“已定价”：AI 颠覆风险 3/5、AI 受益 4/5；年初至今 +95%；预期差“基本没有了，争论在执行，现价已经假设 25% 以上的增长能长期持续”。初筛 9 家里没有它。</p>
+<p><strong>我同意“现在不该为买入做 deepdive”，理由比 mapping 写的更具体：</strong></p>
+<ul>
+<li>问题不在生意。这份 primer 看下来，它的生意比 mapping 那一行字描述得更好：连续 5 个季度加速，非 AI 业务也在加速，指引一贯保守，一致预期可能偏低</li>
+<li>问题在价格和 SBC。下面的反推显示，要在 $266 拿到 10% 年回报，需要收入 5 年年化约 30%、扣 SBC 后的 FCF 利润率从 6% 升到 21%，同时 2031 年还值 45 倍。三件事要同时发生，这是“一切顺利”情景，不是基本情景</li>
+<li>mapping 筛的是“低估值 + 大预期差”。DDOG 有一个小的正向预期差 (2027 收入)，但被一个更大的负向事实 (股东现金很少) 盖住了</li>
+</ul>
+<p><strong>我补充的一点：</strong>它值得做一个“学习型”的跟踪，而不是什么都不做。原因有两个：一是它是可观测性行业的标尺，看懂它就能判断 DT、ESTC 这些“便宜的替代品”到底便宜在哪；二是它的 AI 客户数据 (AI 原生收入占比、GPU 集群监控合同、LLM 调用量) 是观察 AI 推理和训练用量的一个侧面，和你在 AI 基础设施上的主线有交集。</p>
+</div>
+
+<h3>反推现价隐含了什么</h3>
+<div class="prose"><p>软件公司用 non-GAAP EPS 算出来的 P/E 会高估股东回报，因为 SBC 被加回了。所以这里用“扣 SBC 后的 FCF”反推 (股东真正拿到的钱)：</p></div>
+<div class="formula">今日每股价值 = [2026 收入 × (1 + g)^5 × (FCF 利润率 − SBC 占比) × 终值倍数 / (1 + r)^5 + 净现金] / 稀释股本
+
+反推：要在 $266.25 拿到 r = 10%
+  2031 年需要的 (FCF − SBC) = ($1,001 亿 − $40 亿) × 1.1^5 / 终值倍数
+  终值 45x → $34.4 亿；如果 FCF 利润率 33%、SBC 12% (扣完 21%) → 2031 收入要 $164 亿 → g ≈ 30%
+  终值 35x → $44.2 亿；如果 FCF 利润率 30%、SBC 14% (扣完 16%) → 2031 收入要 $276 亿 → g ≈ 44%
+
+对照：一致预期 2025–28 收入复合增速约 25%</div>
+<div class="prose"><p><strong>如果管理层目标兑现会怎样：</strong>二手报道的长期目标是毛利率约 80%、non-GAAP 营业利润率 25% 以上。按 25% 营业利润率、FCF 利润率约 30%，在 SBC 还是 14% 的情况下，扣 SBC 后的利润率只有 16%，就是下面的“基本”情景，每股约 $113。目标本身算得通，问题是 non-GAAP 目标里没有 SBC。</p></div>
+
+<h3>计算器</h3>
+<div class="prose"><p>拖动参数，看隐含价值和现价隐含的增速。默认值是“乐观”情景。</p></div>
+<div class="calc">
+  <div><label for="c-g">2026–31 收入年化增速 %</label><input id="c-g" type="number" step="1" value="28"></div>
+  <div><label for="c-fm">2031 FCF 利润率 %</label><input id="c-fm" type="number" step="1" value="33"></div>
+  <div><label for="c-sbc">2031 SBC 占收入 %</label><input id="c-sbc" type="number" step="1" value="12"></div>
+  <div><label for="c-pe">终值倍数 (× FCF − SBC)</label><input id="c-pe" type="number" step="1" value="45"></div>
+  <div><label for="c-r">要求年回报 %</label><input id="c-r" type="number" step="0.5" value="10"></div>
+  <div><label for="c-px">股价 $</label><input id="c-px" type="number" step="1" value="266.25"></div>
+</div>
+<div class="calc-out">
+  <div><div class="l">隐含今日价值 / 股</div><div class="v" id="o-val">—</div></div>
+  <div><div class="l">相对现价</div><div class="v" id="o-up">—</div></div>
+  <div><div class="l">现价隐含的收入年化增速</div><div class="v" id="o-g">—</div></div>
+</div>
+<p class="note">固定假设：2026 年收入 $44.6 亿 (指引中点)，净现金 $39.9 亿，稀释股本 3.76 亿 (SBC 已作为成本扣除，不再另算稀释)，5 年。“现价隐含增速”沿用上面的利润率、倍数和回报率。</p>
+
+<h3>情景</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th>情景</th><th>收入年化增速</th><th>2031 收入</th><th>FCF 利润率</th><th>SBC</th><th>2031 (FCF − SBC)</th><th>终值倍数</th><th>今日价值 (r = 10%)</th></tr></thead>
+<tbody>
+<tr><td class="l">悲观</td><td class="rate">15%</td><td>$90 亿</td><td class="pct">28%</td><td class="pct">15%</td><td>$11.7 亿</td><td>30x</td><td>$68</td></tr>
+<tr><td class="l">基本</td><td class="rate">20%</td><td>$111 亿</td><td class="pct">30%</td><td class="pct">14%</td><td>$17.8 亿</td><td>35x</td><td>$113</td></tr>
+<tr class="key"><td class="l">乐观</td><td class="rate">28%</td><td>$153 亿</td><td class="pct">33%</td><td class="pct">12%</td><td>$32.2 亿</td><td>45x</td><td>$250</td></tr>
+<tr><td class="l">现价</td><td colspan="7" class="l">$266.25：比乐观情景还高约 6%</td></tr>
+</tbody></table></div>
+
+<div class="verdict">
+<p><strong>要不要 deepdive：</strong>不做以买入为目的的 deepdive；做轻量跟踪，把它当可观测性行业的标尺和 AI 用量的观察窗口。</p>
+<p><strong>现价能不能建仓：</strong>不能。$266 已经高于乐观情景 ($250，收入 5 年 +28%/年、扣 SBC 利润率 21%、终值 45x)。</p>
+<p><strong>合理区间：</strong>$113–250 (基本到乐观)。$150–170 附近 (约 2026 年 4–5 月的价位) 开始有意思：那里只需要收入 5 年 +23–25%/年 (和一致预期差不多)、扣 SBC 后利润率从 6% 升到约 18%、终值 40 倍，就能拿到 10%。</p>
+<p><strong>什么会改变判断：</strong>公司开始用回购抵消 SBC，或者 SBC 占收入快速降到 15% 以下；或者 2027 年指引和实际都证明 28–30% 增速能延续到 2027 年以后。</p>
+</div>
+
+<h3>Deepdive 要做什么 (如果价格到了)</h3>
+<div class="prose"><ol>
+<li><strong>模型：</strong>收入按“非 AI 客户 / AI 原生客户 (拆出最大客户)”两块建；非 AI 再拆成新客户 + 老客户用量增长 + 交叉销售 (按产品数分层的客户占比 × 每层平均支出)。利润端单列 SBC 和稀释，算扣 SBC 后的 FCF / 股</li>
+<li><strong>要核实的数据：</strong>10-K 里 2025 年三笔并购的对价拆分 (Eppo $2.2 亿 vs 合计 $1.78 亿的矛盾)；10-Q 里 AI 原生客户对增长的贡献 (“高个位数个点”) 和最大客户的合同最低承诺额；2026.02 投资者日的长期利润率目标原文 (目前只有 MarketBeat 二手报道)；mapping 表里 TTM FCF $11.8 亿 vs 8-K 加总 $10.7 亿的差别</li>
+<li><strong>专家访谈：</strong>
+  (a) 一家 AI 实验室或大互联网公司的可观测性负责人：账单过亿后，自建 (ClickHouse / Chronosphere) 的真实成本和人力是多少，哪些数据留在 Datadog、哪些搬走；
+  (b) 一家中型 SaaS 公司的 SRE 主管：过去两年 Datadog 账单怎么变、用 Flex Logs / 采样省了多少、有没有认真评估过 Grafana 或 Dynatrace；
+  (c) Dynatrace 或 Grafana 的销售：在哪类客户里赢 Datadog、靠价格还是产品</li>
+</ol></div>
+</section>
+
+<section class="sec">
+<h2>数据来源</h2>
+<ul class="sources">
+<li>公司财报 8-K Ex. 99.1：Q4 2024、Q1–Q4 2025、Q1–Q2 2026 (sec.gov/Archives/edgar/data/1561550)；Q3 2026 财报日公告 (GlobeNewswire 2026.10.14)</li>
+<li>电话会记录：Q1 2025、Q3 2025、Q4 2025、Q2 2026 (transcripts.platformaeronaut.com)；Q4 2025、Q1 2026 (fool.com)</li>
+<li>2026 年代理声明 (sec.gov ddog-20260429)：高管、股权结构</li>
+<li>股价：IBKR 实时快照 (2026.10.15 收盘 $266.25、52 周区间、年初至今涨幅)；Zacks/Yahoo 2026.10.13；TIKR 2026.10.05、10.10 (一致预期、目标价)</li>
+<li>历史与人物：Wikipedia Datadog 条目；Datadog IPO 定价公告；Kiplinger (Agarwal 离任)；Motley Fool 2023.08.11 (指引下调)、2025.07.08 (Guggenheim)；Benzinga 2023.02 (FY23 指引)、2025.07 (Guggenheim)；Pragmatic Engineer (Coinbase $6,500 万账单)；TheStreet 2026.08.07、TIKR、StreetInsider (Q2 2026 反应)；Globes (Upwind)</li>
+<li>行业与竞争：Gartner 2025 Magic Quadrant 摘要；Dynatrace、Elastic 8-K；Cisco IR (Splunk)；PE Hub (New Relic)；SecurityWeek (Chronosphere)；SiliconANGLE (Observe)；Grafana 新闻稿；ClickHouse (Wikipedia、Parsers.vc)；TechCrunch (Resolve AI)；Deductive AI 博客；TechTarget (DASH 2026、BYOC)；MarketBeat (2026 投资者日，二手报道)</li>
+<li>定价：datadoghq.com/pricing/list (2026.10)</li>
+<li>估值框架与同业：Software Sector Mapping (research/2026-10-15-mapping-software) 的 valuation × growth 数据；/mnt/project-files/software-mapping/research/A_data_infra.md</li>
+<li>未核实项：最大客户是 OpenAI (只来自分析师和媒体)；Eppo 收购价；Grafana $90 亿融资；Chronosphere 交易是否完成；Traversal 估值；长期利润率目标原文</li>
+</ul>
+</section>
+
+</main></div>
+<script>
+// Inline SVG bars. Colors come only from CSS variables so dark mode follows the theme.
+function svgBars(id, items, o){
+  o = o || {};
+  var W = 560, H = o.h || 250, top = 30, bot = o.sub ? 46 : 30, left = 8, right = 8;
+  var lo = Math.min(0, Math.min.apply(null, items.map(function(d){return d.lo}))),
+      hi = Math.max.apply(null, items.map(function(d){return d.hi}));
+  if (o.min != null) lo = o.min;
+  var ph = H - top - bot, y = function(v){ return top + (hi - v) / (hi - lo) * ph; };
+  var slot = (W - left - right) / items.length, bw = slot * 0.6;
+  var FILL = {
+    main:'fill:var(--slate-500)', est:'fill:var(--slate-200)', ctx:'fill:var(--slate-100);stroke:var(--text);stroke-width:.8',
+    neg:'fill:var(--gray-250)', end:'fill:var(--navy)'
+  };
+  var s = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+(o.aria||'')+'">';
+  s += '<line x1="'+left+'" x2="'+(W-right)+'" y1="'+y(lo<0?0:lo)+'" y2="'+y(lo<0?0:lo)+'" style="stroke:var(--rule);stroke-width:1"/>';
+  items.forEach(function(d, i){
+    var x = left + slot * i + (slot - bw) / 2, y1 = y(d.hi), y2 = y(d.lo), hgt = Math.max(1, y2 - y1);
+    s += '<rect x="'+x.toFixed(1)+'" y="'+y1.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+hgt.toFixed(1)+'" style="'+FILL[d.c||'main']+'"/>';
+    var ly = d.below ? y2 + 16 : y1 - 8;
+    s += '<text x="'+(x+bw/2).toFixed(1)+'" y="'+ly.toFixed(1)+'" text-anchor="middle" style="fill:var(--text);font-size:13px;font-weight:600">'+d.lab+'</text>';
+    var cy = H - bot + 18;
+    s += '<text x="'+(x+bw/2).toFixed(1)+'" y="'+cy+'" text-anchor="middle" style="fill:var(--muted);font-size:12px">'+d.l+'</text>';
+    if (d.sub) s += '<text x="'+(x+bw/2).toFixed(1)+'" y="'+(cy+16)+'" text-anchor="middle" style="fill:var(--muted);font-size:12px;font-style:italic">'+d.sub+'</text>';
+  });
+  s += '</svg>';
+  document.getElementById(id).innerHTML = s;
+}
+
+svgBars('ch-rev', [
+  {l:"Q1'25", lo:0, hi:761.6, lab:'762', sub:'+25%'},
+  {l:"Q2'25", lo:0, hi:826.8, lab:'827', sub:'+28%'},
+  {l:"Q3'25", lo:0, hi:886, lab:'886', sub:'+28%'},
+  {l:"Q4'25", lo:0, hi:953, lab:'953', sub:'+29%'},
+  {l:"Q1'26", lo:0, hi:1006.4, lab:'1,006', sub:'+32%'},
+  {l:"Q2'26", lo:0, hi:1121.5, lab:'1,122', sub:'+36%'},
+  {l:"Q3'26 指引", lo:0, hi:1140, lab:'1,140', sub:'+29%', c:'est'}
+], {sub:true, aria:'季度收入 $M'});
+
+svgBars('ch-annual', [
+  {l:'2020', lo:0, hi:66, lab:'66%'},
+  {l:'2021', lo:0, hi:70, lab:'70%'},
+  {l:'2022', lo:0, hi:63, lab:'63%'},
+  {l:'2023', lo:0, hi:27, lab:'27%'},
+  {l:'2024', lo:0, hi:26, lab:'26%'},
+  {l:'2025', lo:0, hi:28, lab:'28%'},
+  {l:'2026E', lo:0, hi:30, lab:'30%', c:'est'}
+], {h:220, aria:'年收入增速'});
+
+svgBars('ch-bridge', [
+  {l:'FCF', lo:0, hi:1073, lab:'1,073'},
+  {l:'SBC', lo:249, hi:1073, lab:'(824)', c:'neg'},
+  {l:'FCF − SBC', lo:0, hi:249, lab:'249', c:'end'}
+], {h:240, aria:'过去四个季度 FCF 扣 SBC，$M'});
+
+svgBars('ch-peers', [
+  {l:'Datadog', lo:0, hi:18.5, lab:'18.5x'},
+  {l:'Dynatrace', lo:0, hi:6.7, lab:'6.7x', c:'ctx'},
+  {l:'Elastic', lo:0, hi:4.1, lab:'4.1x', c:'ctx'},
+  {l:'Snowflake', lo:0, hi:15.6, lab:'15.6x', c:'ctx'},
+  {l:'JFrog', lo:0, hi:16.6, lab:'16.6x', c:'ctx'},
+  {l:'MongoDB', lo:0, hi:7.9, lab:'7.9x', c:'ctx'},
+  {l:'CrowdStrike', lo:0, hi:36.9, lab:'36.9x', c:'ctx'}
+], {h:240, aria:'同业 EV/NTM 收入'});
+
+// valuation x growth scatter — same data, filter and fit as the Software mapping §3
+const V=[["MSFT",1,9.45,0.242,94.3,147.8,0.175,0.159],["ORCL",1,4.86,0.456,null,null,null,null],["IBM",1,3.87,0.044,13.5,15.4,0.114,0.124],["SNOW",1,15.63,0.297,67.6,null,0.405,null],["DDOG",1,18.47,0.237,71.3,229.4,0.23,0.41],["MDB",1,7.91,0.191,42.0,372.8,0.181,0.572],["DT",1,6.74,0.197,27.6,56.1,0.247,0.367],["NTNX",1,5.1,0.167,18.9,31.7,0.149,0.189],["FROG",1,16.62,0.181,70.1,3783.0,0.185,0.904],["ESTC",1,4.08,0.166,20.4,58.6,0.241,0.963],["GTLB",1,6.49,0.155,36.7,1375.5,0.268,null],["CRWD",2,36.91,0.226,118.8,360.3,0.294,0.741],["PANW",2,19.89,0.211,51.3,76.3,0.304,0.404],["NET",2,34.1,0.289,250.0,null,0.473,null],["FTNT",2,15.15,0.123,41.3,45.6,0.078,0.074],["OKTA",2,10.1,0.102,37.3,84.0,0.092,0.211],["ZS",2,8.07,0.202,34.9,279.3,0.227,1.63],["RBRK",2,12.5,0.21,62.7,null,0.306,null],["CHKP",2,4.1,0.051,11.7,13.4,0.056,0.083],["AKAM",2,3.67,0.169,null,null,-0.438,null],["SAIL",2,7.69,0.185,44.8,null,0.398,null],["NTSK",2,8.07,0.207,147.9,null,null,null],["S",2,5.7,0.179,59.1,null,0.909,null],["QLYS",2,7.73,0.081,20.6,26.8,0.041,0.056],["VRNS",2,6.17,0.172,40.2,null,0.201,null],["SNPS",6,9.56,0.117,32.6,49.6,0.09,0.126],["CDNS",6,13.62,0.141,44.0,58.7,0.202,0.269],["ADSK",6,5.43,0.116,16.6,22.0,0.094,0.121],["DSY",6,4.04,0.061,18.0,19.7,0.054,0.053],["PTC",6,7.93,0.024,22.5,29.5,0.072,0.12],["TRMB",6,3.77,0.081,16.0,19.6,0.164,0.183],["BSY",6,6.72,0.109,19.0,22.8,0.136,0.177],["NEM",6,5.45,0.191,20.1,21.1,0.184,0.183],["SAP",3,5.19,0.124,20.8,24.5,0.165,0.178],["CRM",3,4.82,0.1,12.9,17.1,0.082,0.09],["NOW",3,8.76,0.193,24.3,39.6,0.285,0.405],["WDAY",3,4.25,0.105,13.9,27.5,0.175,0.341],["ADP",3,4.79,0.069,22.3,23.5,-0.054,-0.061],["PAYX",3,6.11,0.059,16.4,17.0,0.128,0.132],["SGE",3,3.72,0.093,16.7,18.7,0.127,0.131],["PAYC",3,4.97,0.074,17.3,20.4,0.04,0.038],["PCTY",3,4.21,0.089,17.9,25.7,0.03,0.026],["PEGA",3,2.86,0.103,10.8,15.5,0.018,-0.008],["ADBE",4,3.56,0.081,9.0,11.2,0.06,0.061],["TEAM",4,6.76,0.179,25.4,116.6,0.363,null],["ZM",4,4.14,0.042,15.3,24.7,0.031,0.07],["DOCU",4,3.76,0.079,11.5,22.3,0.083,0.156],["FIG",4,5.99,0.252,56.3,null,0.173,null],["HUBS",4,2.72,0.139,14.2,41.7,0.163,0.299],["DBX",4,4.22,-0.003,7.9,11.3,0.018,0.042],["BOX",4,3.95,0.079,13.6,36.6,0.013,0.028],["MNDY",4,2.0,0.15,12.3,27.2,0.175,0.231],["WIX",4,1.88,0.115,7.8,17.6,0.135,0.215],["RELX",5,5.32,0.075,18.0,18.6,0.083,0.083],["CSU",5,3.6,0.151,15.6,15.6,0.11,0.11],["VEEV",5,10.49,0.125,27.9,39.7,0.111,0.134],["TRI",5,5.68,0.08,20.7,22.0,0.055,0.054],["ROP",5,5.42,0.064,13.4,14.4,0.06,0.06],["AXON",5,8.07,0.3,55.6,null,1.298,null],["VRSK",5,8.56,0.064,21.3,22.5,0.029,0.028],["WKL",5,3.24,0.055,11.7,11.9,0.049,0.048],["FICO",5,8.05,0.101,15.0,18.2,0.109,0.109],["TYL",5,5.74,0.096,20.4,26.4,0.094,0.107],["GWRE",5,7.39,0.186,28.5,48.9,0.245,0.342],["MANH",5,10.37,0.082,31.6,44.5,0.058,0.054],["CSGP",5,2.97,0.115,19.1,28.6,0.698,1.982],["JKHY",5,3.94,0.082,21.8,23.4,-0.06,-0.07],["PCOR",5,4.77,0.137,24.0,93.4,0.173,0.658],["APPF",5,5.73,0.172,22.4,29.8,0.19,0.202],["TTAN",5,5.39,0.153,46.5,null,0.241,null],["TOI",5,2.73,0.131,11.3,11.3,0.068,0.068],["DOCS",5,6.73,0.072,18.7,36.9,0.004,0.007],["WAY",5,4.72,0.117,15.5,18.5,0.24,0.271],["SHOP",7,12.36,0.271,68.6,85.7,0.345,0.372],["INTU",7,3.65,0.108,9.5,12.4,0.037,0.026],["PYPL",7,1.44,0.043,7.8,9.7,0.002,-0.001],["XYZ",7,1.68,0.109,12.3,17.0,0.122,0.145],["ADYEN",7,7.05,0.216,18.4,20.2,0.245,0.246],["CPAY",7,6.08,0.095,14.9,16.1,0.092,0.092],["FISV",7,2.63,0.0,6.7,7.3,0.03,0.031],["AFRM",7,5.21,0.312,11.4,15.5,0.563,0.786],["GPN",7,3.15,0.123,6.2,6.6,0.886,1.06],["TOST",7,1.9,0.184,22.6,33.3,0.283,0.371],["GLBE",7,3.86,0.311,17.1,23.0,0.329,0.368],["ACN",8,1.71,0.057,11.4,14.0,0.04,0.037],["TCS",8,2.42,0.073,14.7,14.7,0.089,0.089],["INFY",8,1.97,0.068,13.1,13.5,0.013,0.011],["CTSH",8,1.29,0.051,10.4,11.7,0.057,0.057],["CAP",8,0.97,0.037,9.2,10.2,0.096,0.104],["WIT",8,1.43,0.069,11.4,11.9,0.103,0.105],["EPAM",8,0.92,0.037,10.4,15.4,0.153,0.236]];
+
+(function(){
+  // V row: [t, sector, evs, g, pf, pfa, fg, fga]
+  var MINUS='−', svg=document.getElementById('vs'), W=900, H=460, m={l:60,r:24,t:28,b:52}, mode='s';
+  var SHOW={DDOG:1,DT:1,ESTC:1,SNOW:1,MDB:1,FROG:1,CRWD:1,NET:1,PANW:1,NOW:1,GTLB:1,TEAM:1};
+  var pct=function(v){return (v<0?MINUS:'')+Math.abs(Math.round(v*100))+'%';};
+  document.getElementById('vtabs').addEventListener('click',function(e){var b=e.target.closest('button'); if(!b)return; mode=b.dataset.k;
+    [].forEach.call(this.querySelectorAll('button'),function(x){x.classList.toggle('on',x===b)}); draw();});
+  function draw(){
+    var C = mode==='s' ? {xi:3,yi:2,sec:6,xmin:-0.05,xmax:0.35,ymin:0.8,ymax:40,fitmax:40,yt:[1,2,3,5,10,20,40],xl:'未来约 3 年收入年化增长 (一致预期)',yl:'EV / NTM Sales'}
+                       : {xi:7,yi:5,sec:7,xmin:-0.1,xmax:0.6,ymin:5,ymax:400,fitmax:150,yt:[5,10,20,50,100,200,400],xl:'未来约 3 年 (FCF − SBC) 年化增长 (一致预期)',yl:'市值 / NTM (FCF − SBC)'};
+    var pts=V.filter(function(v){return v[1]<=C.sec && v[C.xi]!=null && v[C.yi]!=null && v[C.yi]>0 && v[0]!=='ORCL';});
+    var xs=function(x){return m.l+(Math.max(C.xmin,Math.min(C.xmax,x))-C.xmin)/(C.xmax-C.xmin)*(W-m.l-m.r);};
+    var ly=Math.log, ys=function(y){return m.t+(ly(C.ymax)-ly(Math.max(C.ymin,Math.min(C.ymax,y))))/(ly(C.ymax)-ly(C.ymin))*(H-m.t-m.b);};
+    var fp=pts.filter(function(p){return p[C.xi]>C.xmin&&p[C.xi]<C.xmax&&p[C.yi]>C.ymin&&p[C.yi]<C.fitmax*1.5;});
+    var n=fp.length, mx=0, my=0; fp.forEach(function(p){mx+=p[C.xi];my+=ly(p[C.yi]);}); mx/=n; my/=n;
+    var sxy=0,sxx=0; fp.forEach(function(p){sxy+=(p[C.xi]-mx)*(ly(p[C.yi])-my); sxx+=(p[C.xi]-mx)*(p[C.xi]-mx);});
+    var b=sxy/sxx, a=my-b*mx, ss=0, st=0; fp.forEach(function(p){ss+=Math.pow(ly(p[C.yi])-a-b*p[C.xi],2); st+=Math.pow(ly(p[C.yi])-my,2);});
+    var r2=1-ss/st, res=function(p){return p[C.yi]/Math.exp(a+b*p[C.xi])-1;};
+    var g='';
+    C.yt.forEach(function(v){ g+='<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+ys(v)+'" y2="'+ys(v)+'" style="stroke:var(--rule)"/><text x="'+(m.l-8)+'" y="'+(ys(v)+4)+'" text-anchor="end" style="fill:var(--muted);font-size:12px">'+v+'x</text>'; });
+    for(var x=Math.ceil(C.xmin*10)/10; x<=C.xmax+1e-9; x+=0.1){ g+='<text x="'+xs(x)+'" y="'+(H-m.b+20)+'" text-anchor="middle" style="fill:var(--muted);font-size:12px">'+pct(x)+'</text>'; }
+    if(C.xmin<0) g+='<line x1="'+xs(0)+'" x2="'+xs(0)+'" y1="'+m.t+'" y2="'+(H-m.b)+'" style="stroke:var(--rule)"/>';
+    g+='<text x="'+((m.l+W-m.r)/2)+'" y="'+(H-8)+'" text-anchor="middle" style="fill:var(--muted);font-size:12.5px">'+C.xl+' →</text>';
+    g+='<text transform="translate(14 '+((m.t+H-m.b)/2)+') rotate(-90)" text-anchor="middle" style="fill:var(--muted);font-size:12.5px">'+C.yl+' (对数)</text>';
+    var d=''; for(var i=0;i<=40;i++){ var xx=C.xmin+(C.xmax-C.xmin)*i/40, yy=Math.exp(a+b*xx); if(yy<C.ymin||yy>C.ymax) continue; d+=(d?'L':'M')+xs(xx).toFixed(1)+' '+ys(yy).toFixed(1); }
+    g+='<path d="'+d+'" fill="none" style="stroke:var(--slate-500)" stroke-width="1.5" stroke-dasharray="6 4"/>';
+    var order=pts.slice().sort(function(p,q){return (p[0]==='DDOG')-(q[0]==='DDOG') || (SHOW[p[0]]?1:0)-(SHOW[q[0]]?1:0);}), placed=[];
+    order.forEach(function(p){
+      var x=xs(p[C.xi]), y=ys(p[C.yi]), me=p[0]==='DDOG', sh=SHOW[p[0]];
+      var fill=me?'var(--navy)':sh?'var(--slate-500)':'var(--slate-300)', rad=me?7:sh?5:3.6;
+      var tip=p[0]+' | 增长 '+pct(p[C.xi])+' | '+p[C.yi].toFixed(1)+'x | 偏离回归线 '+pct(res(p));
+      g+='<circle cx="'+x+'" cy="'+y+'" r="'+rad+'" style="fill:'+fill+'"><title>'+tip+'</title></circle>';
+      if(sh){ var dy=4; [4,-8,16,-20,28].some(function(o){ if(!placed.some(function(q){return Math.abs(q[0]-x)<46&&Math.abs(q[1]-(y+o))<12;})){dy=o;return true;} return false;});
+        placed.push([x,y+dy]); var lf=x>W-90;
+        g+='<text x="'+(lf?x-9:x+9)+'" y="'+(y+dy)+'" text-anchor="'+(lf?'end':'start')+'" style="fill:'+(me?'var(--text)':'var(--muted)')+';font-size:'+(me?13:12)+'px;font-weight:'+(me?600:400)+'">'+p[0]+(me?' '+p[C.yi].toFixed(0)+'x':'')+'</text>'; }
+    });
+    svg.innerHTML=g;
+    var dd=V.filter(function(v){return v[0]==='DDOG'})[0];
+    document.getElementById('vcap').textContent='虚线 = 回归线 ('+n+' 家，R² '+r2.toFixed(2)+')，范围与 mapping 第 3 节默认设置相同。深色大点 = DDOG，比回归线高 '+pct(res(dd))+'；中蓝 = 文中提到的同业；浅色 = 其他软件公司。悬停看数值。'+(mode==='f'?'扣 SBC 后 FCF ≤ 0 的公司 (SNOW、NET、GTLB 等) 无法计算倍数，不在图上；超出坐标范围的点画在图边上 (例如 FROG 3,783x、ESTC 增长 96%)。':'');
+  }
+  draw();
+})();
+
+// calculator: owner FCF (FCF − SBC) in 2031, discounted 5 years
+(function(){
+  var REV=4.46, NC=3.99, SH=0.376, N=5, ids=['c-g','c-fm','c-sbc','c-pe','c-r','c-px'];
+  function v(id){ return parseFloat(document.getElementById(id).value) || 0; }
+  function run(){
+    var g=v('c-g')/100, fm=v('c-fm')/100, sbc=v('c-sbc')/100, pe=v('c-pe'), r=v('c-r')/100, px=v('c-px');
+    var disc=Math.pow(1+r,N), own=REV*Math.pow(1+g,N)*(fm-sbc);
+    var val=(own*pe/disc+NC)/SH, up=px?val/px-1:0;
+    var need=(px*SH-NC)*disc/(pe||1)/((fm-sbc)||1e-9), ig=Math.pow(Math.max(need,1e-9)/REV,1/N)-1;
+    document.getElementById('o-val').textContent='$'+val.toFixed(0);
+    document.getElementById('o-up').textContent=(up<0?'−':'+')+Math.abs(up*100).toFixed(0)+'%';
+    document.getElementById('o-g').textContent=(fm-sbc)>0?(ig*100).toFixed(1)+'%':'—';
+  }
+  ids.forEach(function(id){ document.getElementById(id).addEventListener('input', run); });
+  run();
+})();
+
+// sidebar TOC
+(function(){
+  var nav=document.getElementById('tocnav');
+  var hs=[].slice.call(document.querySelectorAll('.page section h2, .page section h3'));
+  hs.forEach(function(h,i){ if(!h.id) h.id='s'+i; });
+  var S=[['Follow-up','Follow-up'],['1. 行业','1  行业'],['2. 商业','2  生意'],['3. 成长','3  历史'],['4. 当前','4  Set up'],['5. 估值','5  估值'],['数据来源','来源'],
+    ['空间和增速','空间'],['竞争格局','竞争'],['开放标准','OTel'],['上下游','上下游'],['收入怎么拆','收入拆分'],['是不是不可','不可或缺'],['利润质量','利润质量'],['资本结构','资本结构'],
+    ['过去 6','执行'],['核心 driver','Driver'],['往下多想','多想一层'],['市场在问','争议'],['预期差','预期差'],['要做的判断','判断'],
+    ['当前估值','倍数'],['同业对比','同业'],['放在估值','估值 × 增长'],['Mapping','Mapping 结论'],['反推','反推'],['计算器','计算器'],['情景','情景'],['Deepdive','Deepdive']];
+  var short=function(t){var m=S.filter(function(x){return t.indexOf(x[0])===0})[0];return m?m[1]:t;};
+  var grp=null;
+  nav.innerHTML=hs.map(function(h){ if(h.tagName==='H2') grp=h.id; var t=short(h.textContent.trim());
+    return '<a href="#'+h.id+'" class="'+(h.tagName==='H3'?'l3':'l2')+'" data-id="'+h.id+'" data-g="'+grp+'" title="'+t+'">'+t+'</a>'}).join('');
+  var links=[].slice.call(nav.querySelectorAll('a'));
+  function upd(){ var cur=hs[0].id; for(var i=0;i<hs.length;i++){ if(hs[i].getBoundingClientRect().top<140) cur=hs[i].id; else break; }
+    var g=links.filter(function(a){return a.dataset.id===cur})[0].dataset.g;
+    links.forEach(function(a){ a.classList.toggle('on',a.dataset.id===cur); if(a.classList.contains('l3')) a.hidden=a.dataset.g!==g; if(a.classList.contains('l2')) a.classList.toggle('cur',a.dataset.id===g); }); }
+  addEventListener('scroll',upd,{passive:true}); upd();
+})();
+</script>
+</body>
+</html>
