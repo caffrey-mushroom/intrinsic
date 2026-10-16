@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.16 | Primer | GitLab Orbit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Noto+Serif+SC:wght@500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+
+:root{--gray-250:#BFBFBF}
+
+/* GitLab Orbit primer additions — Rota v2 shell; charts: single series slate-500, context slate-100 + ink outline */
+.tags{font-family:var(--sans);font-size:13.5px;color:var(--slate-500);margin:6px 0 2px;letter-spacing:.01em;word-spacing:.35em}
+.layout{display:grid;grid-template-columns:220px minmax(0,912px);gap:56px;justify-content:center;max-width:1240px;margin:0 auto}
+.layout .page{margin:0;max-width:none;min-width:0;padding-left:0;padding-right:0}
+.side{position:relative}
+.side-in{position:sticky;top:calc(env(safe-area-inset-top,0px) + 32px);max-height:calc(100vh - 64px);overflow-y:auto;padding:var(--s6) 0 24px}
+.side-t{font-size:12px;letter-spacing:1.5px;color:var(--muted);margin:0 0 14px 12px}
+#tocnav{display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--rule)}
+#tocnav a{display:block;white-space:pre;overflow:hidden;text-overflow:ellipsis;text-decoration:none;color:var(--muted);font-size:13.5px;line-height:1.5;padding:6px 12px;margin-left:-1px;border-left:1px solid transparent}
+#tocnav a:hover{color:var(--text)}
+#tocnav a.l3{padding:3px 12px 3px 24px;font-size:12.5px}
+#tocnav a.l3[hidden]{display:none}
+#tocnav a.on{color:var(--text);border-left-color:var(--text)}
+#tocnav a.l2.cur{color:var(--text)}
+.page h2[id],.page h3[id]{scroll-margin-top:24px}
+@media (max-width:1100px){.layout{display:block}.side{display:none}.layout .page{margin:0 auto;max-width:var(--page-w);padding-left:var(--s3);padding-right:var(--s3)}}
+@media (max-width:760px){.layout .page{padding-left:var(--s2);padding-right:var(--s2)}}
+
+table.t td.l, table.t th.l{text-align:left; white-space:normal}
+table.t td.wrap{white-space:normal; min-width:180px}
+.tg{font-size:12px; font-weight:600; white-space:nowrap}
+.tg.v{color:var(--text)} .tg.p{color:var(--slate-600)} .tg.t{color:var(--muted); font-weight:400; font-style:italic}
+.tg.e{color:var(--slate-500)}
+.formula{font-size:13.5px; background:var(--soft); border-radius:var(--radius); padding:var(--s2); margin:var(--s2) 0; overflow-x:auto; white-space:pre; line-height:1.7}
+.one{margin-top:var(--s2); padding-left:var(--s2); border-left:2px solid var(--slate-300); max-width:72ch}
+.two{display:grid; grid-template-columns:1fr 1fr; gap:var(--s4); margin-top:var(--s2)}
+.two h4{font-family:var(--sans); font-size:var(--fs-body); font-weight:600; margin:0 0 var(--s1)}
+.two ul{margin:0; padding-left:1.2em} .two li{margin:.35em 0}
+.chart-wrap{margin-top:var(--s2)}
+.chart-wrap svg text{font-family:var(--sans)}
+.src{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.calc{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s2) var(--s3); margin-top:var(--s2)}
+.calc label{display:block; font-size:var(--fs-note); color:var(--muted)}
+.calc input{width:100%; font:inherit; font-size:var(--fs-body); color:var(--text); background:var(--bg); border:var(--hair); border-radius:var(--radius); padding:6px 10px; margin-top:4px; font-variant-numeric:tabular-nums}
+.calc-out{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s3); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.calc-out .l{font-size:var(--fs-note); color:var(--muted)}
+.calc-out .v{font-family:var(--serif); font-weight:500; font-size:32px; line-height:1.15; font-variant-numeric:lining-nums tabular-nums; margin-top:4px}
+.verdict{margin-top:var(--s3); padding:var(--s3) 0 var(--s3) var(--s3); border-left:2px solid var(--navy)}
+.verdict p{margin:0 0 .6em; max-width:72ch} .verdict p:last-child{margin:0}
+.sources{font-size:var(--fs-note); color:var(--muted)} .sources li{margin:.25em 0}
+@media (max-width:760px){
+  .two{grid-template-columns:1fr}
+  .calc{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .calc-out{grid-template-columns:1fr}
+}
+.fix{margin-top:var(--s3); padding:var(--s2) 0; border-top:var(--hair); border-bottom:var(--hair); font-size:13.5px}
+.fix b{font-weight:600}
+.fix ul{margin:var(--s1) 0 0; padding-left:1.2em} .fix li{margin:.3em 0}
+.calc3{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s2) var(--s3); margin-top:var(--s2)}
+.calc3 label{display:block; font-size:var(--fs-note); color:var(--muted)}
+.calc3 input[type=range]{width:100%; accent-color:var(--slate-500)}
+.calc3 .val{font-size:13.5px; color:var(--text)}
+.presets{display:flex; gap:var(--s1); flex-wrap:wrap; margin-top:var(--s2)}
+.presets button{font:inherit; font-size:13px; color:var(--text); background:var(--bg); border:var(--hair); border-radius:var(--radius); padding:4px 12px; cursor:pointer}
+.presets button:hover{background:var(--hover)}
+@media (max-width:760px){.calc3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="layout"><aside class="side" aria-label="目录"><div class="side-in"><div class="side-t">目录</div><nav id="tocnav"></nav></div></aside>
+<main class="page">
+
+<h1>2026.10.16 | Primer | GitLab Orbit</h1>
+<p class="tags">#gtlb</p>
+<p class="meta">v1 · 内部 · 复查 2026.12 (Q3 FY27 财报之后) · 接 2026.10.16 竞争格局 memo</p>
+<p class="psub">Orbit 是 GitLab 2026 年 6 月推出的“上下文图谱”：把一家公司在 GitLab 里所有的代码、改动记录、流水线、上线记录、漏洞和负责人连成一张关系图，让 AI agent 干活前先来查。它不写代码，它告诉写代码的 agent “这里的来龙去脉是什么”。</p>
+
+<p class="summary">大公司改一行代码，贵的不是敲代码，而是搞清楚改了会影响谁、上次哪里出过事、该找谁批。AI agent 写代码很快，但对这些一无所知，所以写得越多，出事越多。Orbit 卖的就是这份“公司内部的来龙去脉”，它的独家之处不在图谱技术，而在只有 GitLab 手里有流水线、上线、漏洞和负责人这些记录。方向对，但它目前只在 GitLab.com 云版测试，GitLab 一半以上收入来自的自托管客户还用不上，而且还没有任何收入数据。</p>
+
+<div class="kpis">
+  <div class="kpi"><div class="l">开通的组织</div><div class="v">2,200+</div><div class="n">6 月测试版上线以来，四周 +70% (Q2 电话会)</div></div>
+  <div class="kpi"><div class="l">来自外部 agent 的查询</div><div class="v">80%</div><div class="n">主要是 Claude Code 这类工具 (Q2 电话会)</div></div>
+  <div class="kpi"><div class="l">AI 审代码的准确率</div><div class="v">58→70%</div><div class="n">一家客户 79 个真实改动，对比常规检索 (自测)</div></div>
+  <div class="kpi"><div class="l">Orbit 收入</div><div class="v">未披露</div><div class="n">外部 agent 调用按 GitLab Credits 扣费</div></div>
+</div>
+
+<section class="sec">
+<h2>Follow-up</h2>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">跟踪项 · 时间点</th><th class="l">为什么跟踪</th><th class="l">结果意味着什么</th></tr></thead>
+<tbody>
+<tr><td class="l wrap"><b>自托管客户能不能用</b><br>GitLab 发布节奏、Q3 电话会</td><td class="l wrap">目前只对 GitLab.com 的 Premium 和 Ultimate 开放。GitLab 约 57% 收入来自自托管客户，银行、政府这些最需要它的客户还用不上</td><td class="l wrap">明年上半年进自托管版：Orbit 能碰到核心客户。一直只有云版：它主要帮云上客户，护城河作用打折</td></tr>
+<tr><td class="l wrap"><b>Paid CRR (按用量的承诺收入)</b><br>Q3 财报 (12 月初)</td><td class="l wrap">Orbit 本身不单独披露收入，外部 agent 调用 Orbit 会消耗 credits，所以只能从 credits 整体看。Q2 末 $40M</td><td class="l wrap">Q3 过 $65M 且管理层点名 Orbit 是消耗来源：Orbit 开始收钱。只说“开通数”：还停在试用阶段</td></tr>
+<tr><td class="l wrap"><b>开通数 → 付费使用</b><br>每季</td><td class="l wrap">2,200 家“开通索引”不等于每天在用。要看日活查询量或付费客户数</td><td class="l wrap">管理层开始给查询量或付费客户数：需求真实。只更新开通数：按营销口径看</td></tr>
+<tr><td class="l wrap"><b>GitHub 有没有做同类产品</b><br>GitHub Universe 2026.10.28–29</td><td class="l wrap">GitHub 也有流水线 (Actions)、漏洞和负责人数据，理论上能做一样的图谱</td><td class="l wrap">GitHub 推出同类功能：Orbit 只是追平，不是差异化。GitHub 不做：GitLab 在这一点上领先一段时间</td></tr>
+</tbody></table></div>
+</section>
+
+<section class="sec">
+<h2>1. 是什么</h2>
+<div class="prose">
+<p><b>一句话：</b>Orbit 把 GitLab 里所有和软件有关的记录连成一张“谁和谁有关系”的图，AI agent 可以直接问它问题，不用自己一个个文件去翻。</p>
+
+<p><b>先说一个贯穿全篇的比喻。</b>把 AI agent 想成一个技术很好、但第一天来公司的外包工程师。代码是图纸。图纸他看得懂，但他不知道：这张图纸上的零件还被哪些车间用着、上次谁改过它导致停产、现在谁负责、改完要过哪些检查。老员工脑子里有这些，公司档案室里也散落着这些记录。Orbit 就是把档案室整理成一张关系图，外包每次动手前先来问。</p>
+
+<p><b>底层怎么工作</b></p>
+<ul>
+<li><b>收集：</b>GitLab 本来就存着这些记录：代码、合并请求 (一次代码改动的申请和审批)、流水线和每个检查任务的结果、部署 (哪个版本上线到哪)、漏洞扫描结果、工单、团队和负责人。Orbit 把它们实时同步到一个单独的数据库里 (ClickHouse)，代码则解析出“哪个函数调用了哪个函数”，支持 Java、Python、Go 等十几种语言</li>
+<li><b>连线：</b>每样东西是一个点，关系是一条线。“这个检查任务属于这条流水线，这条流水线属于这次代码改动，这次改动是这个人提的，改的这个函数被另外三个服务调用”。GitLab 自己公司的图谱有 4 万多个项目、5 亿个点、20 亿条线，45 分钟内建完，之后每有改动就实时更新</li>
+<li><b>查询：</b>agent 通过 MCP (AI 工具之间的通用插头) 或命令行来问。它能看到的范围和这个人在 GitLab 里的权限完全一样，没权限看的项目，agent 也查不到</li>
+</ul>
+
+<p><b>和最近的替代品差在哪。</b>今天 agent 了解代码库，主要靠两种办法：一是自己一个个打开文件读，慢、费 token；二是“检索” (RAG)，把代码切成片段，按字面相似度找出几段塞给模型，快，但只找“长得像”的，不懂“谁依赖谁”。用外包的比喻：第一种是让他自己去档案室翻箱子，第二种是给他一个按关键词搜索的文件柜。Orbit 是直接给他一张标好关系的组织图和流程图。</p>
+
+<p><b>拿来干什么：一个具体例子。</b>2021 年底开源日志组件 Log4j 爆出严重漏洞，全世界的公司都在问同一个问题：我们哪些系统用了它、部署在哪、谁负责修。</p>
+<ul>
+<li><b>今天的做法：</b>安全团队发邮件给各个团队，各自去查，汇总成表格，大公司往往要几天到几周</li>
+<li><b>用 Orbit：</b>一次查询，从这个组件出发，顺着线找到所有调用它的服务、对应的流水线、部署到了哪些环境、每个服务的负责人。GitLab 的说法是漏洞出现的一小时内就能拿出修复计划 (官方口径)</li>
+</ul>
+
+<p><b>现在到哪一步。</b>2026.06.10 公开测试，只对 GitLab.com 云版的 Premium 和 Ultimate 客户开放 (官方博客)。另有一个本地版命令行工具，只看本机代码、不含流水线等记录，可离线用。代码在 GitLab 公开仓库里，用 GitLab 企业版许可证，不是开源免费。</p>
+</div>
+
+<h3>规格</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">项目</th><th class="l">云端版</th><th class="l">本地版</th></tr></thead>
+<tbody>
+<tr><td class="l">看到什么</td><td class="l wrap">代码 + 合并请求、流水线、任务、工单、漏洞、团队和负责人</td><td class="l wrap">只有代码 (函数定义和调用关系)</td></tr>
+<tr><td class="l">存在哪</td><td class="l wrap">ClickHouse，独立服务，查询不占用客户的 GitLab</td><td class="l wrap">本机一个 DuckDB 文件</td></tr>
+<tr><td class="l">权限</td><td class="l wrap">每次查询按 GitLab 权限过滤</td><td class="l wrap">只看本机文件权限</td></tr>
+<tr><td class="l">怎么问</td><td class="l wrap">MCP、REST、GitLab 命令行、网页 Data Explorer</td><td class="l wrap">命令行、MCP</td></tr>
+<tr><td class="l">谁能用</td><td class="l wrap">GitLab.com Premium / Ultimate，测试版</td><td class="l wrap">—</td></tr>
+<tr><td class="l">收费</td><td class="l wrap">GitLab 自己的 agent 调用不收费；Claude Code、Codex 等外部 agent 调用按 GitLab Credits 扣费 (产品页)，单价未公布</td><td class="l wrap">未说明</td></tr>
+</tbody></table></div>
+<p class="src">Source: GitLab 博客 Introducing GitLab Orbit (2026.06.10)、GitLab Orbit 产品页、gitlabhq/orbit-knowledge-graph 仓库说明。</p>
+<div class="one"><b>一句话：</b>Orbit 不写代码，它是给写代码的 agent 准备的“公司档案室 + 关系图”，按 GitLab 权限开放，目前只在云版测试。</div>
+</section>
+
+<section class="sec">
+<h2>2. 客户的底层需求</h2>
+<div class="prose">
+<p><b>大公司改代码，难的从来不是“写”。</b>一家大银行可能有几千个系统、几万个代码仓库，很多代码写于十几年前，写的人早已离职。工程师改一处，真正花时间的是：</p>
+<ul>
+<li>搞清楚改了会影响谁 (谁调用了这段代码，哪些系统依赖它)</li>
+<li>搞清楚历史 (上次谁改过、为什么改、有没有因此出过事故)</li>
+<li>找对人 (谁负责、谁有权批准)</li>
+<li>过检查 (要跑哪些测试、哪些安全扫描、审计要留什么记录)</li>
+</ul>
+<p>这些信息散在 GitLab 的不同角落、工单系统和老员工脑子里。没有 AI 的时候，靠人慢慢问，速度慢但出事少。</p>
+
+<p><b>AI agent 把这个问题放大了。</b>agent 写代码的速度是人的很多倍，GitLab 说部分客户的代码库一年扩大到 5 倍。但 agent 对上面四件事一无所知，只能自己翻文件猜。结果是两种浪费：</p>
+<ul>
+<li><b>慢和贵：</b>agent 翻几百个文件来理解上下文，每翻一个都要花 token</li>
+<li><b>出错：</b>猜错了依赖关系，改出问题，到上线前才发现，或者上线后才发现</li>
+</ul>
+<p>GitLab 拿 Claude Code 做的对比 (同样的任务、同样的模型)：用 Orbit 最多快 11 倍、少用 4.5 倍 token、幻觉少 45 倍。这是 GitLab 自测，而且对比对象是“让 agent 自己翻文件”这种最笨的办法，见第 3 节打折。</p>
+
+<p><b>客户要的是三样东西：</b></p>
+<ol>
+<li><b>准：</b>agent 改得对，少返工、少事故</li>
+<li><b>省：</b>少花 token，少等时间</li>
+<li><b>管得住：</b>agent 只能看到它该看的，所有查询和改动有记录，审计过得去。这一条对银行和政府最重要</li>
+</ol>
+</div>
+<div class="one"><b>一句话：</b>agent 让“写代码”变便宜了，让“搞清楚来龙去脉”变成新的瓶颈。Orbit 卖的是这个瓶颈。</div>
+</section>
+
+<section class="sec">
+<h2>3. 数字打折</h2>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">数字</th><th class="l">跟谁比</th><th class="l">谁测的</th><th class="l">怎么看</th></tr></thead>
+<tbody>
+<tr><td class="l wrap">快 11 倍、少 4.5 倍 token、幻觉少 45 倍</td><td class="l wrap">Claude Code 不用任何外部上下文，自己翻文件</td><td class="l wrap">GitLab 自测，“最多”，未公布任务数</td><td class="l wrap">对手选得最弱。和 Cursor 自带的代码索引、Sourcegraph、Augment 这类专门的代码上下文工具比，差距会小很多 (推断)</td></tr>
+<tr><td class="l wrap">AI 审代码准确率 58% → 70%；摘要覆盖 66% → 68%</td><td class="l wrap">常规检索 (RAG)</td><td class="l wrap">客户 Compare the Market 自己测，79 个真实合并请求</td><td class="l wrap">最可信的一个数：真实客户、真实改动、对手是行业常用做法。但样本小，摘要几乎没差别</td></tr>
+<tr><td class="l wrap">2,200+ 组织开通</td><td class="l wrap">—</td><td class="l wrap">管理层口径</td><td class="l wrap">“开通索引”是点一下开关，测试期免费。不代表在用或付费</td></tr>
+<tr><td class="l wrap">80% 查询来自外部 agent</td><td class="l wrap">—</td><td class="l wrap">管理层口径</td><td class="l wrap">说明客户真在用 Claude Code 这类工具接 Orbit，是正面信号。但没给查询总量</td></tr>
+</tbody></table></div>
+<div class="prose" style="margin-top:var(--s2)">
+<p><b>谁都能做吗？</b>图谱技术本身不稀奇：存储用的是现成的 ClickHouse 和 DuckDB，“解析代码里谁调用谁”Sourcegraph、Cursor、Augment 等都在做。能做的人很多。真正别人做不了的，是图里那些<b>代码以外</b>的点：流水线结果、部署记录、漏洞、审批人、负责人。这些数据只在 GitLab 里，外人拿不到完整的。GitHub 是唯一也有全套数据的公司。</p>
+</div>
+<div class="one"><b>一句话：</b>11 倍、45 倍是拿最弱的对手打出来的；真实客户测出来是准确率提高约 12 个点。优势不在技术，在数据只在 GitLab 手里。</div>
+</section>
+
+<section class="sec">
+<h2>4. 一句话规则</h2>
+<div class="verdict">
+<p><b>agent 要回答的问题，答案是否需要“代码以外”的记录 (流水线结果、上线记录、漏洞、审批人、负责人)？</b></p>
+<p>需要：Orbit 有别人给不了的东西。只需要看代码本身 (这个函数在哪、谁调用它)：Cursor、Sourcegraph、Augment 都能做，Orbit 没有优势。</p>
+</div>
+<div class="prose" style="margin-top:var(--s2)">
+<p>用这条规则过一遍：“帮我写个排序函数”不需要，Orbit 没用。“这次改动会不会让别的团队的流水线挂掉”需要，Orbit 有用。“这个漏洞影响了哪些线上系统、谁负责”需要，Orbit 最有用。</p>
+</div>
+</section>
+
+<section class="sec">
+<h2>5. 反过来想：它缺什么</h2>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">agent 干活需要的能力</th><th class="l">普通代码索引 (Cursor 等)</th><th class="l">Orbit</th><th class="l">缺的性质</th><th class="l">说明</th></tr></thead>
+<tbody>
+<tr><td class="l">看懂代码结构、谁调用谁</td><td class="l">有</td><td class="l">有</td><td class="l">—</td><td class="l wrap">大家都有</td></tr>
+<tr><td class="l">跨几千个仓库看依赖</td><td class="l">弱</td><td class="l">有</td><td class="l">—</td><td class="l wrap">普通工具多数只看打开的那个仓库 (推断)</td></tr>
+<tr><td class="l">流水线、测试、上线记录</td><td class="l">无</td><td class="l">有</td><td class="l">天生 (对别人)</td><td class="l wrap">数据在 GitLab 里，外人要通过 GitLab 接口拿</td></tr>
+<tr><td class="l">漏洞和负责人</td><td class="l">无</td><td class="l">有</td><td class="l">天生 (对别人)</td><td class="l wrap">同上</td></tr>
+<tr><td class="l">按公司权限过滤</td><td class="l">弱</td><td class="l">有</td><td class="l">—</td><td class="l wrap">权限直接沿用 GitLab，审计友好</td></tr>
+<tr><td class="l">装在客户自己机房</td><td class="l">部分有</td><td class="l">无</td><td class="l">没适配</td><td class="l wrap">目前只在 GitLab.com 测试，自托管要客户另装 ClickHouse 等组件</td></tr>
+<tr><td class="l">GitLab 以外的数据 (Jira、GitHub 仓库、线上监控)</td><td class="l">部分有</td><td class="l">无</td><td class="l">天生</td><td class="l wrap">Orbit 只连 GitLab 里的数据。公司代码一半在 GitHub、工单在 Jira 的话，图是残缺的</td></tr>
+<tr><td class="l">线上运行数据 (报错、性能)</td><td class="l">无</td><td class="l">无</td><td class="l">天生</td><td class="l wrap">这是 Datadog 这类监控公司的数据</td></tr>
+</tbody></table></div>
+<div class="prose" style="margin-top:var(--s2)">
+<ul>
+<li><b>没适配的只有一个：自托管。</b>这会因为下一个版本翻掉，也是最该盯的一条，因为这是 GitLab 核心客户</li>
+<li><b>天生缺的是“GitLab 以外的数据”。</b>这不会翻。客户 100% 用 GitLab 时 Orbit 最强；混用 GitHub、Jira 的客户，图只有一半</li>
+<li><b>推论：</b>Orbit 让“全部放在 GitLab 上”变得更值钱，反过来也会推动客户把更多东西搬进 GitLab。这是它对 GitLab 一体化策略的真正作用</li>
+</ul>
+</div>
+</section>
+
+<section class="sec">
+<h2>6. 场景逐个过</h2>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">场景</th><th class="l">要代码以外的记录吗</th><th class="l">Orbit 适不适合</th><th class="l">今天怎么做</th><th class="l">状态</th></tr></thead>
+<tbody>
+<tr><td class="l wrap">漏洞影响范围 (哪些系统、在哪上线、谁负责)</td><td class="l">要</td><td class="l">最适合</td><td class="l wrap">发邮件、汇表格，几天</td><td class="l wrap">官方主推，无客户数据</td></tr>
+<tr><td class="l wrap">改动影响评估 (会不会弄坏别的团队)</td><td class="l">要</td><td class="l">适合</td><td class="l wrap">靠经验和问人</td><td class="l wrap">官方主推</td></tr>
+<tr><td class="l wrap">AI 审代码 (懂整个代码库，不只是这次改动)</td><td class="l">部分要</td><td class="l">适合</td><td class="l wrap">AI 只看本次改动，或用检索</td><td class="l wrap">有一家客户实测 (58% → 70%)</td></tr>
+<tr><td class="l wrap">流水线失败排查 (同一个错还会影响哪些改动)</td><td class="l">要</td><td class="l">适合</td><td class="l wrap">值班工程师逐个看</td><td class="l wrap">官方举例</td></tr>
+<tr><td class="l wrap">合规检查 (哪些项目漏了必须的安全扫描)</td><td class="l">要</td><td class="l">适合</td><td class="l wrap">平台团队写脚本查</td><td class="l wrap">官方举例</td></tr>
+<tr><td class="l wrap">新员工上手 (谁负责什么、系统怎么连)</td><td class="l">部分要</td><td class="l">有用</td><td class="l wrap">看文档、问人</td><td class="l wrap">官方举例</td></tr>
+<tr><td class="l wrap">写一段新功能代码</td><td class="l">不要</td><td class="l">帮助小</td><td class="l wrap">Cursor、Claude Code 自带索引</td><td class="l wrap">—</td></tr>
+</tbody></table></div>
+<div class="one"><b>一句话：</b>越是“出事了要查清楚”和“改之前要评估风险”的场景越适合，越是“从零写新代码”越用不上。前者恰好是受监管大客户最在乎的。</div>
+</section>
+
+<section class="sec">
+<h2>7. 管理层怎么说</h2>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">谁</th><th class="l">说了什么</th><th class="l">场合</th><th class="l">和我们的判断</th></tr></thead>
+<tbody>
+<tr><td class="l">Bill Staples (GitLab CEO)</td><td class="l wrap">Orbit 是“软件生命周期的上下文图谱”；80% 查询来自外部 agent；AI 原生工具是顺风</td><td class="l">Q2 FY27 电话会</td><td class="l wrap">一致：定位是给所有 agent 当底座，不是和它们比写代码</td></tr>
+<tr><td class="l">Bill Staples</td><td class="l wrap">很多客户的 AI 推理费不经过 GitLab，客户付给 GitLab 的是上下文、运行框架和治理</td><td class="l">Q2 FY27 电话会</td><td class="l wrap">一致：这正是 Orbit 收钱的逻辑。但目前没有数字</td></tr>
+<tr><td class="l">GitLab 产品页</td><td class="l wrap">GitLab 自己的 agent 调用不收费，Claude Code、Codex 调用按 credits 收费</td><td class="l">官网</td><td class="l wrap">值得注意：外部 agent 越多用，GitLab 越能收钱；但也可能让客户改用 GitLab 自己的 agent 来省钱</td></tr>
+<tr><td class="l">Ryan Harvey (Compare the Market AI 负责人)</td><td class="l wrap">“Orbit 给了我们一个真正理解代码库的 AI 审查员”；常规检索“比完全不给上下文还差”</td><td class="l">GitLab 博客</td><td class="l wrap">唯一具名客户。厂商挑选的案例</td></tr>
+</tbody></table></div>
+<div class="prose" style="margin-top:var(--s2)">
+<ul>
+<li><b>分歧在哪：</b>管理层讲“2,200 家开通”和“80% 来自外部”，都是使用信号，没有一个是收入信号</li>
+<li><b>背后的前提：</b>GitLab 假设外部 agent 会持续来查它的数据。如果 Cursor、OpenAI 自己做仓库，把代码和流水线都搬过去，这个前提就不成立</li>
+</ul>
+</div>
+</section>
+
+<section class="sec">
+<h2>8. 最容易被误读的几点</h2>
+<div class="tbl"><table class="t">
+<thead><tr><th class="l">大家以为</th><th class="l">实际</th></tr></thead>
+<tbody>
+<tr><td class="l wrap">Orbit 是 GitLab 的 AI 写代码工具</td><td class="l wrap">它不写代码。它是让任何 agent (包括竞争对手的) 写得更准的数据层</td></tr>
+<tr><td class="l wrap">知识图谱是很难的新技术，是壁垒</td><td class="l wrap">技术是现成的 (ClickHouse、DuckDB)。壁垒是数据：流水线、上线、漏洞、负责人只在 GitLab 里</td></tr>
+<tr><td class="l wrap">80% 查询来自外部 agent，说明 GitLab 自己的 AI 没人用</td><td class="l wrap">两件事都可能对。但对 Orbit 来说是好事：它本来就是给所有 agent 用的，外部调用还要付 credits</td></tr>
+<tr><td class="l wrap">GitLab 的核心客户已经在用</td><td class="l wrap">没有。目前只在 GitLab.com 云版测试，自托管客户 (约 57% 收入) 还用不上</td></tr>
+<tr><td class="l wrap">快 11 倍、幻觉少 45 倍</td><td class="l wrap">对手是“不给任何上下文”。真实客户对比常规检索，准确率是 58% → 70%</td></tr>
+</tbody></table></div>
+</section>
+
+<section class="sec">
+<h2>9. 能值多少钱</h2>
+<div class="prose">
+<p>Orbit 没有单独收费，钱通过两条路进来：</p>
+<ol>
+<li><b>直接：</b>外部 agent 调用 Orbit 消耗 credits，进 Paid CRR</li>
+<li><b>间接：</b>让客户更愿意买 Ultimate、更不愿意离开、更愿意把 GitHub 和 Jira 的东西搬进 GitLab。这部分没法单独量</li>
+</ol>
+<p>直接那一块可以粗算，但三个参数都没有公开数据，下面全是假设，拿来感受量级：</p>
+</div>
+<div class="formula">每年 Orbit 直接收入 = 付费开发者数 × 用上 Orbit 的比例 × 每人每月 Orbit 相关 credits × 12</div>
+<div class="prose">
+<ul>
+<li><b>付费开发者数：</b>GitLab 不披露。按 FY27 收入约 $11.3 亿、平均每人每月约 $45 粗算 (Premium 牌价 $29，Ultimate 更贵)，约 200 万人 (估算)</li>
+<li><b>用上 Orbit 的比例：</b>目前只开放给云版 Premium / Ultimate，云版约占收入三分之一</li>
+<li><b>每人每月花费：</b>credits 每个 $0.01，Orbit 单次查询价格未公布</li>
+</ul>
+</div>
+<div class="calc3">
+  <div><label for="s-seat">付费开发者 (万人)</label><input type="range" id="s-seat" min="100" max="300" step="10" value="200"><div class="val" id="v-seat"></div></div>
+  <div><label for="s-adopt">用上 Orbit 的比例 (%)</label><input type="range" id="s-adopt" min="0" max="80" step="5" value="15"><div class="val" id="v-adopt"></div></div>
+  <div><label for="s-spend">每人每月花费 ($)</label><input type="range" id="s-spend" min="0" max="30" step="1" value="5"><div class="val" id="v-spend"></div></div>
+</div>
+<div class="presets"><button data-p="200,15,5">悲观：只有云版客户在用</button><button data-p="200,35,10">基本：进了自托管版</button><button data-p="220,60,20">乐观：agent 普遍接入</button></div>
+<div class="calc-out">
+  <div><div class="l">Orbit 直接年收入</div><div class="v" id="o-rev">—</div></div>
+  <div><div class="l">占 FY27 指引收入 $1,131M</div><div class="v" id="o-pct">—</div></div>
+  <div><div class="l">对照：Paid CRR 年底目标</div><div class="v">&gt;$100M</div></div>
+</div>
+<p class="src" id="o-line"></p>
+<div class="one"><b>一句话：</b>只有云版客户在用时，Orbit 直接收入约 $1,800 万，不到收入的 2%；进了自托管版、每人每月多花 $10，约 $8,400 万 (7%)；要到 $3 亿，得六成开发者每月多花 $20。直接收入能不能做大取决于自托管版和单价，两个都还没数据，所以今天它的主要价值是间接的：让客户更离不开 GitLab。</div>
+</section>
+
+<section class="sec">
+<h2>证据分级</h2>
+<div class="prose">
+<ul>
+<li><span class="tg v">一手</span> GitLab 官方博客和产品页、Orbit 代码仓库说明 (已核对架构、存储、权限、可用范围)</li>
+<li><span class="tg t">管理层口径</span> 2,200 家开通、80% 外部查询、代码库扩大 5 倍 (Q2 FY27 电话会)</li>
+<li><span class="tg t">厂商自测</span> 快 11 倍、少 4.5 倍 token、幻觉少 45 倍</li>
+<li><span class="tg p">客户自测</span> Compare the Market 79 个合并请求，由 GitLab 发布</li>
+<li><span class="tg p">推断</span> 和其他代码上下文工具的差距、付费开发者数、收入粗算</li>
+</ul>
+</div>
+</section>
+
+<section class="sec">
+<h2>数据来源</h2>
+<ul class="sources">
+<li><a href="https://about.gitlab.com/blog/introducing-gitlab-orbit/">GitLab 博客：Introducing GitLab Orbit (2026.06.10)</a></li>
+<li><a href="https://about.gitlab.com/gitlab-orbit/">GitLab Orbit 产品页</a></li>
+<li><a href="https://github.com/gitlabhq/orbit-knowledge-graph">gitlabhq/orbit-knowledge-graph 代码仓库</a></li>
+<li><a href="https://www.fool.com/earnings/call-transcripts/2026/09/08/gitlab-gtlb-q2-2027-earnings-call-transcript/">GitLab Q2 FY27 电话会记录</a></li>
+<li><a href="https://www.augmentcode.com/changelog/context-engine-mcp-in-ga">Augment Code：Context Engine MCP 正式版</a> (同类产品参照)</li>
+<li>GitLab 财务数据沿用 2026.10.15 Initial Review</li>
+</ul>
+<p class="note">Changelog · v1 (2026.10.16)：首版。</p>
+</section>
+
+</main></div>
+<script>
+(function(){
+  function g(id){return document.getElementById(id);}
+  function run(){
+    var seat=+g('s-seat').value, ad=+g('s-adopt').value, sp=+g('s-spend').value;
+    g('v-seat').textContent=seat+' 万人'; g('v-adopt').textContent=ad+'%'; g('v-spend').textContent='$'+sp+' / 人 / 月';
+    var rev=seat*1e4*ad/100*sp*12/1e6;
+    g('o-rev').textContent='$'+rev.toFixed(0)+'M'; g('o-pct').textContent=(rev/1131*100).toFixed(1)+'%';
+    g('o-line').textContent='代入：'+seat+' 万人 × '+ad+'% × $'+sp+' × 12 = $'+rev.toFixed(0)+'M。全部参数为假设，GitLab 未披露。';
+  }
+  ['s-seat','s-adopt','s-spend'].forEach(function(id){g(id).addEventListener('input',run);});
+  [].forEach.call(document.querySelectorAll('.presets button'),function(b){b.addEventListener('click',function(){
+    var p=b.dataset.p.split(','); g('s-seat').value=p[0]; g('s-adopt').value=p[1]; g('s-spend').value=p[2]; run();});});
+  run();
+})();
+(function(){
+  var nav=document.getElementById('tocnav');
+  var hs=[].slice.call(document.querySelectorAll('.page section h2, .page section h3'));
+  hs.forEach(function(h,i){ if(!h.id) h.id='s'+i; });
+  var S=[['Follow-up','Follow-up'],['1. ','1  是什么'],['规格','规格'],['2. ','2  客户需求'],['3. ','3  数字打折'],['4. ','4  一句话规则'],['5. ','5  缺什么'],['6. ','6  场景'],['7. ','7  管理层'],['8. ','8  误读'],['9. ','9  值多少钱'],['证据','证据分级'],['数据来源','来源']];
+  var short=function(t){var m=S.filter(function(x){return t.indexOf(x[0])===0})[0];return m?m[1]:t;};
+  var grp=null;
+  nav.innerHTML=hs.map(function(h){ if(h.tagName==='H2') grp=h.id; var t=short(h.textContent.trim());
+    return '<a href="#'+h.id+'" class="'+(h.tagName==='H3'?'l3':'l2')+'" data-id="'+h.id+'" data-g="'+grp+'" title="'+t+'">'+t+'</a>'}).join('');
+  var links=[].slice.call(nav.querySelectorAll('a'));
+  function upd(){ var cur=hs[0].id; for(var i=0;i<hs.length;i++){ if(hs[i].getBoundingClientRect().top<140) cur=hs[i].id; else break; }
+    var g=links.filter(function(a){return a.dataset.id===cur})[0].dataset.g;
+    links.forEach(function(a){ a.classList.toggle('on',a.dataset.id===cur); if(a.classList.contains('l3')) a.hidden=a.dataset.g!==g; if(a.classList.contains('l2')) a.classList.toggle('cur',a.dataset.id===g); }); }
+  addEventListener('scroll',upd,{passive:true}); upd();
+})();
+</script>
+</body>
+</html>
