@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.17 | Mapping | City Value</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&display=swap">
+<style>
+/* Layout: one ~900px column — summary, quadrant map, weight sliders, sortable table, method */
+:root{
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  --slate-100:#E3E7ED; --slate-300:#ABB7C8; --slate-500:#7189A7; --slate-600:#5E728D; --slate-800:#364456; --navy:#022B46;
+  --quad:#E3E7ED;
+  --serif:Newsreader,"Noto Serif SC","Songti SC",STSong,Georgia,serif;
+  --sans:Inter,"PingFang SC","Noto Sans SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --quad:#262A31; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --quad:#262A31; color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.7;
+  -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+.page{max-width:932px;margin:0 auto;padding-block:48px 64px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-family:var(--serif);font-weight:500;font-size:40px;line-height:1.15;letter-spacing:-.012em;margin:0;text-wrap:balance}
+h2{font-family:var(--serif);font-weight:500;font-size:20px;line-height:1.35;margin:0}
+.tags{font-size:12.5px;color:var(--muted);margin-top:8px}
+.summary{font-family:var(--serif);font-size:19px;line-height:1.65;margin:32px 0 0;padding-left:24px;border-left:2px solid var(--slate-500)}
+.sec{margin-top:48px;padding-top:24px;border-top:1px solid var(--rule)}
+.note{font-size:12.5px;color:var(--muted);line-height:1.6;margin:6px 0 0}
+ul.fu{margin:12px 0 0;padding-left:1.2em} ul.fu li{margin:.4em 0} ul.fu li::marker{color:var(--faint)}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:16px;font-size:13px;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.seg button{font:inherit;font-size:13px;background:transparent;color:var(--muted);border:0;padding:5px 12px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--slate-500);color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font:inherit;font-size:12.5px;border:1px solid var(--rule);background:transparent;color:var(--muted);border-radius:99px;padding:3px 10px;cursor:pointer}
+.chips button[aria-pressed="true"]{border-color:var(--slate-500);color:var(--text);background:var(--slate-100)}
+.chartwrap{overflow-x:auto;margin-top:16px;position:relative}
+#map{display:block;width:100%;min-width:640px;height:auto}
+#map text{font-family:var(--sans)}
+.tip{position:absolute;pointer-events:none;background:var(--bg);border:1px solid var(--rule);border-radius:8px;padding:10px 12px;
+  font-size:12.5px;line-height:1.55;min-width:190px;box-shadow:0 4px 16px rgba(0,0,0,.08);opacity:0;transition:opacity .12s}
+.tip b{font-family:var(--serif);font-weight:500;font-size:16px}
+.tip .row{display:flex;justify-content:space-between;gap:12px;color:var(--muted)} .tip .row span:last-child{color:var(--text)}
+.tip .why{margin-top:6px;color:var(--muted);max-width:240px;white-space:normal}
+.sliders{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 32px;margin-top:16px}
+.sl label{display:flex;justify-content:space-between;font-size:13px}
+.sl label span:last-child{color:var(--muted)}
+.sl input{width:100%;accent-color:#7189A7}
+.reset{font:inherit;font-size:12.5px;background:none;border:0;color:var(--slate-600);cursor:pointer;padding:0;margin-top:8px}
+.tbl{overflow-x:auto;margin-top:16px}
+table{border-collapse:collapse;width:100%}
+th{font-size:12.5px;font-weight:600;color:var(--muted);text-align:right;padding:8px 10px;border-bottom:1px solid var(--rule);white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--text)}
+td{font-size:13.5px;text-align:right;padding:9px 10px;border-bottom:1px solid var(--rule);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;padding-left:0}
+tr:hover td{background:var(--hover)}
+td.q{color:var(--muted);text-align:left} th.ql{text-align:left}
+td.sub{color:var(--muted)}
+.prose p{margin:12px 0 0;max-width:76ch}
+.prose ul{margin:8px 0 0;padding-left:1.2em;max-width:76ch} .prose li{margin:.3em 0}
+code{font-size:.9em;background:var(--soft);padding:.1em .4em;border-radius:4px}
+:focus-visible{outline:2px solid var(--slate-500);outline-offset:2px;border-radius:4px}
+@media (max-width:700px){h1{font-size:32px}.sliders{grid-template-columns:repeat(2,minmax(0,1fr))}.summary{font-size:17px}}
+@media (prefers-reduced-motion: reduce){.tip{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <h1>2026.10.17 | Mapping | City Value</h1>
+  <div class="tags">#city #cost-of-living #quality-of-life #mapping</div>
+
+  <p class="summary">按默认权重，东京、维也纳、京都是质量最高又不贵的三座城：东京 (86 分) 两人每月约 $4,500，比上海 ($5,000、75.5 分) 便宜还高 10 分。欧洲里维也纳 ($4,200、81.5 分) 和马德里 ($4,600、77 分) 比上海更好又更便宜，里斯本和上海同分但每月便宜 $600。纽约、苏黎世、新加坡是真贵也真好；伦敦、波士顿、温哥华、迪拜是花得多买得少</p>
+
+  <div class="sec">
+    <h2>Follow-up</h2>
+    <ul class="fu">
+      <li><b>你最在意的维度权重：</b>把"文化历史"调到最高、"气候"调低，阿姆斯特丹和爱丁堡会往上走；反过来马拉加、悉尼会上来。下面的滑块可以直接试，图会实时重排</li>
+      <li><b>税没进成本：</b>横轴只算房租+生活，不含所得税、资本利得税和财富税。靠投资收益生活的话，美国、荷兰、英国在税后会再往右挪一截，西班牙 (安达卢西亚、马德里免财富税)、迪拜、新加坡相对占优</li>
+      <li><b>签证没进打分：</b>这张图回答"住得好不好、贵不贵"，不回答"能不能住进去"。日本、西班牙、葡萄牙对自雇/被动收入签证相对友好，美国、加拿大、瑞士门槛最高</li>
+    </ul>
+  </div>
+
+  <div class="sec">
+    <h2>生活成本 vs 生活质量</h2>
+    <p class="note">横轴：两人每月开销 (好地段两居室房租 + 日常生活)，美元。纵轴：6 项生活质量加权分 (0–100)。悬停或点按看拆分</p>
+    <div class="ctrl">
+      <span>分界线</span>
+      <div class="seg" role="group" aria-label="分界线">
+        <button type="button" id="cut-med" aria-pressed="true">中位数</button>
+        <button type="button" id="cut-sh" aria-pressed="false">以上海为原点</button>
+      </div>
+      <div class="chips" id="chips" role="group" aria-label="地区筛选"></div>
+    </div>
+    <div class="chartwrap" id="wrap">
+      <svg id="map" viewBox="0 0 900 600" role="img" aria-label="城市生活成本与生活质量四象限图"></svg>
+      <div class="tip" id="tip"></div>
+    </div>
+    <p class="note">Source: 房租与生活开支为 2026 年口径估算 (综合 Numbeo、当地租房平台与此前讨论的西班牙/荷兰数据)；生活质量分为主观打分，见下方方法</p>
+  </div>
+
+  <div class="sec">
+    <h2>调权重</h2>
+    <p class="note">0 = 不在乎，5 = 最在乎。综合分 = Σ(权重 × 单项分) ÷ Σ权重 × 10</p>
+    <div class="sliders" id="sliders"></div>
+    <button type="button" class="reset" id="reset">恢复默认权重</button>
+  </div>
+
+  <div class="sec">
+    <h2>全部城市</h2>
+    <p class="note">点表头排序。"每千美元得分" = 综合分 ÷ (月开销 / 1,000)，越高越划算</p>
+    <div class="tbl"><table id="tbl"></table></div>
+  </div>
+
+  <div class="sec prose">
+    <h2>方法</h2>
+    <p><b>成本口径：</b>两个人，住城里好地段、近十年内的两居室 (约 70–90 平米)，不含买房、学费和税。生活开支 = 吃饭 (含一半在外)、交通、水电网、医保/私立医保、日常娱乐</p>
+    <ul>
+      <li>例：塞维利亚 = Nervión 90 平米约 €1,450 ≈ $1,550 房租 + $2,450 生活 = <b>$4,000</b>，和上次算的一年 4.5–5 万美元一致</li>
+      <li>例：上海 = 好地段两居 1.8 万元 ≈ $2,500 + $2,500 生活 = <b>$5,000</b>，即上次用的一年约 6 万美元</li>
+    </ul>
+    <p><b>6 项打分 (1–10)：</b>安全、气候 (日照、冬夏极端程度)、吃 (含中餐和食材)、房子 (质量和同价位面积)、文化历史 (老城、博物馆、书店和历史厚度)、便利 (英语、国际航线、直飞中国、医疗)</p>
+    <p><b>默认权重：</b>安全 4、文化历史 4、其余各 3。文化历史给得高，是因为你对荷兰黄金时代、拿破仑和一战二战史的兴趣明显；安全给得高，是长住的底线</p>
+    <p><b>要分清的：</b>成本是估算，量级可靠，±15% 以内的差别不要当真；生活质量分是我的主观判断，不是数据。真正决定排序的是权重，所以图的用处是看结构，不是看小数点</p>
+  </div>
+</div>
+
+<script>
+const DIM=[["safety","安全"],["climate","气候"],["food","吃"],["housing","房子"],["culture","文化历史"],["access","便利"]];
+const DEF={safety:4,climate:3,food:3,housing:3,culture:4,access:3};
+// name, region, rent, living, [safety, climate, food, housing, culture, access], note
+const RAW=[
+["纽约","美国",5500,3500,[6,6,9,5,10,10],"什么都有，就是贵；同价位房子小"],
+["波士顿","美国",4000,3000,[7,5,7,6,8,8],"大学城气质，冬天长，性价比一般"],
+["纽黑文","美国",2600,2500,[5,5,6,6,7,6],"耶鲁周边好，出了校区治安差"],
+["芝加哥","美国",3000,2700,[5,4,8,7,7,8],"建筑和博物馆强，冬天狠"],
+["温哥华","加拿大",3000,2400,[7,7,8,6,5,8],"自然好、中餐好，城市历史薄"],
+["多伦多","加拿大",2900,2400,[7,4,8,6,6,8],"多元、方便，冬天长"],
+["蒙特利尔","加拿大",1900,2000,[7,3,8,6,7,7],"北美最欧洲的城，冬天很冷，要会法语"],
+["东京","日本",2300,2200,[10,7,10,7,9,8],"安全、吃、秩序都顶级，日元便宜"],
+["京都","日本",1300,1800,[10,6,9,6,10,6],"历史密度极高，夏闷冬冷，游客多"],
+["福冈","日本",1000,1600,[9,7,9,7,6,7],"小而好住，离上海近"],
+["上海","中国",2500,2500,[9,6,9,6,7,8],"现在的基准点"],
+["杭州","中国",1300,1800,[9,6,8,7,7,6],"西湖、慢一点的上海"],
+["成都","中国",800,1500,[9,5,10,7,6,6],"最便宜的好生活，阴天多"],
+["香港","中国",4500,3000,[9,6,9,3,7,10],"金融和便利满分，房子又小又贵"],
+["阿姆斯特丹","荷兰",2900,2500,[8,4,6,7,9,9],"VOC 和黄金时代的现场，天气和吃一般"],
+["海牙","荷兰",2000,2300,[9,4,6,8,7,7],"比阿姆斯特丹安静宽敞，去代尔夫特一站电车"],
+["马德里","西班牙",2000,2600,[8,7,9,6,8,8],"大城市便利 + 西班牙的吃和阳光"],
+["塞维利亚","西班牙",1550,2450,[8,6,9,6,9,5],"最有西班牙味道，7–8 月 40°C+，无直飞中国"],
+["马拉加","西班牙",1800,2400,[8,9,9,6,6,6],"海边，冬暖夏不太热"],
+["伦敦","欧洲",4200,3300,[6,5,8,4,10,10],"历史和金融都满，房子差还贵"],
+["巴黎","欧洲",3300,3000,[6,6,9,5,10,9],"文化顶级，你说过不如阿姆斯特丹务实"],
+["里斯本","欧洲",2200,2200,[8,9,8,5,8,7],"大航海起点，气候好，房子老"],
+["维也纳","欧洲",1700,2500,[9,6,7,8,10,8],"社会住房让租金不贵，哈布斯堡历史"],
+["苏黎世","欧洲",4000,4200,[10,6,6,8,7,9],"什么都好，贵得离谱"],
+["爱丁堡","欧洲",2200,2500,[8,3,6,6,9,6],"老城极美，阴冷多雨"],
+["悉尼","澳洲",3800,3000,[8,9,8,6,6,8],"海和天气满分，离哪都远"],
+["墨尔本","澳洲",2800,2600,[8,7,9,6,7,7],"吃和咖啡好，比悉尼便宜"],
+["墨西哥城","拉美",1500,1700,[4,8,9,5,8,6],"Roma/Condesa 很好住，城外治安差"],
+["布宜诺斯艾利斯","拉美",1100,1500,[5,7,8,5,8,5],"南美的巴黎，经济不稳定"],
+["开普敦","非洲",1300,1500,[3,9,7,6,6,5],"风景顶级，治安是硬伤"],
+["新加坡","亚洲",4800,3000,[10,5,9,7,5,10],"安全便利满分，热且没历史厚度"],
+["迪拜","亚洲",3500,2800,[10,3,7,8,3,9],"好用但没味道，5–9 月很热"],
+["台北","亚洲",1400,1800,[10,6,10,5,7,7],"吃和安全顶级，房子老"]
+].map(r=>({name:r[0],region:r[1],rent:r[2],living:r[3],cost:r[2]+r[3],s:Object.fromEntries(DIM.map((d,i)=>[d[0],r[4][i]])),note:r[5]}));
+const REGIONS=["美国","加拿大","日本","中国","荷兰","西班牙","欧洲","澳洲","拉美","非洲","亚洲"];
+let W={...DEF}, cutMode="med", active=new Set(REGIONS), sortKey="score", sortDir=-1, pinned=null;
+const $=id=>document.getElementById(id), NS="http://www.w3.org/2000/svg";
+const score=c=>{let t=0,w=0;for(const[k]of DIM){t+=W[k]*c.s[k];w+=W[k]}return w?t/w*10:0};
+const median=a=>{const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
+const fmt=n=>"$"+n.toLocaleString("en-US");
+function el(tag,attrs,parent,txt){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(txt!=null)e.textContent=txt;parent&&parent.appendChild(e);return e}
+function quadName(c,cx,cy){const hi=c.q>=cy,cheap=c.cost<=cx;return hi?(cheap?"Best value":"Premium life"):(cheap?"Budget living":"Bad value")}
+
+function draw(){
+  const svg=$("map");svg.innerHTML="";
+  const Wd=900,H=600,m={l:64,r:24,t:28,b:52},pw=Wd-m.l-m.r,ph=H-m.t-m.b;
+  RAW.forEach(c=>c.q=score(c));
+  const vis=RAW.filter(c=>active.has(c.region));
+  const xs=[2000,10000],ys=[50,95];
+  const X=v=>m.l+(v-xs[0])/(xs[1]-xs[0])*pw, Y=v=>m.t+ph-(v-ys[0])/(ys[1]-ys[0])*ph;
+  const sh=RAW.find(c=>c.name==="上海");
+  const cx=cutMode==="sh"?sh.cost:median(RAW.map(c=>c.cost)), cy=cutMode==="sh"?sh.q:median(RAW.map(c=>c.q));
+  // quadrant tint: best value only
+  el("rect",{x:m.l,y:m.t,width:X(cx)-m.l,height:Y(cy)-m.t,fill:"var(--quad)"},svg);
+  // grid + ticks
+  for(let v=2000;v<=10000;v+=1000){el("line",{x1:X(v),x2:X(v),y1:m.t+ph,y2:m.t+ph+4,stroke:"var(--rule)"},svg);
+    el("text",{x:X(v),y:m.t+ph+18,"text-anchor":"middle","font-size":11,fill:"var(--muted)"},svg,"$"+(v/1000)+"k")}
+  for(let v=50;v<=95;v+=5){el("line",{x1:m.l,x2:m.l+pw,y1:Y(v),y2:Y(v),stroke:"var(--rule)","stroke-width":v%10?0.5:1},svg);
+    el("text",{x:m.l-8,y:Y(v)+4,"text-anchor":"end","font-size":11,fill:"var(--muted)"},svg,v)}
+  el("text",{x:m.l+pw/2,y:H-10,"text-anchor":"middle","font-size":12,fill:"var(--muted)"},svg,"两人每月开销 (房租 + 生活)  →  越往右越贵");
+  el("text",{x:16,y:m.t+ph/2,"text-anchor":"middle","font-size":12,fill:"var(--muted)",transform:`rotate(-90 16 ${m.t+ph/2})`},svg,"生活质量  →  越往上越好");
+  // cut lines
+  el("line",{x1:X(cx),x2:X(cx),y1:m.t,y2:m.t+ph,stroke:"var(--slate-500)","stroke-dasharray":"4 4"},svg);
+  el("line",{x1:m.l,x2:m.l+pw,y1:Y(cy),y2:Y(cy),stroke:"var(--slate-500)","stroke-dasharray":"4 4"},svg);
+  // quadrant labels
+  const ql=[["Best value",m.l+10,m.t+20,"start"],["Premium life",m.l+pw-10,m.t+20,"end"],["Budget living",m.l+10,m.t+ph-12,"start"],["Bad value",m.l+pw-10,m.t+ph-12,"end"]];
+  ql.forEach(([t,x,y,a])=>el("text",{x,y,"text-anchor":a,"font-size":15,"font-style":"italic",fill:"var(--slate-600)",style:"font-family:var(--serif)"},svg,t));
+  // points
+  const placed=[];
+  ql.forEach(([t,x,y,a])=>placed.push({x:a==="start"?x:x-100,y:y-14,w:100,h:18}));
+  const pts=vis.map(c=>({c,x:X(c.cost),y:Y(c.q)}));
+  pts.forEach(p=>placed.push({x:p.x-4,y:p.y-4,w:8,h:8}));
+  const lg=el("g",{},svg),dg=el("g",{},svg);
+  pts.sort((a,b)=>a.y-b.y).forEach(p=>{
+    const isSh=p.c.name==="上海";
+    const dot=el("circle",{cx:p.x,cy:p.y,r:isSh?6:4.5,fill:isSh?"var(--navy)":"var(--slate-500)",stroke:"var(--bg)","stroke-width":1.5,tabindex:0,style:"cursor:pointer"},dg);
+    const t=el("text",{"font-size":12,fill:"var(--text)","font-weight":isSh?600:400},lg,p.c.name);
+    const w=t.getComputedTextLength()||p.c.name.length*12,h=13;
+    const cand=[[7,4,"start"],[-7,4,"end"],[0,-9,"middle"],[0,17,"middle"],[7,-6,"start"],[7,14,"start"],[-7,-6,"end"],[-7,14,"end"]];
+    let best=null,bestO=1e9;
+    for(const[dx,dy,a]of cand){const bx=a==="start"?p.x+dx:a==="end"?p.x+dx-w:p.x-w/2,by=p.y+dy-h+2,r={x:bx,y:by,w,h};
+      if(bx<m.l||bx+w>m.l+pw||by<m.t||by+h>m.t+ph)continue;
+      let o=0;for(const q of placed){const ox=Math.max(0,Math.min(r.x+r.w,q.x+q.w)-Math.max(r.x,q.x)),oy=Math.max(0,Math.min(r.y+r.h,q.y+q.h)-Math.max(r.y,q.y));o+=ox*oy}
+      if(o<bestO){bestO=o;best={dx,dy,a,r}}if(o===0)break}
+    if(!best)best={dx:7,dy:4,a:"start",r:{x:p.x+7,y:p.y-9,w,h}};
+    t.setAttribute("x",p.x+best.dx);t.setAttribute("y",p.y+best.dy);t.setAttribute("text-anchor",best.a);placed.push(best.r);
+    const show=()=>tip(p,cx,cy),hide=()=>{if(pinned!==p.c.name)$("tip").style.opacity=0};
+    dot.addEventListener("mouseenter",show);dot.addEventListener("mouseleave",hide);dot.addEventListener("focus",show);dot.addEventListener("blur",hide);
+    dot.addEventListener("click",e=>{e.stopPropagation();pinned=p.c.name;show()});
+    t.style.cursor="pointer";t.addEventListener("click",e=>{e.stopPropagation();pinned=p.c.name;show()});
+  });
+  table(cx,cy);
+}
+function tip(p,cx,cy){
+  const c=p.c,tp=$("tip"),svg=$("map"),r=svg.getBoundingClientRect(),k=r.width/900;
+  tp.innerHTML=`<b>${c.name}</b> <span style="color:var(--muted)">· ${quadName(c,cx,cy)}</span>
+  <div class="row"><span>月开销</span><span>${fmt(c.cost)}</span></div>
+  <div class="row"><span>　房租 / 生活</span><span>${fmt(c.rent)} / ${fmt(c.living)}</span></div>
+  <div class="row"><span>生活质量</span><span>${c.q.toFixed(1)}</span></div>
+  ${DIM.map(([k,l])=>`<div class="row"><span>　${l}</span><span>${c.s[k]}</span></div>`).join("")}
+  <div class="why">${c.note}</div>`;
+  const wrap=$("wrap"),sx=wrap.scrollLeft;
+  let left=p.x*k+14-sx,top=p.y*k-20;
+  const tw=tp.offsetWidth||220,th=tp.offsetHeight||240;
+  if(left+tw>wrap.clientWidth)left=p.x*k-tw-14-sx;
+  if(top+th>r.height)top=r.height-th-4; if(top<0)top=0;
+  tp.style.left=Math.max(0,left)+sx+"px";tp.style.top=top+"px";tp.style.opacity=1;
+}
+document.addEventListener("click",()=>{pinned=null;$("tip").style.opacity=0});
+
+function table(cx,cy){
+  const rows=RAW.map(c=>({...c,v:c.q/(c.cost/1000),quad:quadName(c,cx,cy)}));
+  const get=(r,k)=>k==="name"?r.name:k==="quad"?r.quad:k in r.s?r.s[k]:r[k==="score"?"q":k];
+  rows.sort((a,b)=>{const x=get(a,sortKey),y=get(b,sortKey);return (typeof x==="string"?x.localeCompare(y,"zh"):x-y)*sortDir});
+  const cols=[["name","城市"],["quad","象限"],["cost","月开销"],["rent","房租"],["score","生活质量"],["v","每千美元得分"],...DIM];
+  const arrow=k=>sortKey===k?(sortDir>0?" ↑":" ↓"):"";
+  $("tbl").innerHTML=`<thead><tr>${cols.map(([k,l])=>`<th data-k="${k}" class="${k==="quad"?"ql":""}">${l}${arrow(k)}</th>`).join("")}</tr></thead><tbody>${
+    rows.map(r=>`<tr><td>${r.name}</td><td class="q">${r.quad}</td><td>${fmt(r.cost)}</td><td>${fmt(r.rent)}</td><td><b>${r.q.toFixed(1)}</b></td><td>${r.v.toFixed(1)}</td>${DIM.map(([k])=>`<td class="sub">${r.s[k]}</td>`).join("")}</tr>`).join("")}</tbody>`;
+  $("tbl").querySelectorAll("th").forEach(th=>th.addEventListener("click",()=>{const k=th.dataset.k;if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=(k==="name"||k==="quad"||k==="cost"||k==="rent")?1:-1}draw()}));
+}
+
+// controls
+$("chips").innerHTML=REGIONS.map(r=>`<button type="button" aria-pressed="true" data-r="${r}">${r}</button>`).join("");
+$("chips").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{const r=b.dataset.r;
+  if(active.has(r)&&active.size>1)active.delete(r);else active.add(r);b.setAttribute("aria-pressed",active.has(r));draw()}));
+[["cut-med","med"],["cut-sh","sh"]].forEach(([id,m])=>$(id).addEventListener("click",()=>{cutMode=m;
+  $("cut-med").setAttribute("aria-pressed",m==="med");$("cut-sh").setAttribute("aria-pressed",m==="sh");draw()}));
+function buildSliders(){$("sliders").innerHTML=DIM.map(([k,l])=>`<div class="sl"><label for="w-${k}"><span>${l}</span><span id="v-${k}">${W[k]}</span></label><input type="range" id="w-${k}" min="0" max="5" step="1" value="${W[k]}"></div>`).join("");
+  DIM.forEach(([k])=>$("w-"+k).addEventListener("input",e=>{W[k]=+e.target.value;$("v-"+k).textContent=W[k];draw()}))}
+$("reset").addEventListener("click",()=>{W={...DEF};buildSliders();draw()});
+buildSliders();
+(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(draw);
+draw();
+</script>
+
+</body>
+</html>
