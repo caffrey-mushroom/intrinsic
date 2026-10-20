@@ -108,13 +108,13 @@ figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top
 
 <h1>2026.10.20 | Primer | DeepInfer</h1>
 <p class="tags">#inference #opensource #primer #deepseek #nvda #huawei #amd #mu #sndk</p>
-<p class="meta">v1.1 · 内部 · 复查 2026.11.20</p>
+<p class="meta">v1.2 · 内部 · 复查 2026.11.20</p>
 <p class="lede">DeepInfer 是 DeepSeek 自己线上跑 V4.1 Flash 用的推理引擎，10 月 20 日以 Apache 2.0 开源，同时开源了对齐官方 API 的输入输出处理组件 deepseek-recipe。它让别人能在 NVIDIA Blackwell (SM100) 或华为昇腾 950 上，用和 DeepSeek 同一套"后厨"跑它的模型。让官方 API 又快又便宜的 KV 缓存管理和负载均衡，DeepSeek 原文说"因与内部基础设施耦合较深，目前尚未完整开源"，只在文章里公开了设计。</p>
 
 <div class="summary">
 <p>这次开源的是 DeepSeek 推理的"引擎"，不是整套"服务"。它会把"谁能把 DeepSeek 模型跑得更快"这件事拉平，但 DeepSeek 官方价格最关键的那块 (96% 的输入命中缓存、缓存留 72 小时) 靠的是没开源的缓存系统。</p>
 <p>对 token 需求是加项：同一个模型在别家跑得更便宜，用的人会更多。对算力和电力，每个 token 要的更少，但总量大概率还是加项，这不是 2025 年 1 月那种"效率冲击"。</p>
-<p>对内存和存储是明确的加项：DeepSeek 一个集群约 2,400 张卡，配了约 100 PiB 的 SSD 专门存 KV 缓存，平均每张卡 40 TiB 以上。便宜的推理靠的是大量、长时间保存 KV 缓存，谁想追上官方价格，就得自己建这一层。</p>
+<p>对内存和存储是明确的加项：DeepSeek 一个集群约 2,400 张卡，配了约 100 PiB 的 SSD 专门存 KV 缓存。按吞吐和保留天数自下而上算，每张卡实际要 13–30 TB，和 NVIDIA Vera Rubin 参考设计的每卡 16TB 同量级到 2 倍。便宜的推理靠的是大量、长时间保存 KV 缓存，谁想追上官方价格，就得自己建这一层。</p>
 <p>受益最清楚的是昇腾 950 和超节点 (64–128 卡一组的机柜级系统)；被挤压的是靠"DeepSeek 模型跑得快"做差异化的推理服务商。</p>
 </div>
 
@@ -328,7 +328,7 @@ figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top
 <tr><td class="k">token 需求</td><td>加项</td><td>同一模型在更多地方、以更低成本跑；deepseek-recipe 让第三方结果和官方一致，企业更敢用</td><td>小幅加项：主要影响 DeepSeek 模型在第三方的份额，不改总盘子</td><td>国内云普遍用昇腾 + DeepInfer 上量，DeepSeek 系模型的总 token 再上一个台阶</td></tr>
 <tr><td class="k">算力 (GPU / NPU)</td><td>每 token 减项，总量加项</td><td>每卡吞吐提升让每个 token 要的算力更少；但第 3 节计算器显示，真正要算的 token 一年多涨了约 17 倍，效率提升被用量吃掉</td><td>中性偏加：这次没有新的效率台阶 (算子 2025 年已开)，只是把已有效率推广到更多部署</td><td>推动 SM100 和昇腾 950 换代，加速旧卡退役</td></tr>
 <tr><td class="k">HBM</td><td>每 token 减项</td><td>"编码器 + 滑动窗口"结构让每个 token 的 KV 更小、更少重算</td><td>中性：是模型结构的影响，不是这次开源带来的</td><td>—</td></tr>
-<tr><td class="k">内存 / 存储容量层 (DRAM、SSD)</td><td>加项</td><td>每张推理卡背后约 43 TiB 的 SSD 专门存 KV；第三方想追官方价格必须自己建</td><td>加项，量级见下</td><td>DeepSeek 开源缓存系统后，所有部署方都照着做</td></tr>
+<tr><td class="k">内存 / 存储容量层 (DRAM、SSD)</td><td>加项</td><td>每张推理卡背后 13–30 TB 的 SSD 专门存 KV (自下而上算；100 PiB 平均下来约 47 TB 是配置上限)；第三方想追官方价格必须自己建</td><td>加项，量级见下</td><td>DeepSeek 开源缓存系统后，所有部署方都照着做</td></tr>
 <tr><td class="k">电力</td><td>每 token 减项，总量随算力</td><td>SemiAnalysis：B200 跑 V4 每兆瓦 token 数 43 天里软件优化提升约 1.7 倍；DeepInfer 把官方水平直接给到第三方</td><td>中性：每兆瓦产出提高，但用量上升抵消</td><td>—</td></tr>
 </tbody></table></div>
 <div class="prose">
@@ -338,11 +338,14 @@ figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top
 <div class="tbl"><table class="t">
 <thead><tr><th>指标</th><th class="num">数值</th><th>算式</th><th>怎么读</th></tr></thead>
 <tbody>
-<tr><td class="k">每张卡配多少 SSD</td><td class="num">约 43 TiB</td><td>100 PiB ÷ 2,400 卡</td><td>是一张 B200 显存 (192 GB) 的 200 多倍</td></tr>
+<tr><td class="k">每张卡配了多少 SSD (自上而下)</td><td class="num">约 47 TB</td><td>100 PiB ÷ 2,400 卡</td><td>配置上限：原文没说 100 PiB 只服务这一个集群，峰值写入也是平均写入的约 10 倍</td></tr>
+<tr><td class="k">每张卡每天新写多少 KV</td><td class="num">2.85 TB</td><td>3.7 万 token/秒 × 86,400 × 890 字节</td><td>3.7 万 = 预填充卡未命中 6 万、解码卡输出 1.4 万，1:1 平均；890 字节/token 来自 V4.1 技术报告，128 token 正好约 112 KiB 一块</td></tr>
+<tr><td class="k">每张卡要多少 SSD (自下而上)</td><td class="num">13–30 TB</td><td>2.85 TB × 3 或 7 天 × 1.2 (纠删码) ÷ 0.8 (不写满)</td><td>只存 3 天约 13 TB，和 Vera Rubin 每卡 16TB 相当；存 7 天约 30 TB，约 2 倍。每 72 张卡约 0.9–2.2 PB</td></tr>
 <tr><td class="k">峰值随机读次数</td><td class="num">约 9,600 万次/秒</td><td>10 TiB/s ÷ 112 KiB</td><td>每张卡约 4 万次/秒</td></tr>
 <tr><td class="k">每 TB 每秒被读几次</td><td class="num">约 850 次</td><td>9,600 万 ÷ 11.3 万 TB</td><td>这是容量盘 (TLC / QLC) 的活，用不上 SLC 级的高速盘，和 XL-Flash memo 的判断一致</td></tr>
 <tr><td class="k">每天写满几遍</td><td class="num">≤ 0.7 遍</td><td>850 GiB/s × 86,400 秒 ÷ 100 PiB</td><td>按峰值算的上限。TLC 够用，QLC 在边上</td></tr>
 </tbody></table></div>
+<p class="note">最敏感的参数是每 token KV 大小。V4.1 Flash 只有 890 字节，是 V4 Flash 的 1/4，约为 V3 一类 MLA 模型的 1/40–1/80。KV 这么小，才存得起 3–7 天；KV 大几十倍的模型只能存几分钟到几小时。所以每卡 SSD 量由"KV 压多小 × 定价逼你存多久"决定，和卡的型号关系不大。</p>
 <div class="prose">
 <p>这组数说明两件事。第一，KV 缓存要的是容量，不是速度：每张推理卡背后几十 TB 的普通企业级 SSD。第二，这是 DeepSeek 一家、一个集群的配置；任何想把 DeepSeek 模型卖到接近官方价格的部署方，都要按差不多的比例配存储。卡数是我反推的，原文说机器留了冗余，实际卡数可能更多，每卡存储会相应少一些。</p>
 <h3>为什么这不是 2025 年 1 月那种"效率冲击"</h3>
@@ -401,7 +404,7 @@ figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top
 <tr><td class="k">GitHub README (功能、硬件、没包含的部分、协议、基于 vLLM)</td><td>一手，已读</td><td>最可靠</td></tr>
 <tr><td class="k">公众号发布内容 (多家媒体一致转述)</td><td>一手，经转述</td><td>措辞一致，可靠</td></tr>
 <tr><td class="k">实测表 (155 万亿、$38、96%、6 万 / 150 万 / 1.4 万 token/秒、400ms)、100 PiB 存储</td><td>一手，已读原文</td><td>DeepSeek 自测，没有第三方核实；三个数能互相对上</td></tr>
-<tr><td class="k">约 2,400 张卡、每卡 43 TiB</td><td>我的推算</td><td>由实测每卡吞吐和 1:1 卡数比反推</td></tr>
+<tr><td class="k">约 2,400 张卡、每卡 13–30 TB (自下而上) / 约 47 TB (自上而下)</td><td>我的推算</td><td>由实测每卡吞吐、1:1 卡数比、890 字节/token 和保留天数推出；原文没给卡数，也没给单卡 SSD 配比</td></tr>
 <tr><td class="k">第三方速度和价格表</td><td>厂商博客 (DeepInfra)</td><td>该页模型参数和发布日期前后矛盾，只取量级</td></tr>
 <tr><td class="k">"编码器 + 解码器"结构、bounded replay 的原理</td><td>一手，已读原文</td><td>原文和 V4.1 技术报告</td></tr>
 <tr><td class="k">B200 级租价 $3–6 / 时</td><td>我的估计</td><td>未核实</td></tr>
@@ -421,6 +424,7 @@ figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top
 <li><a href="https://newsletter.semianalysis.com/p/deepseekv4-16t-day-0-to-day-43-performance">SemiAnalysis：V4 第 0 到 43 天性能</a> · <a href="https://developer.nvidia.com/blog/build-with-deepseek-v4-using-nvidia-blackwell-and-gpu-accelerated-endpoints">NVIDIA 开发者博客</a></li>
 <li><a href="https://www.analyticsvidhya.com/blog/2025/03/deepseek-opensourceweek-day-6-inference-system-overview/">2025.02 DeepSeek 推理系统披露 (545%)</a> · <a href="https://getcoai.com/news/deepseek-pivots-to-sharing-ai-components-instead-of-full-inference-engine">2025.04 不开源整个引擎</a></li>
 </ul>
+<p><strong>v1.2 (2026.10.20)</strong>：第 7 节存储表加上自下而上的算法 (每卡每天新写 2.85 TB × 3–7 天 × 冗余)，每卡 SSD 从"约 43 TiB"改为"实际约 13–30 TB，47 TB 是配置上限"，并和 Vera Rubin 每卡 16TB 对比；结论从"每卡 40TB 以上"降为"同量级到 2 倍"，方向不变。</p>
 <p><strong>v1.1 (2026.10.20)</strong>：读到知乎原文。数字从"媒体转述"改为一手；第 3 节换成原文实测表，输出占比从假设的 2% 改为实测推出的 0.9%，"真正要算的 token 涨幅"从约 20 倍改为约 17 倍，卡数从按收入估算改为按吞吐反推 (约 2,400 张，和 $38 对得上)；第 7 节新增"存储加项有多大" (100 PiB、每卡约 43 TiB)；没开源的部分补上官方理由；模型结构从"我的推断"改为原文确认。核心判断不变。</p>
 <p><strong>v1 (2026.10.20)</strong>：首版。待办第一条：在 SM100 或昇腾 950 上用 README 脚本复现性能，和 SGLang 同条件对比。</p>
 </div>
