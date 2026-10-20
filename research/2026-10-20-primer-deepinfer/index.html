@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.20 | Primer | DeepInfer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Noto+Serif+SC:wght@500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --up:#1E8E4E; --down:#B42318;
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.75; -webkit-font-smoothing:antialiased; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.lede{color:var(--muted); margin:var(--s2) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+.tags{font-family:var(--sans);font-size:13.5px;color:var(--slate-500);margin:6px 0 2px;letter-spacing:.01em;word-spacing:.35em}
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong{font-weight:600}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+.summary p{margin:0 0 .7em}
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.tbl{overflow-x:auto; margin-top:var(--s2)}
+table.t{border-collapse:collapse; width:100%}
+table.t th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:left; padding:var(--s1) 12px; border-bottom:var(--hair); vertical-align:bottom}
+table.t td{font-size:13.5px; text-align:left; padding:10px 12px; border-bottom:var(--hair); vertical-align:top; line-height:1.6}
+table.t th:first-child,table.t td:first-child{padding-left:0}
+table.t td.num,table.t th.num{text-align:right; white-space:nowrap}
+table.t tr:hover td{background:var(--hover)}
+table.t td.k{font-weight:600; white-space:nowrap}
+.one{margin:var(--s3) 0 0; padding-left:var(--s2); border-left:1px solid var(--text); font-weight:600; max-width:72ch}
+.fu p{margin:0 0 1em; max-width:72ch}
+figure.chart{margin:var(--s4) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ctl{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s2)}
+.ctl label{display:block; font-size:13.5px; font-weight:600}
+.ctl .hint{font-size:var(--fs-note); color:var(--muted); font-weight:400}
+.ctl input[type=range]{width:100%; accent-color:var(--slate-500)}
+.ctl output{font-variant-numeric:tabular-nums; font-weight:600}
+.presets{margin-top:var(--s2); display:flex; gap:var(--s2); flex-wrap:wrap}
+.presets button{font:inherit; font-size:13.5px; background:none; border:none; border-bottom:2px solid transparent; color:var(--muted); padding:4px 0; cursor:pointer}
+.presets button[aria-pressed=true]{color:var(--text); border-bottom-color:var(--text)}
+.formula{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.layout{display:grid;grid-template-columns:220px minmax(0,912px);gap:56px;justify-content:center;max-width:1240px;margin:0 auto}
+.layout .page{margin:0;max-width:none;min-width:0;padding-left:0;padding-right:0}
+.side{position:relative}
+.side-in{position:sticky;top:calc(env(safe-area-inset-top,0px) + 32px);max-height:calc(100vh - 64px);overflow-y:auto;padding:var(--s6) 0 24px}
+.side-t{font-size:12px;letter-spacing:1.5px;color:var(--muted);margin:0 0 14px 12px}
+#tocnav{display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--rule)}
+#tocnav a{display:block;white-space:pre;overflow:hidden;text-overflow:ellipsis;text-decoration:none;color:var(--muted);font-size:13.5px;line-height:1.5;padding:6px 12px;margin-left:-1px;border-left:1px solid transparent}
+#tocnav a:hover{color:var(--text)}
+#tocnav a.l3{padding:3px 12px 3px 24px;font-size:12.5px}
+#tocnav a.l3[hidden]{display:none}
+#tocnav a.on{color:var(--text);border-left-color:var(--text)}
+#tocnav a.l2.cur{color:var(--text)}
+.page h2[id],.page h3[id]{scroll-margin-top:24px}
+@media (max-width:1100px){.layout{display:block}.side{display:none}.layout .page{margin:0 auto;max-width:var(--page-w);padding-left:var(--s2);padding-right:var(--s2)}}
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+  .ctl{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="side" aria-label="目录"><div class="side-in"><div class="side-t">目录</div><nav id="tocnav"></nav></div></aside>
+<main class="page">
+
+<h1>2026.10.20 | Primer | DeepInfer</h1>
+<p class="tags">#inference #opensource #primer #deepseek #nvda #huawei #amd #mu #sndk</p>
+<p class="meta">v1.1 · 内部 · 复查 2026.11.20</p>
+<p class="lede">DeepInfer 是 DeepSeek 自己线上跑 V4.1 Flash 用的推理引擎，10 月 20 日以 Apache 2.0 开源，同时开源了对齐官方 API 的输入输出处理组件 deepseek-recipe。它让别人能在 NVIDIA Blackwell (SM100) 或华为昇腾 950 上，用和 DeepSeek 同一套"后厨"跑它的模型。让官方 API 又快又便宜的 KV 缓存管理和负载均衡，DeepSeek 原文说"因与内部基础设施耦合较深，目前尚未完整开源"，只在文章里公开了设计。</p>
+
+<div class="summary">
+<p>这次开源的是 DeepSeek 推理的"引擎"，不是整套"服务"。它会把"谁能把 DeepSeek 模型跑得更快"这件事拉平，但 DeepSeek 官方价格最关键的那块 (96% 的输入命中缓存、缓存留 72 小时) 靠的是没开源的缓存系统。</p>
+<p>对 token 需求是加项：同一个模型在别家跑得更便宜，用的人会更多。对算力和电力，每个 token 要的更少，但总量大概率还是加项，这不是 2025 年 1 月那种"效率冲击"。</p>
+<p>对内存和存储是明确的加项：DeepSeek 一个集群约 2,400 张卡，配了约 100 PiB 的 SSD 专门存 KV 缓存，平均每张卡 40 TiB 以上。便宜的推理靠的是大量、长时间保存 KV 缓存，谁想追上官方价格，就得自己建这一层。</p>
+<p>受益最清楚的是昇腾 950 和超节点 (64–128 卡一组的机柜级系统)；被挤压的是靠"DeepSeek 模型跑得快"做差异化的推理服务商。</p>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="l">单一集群吞吐</div><div class="v">155 万亿</div><div class="n">token / 天，含命中缓存的输入。DeepSeek 自报</div></div>
+  <div class="kpi"><div class="l">输入命中缓存</div><div class="v">96%</div><div class="n">2025 年 2 月是 56%。平均输入 7.7 万 token。DeepSeek 实测</div></div>
+  <div class="kpi"><div class="l">每卡每小时收入</div><div class="v">$38</div><div class="n">按夜间低价算的理论收入，不是利润。2025 年约 $13</div></div>
+  <div class="kpi"><div class="l">KV 缓存专用 SSD</div><div class="v">100 PiB</div><div class="n">3FS 集群，峰值读 10 TiB/s。agent 缓存留 3 天，聊天留 7 天</div></div>
+</div>
+
+<section class="sec">
+<h2>Follow-up (复查 2026.11.20)</h2>
+<div class="prose fu">
+<p><strong>第三方跑 V4.1 Flash 的首 token 延迟和价格，跟官方比。</strong> 这条直接检验"引擎被拉平、缓存没被拉平"的判断。现在的基线：第三方输出速度已经比官方快 (Fireworks 约 250、LithosAI 约 400 token/秒，官方约 210)，但首 token 延迟是 5–7 秒，官方约 1.2 秒 (DeepInfra 博客整理，厂商口径)。一个月后，如果第三方的速度继续涨、首 token 延迟还在 3 秒以上，说明差距在缓存层，判断成立；如果首 token 延迟也追到 2 秒以内、价格贴近官方，说明引擎才是主要差距，"服务商被挤压"要写得更重。</p>
+<p><strong>DeepSeek 会不会把缓存管理和负载均衡也开源。</strong> 原文的说法是"目前尚未完整开源"，理由是和内部基础设施耦合深，没有说不开；README 说预填充 / 解码分离的"大部分引擎功能已经实现"。存储底座 3FS 2025 年已经开源。一旦放出，第三方能复制官方的成本结构，推理服务商的利润会被进一步压，存储层的加项会从 DeepSeek 一家扩散到所有部署方。没有放出，官方 API 继续保有价格优势。</p>
+<p><strong>vLLM / SGLang 会不会吸收 DeepInfer 的东西。</strong> DeepInfer 是从 vLLM 早期版本分出去的，2025 年 4 月 DeepSeek 还说不开源整个引擎、只往上游贡献。看接下来一个月 vLLM / SGLang 是否合入 DSpark 投机解码、SWA bounded replay，以及 DeepInfer 仓库外部贡献者和 issue 的数量 (发布当天 50 star)。上游吸收了，说明开源生态继续以 vLLM / SGLang 为中心；DeepInfer 自己长成社区，说明 DeepSeek 想自立一套标准。</p>
+<p><strong>昇腾 950 上的独立实测。</strong> SemiAnalysis 说过要做华为对 H200 / B200 的对比。如果 DeepInfer 让昇腾 950 的每卡吞吐达到 B200 的七成以上，国内云厂在 DeepSeek 模型上用昇腾替代 NVIDIA 的理由就更硬；如果差一倍以上，"支持昇腾"主要是姿态。</p>
+</div>
+</section>
+
+<section class="sec">
+<h2>1. 是什么</h2>
+<div class="prose">
+<p><strong>DeepInfer 是 DeepSeek 把自己线上推理服务用的那套引擎开源出来，让别人能用同样的方式跑 DeepSeek V4.1 Flash。</strong></p>
+<p>全篇用一个比喻：把大模型推理想成一家餐厅。<strong>模型是菜谱</strong> (DeepSeek 早就公开了)，<strong>芯片是灶台</strong> (NVIDIA、华为)，<strong>推理引擎是后厨流水线</strong>：谁切菜、谁掌勺、几个人同时炒一锅、怎么把灶台火力用满。<strong>KV 缓存系统是冷库</strong>：客人之前点过的半成品存着，回头客来了直接加热。<strong>调度和路由是前厅派单</strong>：哪桌的单派给哪组厨师。这次开源的是后厨流水线，冷库和前厅没开。</p>
+<h3>底层怎么工作</h3>
+<ul>
+<li>大模型回答一个问题分两步。<strong>预填充 (prefill)</strong>：把用户输入的整段文字一次性读进去，算出一份"读后笔记" (KV 缓存)。<strong>解码 (decode)</strong>：一个字一个字往外写，每写一个字都要翻一遍这份笔记</li>
+<li>预填充吃算力 (像切一大堆菜)，解码吃内存带宽 (像厨师不停回头翻菜谱)。所以大厂常把两步拆到不同机器上，叫预填充 / 解码分离</li>
+<li>如果同一段输入之前处理过 (比如 agent 写代码，每一轮都会把整个对话和代码库重新发一遍)，读后笔记可以从缓存里直接取，不用重算。这就是"缓存命中"。命中的输入，DeepSeek 只收 $0.003 每百万 token，是没命中的 1/50</li>
+</ul>
+<h3>核心指标是什么意思</h3>
+<ul>
+<li><strong>吞吐 (token / 天、token / 秒 / 卡)</strong>：后厨一天出多少盘菜。决定每个 token 的成本</li>
+<li><strong>首 token 延迟</strong>：客人点单到第一道菜上桌要等多久。主要取决于预填充，缓存命中时会快很多</li>
+<li><strong>每用户速度 (token / 秒)</strong>：上菜的节奏。DeepSeek 自报 V4.1 Flash 平均 230，写代码时最高 300</li>
+<li><strong>缓存命中率</strong>：有多少原料是冷库里现成的。命中率越高，同样的灶台能接待越多客人</li>
+</ul>
+<h3>和现成的开源引擎差在哪</h3>
+<p>市面上已经有 vLLM、SGLang (都是开源通用后厨，什么菜谱都能做) 和 NVIDIA 的 TensorRT-LLM (只能用 NVIDIA 灶台)。它们早就支持 DeepSeek 模型，而且 DeepSeek 2025 年已经把最关键的几个"刀具" (FlashMLA、DeepEP、DeepGEMM 等算子库) 开源过，这些引擎也在用。DeepInfer 的区别是：它是只为 DeepSeek 一道菜谱打磨的专用流水线，是 DeepSeek 自己每天在用的那条，新模型的推理代码以后也先在这里更新。</p>
+<h3>做成了什么</h3>
+<ul>
+<li><strong>DeepInfer</strong>：引擎本体，Apache 2.0。README 写明"最初主要基于 vLLM 构建"，参考了 SGLang 和 TensorRT-LLM</li>
+<li><strong>deepseek-recipe</strong>：把用户请求转成模型输入、再把模型输出转回 API 格式的组件，MIT 协议，Rust 写的、有 Python 接口。作用是让第三方部署的"口味"和官方 API 一致 (思考模式、工具调用、结构化输出这些细节以前要靠社区反推)</li>
+</ul>
+<h3>拿来干什么 (一个例子)</h3>
+<p>一家国内云厂想卖 DeepSeek V4.1 Flash 的 API。今天：用 vLLM 或 SGLang，自己调参数、自己写适配，模型发布后要等社区几周把性能追上来 (SemiAnalysis 记录过 V4 发布后开源引擎 43 天里性能还在成倍提升)，输出格式和官方有细微差别。用 DeepInfer 之后：拿到和 DeepSeek 一样的引擎和同口径的输入输出处理，在昇腾 950 上也能跑；但缓存要存多久、怎么在几百台机器之间派单，仍要自己搭或用别家的方案。</p>
+<h3>现在到哪一步</h3>
+<ul>
+<li>DeepSeek 自己在生产上用 (官方说法)。开源版只支持<strong>离线推理</strong>，没有 HTTP 服务、鉴权、限流这些上线必需的外壳</li>
+<li>只支持一个模型 (V4.1 Flash) 和两种芯片 (NVIDIA SM100、昇腾 950)。H100 / H200 / H20、AMD 都不在列</li>
+<li>README 有性能图但没给数字：预填充用 4 张 SM100、解码用 64 张，都在一个机柜级互联域里测</li>
+</ul>
+</div>
+<div class="tbl"><table class="t">
+<thead><tr><th>项目</th><th>内容</th><th>来源</th></tr></thead>
+<tbody>
+<tr><td class="k">发布</td><td>2026.10.20，DeepSeek 公众号</td><td>界面、IT之家、21 经济网</td></tr>
+<tr><td class="k">协议</td><td>DeepInfer Apache 2.0；deepseek-recipe MIT</td><td>GitHub README、AlphaSignal</td></tr>
+<tr><td class="k">功能</td><td>自研算子 (FlashMLA、DeepGEMM、DeepEP、TileKernels、DeepSelect、TileLang)；注意力数据并行、上下文并行、专家并行 + 负载均衡；DSpark 投机解码 (默认一次猜 5 个 token)；SWA bounded replay；异步调度；批次无关 / 确定性输出 (仅 NVIDIA)；结构化输出 (正则、JSON schema、EBNF)</td><td>GitHub README</td></tr>
+<tr><td class="k">没包含</td><td>KV 缓存系统、预填充 / 解码分离、副本间负载均衡、API 服务层。原文理由：与内部基础设施耦合较深，目前尚未完整开源</td><td>GitHub README、知乎原文</td></tr>
+<tr><td class="k">硬件</td><td>NVIDIA SM100 (CUDA 13)；昇腾 950 (CANN 9.2)</td><td>GitHub README</td></tr>
+<tr><td class="k">模型</td><td>DeepSeek-V4.1-Flash-1017 (10.17 发布，MIT 权重)</td><td>GitHub README、模型页</td></tr>
+</tbody></table></div>
+<p class="one">一句话：DeepInfer 是 DeepSeek 专用的"后厨流水线"，开源了引擎，没开源让官方又快又便宜的冷库 (缓存) 和派单 (调度)。</p>
+</section>
+
+<section class="sec">
+<h2>2. 机制：便宜从哪来，卡在哪</h2>
+<div class="prose">
+<p>把"一个 token 的成本"拆成串联的几段，最弱的一段说了算。每段标出这次开没开源、由谁定义。</p>
+</div>
+<div class="tbl"><table class="t">
+<thead><tr><th>段</th><th>比喻</th><th>做什么</th><th>这次开源了吗</th><th>谁定义</th></tr></thead>
+<tbody>
+<tr><td class="k">1 算子</td><td>刀具和火候</td><td>把每张卡的算力和带宽用满</td><td>开了 (大部分 2025 年已开)</td><td>DeepSeek + 芯片厂 (CUDA / CANN)</td></tr>
+<tr><td class="k">2 并行</td><td>几个厨师分工</td><td>一个模型拆到几十张卡上，专家并行让每张卡只负责一部分"专家"</td><td>开了</td><td>DeepSeek 写法；能拆多大取决于机柜级互联 (NVL72、昇腾超节点)</td></tr>
+<tr><td class="k">3 投机解码</td><td>提前猜下一道菜备好</td><td>小模块一次猜 5 个 token，大模型一次验证，猜对就省时间</td><td>开了 (DSpark)</td><td>DeepSeek，和模型结构绑定</td></tr>
+<tr><td class="k">4 回头客少重算</td><td>回头客只补做最后一道</td><td>SWA bounded replay：缓存命中时只把最后 128 个 token 重跑一遍，解码侧的预填充计算量近乎减半</td><td>开了</td><td>DeepSeek，和模型结构绑定</td></tr>
+<tr><td class="k">5 缓存存多久、命中多少</td><td>冷库多大、存几天</td><td>约 100 PiB SSD (3FS 集群，10+2 纠删码)，agent 缓存留 3 天、聊天留 7 天，输入命中 96%</td><td><strong>只公开设计</strong> (3FS 本身 2025 年已开源)</td><td>DeepSeek 内部；外部替代：Mooncake、LMCache、NVIDIA Dynamo</td></tr>
+<tr><td class="k">6 分离和派单</td><td>前厅派单</td><td>预填充用 8 卡机器、解码用 64–128 卡超节点，两边卡数约 1:1，随流量自动扩缩；图片编码放最便宜的卡</td><td><strong>只公开设计</strong></td><td>DeepSeek 内部；外部替代：SGLang、NVIDIA Dynamo、llm-d</td></tr>
+</tbody></table></div>
+<div class="prose">
+<p>第 4 段值得多说一句。原文确认 V4.1 Flash 是"编码器 + 解码器"结构 (CED)，前 20 层只看最近 128 个 token (滑动窗口注意力，SWA)。长对话的大部分"读后笔记" (Block KV) 只需要算一次、存进 3FS；窗口那一小段 (SWA KV) 只放在机器内存里，约 3 分钟过期，命中率 98% 以上，丢了就重算最后 128 个 token。V4 的做法是把窗口那段也存盘，结果占掉持久缓存近一半容量，V4.1 改掉了。<strong>第 4 段和第 5 段是一对</strong>：模型结构让缓存命中后几乎不用重算，冷库让命中率到 96%。两者叠在一起，才有 $0.003 的命中价。这次开了前者的代码，后者只公开了设计。</p>
+<p>按"能不能单独复制"排：第 1–4 段现在任何人拿到 SM100 或昇腾 950 都能复制；第 5–6 段要自己有大规模存储和调度系统，而且需要足够大的流量才能让缓存命中率高起来 (冷库只有在回头客多的时候才划算)。</p>
+</div>
+<p class="one">一句话：DeepSeek 的便宜一半来自模型结构 + 引擎 (这次全开了)，一半来自"缓存存得多、存得久" (没开)；后者需要规模，规模本身就是壁垒。</p>
+</section>
+
+<section class="sec">
+<h2>3. 数字打折</h2>
+<div class="prose">
+<p>DeepSeek 在知乎技术文章"DeepSeek V4.1 Flash 大规模推理部署实践" (2026.10.20，官方机构号) 里给了一张线上实测表。逐个问：跟谁比、谁测的、测的是什么。</p>
+</div>
+<div class="tbl"><table class="t">
+<thead><tr><th>阶段</th><th>指标</th><th class="num">线上实测</th><th>怎么读</th></tr></thead>
+<tbody>
+<tr><td class="k">预填充</td><td>每卡吞吐 (不含命中缓存)</td><td class="num">6 万 token/秒</td><td>真正要算的输入</td></tr>
+<tr><td></td><td>每卡吞吐 (含命中缓存)</td><td class="num">150 万 token/秒</td><td>25 倍于上一行，差额就是缓存省下的</td></tr>
+<tr><td></td><td>输入命中缓存</td><td class="num">96%</td><td>2025 年 2 月是 56%</td></tr>
+<tr><td></td><td>首 token 延迟 平均 / P99</td><td class="num">400 / 1,000 ms</td><td>独立测得官方 API 约 1.2 秒 (DeepInfra 博客)，含网络</td></tr>
+<tr><td></td><td>平均输入长度</td><td class="num">7.7 万 token</td><td>agent 流量：每轮把整段上下文重发一遍</td></tr>
+<tr><td class="k">解码</td><td>每卡吞吐</td><td class="num">1.4 万 token/秒</td><td>输出只有输入的约 1%</td></tr>
+<tr><td></td><td>每用户速度</td><td class="num">230 token/秒</td><td>写代码时 300</td></tr>
+<tr><td class="k">缓存</td><td>不活跃后保存时间</td><td class="num">72 小时</td><td>正文：agent 3 天、聊天 7 天</td></tr>
+</tbody></table></div>
+<p class="note">表注 (原文)：机器已预留一定冗余以应对流量波动；实际部署预填充 : 解码卡数接近 1:1；不考虑波峰波谷，整体收入是平均每卡每小时 38 美金 (按谷价)。</p>
+
+<h3>三个数能互相对上</h3>
+<div class="prose">
+<ul>
+<li><strong>卡数</strong>：一半卡做预填充 (每卡每秒 150 万 token)、一半做解码 (1.4 万)，平均每卡每秒约 76 万 token。155 万亿 ÷ (76 万 × 86,400 秒) ≈ <strong>2,400 张卡</strong>。原文没给卡数，这是我反推的</li>
+<li><strong>$38</strong>：预填充卡每小时 54 亿输入 token，96% 按 $0.003、4% 按 $0.15 计价，约 $48；解码卡每小时 5,040 万输出 × $0.60 ≈ $30；平均 $39，和原文 $38 对得上</li>
+<li><strong>96%</strong>：6 万 ÷ 150 万 = 4% 未命中，和 96% 对得上</li>
+</ul>
+<p>另外两个数不采用：快科技文中"OpenAI + Anthropic 合计约 100 万亿 token / 天"自称是 AI 生成的估计；README 性能图没有标数字，也没有和 vLLM / SGLang 的对比，第三方复现是第一条待办。</p>
+</div>
+
+<h3>和 2025 年 2 月那次披露比</h3>
+<div class="tbl"><table class="t">
+<thead><tr><th></th><th class="num">2025.02 (V3 / R1)</th><th class="num">2026.10 (V4.1 Flash)</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td class="k">每天总 token</td><td class="num">7,760 亿</td><td class="num">155 万亿</td><td>约 200 倍。2025 是全部机器，2026 是"单一集群"</td></tr>
+<tr><td class="k">输入命中缓存</td><td class="num">56%</td><td class="num">96%</td><td>从聊天为主变成 agent 为主</td></tr>
+<tr><td class="k">每卡每小时理论收入</td><td class="num">~$13</td><td class="num">$38</td><td>2025：$562,027 ÷ 1,814 卡 ÷ 24。卡数由 $87,072 日成本 ÷ $2/卡时反推</td></tr>
+<tr><td class="k">计价口径</td><td class="num">R1 价，全天</td><td class="num">谷价 (最低价)</td><td>2026 口径更保守</td></tr>
+<tr><td class="k">芯片</td><td class="num">H800</td><td class="num">SM100 / 昇腾 950</td><td>新卡租金更高 (B200 级市场租价约 $3–6 / 时，我的估计，未核实)</td></tr>
+</tbody></table></div>
+
+<h3>真正要"算"的 token 有多少：计算器</h3>
+<div class="prose"><p>155 万亿里，命中缓存的输入几乎只占内存、不占算力。真正要 GPU 去算的是没命中的输入和输出。按原文实测表，预填充和解码卡数约 1:1、每卡吞吐 150 万比 1.4 万，所以输出约占全部 token 的 0.9%。滑块可以改这个比例，看结论在别的流量结构下怎么变。价格用官方谷价：命中 $0.003、未命中 $0.15、输出 $0.60 (每百万 token)。</p></div>
+<div class="presets" role="group" aria-label="预设">
+  <button type="button" data-o="0.9" data-h="96" aria-pressed="true">DeepSeek 实测 (输出 0.9%)</button>
+  <button type="button" data-o="3" data-h="96" aria-pressed="false">输出多一些 (3%)</button>
+  <button type="button" data-o="8" data-h="70" aria-pressed="false">聊天为主 (输出 8%、命中 70%)</button>
+</div>
+<div class="ctl">
+  <div><label for="o">输出占全部 token 的比例：<output id="oo"></output></label><div class="hint">agent 每轮重发 7.7 万 token 上下文、只写几百个，输出不到 1%；聊天会高得多</div><input id="o" type="range" min="0.5" max="10" step="0.1" value="0.9"></div>
+  <div><label for="h">输入命中缓存的比例：<output id="ho"></output></label><div class="hint">DeepSeek 自报 96%；2025 年是 56%</div><input id="h" type="range" min="50" max="99" step="1" value="96"></div>
+</div>
+<figure class="chart">
+  <div class="title">155 万亿 token 拆开看</div>
+  <svg id="c1" viewBox="0 0 880 210" role="img" aria-label="每天 token 拆分"></svg>
+  <figcaption id="c1cap"></figcaption>
+  <p class="formula" id="f1"></p>
+  <p class="note">Source: DeepSeek 知乎原文实测表；2025 年数据来自 DeepSeek Open Infra Index；比例可用滑块调整</p>
+</figure>
+<p class="one">一句话：155 万亿 token 比 2025 年大约 200 倍，但其中 95% 是命中缓存的输入；真正要 GPU 算的 token 大约涨了 17 倍，这才是算力需求的那个数，其余的增长主要落在内存和存储上。</p>
+</section>
+
+<section class="sec">
+<h2>4. 一句话规则</h2>
+<div class="prose">
+<p><strong>问一句：这家公司的优势能不能用"每张卡每秒出多少 token"衡量？能，这次开源把它拉平了；要用"缓存命中率、首 token 延迟、集群规模"衡量，这次没碰到它。</strong></p>
+<p>为什么是这两个指标：每卡吞吐是引擎层 (第 1–4 段) 的产出，这次全部公开；缓存命中率和首 token 延迟是冷库和派单 (第 5–6 段) 的产出，没公开，而且要流量规模才能做高。第三方现在的状态正好印证：输出速度已经超过官方，首 token 延迟还差 4–5 倍。</p>
+<p>拿几个例子过一遍：</p>
+<ul>
+<li>一家靠"我们 DeepSeek 跑得比别人快 30%"拉客的推理服务商：用每卡吞吐衡量，被拉平</li>
+<li>NVIDIA Dynamo、Mooncake 这类分布式调度 / 缓存方案：用缓存命中率衡量，没被碰到，反而多了一个"给 DeepInfer 配冷库"的需求</li>
+<li>做大容量 DRAM / SSD 的存储厂：用"能存多少 KV、存多久"衡量，受益</li>
+<li>DeepSeek 官方 API：靠缓存命中率和规模，优势保留</li>
+</ul>
+</div>
+<p class="one">一句话：被拉平的是"引擎跑多快"，没被拉平的是"冷库存多少、存多久"，判断谁受影响就看它靠哪一个。</p>
+</section>
+
+<section class="sec">
+<h2>5. 反过来想：上线一个推理服务还缺什么</h2>
+<div class="prose"><p>列出一个能对外卖的推理服务必需的能力，对照 DeepInfer 和现成的开源方案。"缺的性质"决定这个缺口会不会很快被补上。</p></div>
+<div class="tbl"><table class="t">
+<thead><tr><th>必需的能力</th><th>DeepInfer</th><th>vLLM / SGLang</th><th>TensorRT-LLM + Dynamo</th><th>缺的性质</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td class="k">DeepSeek 专用算子</td><td>有</td><td>有 (用 DeepSeek 的开源库)</td><td>有</td><td>—</td><td>2025 年已开源，大家都在用</td></tr>
+<tr><td class="k">投机解码 / 少重算</td><td>有 (DSpark、bounded replay)</td><td>有 MTP，新方法待合入</td><td>有 MTP</td><td>—</td><td>上游吸收只是时间问题</td></tr>
+<tr><td class="k">KV 缓存系统 (存多、存久)</td><td>无</td><td>有 (LMCache、HiCache、Mooncake)</td><td>有 (KVBM)</td><td>没适配 (官方：和内部基础设施耦合深，目前未完整开源)</td><td>DeepSeek 的核心成本优势。设计已经公开，底座 3FS 也开源了，但第三方照着搭还要 100 PiB 级的存储和足够的流量</td></tr>
+<tr><td class="k">预填充 / 解码分离</td><td>无 (说大部分已实现)</td><td>有</td><td>有</td><td>没适配</td><td>下一个版本可能放出</td></tr>
+<tr><td class="k">在线 API 服务、鉴权、限流</td><td>无</td><td>有</td><td>有</td><td>没适配</td><td>工程活，第三方几周可补</td></tr>
+<tr><td class="k">多模型</td><td>只有 V4.1 Flash</td><td>几百种</td><td>主流模型</td><td>天生</td><td>定位就是 DeepSeek 专用，不会变成通用引擎</td></tr>
+<tr><td class="k">多种芯片</td><td>SM100、昇腾 950</td><td>NVIDIA 各代、AMD、TPU、昇腾 (插件)、Intel</td><td>只有 NVIDIA</td><td>能补但吃掉优势</td><td>支持旧卡要放弃为新卡写的专用算子</td></tr>
+<tr><td class="k">输出和官方一致</td><td>有 (deepseek-recipe)</td><td>以前靠反推，现在可直接用 recipe</td><td>同左</td><td>—</td><td>recipe 是 MIT，所有引擎都能用</td></tr>
+</tbody></table></div>
+<div class="prose"><ul>
+<li>"没适配"的三项 (缓存、分离、API 层) 里，后两项是工程活，很快会被社区或 DeepSeek 补上；缓存系统最可能是 DeepSeek 主动留着的</li>
+<li>"天生"的一项 (只做 DeepSeek 模型) 决定了 DeepInfer 不会取代 vLLM / SGLang，最多是它们的"DeepSeek 专用分支"</li>
+<li>结论会因下一个版本翻的地方：如果缓存系统也开源，第 4 节的规则仍成立，但"没被拉平"的那一半也被拉平，服务商被挤压的程度要上调</li>
+</ul></div>
+<p class="one">一句话：DeepInfer 缺的东西里，只有"缓存系统"是决定成本的，而它恰好是 DeepSeek 最可能长期不开的那一块。</p>
+</section>
+
+<section class="sec">
+<h2>6. 对谁意味着什么</h2>
+<div class="tbl"><table class="t">
+<thead><tr><th>对象</th><th>影响</th><th>为什么</th><th>状态</th></tr></thead>
+<tbody>
+<tr><td class="k">推理服务商 (Together、Fireworks、DeepInfra、硅基流动、国内云)</td><td>DeepSeek 模型这条线利润被挤压</td><td>引擎层差异被拉平；官方谷价已极低 (未命中输入 $0.15、输出 $0.60)，第三方综合价 $0.08–0.11 已贴近官方</td><td>短期确定；护城河转向缓存和调度</td></tr>
+<tr><td class="k">NVIDIA</td><td>中性偏正</td><td>只支持 SM100，等于把 DeepSeek 模型的最佳部署方案锁在 Blackwell 一代和机柜级系统上 (解码要 64–128 卡一组)；H20 / H100 / H200 不在列</td><td>对海外云是推新卡的理由；中国市场 SM100 受出口管制，帮不上</td></tr>
+<tr><td class="k">华为昇腾</td><td>正面最清楚</td><td>第一次有一个顶级开源模型的"官方生产引擎"同时支持昇腾 950。SemiAnalysis 说 V4 发布当天起，部分官方 API 就跑在华为上</td><td>要看第三方实测每卡吞吐</td></tr>
+<tr><td class="k">AMD</td><td>略负面</td><td>不在支持列表。SemiAnalysis 记录 MI355X 跑 V4 第 0 天几乎不可用，靠社区 26 天提升 100 倍以上；DeepSeek 官方引擎不支持意味着这条路继续靠 AMD 自己补</td><td>看 AMD 是否提 PR 适配</td></tr>
+<tr><td class="k">内存 / 存储 (DRAM、企业级 SSD)</td><td>加项</td><td>DeepSeek 用实际运营数据证明了"大量保存 KV、存 3–7 天"是低价推理的关键：约 2,400 张卡配约 100 PiB SSD。想追上官方价格的部署方要自己建这层</td><td>方向确定，量级见第 7 节</td></tr>
+<tr><td class="k">vLLM / SGLang 开源生态</td><td>短期分叉风险，长期吸收</td><td>DeepInfer 是 vLLM 的分支，以后 DeepSeek 新模型的推理代码先落在这里，vLLM / SGLang 的"首发支持"优势会被削弱；但 Apache 2.0 让它们可以直接搬</td><td>看上游合入速度</td></tr>
+<tr><td class="k">企业自建</td><td>门槛下降，但只对有 SM100 / 昇腾 950 集群的</td><td>小规模部署拿不到高缓存命中率，成本仍高于官方 API</td><td>大多数企业继续买 API</td></tr>
+</tbody></table></div>
+<p class="one">一句话：受益最清楚的是昇腾和存储，被挤压的是"DeepSeek 跑得快"的推理服务商；NVIDIA 是推新卡的理由，但中国市场用不上。</p>
+</section>
+
+<section class="sec">
+<h2>7. 落到核心议题：加项还是减项</h2>
+<div class="tbl"><table class="t">
+<thead><tr><th>议题</th><th>方向</th><th>机制</th><th>Base</th><th>Bull</th></tr></thead>
+<tbody>
+<tr><td class="k">token 需求</td><td>加项</td><td>同一模型在更多地方、以更低成本跑；deepseek-recipe 让第三方结果和官方一致，企业更敢用</td><td>小幅加项：主要影响 DeepSeek 模型在第三方的份额，不改总盘子</td><td>国内云普遍用昇腾 + DeepInfer 上量，DeepSeek 系模型的总 token 再上一个台阶</td></tr>
+<tr><td class="k">算力 (GPU / NPU)</td><td>每 token 减项，总量加项</td><td>每卡吞吐提升让每个 token 要的算力更少；但第 3 节计算器显示，真正要算的 token 一年多涨了约 17 倍，效率提升被用量吃掉</td><td>中性偏加：这次没有新的效率台阶 (算子 2025 年已开)，只是把已有效率推广到更多部署</td><td>推动 SM100 和昇腾 950 换代，加速旧卡退役</td></tr>
+<tr><td class="k">HBM</td><td>每 token 减项</td><td>"编码器 + 滑动窗口"结构让每个 token 的 KV 更小、更少重算</td><td>中性：是模型结构的影响，不是这次开源带来的</td><td>—</td></tr>
+<tr><td class="k">内存 / 存储容量层 (DRAM、SSD)</td><td>加项</td><td>每张推理卡背后约 43 TiB 的 SSD 专门存 KV；第三方想追官方价格必须自己建</td><td>加项，量级见下</td><td>DeepSeek 开源缓存系统后，所有部署方都照着做</td></tr>
+<tr><td class="k">电力</td><td>每 token 减项，总量随算力</td><td>SemiAnalysis：B200 跑 V4 每兆瓦 token 数 43 天里软件优化提升约 1.7 倍；DeepInfer 把官方水平直接给到第三方</td><td>中性：每兆瓦产出提高，但用量上升抵消</td><td>—</td></tr>
+</tbody></table></div>
+<div class="prose">
+<h3>存储加项有多大：拿 DeepSeek 自己的集群算</h3>
+<p>原文给了 KV 缓存存储的规格：3FS 集群约 100 PiB SSD，峰值读 10 TiB/s、写 850 GiB/s，每次读一块约 112 KiB。配上第 3 节反推的约 2,400 张卡，可以算出每张推理卡背后要多少存储。</p>
+</div>
+<div class="tbl"><table class="t">
+<thead><tr><th>指标</th><th class="num">数值</th><th>算式</th><th>怎么读</th></tr></thead>
+<tbody>
+<tr><td class="k">每张卡配多少 SSD</td><td class="num">约 43 TiB</td><td>100 PiB ÷ 2,400 卡</td><td>是一张 B200 显存 (192 GB) 的 200 多倍</td></tr>
+<tr><td class="k">峰值随机读次数</td><td class="num">约 9,600 万次/秒</td><td>10 TiB/s ÷ 112 KiB</td><td>每张卡约 4 万次/秒</td></tr>
+<tr><td class="k">每 TB 每秒被读几次</td><td class="num">约 850 次</td><td>9,600 万 ÷ 11.3 万 TB</td><td>这是容量盘 (TLC / QLC) 的活，用不上 SLC 级的高速盘，和 XL-Flash memo 的判断一致</td></tr>
+<tr><td class="k">每天写满几遍</td><td class="num">≤ 0.7 遍</td><td>850 GiB/s × 86,400 秒 ÷ 100 PiB</td><td>按峰值算的上限。TLC 够用，QLC 在边上</td></tr>
+</tbody></table></div>
+<div class="prose">
+<p>这组数说明两件事。第一，KV 缓存要的是容量，不是速度：每张推理卡背后几十 TB 的普通企业级 SSD。第二，这是 DeepSeek 一家、一个集群的配置；任何想把 DeepSeek 模型卖到接近官方价格的部署方，都要按差不多的比例配存储。卡数是我反推的，原文说机器留了冗余，实际卡数可能更多，每卡存储会相应少一些。</p>
+<h3>为什么这不是 2025 年 1 月那种"效率冲击"</h3>
+<ul>
+<li>2025 年 1 月市场的担心是"同样的能力只要十分之一的算力"。这次没有新的模型或新的效率台阶，DeepInfer 的核心算子 2025 年 2 月就开源了</li>
+<li>DeepSeek 这次自己披露的数据反而在讲另一件事：推理很赚钱。每卡每小时理论收入 $38，即使按 B200 级 $3–6 的租价 (我的估计) 算，收入也是成本的 6–13 倍。推理赚钱，云厂就愿意继续买卡</li>
+<li>社区第一反应也是这个方向：Linux.do 上有人说"每卡 38 美元，怪不得计算卡涨上天了"</li>
+</ul>
+<h3>DeepSeek 为什么要开 (我的推断)</h3>
+<ul>
+<li>它不卖卡，只卖模型和 API。别人越容易跑它的模型，它的模型用的人越多</li>
+<li>2025 年 4 月说过要做"多硬件首发支持"，引擎同时支持昇腾 950 是兑现这一点，也符合国产化方向</li>
+<li>冷库没开，官方 API 的价格优势保留。开源引擎不伤自己的生意</li>
+</ul>
+</div>
+<p class="one">一句话：对 token 和存储容量是加项，对每 token 的算力、HBM、电力是减项，但总量上算力大概率还是加项；DeepSeek 自己的数字在说推理很赚钱，这比效率本身更重要。</p>
+</section>
+
+<section class="sec">
+<h2>8. 管理层怎么说</h2>
+<div class="tbl"><table class="t">
+<thead><tr><th>谁</th><th>说了什么</th><th>场合</th><th>和我们的判断</th></tr></thead>
+<tbody>
+<tr><td class="k">DeepSeek</td><td>内部引擎是一年多前 vLLM 的分支，改得太多、和内部系统绑太紧、团队没精力维护，所以不开源整个引擎，改为往 vLLM / SGLang 贡献、做多硬件首发支持</td><td>2025.04 GitHub 博客</td><td>分歧：这次反过来了</td></tr>
+<tr><td class="k">DeepSeek</td><td>推理框架决定算力成本和能耗；开源是为了让开发者和企业降低算力成本和能耗，"实现真正的大模型普惠"；新模型的推理代码以后在这里更新</td><td>2026.10.20 公众号</td><td>一致：引擎层开放；但没提缓存系统</td></tr>
+<tr><td class="k">DeepSeek</td><td>三个设计目标：兼容多家芯片；用常见的 8 卡机器做预填充、64–128 卡超节点做解码；KV 缓存保留 72 小时以上。单集群 155 万亿 token / 天、每卡每小时 $38 (按谷价)。KV 缓存管理和负载均衡"因与内部基础设施耦合较深，相关代码目前尚未完整开源"</td><td>2026.10.20 知乎技术文章 (官方机构号)</td><td>一致：成本优势在规模和缓存；"目前"留了以后开源的口子</td></tr>
+<tr><td class="k">NVIDIA</td><td>V4 发布当天 Blackwell 就支持，GB200 NVL72 开箱每用户 150 token / 秒以上</td><td>2026.04 开发者博客</td><td>一致：最佳部署在机柜级系统</td></tr>
+<tr><td class="k">SemiAnalysis</td><td>V4 发布后 43 天，开源引擎在各家芯片上的性能还在成倍提升；部分 DeepSeek 官方 API 从第 0 天起跑在华为上</td><td>2026.06 newsletter</td><td>一致：软件是变量，DeepInfer 缩短了这段追赶期</td></tr>
+</tbody></table></div>
+<div class="prose"><ul>
+<li>分歧在 DeepSeek 自己：2025 年说"不开整个引擎"，2026 年开了。前提变了的是：引擎现在要同时支持 NVIDIA 和昇腾，继续只往 vLLM / SGLang 贡献，可能没法保证昇腾上的首发质量 (推断)</li>
+<li>"普惠"的口径和"冷库没开"之间有张力：开出来的部分让别人能跑，没开的部分让官方保持最便宜</li>
+</ul></div>
+</section>
+
+<section class="sec">
+<h2>9. 最容易被误读的几点</h2>
+<div class="tbl"><table class="t">
+<thead><tr><th>大家以为</th><th>实际</th></tr></thead>
+<tbody>
+<tr><td class="k">DeepSeek 又一次效率冲击，算力需求要降</td><td>没有新的效率台阶。核心算子 2025 年已开源，这次是把已有效率推广出去；同时披露的数字在说推理很赚钱</td></tr>
+<tr><td class="k">开源之后，谁都能做到 DeepSeek 的价格</td><td>引擎能复制，96% 命中率和 72 小时缓存不能。小规模部署回头客少，冷库建了也命中不高</td></tr>
+<tr><td class="k">155 万亿 token 说明 DeepSeek 比 OpenAI 还大</td><td>九成以上是命中缓存的输入，几乎不花算力。不能和别家的 token 数直接比，也不能直接换成收入</td></tr>
+<tr><td class="k">支持昇腾说明 DeepSeek 要脱离 NVIDIA</td><td>两边都只支持最新一代 (SM100、昇腾 950)。这是"跟最新硬件走"，在中国是"能买到什么用什么"</td></tr>
+<tr><td class="k">$38 / 卡时是 DeepSeek 的利润</td><td>是全部按最低价计费的理论收入，不扣成本，也不考虑免费用户</td></tr>
+<tr><td class="k">DeepInfer 会取代 vLLM / SGLang</td><td>只支持一个模型、两种芯片，定位是 DeepSeek 专用分支</td></tr>
+</tbody></table></div>
+<p class="one">一句话：这次开源的是"后厨"，不是"冷库"；数字说的是"推理很赚钱"，不是"算力用不完"。</p>
+</section>
+
+<section class="sec">
+<h2>证据分级</h2>
+<div class="tbl"><table class="t">
+<thead><tr><th>证据</th><th>级别</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td class="k">GitHub README (功能、硬件、没包含的部分、协议、基于 vLLM)</td><td>一手，已读</td><td>最可靠</td></tr>
+<tr><td class="k">公众号发布内容 (多家媒体一致转述)</td><td>一手，经转述</td><td>措辞一致，可靠</td></tr>
+<tr><td class="k">实测表 (155 万亿、$38、96%、6 万 / 150 万 / 1.4 万 token/秒、400ms)、100 PiB 存储</td><td>一手，已读原文</td><td>DeepSeek 自测，没有第三方核实；三个数能互相对上</td></tr>
+<tr><td class="k">约 2,400 张卡、每卡 43 TiB</td><td>我的推算</td><td>由实测每卡吞吐和 1:1 卡数比反推</td></tr>
+<tr><td class="k">第三方速度和价格表</td><td>厂商博客 (DeepInfra)</td><td>该页模型参数和发布日期前后矛盾，只取量级</td></tr>
+<tr><td class="k">"编码器 + 解码器"结构、bounded replay 的原理</td><td>一手，已读原文</td><td>原文和 V4.1 技术报告</td></tr>
+<tr><td class="k">B200 级租价 $3–6 / 时</td><td>我的估计</td><td>未核实</td></tr>
+</tbody></table></div>
+</section>
+
+<section class="sec">
+<h2>数据来源与 changelog</h2>
+<div class="prose">
+<ul>
+<li><a href="https://zhuanlan.zhihu.com/p/2095560295930508953">DeepSeek：DeepSeek V4.1 Flash 大规模推理部署实践 (知乎原文)</a> · <a href="https://arxiv.org/html/2609.19969v1">V4.1 Flash 技术报告</a></li>
+<li><a href="https://github.com/deepseek-ai/DeepInfer">deepseek-ai/DeepInfer (GitHub)</a></li>
+<li><a href="https://www.ithome.com/1/015/429.htm">IT之家</a> · <a href="https://www.jiemian.com/article/15213352.html">界面新闻</a> · <a href="https://www.21jingji.com/article/20261020/herald/c3790e64f679fb1f55fc5deddbc65772.html">21 经济网</a> · <a href="https://original.ifeng.com/c/8xNa7mI3a8J">凤凰网</a></li>
+<li><a href="https://news.mydrivers.com/1/1159/1159039.htm">快科技：每张卡每小时 38 美元</a> · <a href="https://www.locdd.com/t/topic/102171">大佬说 (转述知乎原文)</a> · <a href="https://linux.do/t/topic/3050252">Linux.do</a></li>
+<li><a href="https://cryptobriefing.com/deepseek-open-sources-deepinfer-inference-framework/">Crypto Briefing</a> · <a href="https://alphasignal.ai/news/deepseek-opens-deepinfer-exposing-the-engine-running-v4-1-flash">AlphaSignal</a></li>
+<li><a href="https://deepinfra.com/blog/deepseek-v4-1-flash-api-benchmarks">DeepInfra：V4.1 Flash 各家速度和价格</a> · <a href="https://munderdiffl.in/blog/deepseek-v4-1-flash-1017/">V4.1 Flash 官方价格</a></li>
+<li><a href="https://newsletter.semianalysis.com/p/deepseekv4-16t-day-0-to-day-43-performance">SemiAnalysis：V4 第 0 到 43 天性能</a> · <a href="https://developer.nvidia.com/blog/build-with-deepseek-v4-using-nvidia-blackwell-and-gpu-accelerated-endpoints">NVIDIA 开发者博客</a></li>
+<li><a href="https://www.analyticsvidhya.com/blog/2025/03/deepseek-opensourceweek-day-6-inference-system-overview/">2025.02 DeepSeek 推理系统披露 (545%)</a> · <a href="https://getcoai.com/news/deepseek-pivots-to-sharing-ai-components-instead-of-full-inference-engine">2025.04 不开源整个引擎</a></li>
+</ul>
+<p><strong>v1.1 (2026.10.20)</strong>：读到知乎原文。数字从"媒体转述"改为一手；第 3 节换成原文实测表，输出占比从假设的 2% 改为实测推出的 0.9%，"真正要算的 token 涨幅"从约 20 倍改为约 17 倍，卡数从按收入估算改为按吞吐反推 (约 2,400 张，和 $38 对得上)；第 7 节新增"存储加项有多大" (100 PiB、每卡约 43 TiB)；没开源的部分补上官方理由；模型结构从"我的推断"改为原文确认。核心判断不变。</p>
+<p><strong>v1 (2026.10.20)</strong>：首版。待办第一条：在 SM100 或昇腾 950 上用 README 脚本复现性能，和 SGLang 同条件对比。</p>
+</div>
+</section>
+
+</main>
+</div>
+<script>
+(function(){
+  const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const o=document.getElementById('o'), h=document.getElementById('h');
+  const oo=document.getElementById('oo'), ho=document.getElementById('ho');
+  const btns=[...document.querySelectorAll('.presets button')];
+  const TOTAL=155e12, P_HIT=0.003, P_MISS=0.15, P_OUT=0.60, RPH=38;
+  const REAL25=266e9+168e9; // 2025: 未命中输入 + 输出
+  const fmtT=x=>x>=1e12?(x/1e12).toFixed(1)+' 万亿':(x/1e8).toFixed(0)+' 亿';
+  function draw(){
+    const os=+o.value/100, hs=+h.value/100;
+    oo.textContent=(+o.value).toFixed(1)+'%'; ho.textContent=h.value+'%';
+    const inp=TOTAL*(1-os), hit=inp*hs, miss=inp*(1-hs), out=TOTAL*os;
+    const rev=(hit*P_HIT+miss*P_MISS+out*P_OUT)/1e6;
+    const cards=rev/(RPH*24), real=miss+out;
+    const svg=document.getElementById('c1');
+    const W=880, x0=150, bw=W-x0-20;
+    const rows=[['命中缓存的输入',hit,css('--slate-100'),true],['未命中的输入',miss,css('--slate-500'),false],['输出',out,css('--slate-500'),false]];
+    const max=TOTAL;
+    let s='';
+    rows.forEach((r,i)=>{
+      const y=20+i*60, w=Math.max(2,bw*r[1]/max);
+      s+=`<text x="0" y="${y+22}" font-size="13.5" fill="${css('--muted')}" font-family="${css('--sans')}">${r[0]}</text>`;
+      s+=`<rect x="${x0}" y="${y}" width="${w}" height="34" fill="${r[2]}" ${r[3]?`stroke="${css('--text')}" stroke-width="0.6"`:''}/>`;
+      const lx=r[1]/max>0.75? x0+w-8 : x0+w+8, anc=r[1]/max>0.75?'end':'start';
+      s+=`<text x="${lx}" y="${y+22}" font-size="13.5" text-anchor="${anc}" fill="${css('--text')}" font-weight="600" font-family="${css('--sans')}">${fmtT(r[1])}</text>`;
+    });
+    svg.innerHTML=s;
+    document.getElementById('c1cap').textContent=`要 GPU 真正去算的 (未命中输入 + 输出) 约 ${fmtT(real)} / 天，是 2025 年 2 月 (约 4,340 亿) 的 ${(real/REAL25).toFixed(0)} 倍；总 token 是 200 倍。命中缓存的部分主要占内存和存储。`;
+    document.getElementById('f1').textContent=`隐含日收入 = 命中 ${fmtT(hit)} × $0.003 + 未命中 ${fmtT(miss)} × $0.15 + 输出 ${fmtT(out)} × $0.60 (每百万) ≈ $${(rev/1e6).toFixed(2)}M / 天；÷ ($38 × 24) ≈ ${Math.round(cards).toLocaleString()} 张卡 (这是"单一集群"的隐含规模，DeepSeek 没公布卡数)`;
+  }
+  btns.forEach(b=>b.addEventListener('click',()=>{o.value=b.dataset.o;h.value=b.dataset.h;btns.forEach(x=>x.setAttribute('aria-pressed',x===b));draw();}));
+  [o,h].forEach(el=>el.addEventListener('input',()=>{btns.forEach(x=>x.setAttribute('aria-pressed','false'));draw();}));
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',draw);
+  draw();
+
+  const nav=document.getElementById('tocnav');
+  const hs=[...document.querySelectorAll('.page section h2, .page section h3')];
+  hs.forEach((x,i)=>{ if(!x.id) x.id='s'+i; });
+  const S=[['Follow-up','Follow-up'],['1. 是什么','1  是什么'],['2. 机制','2  机制'],['3. 数字打折','3  数字打折'],['4. 一句话规则','4  规则'],['5. 反过来想','5  反过来想'],['6. 对谁','6  对谁'],['7. 落到核心议题','7  加项减项'],['8. 管理层','8  管理层'],['9. 最容易','9  误读'],['证据分级','证据分级'],['数据来源','来源']];
+  const short=t=>{const m=S.find(([k])=>t.startsWith(k));return m?m[1]:t;};
+  let grp=null;
+  nav.innerHTML=hs.map(x=>{ if(x.tagName==='H2') grp=x.id; const t=short(x.textContent.trim());
+    return `<a href="#${x.id}" class="${x.tagName==='H3'?'l3':'l2'}" data-id="${x.id}" data-g="${grp}" title="${t}">${t}</a>`}).join('');
+  const links=[...nav.querySelectorAll('a')];
+  function upd(){let cur=hs[0].id; for(const x of hs){ if(x.getBoundingClientRect().top<140) cur=x.id; else break;}
+    const g=links.find(a=>a.dataset.id===cur).dataset.g;
+    links.forEach(a=>{a.classList.toggle('on',a.dataset.id===cur); if(a.classList.contains('l3')) a.hidden=a.dataset.g!==g; if(a.classList.contains('l2')) a.classList.toggle('cur',a.dataset.id===g);});}
+  addEventListener('scroll',upd,{passive:true}); upd();
+})();
+</script>
+</body>
+</html>
