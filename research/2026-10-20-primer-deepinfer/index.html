@@ -108,7 +108,7 @@ figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top
 
 <h1>2026.10.20 | Primer | DeepInfer</h1>
 <p class="tags">#inference #opensource #primer #deepseek #nvda #huawei #amd #mu #sndk</p>
-<p class="meta">v1.3 · 内部 · 复查 2026.11.20</p>
+<p class="meta">v1.4 · 内部 · 复查 2026.11.20</p>
 <p class="lede">DeepInfer 是 DeepSeek 自己线上跑 V4.1 Flash 用的推理引擎，10 月 20 日以 Apache 2.0 开源，同时开源了对齐官方 API 的输入输出处理组件 deepseek-recipe。它让别人能在 NVIDIA Blackwell (SM100) 或华为昇腾 950 上，用和 DeepSeek 同一套"后厨"跑它的模型。让官方 API 又快又便宜的 KV 缓存管理和负载均衡，DeepSeek 原文说"因与内部基础设施耦合较深，目前尚未完整开源"，只在文章里公开了设计。</p>
 
 <div class="summary">
@@ -399,7 +399,7 @@ figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top
 <section class="sec">
 <h2>10. 2027E 全球 KV 缓存 SSD 需求 (按 3 天规则)</h2>
 <div class="prose">
-<p><strong>把 DeepSeek "存 3 天"的做法套到海外大模型上，结果几乎完全取决于每个 token 的 KV 有多大。</strong> 不压缩 KV 的话，算出来要 500–1,500 EB，接近或超过 2027 年全球 NAND 的全部产量，这不会发生，只能缩短保存时间。只有海外模型也像 DeepSeek 一样把 KV 压到几 KB，3 天才存得起；那时需求约 80 EB，是全年 NAND 的 6–7%。</p>
+<p><strong>把 DeepSeek "存 3 天"的做法套到海外大模型上，结果几乎完全取决于每个 token 的 KV 有多大。</strong> 不压缩 KV 的话，算出来要 500–1,500 EB，接近或超过 2027 年全球 NAND 的全部产量 (约 1,400 EB)，这不会发生，只能缩短保存时间。只有海外模型也像 DeepSeek 一样把 KV 压到几 KB，3 天才存得起；那时需求约 80 EB，是全年 NAND 的 5–6%。</p>
 <h3>算式</h3>
 <p>2027E KV 缓存 SSD (EB) = 加速器出货 × 用于推理的比例 × 每卡每秒新写入 token × 86,400 × 每 token KV 字节 × 保存天数 × 1.2 (纠删码) ÷ 0.8 (不写满)</p>
 <ul>
@@ -407,7 +407,7 @@ figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top
 <li><strong>推理比例 (默认 50%)</strong>：只有推理卡要存 KV</li>
 <li><strong>每卡每秒新写入 token (默认 4,000)</strong>：没命中缓存的输入 + 输出。DeepSeek V4.1 Flash 实测是 3.7 万，但它每次只激活 80–160 亿参数；海外旗舰模型大得多，每卡吞吐按约 1/10 取 (我的估计，最软的锚)</li>
 <li><strong>每 token KV</strong>：海外闭源模型不披露，用开源模型的结构推。Llama 3 70B 约 160 KB (FP8)，Llama 3.1 405B 约 260 KB (FP8)，Qwen3-235B 约 100 KB (FP8)，DeepSeek V3 一类的 MLA 约 35–70 KB，DeepSeek V4 Flash 约 3.5 KB，V4.1 Flash 890 字节 (技术报告)。按结构推算，未逐一核实</li>
-<li><strong>2027 年全球 NAND 位元供给 (约 1,200 EB)</strong>：我的估计，和 XL-Flash memo 里 2030 年约 2,000 EB 的假设同一口径</li>
+<li><strong>2027 年全球 NAND 位元供给 (约 1,400 EB)</strong>：SanDisk 说 2026 年闪存出货 1.2 ZB；行业位元增速 15–20% (SanDisk "mid- to high-teens"，TrendForce 说 2027 年明显快于 2026)，推得 1,380–1,440 EB。机构没直接给 2027 年绝对数。对照：SanDisk 投资者日估 2030 年持久化 KV 存储装机量超过 1 ZB</li>
 </ul>
 </div>
 <div class="presets kvp" role="group" aria-label="每 token KV 大小">
@@ -432,11 +432,11 @@ figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top
 <div class="tbl"><table class="t">
 <thead><tr><th>每 token KV (存 3 天)</th><th class="num">每卡要多少 SSD</th><th class="num">2027E 全球</th><th class="num">占全年 NAND</th><th>怎么读</th></tr></thead>
 <tbody>
-<tr><td class="k">890 字节 (DeepSeek V4.1 级)</td><td class="num">1.4 TB</td><td class="num">14 EB</td><td class="num">1%</td><td>压得最狠，存 3 天也不多</td></tr>
-<tr><td class="k">5 KB (V4 级)</td><td class="num">7.8 TB</td><td class="num">78 EB</td><td class="num">6.5%</td><td>海外模型学 DeepSeek 压 KV 后最可能的样子</td></tr>
-<tr><td class="k">35 KB (MLA + FP8)</td><td class="num">54 TB</td><td class="num">544 EB</td><td class="num">45%</td><td>经济上存不起 3 天，保存时间会缩短</td></tr>
-<tr><td class="k">100 KB (普通大模型)</td><td class="num">156 TB</td><td class="num">1,555 EB</td><td class="num">130%</td><td>超过全球产量，不可能；要塞进每卡 16 TB 只能存约 7 小时</td></tr>
-<tr><td class="k">对照：Vera Rubin 每卡 16 TB</td><td class="num">16 TB</td><td class="num">160 EB</td><td class="num">13%</td><td>如果所有推理卡都按 NVIDIA 参考设计配满</td></tr>
+<tr><td class="k">890 字节 (DeepSeek V4.1 级)</td><td class="num">1.4 TB</td><td class="num">14 EB</td><td class="num">1.0%</td><td>压得最狠，存 3 天也不多</td></tr>
+<tr><td class="k">5 KB (V4 级)</td><td class="num">7.8 TB</td><td class="num">78 EB</td><td class="num">5.6%</td><td>海外模型学 DeepSeek 压 KV 后最可能的样子</td></tr>
+<tr><td class="k">35 KB (MLA + FP8)</td><td class="num">54 TB</td><td class="num">544 EB</td><td class="num">39%</td><td>经济上存不起 3 天，保存时间会缩短</td></tr>
+<tr><td class="k">100 KB (普通大模型)</td><td class="num">156 TB</td><td class="num">1,555 EB</td><td class="num">111%</td><td>超过全球产量，不可能；要塞进每卡 16 TB 只能存约 7 小时</td></tr>
+<tr><td class="k">对照：Vera Rubin 每卡 16 TB</td><td class="num">16 TB</td><td class="num">160 EB</td><td class="num">11%</td><td>如果所有推理卡都按 NVIDIA 参考设计配满</td></tr>
 </tbody></table></div>
 <p class="note">默认参数：出货 2,000 万颗、推理 50%、每卡每秒新写入 4,000 token、存 3 天、纠删码 1.2 倍、盘写到 80%。</p>
 <div class="prose"><ul>
@@ -444,7 +444,21 @@ figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top
 <li>对 SSD 最有用的观察项是海外模型的 KV 压缩程度和缓存保存时长。现在 Anthropic、OpenAI、Google 的商用缓存大多是 5 分钟到 1 小时，个别提供更长的选项 (训练知识，未在本次核实)。哪家把缓存时长拉到天级，就是这条线成立的信号</li>
 <li>保存时长和 KV 大小对需求的影响是线性相乘的：KV 压小 10 倍、保存时间拉长 10 倍，SSD 需求不变。所以 KV 压缩本身不是减项，它会把保存时间推长</li>
 </ul></div>
-<p class="one">一句话：照搬 3 天规则，海外大模型的 KV 太大，算出来的需求超过全球 NAND 产量；海外模型学 DeepSeek 把 KV 压到约 5 KB 才存得起 3 天，2027E 约 80 EB、占 NAND 6–7%，按 NVIDIA 参考设计每卡配满 16 TB 是约 160 EB。</p>
+<div class="prose">
+<h3>买存储划不划算：平均回报很高，边际回报接近盈亏平衡</h3>
+<ul>
+<li><strong>平均 (有没有缓存)</strong>：100 PiB 按 $0.5/GB 约 $0.56 亿。不存缓存的话，96% 命中的输入都要重算，预填充卡要从约 1,200 张变成约 3 万张，多花约 $14 亿 (每卡 $5 万，我的估计)。存储的回报约 25 倍，是上限：只在内存里存一小时也能接住一部分命中</li>
+<li><strong>边际 (聊天从存 3 天加到 7 天)</strong>：原文说只存 3 天左右，聊天命中率会掉 0.5–1%。多存 4 天要多约 34 TB/每对卡，约 $1.7 万；腾出的预填充算力按 $38/卡时去卖，扣掉命中后少收的钱，一年净增 $0.7–1.4 万，回本 1.25–2.5 年。NAND $1/GB 时要 2.5–5 年</li>
+<li><strong>含义</strong>：DeepSeek 的 3 天 / 7 天大致停在"再多存就不划算"的位置，是它在当前价格下的最优点，不是行业标准。NAND 涨价砍掉的是最后几天的尾巴，不是主体</li>
+</ul>
+<h3>长程 agent 为什么利好 NAND：看停顿多久</h3>
+<ul>
+<li>KV 放哪取决于下次被用到前要等多久：等几秒留显存 (HBM)，等几分钟放内存 (DRAM)，等几小时到几天只能放 SSD (NAND)</li>
+<li>loop 任务、跨天任务"跑一段、等一段"，上下文更长、回头读更多、停顿更长，三项都是 NAND 的加项。反向力量是上下文压缩 (定期总结历史) 和 KV 压缩</li>
+<li>要盯的是 agent 任务的平均停顿时长和厂商缓存的保存时长，比任务总长度更关键</li>
+</ul>
+</div>
+<p class="one">一句话：照搬 3 天规则，海外大模型的 KV 太大，算出来的需求超过全球 NAND 产量；海外模型学 DeepSeek 把 KV 压到约 5 KB 才存得起 3 天，2027E 约 80 EB、占 NAND 5–6%，按 NVIDIA 参考设计每卡配满 16 TB 是约 160 EB、占 11%。</p>
 </section>
 
 <section class="sec">
@@ -475,6 +489,7 @@ figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top
 <li><a href="https://newsletter.semianalysis.com/p/deepseekv4-16t-day-0-to-day-43-performance">SemiAnalysis：V4 第 0 到 43 天性能</a> · <a href="https://developer.nvidia.com/blog/build-with-deepseek-v4-using-nvidia-blackwell-and-gpu-accelerated-endpoints">NVIDIA 开发者博客</a></li>
 <li><a href="https://www.analyticsvidhya.com/blog/2025/03/deepseek-opensourceweek-day-6-inference-system-overview/">2025.02 DeepSeek 推理系统披露 (545%)</a> · <a href="https://getcoai.com/news/deepseek-pivots-to-sharing-ai-components-instead-of-full-inference-engine">2025.04 不开源整个引擎</a></li>
 </ul>
+<p><strong>v1.4 (2026.10.21)</strong>：2027 年 NAND 位元供给从 1,200 EB (其实是 2026 年口径) 改为约 1,400 EB (SanDisk 2026 年 1.2 ZB × 增速 15–20%)；第 10 节占比相应下调，压到 5 KB 情形从 6.5% 改为 5.6%。</p>
 <p><strong>v1.3 (2026.10.20)</strong>：新增第 10 节，按 3 天规则估 2027E 全球 KV 缓存 SSD 需求，带滑块。出货用占位数 (AI Economy model 未找到)，每 token KV 按开源模型结构给区间。结论：KV 不压缩时 3 天规则算出的需求超过全球 NAND 产量，不会发生；压到约 5 KB 时约 80 EB、占 NAND 6–7%。</p>
 <p><strong>v1.2 (2026.10.20)</strong>：第 7 节存储表加上自下而上的算法 (每卡每天新写 2.85 TB × 3–7 天 × 冗余)，每卡 SSD 从"约 43 TiB"改为"实际约 13–30 TB，47 TB 是配置上限"，并和 Vera Rubin 每卡 16TB 对比；结论从"每卡 40TB 以上"降为"同量级到 2 倍"，方向不变。</p>
 <p><strong>v1.1 (2026.10.20)</strong>：读到知乎原文。数字从"媒体转述"改为一手；第 3 节换成原文实测表，输出占比从假设的 2% 改为实测推出的 0.9%，"真正要算的 token 涨幅"从约 20 倍改为约 17 倍，卡数从按收入估算改为按吞吐反推 (约 2,400 张，和 $38 对得上)；第 7 节新增"存储加项有多大" (100 PiB、每卡约 43 TiB)；没开源的部分补上官方理由；模型结构从"我的推断"改为原文确认。核心判断不变。</p>
@@ -521,7 +536,7 @@ figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top
   draw();
 
   // 2027E KV SSD demand
-  const NAND=1200, VR=16;
+  const NAND=1400, VR=16;
   let KV=5000;
   const kbtn=[...document.querySelectorAll('.presets.kvp button')];
   const kN=document.getElementById('kN'), kI=document.getElementById('kI'), kR=document.getElementById('kR'), kT=document.getElementById('kT');
