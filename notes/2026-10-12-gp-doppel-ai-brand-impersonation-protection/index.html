@@ -1,0 +1,265 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.12 | GP | Security | Doppel: AI Brand Impersonation Protection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.12 | GP | Security | Doppel: AI Brand Impersonation Protection</h1>
+<p class="orig">原标题：Doppel: Customer Discusses This AI-Powered Digital Risk Protection and Brand Impersonation Prevention Platform</p>
+<p class="tags">#security #software</p>
+<p class="meta">GuidePoint · 2026-10-12</p>
+<div class="body">
+<p>Primary:</p>
+<p>Doppel Inc.</p>
+<p>Associated:</p>
+<p>Netcraft Ltd.</p>
+<p>Bolster, Inc.</p>
+<p>BrandShield Ltd.</p>
+<p>ZeroFox Holdings, Inc.</p>
+<p>Viewpoint:</p>
+<p>Customer</p>
+<p>Moderator: Niraj Sheth (NS)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Oct 12, 2026</td><td>22 Min Read</td></tr></tbody></table></div>
+<p>Sean Geng (SG), Co-Founder - B3 Labs</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The discussion examined how a major cryptocurrency platform uses Doppel to detect phishing, impersonation, and brand abuse. Crypto customers face elevated fraud risks because self-custodied assets generally cannot be recovered after an unauthorized transfer.</p>
+<p>Doppel supplements internal security systems and specialist blockchain-security vendors. Its primary role is monitoring off-chain threats across websites, email, and social media rather than analyzing malicious smart contracts, tokens, transactions, or decentralized applications.</p>
+<p>Key Insights</p>
+<p>The expert viewed detection speed as Doppel’s strongest advantage, supported by extensive automation and an AI-oriented approach. Alerts can flow directly into automated protections, including blocking suspicious sites or presenting prominent warnings. False positives are the principal weakness. Legitimate websites and applications may be blocked, requiring manual review and creating work for operations and customer-support teams. Support was reportedly weaker on crypto-relevant messaging channels such as Telegram and WhatsApp. Doppel was characterized as moderately effective rather than comprehensive. Rapidly evolving AI-generated impersonation and previously unseen attacks prevent any provider from maintaining consistent protection. The expert considered Doppel faster than evaluated alternatives at the time, prompting additional discussion about its automation and fintech alignment. Vendor loyalty is limited. The customer may replace Doppel or use several providers if another combination offers stronger coverage. Return on investment is difficult to measure because security spending primarily protects customer trust and brand reputation rather than generating directly attributable revenue.</p>
+<p>Competitive Landscape</p>
+<p>10/13/2026 at 04:11 AM UTC</p>
+<p>Provider or category</p>
+<p>Positioning and advantages</p>
+<p>Limitations</p>
+<p>Doppel</p>
+<p>ZeroFox</p>
+<p>Netcraft</p>
+<p>BrandShield</p>
+<p>Bolster</p>
+<p>Highly automated, AI-oriented, fast detection, and experience with financial-services customers</p>
+<p>False positives, uneven channel coverage, and limited blockchain-native analysis</p>
+<p>Broader cybersecurity coverage with a more hands-on managed-service model</p>
+<p>Potentially slower and less tailored to sophisticated crypto threats</p>
+<p>Automated phishing and brand-protection capabilities with broad enterprise experience</p>
+<p>Crypto-specific effectiveness requires testing; general claims may not reflect niche performance</p>
+<p>Competes in digital brand protection and impersonation monitoring</p>
+<p>No distinct advantage was established in the discussion</p>
+<p>Included among evaluated digital-risk providers</p>
+<p>No detailed differentiation was provided</p>
+<p>Blockchain-native vendors</p>
+<p>Stronger at identifying malicious contracts, tokens, transactions, and decentralized applications</p>
+<p>Serve different threat vectors and do not replace broader phishing protection</p>
+<p>Quantitative Insights</p>
+<p>Metric</p>
+<p>Expert assessment</p>
+<p>Estimated effectiveness</p>
+<p>Approximately 60%, presented as a subjective assessment</p>
+<p>Historical labor reduction</p>
+<p>Roughly 30% in combined engineering and support effort, though the expert was uncertain about the precise metric and said it may be outdated</p>
+<p>Automation level</p>
+<p>Nearly all initial detection and blocking are automated; human involvement mainly addresses disputed false positives</p>
+<p>False-positive rate</p>
+<p>No estimate was available, although the operational burden was described as meaningful</p>
+<p>NS: Good morning, this is Niraj Sheth, Senior Analyst here at Guidepoint Insights. Welcome to our call on Doppel. Our advisor for today's call is Sean Geng, who is the Senior Engineer at Coinbase Global. Sean, thank you for joining us today. It's a pleasure to have you on our call. Could you please start off by providing us with a brief summary of your professional background?</p>
+<p>SG: Yeah, absolutely. Been an entrepreneur most of my life. I got into the work with Coinbase when I had a venture in the Solana space that was acquired by them. And so I came as a part of an acquihire and was brought on to lead engineering for a number of different teams. But essentially, I was the dude that they would bring in to do 0 to 1 initiatives because of my startup background and so I worked a lot with some of the Coinbase Ventures teams and then also did a tour of duty with Coinbase Wallet as well as the Coinbase Retail which is like the primary retail app.</p>
+<p>10/13/2026 at 04:11 AM UTC</p>
+<p>NS: Great. Thank you so much, Sean, for the introduction and congrats on the great career. Let's just start with Doppel. So help us understand what were the main challenges that led you to the adoption of Doppel and what were the problems you were trying to resolve?</p>
+<p>SG: Yeah, so. In the crypto space, one of the challenges, especially on the dApp side, which is the self-custodial wallet, it's ripe with scams. People, especially in the context of, hey, there's money on-chain or online in a way that is not gated by the traditional rails of finance. That is to say, with credit cards or ACH, you can just kind of dispute it with your bank. In crypto it's self-custodial so if you lose your funds, there's really not much anyone can do for you. And so, the challenge that Coinbase always faces is that there's a lot of scammers out there who are preying upon their customers. And so those customers are divided into 2 segments. There's people on the retail app, which are customers who are using the Coinbase custodial. These are accounts that are held by Coinbase where the wallet itself is managed through the Coinbase infrastructure and you can think of this closer to the exchange product or a little bit closer to like a bank, right, where there's some more mitigations in place for protecting those assets. And then there's also customers on the Coinbase Wallet side. So these are customers who, you can create a Coinbase Wallet account without having to go through KYC or formally establish an account and so it's really a self-custodial product, which is to say, their competitors here are like Phantom and MetaMask but a user can create an account and load money on that account and then just use it. And so, that presents a different set of challenges, primarily that you can't offer this level of protection. And so, all of that to say, a lot of opportunities to be scammed. And so Coinbase is always utilizing tools like Doppel to protect its customers against a mouse and cat game of infinity... scammers always trying to come up with new ways to extract money from these accounts, which are, by the structure of them, kind of like ripe targets in a way.</p>
+<p>NS: So if we talk about previously prior to Doppel, what tools, or was it manual, or you were using some other solution to tackle these problems?</p>
+<p>SG: Yeah, so on the trust and safety team, which is the team that actually manages this, there's also, of course, the customer support team, customer service team that works with trust and safety to implement the tooling here. There has been, in the years that I've been at Coinbase, a number of different attempts to fight this. There is no perfect solution. I'll say that up front. And even Doppel is imperfect for many reasons. But they've tried many different things. There's been in-house, internal tools. Those always exist and usually are supplemented by third-party vendors. But we have vendors who cover specifically the blockchain side, which is identifying malicious contracts, smart contracts, malicious tokens, malicious vendors who specialize specifically on, hey, these on-chain assets might be malicious. Doppel, I believe, was being primarily used for phishing attempts. And so there's another vector of attack, right? Which is that people can pretend to be Coinbase support, call you, email you, basically obscure the fact that they're not actually Coinbase, and then attempt to gain access to your account, and that could be either the Coinbase Wallet or the Coinbase Retail app account. So that was the context of which Doppel's use is less on the on-chain side and more on phishing mitigation, brand protection and monitoring for these kind of issues where there's impersonation.</p>
+<p>NS: So let's get into that detail. So explain us what are the main use cases of Doppel and are you using and so what are the different products and solutions which you have adopted from Doppel and can you explain us the use cases of each of the products and solution?</p>
+<p>SG: Yeah, and again, I'm on the engineering side. So I can't get into the details of exactly how the operations team will use the tool, but from our side, what I understand is that there's monitoring solutions in place. So, it's largely proactive, which is, hey, we detect that somebody is impersonating Coinbase and reaching out to customers and they're making an attempt to essentially do some form of a phishing attack or some way to gain access to the customer's account. And so there, I believe is an alerting tool that was wired into the platform. There's internal tools, of course, that I'm talking about here, which the teams actually use is the primary interface, but are supported by vendors like Doppel and other third parties for these alerts, basically, instances that the teams would have to deal</p>
+<p>10/13/2026 at 04:11 AM UTC</p>
+<p>with. And so there is some kind of manual process, but due to the volume of these, automation is kind of the only way to tackle this. And so they leaned on vendors like Doppel to basically deal with this kind of thing.</p>
+<p>NS: So, according to you, can you define, how would you define what are the strengths and weaknesses of Doppel?</p>
+<p>SG: Yeah, I would say the strengths is speed. So their solution, I believe, is rather AI-driven at this point, and so they're usually pretty quick on dealing with these. This is one of the things you cannot manually review. You can't catch this in real time. There's really no way to do this other than to use some level of automation, so speed was probably one of them. And on the weakness side, you get a lot of false positives, and so that was largely the trade-off you make. Which is, you have this platform, which would flag a lot of incidents, a lot of issues, and then you would have complaints. You would have complaints that the operations team would have to deal with because in many cases, some of the flags were false positives. And so, it becomes this kind of, it's better to overcorrect in one way. Try to err on the side of caution, but then you end up creating work for the teams in terms of cleaning up and then basically going back and forth with Doppel and other third parties to say, hey, can we double click on this event? Why did you flag this site or this attacker as malicious? In some cases there were false positives and that would lead to frustrations with the vendors themselves, which could in some cases be totally legitimate people. That sometimes Coinbase had ongoing relationships with and then they're like, oh, how come my new app is being flagged or how come my new site is being flagged and it's not being blocked? And so I would say that was definitely a frustration point.</p>
+<p>NS: So, can you give us some numbers in terms of what is a measurable reduction have you seen after adopting Doppel in terms of detecting phishing or any other data points in terms of the turnaround time or anything? If you can.</p>
+<p>SG: I don't think I can give you specific numbers because I have an NDA with Coinbase.</p>
+<p>NS: Not SG: generally.</p>
+<p>NS: Specific, but any general numbers? For the reasonable range, if you can help us with, that would be helpful.</p>
+<p>SG: To be honest on this, I don't know off of the top of my head what the latest numbers are.</p>
+<p>NS: But any rough percentage, even if it is older, it is fine. But any rough percentage, what have you seen in terms of what is a measurable reduction which you have seen in terms of the?</p>
+<p>SG: Yeah, I believe I saw, so internally in Coinbase, we do engineering review that is kind of a promotion process. And so I've seen other engineering managers who have utilized Doppel... speak to it in terms of the adoption things. I believe I saw a number out there that was like, there was some 30%, I think was the rate. And this is probably an old number, reduction in, I think it was time or something. Like, hey, this is reduced engineering plus support hours efforts. And so they were quantifying it in terms of, hey, this is reducing labor, in the sense of people had to spend less time doing this.</p>
+<p>NS: And also, if you think about Doppel, which type of threats or attacks Doppel is able to handle effectively and where it is still lacking? Can you give us an idea of that?</p>
+<p>SG: Yeah. I took a look at the latest Doppel site. It looks like, more recently, they've expanded into AI, more an AI approach and more of a social engineering approach. But on the Coinbase side specifically, they were largely concerned with brand protection as well as phishing. And so, they're looking for vendors like Doppel to essentially monitor different channels. In the crypto world, those channels are largely like Twitter/X, Instagram, TikTok, the main social media channels. And of course, for the retail customers, they have people who would impersonate Coinbase</p>
+<p>10/13/2026 at 04:11 AM UTC</p>
+<p>via email and those kind of threat vectors. I will say 1 other weakness that I recall is that the channel support was uneven. So this is maybe something that's more specific to Doppel, but in crypto, primarily the community utilizes different channels. So Telegram is a very popular 1, WhatsApp is a very popular 1. I don't believe at the time that Doppel had great support on those channels and so that was 1 of the gaps.</p>
+<p>NS: Also, is that the case, do you think where... Are there any threats where Doppel is more effective compared to the other security tools which are there in the market?</p>
+<p>SG: Yeah, I would say, again, Coinbase leans on different vendors for different types of attack vectors in a sense. So sometimes they'll have multiple vendors who cover kind of the same thing. But Doppel, I would say is less crypto- native. And so what I mean by that is they cover kind of more of a traditional sense of phishing and brand like malicious. Somebody's pretending to be the Coinbase side or somebody's pretending to be Coinbase support. Those attacks can come from your standard channels. And so that was one thing they would lean on Doppel for, but not others, versus like say these other providers who would specialize more in the crypto side and flag like at the transaction level or at the smart contract level or like specific dApps, dApps are decentralized applications that run on the blockchain. And so those are gaps that I don't think Doppel covered.</p>
+<p>NS: And if you think, how effective is Doppel at detecting sophisticated impersonation campaigns or AI-generated content or deepfakes... was Doppel able to capture?</p>
+<p>SG: You know, it's a tough question because this is always a game of cat and mouse in the AI industry; it is just changing. It's developing very fast. So what I'll say is with any kind of cybersecurity instrument like this, you can be effective one day and ineffective the next, which is always the challenge, because you get good at blocking one type of thing and then immediately your counterparty, these attackers are, of course, incentivized to circumvent and so they develop new techniques. I think in today's world, doing deepfakes has gotten even better, even more effective and harder and harder to detect as there are very sophisticated teams out there who are working on both on the black hat side, which is if you're an attacker and you're basically brewing these type of instruments, but also on the white hat side, which is like people who are just building AI models that just happen to be good at representing humans well. And then those completely benign tools are being utilized or hijacked in some format by attackers to use them for more nefarious purposes. I would say the effectiveness of this is not something that is consistent, which is, hey, generally it might be good, but it's definitely not foolproof because day over day, new threats happen, and there's nothing that Doppel or anyone else can do to stay ahead of the zero-day attacks or some more sophisticated attack vectors. You know, overall, I would say is moderately effective.</p>
+<p>NS: So if you have to rate on a percentage of 100, how would you rate how much effective it is? 50% to 60% or more than that? How would you rate?</p>
+<p>SG: We'll call it 60%.</p>
+<p>NS: Also. If you think about how much of a threat investigation or takedown process is fully automated by Doppel and where is the human intervention still required?</p>
+<p>SG: Yeah, so most threat intervention is automated at Coinbase. And again, multiple vendors feed into that. So on the Coinbase Wallet side, for example, there is an ongoing shared block list, if you will. So if you try to access a certain site or application, it could just be blocked if it's on the block list, or you get this big warning screen. I'm sure you might have seen it on Google Chrome if you're not familiar with a Coinbase Wallet specifically, which is, you're about... this is what we've detected, this is a malicious site or this is a malicious dApp. And a big warning. And then you have to select a couple of checkboxes in order to bypass that. And so that process is largely automated. There are also automations on the Coinbase retail side. I will give you 1 example: if you are on the phone, you have the app on your</p>
+<p>10/13/2026 at 04:11 AM UTC</p>
+<p>phone and somebody calls you, that phone call... if Coinbase detects that you are on the phone at the same time you are viewing the app, you get this big warning that is like, "Coinbase, we are not calling you right now." So there are things like that that Coinbase does to mitigate these types of threats or to reduce, and those are all automations. But the challenge is that when you block these sites in the first example, you overcorrect. So there are many times where the frustration on the operations team, or what Coinbase support would have to deal with, is non-malicious sites or false positives being flagged and automatically blocked by the automation that then has to go through a manual process to essentially arbitrate. The team who builds this web app or something has to reach out, and then there has to be a process within Coinbase to basically review these cases one by one, because instead of reviewing whether something is a threat, you are basically reviewing whether something needs to be unmarked as a threat which was caught by the automation so.</p>
+<p>NS: But if we talk particularly about Doppel, what percentage of the task is fully automated by Doppel and how much human intervention is still required?</p>
+<p>SG: What I'm saying is the Doppel solution is fully automated, as in, when they detect a phishing event... that usually gets piped directly into, in this case, a Coinbase Wallet, the site is automatically blocked. And those events, like I said, piped from Doppel and other sources as well. So that's all automated. Where the manual step happens is then arbitration of, hey, the team who built it is, "Hey, my app is being flagged even though it's not actually malicious." And so, it's almost all automated except for the part where you have to dispute the false positives.</p>
+<p>NS: And how much is the false positive? Can you give us some numbers around that? Any rough numbers?</p>
+<p>SG: How much? Oh, that I don't know. That's definitely more of an operations question. But, you know, I can tell you that we would hear about it every now and then, and so, I have to imagine that it took a decent amount of time.</p>
+<p>NS: Also, if we talk about which all vendors did you evaluate before adopting Doppel?</p>
+<p>SG: I think they're always evaluating different vendors and some of the ways that Coinbase works here is, there's a Coinbase Ventures team. The Ventures team is one of the most active teams in the crypto space in terms of making investments into companies. They make investments, primarily in crypto companies, but the breadth of which they invest is large, so they're one of the most active investors. And the way it works in Coinbase is, if you want to get a tool adopted, if Coinbase Ventures has invested in the company, that's usually a good way to say, oh, well, we're already supporting them in some format. So it's an easier pitch than not. For other vendors, you have to go through a process. They use something called ZIP, which was a requisition, acquisition style tool where you can submit a request to say, hey, I want to evaluate this vendor or I want to utilize this vendor. And then you have to get alignment from various stakeholders, usually other product people as well as engineering people or whoever is relevant in this case. So in some cases it could be the ops team or the support team, and usually you would need to get director level support; you can't just get another engineer to say, hey, I want to do this. And so you need some leadership alignment in order to get these vendors approved. And I can say that they've evaluated... I mean, I think... many different vendors in this process, but the vendors they evaluate change all the time because the... Well, the people change, right? So if there's a new engineering manager or there's a new customer support person, a director of support or something like that, that person may be pitched by some other third party and then go through this process, and so, just to give it to you straight, that's traditionally how tools get adopted here. It's this process, or of course there's other ways. But yeah, I can't speak to what they've adopted specifically, but they've looked at, I think, many different types of competitors.</p>
+<p>NS: Understood. Earlier, I guess you mentioned that you are also aware of the other vendors like ZeroFox, Bolster, Netcraft, and BrandShield. So can you do some comparative analysis in terms of comparing all these vendors with Doppel and what are the strengths and weaknesses of each of the players?</p>
+<p>10/13/2026 at 04:11 AM UTC</p>
+<p>SG: Yeah, sure. So from my understanding, Doppel is more automated than some of the other options, and so I think that was one decision, which is the company is leaning more into AI. And so, in order to deal with threats like this, unless you're dealing with a niche-specific vendor, which none of those guys are... they're all kind of traditional cybersecurity-style vendors... the automation approach is maybe going to cast a wider net. Some of the other vendors, I'm trying to remember which one specifically, I think it was ZeroFox, you know, they're more like a managed service, if that makes sense. So there's more hands-on type of an approach, whereas with Doppel, it was largely more automation-based. That was my impression, at least.</p>
+<p>NS: For Netcraft and BrandShield, what were their strengths and weaknesses?</p>
+<p>SG: You know, I think it's hard to evaluate. It's like everybody just kind of makes these claims of... hey, we have X coverage or this kind of rate, and there's really no way for Coinbase to tell until they test it. And they're... again, they're in a niche, right? So most of the time where they're dealing with a Netcraft or a ZeroFox, these guys are all just talking very broadly and their customers range from... they're working with everybody from Meta to Microsoft and all these guys. And so, those customers are not the same as the kind of threats that Coinbase deals with, generally speaking, because the crypto actors are a little bit more sophisticated. And so I think what Coinbase was looking for was, "Hey, what level of automation slash threat detection do we feel has good coverage in our niche versus just a broader approach?" And so I think that was kind of what was discussed when they were evaluating the difference with some of these guys. So I know Netcraft, for example, and ZeroFox, they all have automations in place that kind of screen. And again, the primary use case here for Coinbase was phishing, right? So they're really just more concerned about the brand protection aspect of it and not some of the other solutions that these guys provide. But when they're evaluating phishing or brand protection, they're looking at what is the speed, you know, how quickly, let's say an attacker spins up a fake site right away, what is the time to essentially detect that this is a malicious site, and flag it? And what does the coverage look like in the crypto sector, which, again, the false positives tend to be an issue here.</p>
+<p>NS: So can we say Doppel was the fastest among the other players which you are talking about, like ZeroFox, Netcraft, BrandShield, and Bolster?</p>
+<p>SG: That was, yeah, I mean, that was my impression. I don't know if that's changed, you know, obviously everybody's building new stuff. So I think at the time it was.</p>
+<p>NS: Where do you see Doppel has a clear advantage if we talk about compared to the competing platform which we are talking about, and where do you see the competitors have a strong advantage over Doppel?</p>
+<p>SG: Yeah, so I think the impression I got when they were doing the evaluations was that Doppel was more AI-driven. So 1, they dealt with more fintech customers, so that was better aligned for Coinbase in terms of, hey, they have a slightly more niche, they're dealing with more finance type applications and that may be a better fit for us as well as the fact that they were more AI-driven and some of these other guys, like ZeroFox, I think were taking more conventional approaches and there was still this kind of managed approach in a way so that was a trade-off, right? You make when it comes to speed.</p>
+<p>NS: Also, if you think from a pricing point of view, how is Doppel's pricing structure and how competitive the pricing was compared to other players?</p>
+<p>SG: To be honest, I don't know the pricing because the enterprise agreements are negotiated by business development, and so I couldn't tell you what we were offered or what we're paying for Doppel relative to the other.</p>
+<p>NS: Also, can you give us some numbers in terms of what is the ROI which Coinbase has realized post implementing Doppel, the return on investment?</p>
+<p>10/13/2026 at 04:11 AM UTC</p>
+<p>SG: Yeah, I don't know. I mean, I think that's hard to quantify, right? 1 of the things with Coinbase is the main value of why somebody would use a Coinbase versus a Kraken or a Binance or 1 of their competitors is that Coinbase is a very security-conscious brand. The brand they always drilled into you was the Coinbase brand is security. All of that is to say that the calculus of ROI is difficult because you want to make sure you're investing into your security if you're going to say that your brand is security, even if you get no direct ROI from it, in the sense of... it's not like marketing, right? Where you put $1 in and you can get $2 back, and so you could say there's a good ROI there. This is, I think, a little bit more intangible.</p>
+<p>NS: Just 1 last question. If you think from an industry point of view, how mature is the adoption of this kind of a platform like Doppel in terms of a digital risk protection platform? How mature is the industry?</p>
+<p>SG: The industry is getting more mature, but it's... I would say it's still very much an undecided race because the attack vectors continue to grow as AI continues to grow and the sophistication of attacks, especially from threat actors, has gotten far more complex, especially given the fact that the actors themselves might still be under-resourced or much smaller teams, but essentially AI has made their capabilities far more powerful. It's still very much a crapshoot, and I can tell you that Coinbase is not married to any 1 vendor. So they may be using Doppel today, but nothing would prevent them from switching to a different or multiple other providers because ultimately they just care about who is providing them the best solution.</p>
+<p>NS: Sure. Well, Sean, that was it from my side. Let's wrap it here. Thank you so much for your time and thank you so much for your thoughts on Doppel. Have a good one.</p>
+<p>SG: Okay. Yeah.</p>
+<p>NS: Thanks.</p>
+<p>SG: Thank you. Bye.</p>
+<p>NS: Bye.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>10/13/2026 at 04:11 AM UTC</p>
+</div>
+</main>
+</body></html>

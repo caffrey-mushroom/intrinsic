@@ -1,0 +1,239 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.23 | AC | Robotics | Physical AI Primer: Budgets Land, Efficiency Lags</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.23 | AC | Robotics | Physical AI Primer: Budgets Land, Efficiency Lags</h1>
+<p class="orig">原标题：物理ai初步学习：数据开始有价，预算开始落地，但替代效率尚未跨过阈值</p>
+<p class="tags">#robotics</p>
+<p class="meta">AceCamp · 2026-10-23 · article 70568387</p>
+<div class="body">
+<h2>摘要</h2>
+<p>物理AI，正处在一个更朴素的阶段：预算开始进入采购科目，数据开始具备交易价格，机器在真实场景里的成功率还没有跨过替代人工的阈值</p>
+<p>注：以下内容的数字部分，均来自个人搜集整理和行业专家调研，图表为笔者自制，可能存在不准确、不完整的情况，请自担风险</p>
+<p><b>一、核心结论</b></p>
+<p><b>行业正在发生的六件事</b></p>
+<p><b>1. 第一批规模化预算落在电网。</b>2026年4月，中国电网框架采购四足巡检机器狗5000台、人形带电作业机器人500台、双臂巡检机器人3000台，三项预算分别为15亿元、25亿元、18亿元，合计58亿元，供应商覆盖云深处、宇树、智元、优必选、傅利叶等。这是目前可查的物理AI最大单笔需求，采购标的锁定在替代巡检班组的人力成本上，AI能力本身并未进入定价。</p>
+<p><b>2. 人形出货在放量，但六成流向文娱与数据采集。</b>2026年上半年全球人形机器人出货约2.5万台，中国约1.9万台、占77.9%。应用结构上，文娱商演占33.6%、科教数采占27.0%，两者合计超过60%；导览导购约19%，智能制造13%，仓储物流仅5%。出货量增长与工业替代是两条不同的曲线。</p>
+<p><b>3. 数据从内部成本项变成可交易资产。</b>专家三给出的口径是：数据采集硬件加服务当前占人形机器人企业资本开支的20%-25%，未来1-2年升至30%-35%，3-5年后回落至约25%。同期，2025年7月至2026年7月国内15家独立数据服务商合计融资约44.7亿元；国家数据集团2026年10月正式落地雄安，政策明确推动数据采买纳入预算编制、探索词元交易。</p>
+<p><b>4. 模型路线从“生成画面”转向“预测动作”。</b>视频生成、3D/4D重建、JEPA三条路线并行，尚未收敛；但产业界对终局的判断已经比较一致——多模态输入、以动作为核心输出、用高维物理状态做辅助监督。这个形态已经在特斯拉FSD上得到验证，世界模型的评价标准正在从“像不像”转向“能不能控制”。</p>
+<p><b>5. 力觉触觉仍是架构级空白。</b>硬件端没有统一的采集标准，模型端把力觉触觉像文本一样直接拼进输入会产生副作用（英伟达与伯克利的联合研究已验证）。较可行的方向是力觉触觉token化后融入世界模型，但目前仍停留在论文阶段。专家判断5年内会产生实际收益，但具体节点无法给出。</p>
+<p><b>6. 商业模式的迁移刚刚开始：项目制是现金流，订阅是估值。</b>产业侧的判断是，大客户项目制落地最快但定制成本高、报表差、不可持续；国央企出于数据安全和国资监管，不接受数据上云、按黑箱token付费。卖方研究则已经给出“基础订阅+场景能力包订阅+项目定制”的三层模式。中控技术2026年上半年营收36.35亿元、同比下降5.10%，归母净利润1.55亿元、同比下降56.20%——估值定价的对象是订阅化预期，当期报表尚未进入定价。</p>
+<p><b>三个最重要的判断</b></p>
+<p><b>判断一：当前由预算驱动，效率驱动尚未接棒。</b>物理AI的第一批付费方是国央企，这意味着两点：一是需求会在预算周期内线性放量，不会自发爆发；二是当政绩诉求退潮，能否续单取决于能不能算清投入产出账。跟踪重点应放在复购率、扩点数量和单站巡检成本上，首单金额的参考价值有限。</p>
+<p><b>判断二：数据是确定性最高的环节，但“纯卖数据”不成立。</b>数据缺口真实存在，价格体系也已经形成；但无本体数据短期质量低、长期采集门槛低，单纯按小时卖数据会很快进入价格下行通道。真正能沉淀壁垒的是三样东西：采集网络的密度（场景准入与分布式点位）、采集设备与上游元器件（IMU、触觉传感器、3D相机）、以及把数据变成可用训练集的处理能力。</p>
+<p><b>判断三：工业AI的估值已经跑到报表前面。</b>市场用平台化逻辑给工业AI定价，产业侧看到的却是项目制、定制化和净利下滑。两者处在不同的时间尺度上，无需判定对错。2026-2027年是验证窗口：如果订阅型收入（能力包、年费、按产能抽成）不能形成可披露的规模，估值需要向项目制的现金流回归。</p>
+<p><b>二、需求侧：第一批真实预算来自电网</b></p>
+<p>物理AI讲了一年多，真正落到采购订单上的第一笔大钱，出现在电力系统，被讨论最多的汽车工厂反而排在后面。这个顺序本身就说明了问题：愿意为“前沿技术”付溢价的是预算充裕、且能把技术写进工作报告的央企；对良率和节拍极其敏感的车企，付费优先级明显靠后。</p>
+<p><b>已经发生的事</b></p>
+<p><b>中国电网的框架采购。</b>2026年4月24日，中国电网对四足巡检机器狗、人形带电作业机器人、双臂巡检机器人三类产品完成框架采购，数量分别为5000台、500台、3000台，对应预算15亿元、25亿元、18亿元。四足产品部署于变电站、输电线路及山区电网，人形产品用于配网带电作业与特高压项目，双臂产品用于变电站设备操作与故障处理。</p>
+<p><b>巡检龙头的订单节奏。</b>江行智能2026年9月新增国家电网与中国石化的巡检机器人订单，累计服务的工业场站突破1800座。专家一提供的一手信息是，该公司2025年连续完成两轮融资。</p>
+<p><b>专家给出的机制解释</b></p>
+<p>公开数据只能看到订单，看不到订单为什么这样下。专家一对付费动机的解释是最直接的一手信息：</p>
+<p>· <b>付费动机：</b>国央企的一线主管多为高学历科技背景，有前沿技术布局的政绩表达诉求，这是当前最明确的付费驱动；集中在能源、火电、电力、航空航天、军工等资金充裕的行业。</p>
+<p>· <b>需求分层：</b>智能巡检的第一代需求是“无人巡检场站”的宣传目标，已经基本满足；第二代需求是缺陷100%查漏补缺（跑冒滴漏、安全隐患），行业分歧很大，真正做深的厂商很少。客户整体评价是“还可以，但没有超乎预期”。</p>
+<p>· <b>价值锚：</b>巡检本身属于厂站的边缘业务，价值落地的决策链条过长，很难直接关联到后端业务优化。机器人替代人力的账可以算清，但缺乏规模化翻倍增长的想象力。</p>
+<p>· <b>民企侧：</b>民用领域只有北方华创等半导体设备厂商有明确的相关研发合作需求；大量民企产线自动化改造水平偏低，甚至没有把三轴机床升级为四轴、五轴的意愿，对物理AI付费意愿极低。</p>
+<p><b>为什么这是一次状态迁移</b></p>
+<p>把订单和机制放在一起看，真正的变化发生在采购主体和预算科目上：过去是科技部门出钱做示范项目，单笔几十台；现在是生产部门把机器人写进年度采购预算，单笔上千台。这意味着需求从“项目验证”进入了“资产采购”，节奏由预算周期决定，技术突破的影响退居其次。</p>
+<p>但它同时是一次有天花板的迁移。采购标的锁定在替代班组的人力成本上，AI能力本身并未单独计价。按电网的账本，一台巡检机器狗的价值等于节省几个人工、以及把高危作业转为无人作业的风险折价。这个账算得清，也意味着单价会被压得很实——这也是为什么专家一说“行业内机器人替代人力的账虽可算清，但缺乏规模化翻倍增长的想象力”。</p>
+<p><b>与市场认知的差异</b></p>
+<p>卖方对物理AI的定价逻辑要激进得多。2026年10月的多份行业报告把物理AI定义为“编码之后需求空间最大的应用场景”，黄仁勋给出的口径是超过50万亿美元的产业机会；工业AI被描述为可复制、可订阅、可从一次性硬件销售转向全生命周期收入，估值逻辑从制造估值切向平台估值。</p>
+<p>产业侧的表述恰好相反：项目制、定制化、决策链长、报表表现差、可持续性不足。这更像两个时间尺度上的表述——卖方在给终局定价，产业侧在描述当下。对投资判断的含义是：需求的真实性已经不需要争论，需要争论的是兑现的速度和毛利率。</p>
+<p><b>三、供给侧：出货量已经上量，“会干活”的比例仍然很低</b></p>
+<p><b>2026年上半年的量级</b></p>
+<p>2026年上半年，全球人形机器人出货约2.5万台，中国约1.9万台、占77.9%；另有口径称中国份额超过85%，差异来自统计范围是否包含小尺寸与教育机型。厂商层面，智元出货约9700台（全球份额43.1%）、宇树约7000台（31.1%）、银河通用约1100台、优必选约1000台、乐聚约650台，前五家中国厂商合计占全球约86.5%。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568387_5244d8c18b4ff487.webp" alt="" loading="lazy"></p>
+<p>这组数字里有两个容易被忽略的细节。第一，厂商的“累计下线”与“实际出货”差距很大，智元累计下线2万台、上半年出货约9000台，说明产能已经跑到需求前面。第二，优必选的在手订单1.3万台与上半年全尺寸出货921台之间差了一个数量级，订单到交付之间还隔着场景适配和验收周期。</p>
+<p><b>结构比总量更重要</b></p>
+<p>决定产业阶段的关键变量，是这些机器人去了哪里。2026年上半年全球人形机器人出货的应用结构中，文娱商演占33.6%、科教数采占27.0%、导览导购约19%、智能制造13%、仓储物流5%。也就是说，超过六成的出货服务于“表演”和“采数据”，真正进入生产环节的不到两成。</p>
+<p>这与专家三的判断需要做一次调和。专家三认为工业制造是人形机器人商业化的“最大爆发点”，理由是供应链成熟、订单量大、用工缺口大、高危岗位替代需求强；他所在的企业已与宁德时代、西门子合作，优必选也与汽车厂商合作。这个判断和13%的占比并不矛盾，因为两者统计的对象不同：按台数，工业占比只有13%；按订单金额，工业单笔价值远高于商演和科教采购（此为推断，公开数据只披露了台数结构，未披露分场景金额）。工业在订单金额上占据主导，在台数上占比有限。</p>
+<p>这也解释了一个现象：出货量高增的2026年，本体厂商的盈利并未同步改善。低价小尺寸机型撑起了文娱与数采需求，这部分订单单价低、复购主要由预算驱动，与生产效益的关联度低；而高价值的工业订单需要逐场景适配，交付周期长。</p>
+<p><b>真正的门槛在成功率</b></p>
+<p>公开的专家交流给出了一个可以量化的门槛：在物体固定的受控环境下，人形机器人的演示成功率可达80%-90%；一旦更换物体或光线变化，成功率降到40%-50%甚至更低；要在完全开放、无需专门调教的任意场景下稳定达到70%-80%，业内普遍认为要到2030年以后。</p>
+<p>对照专家二和专家三的说法，这个门槛的成因是清楚的：全球高质量真机交互数据目前只有几十万小时量级，而通用开放世界场景需要千万小时级、且要覆盖不同物体、光照、扰动、失败案例和带力反馈的关节状态；纯仿真数据存在迁移鸿沟。数据不够，成功率就上不去；成功率上不去，工业客户就不会把产线交给机器人。</p>
+<p>所以2026年的产业状态可以概括为：产能和出货已经准备好，数据和成功率还没准备好。这也是为什么厂商一边把出货指引定在万台级，一边把主要收入放在文娱、科教和导览这些容错率高的场景。</p>
+<p><b>四、数据：从成本项到资产项</b></p>
+<p><b>资本开支里的占比在抬升</b></p>
+<p>专家三给出了这条产业链上最直接的一个比例：在人形机器人企业从研发到量产的完整流程中，数据采集硬件加数据服务的投入，当前占整体资本开支的20%-25%；由于行业数据缺口极大、且国家层面在推动，未来1-2年这一比例会升到30%-35%；3-5年后随着模型具备一定自主迭代能力，回落到约25%。</p>
+<p>这条“先升后降”的曲线，比任何单点数字都更有信息量。它说明两件事：一是未来两年数据服务商面对的是一个扩张市场，尚未进入存量博弈；二是这个扩张有明确的时间窗口，2028年之后，随着模型自主迭代能力提升和本体成本下降，数据在成本结构中的相对重要性会回落。对数据服务公司的估值，不能简单用永续成长来推。</p>
+<p><b>价格体系已经形成</b></p>
+<p>三个专家口径与公开信息在价格上高度一致，只有小幅出入：真机遥操作数据500-1100元/小时，UMI等手持采集数据300-400元/小时，EGO第一视角数据约100元/小时（专家口径将EGO与UMI合并为200-400元/小时），仿真合成数据单条约0.2-0.3元。</p>
+<p>价格差异背后是数据质量的梯度：真机数据与本体100%对齐，可直接用于微调和落地；UMI带触觉与力觉，适合精细抓取；EGO成本最低、可大规模采集，但人体动作映射到真机存在物理偏差，主要用于预训练；仿真数据成本几乎可以忽略，但物理真实感最差。这个梯度决定了各类数据在训练流程中的位置，也决定了它们的价格弹性完全不同。</p>
+<p><b>供给端在快速扩张</b></p>
+<p>· <b>融资：</b>2025年7月至2026年7月，国内15家不做本体、也不训练模型的独立数据服务商合计融资约44.7亿元。</p>
+<p>· <b>产能：</b>光轮智能2026年3月完成10亿元融资，其EgoSuite在7个国家、500多个环境并行采集，覆盖1万多项任务，产能超过2万小时/周。</p>
+<p>· <b>大厂入场：</b>智元2026年4月将数据业务拆分成立觅蜂科技；京东宣布动员最多60万人佩戴设备众包采集，目标两年积累1000万小时真实场景视频。</p>
+<p>· <b>政策：</b>国家数据集团2026年10月落地雄安，《实施方案》推动数据采买纳入预算编制、商业模式从基础数据包销售向API调用、模型化解决方案和全栈服务跃升，并探索词元交易。</p>
+<p><b>但“卖数据”难以独立成生意</b></p>
+<p>与融资热度相反的一组证据：2026年9月，一家机器人数据公司关停，创始人的复盘结论是“卖数据撑不起一家独立公司”。专家二的判断与之呼应——无本体数据采集设备仍不成熟，动作控制精度不足、力觉触觉硬件标准不统一，当前采集的数据长期看都是低质量数据，后续价值会持续降低、售价越来越廉价；而单纯众包采集的门槛极低，难以构建长期商业壁垒。</p>
+<p>这两条信息放在一起，指向同一个结论：数据环节的价值捕获不在“小时产能”，而在三个更难复制的东西上——采集网络的密度（能不能进入工厂、门店、家庭这些真实场景）、采集设备与上游元器件（IMU、触觉传感器、3D相机，这部分毛利最高）、以及把原始数据清洗标注成可用训练集的能力。专家三也明确说，产业链中价值量最高的是上游核心元器件和高质量数据服务，整机硬件货值高但盈利性更弱。</p>
+<p>需要提示一个口径差异：专家三按“2030年全球机器人本体市场2500亿元、数据采集硬件加服务占10%-15%”测算出250-375亿元的市场空间；公开测算中，AperData类标准化数采设备2030年基准采购需求约48亿元（区间18-100亿元）。两者处在不同层面——前者是“硬件+服务”的合并口径且为全球，后者只算设备采购、且只覆盖样本内整机企业。直接对比会得出错误结论，应分别标注口径使用。</p>
+<p><b>五、技术：路线未收敛，但方向已经明确</b></p>
+<p><b>世界模型与物理AI的边界</b></p>
+<p>专家二给了一个清晰的分层：物理AI是宽口径，指需要理解现实物理规律才能有效运行的AI应用；世界模型是其中的基座模型层，负责预测未来物理状态、生成并理解世界。除此之外，物理AI还包括数据层和Infra层——数据采集与治理、千卡万卡级分布式训练、高并发推理部署。这个分层很重要，因为市场讨论经常把“世界模型的能力”直接等同于“物理AI的落地”，实际上后者还受制于数据和工程。</p>
+<p>世界模型与主流VLM的差异，专家二讲得比公开材料更具体：VLM以语言能力为核心，输入图像和文本，在具身场景中承担任务理解与规划；世界模型建立在语言模型之上，但额外搭载重量级Transformer输出未来物理状态，训练方式以扩散模型为主，监督维度从一维文本升到视频、3D甚至4D，因此对数据量和算力的要求高出一个量级。</p>
+<p><b>三条路线，一个终局</b></p>
+<p>当前世界模型有三条技术路线：以Seedance为代表的视频生成路线，面向2D内容生成，落地最快；以李飞飞World Labs为代表的3D/4D重建路线，可输出点云与3D高斯泼溅，2026年9月AMD以82亿美元收购该公司；以及杨立昆提出的JEPA路线，只预测物体的轮廓、形状、纹理等高层语义，不预测像素，因此做不了内容生成，但更适配动作预测，且能大幅降低数据与算力需求。</p>
+<p>专家二对终局的判断值得单独拎出来：模型会演变为多模态输入、多模态输出，输入是用户指令、当前观测和历史信息，输出以动作为核心，同时输出2D/3D/4D物理状态作为辅助监督——高维状态预测做好了，对低维动作预测就是降维打击。这个形态在特斯拉FS D上已经验证：输出驾驶动作的同时预测未来视频、车辆框和车道线。</p>
+<p>这条判断的含义是，世界模型的评价标准会变。现在市场关注的是生成质量（画面是否逼真、镜头是否稳定），但这只是“像”；真正的分水岭是物理一致性和动作精度——专家二举的例子很直观：镜头移开再回到原位，桌上的水杯变样了，说明模型没有真正理解物理规律。2027年之前，评价体系大概率会从生成指标转向下游任务成功率与数据效率。</p>
+<p><b>力觉触觉：架构级空白</b></p>
+<p>力觉触觉的必要性没有争议：抓纸杯力度过大会捏扁，屏蔽触觉后抓豆腐会碎，视觉也分不清逼真的假花生和真花生。问题在于怎么用。硬件端，行业对“模型到底需要什么样的力觉触觉数据”没有统一答案，各家方案差异极大；模型端，英伟达与伯克利的联合研究显示，简单把力觉触觉信息像文本一样拼进输入会带来副作用，需要全新的架构。目前较直接的方向是token化后融入世界模型，但仍停留在论文阶段。</p>
+<p>专家的判断是：真正跑通要先完成硬件迭代，再大规模采集数据、验证模型，周期可能是1-2年，也可能是5-10年；但力觉触觉在世界模型中产生实际收益“不会超过5年”。这个判断的实际含义是，精细操作类场景（柔性装配、精密抓取）的规模化落地时点会被推后，而移动、巡检、搬运这类对力觉要求低的场景会先跑出来——这与第三章的出货结构是自洽的。</p>
+<p><b>大厂入局：创业公司的空间被压缩到两端</b></p>
+<p>专家二把大厂入局的影响分成两类：定位通用世界模型的创业公司会遭受直接冲击，需要和大厂拼资源、算力、数据；定位垂类场景和应用的创业公司反而受益，可以基于大厂基座做落地。这个分化在2026年10月已经能看到证据：谷歌Gemini4 Argon可直接控制人形机器人，GPT-6 Astra在具身大脑榜单居前，OpenAI的VLA模型可以文本直接转成机器人关节控制动作。</p>
+<p>对产业格局的含义是，竞争维度从“模型能力”转向“数据闭环加场景交付”。这也解释了为什么2026年数据采集赛道的融资热度高于模型层——模型能力在向大厂集中，而数据和场景是分散的、需要一个个拿下的。</p>
+<p><b>六、商业模式：项目制是现金流，订阅是估值</b></p>
+<p><b>产业侧看到的约束</b></p>
+<p>专家一对商业模式的判断相当悲观，而且给出了机制：</p>
+<p>· <b>短期最优：</b>依托熟客资源的大客户项目制落地最快，中控、科远、汇川这类有客户基础的企业可以快速做示范应用；但定制化成本高、可复制性弱、报表表现差，可持续性不足。</p>
+<p>· <b>长期障碍：</b>国央企出于国有资产监管、数据安全和避免核心业务控制权旁落的考虑，不会接受数据上传第三方云端、按黑箱规则支付token费用；倾向采购一体机本地部署、获取全部源代码和技术交付。纯软件服务模式“更多是乙方的一厢情愿”。</p>
+<p>· <b>唯一可能的例外：</b>汇川技术规划自建垂类模型工厂，把机械臂决策逻辑上云、按token计费；这条路能否跑通，取决于客户是否接受云边协同，而国央企数据敏感型客户对模型成本并不敏感。</p>
+<p>· <b>终局条件：</b>出现类似Excel的普适性产品，才有可能实现大规模可持续商业化；当前甲乙双方仍处于动态博弈。</p>
+<p><b>卖方给出的路径</b></p>
+<p>卖方研究的框架更乐观，也更结构化：底层基础订阅（通用VLA基础世界模型按月、按算力配额出售，附预训练权重、微调工具和仿真环境）、场景能力包订阅（把插件上料、螺丝锁付、物料分拣等工艺封装成技能包，客户采购硬件后按包订阅或按产能抽成，新增工序只需开通新包）、项目定制（非标高定工艺一次性收费加运维）。三层叠加，把一次性硬件销售变成全生命周期收入。</p>
+<p>两种说法看似对立，其实描述的是不同的客户结构。卖方的“能力包订阅”针对的是标准化程度较高、决策链较短的制造业客户；专家一的“订阅不可行”针对的是国央企，那里数据主权和国资监管是硬约束。调和后的判断是：最可能跑通的形态是“硬件一次性销售+本地部署的能力包年费”，公有云token计费在国央企场景难以成立，且会先从少数标准化工艺环节切入。</p>
+<p><b>中控技术是一个观察窗口</b></p>
+<p>中控技术2026年上半年营收36.35亿元、同比下降5.10%，归母净利润1.55亿元、同比下降56.20%；其TPT工业AI基座平台与UCS融合构建的自主运行工厂系统已复制到29个细分行业。国泰海通在2026年10月的报告中维持107倍2 026年PE、目标价94.99元；华创证券给的目标价是114.2元。</p>
+<p>这是一个典型的估值与报表背离：净利润腰斩，估值给到三位数PE，交易的是“工业AI从项目制转向订阅制”的预期。专家一的判断正好是这条路的最大风险点——如果收入仍然是项目制，那么毛利和现金流会持续承压；如果能力包订阅能起量，估值逻辑才成立。20 26年年报和2027年中报是两个可验证的时点。</p>
+<p>风险提示：以上内容仅为个人学习总结，不构成任何投资建议。</p>
+</div>
+</main>
+</body></html>

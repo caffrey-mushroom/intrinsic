@@ -1,0 +1,239 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.13 | AC | Robotics | Physical AI: Lidar &amp; Laser Processing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.13 | AC | Robotics | Physical AI: Lidar &amp; Laser Processing</h1>
+<p class="orig">原标题：AI的下一站是物理世界：激光雷达和激光加工，谁才是物理AI的“眼睛”与“手”？</p>
+<p class="tags">#robotics #optical #auto</p>
+<p class="meta">AceCamp · 2026-10-13 · article 70567959</p>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>“物理AI”正在成为AI叙事的主线。AI正从数字世界走向物理世界；英伟达CEO黄仁勋在2026年CES上断言，物理AI可重塑价值约50万亿美元的制造与物流产业[1][2]。</li><li>全球出货量从2026年约7.5万台增至2030年约89万台、2035年约650万台，对应约1380亿美元市场机会[3]。</li></ol>
+<p>3.激光是物理AI最核心的“感官”与“工具”双载体——感知端，机器人激光雷达出货爆发，速腾聚创2026年一季度机器人领域激光雷达销量18.55万台、同比增长1458.8%，首次超过ADAS车载业务成为第一大收入来源[5]；制造端，激光焊接、切割、打标是机器人本体量产的刚需工艺。</p>
+<ol><li>供给端格局快速变化：禾赛2025年激光雷达交付超160万台，2026年出货量有望达300万—350万台；图达通2026年前5个月出货36.5万台、同比增长约349%，机器人领域出货同比增幅达1177%[6]。</li><li>激光在物理AI中的角色可概括为“眼睛（感知）—手（制造）—印记（数据标识）”三位一体。</li></ol>
+<p>6.全球物理人工智能市场在2025年估值为8.9亿美元，预计到2032年将达到152亿美元，2026年至2032年复合年增长率为47.2%[7]</p>
+<p><b>Q1 物理AI到底是什么？为什么2026年突然成为热点？</b></p>
+<p>物理AI指能够感知、理解并作用于真实物理世界的人工智能系统，核心载体是机器人（含人形机器人）、自动驾驶与具身智能设备；它之所以在2026年爆发，是因为大模型“数字能力”外溢到物理世界的时间窗口到了。</p>
+<p>物理AI与具身智能高度重叠但外延更宽：它要求AI系统具备多模态感知（视觉、触觉、力觉）、世界模型理解（重力、摩擦、材质）与实时物理交互能力。英伟达将其视为“AI的下一站”，并在GTC/COMPUTEX 2026上推出完整软硬件生态（模拟训练、机器人基础模型、边缘算力）[1]。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567959_998c83b457b84e28.webp" alt="" loading="lazy"></p>
+<p>数据来源：Tesla&amp;国金证券-Optimus 位于费蒙市的第一代产线</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567959_9db07546c58c8e2e.webp" alt="" loading="lazy"></p>
+<p>数据来源：：OpenLoong &amp;WAIC-数据质量最高且获取成本最高的机器人真机数据极为匮乏</p>
+<p>市场空间上，物理AI市场规模将从2026年的15亿美元增至2032年的152亿美元、CAGR约47.2%[7]；预计市场从2026年约3830亿美元增至2040年的3.26万亿美元，被视为“历史上规模最大的技术市场扩张之一”；这里有个共识是：物理AI是AI产业下一个十年最大的增量叙事。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567959_4e05071da84a9287.webp" alt="" loading="lazy"></p>
+<p>数据来源：高盛-人形机器人全球出货</p>
+<p><b>Q2 人形机器人的出货预测到底有多激进？</b></p>
+<p>人形机器人正处于“从0到1放量”的拐点，但机构口径差异明显——IDC统计2026年上半年全球出货接近2.5万台、同比增长432.1%，沙利文统计同期3.6万台、收入5.4亿美元，高盛给出2035年650万台、约1380亿美元的中长期预测。</p>
+<p>目前而言：IDC统计，2026年上半年全球人形机器人出货接近2.5万台、同比涨432.1%；沙利文同期统计为3.6万台、收入5.4亿美元，半年已超2025年全年[8]。GGII产业调研数据则预计2025年全球人形机器人出货约1.88万台、2 026年突破9万台、同比增速接近380%。三家中IDC偏保守、沙利文偏乐观，但“行业在放量”判断一致。</p>
+<p>再看远期：高盛在最新全球物理AI报告中大幅上调人形机器人预测：预计全球出货量从2026年的7.5万台增至2030年约89万台、2035年达到约650万台，对应约1380亿美元市场机会，2026年基准预测从此前的5.1万台大幅上调至7.5万台，整体预测上调约4倍[3]。高盛认为物流仓储将率先规模化，电商仓库与汽车生产线是最快应用场景[3]。</p>
+<p>其实行业“账本”仍不乐观：收入份额第一的优必选2026年上半年亏损3.39亿元[8]，说明当前放量仍是“以投入换规模”，真正进入利润释放期还需2—3年。对激光产业链而言这反而是好事：量产爬坡期的设备采购是前置指标，需求会提前放量。</p>
+<p><b>Q3 激光在物理AI里的角色怎么定位？“眼睛—手—印记”怎么理解？</b></p>
+<p>激光在物理AI中承担三种角色——感知端（激光雷达，机器人的“眼睛”）、制造端（激光焊接/切割/打标，机器人的“手”与量产工具）、数据端（激光刻蚀编码、晶圆划切，物理世界的“印记”）。三种角色对应三类不同的激光产业机会。</p>
+<p>第一，眼睛：激光雷达是机器人空间感知的核心传感器。与摄像头相比，激光雷达在暗光、强光、雨雾等恶劣环境下的测距精度与鲁棒性显著占优，是机器人避障、导航、抓取的关键硬件。机器人与汽车的激光雷达TAM中，业内估计机器人领域的TAM是汽车的2倍。</p>
+<p>第二，手：机器人本体制造需要大量激光工艺——谐波减速器齿轮激光淬火、电机定子激光焊接、镁铝合金壳体激光切割、传感器模组激光打标、关节模组激光封装等。以人形机器人单台价值量拆解，激光加工相关工序占比约5%—10%，是机器人量产后确定性最高的工艺需求。</p>
+<p>第三，印记：激光刻蚀/编码用于机器人核心部件的身份标识与溯源，激光划切用于MEMS传感器、芯片的晶圆级加工。这一层价值量小但技术壁垒高，是国产超快激光（皮秒/飞秒）切入机器人产业链的入口。</p>
+<p><b>Q4 机器人激光雷达的出货到底有多猛？头部厂商数据如何？</b></p>
+<p>机器人激光雷达是2026年激光产业链增速最快的细分——速腾聚创Q1机器人雷达销量首超车载业务，禾赛、图达通机器人业务同比增速也达3位数，行业正从“汽车驱动”切换为“机器人+汽车双驱动”。</p>
+<p>速腾聚创：2026年一季度激光雷达总销量33.03万台，其中机器人领域销量18.55万台、同比暴增1458.8%，在整体销量中占比由去年同期11%跃升至56%，首次超越ADAS车载业务，成为第一大收入来源；全球机器人客户超3400家[5]。公司给出的2026年全年出货指引为：ADAS 120万—180万台，机器人80万—90万台（约三倍增长），全年收入目标25亿—30亿元。2026年7月17日至21日，上海世界人工智能大会（WAIC）期间，速腾聚创连续宣布与四家公司达成战略合作。合作方覆盖具身基础模型研发、真实世界数据采集、数据-评测-部署反馈体系及中东市场拓展[4]。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567959_064826d5ba653dc0.webp" alt="" loading="lazy"></p>
+<p>数据来源：财联社-速腾聚创WAIC会上四份合作清单</p>
+<p>禾赛科技：2025年全年激光雷达交付量超160万台，2026年出货量有望达300万—350万台；专为机器人设计的JT系列360°小型雷达2025年交付超20万台，2026年已与追觅、Mova等头部品牌签订独家供应协议，订单储备超1000万台[6]。</p>
+<p>图达通：2026年前5个月激光雷达总出货约36.5万台、同比增长约349%，其中ADAS出货约33.27万台、同比+323%，机器人等领域出货约3.23万台、同比增幅高达1177%。</p>
+<p>这三个玩家的共同信号：机器人已成为激光雷达第二增长曲线，且增速远高于车载。对激光产业而言，这意味着激光雷达本身（半导体激光器、光学元件、扫描机构）的供应链正在复制当年汽车雷达的放量路径，且节奏更快[10]。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567959_bfe8b99322a424f9.webp" alt="" loading="lazy"></p>
+<p>数据来源：证券时报、中证网-激光雷达头部厂商出货量对比（万台）</p>
+<p><b>Q5 激光雷达产业激光技术和国产化程度如何？</b></p>
+<p>激光雷达是“激光技术含量最高、国产化最彻底”的感知终端——其核心光源（EEL、VCSEL、光纤激光器）、光学元件（扫描镜、透镜、滤光片）、接收器件全部是激光/光电子技术栈，且中国厂商已实现从芯片到整机的全链条自主，属于国产激光产业的标杆赛道。</p>
+<p>激光雷达的技术内核即激光技术：机械式/半固态采用EEL（边发射激光器）或光纤激光器发射、APD/SiPM接收；固态式（Flash/OPA）采用VCSEL面阵与SPAD阵列，本质上是一套“激光发射—光束扫描—光子接收—点云处理”的完整光机电系统。国内速腾、禾赛、图达通、华为等已形成全栈自研能力，光源、探测器、扫描振镜等核心部件国产化率高[6]。</p>
+<p>产业意义有三点：其一，激光雷达是激光设备厂与元器件厂“向下游延伸”的天然跳板（振镜、光源、光学加工工艺同源）；其二，机器人雷达对小型化、低成本、高可靠性的要求，倒逼国产超快激光与微光学加工升级；其三，雷达出货放量带来的加工需求（晶圆级VCS EL加工、光学元件切割、模组封装焊接）直接利好激光设备商[10]。</p>
+<p><b>Q6 人形机器人量产的激光加工需求有多大？单台价值量怎么拆？</b></p>
+<p>人形机器人单台激光加工相关价值量约在数千元至万元级，核心集中在三大环节——精密结构件激光切割/焊接、电机与减速器激光加工、传感器模组激光封装；以2030年89万台出货预测，对应激光设备年需求约数十亿元量级。</p>
+<p>按行业公开拆解：人形机器人单台硬件成本中，电机与关节模组占比最高（约40%—50%），其定子/转子激光焊接、永磁体激光切割、壳体激光密封是激光需求最密集的环节；减速器齿轮的激光淬火与表面处理，单台贡献数百元级激光工艺价值；镁铝合金轻量化壳体激光切割+焊接约千元级；传感器（力觉、视觉、雷达）模组激光封装约数百元。</p>
+<p>汇总看，单台激光加工相关工序价值量约3000—8000元区间，对应2030年89万台出货量，激光设备年需求约30亿—70亿元[3]。相比激光雷达（单台数百至数千元、随车/机器人出货放量），本体加工是更“重”的制造环节，也是激光设备厂卡位机器人最直接的方式。</p>
+<p><b>Q7 物理AI对激光产业链的传导路径是什么？谁最先受益？</b></p>
+<p>传导路径清晰——“物理AI放量→机器人/智驾车出货→激光雷达与本体制造需求→激光设备与元器件订单”。最先受益的是激光雷达供应链，其次是机器人本体激光加工设备，最后是上游超快激光与光学元件国产替代（2027年前后集中释放）。</p>
+<p>第一层：激光雷达出货爆发已反映在速腾、禾赛、图达通的订单与收入上，配套的半导体激光器、光学元件、振镜厂已进入放量周期[5][6]。</p>
+<p>第二层：人形机器人本体量产爬坡期，激光焊接、切割、打标设备厂开始获得批量订单。以特斯拉Optimus、优必选Walker、智元等量产进度为锚，2026—2027年是本体激光设备订单确认高峰期[8]。</p>
+<p>第三层：机器人对轻量化、高精度、微型化的要求，将拉动皮秒/飞秒超快激光在精密加工（传感器、MEMS、薄壁件）中的应用——这正是国产超快激光器的强项与卡位点[10]。</p>
+<p>综合判断：物理AI不是概念炒作，而是“激光雷达已经放量、本体加工正在放量、超快激光即将放量”的确定性产业传导。跟踪指标：机器人月度产量、激光雷达厂商季度出货、机器人厂商设备招标。</p>
+<p><b>Q8 国产激光雷达与海外（Velodyne、Luminar等）的竞争格局如何？</b></p>
+<p>全球激光雷达竞争格局已由中美厂商主导，且中国厂商在出货量上全面领先——速腾、禾赛稳居全球前二，图达通在ADAS市场放量，海外老牌Velodyne基本退出车载主流市场，Luminar转向1550nm高端路线且出货量级远小于中国头部。</p>
+<p>出货数据上，2026年一季度速腾聚创机器人领域激光雷达销量18.55万台、位居全球第一[5]；2025年禾赛全年交付超160万台、居全球首位，速腾2025年91.2万台、2026年总销量预计同比增2—3倍。海外方面，Luminar主攻155 0nm光纤激光方案（面向高阶自动驾驶），年出货量级在万台级，与中国头部厂商差两个数量级；Velodyne已被Ouster并购，在车载市场边缘化。</p>
+<p>中国厂商胜出的核心是“垂直整合+规模成本”：从芯片、光学到整机全栈自主，叠加国内机器人/智驾车产业链的规模效应，单台成本降至海外竞品的几分之一。对国产激光产业而言，激光雷达是中国少有的“整机+核心部件双领先”赛道，其经验可复制到半导体激光器、光学元件等其他激光细分[6][11]。</p>
+<p><b>Q9 物理AI还有哪些激光相关的“冷门”机会？</b></p>
+<p>除雷达与本体加工外，物理AI还催生三类冷门但高壁垒的激光机会——机器人数据采集的激光标记/编码、具身智能训练场的激光定位与建模、机器人电池系统的激光焊接（延续AI液冷/锂电工艺）。</p>
+<p>第一，数据标记：物理AI训练依赖海量真实世界数据，机器人本体、传感器、执行器的激光刻蚀编码是数据溯源的基础，皮秒激光打标在高节拍产线中需求上升。第二，训练场建设：英伟达等推动的物理AI仿真与训练场（机器人操练场）需要激光雷达建图、激光定位（SLAM辅助）与视觉标定，属于激光测量与光学标定设备的增量场景[1]。第三，机器人能源系统：人形机器人电池包（高倍率、轻量化）的极耳焊接、壳体密封焊接与AI服务器液冷板焊接工艺同源，机器人电池是下一个放量应用。</p>
+<p>综合而言，这三类机会的共同特征是“单台价值量不高、但随机器人出货线性增长、且技术壁垒高”，适合作为超快激光与精密加工厂的差异化卡位点。</p>
+<p><b>Q10 怎么跟踪物理AI的激光产业机会？（给出优先级）</b></p>
+<p>跟踪优先级按确定性排序——第一，激光雷达厂商季度出货与机器人业务占比（已兑现、最确定）；第二，人形机器人本体激光设备订单（2026-2027确认高峰）；第三，超快激光在机器人精密加工的应用渗透（2027年前后释放）。具体跟踪三条线：一是上市公司披露线——速腾（已上市）、禾赛（NASDAQ）、图达通（已上市）的季度出货与机器人业务收入占比等量产数据；二是行业数据线——国家统计局工业机器人/服务机器人产量、IDC/沙利文/高盛的人形机器人出货预测[3][8]；三是设备订单线——激光设备厂在机器人行业的订单与整线交付案例。</p>
+<p>物理AI对激光产业的本质意义，是把激光从“制造工具”升级为“智能体的感官与工具”，其需求弹性远超传统制造业，现在正是布局“感知+制造”双卡位的时间窗口。</p>
+<p><b>Q11 2032年物理人工智能行业展望</b></p>
+<p>预计实体人工智能行业将在2032年前实现卓越增长，这得益于人工智能、机器人技术、边缘计算、高性能处理器和智能传感技术的快速发展。随着制造业、物流、医疗保健、汽车、农业和零售等各类组织加速数字化转型，能够与现实环境交互并做出决策的人工智能系统需求将持续增长。对自主机器人、智能工厂、数字孪生、人工智能工业设备和下一代出行解决方案的投资日益增加，预计将使物理人工智能成为工业4.0及新兴自主运营时代的基础技术[7]。生成式人工智能、多模态人工智能模型和实时感知的持续创新将进一步提升智能机器的能力。</p>
+<p>到2032年，物理人工智能预计将从专业的工业部署发展为驱动广泛商业和消费应用的主流技术。智能机器人、自主移动机器人（AMR）、类人机器人、自动驾驶车辆、人工智能驱动的医疗系统和智能基础设施将越来越依赖物理人工智能，以安全、高效且协作地与人类并肩作战。政府对人工智能创新的强力支持、日益增长的私营部门投资，以及半导体公司、机器人制造商和云服务提供商之间日益扩大的合作关系，将加速全球商业化进程。因此，实体人工智能行业预计将成为全球人工智能生态系统中增长最快的细分领域之一，改变企业自动化运营、提升生产力以及解决多个行业劳动力挑战的方式[7]。</p>
+<p><b>风险提示</b></p>
+<ol><li>人形机器人量产进度不及预期，出货节奏存在不确定性。</li><li>激光雷达行业价格竞争激烈，毛利率存在下行压力。</li><li>机器人本体激光设备需求依赖量产爬坡，订单存在节奏波动。</li></ol>
+<p>风险提示：以上内容不构成任何投资建议，请风险自担。</p>
+<p><b>参考引用</b></p>
+<p>1] 慧博投研&amp;国金证券：AI的下一站，物理AI</p>
+<p>https://www.hibor.com.cn/data/07162eefdcced82ccbea20071471be14.html</p>
+<p>2] 证券时报：万亿赛道指数“换血”！人形机器人含量再飙升，新一轮产业浪潮来了？</p>
+<p>https://www.stcn.com/article/detail/3963061.html</p>
+<p>3] 高盛官网：生成式AI或将推动全球GDP增长7%</p>
+<p>https://www.goldmansachs.com/worldwide/greater-china/insights/Generative-AI-global-GDP</p>
+<p>4] 财联社：速腾聚创WAIC四大合作</p>
+<p>https://www.cls.cn/detail/2433881</p>
+<p>5] 央广网：速腾聚创Q1机器人雷达+1458.8%</p>
+<p>http://tech.cnr.cn/techph/20260527/t20260527_527637975.shtml</p>
+<p>6] 证券时报：激光雷达拓宽物理AI应用场景</p>
+<p>https://www.stcn.com/article/detail/3771101.html</p>
+<p>7] MarketsandMarkets：2032年物理人工智能行业展望：市场规模、关键趋势及竞争格局</p>
+<p>https://www.marketsandmarkets.com/ResearchInsight/physical-ai-market-outlook.asp</p>
+<p>8] IDC官网：2026年全球人形机器人市场分析：突破、商业化与新兴格局</p>
+<p>https://my.idc.com/getdoc.jsp?containerId=CHE54229626&amp;pageType=PRINTFRIENDLY</p>
+<p>9] 中国信通院：具身智能发展报告（2025年）</p>
+<p>https://www.caict.ac.cn/kxyj/qwfb/bps/202601/t20260130\_712446.htm</p>
+<p>10] 中国信通院：车载激光雷达技术与应用研究报告</p>
+<p>https://www.caict.ac.cn/kxyj/qwfb/ztbg/202309/P020230920619753767682.pdf</p>
+<p>11] 中证网：禾赛科技CEO李一帆：从价格战到性能战 激光雷达拓宽物理AI应用场景</p>
+<p>https://www.cs.com.cn/ssgs/01/2026/04/21/detail_2026042110005326.html</p>
+</div>
+</main>
+</body></html>

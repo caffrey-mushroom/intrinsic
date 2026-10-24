@@ -1,0 +1,267 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.22 | 9K | AI Compute | Fireworks: Fast Inference Demand &amp; Trade-offs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.22 | 9K | AI Compute | Fireworks: Fast Inference Demand &amp; Trade-offs</h1>
+<p class="orig">原标题：Fireworks离职专家|快速推理需求目前约占整体市场六七成，但模型能力通过 benchmark 仍是选型前提，Kimi K3 实际速度约每秒 100 到 200 个 token；八卡节点约束主流模型回到一万亿参数量级，B300租价较5月上涨约30%推动token价格稳中有升，Fireworks目标明年3月达到22亿至23亿美元ARR</p>
+<p class="tags">#llm #ai-demand</p>
+<p class="meta">Meritco 久谦 · 2026-10-22</p>
+<div class="body">
+<h2>摘要</h2>
+<p>快速推理需求目前约占六七成，但客户仍先验证模型能力，再权衡速度、吞吐与成本。Kimi K3 约每秒 100 到 200 个 token，Cerebras 千token级方案受价格、供给和 MOE适配限制；B300租价较5月上涨约30%，token价格稳中有升。</p>
+<h2>要点</h2>
+<ol><li>客户选型首先要求模型能力通过 SWE-bench、Terminal-Bench 或定制 benchmark，再从达标模型中选择参数量最小者优化速度与成本，极少有客户预先要求每秒 500 个 token；定制 benchmark</li></ol>
+<p>成本较高，20 万美元级 deal 通常不值得投入 3 到 5 人耗时一个多月构建</p>
+<ol><li>目前快速推理需求可能占整体市场六七成，核心判断标准是用户是否直接与 AI 互动；coding、cowork 和实时文档 agent 重视低延迟，而检索、索引及长程后台任务更适合以慢模式换取更高吞吐和更低成本</li><li>实际推理速度高度依赖模型与场景，Kimi K3 约为每秒 100 到 200 个 token，智谱 5.2、5.3 极限约每秒 400 到 480 个 token，较小的千问模型最快接近每秒 700 个 token；垂直场景可通过提高</li></ol>
+<p>KV cache 和推测解码命中率进一步提速</p>
+<ol><li>Cerebras、Groq 的千token级高速体验存在价值，但市场受价格、供应量和量产能力约束；若 Codex 使用 Cerebras，速度可能超过每秒 1,000 个 token、价格或达每月 2,000 美元，而 SRAM</li></ol>
+<p>寻址也使其更适合参数量较小的 Dense 模型，超大 MOE 模型需要软硬件 co-design</p>
+<ol><li>主流 frontier 模型因推理成本重新回到约一万亿参数量级，Kimi 3.1 可能缩至约 1.4 万亿到 1.6 万亿；若 Vera Rubin 未在明年大规模铺开，八张 B300 或 GB300 合计不到 2TB</li></ol>
+<p>的主流节点将使模型很难超过两万亿参数，若大规模铺开则更普适的最大模型可能达到五万亿参数</p>
+<ol><li>推理成本下降约三分之二来自硬件迭代、三分之一来自推理优化，但B300租价已由5月底、6月初每卡每小时3.6到3.8美元升至通常5美元以上，较5月上涨约30%，推动token价格稳中有升；Fireworks当前run</li></ol>
+<p>rate约15亿美元，目标在明年3月达到22亿至23亿美元ARR</p>
+<h2>Q:我们主要想研究快速推理服务市场，并对需求进行分类。随着模型不断演进，一些参数量较小的模型速度很快，但这种速度是否有实际意义；参数量特别大的模型又难以达到很高速度。如果从 tokens per second per user 和大模型参数量两个维度分析，各类 AI 应用场景应如何划分？不同场景分别适合多快的速度和多大的模型参数量？</h2>
+<p>A:首先要暂时忽略“快速”这一概念，因为现阶段快速并不适用于所有客户。许多 C 端付费产品的用户追求的并不是速度，而是单纯降低成本。做推理时，kernel 的优化方式可能相同，但在为客户部署时，优化后 kernel的部署方式有很多种。例如，cowork 或 coding agent 的用户无疑会追求最快速度；但定制客服，或者类似 Harvey 的大文本搜索、反向推荐场景，对推理速度本身未必特别敏感，更看重能否尽可能增大吞吐，从而显著降低单个token 的成本，速度慢一些也可以接受。不同用户、不同场景的需求完全不同，不能将任何模型都一味向更快的方向优化。</p>
+<p>选择模型必须以模型能力为基础。通常是先确定模型，再考虑将其优化到多快；不存在客户要求模型必须达到每秒 500 个 token 以上，而对模型能力较弱无所谓的情况。首先要保证模型能力达到一定水平，并根据每个用户自己的 use case判断。例如，coding agent 可能参考 Terminal-Bench、SWE-bench、MMLU 等 benchmark；更专业的公司如 Harvey，甚至会建立自己的 Legal Bench，针对自身场景和常见问题构建初始任务集，在自己的环境中评估每项任务的完成水平，并建立综合评分体系。</p>
+<p>现阶段 AI Native 企业的整合水平较高，是因为它们对各个场景都有较明确的判断。现在许多系统采用 Multi-Agent 结构，一个 harness中可能包含多个模型，不同角色对应不同的模型和能力要求。较通用的方式是在顶层使用当前能力最强的模型进行任务调度；对于较简单的 use case，也可能使用能力较弱的模型调度。继续向底层拆解，例如需要一个子 agent进行大范围代码搜索、文档搜索和文档总结，这部分未必特别强调模型的工具调用能力，但要求模型能够进行大范围文本搜索，并具备较长的上下文。确定模型后，还要评估其能力差距，这也是当前大力推动后训练的原因。快速推理主要是 2024年讨论的问题；现在通常先通过后训练使模型能力满足产品场景要求，再开始大规模部署。</p>
+<p>模型能力满足要求后，才会考虑用户的偏好:是增大吞吐，还是降低吞吐以提高 tokens per second。这里没有一个理论值能够说明达到多少就一定可以满足客户要求，更多是竞争对手之间的比较。某些模型结合 kernel、推测解码和 KV cache 的综合优化，极值可以达到每秒 460，480 个 token，但这一极值不可持续。用户的 use case 会变化，推测解码机制可能不准确，概率分布也可能发生偏移，这些因素都会导致推理速度下降。运行更大的模型时，最快可能只有每秒200 个 token 出头；较小的 70B、32B 或 33B 模型，在 B300 上采用较极限的配置，可能接近每秒 800 个token。这些极限数据可以作为营销展示，但并不意味着实际推理时必须如此配置。最终仍要实测整体成本和用户体验，在两者之间寻找平衡，并非越快越好。</p>
+<h2>Q:客户通常会基于自身哪些需求选择模型？例如，高频量化交易、实时语音客服可能对速度要求较高。客户会从哪些维度进行考虑，并最终确定使用什么模型？</h2>
+<p>A:对于偏高频交易的场景，通常一开始就不会推荐一万亿参数以上的模型，因为无论如何优化，都难以达到很高速度。仍然要先评估客户对速度的容忍度。如果客户更重视智能水平，对速度要求相对较低，可以尝试约四千亿参数以内的模型，或者 MiniMax一类模型。当然，选择这类模型也意味着其承担的通常不是写代码等复杂任务，而是捕捉几个简单信号并做出简单判断。</p>
+<p>这类场景对客户现有业务流程能够提供的数据集要求较高，因为数据集决定了后续通过 SFT 或 RL 能将模型能力提升到什么水平。如果模型被限制在三千亿参数以下，其能力相较一万亿参数以上的模型必然更弱，因此必须结合具体scope。通常可将推荐模型分为三个档次:最难的 coding 或 cowork 场景，可选择的模型并不多；中间档包括千问 Max、Plus、MiniMax，以及 Flash一类模型，适合执行对速度敏感但较轻量的任务；更便宜的一档，例如单纯回复邮件，可以使用千问 30B，甚至 9B。如果后训练效果较好，用于回复客服邮件和进行简单工具调用也没有太大问题。</p>
+<p>初步分类大致如此，但仍需具体分析每个用户的 case。例如，有客户对千问 Max 设置了一个性能门槛:在某个 benchmark，如 SWE-bench、MMLU 或 Terminal-Bench 上达到 50 分以上、60分左右即可；但同时要求 Time to First Token 必须控制在 300 毫秒以内。这时可以直接使用新一代 GPU 执行 prefill，并在生成阶段调低 batch size，以满足每秒 400 个 token以上的要求。其背后存在一系列 trade-off:token 会更贵，但客户对 latency 更敏感，因此最终配置通常是与客户协商后的结果。</p>
+<h2>Q:从 Fireworks AI 的角度看，通常会从哪些模型中进行选择并最终提供给客户使用？刚才提到了 Kimi、智谱、DeepSeek、MiniMax，除此之外还有哪些模型？</h2>
+<p>A:主要就是这些，而且模型选择会随时间变化。用户对模型本身基本没有忠诚度。例如，如果在 2025 年讨论这一问题，全年约 80%的场景可能使用 DeepSeek V3；到8月以后，Kimi 发布K2，可能占到百分之三十几的流量，但仍有相当一部分流量保留在原有模型上。企业级用户的特点之一是模型更新相对滞后，不会仅因媒体报道某厂商发布了新模型就立即更换，而是会进行大量、彻底的评估，再决定某个场景是否接入新模型。</p>
+<p>目前，较进阶的 case 会使用 Kimi、智谱等模型；中间档可能使用 MiniMax、千问，智谱也可以算是性价比较高的模型；小模型则主要包括千问 9B、3B等。还有一些偏公共服务导向、与美国政府合作，或内部明确不希望使用中国模型的公司，只能尝试 NVIDIA 自有模型、Google Gemma 等美国开源模型。此前这些模型的整体能力确实不强，如果客户坚持只使用美国模型，部分订单就无法承接。随着Meta 的开源模型上线，这部分公共事业客户可能愿意切换过去。总体而言，在某一时间段内能够达到特定能力档位的模型可能只有一两个，用户试用后也没有太多选择。</p>
+<h2>Q:这些客户都是企业用户吗？企业用户通常有能力明确指定必须使用某个模型，还是更多由 Fireworks AI 帮助其评估和提供建议？</h2>
+<p>A:由服务商帮助评估和提供建议的情况会越来越多。AI Native 公司通常具备内部技术能力，但需要快速迭代产品，因而没有足够精力管理 infra、推理优化和后训练等工作。对这类公司而言，将相关工作交给专业服务商处理，可以集中精力优化自身的harness。去年的许多 coding agent 公司基本采用这种模式。</p>
+<p>随着业务规模扩大，服务对象会从 AI Native 公司逐渐扩展到传统大公司。传统大公司往往只有大致需求，需要先明确“准备使用 AI 做什么”，设定对模型及拟构建 agent 能力边界的合理预期，再拆解整个harness，判断具体需求是大文本搜索、工具调用，还是串联固定工作流，之后进一步确定使用哪些模型及其利弊。此类项目的推进难度更高、签约周期也更长，但传统大公司的项目规模通常更大。</p>
+<h2>Q:客户选择模型时会参考 SWE-bench 等 benchmark 吗？参考 benchmark 是否是必需流程？</h2>
+<p>A:现阶段参考 benchmark 是必需的，但许多 benchmark 已经不太可靠。例如，一些强化学习和工具调用常用的 benchmark，整体得分都很低，尤其是最新版的 Terminal-Bench 等；而 SWE-bench上各家的成绩又都很高。这类似于考试命题:试卷太简单，班里一半以上都是满分，就没有区分度；试卷太难，班里一半以上不及格，同样没有区分度。要对模型形成较好的梯度判断，目前最可靠的方式是直接为用户构建自己的 benchmark。</p>
+<p>构建定制 benchmark 的前置成本非常高。对于 JP Morgan、安永等大型客户，可以投入资源构建；小公司基本仍以借鉴现有 benchmark 为主。如果整个 deal 只有 20 万美元，就没有必要投入 3 到 5个人，花费一个多月专门为客户构建 benchmark。</p>
+<h2>Q:无论参考现有 benchmark，还是帮助客户构建定制 benchmark，tokens per second 在其中是如何考量的？在您接触的 use case 中，是否有某些公司或场景特别重视 tokens per second？</h2>
+<p>A:这种情况非常少，极少有客户一开始就将 tokens per second 放在首位。否则可以全部使用千问 9B，让 token 速度非常快，但这没有意义。token 的第一要务是解决业务问题，因此模型能力必须先通过客户的benchmark。通过门槛后，再从满足业务要求的模型中选择参数量最小的模型并进行极致优化，评估大约能够达到多快，以及客户是否接受。这才是业务决策流程。不会有客户先要求无论使用什么模型都达到每秒 500 个 token，再从中选择模型。</p>
+<h2>Q:如果评估 Cerebras、Groq、NVIDIA 的 Prefill-Decode分离方案，以及其他快速推理创业公司，应如何判断其潜在市场空间？从厂商角度看，tokens per second 似乎越快越好。</h2>
+<p>A:这完全是用户体验问题。在模型本身能够解决业务问题的前提下，人类对 token 速度的追求几乎没有上限。如果一款芯片的能力接近 NVIDIA GPU，却能达到每秒 1,500 个 token，也就是 Cerebras 和 Groq所做的事情，那么真正需要关注的是用户愿意花多少钱购买这种体验。过几个月或半年后，如果又出现一款声称可以达到每秒 4,000 个 token 的芯片，同样要看用户愿意为体验提升支付多少。速度本身几乎没有极限。</p>
+<p>相比之下，现在许多软件工程师发出一个 prompt 后，需要等待模型运行半小时、一小时，甚至十几个小时，因此提高速度具有很大价值。但相应的问题是，一旦引入这种服务，成本基本不可控。</p>
+<p>此前有对冲基金投资了 Cerebras，并猜测 OpenAI 将发布 Ultra Fast 版本，可能会使用 Cerebras；但最终该版本仍使用 NVIDIA 的卡，只是将 batch size调得非常低。用户体验仍然不错，速度可能从原来的每秒一百多个 token 提升到四五百个。如果使用 Cerebras，Codex 的体验可能接近每秒 1,000 个 token 以上，但价格可能达到每月 2,000 美元，而且 OpenAI还不一定能够盈利。这是当前最大的问题。任何定制芯片能否降低成本都非常关键。只要解决成本和量产问题，我不认为用户会拒绝这类芯片。</p>
+<h2>Q:OpenAI 的快速模式据说能达到每秒约 300 个 token，而且使用 NVIDIA GPU。从您的角度推断，OpenAI 为什么没有采用 Cerebras 芯片？</h2>
+<p>A:首先要看 Cerebras 能提供多少供应量。如果供应量上不去，即使服务发布，大部分客户也可能因为无法使用而抱怨。多数人可能根本负担不起，但市场却在大规模炒作，最终可能只有桥水、JP Morgan 的顶级高管等少数人能够使用。即使按每月1 万美元收费，也可能仍然不够。这样既可能使 OpenAI 在价值观上受到质疑，也会因服务量不足而需要专门团队维护集群，长期来看并不具备可扩展性。因此，目前将其单独打包为公开服务还不成熟。</p>
+<p>2025 年时，Cerebras 的 SRAM 寻址方式较为特殊；当 DeepSeek 刚发布、MOE 模型开始出现时，连续寻址会使 MOE 推理变得非常慢。它无法跳跃寻址并直接找到对应的 expert，只能按顺序寻找。例如，在 256个专家中需要访问 1，4，8 时，可能要先按 1，2，3，4 的顺序查找，再继续按顺序找到 8，导致推理效率未必很高。后来有说法称这一问题已经得到较好解决，但如果运行超大模型，我认为 Cerebras仍未必能够承载，可能需要修改模型架构，使模型适配 Cerebras 芯片。这本质上是软硬件 co-design 问题。</p>
+<p>Google 也在做类似的事情。长期来看，Google 可能不希望支持大量不同的模型架构，而是固定在 Gemini 路线上持续优化。它将硬件组和软件组合并，重新设计新架构的 Gemini和自有芯片，使芯片固定适配模型架构，同时让模型架构固定适配芯片。这样可以将理论吞吐提高到非常高的极值，但不再考虑通用兼容性。Cerebras 在某种程度上也是这一方向上的妥协。</p>
+<h2>Q:Cerebras、Groq 等路线使用 SRAM，decode 环节较快，但目前披露的高速推理模型参数量通常不大。例如，有模型达到每秒 750 个 token，Gemma 31B 可以达到每秒 3,000 多个 token。这类路线未来能否支持三万亿或五万亿参数的模型，同时达到每秒 1,000，2,000 至 3,000 个 token？</h2>
+<p>A:这仍然涉及 SRAM 寻址问题。SRAM 不像 HBM 那样灵活，部署模型时必须预先设计整个模型的各层，乃至 MOE 架构以何种拓扑形式展开。访问时，每个算子只能访问其周边的几个SRAM；一旦无法访问，就需要进行全局访问，速度会非常慢。因此，Dense 且参数量不大的模型最符合现阶段这些 ASIC 的特点。模型越稀疏，在这类 SRAM 芯片上的推理就越困难。</p>
+<h2>Q:当前前沿模型大概处于什么参数量级，通常是多少万亿参数？</h2>
+<p>A:现在的趋势可能又开始反向变化。去年几乎所有 Frontier Lab 都在将投入转向后训练；今年 Anthropic 的 4.5，4.6证明预训练仍然非常有效，因此各厂商又开始转向预训练。后训练更多用于能力校正，并不能使模型大范围学习新知识。若要大范围提升模型能力，仍要回到预训练或 mid-training阶段。今年上半年可以明显看到模型不断增大，已经很少见到一万亿参数以下的前沿模型。</p>
+<p>但从下半年看，这一趋势可能再次反转。有模型最初尝试做到十万亿参数，后来发现成本无法承受，便缩减到三万亿；另一些模型约为一万亿参数。Kimi 的三万亿级模型可能已经是当前开源和闭源模型中最大的。再下一档，DeepSeek 约为 1.6万亿参数，Kimi K2.5 约为 1.4 万亿参数，其他一些前沿模型也在一万亿参数出头。总体来看，主流 frontier 模型又回到约一万亿参数量级。三万亿级模型通常并未向所有用户开放，大部分客户实际使用较多的仍是一万亿参数量级的模型。</p>
+<h2>Q:OpenAI 等公司内部是否会有一个参数量最大的 teacher model，再从中蒸馏出不同参数量的版本，向客户开放？</h2>
+<p>A:是的，而且这也基于硬件考量。例如，OpenAI 的一个 Luna 版本正好是 700 亿参数，以 BF16 精度部署时，可以正好放入 H200，并占用约一半 HBM，剩余空间可以放置 KV cache。该模型的设计与 OpenAI拥有大量 H200、模型正好可以一卡部署一个有关。因此，这是软硬件共同考量的结果。大模型现在基本不对外销售，而是不断用大模型蒸馏出小模型，再蒸馏出更小的模型。</p>
+<h2>Q:OpenAI 对外提供、用户实际能够使用的 Astra、SOE 等模型，大概是多少万亿参数？</h2>
+<p>A:Astra 应该在 1.3 万亿到 1.4 万亿参数左右，SOE 大概在八千多亿参数。</p>
+<h2>Q:是否可以理解为，用户实际使用的模型通常仍在一万亿到两万亿，或者两万亿到三万亿参数以内？</h2>
+<p>A:是的。上半年曾经上线过一段时间的三万亿参数模型，但成本完全无法承受。用户一方面抱怨询问一个问题可能要扣除 40 美元，另一方面服务商自身也无法承担成本，因此又开始降低成本，最终不如直接将模型缩回一万亿参数左右。</p>
+<h2>Q:到明年，实际使用模型的参数量会呈现什么变化趋势？例如，Kimi 从 K2 发展到 K3，K3 可能是 2.8 万亿参数，那么 K4 或明年的模型可能达到多少参数？</h2>
+<p>A:我认为 Kimi 的模型也会缩小。至少到明年第一季度结束，模型能够做到多大，在很大程度上取决于 Vera Rubin 何时能够大规模铺开。如果这件事没有发生，大部分推理算力仍将来自 B300 和GB300，主流配置仍是单节点八张卡。一张卡约 280GB，八张卡合计不到 2TB，因此模型很难超过两万亿参数。</p>
+<p>如果强行部署 K3 这类 2.8 万亿参数模型，在 B300 上也需要量化部分中间层，尤其要将 MOE 层量化到 FP4，才能将模型装入八张卡。否则只能使用 GB300；如果不做优化，可能需要 16张卡，成本会非常高，甚至不如直接运行其他闭源模型。Kimi 目前的说法是，下一个 3.1 版本将开始缩小模型，参数量可能回到约 1.4 万亿到 1.6 万亿。</p>
+<h2>Q:为什么说主流配置是单节点八张卡？NVIDIA 很多产品以 NVL72 形式提供，后续 Rubin Ultra 可能还有 NVL576，看起来一个节点可以包含几十张甚至几百张卡。为什么实际仍按八卡节点计算？</h2>
+<p>A:目前从大部分 Neocloud 购买算力，基本都是按 node 销售，一个 node 配置八张卡。即使后端物理机柜有 72 张卡，进行虚拟化时似乎也是按八张卡划分。如果直接购买 bare metal，并从 Kubernetes 调度和infra 层自行重写，也许可以采用其他方式，只是目前规模不大。当前大多数 Neocloud 使用的仍不是 72 卡机柜，而是原有的八卡组织节点，再配置 B300 GPU。</p>
+<h2>Q:八卡节点是否主要用于推理服务，而训练业务会以更多卡组成的大集群进行销售或出租？</h2>
+<p>A:不是，这是数据中心硬件本身的配置。无论训练还是推理，进入数据中心后采用的组织方式都相同。Nebius、Together、Crusoe、CoreWeave 等基本都是这样配置的。</p>
+<h2>Q:能否大致估算快速推理服务目前占整个市场的比例，以及未来几年，例如到 2030 年可能达到多少？</h2>
+<p>A:coding 场景追求速度很自然，因为用户需要不断与计算机或手机互动，token 生成得越快，用户就能越早看到结果。Cognition、Cursor 等 coding agent 基本都采用这一模式。</p>
+<p>另一类常见的高速需求是 cowork。例如，微软 Copilot 面向付费用户，需要提供更好的体验；PPT 生成等应用也有 token 加速需求。Harvey 的任务则可以分为两类:大文档检索、索引等 background task，只要成本低即可，可以在半夜无人使用时启动大量 job，以大吞吐方式运行；但面向用户实时互动的文档处理 agent，例如分类、填表和生成关联信息等，需要实时运行，因此仍有快速推理需求。</p>
+<p>整体而言，目前快速推理需求可能占六七成。判断某个场景是否需要快速推理，主要取决于用户是否直接与 AI 互动。如果用户不直接与 AI 互动，速度快一些或慢一些通常无关紧要；既然影响不大，就会选择慢模式，因为速度越慢，成本越低。C 端agent 也是如此:当用户盯着手机提问时，需要尽快响应；但在执行预订饭店、寻找度假村等长程任务时，agent 可能在后台打开浏览器搜索三十多分钟，快模式和慢模式对用户的区别不大，而慢模式的经济性更好，因此服务商会选择慢模式。</p>
+<h2>Q:目前为客户提供的推理服务通常能达到多少 tokens per second？</h2>
+<p>A:具体速度取决于模型。Kimi K3 大约为每秒 100 到 200 个 token；智谱 5.3，5.2 的极限可能达到每秒 400 到 480 个 token，但常规提供服务时，每秒 400个左右已经基本足够。较小的千问模型最快可以接近每秒 700 个 token。</p>
+<p>除了 kernel 优化，用户的 use case 越垂直、越集中，推理速度也可以越快。如果使用同一个模型询问天文、地理、时事新闻等各种内容，会生成大量无效cache；如果只用于编写代码，主流编程语言的输出主要由英文、数字、标点、空格和回车构成，整体分布非常集中，KV cache 的命中率会更高，推测解码的命中概率也会更高，因此推理自然更快。</p>
+<h2>Q:目前提供 Kimi K3 这类大模型推理服务时，最快大约是每秒 200 个 token，对吗？</h2>
+<p>A:对。</p>
+<h2>Q:如果 Cerebras 能将 Kimi K3 的速度提升至每秒 1,000 多个 token，而领先的推理服务公司目前也没有提供这么快的服务，那么这种产品的市场在哪里？</h2>
+<p>A:坦率地说，我认为市场不大。这类芯片必须用来运行最好的模型。速度达到如此高的水平，某种程度上已经决定了其客户是最高端客户。就像一台 90 英寸、超清 8K 电视，其目标用户通常是大面积豪宅的业主，而不是居住在 40平方米出租屋中的用户。如果追求极快的推理速度和极佳的体验，最好运行的就应当是最好的模型。</p>
+<p>目前开源模型和闭源模型在能力上仍有明显差异。只有一种非常狭窄的情况可能成立:用户不希望受到 Anthropic 或 OpenAI 等闭源模型的牵制，希望掌控自己的模型，因此必须以开源模型为基座，通过大量后训练形成仅服务自身 use case的垂直模型；同时，该客户资金非常充足，对用户体验要求极高，愿意不计成本追求速度。只有在这种情况下，K3 和 Cerebras 一类方案才可能结合使用。</p>
+<h2>Q:Cognition 和 Cursor 都是 Fireworks AI 的客户吗？</h2>
+<p>A:对。</p>
+<h2>Q:在这些对速度要求最高的客户中，是否有客户向 Fireworks AI 提出每秒需要生成 1,000 多个 token 之类的诉求？</h2>
+<p>A:用户体验提升到一定程度后，下游落地的仍然是产品。产品即使暂时不盈利，至少也不能造成无法承受的亏损。一旦这类产品上线，token 单价会非常高，因此首先要找到真正需要这类产品的用户。另一种可能是大幅降低 Cerebras芯片的成本。例如，用户仍然每月支付 200 美元，却能将速度从每秒 100 个 token 提升到 1,000 个，用户一定会选择更快的方案；但如果推理速度只提高三倍，价格却提高到五倍，产品就难以承受。若每天成本达到 1万多美元，基本没有企业能够长期承担。</p>
+<h2>Q:Fireworks AI 目前提供推理服务时，使用的都是 NVIDIA 的卡吗？</h2>
+<p>A:基本上九成是 NVIDIA 的卡。目前开始陆续使用 AMD，可能不到 10%的流量运行在 AMD 上。</p>
+<h2>Q:B 系列、H200 等不同 NVIDIA GPU 在 Fireworks AI 的使用比例大概是多少？</h2>
+<p>A:目前可能一半是 B300，四分之一是 GB300。剩余四分之一中，大部分是 H200，还有极少一部分 H100 或 A100，主要用于日常运行一些小任务。</p>
+<h2>Q:目前 token 价格呈现什么趋势？是否仍处于下降趋势？</h2>
+<p>A:我认为现在可能是稳中有升。如果按季度观察，长期趋势一定是下降的。在推理成本下降的贡献中，非常主观地估算，推理优化可能只占三分之一，另外三分之二仍来自硬件迭代。相比单纯优化，更重要的是通过大规模、可靠的infra，稳定运行用户的推理需求。</p>
+<p>例如，从 H200 升级到 B200，在大部分 Neocloud 租用时，价格可能相差 50%到 60%，即 B200 的价格约为 H200 的 1.6 倍，但吞吐可以稳定提高三倍。对于企业级服务，如果用户的 token输入输出量处于一定水平以内，通常会建议将 H200 全部换成 B200，因为可以使用更少的卡运行更多 token，体验更好且成本更低。切换到新架构的卡后，速度自然会提高数倍；推理公司的工作更多是使各种算子和 kernel适配新卡。主要贡献仍然来自硬件。</p>
+<h2>Q:前沿模型的 token 价格是否也呈现类似趋势，例如 Anthropic、OpenAI 的模型？</h2>
+<p>A:过去一个月较为棘手的情况是需求仍在增长，但美国数据中心建设速度开始放缓。中期选举、美债利率较高、Neocloud融资困难，以及数据中心经常遭遇抗议，导致许多建设项目暂停或缩小规模。需求稳中增加，但当前供给不足，明年的供给也可能低于预期，因此算力价格重新上涨。</p>
+<p>例如，5月底、6月初，B300 可能还可以按每卡每小时 3.6 到 3.8 美元租到；现在通常需要 5 美元以上，有些 Neocloud 的报价达到每小时 6.4 或 6.5美元，还要求签订五年合同。整体价格较5月上涨了不少，至少可能上涨约 30%。从5月至今，硬件架构没有明显变化，吞吐也没有革命性提升，但算力成本上涨约 30%，因此 token 价格肯定没有下降，甚至可能略有上涨。</p>
+<h2>Q:如果考察每百万 token 的实际价格，而不是 GPU 租赁价格，近期是否有所下降？硬件从 H200 升级到 B200 后，性能提升很大，这是否会带动 token 价格下降？</h2>
+<p>A:硬件升级主要发生在今年3月至5月。至少从5月以后，没有发生明显的硬件升级，大部分 Neocloud 都采用 B200 加 B300 的配置，因此 token 价格没有出现较大变化。偶尔有几家公司降价，也是出于商业竞争而提前下调token 报价，实际成本基本没有变化。</p>
+<h2>Q:Fireworks AI 当前 ARR 是什么情况？第三季度以及预期第四季度分别如何？</h2>
+<p>A:目前按这个月底折算的 run rate 约为 15 亿美元。到第四季度结束，目标大概达到 22 亿至 23 亿美元 ARR。</p>
+<h2>Q:10月底的 run rate 是按整个10月综合计算，还是具体按最后一周等更短时期计算？</h2>
+<p>A:按10月综合情况计算。</p>
+<h2>Q:第四季度结束是指12月吗？届时 ARR 是否会达到 22 亿至 23 亿美元？</h2>
+<p>A:不是，该公司的第四季度截至明年3月，采用 fiscal year。</p>
+<h2>Q:整体推理服务的 tokens per second 是否会随时间逐步提高？例如，当前最前沿的开源模型 Kimi K3 可以达到每秒约 200 个 token，到明年年底，届时最前沿的开源模型是否可能达到每秒 300 个 token 或更高？</h2>
+<p>A:Vera Rubin 的性能很强，但价格也很高。</p>
+<h2>Q:去年年底，使用当时最前沿的开源模型提供推理服务，大概能达到多少 tokens per second？</h2>
+<p>A:当时使用的是 Kimi K2，参数量约为一万亿。该模型量化后在 H100 上运行，完成优化后可能也只有每秒 100 个 token 出头，而且需要 16 张卡。如果不进行优化，当时刚出现的 SGLang 或 vLLM等开源框架大约只能达到每秒 30 到 40 个 token。</p>
+<h2>Q:展望一年以后，真正用于推理服务的最佳开源模型是否仍会在一万亿到两万亿参数左右，不会比当前的 Kimi K3 显著更大？</h2>
+<p>A:不一定，关键取决于明年 Vera Rubin 的铺开规模。如果 Vera Rubin 大规模铺开，厂商会重新获得将模型做大的动力。届时，更普适的最大模型可能达到五万亿参数左右。</p>
+<p>模型厂商一直在两个极端之间反复变化:先将模型做大，观察到能力突破；随后发现算力成本无法承受，再将模型缩小；下一代硬件能够支持后，又重新将模型做大。这与游戏不断试探硬件加速边界类似。有时模型或游戏过于复杂，大部分硬件无法承载，用户抱怨后，开发者又会缩小模型或降低要求。</p>
+<h2>Q:如果到 2028 年前后，Rubin Ultra 及后续新架构陆续出现，模型是否会继续增大，达到八万亿、十万亿参数？</h2>
+<p>A:一定会有企业尝试开发十万亿参数模型，但目前没有人能够保证超大模型一定会成功。Scaling law的前提是数据和算力都充足，在这种情况下，模型可以不断增大；现实问题是，企业在每个预训练阶段可能无法获得新的数据。如果没有新数据，只增加模型参数，产生的增益可能非常小。</p>
+<p>许多公司为了获取数据，已经愿意付出很高成本。例如，专门制作 agentic tool use 数据，让 agent 查询文档、调用多个工具并完成任务，一整条工具执行链的数据成本可能接近 2,000 美元。即使是OpenAI、Google、Meta 等资金充足的公司，也很难长期承受这种成本。</p>
+<p>有价值的公开数据正在逐渐枯竭，更多高价值数据仍是私有数据。例如，医院数据、法院案件卷宗、汽车厂商内部专业数据等，基本不可能直接提供给模型公司。公开数据已经通过购买、抓取等多种方式被大量使用，后续获取数据会越来越困难。因此，模型从三万亿参数增加到五万亿参数也许仍有效果，但从五万亿参数增加到十万亿参数，可能经过几次实验后发现没有明显作用，届时厂商也会停止继续扩大模型。</p>
+<h2>Q:如果明年出现五万亿参数模型，H200、B200、B300、GB300 等旧硬件将如何消化和使用？</h2>
+<p>A:市场上始终会有大量预算有限的用户和基础 use case。例如，智能助手回复邮件等简单场景一直可以使用小模型，因此旧硬件一定会得到利用。斯坦福、CMU 的博士生完成期末作业、论文或 thesis 时，可能只有两张A100。下游用户预算有限，因此获得几张 H200 已经能够满足其需求。</p>
+<h2>Q:您如何看待 Recursive Self-Improvement，也就是 RSI？如果后续缺少优质数据，RSI 是否仍能推动模型进步，还是进步速度不会太快？</h2>
+<p>A:我个人认为，RSI 本质上是一种市场营销话术。现阶段大家追求的其实一直都是 RSI。早期 GPT-3.5 的能力较弱，训练 reward model 需要由人工打分；从 DeepSeek开始，强化学习可以采用更多打分方式，例如让强模型为弱模型打分，或者对于数学、物理等可验证任务，通过表达式或验证器自动打分。大家一直在探索模型训练 pipeline 中的哪些步骤可以由模型介入并实现自动化。</p>
+<p>目前已经有一些步骤可以由模型参与，例如数据标注。对于确定性很高、较简单的 case，可以调用 Opus、Astra 等强模型进行评分；对于不太信任模型输出的任务，仍然需要人工介入。因此，当前模型训练和数据标注流程或多或少都是由人和 AI共同完成。</p>
+<p>如果追求 RSI 的最终形态，即端到端全部由 AI 完成，AI 训练 AI 并形成自我闭环，相当于 AI 实现自我迭代，我认为距离这一阶段还非常遥远。大家可以朝这个方向努力，但我个人认为现阶段仍有些不切实际。</p>
+<h2>Q:是否可以理解为，当前一些训练步骤已经在某种程度上使用了 RSI，但端到端全部使用 RSI 仍然比较遥远？</h2>
+<p>A:是的。例如，智谱在介绍新版 GLM 的训练时，措辞也很谨慎，只表示“在某些步骤上实现了 RSI”。如果在强化学习阶段让模型为数据打标，例如训练千问时使用 K3 或 Opus 5.5 打标，也可以将这种做法称为 RSI。</p>
+<h2>Q:Anthropic 是否会使用 Cerebras 这类快速推理芯片？</h2>
+<p>A:Anthropic 目前似乎没有使用。它现在主要使用 NVIDIA GPU 和 TPU，并且还在适配其他训练芯片，应该主要就是这几类。目前似乎没有采用 Cerebras 的计划；如果有公司使用 Cerebras，更可能是 OpenAI。</p>
+<h2>Q:您对 OpenAI 使用 Cerebras 的情况有大概了解吗？</h2>
+<p>A:目前没有听说太多相关信息。OpenAI 应该没有任何公开服务在使用 Cerebras。我猜测它可能会在内部运行一些小规模任务。</p>
+<p>以上仅供交流探讨，不构成投资建议</p>
+</div>
+</main>
+</body></html>

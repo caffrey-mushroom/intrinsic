@@ -1,0 +1,284 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.20 | GP | AI Compute | Agentic Inference: Specialized vs Heterogeneous Compute</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.20 | GP | AI Compute | Agentic Inference: Specialized vs Heterogeneous Compute</h1>
+<p class="orig">原标题：AI Inference: Does Agentic AI Favor Specialized or Heterogeneous Compute? Views From Former Nvidia and SambaNova Executive</p>
+<p class="tags">#semis #asic #agents</p>
+<p class="meta">GuidePoint · 2026-10-20</p>
+<div class="body">
+<p>Primary:</p>
+<p>NVDA</p>
+<p>Associated:</p>
+<p>INTC</p>
+<p>AMD</p>
+<p>MRVL</p>
+<p>AVGO</p>
+<p>AMZN</p>
+<p>2330:TT</p>
+<p>SambaNova Systems, Inc.</p>
+<p>CBRS</p>
+<p>Viewpoint:</p>
+<p>Former Executive</p>
+<p>Moderator: Dan Kaplan (DK)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Oct 19, 2026</td><td>32 Min Read</td></tr></tbody></table></div>
+<p>Peter Buckingham (PB), Former VP of Software Engineering - SambaNova</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The discussion examined Microsoft Maia, specialized AI inference accelerators, heterogeneous computing, memory architectures, and supply constraints. The expert has held senior software roles across GPU, cloud, and AI-accelerator companies and recently worked on bringing D-Matrix’s first-generation inference chip into production.</p>
+<p>The central view was that GPUs will remain important, but latency-sensitive generative and agentic AI increasingly requires combinations of GPUs and SRAM-based accelerators. Customers consuming application-level AI services may not know or care which hardware generates their tokens, provided service quality remains consistent.</p>
+<p>Key Insights</p>
+<p>Microsoft will likely use Maia primarily for internal services and managed customer applications rather than expose it directly to most users. A universal hardware-agnostic software layer would simplify development but sacrifice performance. Microsoft is more likely to optimize software for each accelerator. AI coding tools now make architecture-specific kernel development faster, reducing a major barrier to adopting non-GPU hardware. Compute shortages and demand exceeding available capacity are accelerating heterogeneous deployments. SRAM accelerators offer compelling latency and bandwidth for decoding, but current capacity limitations make mixed GPU and SRAM systems more practical for frontier models. Speculative decoding presents relatively modest networking risk, while attention-expert disaggregation requires more communication and carries greater performance sensitivity. The expert strongly favored D-Matrix, while acknowledging prior affiliation and potential bias. The moderator pursued this view through follow-up questions on cooling, system integration, and interconnects.</p>
+<p>Competitive Landscape</p>
+<p>10/20/2026 at 05:04 AM UTC</p>
+<p>Platform</p>
+<p>Positioning and advantages</p>
+<p>Challenges</p>
+<p>Microsoft Maia</p>
+<p>Higher bandwidth than current GPUs; potentially improves Microsoft’s infrastructure efficiency</p>
+<p>HBM and foundry supply constraints; remains below SRAM bandwidth</p>
+<p>NVIDIA</p>
+<p>Dominant ecosystem, broad supply relationships, and NVLink adoption</p>
+<p>GPUs cannot match some SRAM-based latency and bandwidth characteristics</p>
+<p>D-Matrix Corsair</p>
+<p>Shipping, air-cooled, dense PCIe deployment; low-latency accelerator and GPU connectivity</p>
+<p>Must deliver denser liquid-cooled and next- generation products</p>
+<p>Groq LPU</p>
+<p>Cerebras</p>
+<p>Demonstrated strong SRAM inference performance; benefits from NVIDIA relationship</p>
+<p>Limited on-chip SRAM and uncertainty around next-generation delivery</p>
+<p>Mature, available, and commercially established</p>
+<p>High power use, lower density, and inter-system communication challenges</p>
+<p>SambaNova</p>
+<p>Specialized AI acceleration</p>
+<p>HBM dependence reduces its advantage under constrained memory supply</p>
+<p>Quantitative Insights</p>
+<p>Metric</p>
+<p>Detail</p>
+<p>Maia memory bandwidth</p>
+<p>About 18 TB/s</p>
+<p>Corsair memory bandwidth</p>
+<p>About 150 TB/s</p>
+<p>SRAM alternatives</p>
+<p>Several exceed 100 TB/s</p>
+<p>Corsair capacity</p>
+<p>2 GB SRAM per card; up to 128 GB per air-cooled rack</p>
+<p>Groq LPU3 target</p>
+<p>512 MB SRAM per chip and 128 GB per liquid-cooled rack</p>
+<p>Speculative decoding</p>
+<p>Demonstrated up to 12x improvement in the cited implementation</p>
+<p>Raptor outlook</p>
+<p>More than 10x Corsair’s capacity and over 100 TB/s bandwidth</p>
+<p>Model capacity outlook</p>
+<p>Roughly 100 billion parameters per Corsair rack; potentially over 1 trillion with next- generation air cooling and 3–5 trillion with liquid cooling</p>
+<p>NVIDIA market share</p>
+<p>More than 80%</p>
+<p>HBM availability</p>
+<p>Much of near-term supply was described as already committed</p>
+<p>10/20/2026 at 05:04 AM UTC</p>
+<p>DK: Hey everyone, my name is Dan Kaplan. Thank you for joining today's call, AI inference, GenAI, specialized or future-gen compute, a review from former NVIDIA and SambaNova executive. If you have any questions, please email me at ask@guidepoint.com and I will work your questions into the call. And it is my pleasure to introduce Peter Buckingham, who is our expert for today. He recently left the position of SVP of software at D-Matrix. Previously, he was a vice president of software engineering at SambaNova. And Peter, thank you very much for being with us today. To start, if you could please give us a few words about your background, your role at D-Matrix, SambaNova, and NVIDIA.</p>
+<p>PB: Sure, absolutely. Dan, as always, it's great to talk with you. I've been doing this for many years. I won't bore everybody with all of my background, but certainly I was at NVIDIA at the end of 2008, beginning of 2009, where I led the CUDA team for a number of years. That was really at the onset of GPU computing as a thing and I was very involved in that data center push when I was at NVIDIA. We went from $0 of data center revenue to around $200 million of data center revenue annually, which felt like a great achievement at the time, but NVIDIA has certainly gone on to grow that over time. When I left NVIDIA, I went into a number of other things, but I got back into the AI space probably around 2018-2019 when I was at Bitfusion and Bitfusion was a technology for remotely attaching to NVIDIA- based GPUs and we were acquired by VMware and we integrated Bitfusion into the VMware stack and I led AI-ML platform development at VMware for several years including the partnerships with NVIDIA, AMD, Intel, Habana and all of those folks. Then I went to SambaNova at the beginning of 2022 where I led the software team for about 2.5 years, so that was sort of prior to ChatGPT launching and it's certainly a very different world back then. I left SambaNova probably in the middle of 2024 and joined D-Matrix. D-Matrix, again, manufacturing a chip for accelerated machine learning focused on inference, and I sort of led the worldwide software team as we were bringing up the first- generation chip, getting that to production and starting to sort of go on that customer journey. And I left D-Matrix about a month ago, I'm taking some time, I'm advising a few startups in this space, but kind of exploring what I want to be doing next. Dan, that's kind of the not super short version of my background.</p>
+<p>DK: Wonderful. Thank you. Thank you very much for that. I would love to get your thoughts on Microsoft Maia. So Microsoft has said that it will become its primary inference system in 2027. What are their main challenges and opportunities with that? Does it have to make its inference software increasingly hardware agnostic and what does it mean for customers? Does it mean customers switch or does it mean that Microsoft uses it as a primary platform for internal AI workloads?</p>
+<p>PB: I think there are a couple of things to take a look at here. Some of the design choices that they've made for the Maia 100 product. They are getting more bandwidth out of the HBM than, say, if you were to compare it with a GPU, but it's still somewhat lacking compared to SRAM-based accelerators. My understanding is with Maia 100 that the memory bandwidth is around 18 terabytes a second, which is up to double what the current generation of NVIDIA GPUs can get, but it's still substantially less than what you can get with SRAM-based accelerators. If you look at Corsair from D-Matrix, Corsair has 150 terabytes per second of memory bandwidth and certainly NVIDIA has come out and said for the LPU3 that they're developing with Groq that that will be roughly the same bandwidth and there are a number of other solutions that are greater than 100 terabytes per second if you are using an SRAM-based approach. I think that Maia certainly can provide better inference capabilities compared to GPUs, but I think what we're seeing at the moment is these heterogeneous solutions with SRAM-based accelerators are critically important. My guess with Maia is that they will likely also be looking at heterogeneous-based solutions to deal with some of that memory bandwidth difference between what Maia can provide and what SRAM accelerators can provide. I know you also had a question about the software, but I just want to pause there and just see if there's any other comments or questions you have on that.</p>
+<p>DK: This is good. I would like to understand what this means in terms of their software and, frankly, PB: Right.</p>
+<p>10/20/2026 at 05:04 AM UTC</p>
+<p>DK: efficiencies that they could get with using such different architecture.</p>
+<p>PB: Yeah, so I think that's a really good question as well, right? I think that most software developers would like to be able to write their software once and have it run across a variety of different accelerators without them having to do anything to make that happen. I can totally understand that from a simplicity from the programming standpoint, but mostly when you take that approach, you end up giving up performance. I don't know for sure, but I would strongly suspect that Microsoft won't really be targeting just 1 set of inference software across all of the different accelerators. I suspect that they will be trying to optimize for each of them to maximize the performance of the inference that they are providing, right? Jensen talked a bit about this in GTC and we see this coming up. Certainly in a variety of different forums over the last 6 to 9 months, where people are talking about ultra premium inference, where that sort of bandwidth and low latency is critical and frankly, to unlock that kind of behavior, you really need to write very targeted software for the particular architectures that you're working on. Now, I think there's good news here, right? So even a year ago, I think that many of the current generation models weren't yet sophisticated enough to truly be an accelerant for development on different types of accelerators. And I think what we're seeing now is these models have come a long way where there's actually a substantial ability for teams to write these highly optimized kernels for novel accelerators relatively quickly. And so I think that's actually allowing these non-GPU accelerators to actually come up and not necessarily have parity but have performant kernels and in a much quicker fashion than what they had before. So what I would expect from a hardware architecture standpoint is that Microsoft and actually many others are going to be going with heterogeneous solutions. I think that they will be using AI to develop many of the core kernels that they need to develop, and that will likely speed up their ability to provide solutions.</p>
+<p>DK: So it seems that the leap in using heterogeneous solutions has been, it's a smaller leap now than it used to be in the past.</p>
+<p>PB: Well, I think there are a couple of drivers for this. At the moment, we live in a very capacity-constrained world. If you look at what both Anthropic and OpenAI are saying, their revenue is limited by the fact that they can't deploy enough compute to capture the market demand that is out there. They've gone in and said, if NVIDIA can't supply us as much as we need, or AMD, then let's look for other things. At the beginning of the year, there was a lot of Cerebras being purchased and used. I think we're starting to see people look at other solutions that might allow more compute to be deployed sooner. Supply constraints are certainly pushing people towards heterogeneous solutions because that allows them to deploy more compute sooner. Then there are the performance characteristics that you get by doing heterogeneous solutions as well. Most of the current generation of SRAM accelerators couldn't host a frontier- sized model in a homogeneous way. But you can certainly, whether you do a special decoding or attention expert disaggregation, find a way to get up to frontier-sized models and provide some of this high level of interactivity, low latency and much bigger throughput. There are characteristics of the service that you're providing that will allow these vendors to charge a higher premium on that, and there are also the supply constraint aspects, which allow them to deploy more compute that will potentially allow them to get more revenue as well. Does that sort of make sense, Dan?</p>
+<p>DK: Sure. Just would love to get your thoughts in terms of cost and frontier models. Is there some inefficiency involved with them getting up to that level of memory? Does it somewhat increase the lag perhaps, or also what is the timing and cost implications of having to do that?</p>
+<p>PB: Well, so there's a number of different aspects. So typically you don't see that there's a lag issue, but there's different pressure points, right? So when we talk about heterogeneous disaggregation, there are basically 3 types that people are looking at at the moment. So there's pre-fill and decode, where you do the decode largely on things like SRAM-based accelerators because that's where they shine. There's speculative decoding where you're running an entire draft model on potentially SRAM-type accelerators and the target model is running on GPUs. And then attention expert disaggregation, or AFD, where you're potentially running attention and pre-fill on GPUs, and then the decode is running on SRAM-based accelerators. So pre-fill decoding, okay, you've got some KV cache transfer and</p>
+<p>10/20/2026 at 05:04 AM UTC</p>
+<p>things like this, but mostly there's a lot of tooling out there that supports that today. There's certainly some network- related issues, but they are more minimal. In speculative decoding, you're generating a token from the draft model that you then pass into the target model and, you know, it's... So there is connectivity and the speed of that network and that response time is important, but there isn't back and forth communication between the draft and the target model, which means that there's less pressure on that network communication.</p>
+<p>DK: Got it.</p>
+<p>PB: And on attention expert, it's kind of, there's a lot of back and forth potentially between the attention and the experts and all of these things. That means that there's, depending on how interactive you want the overall model to be, that can have a huge impact. How you communicate between, say, the SRAM-based accelerators and the GPUs is critically important. And then also it has the aspect that you're not having a nice, clean, well-defined token that you're passing off. There's sort of intermediate things that have been passed in between the GPUs and the accelerators too. So there's DK: Got it.</p>
+<p>PB: a lot of value in doing attention expert disaggregation. But there's a pretty big pressure on some of the other components within the environment to make sure it will be performant.</p>
+<p>DK: So I would like to take it back a little bit to Maia and what does that mean for Microsoft? Do you think essentially the software environment would be able to handle that heterogeneity well? Is there any reason to think otherwise? And again, what does it mean for customers? Does it mean customers need to switch to Maia or is it up to Microsoft just to provide tokens and that's all the customer cares about?</p>
+<p>PB: Yeah, so I think that there are a couple of different aspects to all of that, right? So if we look at what Microsoft has been doing before, right now, admittedly a bunch of this stuff has been with GPUs or other things like that or earlier versions of Maia. They can potentially work with, like they were working with OpenAI before, to get some of the GPT models up and running on their platform, and the end user is sort of oblivious to exactly how those tokens are provided or how they respond to their queries. There's certainly a lot of internal customers at Microsoft, you know, whether it be Copilot or other things like this, and so there will be many internal users who can, you know, do the migration to Maia, and there will be a lot of incentive for them to do that. I suspect that they're not going to expose Maia directly to a set of end-users. I think it's going to be provided to either internal customers or external customers to sort of build on top of and then the general public or business customers will kind of see the interfaces on top of that. And so I think, how do they get onto there? And I think that that comes back to what we discussed just a little bit earlier, right? Where I think the sophistication of these coding models have come a long way and the getting performant kernels on different types of architecture can happen much more quickly now than they have done in the past. That being said, I mean Microsoft does have some very strong internal software teams that know how to write optimized software for accelerators too. So I think they'll have a mix of experts but also using AI to speed up the overall development of the process too.</p>
+<p>DK: Got it. How does Maia 100 compare to Blackwell? I think that they've mentioned that Microsoft mentioned that they would deliver 40% more tokens per megawatt compared to leading GPU-based systems. Is that a Blackwell comparison or is that a Rubin comparison?</p>
+<p>PB: I think it's a Blackwell comparison rather than a Rubin comparison. You DK: Got it. So PB: Know, and DK: Rubin PB: Yeah,</p>
+<p>10/20/2026 at 05:04 AM UTC</p>
+<p>DK: would still... Sorry.</p>
+<p>PB: Go ahead, Dan.</p>
+<p>DK: Okay, PB: Yeah.</p>
+<p>DK: Got it. Again, just in terms of what you have perhaps seen out there, I'm still trying to better understand if in these heterogeneous systems you actually have performance losses or have you seen those working without such performance losses?</p>
+<p>PB: There are a couple of things that I've seen personally. I think we've talked a couple of times, Dan. Previously when we discussed things, we talked about a blog post that Gimlet did with D-Matrix back in the February or March timeframe, talking about speculative decoding. I don't remember all of the details, but I think when we wrote that blog post, essentially we're saying you can get up to 12x performance improvement using speculative decoding where you have the draft model running on Corsair and the target model running on Blackwell, I forget exactly which generation of Blackwell it was, compared to running a homogeneous non-speculative decoding model on GPUs. D- Matrix has implemented that with Gimlet, and we've measured that that speedup is real and that happens now. I'm not aware, but there may be degenerate cases and corner cases where you sort of see some level of performance loss here. But actually, one of the reasons why you tend to see a speedup that's better even compared to speculative decoding using GPUs is the fact that you can generate more tokens on the SRAM accelerators quicker, allow you to have a deeper speculative depth than what you can have with GPUs, which means that the likelihood of the tokens being rejected by the target model starts to decrease. And I think that where you would see, at least in the speculative decoding use case, it start to behave poorly from a performance standpoint is if the tokens that are being generated have a much higher rejection rate. I think as we discussed earlier, speculative decoding is a little less sensitive to the network environment, the latency, and all of these things because you're just passing a token through. So there's less places for it to potentially go wrong. Now with AFD, I think... because there is more back and forth between potentially the attention and the experts, depending on how that behavior happens, there may be situations where you will lose some of the performance depending on how much back and forth that you have, how your network is set up, and things like this. There's potentially higher risk on the attention expert disaggregation. But what I've typically seen in terms of the modeling, the expectation of that performance is that it will generally have a bigger impact on the overall end user than some of the other forms of disaggregation. Does that make sense?</p>
+<p>DK: Sure. I guess it's still, one thing that I'm still not quite there yet is what does it mean for a customer if Microsoft switches to Maia? It doesn't mean anything at all. Does it mean that, essentially... the customer will still say use NVIDIA hardware but Microsoft will use Maia for its own workload?</p>
+<p>PB: So I think that there are a couple of different ways of looking at this, right? Maybe Google is a good place to compare here as well, right? So Google certainly has GPUs, but they also have TPUs as well. Right. I don't expect Google anytime soon will go down to 0 GPUs from NVIDIA. But it makes a lot of sense for them to move and migrate as many workloads as they can to TPUs that make sense, right? Because there's maybe lower costs and all of these sorts of things in terms of what it takes for them to provide that versus providing their GPUs. Now, when it comes to providing an application service to end users, most people who are paying for a subscription to ChatGPT, they don't really care whether it's NVIDIA GPUs, it's Cerebras or it's anything else, provided they get the response and capabilities that they're looking for. And so I fully expect that Microsoft will be providing this kind of application level interfaces to their customers and whether that's implemented with Maia or with NVIDIA or AMD or some other type of accelerator, the end user is going to be oblivious unless there's a difference in behavior. Right. Now, there are some aspects potentially where Maia may be more beneficial, but if you have a look at how Microsoft is trying to market it, where it's more tokens per megawatt, that's a value to Microsoft. It's not really a value to the end user. So I suspect</p>
+<p>10/20/2026 at 05:04 AM UTC</p>
+<p>that they will be looking to power applications with this. They will make the effort to migrate the applications onto Maia, but from an end-user standpoint, they will be somewhat ignorant of exactly how those tokens are provided.</p>
+<p>DK: Yeah, okay, very helpful. What about supply? Do you think they can get supply to make that switch? And if so, how long is that going to take? They said that they are going to use it as a primary inference system. That stuff requires some volume.</p>
+<p>PB: Yeah, so I think, you know, the supply chain is kind of the elephant in the room at the moment, right? So I think everybody's starting to struggle with supply and what can they secure and how much is it going to cost to access these particular items. I mean, I look at Maia 100, talking about, you know, almost 300 gigabytes of HBM, which is huge. So, and I think I am not a supply chain expert, but my understanding is a lot of the HBM has already been booked up for at least the next 12 months. And we're even in the situation where I'm sure you've heard and read the reports that NVIDIA is planning to change the memory on some of their SKUs so they can ship more SKUs with less memory just because of some of the supply constraints. I fully expect that Microsoft is going to be challenged to get the supply that they are looking for. Now, it may be that they do something like NVIDIA does and says, okay, well, maybe the first SKU of Maia 100 has 288 gigabytes of HBM4, but maybe they will have other SKUs that have less memory. I think that... They're also competing with NVIDIA for Fab space at TSMC, which is challenging too. I, you know, Microsoft obviously has deep pockets, they have a large business, I'm sure they can manage their supply chain and get some of this stuff sorted out. But I don't think anybody in the business today has guaranteed volume at the level that they would like. So I'm not totally sure how that'll play out. I'm sure it'll be hard for Microsoft just like it is for everyone else.</p>
+<p>DK: Got it, thank you. We'd love to move on here. So I would love to get your thoughts in terms of how the D-Matrix, Corsair, Groq LPU, and Cerebras CS3, CS4 compare, and which specialized inference architecture do you think can scale commercially and, of course, why?</p>
+<p>PB: I have to admit that I'm a little bit biased here. Even though I just left D-Matrix, I do feel like it is the better solution. But let's talk about why and we can poke holes in it if we want to as well. Hats off to Groq. Groq made a lot of noise and demonstrated that SRAM accelerators could be highly performant. They made enough noise and got enough people to move to their service that it was enough to convince NVIDIA late last year to essentially, well, I guess it's licensing, a licensing deal that they have, but largely to acquire the technology. But I think there are certainly some challenges. The first generation hardware that Groq has only has, I think, 200 megabytes of SRAM per chip. It seems like their attempt to do a second generation of hardware has not seen the light of day. And currently there's the LPU3 that Jensen announced at GTC earlier this year that's meant to be coming at some point next year, but it still remains to be seen, can they deliver that? Now that LPU3 is liquid cooled, but they still will only be getting to the point where they can have 512 megabytes of SRAM per chip. And I think with a liquid cooled rack, NVIDIA has said they can get to 128 gigabytes of SRAM in a rack. Now, let's talk a bit about D-Matrix because I think D-Matrix and Groq are a good sort of direct comparison before we talk about Cerebras. With Corsair today, there's a PCI Express form factor that D- Matrix has. It's 2 gigabytes of SRAM per card and we can put 8 of those cards into a 5U server. And we can essentially get 8 of those servers in a rack. So today for an air-cooled rack, D-Matrix can get 128 gigabytes of SRAM and that's shipping. That's available today. People can buy it. There's obviously future things that D-Matrix has talked about pursuing, but so today in terms of what's available, I think D-Matrix is ahead of what Groq has. And from a pure hardware standpoint of what it can provide, I think the PCIe form factor and the server form factor allows customers a lot of choice in terms of how they can deploy it. And because it's a fairly dense solution, it sidesteps some of the challenges that Groq had with their first generation hardware. Now, let's talk about Cerebras. Again, Cerebras is an amazing feat of engineering. I mean, the wafer scale engine is just an extraordinarily challenging scientific feat to go produce that and to get that working and do all of that. And so, hats off to Cerebras for figuring that out. They've had a lot of success in the last 12 months. And largely that's been because they're a little further along, a little bit more</p>
+<p>10/20/2026 at 05:04 AM UTC</p>
+<p>mature than the other choices in the marketplace. And because Groq, Cerebras, and SambaNova are all SRAM-based accelerators, they have no HBM. They're additive compute in a way that anything that's using HBM is not. So we haven't talked about SambaNova, but SambaNova has HBM on both the SN40L and the SN50. And so there are different challenges with going through that supply chain versus the SRAM-based options. So Cerebras, I think, has had a lot of success because they are shipping. It's available. They have been a little bit further along in terms of the product and software, so that was largely the choice that was available to many people when they were looking for alternatives at the end of last year, beginning of this year. And so you saw that with the deal that Cerebras did with OpenAI. And I mean, there are some rumors at the moment about exactly what OpenAI is looking for moving ahead, but Cerebras has certainly got some of that market because they're available today. Now, let's talk a little bit about practicality. Now Cerebras is certainly looking to create denser solutions with liquid cooling, but frankly it's a pretty big user of power. The density is not great. There are challenges that it has in terms of communication between different wafer scale engines too. With Groq, they've done their chip-to-chip technology that allows them to scale and communicate between different Groq LPUs, but right now they don't have a great way of having that chip-to-chip communication go to GPUs, although I, if I were to guess, I'm sure that NVIDIA is trying to figure out and work on that currently. And D-Matrix has JetStream, which is a low latency network interface that allows us to communicate with no single digit microseconds between Corsair accelerators, but we can actually use that same interconnect to have low latency communication between GPUs and other types of accelerators too. So anyway, to sum it up, I think Groq, obviously being part of NVIDIA now, it never makes sense to bet against NVIDIA, but I think Groq as a solution is not a great comparison to what D-Matrix has today. I think Cerebras, obviously an engineering marvel that they've managed to get good market share because they've been available, but I think as other solutions start to ramp up in the market, we will see Cerebras have less success. I think in terms of the interconnect, I think that that's a fundamentally important piece because for all of these frontier models, they are largely potentially multiple nodes, but also heterogeneous is super important as well. I guess Dan, in my humble opinion, I think D-Matrix is the best solution, but as I say, I'm potentially a little bit biased on that.</p>
+<p>DK: Well, that's understood. But let me ask you this in terms of D-Matrix. So you mentioned that it's an air-cooled rack, and of course, there's quite a market for that. What about some of the liquid-cooled racks? And part of the reason I ask is because they seem to be sold as systems, right, rather than racks.</p>
+<p>PB: Yes.</p>
+<p>DK: How does D-Matrix look at that and does it lose some of its advantages or perhaps does it need to be introduced by the actual equipment, by the actual system provider?</p>
+<p>PB: I think... we just had OCP last week, right? D-Matrix made several announcements around Squadron, and in the past, there's been discussions around SquadRack and things like that. So it's certainly possible to treat D-Matrix as a rack-level solution. Now, what's interesting about air-cooled solutions is you can roll them in and plug them into a data center that's set up for liquid-cooled solutions anyway, right? It's typically not an issue to support air-cooled solutions in a data center that has the plumbing for liquid-cooled solutions. I think that there's not necessarily a limitation for D-Matrix in that sense. That being said, when you move to liquid-cooled solutions, you can get to be much denser, right? So the question is, as D-Matrix moves towards having liquid-cooled solutions, how does that then impact what they can go and provide, right? I think already you can maybe do a comparison with Groq, the LPU1 versus the LPU3, and some of the density there that you get with liquid cooling. There's been certainly some discussions from D-Matrix and Hot Chips and other places around Raptor, which is the next generation hardware that D-Matrix is producing, and so I think you can get to a much denser solution with the liquid-cooled capability. I don't think not having liquid-cooled today rules D-Matrix out, but clearly getting to denser, more capable solutions in the future is something that is important for D-Matrix to do.</p>
+<p>DK: Okay. And it has adopted NVLink fusion, right? So does that validate perhaps future genius inference or</p>
+<p>10/20/2026 at 05:04 AM UTC</p>
+<p>strengthen immediate system moat?</p>
+<p>PB: So kind of an interesting question. So just for context, right? And I know you're aware of this. The partnership between D-Matrix and NVIDIA for NVLink is for the next generation hardware for the Raptor solution. And this does potentially allow for some more interesting heterogeneous communications and solutions. And I think that that's very useful and interesting. I think so, yeah. At the moment, when you're dealing with just network communication, even if you're sort of bypassing going through user space and all of that, you know, you're talking microseconds of latency. I think with things like NVLink, you can potentially decrease that, increase the bandwidth of communication you have between nodes and have a stronger level of communication. So I think it does open up a number of options for heterogeneous compute, but also even in terms of how you scale up inference in a homogeneous way, right? So, you know, D-Matrix will be able to use NVLink to communicate between chips and not have to rely on, say, network interconnects for doing larger scale inference. So I think there's a number of reasons why that's valuable. Now, does this strengthen NVIDIA's hardware moat? So I think that... what's valuable to NVIDIA is to get more people to adopt the technology that they have. And so I think Amazon has also come out and said that they plan to use NVLink. So I think these are definite items that are important for NVIDIA to sort of show that they are playing in an ecosystem. I think rather than saying that it helps strengthen NVIDIA's moat, what I would sort of say is it helps NVIDIA, you know, show that it's a competitive environment, right? So you know, again, I don't know that there's going to be antitrust investigations into NVIDIA, but they currently have greater than 80% market share. And if they can do things to demonstrate that this is a healthy ecosystem with a number of competitors, then it means that it's less likely that there'll be any larger sort of regulatory pressure on them to do things differently.</p>
+<p>DK: That's very helpful. So let's talk about GenAI and does that strengthen the case for future inference systems? Does it make them more attractive as workloads become more dynamic and latency sensitive?</p>
+<p>PB: Absolutely. I've been doing this for a while. A year ago, most people were going, "Why would I use anything that's not a GPU?" It's just easier. People know how to program it, so why would I do something different than that? With the licensing/acquisition of Groq technology in December, NVIDIA was essentially saying, "Okay, there are fundamentally different things that customers seem to care about that we can't provide with GPUs." What we see with SRAM-based accelerators is there's this low latency, there's inference time compute. There are a number of these different characteristics that seem to be very important, particularly for agentic and generative AI workloads that are just not realistically achievable using a GPU-type architecture. The rise of agents and the level of interactivity that people are looking for is pushing heterogeneous solutions. Right now, as I mentioned earlier, the size in terms of just running a homogeneous model on SRAM-based accelerators is not really able to get up to the multiple trillion parameter that you see on these frontier models. Heterogeneous is certainly the way to go for the immediate future to be able to take care of those sort of interactivity and low latency needs that these workloads are looking for.</p>
+<p>DK: Got it. We've already answered really the next question that I had, but how about a hybrid SRAM 3D DRAM system? Can that compete with HBM on both bandwidth and capacity?</p>
+<p>PB: Yeah, Sudeep Bhoja, who's the CTO and co-founder of D-Matrix, did a detailed presentation at Hot Chips this year on Raptor. I think what you get... With SRAM, again, let's talk about D-Matrix in the context here. For Corsair, it's essentially 2 gigabytes of SRAM per card, and you can get up to 128 gigabytes of SRAM in a rack. Now, with 3D stacked memory, Raptor is one stack. There's a way to sort of cut up DDR, stick it underneath the processor, and you can get over 100 terabytes per second of memory bandwidth, and it's greater than 10x the capacity than what you can get with the SRAM-based solution that we have in Corsair. And so, if you go today, say for Corsair, 128 gigabytes of SRAM in a rack gets you roughly 100 billion parameters of model. In the Raptor timeframe, again, if you're kind of using roughly the same form factor, potentially air-cooled, you move to over a trillion parameters within a rack, and if you go liquid-cooled, maybe it's 3 to 5 trillion parameters within a rack. And so, there's certainly gains from that. Now, is it going to be the same capacity as HBM? I think HBM will still have a larger capacity, but the ratio that we have</p>
+<p>10/20/2026 at 05:04 AM UTC</p>
+<p>today, like 2 gigabytes of SRAM for Corsair, we're just talking about Maia 100 earlier, so Maia 100 has between 200 and 300 gigabytes of HBM capacity, so that's about 100x size differential. I think that we are going to an increase in capacity for the 3D stacked memory of greater than 10x. So it's not going to be 1-to-1, but it's going to be probably less than a 10-to-1 comparison, so you have a much better density. And then also just in terms of the number of cards and chips you need to scale up and scale out, means that you can start to get to the point where running frontier level models homogeneously on a solution like that becomes practical, and so that is what becomes interesting. But again, it's probably not going to be 1-to-1 from a size capacity standpoint, yeah.</p>
+<p>DK: So one-to-one with HBM and near-memory?</p>
+<p>PB: Yeah, correct.</p>
+<p>DK: Can we go maybe over some of the advantages of that system? So it wouldn't be one-to-one in terms of capacity, but it would still be faster, right?</p>
+<p>PB: Yeah, so the expectation is that you still have SRAM-like capabilities for this 3D stack of memory. Right, so like I said, with Maia 100, it's somewhere between 10 and 20 gigabytes per second of memory bandwidth for HBM4. For 3D stack of memory, it's over 100 terabytes per second, so it's still a factor of 5x or more in terms of the bandwidth that you will have with that memory. And then the fact that you have that memory sitting on the chip itself means that you don't have the data movement issues, right? So a lot of times in terms of getting the best performance out of GPUs, you have to deal with the fact that HBM is kind of off-chip. You need to move that data on-chip, you need to do the calculations on-chip, and there's a lot of data movement that's required to be able to operate. And with... whether it be 3D stack memory or SRAM-based accelerators, you have data locality. And so you don't really need to be moving that memory around. And again, with the D-Matrix solution with the digital in-memory compute, you have the situation where you can actually... you know, move that data even less, right? You can go and do the calculations while these things remain static in memory, and so, you know, you're both avoiding that data movement and by keeping it in place, you're also potentially saving a lot of power. Right? And so that's some of the real value of these solutions. Now, with the capacity increase that you get with 3D stack memory, it now will unlock the ability to have larger and larger models that will fit into a smaller number of accelerators, which is valuable too.</p>
+<p>DK: What about the cost? I mean, if you look at a 1-to-1 basis, I've heard numbers as much as that SRAM is, and one has to make assumptions in terms of HBM will cost next year, but I've heard numbers as much as 500x in terms of pricing.</p>
+<p>PB: So I'm not really the price guy, but I would be very surprised if it's that cost, right? So again, with the approach that sort of D-Matrix is outlined using DDR, that certainly is... I suspect that cost-wise, it's not a high cost. There are some manufacturing aspects of doing that too. But again, I think all memories seem to be increasing in price at the moment too. And so I don't see that there's a fundamental reason why this approach would be dramatically higher cost than HBM. But at the moment, as I said, the memory markets are going a little bit crazy.</p>
+<p>DK: Okay, that's really helpful. I think that's really all I have for today. Anything that we haven't discussed that we should have?</p>
+<p>PB: No, I think we've covered a lot today, Dan. It's been a very interesting conversation.</p>
+<p>DK: Wonderful. All right. So really appreciate your time and your thoughts here. So thank you so much. And thank you everyone who was able to join the call. Hopefully everybody has a great week.</p>
+<p>PB: Okay, thanks. Bye-bye.</p>
+<p>10/20/2026 at 05:04 AM UTC</p>
+<p>DK: Take care. Cheers.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>10/20/2026 at 05:04 AM UTC</p>
+</div>
+</main>
+</body></html>

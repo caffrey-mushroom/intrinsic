@@ -1,0 +1,207 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.15 | AC | Agents | Meta Muse On-Device AI: CPU &amp; Compute Load</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.15 | AC | Agents | Meta Muse On-Device AI: CPU &amp; Compute Load</h1>
+<p class="orig">原标题：Meta Muse类端侧表现和需求判断，对算力和CPU的消耗，复杂AI任务在端侧的挑战。头部模型在实际任务中的表现对比等。苹果_GLM_Gemini_Grok_Anthropic_OpenAI</p>
+<p class="tags">#agents #llm #hardware</p>
+<p class="meta">AceCamp · 2026-10-15 · article 70568052</p>
+<div class="body">
+<h2>摘要</h2>
+<p>/ 头部端侧模型和应用前景对比和展望。/ 复杂任务在端侧运行的挑战，CPU和算力资源消耗等。</p>
+<p><b>专家观点：</b></p>
+<p><b>﻿Meta Muse针对新用户推荐奖励10亿token的策略，在当前产品功能下，这10亿token大概能使用多久？其商业模式的可持续性如何？</b></p>
+<p>这10亿token可以使用非常长的时间。对于To C（面向消费者）的个人数字助理类应用场景，除了打电话等少数任务可能消耗稍多token外，绝大多数个人任务并非长链条，不存在需要进行数百轮对话才能完成的复杂情况，因此token的实际消耗速度可能没有那么快。</p>
+<p>这种定价和用量策略引发了对其商业模式和盈利能力的质疑。该应用能够连接并获取用户的日历、通讯录、提醒事项、健康数据、家庭数据、蓝牙、谷歌套件、Instagram、Notion、Outlook、Shopify、Spotify等多种个人数据（需用户授权，否则其功能仅相当于一个聊天机器人）。考虑到其高昂的运营成本，若非通过售卖用户隐私或广告等方式变现，其盈利路径尚不明朗。</p>
+<p><b>从技术和成本角度分析，为每个用户提供独立的虚拟机或沙盒环境将产生哪些具体成本？这些成本与其当前的定价策略是否匹配？</b></p>
+<p>为每个用户提供独立的沙盒环境会带来显著的成本。这种模式旨在隔离用户数据以解决隐私顾虑，但每个沙盒实例的开启和运行都需要付费，且无法与其他用户共享资源。如果采用独立虚拟机或类似的K8S部署方式，即便对于大客户，单个用户一天的基础设施成本预估至少在1元至1.5元人民币。这仅仅是沙盒或虚拟机的费用，尚未包含运行大语言模型本身所需的大量GPU部署和运维成本。综合来看，高昂的单位用户基础设施成本与当前看似优惠的用户获取策略之间存在矛盾，其利润模型如何成立尚不明确。尽管初期通过大规模补贴来抢占To C市场是一种常见策略，但该模式的长期盈利能力仍存在疑问。</p>
+<p><b>个人AI助理在端侧的发展前景如何？考虑到个人任务通常并非长链条且消耗token有限，端侧AI是否具备发展潜力？</b></p>
+<p>个人任务确实大多不是长链条，对token的消耗量有限。如果模型足够优化，在端侧设备（如AI手机、AI PC）上运行是完全可行的。</p>
+<p><b>对于端侧AI的发展路径，目前主要有两种模式：一种是类似Meta的混合模式，即数据保留在本地，但处理在云端；另一种是完全在端侧设备上进行本地化计算。请问这两种路径各自有哪些值得期待的发展？以及在AI手机和AIPC算力提升、模型持续精简优化的未来趋势下，完全本地化的端侧AI的必要性如何？</b></p>
+<p>纯端侧的AI计算在未来三到五年内很难取得重大突破。当前AI的发展方向是构建能够执行复杂任务的Agent，而这条技术路径对算力的要求极高，目前的端侧设备算力远不能满足需求。因此，在相当长的一段时间内，类似Meta或Grok Bot采用的云端与本地结合的混合模式将是唯一可行的解决方案。</p>
+<p>苹果公司此前在纯端侧AI上的尝试及其不理想的效果，也从侧面印证了这一观点。即使是任务拆解这类看似可以在本地处理的环节，也需要大型模型对用户意图进行精准理解，这意味着模型本身的参数量不可能很小，单纯依赖端侧CPU进行处理是不现实的。因此，尽管市场对英特尔和AMD等CPU厂商抱有很高期望，但这种由AI Agent驱动的虚拟机需求，与CPU的核心数量并非强线性关系。服务器CPU，如AMD的EPYC系列，单颗已拥有一百二十多个核心，通过成熟的时间共享技术，一个物理核心可以支持多个虚拟机实例，足以应对这类负载不高的专一化任务。与GPU不同，AI模型训练对GB200这类最新硬件有刚性需求，而CPU领域目前不存在类似的井喷式增长动力，市场预期可能过于乐观。</p>
+<p><b>您提到虚拟机消耗的物理核心并不多，是否可以理解为个人用户的AI任务对算力稳定性的要求不高，因此可以通过时间共享等技术大幅降低对物理CPU核心的依赖？</b></p>
+<p>是的，个人用户的AI任务通常没有严格的服务等级协议承诺。任务执行过程中出现中断或失败，用户可以重新启动实例，其容忍度较高。在这种情况下，云服务商可以利用非常成熟的物理资源共享技术，例如时间共享，将多个负载不高的虚拟机实例调度到同一个物理核心上运行，从而大幅提升资源利用率并降低成本。如果对SLA没有要求，单个虚拟机的成本可能会变得非常低，这使得商业模式在逻辑上具备了可行性。当然，目前关于成本的讨论还处于早期猜测阶段。</p>
+<p><b>您刚才判断纯端侧AI在三五年内难以落地，其主要原因是什么？</b></p>
+<p>纯端侧AI路线目前面临的主要困境在于，除了苹果公司，其他主流厂商并未积极投入。如果唯一的推动者苹果也未能取得实质性进展，那么这条技术路线就很难吸引到新的行业资源注入，从而导致其发展停滞。一个技术方向能否成功，不仅取决于其本身是否可行，更依赖于是否有足够的资源和参与者来共同推动其前进。</p>
+<p><b>考虑到苹果拥有完整的硬件生态系统（全家桶），用户个人设备本身就可以构成一个计算资源网络，为什么其在推进纯端侧AI方案时会遇到困难？</b></p>
+<p>苹果推进端侧AI方案受阻的核心问题在于其产品体验不佳。根本原因在于，苹果坚持将所有计算任务都在本地完成，而当前端侧芯片的算力，即使再提升三倍，也无法满足复杂AI任务的需求。这种物理性能上的限制，决定了在本地只能处理一些相对简单的任务，例如分类或信息总结，而无法支持更高级的AI功能，从而导致用户体验不理想。</p>
+<p><b>当前纯本地计算的大模型在C端应用上面临哪些具体挑战？</b></p>
+<p>纯本地计算在C端面临的主要挑战是模型效果不佳，而非芯片算力无法承受。例如，在苹果相册中搜索“去年（2025年）坐飞机的照片”这类简单的单轮（One-shot）图文搜索任务，尽管反应速度快，但结果准确性很差，无法满足用户在当前大模型技术水平下的期望。这是因为在终端设备有限的计算资源内，只能部署规模非常小的模型，而这类小模型无法提供令人满意的结果。相较之下，要流畅运行像千问7B或13B参数级别的模型，可能需要5,090级别的硬件才能保证理想的Token生成速度，这在当前终端设备中难以实现。此外，一些如句式改写、设置提醒或预约计划等功能，并不一定需要大模型即可实现，传统技术也能完成。同时，Siri等语音助手的表现依然不佳，例如搜索歌曲等基础任务都难以准确完成，这进一步限制了用户体验。因此，硬件性能的迭代是关键，预计需要大约三代以上的产品演进，才可能实现苹果在2025年所设想的纯本地计算效果。</p>
+<p><b>近期有哪些值得关注的新模型发布？在实际生产环境中，不同大模型之间的选择和性价比是如何考量的？</b></p>
+<p>近期新发布的Opus 5.5模型据称表现优异，在参数调优和资源消耗方面有显著优势，有潜力达到类似OpenAI GPT 4.6的水平。在实际生产任务中，模型选择主要集中在两家：OpenAI的模型（如GPT 4.7、4.8）和Codex的GPT-6。尽管其他模型价格更低，但在处理复杂任务链时，其表现不够稳定，需要投入大量精力进行调试和优化，性价比不高。因此，对于复杂的生产级应用，只有OpenAI和Codex的模型能够提供可靠且高效的结果。</p>
+<p>OpenAI和Cloud在技术上处于断崖式领先地位。以谷歌为例，目前开放访问的Gemini 3.8版本在处理PPT制作等任务时，表现甚至不如智谱的GLM 5.3 Flash。智谱的GLM模型在一般性任务上表现出色，与OpenAI的4.8版本差距不大，确实达到了其宣称的对标水平。</p>
+<p><b>在处理长上下文的复杂Agent任务时，不同模型的表现和局限性体现在哪些方面？</b></p>
+<p>在处理长上下文的复杂Agent任务时，模型的指令跟随能力会受到挑战。以智谱的GLM模型为例，在进行60至70轮以上的对话后，模型可能会开始出现逻辑混乱，对指令的遵循度下降。对于一个需要约150轮对话才能完成的DCF估值模型构建任务，GLM虽然可以完成，但需要大量的人工干预和修正，难以实现单次指令成功（one-shot）。即便是Codex的模型，在任务后期也可能出现内容捏造的问题。相较之下，Claude在处理此类长链条任务时表现优于Codex。尽管存在局限性，但考虑到智谱模型的成本不到前者的十分之一，并且能在80到90个Token的处理范围内保持可用性，其表现已相当出色。</p>
+<p><b>如何客观评估和衡量大模型之间的能力差距及其技术壁垒？</b></p>
+<p>量化评估大模型的能力非常困难，因为公开的排行榜（刷分榜）数据参考价值有限，模型通常会针对这些评测进行特定优化（特调）。更可靠的评估方式是在具体的、真实的业务场景中对不同模型进行持续测试。例如，在开发AI投研产品时，通过对比不同模型完成同一任务的效果和成本，可以获得非常清晰直观的感受。最初使用Opus模型完成一次任务的成本是5美金，而换用智谱或Sonnet模型后，成本可以降至两毛钱以下，这种在实际应用中的成本与效果差异，是衡量模型能力和壁垒的最直接体现。</p>
+<p><b>各主流大语言模型（如Claude Sonnet/Opus、Codex、GLM等）在实际应用中的具体差异和各自的优劣势体现在哪些方面？</b></p>
+<p>不同模型间的差异在特定场景下非常明显。以智谱为例，可以理解为对Claude模型进行了非常出色的“蒸馏”。具体来说，智谱模型的API能够与Claude的API完美迁移，无需修改即可使用，这清晰地揭示了其技术来源。尽管是蒸馏模型，但其质量不错，且具备价格便宜、处理量大的优势，这本身也体现了其技术水平。</p>
+<p>在长链条任务处理方面，Claude模型，尤其是Opus，是无可争议的第一。其指令跟随能力非常强，甚至Fable模型在处理约200k token的任务时表现可能更优。在实际测试中，模型能够自问自答完成130轮对话，展现了其强大的长上下文（long-context window）处理能力。</p>
+<p>相比之下，GPT模型在处理多样化、天马行空的问题时，回答质量通常优于Claude。GPT模型具备一定的“taste”，在设计等方面表现更佳。而Claude则更像一个纯粹的执行工具，专注于任务完成，不具备额外的设计感或品味。它在指令遵循和结果交付的规范性上是做得最好的，但若要求其进行文章创作等需要创造性的任务，其表现则不如GPT。</p>
+<p><b>从商业竞争角度看，Claude模型的核心壁垒是什么？其技术优势是否容易被竞争对手复制？</b></p>
+<p>Claude模型的核心护城河并非模型本身的技术领先，而在于其“harness”做得非常出色。尽管其他厂商可以尝试复制其harness，但很难达到同样的效果，这构成了其独特的优势。然而，这种独门绝技的领先周期并不长，通常在几个月或一两个月内，竞争对手便能复制出达到80%至90%效果的同类产品。尽管如此，在To B市场，Anthropic的产品依然具备竞争力。许多公司，尤其是美国市场的企业，即使不采购Codex或GPT，也一定会采购Anthropic的产品。</p>
+<p><b>在美国企业级市场，不同AI模型的采购决策逻辑是怎样的？</b></p>
+<p>美国企业在采购AI服务时，普遍遵循“要买就买最好”的原则，价格敏感度相对较低。因此，许多公司会同时采购Codex和Claude。如果仅选择一个，多数会选择Claude。对于一些传统行业，如银行，要么完全不使用外部AI服务，要么会采用集成在谷歌云或微软Copilot等套件中的模型。但若进行独立采购，Claude通常是首选。不过，这种采购逻辑主要适用于美国市场，在全球其他地区可能并不适用，这也解释了其全球ARR增长相对审慎的原因。</p>
+<p><b>对于深度使用AI的专业人士，目前每月在AI模型API上的花费大概是多少？这些费用主要消耗在哪些类型的任务上？</b></p>
+<p>对于将日常绝大部分任务都交由AI处理的专业用户而言，每月2000至3,000美元的API账单是基础开销。以个人为例，将PPT撰写、工作总结、DevOps等各类任务都接入AI后，月度账单约为3,230美元。</p>
+<p>Token消耗量最大的任务是那些需要AI Agent进行探索和试错的场景。当任务目标比较模糊，Agent需要不断尝试、验证、回滚再尝试时，会产生巨大的token消耗。目前的使用场景主要集中在目标明确、路径清晰的任务上，即从头到尾执行一系列指令，这类任务的token消耗主要源于任务本身的繁重，而非Agent的判断和探索过程。由于公司政策限制，许多需要大量试错的“浇水活”（token密集型任务）尚未交由Agent处理，因此当前的月度开销尚未达到理论上限。</p>
+<p><b>在企业级应用场景中，AI模型的使用成本和未来的增长潜力如何？</b></p>
+<p>当前在特定任务中，例如根据一个约五六千字的明确PROMPT生成约两万行代码，其计算量和成本尚未达到海量增长的阶段。如果进入一种“完全投入”（fully engaged）的使用模式，即可能由AI Agent自主完成大部分工作，按照当前价格估算，每月的成本大约在8,000至10,000美元。</p>
+<p>从一个模拟单人公司运营（涵盖运营、会计、编码等所有角色）的测试来看，一周内消耗了59亿个token。若按标准API价格计算，这部分成本将超过3万美元；但通过特定的编码方案，实际花费仅为100美元。这表明，对于一个小公司而言，全面采用AI的t oken消耗量是巨大的。</p>
+<p>因此，在To B的工作场景中，员工的AI使用账单存在显著的上升空间，预计至少能再翻一倍。目前，这种高强度的使用主要集中在R&amp;D部门，其他部门尚未配置高级模型。未来，随着公司全面转向基于智能体的开发模式，为各部门提供不同功能的智能体，token消耗量必将大幅上涨。特别是对于那些目标不够明确、需要AI进行多次尝试和探索的任务，其成本会迅速增加。</p>
+<p><b>Palo Alto Networks对未来市场规模预测是怎样的，其实现路径和战略逻辑是什么？</b></p>
+<p>根据一项预测，网络安全行业的市场规模（Market Cap）呈现高速增长。2012年，整个行业市场规模为400亿美元，当时Symantec、Check Point和Trend Micro是市场主导者，Palo Alto Networks仅占9%。到2019年，行业规模增至1,550亿美元，市场格局变为Splunk占15%，Palo Alto Networks占14%，Fortinet占12%。</p>
+<p>展望未来，预计到2026年，行业市场规模将达到6,700亿美元，更长远的预测显示，到2035-2037年左右，整个市场容量有望达到2万亿美元。</p>
+<p>为实现份额提升的目标，Palo Alto Networks的战略已超越传统的网络安全范畴，致力于成为AI时代下处理各类基础设施“脏活累活”的网关型公司。其估值逻辑将不再局限于网络安全本身，而是整合了ServiceNow所代表的企业服务和Splunk所代表的可观测性等领域。通过平台化战略，将网络安全、企业IT服务、可观测性等功能整合在一起。具体的执行动作包括近期收购了一家从事企业ticketing业务的公司，该公司专注于构建AI Native的解决方案，旨在取代非AI Native的现有系统（如ServiceNow的部分功能），从而拓展业务边界。</p>
+<p><b>在AI模型能力不断迭代的背景下，例如在一些标志性新模型发布前后，公司的客单价和定价策略是否发生了显著变化？</b></p>
+<p>公司的客单价确实比以往更高，但这并非通过调整单个产品的价格实现，而是定价策略发生了转变。当前公司倾向于销售整体解决方案，将多种产品和服务打包在一起，从而提升单个合同的价值。这种策略的逻辑在于，通过打通不同产品的数据，可以为客户提供更优质的保护。一个非常明显的变化是，目前新签的合同金额很少低于100万美元，基本都在百万美元级别以上。</p>
+<p><b>公司的客户基数是否在扩大？</b></p>
+<p>客户基数在持续扩大，但增长主要来自于非北美地区。</p>
+<p><b>随着新AI模型的发布，客户对网络安全方案的态度发生了怎样的变化？</b></p>
+<p>当前行业共识是，单一的网络安全产品已无法提供有效防护，客户倾向于购买一整套防护系统。这验证了公司自2024年以来推行的平台化战略的成功，并推动了客单价的持续上涨，因为整套系统能够实现数据互通，从而提供更完善的保护。此外，近期频繁出现的“模型逃逸”等安全事件，反而提升了市场对网络安全的需求，对公司股价起到了提振作用。</p>
+<p><b>更强大的AI模型能力是否与公司订单量的增长存在正相关关系？</b></p>
+<p>可以认为两者之间存在正相关关系，至少在一段时间内，这种线性关系无法被证伪。</p>
+<p><b>公司内部利用AI Agent进行主动防御的技术应用目前处于什么阶段？与AI模型公司的合作模式是怎样的？</b></p>
+<p>公司内部利用AI Agent进行主动防御的应用仍处于试验阶段，在技术架构上尚未实现重大突破。当前的核心优势主要体现在与Anthropic等AI模型公司的紧密合作关系上。通过这种合作，公司能够获得产品的早期访问权限（Early Access），进行更充分的内部测试和准备，从而降低产品在实际应用中出现问题的几率。</p>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,222 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.22 | AC | LLM | Jonathan Frankle: From Token Max to Value Max</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.22 | AC | LLM | Jonathan Frankle: From Token Max to Value Max</h1>
+<p class="orig">原标题：Databricks 的首席人工智能科学家、MosaicML 的联合创始人Jonathan Frankle：从Token最大化到价值最大化，企业AI规模化落地的评估与治理拐点</p>
+<p class="tags">#llm #software</p>
+<p class="meta">AceCamp · 2026-10-22 · article 70568361</p>
+<div class="body">
+<h2>摘要</h2>
+<p>文章来源于2026年10月21日，Brendan Foody在播客《The Frontier with Brendan Foody》中对Databricks 的首席人工智能科学家、MosaicML 的联合创始人Jonathan Frankle的采访。</p>
+<p><b>以下是访谈原文：</b></p>
+<p><b>Q&amp;A</b></p>
+<p><b>您能否介绍一下“彩票假设”（Lottery Ticket Hypothesis）及其在深度学习领域从理论研究转向实证研究过程中的作用？</b></p>
+<p>“彩票假设”是我在2018年进行的一项研究工作。回顾2018年，深度学习尚处于早期阶段，当时行业内存在一个核心争论：我们是应该通过简洁的理论模型来理解深度学习，还是应该接受其内在的复杂性与混乱。作为源于数学的计算机科学领域，我们倾向于寻求理论证明和最坏情况下的界限，而非仅仅依赖经验性陈述。</p>
+<p>“彩票假设”研究的持久影响在于它完全采用了实证方法，直接探究真实模型中的现象。在当时，所谓的“真实模型”参数量大约在20万到100万之间，处理的是CIFAR-10这类32x32像素的数据集，这在当时已经是计算密集型任务。这项研究的核心思想是，我们应该通过测量和实证观察来探索模型的属性，而不是等待一个大一统的理论出现。</p>
+<p>这种纯实证的方法在当时引起了很大争议。例如，该论文的同行评审得分中有一个低分，理由是“没有理论证明”。在我求职面试时，甚至有人质疑我的实证工作是否“有原则”，因为在计算机科学领域，“有原则”通常等同于“理论性的和可证明的”。然而，实证主义本身就是一种有原则的科学方法。</p>
+<p>最终，实证主义的路径胜出了。如今，我们不再试图通过数学证明来验证模型性能，而是通过评估来衡量其行为。这项工作的重要意义在于，它证明了实证主义是一个能够让我们比纯理论走得更远的视角，使我们能够探索那些无法用数学精确描述或证明的更宏大问题。如今，依赖实证评估已成为业界的共识。</p>
+<p><b>您是如何从学术研究转向创立MosaicML，并最终加入Databricks的？能否分享一下MosaicML的早期发展历程、被收购的过程以及您目前在Databricks负责的关键项目？</b></p>
+<p>我加入MosaicML源于一封来自Naveen Rao的邮件，他后来成为了我的CEO。最初，他提议基于“彩票假设”论文创业，但我认为该论文本身并不具备直接的商业价值。经过探讨，我们将方向调整为提升模型训练效率，通过改进训练算法来更高效地获得更高质量的模型。在当时，改变训练算法是一个颇具争议的做法，因为人们担心这会产生与预期不同的结果。我们提出的核心价值是，虽然训练过程略有不同，但最终能在评估指标上达到同等质量，这在今天看来是深度学习的常规操作，但在当时对客户而言是一个需要接受的新概念。</p>
+<p>MosaicML的发展经历了一段演变。我们最初专注于为客户训练定制化的视觉模型，如ResNet-50、Mask R-CNN等。到了2022年夏天，也就是ChatGPT发布前，我团队的一位成员Obie预见到大型语言模型的潜力，并主动搭建了多节点训练及LLM预训练的技术栈。尽管我最初对此表示怀疑，认为8个GPU和2,500万参数的模型已经足够，但他坚持了下来并取得了初步成功。这促使我们整个团队转向定制化LLM业务。不到一年，我们便在256个A100 GPU上完成了对Llama 7B模型的首次开源复现，该模型在1万亿个token上进行了训练。这在当时是一项艰巨的工程，而现在可能只是一个实习生项目。</p>
+<p>关于被Databricks收购，据传Naveen Rao与Databricks的CEO Ali Ghodsi在一次活动中相识并一拍即合。这次合并具有很强的战略协同性：MosaicML作为一家定制化模型训练公司，迫切需要数据；而Databricks作为一家数据公司，也需要定制化训练能力来释放数据的价值。Databricks的创始人很早就意识到AI是数据的应用，两者密不可分，其年度峰会早在2018年左右就从“Spark Summit”更名为“Data and AI Summit”。</p>
+<p>目前，我负责领导一个研究团队。我的日常工作一方面是为公司承担风险预算，探索前沿和高风险的项目。我们的职责就是去尝试可能失败的新事物，例如大规模强化学习或开发基于前沿技术的新产品。有时一个项目可能需要历经数年，在模型能力发展到足够水平后才能取得突破。今年（2026年）就有一个始于2022年的项目，随着模型能力的提升终于取得了颠覆性的进展。另一方面，我花费大量时间与企业客户交流，理解他们在应用AI时遇到的瓶颈，并基于我们在机器学习领域的专业知识，发明全新的技术来解决这些问题。我们的最终评估标准是客户是否真正采纳、喜爱并愿意为我们的技术付费，甚至因此获得职业上的成功。</p>
+<p><b>从您与企业客户的深入交流来看，当前阻碍AI在企业中实现10倍规模化应用的最大瓶颈是什么？</b></p>
+<p>简而言之，最大的瓶颈是评估，也就是衡量。尽管模型的智能水平已经相当高，例如Claude Sonnet 3.5之后的模型，在许多复杂的企业和知识型任务中已经表现得足够好。问题不在于模型不够聪明，而在于我们如何清晰地描述希望AI完成的任务，以及如何判断它是否做好了。这本质上是一个评估任务。</p>
+<p>即使拥有一个比Mythos聪明10倍的模型，或者世界上最聪明的人，如果他们不清楚任务目标和评价标准，他们仍然会失败。因此，真正的挑战在于定义任务和衡量成功。如果我们能在这方面取得突破，将为企业释放巨大的AI价值。反之，如果评估问题得不到解决，即使模型能力再强，也无法有效落地。</p>
+<p><b>在企业构建AI应用的过程中，从原型验证到规模化部署，应如何决策何时采用提示词工程、何时转向训练定制化模型？</b></p>
+<p>这个决策过程可以类比软件开发。初期阶段，类似用Python构建原型，目标是快速验证想法的可行性。此时应该使用最强大的基础模型，通过提示词工程和少量“凭感觉”的评估样本，来验证任务是否值得投入更多资源。即使成本较高，快速失败的价值也远大于过早投入大量工程资源。</p>
+<p>当一个用例被证明有价值，并且用户反馈良好，就可以进入优化阶段。这包括使用自动化工具（如GEPA）针对已建立的评估集进行提示词优化，或者尝试使用更小、更高效的模型来降低成本。</p>
+<p>当一个应用场景被确认将长期大规模存在时，就到了训练定制化模型的最佳时机。这好比将原型代码从Python重写为Rust，是为了追求极致的效率和可扩展性。通过定制化训练，例如进行一些定制化的强化学习，可以将成本降低5倍甚至更多。我们已经看到Cu rsor和Harvey等公司公开讨论了他们通过定制模型获得的收益。在本周的峰会上，许多客户的分享中也出现了定制模型的身影，这表明他们的用例已经非常成熟，值得进行深度投入。</p>
+<p><b>企业在构建和应用AI评估体系方面进展如何？他们是已经建立了稳健的评估流程，还是这仍是未来一年需要努力的方向？</b></p>
+<p>企业在这方面的进展呈现出一种正态分布的态势，但我们不应低估他们学习和适应的速度。几个月前，我与一家大型医疗保健公司的高管层会面，包括其CFO和CEO，他们已经能够深入探讨评估和“裁判”机制的细节问题，这表明高层领导者对AI技术趋势的认知正在迅速深化。</p>
+<p>在实践层面，一些领先企业已经取得了令人瞩目的成就。例如，我本周接触的一家Databricks客户，他们从事医疗敏感领域的应用，已经标注了12,000个样本，并建立和校准了一个由70多名“裁判”组成的评估团队。这种严谨程度甚至超过了许多专业外包服务。两年前，我还在向他们介绍“裁判”机制的重要性，而现在他们已经成为该领域的专家。这预示了行业未来的发展方向：一旦拥有了这样强大的评估能力，所能释放的价值将是巨大的。</p>
+<p>同时，我也观察到业界正在探讨线上评估与线下评估的平衡。线上评估侧重于每日审查实际应用中的轨迹，而线下评估则像单元测试，使用静态数据集进行回归测试。如何将线上发现的异常情况高效地转化为线下的单元测试用例，形成一个闭环，是目前尚未完全解决的流程问题。我们当前在AI领域的工程实践，好比软件开发的1,960年代，仍在使用打孔卡。我们期待着AI领域“面向对象编程”范式的出现。许多企业最初尝试使用“赞/踩”的简单反馈机制，但这无法提供足够的信息来理解问题所在并进行有效迭代，这也凸显了建立更完善的线下评估体系的重要性。</p>
+<p><b>在企业应用场景中，如何定义一个好的、严谨的AI评测？其具体实践方法是怎样的？</b></p>
+<p>评测AI的严谨性，可以类比自动驾驶汽车。人类驾驶员通过简单的路考即可上路，但我们绝不会允许自动驾驶汽车仅通过同等测试就上路行驶。这是因为AI能够以任意大的规模进行扩展，一个软件更新可以同时影响所有单元。我们整个世界的构建都围绕着人类的优缺点以及人类的局限性，但AI不受此限。因此，衡量AI必须达到Waymo自动驾驶汽车那样的严谨程度，即通过多个激光雷达传感器和长达十年的数据标注来精确测量驾驶行为的方方面面。这种严谨性不仅适用于AI，也为衡量人类工作提供了新机遇，其精确度远超传统的主观绩效评估。</p>
+<p>在具体实践上，严谨的评测始于一个简单的实例。正如Waymo最初可能在谷歌园区内设置包含路标、红绿灯和模拟行人的简单驾驶路线进行测试，企业评测也可以从一个电子表格或一个反复提出的问题开始，并设定几个标准答案，通过一个中等水平的LLM裁判来判断输出是否匹配。可以从一个例子开始，逐步增加到两个、三个。这类似于在新模型发布时，人们会用自己偏好的问题进行“体感测试”（vibe test）。随着时间的推移，这种“体感测试”会逐渐演变为正式的评测。当系统大规模部署后，评测会变得更加系统化。例如，Waymo在遇到新的极端情况（corner cases）时会发布召回，并将该场景加入其评测套件中，收集更多相关数据。企业可以借鉴这种方式，从简单的测试逐步构建起一套严谨的评测体系。</p>
+<p><b>企业在投入大量资源构建了稳健的评测体系后，是否愿意与基础模型实验室（foundation model labs）共享这些评测数据？</b></p>
+<p>企业对此通常持极其谨慎的态度。数据是企业的命脉，这不仅包括字面上的数据，也包括沉淀在人力资本中的知识。对于大型语言模型的开发者而言，数据同样是其生命线，他们渴望获取更多数据。因此，企业在面对一个既想提供帮助又极度需要其核心数据的公司时，处境会变得非常复杂。</p>
+<p>Databricks在此类合作中扮演着中立角色，作为数据存储和模型应用的平台，可以在企业与模型开发者之间进行协调，使得在不直接共享敏感数据的情况下，也能对AI智能体进行评测并提供反馈。</p>
+<p>现实与模拟之间的差距（real-to-sim gap）很大程度上源于此。如果每个企业都能与模型实验室共享其稳健的评测数据，这一差距将很快被弥合。但由于企业不愿共享，前沿模型实验室（Frontier Labs）需要雇佣大量承包商来模拟整个经济体中的数据分布，这导致即使在公开基准测试上，模型表现与真实世界应用之间仍存在差距。</p>
+<p><b>如何看待当前公开基准测试（public benchmarks）的价值、局限性以及行业需要弥补的主要差距？</b></p>
+<p>公开基准测试一直以来都备受争议，但其价值不容忽视。例如，尽管CIFAR-10（图像分辨率仅32x32）和ImageNet（其中10%的类别是狗的品种，而猫只有一个类别）存在明显缺陷，但ImageNet的出现证明了深度学习的价值，推动了该领域长达五年的大量投资，极大地促进了技术进步。因此，新的公开基准测试作为行业共同的衡量标准，能够挑战并推动技术发展，尽管它们很快会因过度优化或“刷榜”（bench-maxing）而失去部分效用。</p>
+<p>当前公开基准测试的局限性在于其固有的偏见。首先，它们反映了学术界能够构建什么，以及学术界认为对AI而言什么是重要的。例如，目前对编码任务的关注度很高，但对知识相关或知识综合类任务的重视程度不足。软件工程在整个经济体中的占比仅约为1%，而学术界和硅谷往往高估了其重要性。其次，在强化学习环境领域，也存在偏向于编码相关环境的趋势，认为Docker容器足以容纳一个环境。然而，在企业视角下，许多环境的数据量达到数十PB级别，将其置于Docker容器中并实现轻松修改和重置，本身就是一个需要大规模解决的新系统问题。如何让AI智能体在10PB的环境中工作、做出更改并能立即恢复，同时避免破坏生产环境，这与学术界关注的问题截然不同。</p>
+<p>最关键的缺失在于规模。学术界的任务规模与产业界存在巨大鸿沟。正如谷歌的出现改变了信息检索领域的研究范式，因为拥有整个互联网的数据与在合成数据集上进行研究完全是两个不同量级的问题。如今，学术界再次面临同样的情况，许多研究人员离开学术界加入工业界，因为在拥有海量计算资源和真实数据的环境中工作，与在有限资源下进行研究不可同日而pano。目前没有任何学术基准测试是基于数十PB的数据集构建的，这在客观上也很难实现。</p>
+<p><b>目前哪些公开基准测试被认为较为实用？企业内部又是如何进行评测的？</b></p>
+<p>在Databricks内部，我们越来越少依赖公开基准测试，而是转向使用基于自身真实、复杂数据的内部标注基准。因为我们拥有这些数据的完全访问权限，无需征求许可或创建合成数据集。尽管如此，一些公开基准测试如BrowseComp+和Stark，以及许多检索类基准，仍然具有实用价值。虽然它们的问题设计可能有些刻意，并非真实的用户搜索场景，但确实能在有意义的层面上挑战模型的某些能力。</p>
+<p>我们也发布了自己的基准测试，例如OfficeQA。这是一个专注于解析和推理的基准，因为即便在今天，PDF解析仍是一个未被完全解决的难题。最近发布的版本中，我们与美国财政部合作，纳入了可追溯至1,789年的历史文件，例如亚历山大·汉密尔顿的薪水单。解析这些古老文件极具挑战性。虽然没有客户需要查询汉密尔顿的薪资，但这类任务能有效推动模型在关键能力上的进步。这个基准已被OpenAI纳入其每个新模型的发布评测中。</p>
+<p>然而，即便是OfficeQA，其规模也远小于我们内部正在进行的评测。在内部，我们面对的是数十PB的工作空间，环境是动态的，答案甚至可能每天都在变化。</p>
+<p><b>随着企业赋予AI模型更多的工具、数据和访问权限，治理变得至关重要。企业在为准确性构建评测体系的同时，是否也为治理建立了相应的评测？</b></p>
+<p>目前，行业甚至还没有找到衡量治理的有效方法。治理这个概念对普通AI从业者来说可能比较陌生，它主要关注模型或个人应拥有何种访问权限。这个问题看似简单，比如区分哪些代码或财务信息可以访问，哪些不可以。但在一个拥有数千甚至上万名员工的公司里，权限管理会变得极其复杂。</p>
+<p>人类在权限管理上已经存在很多不严谨之处，例如为了方便而将文档设置为公司内所有人可读，甚至可编辑。AI智能体有能力发现那些人类员工从未留意过、但技术上拥有权限的敏感文件，如人力资源或法律相关文件，从而给企业带来风险。智能体以人类无法比拟的规模和方式工作，它们会进行创造性甚至奇怪的操作，这些操作在事后分析可能合乎逻辑，但在当下却难以预料。</p>
+<p>因此，将人类员工的权限直接赋予智能体并让其负责人承担责任的简单做法是行不通的。人类需要理解自己赋予了智能体哪些权限，以及智能体可能如何以意想不到的方式组合使用这些权限。例如，一个同时被授予Jira和某个谷歌文档访问权限的智能体，可能会通过结合两处的信息做出意想不到的行为。当权限范围扩展到Slack、Glean等更多服务时，情况会迅速变得混乱。</p>
+<p>评测的演进方向不仅应关注任务是否完成，还应关注其执行过程是否合理、妥当。这包括智能体需要哪些权限、实际访问了什么、是否应该访问、是否需要互联网访问权限等。互联网访问权限不像文件系统那样有明确的读写区分，智能体可以轻易地通过POST请求向互联网写入数据，这可能导致各种异常情况发生。</p>
+<p><b>过去12个月，AI模型和智能体的进展与您的预期相比如何？行业关注的焦点发生了哪些变化？</b></p>
+<p>总体而言，进展超出了我的预期。回顾2025年12月，当时风险投资界普遍预测2026年的AI大趋势将是：大规模部署工作智能体、内存成为重要议题、OpenClaw等项目备受关注、编码智能体将发挥重要作用。当时市场充满了对AI将接管我们生活的无限乐观。然而，当时我们就预见到，质量及其衡量标准，即评测，将成为核心议题。</p>
+<p>当前与客户交流时，他们最先提出的三大问题是：成本、治理和安全。我们经历了一个为期约三个月的“token最大化”（token maxing）和追求排行榜分数的阶段。现在，那个时代已经结束，追求“价值最大化”（value mogging）的时代已经到来。其次是治理问题，即智能体应拥有何种权限，以及如何避免其做出带来巨大风险的愚蠢行为。第三是安全问题，企业对于智能体能够随意安装软件包（pip install）所带来的安全隐患感到担忧，这甚至导致他们对采用初创公司的软件持谨慎态度。</p>
+<p>总而言之，整个行业和商界的姿态已经从极度乐观转向更为谨慎，大家开始加固防线，变得更加审慎。在2026年的前四五个月，行业焦点确实是“token最大化”，即如何将模型接入上下文和工具中以探索其能力。随着Anthropic和OpenAI的收入飙升，问题自然转向了如何优化成本、寻找成本与性能的帕累托最优解，以及判断完成特定任务是否真的需要使用最大规模的模型。而所有这些优化的基础，最终都回归到了评测。</p>
+<p><b>在未来5到10年，随着AI模型能力的提升，人类在企业中将扮演什么样的角色？</b></p>
+<p>关于AI将取代所有人类工作或完全不产生影响的观点都过于简单化，也无益于讨论。声称要取代所有律师，自然会引发律师群体的反对。一个更可能出现的情景是，工作本身会发生改变，就像数字计算机、计算器和互联网带来的变革一样。许多枯燥、重复性的工作，如打字排版、誊写录音带等，已经被淘汰。但这并不意味着工作消失了，而是人们可以从事更高层次、更有价值的法律工作。</p>
+<p>世界的复杂性是分形的，任何一个问题深入探究下去，都会发现同等程度的复杂性。因此，所谓“金融AI”或“生物AI”的笼统概念，实际上是对从事这些工作的专业人士的不尊重。金融领域包含成千上万个细分任务，每个任务都复杂而微妙，并且在不同组织中有其独特性，可能全世界只有少数几个人真正理解其中一个任务的细节。</p>
+<p>AI的发展将推动人类向更高层次和任务的边界迈进。当一个领域中简单、明确的部分可以被自动化时，人类并不会因此被淘汰，正如农业效率提升并未导致95%的人口失业，反而推动了人类社会向更复杂、更有趣的领域发展。律师可以将更多时间投入到最复杂、最具挑战性的法律问题上，或者服务更多的人。例如，遗嘱规划对每个人都至关重要，但目前由于其昂贵和复杂，普及率并不高。AI的介入有望让更多人享受到这类专业服务。</p>
+<p><b>在企业客户面临的所有任务中，您认为目前有多大比例的任务已经被模型真正自动化了？实现更广泛自动化的核心突破点在哪里？</b></p>
+<p>目前已被自动化的任务比例极低，可能仅在非常低的个位数百分比。许多任务在很长一段时间内可能都难以自动化。</p>
+<p>在我看来，当前所需的核心突破并非研发更智能的模型，而是开发出更具成本效益的评测构建方法。这里的“成本效益”并非指花费更少的钱，而是指对于那些掌握着某个细分企业任务知识的少数专家来说，构建评测的过程不再是痛苦的。这个过程应该让他们感到愉悦，甚至是一种学习和成长的体验，而不是感觉自己的知识被单向地抽取到AI智能体中。</p>
+<p>这个过程可以类比AI领域的期望最大化算法，是一个双向迭代、共同进步的过程。如果能将评测的构建过程设计成一个令人愉悦的学习过程，就能同时释放AI和人类的潜力。这与农业效率的提升解放了人类劳动力、从而构建了现代世界的逻辑是一致的。如果能实现这一点，我们将能够真正释放AI的巨大潜能。</p>
+<p><b>展望未来五年，随着AI Agent训练领域的发展，相关工作将呈现何种形态？人们是否会花费大量时间构建评估、更新Agent的上下文，或在更高抽象层次上管理这些Agent？</b></p>
+<p>预测未来五年工作的具体形态存在不确定性，但可以预见的是，人类将普遍地更像管理者。人们需要学习如何以声明式的方式描述任务，并检验任务的完成质量，同时掌握在信息有限的情况下提出关键问题的能力。每个人都可能成为某种意义上的项目经理，负责编写流程并构建由多个Agent组成的流水线，如同设计自己的团队架构。</p>
+<p>这项转变将推动人类更多地进行批判性思考，并触及工作能力的边界。所有重复性的、机械性的工作都将被Agent取代。这虽然可能让习惯于常规任务的人感到不安，例如熟练进行绩效评估或研究管理，但同时也迫使每个人每天都必须更具创造力，专注于那些真正有价值、有趣且核心的工作内容。这类似于从使用打字机、穿孔卡片和大型机，到能够专注于创造性软件开发的演变。</p>
+<p>以80年代的银行业并购为例，当时一项并购业务相当于处理一堆穿孔卡片，每年仅能完成三项，且结构都非常相似。如今，一名助理就能处理三项并购，并且每一项都充满创造性和趣味性。计算机处理规模和复杂性的能力提升，催生了过去无法想象的交易，增强了经济活力。</p>
+<p>未来，任务的复杂性将持续提升。例如，在保险行业，当前（2026年）的做法可能因为加州发生野火就取消该州所有房主的保险。但到2030年，借助AI，有望实现对每栋房屋进行个性化评估。无人机可以每年多次拍摄房屋影像，分析周边环境，从而为每栋房屋量身定制保险政策，而不是因为洛杉矶的火灾就取消整个加州的保单。保险理赔员的工作将不再是遵循流程、盖章审批，而是思考如何为以前无法承保的房屋提供保险，从而将工作的边界推向新的领域。</p>
+<p>这将带来一个创造更容易、需求也随之增长的世界。更多人将投入到更有趣的工作中，同时，普通人也能以极低的成本获得如遗产规划、税务筹划等服务。尽管会计师等职业所处理的许多事务本身可能很枯燥，但他们的工作内容将变得远比现在有趣。</p>
+<p><b>目前，创建评估或训练Agent在经济活动中占比极小，预计五年后这一市场的规模将增长多少倍？</b></p>
+<p>尽管难以给出确切的倍数，但预计该市场规模将变得相当庞大，其增长潜力可能远超想象。市场增长的关键在于降低成本、简化操作，让评估工具对所有人来说都更易于使用和获取。</p>
+<p>未来的理想状态是，单次评估的成本实现数个数量级的下降，而整体市场规模则增长更多个数量级，这与所有商品的发展规律一致。正如数字计算机成本的大幅降低使其普及到手机、手表甚至烟雾探测器中一样，评估工具也应遵循类似路径。</p>
+<p>五年后，企业或许不再需要向Merkor支付数千万美元来为特定任务定制一套高质量的评估体系。取而代之的可能是，企业为一名员工购买价值1,000美元的某款产品许可证，但实际上公司内的每位员工都配备了该产品，从而使企业在Merkor上的总花费达到数亿甚至数十亿美元。届时，市场已经扩大，技术也已变革并实现民主化，就像软件行业的发展历程一样。</p>
+<p>软件开发的演变提供了一个参照：从过去需要在大学或实验室，通过特定关系才能在深夜获得大型机使用时间，用穿孔卡片运行程序，到如今使用像Claude Code这样的工具轻松构建。评估工具目前的状态类似于早期的软件开发，希望未来它能变得像现在的软件一样易于获取，从而引爆需求，使市场规模急剧扩大，让任何人都能参与其中。</p>
+<p><b>对于正在寻求采用AI的企业，有哪些核心建议？</b></p>
+<p>有两点建议。第一，企业需要同时认识到AI带来的巨大机遇与潜在风险，并在这两者之间保持一种辩证的中间立场。在推广这项我们尚未完全理解的新技术时，很容易陷入两个极端：要么因其危险而完全拒绝，要么因其潜力而盲目应用于所有领域，幻想着用“token ”取代所有员工和工作。企业必须在中间地带找到平衡，就像互联网改变了世界，但并未改变所有事情一样。</p>
+<p>第二，企业应鼓励实验。建议设立受控的沙盒环境，允许员工自下而上地尝试和应用这项技术。回顾互联网的发展，其早期是通过一种民主化的、基于第一性原理的方式构建起来的。任何人都可以创建网站，这虽然催生了许多不成熟甚至错误的应用，但也孕育了Flash动画、网络迷因的雏形，以及开源软件等改变世界的事物。</p>
+<p>因此，在企业内部创造空间，让员工能够自由尝试用AI创造新事物至关重要。大部分尝试可能结果平平，甚至显得有些愚蠢或冒险，但少数成功的尝试将可能彻底改变业务乃至世界。计算领域的一条重要经验是，无法预知谁将改变世界，所以应当尽可能为更多人提供机会。维基百科最初听起来像是一个不切实际的乌托邦项目，但它最终深刻地影响了世界。在团队管理中，给予成员一定的非结构化空间进行原型开发，让他们有机会证明最初的判断是错误的，往往能带来突破。例如，在Mosaic，正是这种开放性促成了LLM的研发并最终被收购；在Databricks，许多最初被否决但由团队成员坚持推进的项目，最终成为了公司的关键成果。因此，保持开放的心态至关重要。</p>
+</div>
+</main>
+</body></html>

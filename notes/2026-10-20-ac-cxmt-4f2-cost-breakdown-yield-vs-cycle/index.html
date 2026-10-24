@@ -1,0 +1,200 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.20 | AC | Memory | CXMT 4F2 Cost Breakdown: Yield vs Cycle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.20 | AC | Memory | CXMT 4F2 Cost Breakdown: Yield vs Cycle</h1>
+<p class="orig">原标题：长鑫4F²成本拆解：良率爬坡能否跑赢周期</p>
+<p class="tags">#memory #china</p>
+<p class="meta">AceCamp · 2026-10-20 · article 70568267</p>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>4F²结构能否带来密度优势与光刻宽容度；</li><li>30%成本差距的具体构成与增量成本影响；</li><li>4F²与G5平台的内部竞争及良率爬坡如何跑赢周期。</li></ol>
+<p class="qq">10月10日，长鑫宣布年底推出首款4F²服务器内存，市场随即开始讨论中国DRAM是否在单元结构上实现了"弯道超车"，三星、SK海力士、美光的股价也在随后几个交易日承压。有一个数字被反复引用：长鑫DDR5的每bit成本仍比三大厂高出三成以上。4F²能不能让这三成消失、什么时候消失，比"谁先发布"重要得多。而答案，在至今没有公开的良率曲线里。</p>
+<p>本报告主要整理自近期就长鑫4F²进行的访谈与调研。报告中的数据除标注外，均来自调研信息。</p>
+<h2>一、核心观点：4F²换掉的是成本劣势的来源，而不是代际差距</h2>
+<p>本报告认为，<b>4F²对长鑫的意义不在于密度领先，而在于把成本劣势的来源从"拿不到EUV"换成"良率爬不上去"。</b>前者靠长鑫自身无解，后者可以靠工程爬坡逐步解决。这一判断可以分三层展开。</p>
+<p><b>一是，4F²在长鑫当前的工艺节点上换不来密度领先，换来的是对光刻精度依赖的下降。</b>按本报告测算，长鑫4F²单元面积最多与对手的6F²大致相当，但同样单元面积下，可容许的线宽放宽约22%，这正是没有EUV的长鑫最缺的东西。</p>
+<p><b>二是，4F²上线后首先要比的不是三大厂，而是长鑫自家正在爬坡的G5。</b>情景测算显示，在高成本假设下，同等良率时4F²只比G5便宜约1.5%，几乎没有放量的经济理由。</p>
+<p><b>三是，4F²与三大厂达到成本平价，综合良率至少需要71%。</b>参照长鑫6F² DDR5的历史爬坡速度，笔者估计平价时点落在2028年前后，而DRAM周期可能的拐点、三星4F²的量产目标也落在同一年。</p>
+<p>由此，判断长鑫4F²价值的核心问题只有一个：<b>良率爬坡能否跑赢周期</b>。下文各章都围绕这个问题展开。</p>
+<h2>二、4F²追不上代差：在长鑫的节点上，单元面积最多与对手持平</h2>
+<p><b>4F²能缩小单元面积，但缩小的幅度取决于在哪个节点上做。</b>4F²和6F²都是面积系数：同样的特征尺寸F下，4F²单元面积是6F²的三分之二。问题在于，长鑫是在G4、G5这类10纳米级节点上做4F²，而三星、SK海力士的4F²瞄准的是10纳米以下的0a、0b节点。拿长鑫的4F²和对手的6F²比，F不在同一个尺度上。</p>
+<p><b>以长鑫自身节点做一次量级测算，结论很清楚。</b>调研信息显示，长鑫G4约为16纳米级，G5约为15纳米级。假设对手主流6F²约为12纳米级，那么即使长鑫在G5上做4F²，单元面积之比约为4×15²÷(6×12²)≈1.04，只是与对手大致相当；如果首代4F²落在更宽松的尺寸上，比如17纳米级，比值升到约1.34，单元反而大三分之一。换句话说，4F²无法让长鑫在密度上反超，至多把差距拉平。</p>
+<p><b>4F²真正给长鑫的是光刻宽容度。</b>同样的单元面积下，4F²容许的特征尺寸是6F²的√1.5≈1.22倍，也就是线宽可以放宽约22%。以15纳米计，这相当于约3纳米的余量。长鑫从G1（约19纳米）到G5（约15纳米）大约每代缩小1纳米，3纳米的余量约相当于两到三代的平面微缩。这份余量是一次性的：再往10纳米以下走，4F²一样会碰到光刻精度的瓶颈。对长鑫而言，4F²买到的是时间，而不是终点。</p>
+<h2>三、30%成本差里，4F²只能消掉光刻和面积那一部分</h2>
+<p><b>要判断4F²能把成本差缩小多少，得先搞清这30%由什么构成。</b>"每bit成本高三大厂30%以上"是市场引用最多的口径，最早见于SemiAnalysis 2026年6月23日发布的测算，对象是G4（约对应1z）DDR5，不是4F²。本报告把它当作待拆解的对象，而不是结论。按成本形成机制，这一差距可以拆成五项，其中只有两项与4F²直接相关。</p>
+<p><b>最大的一项来自光刻，这也是4F²针对的地方。</b>调研信息显示，在海外厂商单次曝光即可达到良率要求的关键层上，长鑫需要3—4次曝光。每多一次曝光，就多一轮光刻、刻蚀、沉积和清洗，机台时间和材料消耗随之成倍增加，这些层的加工成本因此被放大数倍。长鑫在10月10日的演讲中提到，4F²方案将DRAM阵列与CMOS外围电路工艺解耦，再通过晶圆级混合键合集成。阵列晶圆不必再迁就外围逻辑的工艺约束，可以改用相对成熟的图形化方案，从而绕开最依赖光刻精度的那一环。</p>
+<p><b>第二项是单片有效产出，4F²只能部分改善。</b>调研信息显示，长鑫G4每片晶圆约产出800—1,200颗裸片，其中15%—20%存在缺陷或不完整。4F²缩小了阵列面积，但外围电路、冗余和测试结构都会稀释面积收益，单元面积缩小三分之一，不等于每片产出多出一半。</p>
+<p><b>接下来的两项4F²无能为力，甚至会加重。</b>长鑫的设备、硅片和电子材料采购规模小于韩系厂商，议价能力偏弱，这只能靠扩产和国产替代解决；为攻关新架构持续引进人才和反复试错，短期内还会推高费用。</p>
+<p><b>4F²自己还会带来一项新成本：第二片晶圆和键合。</b>阵列与外围分开制造，意味着每颗芯片要消耗两片晶圆的加工；晶圆对晶圆（W2W）键合无法像芯片对晶圆（D2W）那样先挑出合格裸片再配对，上下任一片晶圆在同一位置有缺陷，这一组合就报废。因此综合良率近似等于阵列良率×外围良率×键合良率，任何一个环节偏低都会被乘法放大。</p>
+<p>拆完这五项，结论就很清楚：<b>4F²用新增的键合成本，换掉了旧的光刻成本，净效果完全取决于良率。</b>这正是本报告把良率曲线视为唯一标尺的原因。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568267_864c44def16ce653.webp" alt="" loading="lazy"></p>
+<h2>四、4F²要先赢过长鑫自家的G5，才谈得上追三大厂</h2>
+<p><b>30%本身也在变，4F²上线时面对的比较基准已经不是G4。</b>9月20日，长鑫宣布G5平台量产：阵列有源区半间距11.95纳米，电容深宽比45:1，每张晶圆产出较G4提升50%以上。需要注意，这里的"提升50%"是按总裸片数计算的理论值，不是良品产出。G5仍是6F²，但它在不改架构的前提下继续压缩成本，等于抬高了4F²需要跨过的门槛。</p>
+<p><b>情景测算显示，在资本配置上，4F²和G5是长鑫内部的两匹赛马。</b>按本报告的情景模型，G5的综合良率爬到约85%，单位成本即可与三大厂持平；在基准成本假设下，同等良率时4F²比G5便宜约16%；但如果双晶圆加工和键合把投入推高到"高成本情景"，同等良率下4F²只比G5便宜约1.5%（下图）。这意味着，只要4F²的良率落后G5超过一成半，或者键合成本偏向高成本情景，长鑫的理性选择都是让G5承担主要产量，4F²留在战略产品的位置。笔者判断，2027年最可能出现的局面是"<b>4F²负责发布，G5负责赚钱</b>"。</p>
+<p><b>三季度业绩已经出现成本压力的迹象，但还不足以下结论。</b>按长鑫10月16日披露的前三季度业绩预告，结合中报数据推算（二季度营收995.10亿元、归母净利润528.43亿元），三季度营收为1,146.9亿—1,196.9亿元，环比增长15.25%—20.28%；归母净利润为533.95亿—548.95亿元，环比仅增长1%—4%，净利率从二季度的约53%降至约45%—48%。公司没有解释利润增速放缓的原因。可能的解释有两种：一是价格传导滞后，长鑫出货以长协为主，TrendForce在9月30日的报告中也指出，部分供应商的服务器DRAM涨价因长协定价机制而滞后；二是折旧和研发费用提前上升。两种解释对4F²的含义完全不同，前者只是时间差，后者意味着成本先于收入启动。完整三季报中的毛利率与折旧增速，是区分二者最直接的两个数字。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568267_a4fae56e2b4a5966.webp" alt="" loading="lazy"></p>
+<h2>五、成本平价的门槛：良率需到71%—83%，时点大概率在2028年前后</h2>
+<p><b>目前无法画出长鑫4F²的真实良率曲线，可行的办法是反推平价所需的良率。</b>截至报告日，长鑫尚未公开披露4F²产品的送样信息，也没有给出良率、速率和容量。本报告以长鑫自身的6F²经验作为参照：调研信息显示，长鑫DDR5良率从2024年量产初期的不到50%，爬升至2025年底的约80%。按18—24个月计，笔者估算平均每月提升约1.3—1.7个百分点。</p>
+<p><b>情景测算给出的平价区间是71%—83%。</b>在基准成本假设下，4F²综合良率约71%即可与三大厂成本持平，良率达到85%时比三大厂便宜约16%；在高成本假设下，平价点上移至约83%（上图）。两种情景的差别全部来自加工投入，也就是外围晶圆、键合与测试的成本。</p>
+<p><b>比平价点更值得警惕的，是存在"永远追不上"的组合。</b>下图把4F²的毛位元产出倍数g和完整加工投入倍数k拆开：所需良率=90%×k÷g。如果g只有1.2倍，而k达到1.4倍以上，4F²要与90%良率的成熟6F²持平，所需良率超过100%，在经济上不可达。需要说明的是，前文"单元面积最多与对手持平"比较的是长鑫与对手的密度，与这里长鑫自身4F²相对6F²的g不是同一基准。真正决定g和k的，是外围晶圆走什么工艺：外围电路若能用更成熟、更便宜的逻辑工艺，k就能压低，4F²就落在可达区间；若外围仍需先进工艺，k会显著抬升。这是判断4F²经济性最关键、也最容易被忽视的变量。</p>
+<p><b>把爬坡速度叠加上去，可以得到一个可以证伪的时点。</b>假设4F²首发良率与当年6F² DDR5相近（约50%），爬坡速度也相同，那么基准情景的平价点大约在发布后12—16个月出现，高成本情景需要20个月以上。粗略换算，<b>4F²与三大厂的成本平价大概率出现在2028年前后</b>，上半年还是下半年取决于键合成本落在哪一档。</p>
+<p><b>需要强调，"成本平价"不等于"开始赚钱"。</b>在当前价格下，低良率产品同样可能盈利；平价点衡量的是价格回归正常后，长鑫能否与三大厂在同一成本线上竞争。这一区分决定了4F²的投资含义（见第七章）。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568267_7610caf417abffd5.webp" alt="" loading="lazy"></p>
+<h2>六、服务器量产：年底只是发布，真正的考验是成本平价与周期拐点同在2028年</h2>
+<p>"服务器内存何时量产"至少要分成四块时钟来看，它们走得并不一样快。</p>
+<p><b>发布时钟年底就会走到，但发布不等于量产。</b>Tom's Hardware注意到，长鑫至今没有公布产品的速率和容量。在规格披露之前，无法判断首代产品是全面采用4F²，还是局部导入。</p>
+<p><b>认证时钟取决于客户，而长鑫这次选择了一条反常的路径。</b>长鑫的惯例是新一代产品先在移动端颗粒上完成验证，再导入服务器；即便工艺不变，换一条产线也要重新送样，只是周期会缩短。目前长鑫的服务器客户全部在国内，阿里云的服务器已在稳定使用长鑫颗粒。首代4F²直接选择服务器RDIMM，打破了"先移动、后服务器"的惯例。笔者判断，原因在于服务器是眼下最能消化低良率成本的市场。TrendForce在9月30日的报告中指出，四季度服务器DRAM仍供不应求，云服务商为支撑agentic AI的通用服务器正在加大RDIMM采购，供应商也在提高低容量RDIMM的供应比例，同时模组组装与测试产能成为约束。低容量规格加上关系紧密的国内云客户，正好适合承接良率爬坡期的高成本。这一判断有待产品规格披露后验证。</p>
+<p><b>成本平价时钟按上一章推演在2028年前后，周期时钟决定这个时点是否来得及。</b>TrendForce预计四季度通用DRAM合约价环比上涨10%—15%，涨幅在收窄；同时上调2027年HBM价格展望，预计混合ASP同比上涨121%，三大厂的先进产能将继续被HBM占用。笔者4月25日报告曾判断，HBM转换正把通用DRAM的周期性短缺放大为结构性价格扭曲，这为长鑫提供了一个爬坡窗口。但窗口有边界：存储供需拐点最快在2028年出现。</p>
+<p><b>三个时点在2028年重叠，是长鑫4F²最大的不确定性。</b>如果成本平价先于周期拐点到来，4F²会在价格回落时成为长鑫守住毛利率的工具；如果周期拐点先到，4F²将在低良率阶段直接面对价格下行，同时还要迎战已经量产的三星4F²。这再次回到全文的核心问题：良率爬坡能否跑赢周期。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568267_3bff604f56eddcfb.webp" alt="" loading="lazy"></p>
+<h2>七、投资含义：4F²是长鑫估值的下行保护，对竞争对手的压力会来得更晚</h2>
+<p><b>对长鑫科技而言，4F²更接近估值的"下行保护"，而不是额外的上行期权。</b>笔者8月3日报告分析，价格回归常态时，成本差是决定长鑫能否扛过下行周期的关键变量。沿着这一逻辑，4F²决定的是2028年价格回落时长鑫的毛利率能守住多少，而不是2027年能多赚多少。市场对此已有所反应：10月19日，长鑫股价在前三季度业绩预告发布后盘中一度下跌8.9%，收盘跌7.8%，投资者开始关注利润增速，而不只是营收规模。</p>
+<p><b>对三星、SK海力士、美光以及以通用DRAM为主的厂商，4F²的冲击时点要晚于市场的第一反应，但会落在更难受的位置。</b>原因在于成本对定价行为的约束：成本比对手高三成，意味着任何降价都先伤到长鑫自己。调研信息显示，长鑫当前售价只比韩系略低，且差距在收窄，在定价上更像跟随者。在4F²跨过成本平价点之前，长鑫对通用DRAM价格体系起的是支撑作用，而不是冲击；一旦跨过平价点，它就有了价格竞争的成本底气，而这一时点可能恰好落在2028年的周期拐点附近。受影响最大的，是收入更依赖通用DRAM、而不是HBM的厂商。</p>
+<p><b>对产业链而言，4F²新增的价值量集中在键合与测试两个环节。</b>第一，键合设备。拓荆科技在9月18日举行的2026半导体生态发展大会上表示，公司Hybrid Bonding相关产品已在大规模量产；公司半年报显示，上半年合同负债约51.31亿元。但公开资料没有披露拓荆与长鑫4F²项目的具体订单关系，这一层只能视为逻辑关联。第二，测试。长鑫9月28日公告，拟投资108亿元（其中超募资金50亿元）建设存储器晶圆后道测试基地二期，建设周期37个月，用于DRAM测试和模组组装。叠加TrendForce所指出的测试产能约束，4F²的双晶圆结构与RDIMM模组测试，只会进一步提高测试强度。第三，接口芯片。澜起科技9月28日宣布DDR5第五子代RCD（RCD05）量产，支持8,000MT/s；6月10日已送样支持9,200MT/s的RCD06。任何RDIMM都离不开RCD，但长鑫4F² RDIMM带来的增量，需要服务器认证完成后才会进入利润表。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568267_d4457520c85d5253.webp" alt="" loading="lazy"></p>
+<p><b>判断能否成立，可以用三个信号检验。</b>其一，规格与占比：长鑫披露4F² RDIMM的容量、速率和送样客户，并说明4F²在产品中的占比；若首批只是局部导入，成本平价时钟还要后移。其二，成本是否先于收入启动：三季报与年报中毛利率和折旧的相对变化，若折旧增速持续快于营收增速，"赚钱太晚"的风险正在兑现。这与笔者10月14日报告的结论一致，即长鑫4F²的风险在于"赚钱太晚"，而非"路线选错"。其三，定价行为：长鑫与三大厂的报价差，若合约价仍在上涨而价差突然拉大，往往意味着长鑫成本已接近平价点，开始主动争取份额。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568267_c85e299fb99eb389.webp" alt="" loading="lazy"></p>
+<p><b>下行风险</b>包括：出口管制延伸至DUV设备的维修与服务，同时影响G5与4F²；4F²良率爬坡慢于6F²的历史速度，或外围晶圆需要采用先进工艺，使加工投入落入不可达区间；DRAM价格早于2028年回落，压缩低良率阶段的盈利空间；三星、SK海力士的4F²量产提前。<b>上行风险</b>包括：外围晶圆可采用成熟逻辑工艺，加工投入接近基准情景；4F²良率爬坡快于6F²经验；HBM对通用DRAM产能的挤占持续时间超出预期，延长长鑫的爬坡窗口。</p>
+<p><b>以上内容不构成任何投资建议，请风险自担。</b></p>
+</div>
+</main>
+</body></html>

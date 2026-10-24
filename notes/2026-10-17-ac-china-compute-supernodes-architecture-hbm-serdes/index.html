@@ -1,0 +1,195 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.17 | AC | China AI | China Compute Supernodes: Architecture, HBM &amp; SerDes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.17 | AC | China AI | China Compute Supernodes: Architecture, HBM &amp; SerDes</h1>
+<p class="orig">原标题：国产算力超节点——数据中心架构_超节点演进_价值量_HBM_SerDes</p>
+<p class="tags">#semis #networking #china</p>
+<p class="meta">AceCamp · 2026-10-17 · article 70568129</p>
+<div class="body">
+<h2>摘要</h2>
+<p>1、超算节点演进：Atlas 950 采用光电混合互联（UB 2.0），通过电连接降低成本与时延，光连接解决长距传输，实现系统级性能跃升。2、HBM 路径差异化：采用自研 HBM 变体，集成主动加压功能提升传输速率，逻辑层面与美系标准分离。</p>
+<p>专家观点：</p>
+<p><b>请介绍一下公司超算节点这几代产品的发展演进，以及今年（2026年）和明年（2027年）的规划情况？</b></p>
+<p>超算节点是大模型时代与传统GPU计算的一个分界点，行业内通常认为其具备四个核心特点：第一，具备MPU或GPU之间C2C（Chip-to-Chip）的直连能力，不再通过PCIe，而是类似NVIDIA NVLink的芯片间高速互联，其底层技术是高速SerDes；第二，具备统一显存互访能力，能将各卡的显存整合成一个统一管理的大显存池；第三，具备整机交付能力，例如Atlas 950或Cloud Matrix 384，无论是风冷还是液冷，都作为一个单一整体进行交付；第四，由统一的软件体系管理底层的互联协议，如MD-Link或UB，而非传统的IP网络。</p>
+<p>国内超算节点的发展可分为三个阶段：</p>
+<p>第一阶段是去年（2025年）初推出的Cloud Matrix 384，它将384张910芯片与200颗CPU通过UB 1.0协议互联，组成一个单一整体。当时，由于电互联SerDes技术存在瓶颈，该方案完全采用光互联，通过独立的光网络交换机和光交换芯片实现，使用了超过6,000个光模块。这一代产品主要用于支撑超大模型的训练，对于参数量达到万亿级别（T-level）的MoE模型，即使是推理任务，也必须依赖此类超算节点的高速卡间互联能力。</p>
+<p>第二阶段是计划于今年（2026年）年底发布的Atlas 950，它将1,024张950DD芯片通过UB 2.0高速互联协议组成一个算力整体。与第一代不同，Atlas 950采用了光电混合互联的方案。之所以引入电连接，主要有三个原因：首先，降低成本，1.6T速率的光模块单价接近1,000美金，成本高昂；其次，降低时延，计算芯片输出的是电信号，通过电连接直接传输速度最快，避免了光电转换和编解码过程带来的时延；最后，降低功耗，大量光模块的耗电量同样是一个需要考虑的问题。</p>
+<p>虽然光的传播速度快，但在实际应用中，电信号在短距离传输时是以电磁波的形式，其传播速度与光基本一致。电连接的主要瓶颈在于传输距离较短，因此光电结合成为当前阶段的最佳方案，这符合行业技术演进的规律。通过这种方式，既能利用电连接的低成本、低时延优势，又能通过光连接解决长距离传输问题，从而在提升大规模集群数量的同时，优化成本效率并降低功耗压力。</p>
+<p><b>超级节点（Super Pod）未来的发展阶段、核心价值以及其设计旨在解决的关键问题？</b></p>
+<p>超级节点的未来发展将进入以“Data Hall”为形态的第三阶段，即数据中心内的一个“厅”构成一个超级节点。规划中的一个超级节点将由200个机柜组成，旨在支持需要数千张卡协同工作以缩短训练周期的场景，目标是将原本需要两到三个月的训练时间压缩至一个月甚至两周内，从而实现成本可控和高效运行。</p>
+<p>超级节点的设计、生产和规划具有三大核心价值：</p>
+<p>第一，解决大模型持续增长带来的痛点。随着模型参数量的急剧膨胀，例如从2025年的400B参数，到2026年上半年智谱新模型的300多B参数，再到近期DeepSeek V4的1.T以上参数，业界普遍采用增加神经网络输入层数量和网络层数的方法来提升模型性能。超级节点的发展方向，无论是早期的GPU算力提升、后续的整柜交付，还是当前的跨机柜集群（如英伟达的574张卡集群和阿特拉斯的4,000张卡集群），都是为了应对大模型参数、神经元数量及输入层规模急剧膨胀的问题。未来神经网络预计将沿着模型参数持续增大和向垂直领域模型拓展两个方向发展，而超级节点是支撑这些发展的关键基础设施。</p>
+<p>第二，以系统级能力补充单芯片制程的短板。大模型对算力的需求增长速度已超过摩尔定律，即单芯片算力约18个月翻一倍的规律。为应对这一挑战，业界转向通过系统级设计来弥补单芯片算力和制造工艺的制约。例如，英伟达自安培架构开始，尤其在Hopper架构之后，便采用整柜形态，通过收购Mellanox等掌握高速通信技术，用系统级方案补充单芯片性能。其核心在于具备C2C（Chip-to-Chip）通信能力。以950DT为例，其采用四Die合封技术，物理上是将四块芯片封装在同一基板上，其中两个D ie专门用于C2C通信，这虽然占用了宝贵的芯片面积并增加了成本，但却是弥补单芯片短板、实现系统级性能跃升的关键，也解释了数据中心卡与消费级显卡价格差异巨大的物理原因。</p>
+<p>第三，解决商业模式和全栈化交付的问题。超级节点以整柜或Super Pod的形式进行打包交付，将高压直流、片间通信（无论是光模块、MPO、CPO还是CPC）、液冷散热等技术整合为一体化的解决方案。这种交付模式使得上述技术成为核心控标点和技术门槛。同时，它实现了端到端的统一液冷或热管理设计与产品化交付。例如，MVLTER实现了90%的液冷，而950之后的CPO方案则实现了100%液冷，不再有风扇。这种集成化的交付方式为产业链带来了变革机会，尤其是在电源、PCB等领域，可能为新进入者或技术颠覆者提供发展空间。</p>
+<p><b>当前超级节点发展面临哪些主要挑战、难点或风险？</b></p>
+<p>超级节点发展当前面临两大核心挑战与风险：</p>
+<p>第一，生态系统封闭，各厂商产品互不兼容。由于超级节点技术发展迅速，不同厂商的芯片、C2C通信协议乃至软件栈之间普遍存在互不相通的问题。例如，使用英伟达的算力卡或整机，就必须运行在其特定的软件生态之上，并采用其认证的板卡、电源等配套组件，形成了一个相对封闭的体系。国内相关部门已注意到这一问题，并倡导国内几家主要厂商实现互通以构建超级节点，但目前这仍是一个短板和风险。</p>
+<p>第二，技术壁垒高，易形成“马太效应”。尽管部分互联标准（如UB）已开源，理论上允许其他芯片厂商支持，但现实中能够跟进头部企业研发投入和技术迭代的二、三梯队厂商非常少。超级节点的研发投入巨大，通常以十亿级为单位，且投资回报周期难以估量，风险极高。这导致在实际的产能和交付上，市场供给仍主要由头部厂商主导，强者愈强。这种“马太效应”是科技行业的竞争规律，尤其符合美国市场的竞争原则，即通过绝对的技术领先优势甩开竞争对手。因此，尽管存在标准开源的努力，但技术和资本的高门槛使得市场集中度很可能持续提高。</p>
+<p><b>DeepSeek大模型对于昇腾910和950系列芯片的生态拉动作用具体体现在哪些方面？</b></p>
+<p>DeepSeek对昇腾910和950系列芯片的生态拉动作用非常巨大，属于第一梯队，其生态层面的拉动是无可替代的。当前，许多互联网或创业公司主要使用国外的开源模型进行推理，或者利用TensorFlow、PyTorch等框架来构建模型。这些主流框架的底层是为在CUDA上运行而设计的，脱离CUDA环境便无法运行，迁移成本极高。DeepSeek的价值在于，它能够从神经网络的构建，到前向传播、反向传播、梯度下降，乃至神经元的计算，完全实现计算自主化，并将算力优化落实到计算芯片上。这一过程完全摆脱了对CUDA环境的依赖，从而形成了与西方并行的独立生态。这种从底层重构并与国产算力深度绑定的方式，是对生态的强力扶持与绑定。尽管这种模式可能导致生态圈子相对较小，难以形成“百家争鸣”的局面，但在当前环境下，能够自主重写底层框架的企业凤毛麟角，因此这项基础性工作具有极高的价值。</p>
+<p><b>华为昇腾系列AI芯片市场需求和供给方面呈现何种态势？</b></p>
+<p>从AIGC的市场角度看，需求非常旺盛。例如，仅一家大型互联网公司在2026年就可能消耗约16万片芯片，如果市场上有十家类似规模的公司，就将消耗掉全部产能，显示出市场需求的强劲。因此，当前市场的主要瓶颈不在于需求，而在于供给端，供给能力是主要的短板。</p>
+<p><b>华为昇腾系列AI芯片在2026年和2027年的产品构成是怎样的？不同型号（如910、950）及其不同版本（如DT、PR）的出货占比将如何演变？</b></p>
+<p>2026年，昇腾910和950的出货量大致是对半开的局面。其中，910的部分出货是为了配合原有的384超级节点。昇腾950芯片架构已发生变化，其在2026年出货的产品中，PR版本将是主流，DT版本的进展相对较慢。展望2027年，产品结构将以950为主，在2027年的950出货中，DT版本和PR版本将各占一半。DT版本配置更高，配备144GB HBM显存，而PR版本为128GB显存，两者在通信能力上也存在显著差异。</p>
+<p><b>华为昇腾系列AI芯片未来的产品演进路线图是怎样的，特别是在2028年至2030年期间的技术发展方向？</b></p>
+<p>遵循延续摩尔定律的演进路径，预计到2028年，960将会推出。960极有可能采用近存处理单元的通信方式作为一个过渡阶段。再往后发展，到2029年至2030年期间，后续两到三代产品可能会转向CPO（共封装光学）技术，实现芯片间的光连接，即信号直接以光的形式在芯片间传输。</p>
+<p><b>华为对HBM的需求量如何，以及如何解决HBM供应短缺的问题？</b></p>
+<p>目前内存颗粒价格上涨显著，2026年至今的价格相比2025年同期已上涨约3.5倍，苹果向三星采购内存的价格也已翻倍。在此背景下，HBM作为一种稀缺资源，其供应问题备受关注。华为无法获取HBM2E或HBM3E，这与价格无关，根本原因在于此类H BM的标准由美国计算芯片厂商主导制定，例如美光率先定义了HBM3E标准。计算芯片厂商在与存储芯片厂商合作时，会详细规定显存的引脚、带宽、信号等规格，从而掌握了标准制定权。因此，遵循这些标准的产品自然无法供应给华为。</p>
+<p><b>华为所使用的HBM是何种形态，其技术路线与主流HBM有何差异？</b></p>
+<p>华为所采用的HBM并非HBM2E或HBM3E，而是一种HBM的变体，其标准与美国主导的体系完全不同。这种变体同样应用了堆叠和硅通孔等技术，将存储单元堆叠在计算芯片旁，通过穿孔方式逐层连接至芯片内部，实现了高带宽。其核心差异在于工作方式：传统的Memory是被动式存储，而华为采用的HBM方案中，HBM部分集成了类似“水泵”的主动加压功能，能主动将数据“泵”入计算芯片，从而大幅提升数据传输速率。这是一种通过空间换时间、实现技术追赶的路径。由于标准和生态已经分离，即使未来能够获得三星或海力士的HBM，也无法与现有芯片兼容适配。</p>
+<p><b>华为自研的HBM方案与三星、海力士等主流产品在技术上有哪些异同？</b></p>
+<p>两种技术路线在组合方式上存在显著差异，但在底层生产工艺和物理结构上仍有相似之处，例如在堆叠、穿孔、线宽等方面可能借鉴了相近的技术。然而，核心的工作方式和控制逻辑已完全不同。可以理解为，虽然两者都被称为HBM，但在逻辑层面已演变为两种形态。因此，华为后续的HBM产品与海力士、三星的产品将完全不同，需要进行大量的适配工作，架构和内部结构也存在根本性差异。</p>
+<p><b>华为在先进封装技术（如CoWoS-L/R/S或2.5D/3D封装）方面有哪些进展？</b></p>
+<p>先进封装是华为投入较大的主力研发路线之一，相关的底层工艺研究从未停止。这包括Die与Die之间的连接方式以及Chiplet等技术方向。</p>
+<p><b>在国内半导体产业链中，华为与长电科技、通富微电等封测厂商的合作模式是怎样的？</b></p>
+<p>华为并未大规模自建封测工厂，其半导体生产工艺、标准等方面的投入巨大。在高端芯片领域，生产工艺本身就是研发的核心环节。长电科技、通富微电等厂商过往为AMD等客户提供服务，积累了丰富的经验。在此基础上，它们能够承接新产品架构下的封装工艺需求，尤其是在HBM和多Die整合封装等先进技术方面。这种合作关系对这些封测厂商的拉动作用显著，容易形成马太效应。即使海外订单减少，来自国内关键产业的订单也能提供有力支撑。长远来看，这有望形成产业反哺，促进国内封测企业迅速发展壮大，类似于当年台湾半导体产业的成长路径。一旦形成产量规模，结合自定义的生产工艺和标准，将有效拉动产业链升级，构建起从产业、现金流、产能到市场的国内循环，最终实现产能输出，形成难以逆转的规模优势。</p>
+<p><b>高端芯片的生产工艺难度体现在哪些方面？</b></p>
+<p>高端芯片的生产工艺代表了人类工业制造的极致水平。以一个实验为例，为测试微流道液冷方案，需要模拟一颗在不到8平方厘米面积内发热量高达1,200瓦的GPU。在市场上寻找能够制作如此小、薄且能承受高功率输入的模拟发热元件时，供应商普遍表示无法实现。主要难点在于供电，需要在极小面积内集成大量或大电流通路，这与芯片本身通过数千个引脚（如LGA或BGA封装）供电的原理类似，在物理实现上极为困难，最终只能使用真实的芯片进行测试。这说明高端芯片的制造过程需要对生产工艺、材料、环境等变量有深刻的理解和掌控，从而形成产业优势。在材料方面，产业界已经在探索新材料的应用，例如近期热门的玻璃基板。更进一步的技术方向是超越玻璃基板，直接采用金刚石基板，以实现最佳性能。然而，将金刚石这种昂贵且稀缺的材料加工成符合极致工艺和良率要求的芯片基板，其技术壁垒极高，全球范围内能实现的工厂极少，这为掌握该技术的企业提供了形成产业领导优势的机会。</p>
+<p><b>目前市场上384卡集群以及英伟达B300 8卡服务器的实际市场价值分别是多少？</b></p>
+<p>目录价与实际市场成交价存在巨大差异。以英伟达B300 8卡服务器为例，其目录价大约在60万美元左右，但在国内市场的实际成交价已高达1,400万元人民币。对于384卡或更大规模的4,000卡集群，其价值可以基于此进行比例推算。在定价方面，国产卡相较于国外同类产品，其实际成交价通常会有一定的折扣。</p>
+<p><b>华为下一代Atlas架构在互联技术方案上将有哪些变化？</b></p>
+<p>在下一代Atlas架构中，电互联的比重将会增加。预计在2026年下半年会发布一个采用电互联的板级版本。此前384卡集群之所以全部采用光互联，主要是因为SerDes技术存在短板。随着SerDes技术的演进，新架构将开始应用电互联方案。不过，电互联的应用范围将主要限定在机柜内部，用于实现3米以内的芯片到芯片（C2C）连接。而机柜与机柜之间的连接，由于电信号固有的距离限制，仍将继续采用光互联技术。</p>
+<p><b>SerDes技术作为行业难点，其技术壁垒主要体现在哪里？目前国内产业的发展现状如何？</b></p>
+<p>SerDes是解决芯片间高速互联的根本性技术，也是全球范围内的技术难点，英伟达在该领域处于领先地位。其技术优势的形成，部分得益于2017年对Mellanox的并购，这为其后续在A100及Hopper架构产品上建立代际优势奠定了基础。SerD es技术的难点主要集中在芯片的发送端，当然接收端也存在挑战。目前国内在这一领域尚无成熟的产业链，但随着C2C超节点需求的增长，已经开始有公司专注于SerDes技术的研发。</p>
+</div>
+</main>
+</body></html>

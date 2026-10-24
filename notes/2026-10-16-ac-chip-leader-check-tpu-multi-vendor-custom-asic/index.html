@@ -1,0 +1,193 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.16 | AC | ASIC | Chip Leader Check: TPU Multi-Vendor &amp; Custom ASIC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.16 | AC | ASIC | Chip Leader Check: TPU Multi-Vendor &amp; Custom ASIC</h1>
+<p class="orig">原标题：芯片大厂调研_TPU多供应商格局及放量节奏,定制ASIC订单推进,交换芯片供给趋势-聚焦Google_Anthropic_OpenAI_联发科_Marvell_台积电_AWS等</p>
+<p class="tags">#asic #networking</p>
+<p class="meta">AceCamp · 2026-10-16 · article 70568111</p>
+<div class="body">
+<h2>摘要</h2>
+<p>1、TPU多供应商格局及放量节奏, 2、定制ASIC订单推进, 3、交换芯片供给趋势。</p>
+<p><b>以下为专家观点：</b></p>
+<p><b>谷歌、Anthropic和OpenAI在自研ASIC芯片项目上分别有哪些新的动向和规划，特别是谷歌引入联发科和Marvell之后，这三家供应商的角色分工是怎样的？</b></p>
+<p>从2026年开始，谷歌的TPU项目引入了联发科和Marvell作为新的合作伙伴，与原有的公司形成了多元化的供应格局，三者的分工各有侧重。首先，公司在未来五年内仍将是谷歌核心IP的主要开发者，尤其是在高速I/O等领域。即便在联发科参与设计的芯片中，仍会大量使用公司的IP，公司将从中获取可观的royalty收入。公司未来会继续协助谷歌开发支持其Gemini大模型的最先进架构。其次，谷歌与联发科的合作主要聚焦于降低推理端成本。随着AI模型及应用的落地，市场关注点正从训练端转向推理端，客户对每个TOKEN的成本及硬件总成本日益敏感。在此背景下，谷歌委托联发科开发低成本的推理芯片。双方的合作模式与公司不同：谷歌更多地负责芯片前端的架构与设计，而联发科则负责后端实现，如布局布线、测试和封装。这种模式使谷歌能通过将更多设计工作内部化来最大限度地降低芯片成本。最后，谷歌与Marvell的合作旨在开创一种全新的推理架构。Marvell曾为Groq开发过LPU，该产品被英伟达在其下一代推理架构中采用，通过将内存任务交由LPU处理，减少对HBM的依赖，从而降低成本、提升内存读取速度（采用SRAM），并将GPU解放出来专注于token解析，最终实现更低的延迟和更高的性能。借鉴此思路，谷歌委托Marvell开发一款功能类似的芯片，该芯片采用LPDDR，通过CXL或未来可能采用的OCS技术实现共享内存池。这颗芯片将与谷歌未来的推理TPU协同工作：TPU专职解析token，而Marvell开发的芯片则专职读写内存池。这一组合方案旨在实现极低的延迟，将成为谷歌未来在智能体等长上下文推理应用中的主力架构。</p>
+<p><b>如何理解数据中心AI芯片部署规模所提及的“5GW”功耗概念，以及基于此，谷歌TPU的部署量级大概是多少？</b></p>
+<p>“GW”（吉瓦）是衡量数据中心内AI芯片集群总功耗的单位，通过它可以推算出芯片的部署数量。具体的换算关系取决于单颗芯片的功耗。以一颗功耗为1千瓦的AI芯片为例，1GW的总功耗就对应着100万颗此类芯片的部署量。对于谷歌的TPU而言，其单颗芯片的功耗通常在700至800瓦之间。基于这个功耗水平进行估算，1GW的功耗大约对应140万颗谷歌TPU。因此，如果总部署规模达到5GW，则意味着谷歌TPU的部署总量接近700万颗。</p>
+<p><b>谷歌TPU在2026年的出货结构、整体规模以及供应商情况如何？为何其出货计划有所下调？</b></p>
+<p>谷歌在2026年年初规划的TPU出货规模约为420万颗，但目前已下调至360万颗左右，减少了约60万颗。这360万颗芯片主要由公司为谷歌代工，涵盖了V6、V7和V8三个版本。下调的主要原因是台积电3纳米制程产能及CoWoS封装产能非常紧张。英伟达计划获取台积电60%的CoWoS产能，导致剩余的产能及材料无法满足谷歌原定的420万颗TPU出货目标，目前的产能仅能支持约360万颗的规模。此次订单削减主要发生在2026年下半年。此外，联发科为谷歌生产的V8芯片，预计2026年出货量约30万颗，这部分不包含在前述的360万颗之内。因此，若合并公司与联发科的供应量，2026年谷歌TPU的总出货量将在390万至400万颗之间。</p>
+<p><b>除了谷歌TPU，2026至2027年期间，OpenAI和Meta等公司在自研ASIC芯片方面的出货规划和产品定价是怎样的？</b></p>
+<p>OpenAI的自研推理芯片已经推出，预计2026年的出货规模较小。OpenAI的计划较为积极，希望在2027年将出货量提升至100万颗左右，以部分替代现有架构。Meta方面，由于其下一代芯片项目被临时取消，需要进行新架构的开发，因此其202 6年和2027年的整体出货规模将保持相对稳定，预计在每年45万至50万颗之间。Meta的芯片定价相对较低，约为3,000至3,500美元。</p>
+<p><b>既然OpenAI等公司已经开始自研定制芯片，为何它们同时还会向谷歌采购TPU？</b></p>
+<p>这两种芯片的定位和作用不完全相同。首先，OpenAI自研的芯片是其首款专为大模型推理任务设计的芯片。在此之前，OpenAI向谷歌采购TPU，主要目的是在其自研芯片供应不足或尚未成熟的阶段，部分降低对英伟达GPU的依赖。过去数年，包括Meta、微软在内的科技公司都严重依赖英伟达的GPU。近年来，这些公司开始在自身的计算集群中推行芯片架构的多样化策略，以避免单一供应商风险。谷歌的TPU生态系统是目前除英伟达GPU之外非常成熟的解决方案之一，这也是众多公司选择采购谷歌TPU或采用其架构的重要原因。</p>
+<p><b>OpenAI向谷歌采购TPU的订单是否有变化，以及具体的交付节奏和未来预期是怎样的？</b></p>
+<p>短期内，OpenAI向谷歌采购TPU的订单没有改变。OpenAI采购谷歌的训练端芯片主要是为了平衡对英伟达GPU的依赖，而其自研芯片更多应用于推理端。当前，OpenAI每年从谷歌采购的TPU数量接近20万颗。预计2027年，基于其内部需求，采购量可能增加至30万颗左右，但此数量尚未最终确定。由于OpenAI计划在2027年重点推广其自研芯片，目标接近100万颗，因此其外部采购，尤其是在训练端的芯片数量，预计不会有大幅增长。</p>
+<p><b>考虑到2026年谷歌TPU的出货量有所削减，其2027年及2028年的出货计划是否有新的更新？</b></p>
+<p>2026年谷歌TPU出货量削减的主要原因是台积电三纳米产能受限，但随着台积电2027年扩产，此问题将逐步解决。预计2027年，谷歌TPU的总出货量将接近1,000万颗。这一数字较之前预期的800万颗有所上修，主要原因包括Anthropic的出货规模增加。</p>
+<p><b>2027年谷歌TPU预计出货的1,000万颗中，各供应商及客户的具体构成是怎样的？</b></p>
+<p>在2027年预计的1,000万颗总出货量中，联发科若进展顺利，其V8芯片的出货量将达到250万至300万颗。公司将继续出货V7和V8芯片，总量预计在600万至650万颗，这部分包含了为Anthropic提供的芯片，该芯片在I/O端口上有一些特殊定制。在出货量中，纯粹供给谷歌自用的部分预计为300万至350万颗，其余部分则供应给Anthropic、Meta、OpenAI等外部客户。</p>
+<p><b>谷歌对2028年TPU及相关XPU的出货量有何展望，公司在其中的参与份额以及产品迭代计划是怎样的？</b></p>
+<p>预计到2028年，随着联发科和Marvell的芯片进入规模化放量阶段，谷歌体系的整体XPU（包括TPU和MPU）出货规模可能超过2000万颗。公司将继续参与训练端芯片的供应，预计负责的出货量在800万颗左右。届时，V7芯片将停产，出货将以V 8和V10为主。公司负责的V10芯片预计在2028年进入量产出货。在这800万颗中，约一半为谷歌自用，另一半则交付给Anthropic、Meta、苹果和OpenAI等客户。此外，谷歌在推理端将采用TPU加MPU的“1+1”模式，类似英伟达的GPU加LPU方案，预计2028年推理TPU和MPU的出货规模合计可达500万颗。</p>
+<p><b>除了现有项目，公司在2028年是否有其他重要的ASIC项目规划？</b></p>
+<p>公司的主要客户包括谷歌、Meta、OpenAI和Anthropic。此外，字节跳动曾与公司合作一个芯片项目，该项目一度暂停后现已重启。这款芯片主要用于字节在美国本土的TikTok业务，预计将在2027年年底进入市场，2028年实现量产出货。</p>
+<p><b>字节跳动推出的芯片定价高的原因？</b></p>
+<p>其定价较高主要是因为这是一款训推一体的芯片，与专注于训练或推理的芯片（如OpenAI或谷歌TPU的部分产品）相比，其内部设计更为复杂，例如在HBM的用量等方面要求更高。</p>
+<p><b>字节跳动这款芯片是否符合美国相关规定，能否在中国大陆销售和使用？</b></p>
+<p>该芯片无法在中国大陆销售或使用，其唯一的销售市场在海外。</p>
+<p><b>除了字节跳动，ASIC领域近期还有哪些其他重要进展？</b></p>
+<p>另一个重要进展是亚马逊已决定委托公司开发其下一代训练芯片Trainium 4。此前，亚马逊主要与Marvell合作。这一转变主要是因为谷歌近年来在自研芯片方面取得的成功对亚马逊产生了较大影响，促使其寻求与公司合作探索新的可能性。</p>
+<p><b>亚马逊下一代训练芯片Trainium 4其成本较高的原因是什么？</b></p>
+<p>其成本较高的主要原因在于采用了先进的规格和制程工艺，预计将使用2纳米工艺，这相较于3纳米工艺会带来更高的成本和更长的设计周期。</p>
+<p><b>Tomahawk 5和Tomahawk 6交换芯片在2026年的出货情况如何？</b></p>
+<p>截至2026年第三季度末，Tomahawk 5今年的累计出货量已超过40万颗，预计全年总出货量将超过60万颗。Tomahawk 6于2025年10月发布，2026年3月进入规模化量产。受限于台积电3纳米产能紧张及良率爬坡等因素，预计Tomahawk 6今年全年的出货规模在12万至15万颗之间。此外，下游生态（如光模块、DSP）的规模化部署能力也对出货构成了一定制约。</p>
+<p><b>2026年台积电的产能紧张对交换机芯片的供应造成了多大影响？</b></p>
+<p>2026年台积电3纳米产能非常紧张，超过一半的产能分配给了英伟达GPU、TPU等AI算力芯片，占比接近甚至可能超过60%。这导致交换机芯片和DSP芯片的产能受到较大影响，可利用的产能相对有限，交期也相应延长。</p>
+<p><b>预计2027年交换机芯片的产能紧张问题是否会缓解？Tomahawk 5和Tomahawk 6的出货量预期是多少？</b></p>
+<p>预计2027年产能紧张状况将有所缓解。主要原因有两点：首先，大量GPU和TPU将切换至2纳米工艺，从而释放出3纳米产能；其次，台积电全球工厂的扩产也将增加总体供应。届时，产能缺口预计将缩小至10%左右，主要表现为交货周期延长而非严重短缺。随着台积电新产能的不断补充，预计到2027年下半年，市场供需将基本达到平衡。出货量方面，预计2027年Tomahawk 5的全年出货量将在70万至75万颗之间，而Tomahawk 6的出货量将大幅增长至40万至45万颗。</p>
+<p><b>在Tomahawk交换芯片的出货中，CPO版本的占比情况如何？其发展面临哪些主要挑战？</b></p>
+<p>目前CPO版本的占比非常低，对于公司而言可能不到10%。其发展面临的主要挑战首先在于台积电的加工工艺尚未完全成熟，特别是在光电耦合处理方面，良率无法达到很高水平。在CPO封装中，光纤连接的密度和精度要求极高，工艺问题会直接影响最终产品的出货。其次，进入1.6T时代后，产品（如Davisson）将大量采用玻璃基板。目前，能够批量供应玻璃基板的公司非常有限，且其加工工艺也存在挑战。尽管玻璃基板因其优异的热稳定性等性能被采用，以解决传统有机基板在大尺寸和高热量下容易发生的翘曲问题，但相关的供应链和制造技术仍是瓶颈。</p>
+<p><b>从有机基板切换至玻璃基板的原因是什么？玻璃基板相较于有机基板有哪些优缺点，以及目前面临的主要技术挑战？</b></p>
+<p>从有机基板切换至玻璃基板的主要原因是，有机基板受热后容易发生翘曲，进而导致内部电路失效，例如短路或开路。玻璃基板具备类似玻璃材料的韧性，耐热性更佳，在承载光波导等器件时具有显著优势。同时，玻璃基板的绝缘性优于有机基板，因此可以实现更高的布线密度，在数据中心等高温场景下，其性能和可靠性也更好。例如，有机基板通常需要10至20层布线，而玻璃基板仅需约5层即可达到高密度集成。然而，玻璃基板目前存在两个主要缺点。第一，其材质较脆，在进行钻孔等加工时容易发生断裂。第二，在玻璃基板光滑的表面上实现铜等金属线路的良好附着力是一个技术挑战，即对玻璃基板表面进行金属化或钝化的处理工艺尚不成熟。这些挑战导致目前玻璃基板的生产良率较低，例如台积电的良率远低于成熟工艺通常要求的80%以上。</p>
+<p><b>Tomahawk 6系列芯片中，专用于Scale-up的Ultra芯片出货量占比如何？其市场应用面临哪些挑战？</b></p>
+<p>在Tomahawk 6系列中，专为Scale-up应用设计并优化了延迟的Tomahawk 6 Ultra芯片，其整体出货量并不理想，占Tomahawk系列总出货量的比例不足10%。其市场应用面临的主要挑战在于生态系统的配合。尽管交换芯片层面引入了Ultra，但需要与GPU、TPU等计算单元的端口协议相配合才能实现规模化部署。目前，许多客户的TPU（如谷歌）尚未完全采用Scale-up Ethernet方案。现阶段大量的TPU或XPU内部主要采用PCIe、AMD的UALink或谷歌的OCS等总线结构，各家标准不一。若要推广Scale-up Ethernet，需要各芯片厂商在端口标准上统一采用以太网协议，才能提升连接效率。这与英伟达的模式不同，英伟达通过其Spectrum芯片、NVLink和InfiniBand等技术构建了一个封闭生态系统，能够在内部进行优化以保证整体性能。而公司作为芯片定制服务商，其方案的推广依赖于云厂商和芯片厂商对其自身端口进行以太网协议的兼容。如果缺乏这种兼容，就难以在现有架构上实现Scale-up Ethernet的部署。</p>
+</div>
+</main>
+</body></html>

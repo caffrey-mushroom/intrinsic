@@ -1,0 +1,196 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.21 | AC | Memory | Memory Price Slowdown Is Not the Peak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.21 | AC | Memory | Memory Price Slowdown Is Not the Peak</h1>
+<p class="orig">原标题：存储涨价放缓，不等于周期见顶——三轮历史复盘与2027年供需推演</p>
+<p class="tags">#memory</p>
+<p class="meta">AceCamp · 2026-10-21 · article 70568306</p>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>存储合约价涨幅收窄的成因与二阶导变化；</li><li>三轮历史周期中涨幅见顶与价格顶点的时滞规律；</li><li>2027年DRAM供需缺口及周期见顶的关键扳机。</li></ol>
+<p class="qq">存储合约价涨幅已连续收窄，但涨得慢不等于见顶。历史上从涨幅见顶到价格见顶隔了1到6个季度，长短取决于客户库存和新增供给。2027年DRAM缺口约2%，周期翻转的扳机大概率在客户停止囤货，而不在新厂投产。</p>
+<p>三星电子10月8日预告，三季度营业利润约107.4万亿韩元，连续第四个季度创纪录；其股价却仍比6月高点低了约41%。利润在创新高，股价却在按"周期顶点"定价。市场分歧集中在一个问题上：<b>存储合约价的涨幅已经连续两个季度收窄，这到底是涨价节奏在换挡，还是这一轮周期已经走到头了？</b></p>
+<h2>一、涨幅收窄，其实有一部分是长协"压"出来的</h2>
+<p><b>本文倾向于认为，当前合约价"减速"这个信号，市场读得偏重了。</b>理由有两层：第一，按价格水平而不是涨幅计算，真正的拐点比多数人以为的晚一个季度；第二，长协条款正在机械地压低合约价的涨幅，让这个指标比过去"迟钝"。</p>
+<p><b>先看第一层：涨幅见顶不等于涨价金额见顶。</b>按TrendForce历次季度预测区间的中点计算，通用DRAM合约价环比涨幅依次为：4Q25约47.5%、1Q26约92.5%、2Q26约60.5%、3Q26约15.5%、4Q26预测约12.5%。其中1Q26取的是2月发布的预测区间90%—95%的中点，TrendForce事后回顾的实际涨幅为93%—98%；改用95.5%重算，下文结论不变。如果只看百分比，涨幅在1Q26就见顶了。但把价格换成指数（3Q25=100），各季度价格依次为147.5、283.9、455.7、526.4和592.2，每季度实际多涨的"金额"是47.5、136.4、171.8、70.6和65.8个指数点。也就是说，单季涨价金额在2Q26才见顶，价格水平的二阶导到3Q26才真正转负。这一个季度的差别看起来似乎无关紧要，但放到周期复盘里，它直接决定"离顶点还有多远"这把尺子从哪里量起。</p>
+<p><b>再看第二层：合约价指数里，被长协上下限框住的那部分越来越多，指数自然越涨越"平"。</b>TrendForce在9月30日的报告中指出，4Q26服务器DRAM仍然供不应求，但部分供应商因为长协定价机制，涨幅可能落后于市场平均。4Q26 DRAM合约价环比约涨20%，低于二季度的约80%和三季度的约40%，放缓原因除了高基期和终端购买力转弱，更在于长协价格上限逐步生效。与此同时，不受长协约束的边际价格还在上涨：南亚科10月初通知客户，部分产品涨价最高20%，公司9月营收约451亿新台币、同比增长约577%；市场预计10月PC DRAM的月度涨幅仍在15%以上。</p>
+<p><b>这两层叠加，推出一个直接的结论：合约价已经从"单一市场价"变成了"长协价和市场价的混合"，用它的二阶导判断周期，需要打个折扣。</b>逻辑很简单：长协占比越高，指数里受上限约束的部分越大，涨幅收窄就有越大一部分是合同决定的，而不是供需决定的。打个比方，以前的合约价是一支直接插在市场里的温度计，现在这支温度计有一部分被装进了恒温箱。拿历史上的刻度来读今天的读数，很容易把"条款封顶"误判成"供需转松"。因此，判断周期位置时，长协以外的边际价格和现货价比整体合约价指数更有参考价值。</p>
+<p><b>品类之间也谈不上"全面减速"。</b>TrendForce预测4Q26 NAND合约价环比上涨15%—20%，比三季度的10%—15%还高，企业级SSD是唯一涨幅还在扩大的品类。4Q26 DRAM的预测本身也有分歧：TrendForce官方给出+10%—15%，也有市场估计低至+0%—5%，本文以前者为基准。笔者在10月16日报告中判断，市场交易的已经不是利润的绝对高度，而是涨价速度的变化率。本文在此基础上往前推一步：如果这个变化率有一部分是被合同条款压下来的，市场就可能在为一次"假减速"打折。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568306_b64a430f0c4a5149.webp" alt="" loading="lazy"></p>
+<h2>二、历史经验：涨幅见顶后，价格还能再涨1到6个季度</h2>
+<p><b>三轮历史给出的答案很明确：涨幅见顶从来不是价格见顶的信号，中间隔多久，取决于两件事——新增供给什么时候到位，客户库存有没有超过健康水平。</b></p>
+<p><b>第一轮（2009—2010年）：供给来得快，时滞约2个季度。</b>动能峰值出现在4Q09，DDR3 2GB合约价在2Q10见顶，约46美元，3Q10下跌约13%，4Q10再跌约30%。触发下跌的是供给端：4xnm制程迁移让下半年产出明显放大，同时PC旺季需求不及预期。</p>
+<p><b>第二轮（2016—2018年）：供给受约束，时滞长达约6个季度。</b>服务器DRAM合约价涨幅从1Q17的约40%降到2Q17的约10%，3Q17预测再降到3%—8%。如果当时把"涨幅收窄"当成卖出信号，就会错过此后约6个季度的上涨，直到3Q18主流合约价只涨1%—2%才算到顶。原因在于2017年供应商对服务器DRAM的交付满足率只有约60%—70%，新平台和单机容量提升持续拉动需求，供给始终追不上。真正的见顶信号是2018年才凑齐的：现货价在6月底跌破合约价，服务器DRAM交付满足率改善，客户库存偏高。到4Q18，行业营收环比下降18.3%。</p>
+<p><b>第三轮（2020—2021年）：客户库存先满了，时滞只有约1个季度。</b>DRAM合约价涨幅从2Q21的18%—23%降到3Q21预测的3%—8%，4Q21随即下跌3%—8%。2021年7月的情况很能说明问题：供应商的服务器DRAM库存偏低，北美和中国的云厂商却已持有超过8周库存，部分超过10周；同时其他零部件缺货导致整机交不了货，客户手里的内存很快变成了多余库存。这一轮的教训是：<b>原厂库存低，不代表客户库存也低</b>。</p>
+<p><b>把三轮放在一起，逻辑链条可以归纳为：涨幅收窄只说明边际定价力量在变弱；只有当它与"客户停止补库、交付满足率改善、有效供给超过采购"同时出现时，周期才接近顶部。</b>照这个标准对比本轮，本文判断当前大概率更像2017年，而不是2021年：3Q26二阶导转负后，4Q26仍预测有两位数涨幅，服务器DRAM仍然短缺。不过，2021年式的隐患已经出现。从产业链情况看，部分客户因为担心断供，已把库存目标从历史常见的12—16周提高到约26周（这是个别客户的目标值，不是行业实测库存，客户之间差异很大）。TrendForce 9月30日的报告也写道，笔记本库存已在反映更高的零部件成本、拖累终端销售，但PC品牌因为预期2027年DRAM仍紧，仍在积极采购。<b>采购由"怕缺货"驱动，而不是由实际消耗驱动</b>，这和2021年下半年的情况很像。需要说明的是，以上属于事件复盘，不是同规格的统计回归，不能据此算出"平均领先几个季度"。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568306_1d66a21e32c3f323.webp" alt="" loading="lazy"></p>
+<h2>三、2027年DRAM仍缺货，但缺口只有约2%</h2>
+<p><b>本文测算的结论是：2027年DRAM大概率仍然偏紧，但缺口很薄，不足以支撑2026年上半年那样的涨幅。</b></p>
+<p><b>模型怎么搭的。</b>基期锚定TrendForce对2026年的预测：DRAM供需充足率为−1%至−2%，NAND缺口为4%—5%，各取中点，即2026年需求设为100时，DRAM供给为98.5，NAND供给为95.5。供给端假设：全年平均投片增长8%，HBM占全部投片的比例从20%升到26%，通用DRAM每片晶圆的有效位元增长18%。三项相乘，通用DRAM位元供给增长约17.9%，HBM增长约55%。需求端按应用拆开：服务器占通用DRAM位元的46%，出货增长22%、单机容量增长12%，两者相乘得到约36.6%的位元需求增长；手机、PC和其他应用分别只增长1.9%、2.9%和8%。加权后，通用DRAM需求增长约18.6%，HBM需求增长设为55%。</p>
+<p><b>结果怎么读。</b>基准情景下，2027年通用DRAM充足率约为−2.1%，HBM约−1.5%，DRAM合计约−2.0%，NAND约−0.3%（负值代表短缺）。换一组更紧或更松的参数，DRAM合计的区间在−6.6%到+8.3%之间。这些都是条件测算，既不是行业实测，也不是市场一致预期。约2%的缺口意味着价格大概率还有支撑，但它和2026年上半年动辄两位数的缺口不在一个量级，所以"涨幅继续收窄、价格维持高位"是比"再来一轮暴涨"更合理的基准情形。</p>
+<p><b>NAND则更接近平衡点，而且分歧更大。</b>TrendForce 7月判断NAND会在2027年下半年转向宽松，美光管理层则认为2027—2028年仍然偏紧。分歧的核心是企业级SSD能不能持续吃下新增位元。在本文模型中，企业级SSD位元需求增速只要从45%降到约44%，NAND就会从轻微短缺变为平衡。消费端其实已经先松了：TrendForce观察到，PC品牌在下调主流机型的SSD容量，手机品牌对eMMC/UFS只采购维持合作关系的最低量。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568306_1ba1c6add9a57410.webp" alt="" loading="lazy"></p>
+<h2>四、周期见顶的扳机在客户库存，不在新厂投产</h2>
+<p><b>比争论缺口是2%还是3%更有用的，是找出"多大的变化就能把缺口抹平"。答案是：需要的变化都不大，而其中最容易发生的，是客户调低库存目标。</b></p>
+<p><b>第一，供给端的阈值并不高。</b>在其他参数不变时，全年投片增速从8%提高到约10.3%，或HBM全年平均投片占比从26%降到约24.4%，通用DRAM就会基本平衡。需求端同样敏感：服务器单机通用DRAM容量增速从12%降到约7.5%，缺口也会消失。</p>
+<p><b>第二，库存端的阈值更低。</b>DRAM合计约2.49个需求点的缺口，按全年52周粗略换算，只相当于约1.3周的需求。这意味着，2027年见顶并不需要出现供给过剩——客户只要把安全库存目标下调一周多，就能在模型里抹平全年缺口。而前面提到的26周目标，比历史常见的12—16周高出10周以上。一旦客户判断"不会再缺货了"，库存目标回调释放出来的采购减量，远大于填平缺口所需要的量。<b>这就是本文认为周期翻转的扳机实际在买方库存政策、而不在卖方新厂的原因。</b></p>
+<p><b>第三，HBM降配可能是一个被低估的"隐形供给"。</b>以英伟达正在评估的方案为例：若Rubin Ultra从12-Hi改为8-Hi HBM，在堆栈数和每层容量不变的情况下，每颗GPU的HBM容量下降约三分之一（8/12），同样数量的DRAM die可以多支持约50%的GPU（12/8）。对HBM本身，这是"量减价升"——TrendForce预计2027年8-Hi每Gb成本比12-Hi高10%—20%；但对通用DRAM，如果HBM位元需求因此下修，被释放出来的前道产能有可能流回通用DRAM，正好对应上面那条24.4%的阈值。当然，GPU出货增加也会带动系统内存需求，两种效应要合并来看。</p>
+<p><b>第四，新厂产能大多落在2027年下半年以后，2027年上半年的供给弹性很有限。</b>SK海力士正在加快M15X量产，并计划在2027年初龙仁一期洁净室开放后扩产；美光管理层表示，爱达荷工厂预计2027年中首次产出晶圆，形成有意义的供货还要再等几个季度。长鑫存储计划在年底前推出4F²架构的DDR5服务器内存条（RDIMM），但还没有披露规格、良率和客户。考虑到良率、漏电和数据保持仍是4F²量产的难点，本文判断其大规模放量大概率要到2028年以后。这几项叠加，说明2027年的"顶"不太可能由供给端主动触发。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568306_1d99ef700af4c9d9.webp" alt="" loading="lazy"></p>
+<h2>五、对公司的含义：怕"涨得慢"和怕"跌下来"的，不是同一批公司</h2>
+<p><b>市场已经在按周期顶点给存储股定价。</b>亚洲存储股自2025年9月本轮周期启动以来累计上涨约9倍，市场一致预期EPS平均上修432%，三星与SK海力士的前瞻市盈率只有3到4倍。如果用当前估值反推，有测算显示合约价还需在现有水平上环比上涨约70%，才能支撑股价进一步上行——这显然很难实现。低市盈率反映的，是市场在给"利润峰值"打折。</p>
+<p><b>但"打折"的方式应该因公司而异，关键是把盈利拆成"受长协保护的部分"和"随行就市的部分"。</b>涨幅放缓首先打击的是后者；前者要等到价格真正下跌时，才轮到检验价格下限是否靠得住。笔者在7月10日报告中分析，重估不取决于涨价还能持续多久，而取决于合约在坏年景里能否兑现。按本文的平衡表，2027年还不是那场压力测试，价格下限真正受考验要等2028年供给集中落地；2027年先承压的，是长协以外按月随行就市的那部分价格。照这个思路，可以把主要公司分成三类。</p>
+<p><b>第一类：对"涨得慢"最不敏感——美光。</b>据美光FQ4财报电话会问答，公司的战略客户协议（SCA）已增至26份，约四分之三的SCA收入有明确的价格框架；管理层同时澄清，市场讨论中约35%的覆盖率是按位元口径计算的。财报数据显示，FQ4非GAAP毛利率为87.0%，FQ1指引约86.25%；FQ1收入指引为615亿美元（±15亿美元），高于FQ4实际收入542.3亿美元，非GAAP EPS指引38.15美元，也高于FQ4实际的33.42美元。毛利率小幅回落、利润继续增长，正是"斜率拐点、价格未顶"的典型样子。</p>
+<p><b>第二类：对"涨得慢"最敏感——SK海力士、三星、南亚科和华邦电，但缓冲各不相同。</b>SK海力士据报道在长协中只设下限、不设上限，涨价时弹性最大，代价是通用DRAM边际定价放缓时，盈利也会更快反映出来；它的缓冲来自HBM，TrendForce预计2027年HBM混合均价同比上涨121%，但其中包含代际升级和规格结构的变化，不全是同款产品涨价。三星的矛盾在公司内部：存储涨价推高利润，手机业务却被成本挤压，市场估计其三季度手机业务亏损超过10亿美元；一致预期显示，四季度利润环比增长约8.2%，低于三季度的约20%，<b>利润的二阶导也已经转负</b>。南亚科、华邦电以通用和利基DRAM为主，基本没有HBM缓冲，是最直接反映"二阶导"的标的。</p>
+<p><b>第三类：怕的不是"涨得慢"，而是"跌下来"——NAND厂商和锁了价的下游模组厂。</b>NAND是本轮最接近传统周期规律的品类，市场也在这样定价。更隐蔽的风险在买方。据佰维存储3月和6月的公告，公司今年先后签下15亿美元NAND晶圆、18.61亿美元企业级闪存颗粒两笔"锁量锁价"采购合同，合计约33.6亿美元，约为其2025年营收113.02亿元的两倍多；其年报显示，直接材料约占营业成本的94%。具体锁定价格没有披露，也有报道称合同在执行中逐季调价，锁定程度还要看后续财报。但方向是清楚的：锁价让买方在涨价期保住了货源，价格一旦掉头，成本刚性就会直接压到利润表上。<b>周期见顶最先显形的地方，可能不是原厂的毛利率，而是锁了价的下游模组厂。</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568306_55413af7d23f800a.webp" alt="" loading="lazy"></p>
+<h2>六、接下来盯什么：看谁先停止囤货</h2>
+<p><b>判断标准应该从"涨幅还剩多少"换成"谁在停止囤货"。</b>接下来两个月的验证节点很密：10月28日SK海力士三季报电话会，重点看"无上限"条款覆盖哪些产品，以及2027年HBM4是否已基本售罄；10月29日三星公布分部业绩，看存储和手机两端的利润剪刀差，同日佰维存储披露三季报，可以检验锁价采购对模组厂毛利的影响；10月30日铠侠公布业绩，检验NAND企业级和消费级是否继续分化；12月美光FQ1业绩和TrendForce对1Q27的合约价预测，会给出长协以外价格的第一份"成绩单"；年底则看长鑫存储的4F² RDIMM能否如期推出并进入服务器认证。</p>
+<p><b>从"斜率拐点"走到"周期顶点"，需要几个信号同时出现，单看任何一个都不够。</b>三轮历史给出的组合是：现货价持续跌破合约价，并且价格倒挂从低容量eMMC、DDR4扩散到主流DDR5；客户下调库存目标，采购量低于实际消耗；交期缩短，交付满足率提高；长协续约时降价，或者条款被重新谈判。在这些信号同时出现之前，本文倾向于把当前的涨幅收窄看作2017年式的换挡，而不是2021年式的掉头。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568306_4974ee279d62d6ac.webp" alt="" loading="lazy"></p>
+<p><b>下行风险包括：</b>服务器单机内存配置增长低于假设，客户集中下调安全库存目标，HBM降配释放出更多通用DRAM产能，以及新厂良率爬坡快于预期。<b>上行风险包括：</b>Agentic AI带动通用服务器需求进一步上修，HBM新增供给的客户认证延误，以及企业级SSD持续吸收NAND新增位元。</p>
+<p>存储厂并没有消灭周期，它们只是把周期的尾部风险写进合同，卖给了最怕断供的客户。2027年真正要看的，是这些客户什么时候不再害怕。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568306_048581daf2aad970.webp" alt="" loading="lazy"></p>
+<p><b>以上内容不构成任何投资建议，请风险自担。</b></p>
+</div>
+</main>
+</body></html>

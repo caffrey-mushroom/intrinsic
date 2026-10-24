@@ -1,0 +1,262 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.13 | Substack | Memory | What Is Happening in HBM4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.13 | Substack | Memory | What Is Happening in HBM4</h1>
+<p class="orig">原标题：What Is Happening in HBM4</p>
+<p class="tags">#memory</p>
+<p class="meta">Substack · 2026-10-13</p>
+<div class="body">
+<p><i>This article is the work of Damnang Research and is protected by copyright law. Reproduction, distribution, republication, derivative use or use for AI training without the prior written consent of the copyright holder is prohibited, and unauthorized use will be pursued through legal proceedings.</i></p>
+<p>There are all kinds of rumors about HBM4. The market was shaken by the news that it was despec’d from 12-high to 8-high, and on top of that, news of 4-high was going around for a while.</p>
+<p>Then came the story that it is going back up to 12-high again (I was probably almost the first to say this).</p>
+<p>On the other hand, there is also talk that SK hynix, which held the upper hand in HBM3, is not able to show its real strength when it comes to HBM4.</p>
+<p>Some exaggerated rumors even go as far as saying that the relationship between TSMC and SK hynix has soured because of this, or that NVIDIA might sue SK hynix (Maybe it is not true)</p>
+<p>What on earth is true? What is going on in HBM4? I am not an insider either, so I do not know exactly. But as I listened to many stories from the field, from analysts and experts, and studied the actual technical structure of HBM, the puzzle seems to be coming together in my own way.</p>
+<p>In this article I will try to write up the HBM4 story as I have reconstructed it in my own way. I will also try to forecast what comes next with my own HBM modeling data. I am confident that after reading this article you will easily understand what has been happening in HBM4 and what will happen.</p>
+<p><b><i>Disclaimer</i></b></p>
+<p><i>This article is my inference based on public reporting and stories heard in the industry, and it is for informational purposes. It does not recommend buying or selling any particular stock, and every model number in the text is my own assumption. I may hold the stocks mentioned or change my positions. Investment decisions and responsibility are your own. NFA, DYOR.</i></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791881737743-7.png" alt="" loading="lazy">Subscribed</p>
+<h2>SK hynix won through HBM3E with MR-MUF</h2>
+<p>SK hynix won an overwhelming victory over Samsung in HBM3.</p>
+<p>The biggest difference cited is the bonding difference for HBM stacking: the MR MUF method SK hynix uses was pointed to as performing better than Samsung’s TC NCF method, and that was named as the reason.</p>
+<p>It is a very complicated process, but to explain it simply, Samsung’s TC-NCF puts a film between the chips and presses them on one at a time, while SK hynix’s MR-MUF stacks all the chips first, bonds them at once, and fills the gaps with a liquid protective material that is then cured.</p>
+<p>According to SK hynix, the Advanced MR-MUF used in 12-high HBM3 improves productivity by about 3 times and heat dissipation by about 2.5 times over the previous process.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791881739054-8.jpg" alt="" loading="lazy"></p>
+<p>In fact, I myself, back when I worked at AMD, had to take part in a lot of silicon debug over this Samsung HBM3 heat issue. That is how hard a heat issue in HBM is to solve. In any case, because of this difference in the bonding process, Samsung passed NVIDIA’s quality test a full year later than SK hynix due to heat problems, and that is why SK hynix was able to take most of NVIDIA’s HBM volume.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791881739773-9.png" alt="" loading="lazy">Subscribed</p>
+<h2>NVIDIA raised the Rubin HBM4 spec</h2>
+<p>The pin speed in the JEDEC standard at the time HBM4 was first designed was 8Gbps.</p>
+<p>SK hynix designed for 10Gbps, 25% faster than the standard at the time, and decided to use the same 1b process as HBM3E for the DRAM dies being stacked, TSMC’s legacy 12nm process for the base die that sits at the bottom and talks to the GPU, and Advanced MR-MUF for the stacking process.</p>
+<p>Having already succeeded with HBM3E, they saw no need to take on a new challenge, and judged that reusing the method proven in HBM3E as it was would cause no problems.</p>
+<p>The problem is that NVIDIA raised the required speed of HBM4 for Rubin.</p>
+<p>In the third quarter of 2025, NVIDIA raised the per-pin speed requirement to 10Gbps and then to over 11Gbps, and the mood in the field at the time saw competition with AMD’s MI450 as the reason. This came right after September 2025, when SK hynix announced it had finished development targeting 10Gbps, and all three companies had to send samples again.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791881740697-10.jpg" alt="" loading="lazy"></p>
+<p>The interesting part is that Samsung, having suffered a crushing defeat in HBM3, was gritting its teeth and made an extremely aggressive choice to secure share in HBM4.</p>
+<p>It moved the DRAM die to the one-generation-newer 1c process and the base die to Samsung Foundry’s 4nm. This choice was made in 2024, a year before NVIDIA raised the spec, and Samsung has said it targeted a speed above the standard from the start of HBM4 development.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791881742638-11.jpg" alt="" loading="lazy"></p>
+<h3>How Samsung Overtakes SK hynix in HBM4: An ISSCC 2026 Paper Review</h3>
+<p>Damnang</p>
+<p>·</p>
+<p>Mar 20</p>
+<p>Read full story</p>
+<p>At the time this was called a reckless choice, but as a result, making this choice gave Samsung the headroom to meet NVIDIA’s raised spec. A finer process uses less power and produces less heat at the same speed. Samsung announced mass-production shipments at 11.7Gbps in February this year. The figure above shows the order in which the required speed went up and when the two companies responded.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791881745677-12.jpg" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791881746225-13.png" alt="" loading="lazy">Subscribed</p>
+<h2>What happened to SK hynix’s 12-high HBM4</h2>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791881747158-14.jpg" alt="" loading="lazy"></p>
+<p>According to many experts in the field, the SK hynix 12-high HBM4 issue has been around for quite a while.</p>
+<p>From what I hear, the problem is serious enough that at the SiP level the 12-high samples delivered to NVIDIA so far have been judged entirely defective (or short of the speed), and there is even talk that TSMC, SK hynix and NVIDIA have come together to find the cause of the problem.</p>
+<p>In particular, when an HBM defect shows up at the package stage, it becomes several times harder to catch. From my past validation experience, one more loop takes at least a month or two, and the validation process itself is very demanding.</p>
+<p>According to a person in the field, there is also talk that AMD, the other customer, has given up on taking SK hynix’s 12-high HBM4 and decided to take only 8-high.</p>
+<p>If 12-high cannot get in even at AMD, whose required speed is 30% lower than NVIDIA’s, then under the current situation it looks highly likely that SK hynix’s 12-high has a structural problem that speed binning cannot solve.</p>
+<h2>I estimate the 8-high request was also ultimately because of SK hynix’s 12-high defects</h2>
+<p>So I suspect that NVIDIA's 8-high despec request, as it is known to the public, was because of the SK hynix 12-high problem.</p>
+<p>The surface reason was a volume shortage, but I cautiously raise the possibility that in reality it was a 'shortage of SK hynix 12-high HBM4'.</p>
+<p>In fact, NVIDIA had planned to take 60 to 70% of its HBM4 volume from SK hynix, but when SK hynix's 12-high could not meet the required speed and Samsung's 12-high alone was short of the early ramp volume, at the end of August it asked both companies to switch their main product to 8-high.</p>
+<p><b><i>Of course, I make clear that this estimate is not a confirmed fact and is my inference.</i></b></p>
+<p>But at least it looks certain for now that this is not a situation where the despec to 8-high comes from NPO use or improvements in AI algorithms.</p>
+<p>Another story going around now is that SK hynix's 8-high for NVIDIA also has quality problems. Because of this, I think Samsung's HBM4 8-high sample supply was put on hold and the decision was made to go back to 12-high. In other words, the most fitting inference for now seems to be that Vera Rubin is made up of SK hynix's 8-high and Samsung's 12-high (or Samsung's 8-high and 12-high).</p>
+<p>Another interesting thing is the story going around in the field that, by coincidence, an HBM4 8-high volume request came to Samsung from AMD around this time, so Samsung is now in a position to supply both HBM4 8-high and 12-high stably to multiple customers.</p>
+<p>Anyway, I think the decision Samsung made on HBM4 has turned out well for it in the end. I suspect that the Samsung HBM pricing-power advantage reported by various media comes precisely from this confidence.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791881749370-15.jpg" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791881750443-16.jpg" alt="" loading="lazy"></p>
+<h2>So what technically went wrong</h2>
+<p><i>This section is my inference based on stories heard from the field and on my technical knowledge, and I make clear that it is not an issue confirmed in the field.</i></p>
+<p>With MR-MUF, the thinner the dies and the more of them there are, the more warpage builds up during stacking. In the paper SK hynix presented at a conference in 2023, when dies with warpage over ±20µm overlapped, non-wet defects occurred where the bumps (the small solder protrusions that connect die to die) did not bond, and the spot was mainly between the base die and the first DRAM die.</p>
+<p>Thinking on the basis of this paper, two reasons can be inferred as follows.</p>
+<ol><li>In HBM3E the base die was SK hynix’s own DRAM-process die, so its material and thermal expansion were similar to the</li></ol>
+<p>core dies above it, but in HBM4 it changed to a TSMC 12nm logic die, which warps to a different degree from the core dies when heated. The joint at the spot that melts the most has become a joint between different materials, and since HBM4 has twice the I/O, there are more bumps to bond and they are packed tighter, so I suspect the process was harder than before.</p>
+<ol><li>SK hynix is known to stack 12-high in groups of four when stacking with MR-MUF, and I expect this is because melting</li></ol>
+<p>12 thin dies at once pushes warpage past the tolerance, so it bonds as many dies as stay within tolerance and then puts the next group on. That means, if the whole stack is reheated each time a group is added, in 12-high the bottom joint melts and solidifies three times, which makes the layer where solder meets copper prone to thickening, and in HBM4, as mentioned above, that joint is now with the logic die, so I estimate there would be difficulty there.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791881752101-17.jpg" alt="" loading="lazy"></p>
+<p>Another story heard from the field is the possibility that SK hynix pushed changes to HBM thickness and material properties too far to meet NVIDIA’s required pin speed and caused defects.</p>
+<p>The HBM4 design is already fixed and cannot be changed, so to improve speed the only way is to solve it in the process. My guess is that for this speed improvement SK hynix ground the core dies thinner to shorten the TSVs, switched to an EMC with a lower dielectric constant and better heat conduction, re-tuned voltage and timing, and set only the stacks that came out well as the top bin.</p>
+<p>When SK hynix tested the stack on its own, there probably was no problem, but I think it is possible that this structural change became a problem in validation at the system level, where the stack is actually connected to a GPU and has to receive unrefined high-speed signals.</p>
+<p>Of course, as I said above, all of this is only my inference based on technical knowledge, so please take it as a reference only.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791881754531-18.jpg" alt="" loading="lazy"></p>
+<p>Another interesting fact is that even for the same HBM4, the validation result differs by customer.</p>
+<p>From what I hear in the field, SK hynix’s 12-high HBM4 was a problem at both customers, AMD and NVIDIA, but for 8-high there is no problem at AMD and the problem is occurring only at NVIDIA. From what I hear, the explanation is that AMD’s package layout complexity is lower so it is fine, but my inference is that on top of that, AMD’s performance requirement spec is lower than NVIDIA’s, Rubin’s higher per-pin speed leaves less signal margin, the GPU heat is greater, and NVIDIA even requires the HBM to be thinner than the standard.</p>
+<p>Therefore, even the same HBM4 may split into good and bad depending on which GPU it is attached to, with what design approach and what spec requirements.</p>
+<h2>When it gets fixed, and the revenue impact</h2>
+<p>I guess the SK hynix 12-high and 8-high problems get resolved around year end.</p>
+<p>The schedule below is my estimate based on my engineering experience. Even after passing NVIDIA qualification, mass-production supply, packaging and rack assembly take 3 more months combined, so I expect the point at which SK hynix’s 12-high top bin actually goes into Rubin racks to be the second quarter of 2027.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791881756294-19.jpg" alt="" loading="lazy"></p>
+<p><i>The schedule assumptions are the usual lead times of a mature process; in reality they could move two or three months earlier or later depending on the scope of the redesign and the qualification items.</i></p>
+<p>I estimate two delay cases from here.</p>
+<p>One is the case where the three-party discussion mentioned above finds the cause on the package side and silicon debug runs one more loop. One loop takes around two months, so the verdict could slip to the first quarter of 2027 and Rubin adoption to the third quarter.</p>
+<p>The other is the case where the cause turns out to be the base die and the design is redone from scratch. In that case the HBM4 top bin is effectively skipped, moving on to HBM4E, which targets mass production in 2027, and NVIDIA supply becomes the second half of 2027.</p>
+<p>In either case, I think it is highly likely that most of the 12-high going into Rubin in the first half of 2027 will be Samsung’s volume.</p>
+<p>What if we calculate the actual volume? According to the rumors going around, Rubin looks set to ship 5,000 racks in the second half of this year.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791881756973-20.jpg" alt="" loading="lazy"></p>
+<p>Jukan ✈️OCP 2026</p>
+<p>@jukan05</p>
+<p>@tuolaji2024 我核实了一下，Rubin今年的出货量是5,000台。这个数字本身没错，但据说并没有下调，原本的订单量就是5,000台。</p>
+<p>3:11 AM · Oct 13, 2026 · 19.7K Views</p>
+<p>12 Replies · 7 Reposts · 97 Likes</p>
+<p>My model is on a memory-shipment basis. The plan bars in the figure below take the reported SK hynix plan divided by its 65% allocation, 32 million stacks to NVIDIA this year, and 48 million stacks in 2027 assumed at 1.5 times that, add the AMD volume, and split them by the reported allocation (SK hynix 65%, Samsung 25%, Micron 10%).</p>
+<p>The estimate bars take this plan, which is a number from before the Rubin delay, cut it by 24% for the Rubin share adjustment in the April report (29% to 22%), and split it by my estimated allocation (SK hynix 25% this year, 30% in the first half of 2027 and 45% in the second half, with most of the rest going to Samsung).</p>
+<p>SK hynix's 25% this year combines the volume already shipped with second-bin 12-high and 8-high. For AMD it is Samsung 55% and SK hynix 40%, and SK hynix's share is 8-high. In 2027 SK hynix has 17.3 million fewer stacks than the original allocation and Samsung has 5 million more.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791881759113-21.jpg" alt="" loading="lazy"></p>
+<p>For prices, within the contract price range heard from the field (12-high HBM3E $530 to 550 per stack, HBM4 $800 to 1,400, with Samsung at the top of that range), I assumed HBM3E at $540, the HBM4 12-high top bin at $1,200, the second bin at $1,000, and since 8-high has two thirds of the capacity, the 8-high top bin at $800 and the lower bin at $680.</p>
+<p>I heard AMD buys SK hynix's lower bin at the higher-bin price, so I set it at $800.</p>
+<p>The plan bars in the figure below are the case where SK hynix sold the 12-high top bin to NVIDIA and the 12-high second bin to AMD, and the estimate bars stack the estimated shipments to NVIDIA, 8-high to AMD, and the volume that could not go out and was sold as HBM3E instead.</p>
+<p>Calculating with my model, SK hynix's HBM4 revenue through the end of 2027 is $72.6B planned versus $39.7B estimated, a net decrease of $32.9B, and I see $36.4B if debug runs one more loop and $38.2B if it skips to HBM4E. Of the net decrease, $15.1B is the part from the smaller market and $17.8B is the part from share, price and the switch to 8-high.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1791881760837-22.jpg" alt="" loading="lazy"></p>
+<p>For a company with quarterly revenue over $55B, $32.9B over the two years through the end of 2027 is around 7% of revenue, which looks manageable if you only look at the number.</p>
+<p>The problem is where it comes out of.</p>
+<p>The volume that drops out is the most expensive product at $1,200 per stack, and that spot is filled by $540 HBM3E and 8-high, so the product mix gets worse than revenue does, and margins are likely to get worse along with it.</p>
+<p>And as SK hynix’s share within NVIDIA HBM4 falls from 65% to 38%, the structure for 2027 as a whole becomes one where Samsung supplies more. This structure turns directly into money in the 2027 price negotiations.</p>
+<p>Samsung has at least three customers, so if NVIDIA does not take 8-high it can sell to AMD, and if HBM4 does not sell it also has the most wafers to turn over to commodity DRAM. That is why it can ask for the top of the HBM4 price range.</p>
+<p>On the other hand, SK hynix’s nearly a quarter revenue comes from NVIDIA alone and around 30% of its wafers are tied up in HBM lines, so to protect NVIDIA volume it has to give on price.</p>
+<p>In the 2027 HBM4 price negotiations, the company with the largest HBM share is likely to get the lowest price.</p>
+<p><i>The model’s quantities, allocations and prices are all my assumptions. They are not actual contract prices or market-size forecasts.</i></p>
+<h2>Conclusion: in the end it comes down to HBM4E</h2>
+<p>The battleground that can turn this around will, in the end, be HBM4E.</p>
+<p>SK hynix’s HBM4E moves the core die to 1c and the base die to TSMC 3nm and targets mass production in 2027; there is a report that Samsung’s 12-high HBM4E passed NVIDIA qualification at the end of September, while SK hynix has had no publicly disclosed result yet since sending samples in June.</p>
+<p>For SK hynix to retake first place in the HBM fight, HBM4E qualification first has to finish in the first half of 2027.</p>
+<p>Until then, what I am watching is NVIDIA’s year-end verdict on SK hynix’s 12-high HBM4 and whether SK hynix’s 8-high passes the quality test, the conclusion of the three-party discussion, and when SK hynix’s HBM4E qualification completes.</p>
+<p>Once again, none of these assumptions are based on confirmed facts; they are estimates based on my engineering background, so nothing can be known for certain.</p>
+<p>It is also quite possible that the issue is some other minor one rather than the one I assumed. That is why, until the year-end verdict comes out, we need to keep watching the market, the three companies’ earnings calls, and the stories coming out of the field.</p>
+<p>The first thing to watch will be the mention of HBM changes on SK hynix’s third-quarter earnings call at the end of October, such as whether 12-high mentions decrease and 8-high and HBM3E talk increases.</p>
+</div>
+</main>
+</body></html>

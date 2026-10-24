@@ -1,0 +1,189 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.16 | AC | Software | Observability &amp; Security: Columnar Storage Demand</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.16 | AC | Software | Observability &amp; Security: Columnar Storage Demand</h1>
+<p class="orig">原标题：垂类AI大厂列式存储和全观测新品对需求带动，安全方案需求和形态，日志管理增长判断。模型能力支持等。ClickHouse_Splunk_Dynatrace_Datadog</p>
+<p class="tags">#software #security</p>
+<p class="meta">AceCamp · 2026-10-16 · article 70568073</p>
+<div class="body">
+<h2>摘要</h2>
+<p>/ 模型能力对观测新品的支持，观测细分增长动力。/ 大厂安全方案、形态、和需求判断，列式存储新品需求。</p>
+<p>【以下为专家观点汇总，具体细节仅供参考。】</p>
+<p><b>最近推出的列式存储在实际生产中的表现？官方披露性能远超ClickHouse？</b></p>
+<p>首先，有些客户在做测试，但还没有正式上线生产环境。和ClickHouse对比是针对 Open Telemetry的数据，也就是特指时序数据。Open Telemetry的数据主要包括 CPU使用率、内存占用率、磁盘、延迟等，这些都是时间线上的点。ES对时序数据做了专门优化。时序数据库，比如 InfluxDB 这类产品，会有一些专门的功能，比如采样，通常会统计每分钟 CPU平均延时等，很多功能都只和时序数据相关。所以你提到的场景主要是针对时序库。ClickHouse并没有专门针对这些数据做优化，所以ES在那个场景下比它快。列式存储引擎不仅能用于时序数据，也可以用于其他指标数据，比如纯数字但不一定有时间线字段的数据，也可以用于日志层面。在单层的指标和日志层面，ES也在向ClickHouse靠拢。至于他提到的query快八倍，并不是所有场景都快八倍，只是在某些特定场景，比如某些聚合操作时会快八倍，但像算平均值、最大值、移动平均线等，并不是每个操作都快八倍。</p>
+<p><b>现在这个产品是处于 preview 阶段？</b></p>
+<p>对，还没有 GA，应该是等到 Elastic 9.7版本才会GA。</p>
+<p><b>Elastic 9.6是不是原定10/6发布但推迟了？原因？</b></p>
+<p>对，原因是 9.5 发布时出了事故，9.5.0 和 9.5.1 这两个版本都有一个比较明显的 bug，虽然不会导致数据丢失，但会出现数据不准确的情况。ES在 9.5.2 修复了这个问题。当时研发进度有些赶，这次吸取了教训，如果有 issue没处理完就不会着急发布。9.6 有两个值得期待的新功能，分别是观测和安全性相关，一个是 observability 的 SRE Nightshift，另一个是安全的 Alert Zero，这两个 agent 产品都在 serverless上发布，原计划在 9.6 推出，但因为还有一些 issue 没处理完。serverless 上现在是白名单测试和预览模式。serverless 可以随时修复 bug，因为是 SaaS产品，出了问题可以马上修复。但如果是以二进制文件分发，比如 9.6.0 release 发给客户，有问题只能等下一个包，客户需要重启、安装、升级才能修复。所以二进制包的发布不能像 serverless 那么灵活。现在这两个产品在serverless 上预览，用户反馈了一些问题，这些问题没修复前ES不会发布 9.6。</p>
+<p><b>9.5 的 bug 对获客或客户粘性影响是否很大？</b></p>
+<p>应该不会。虽然是 bug，但不会影响生产集群的稳定性和可用性。只是某些场景下，部分数据可能不太准确，主要是在搜索或聚合运算场景下，但不会丢数据，也不会影响集群正常工作，主要是数据准确性的问题。</p>
+<p><b>ES 9.6、9.7 的发布时间大概是什么时候？</b></p>
+<p>9.6 预计要到 11 月中旬，9.7 可能要顺延到明年（2027年）初。9.6 发布后还会有 9.6.1、9.6.2、9.6.3 这样的后续版本，9.7 估计就是明年（2027年）初了。</p>
+<p><b>列式存储有没有为明年（2027年）设定ARR或收入目标？</b></p>
+<p>一般ES不会针对某个竞品设定目标，目标的制定主要是基于解决方案本身。因为列式存储这个功能既可以应用于安全，也可以用于搜索和可观测等场景。组织架构上也没有专门的feature负责人去承担具体业务目标的理解。</p>
+<p><b>最近ES有没有在重点推广全观测方案？在infra和APM领域的竞争力和产品进展如何？</b></p>
+<p>全观测或者说全观测在业内其实很多年前大家就开始做了。大约五六年前，大家各自发展自己的数据集成能力。后来，随着Open Telemetry的出现，在数据采集、处理和标准化层面，大家都采用了Open Telemetry。Open Telemetry是社区驱动，所有厂商都在贡献，只要用户用Open Telemetry，支持的infra、K8s、APM等都能复用。大家在这块基本拉齐，不会有谁特别强或特别弱，也不会有谁缺失或多出很多功能。未来会有越来越多用户转向Open Telemetry，而不是用厂商自有方案进行绑定。在全观测下的数据采集和标准化层面，大家基本处于同一起跑线。</p>
+<p>如果要看平台化和挑战，主要是在更上层，比如Datadog可能强在产品理解和易用性，尤其是云集成方面。这部分不是Open Telemetry覆盖的，比如AWS新出的云产品、计费方式、流量、某些指标等，不属于Open Telemetry必须覆盖的范畴。Open Telemetry主要覆盖常见的本地机房设备和infra，所以Datadog在云上的能力更强。随着agent和AI的发展，软件和新服务出现得很快，很多创新服务都部署在云上。ES的挑战是要在cloud、Elastic cloud或自有service上做好体验和集成适配。</p>
+<p><b>Dynatrace在全观测的前景？怎么和ES对比？</b></p>
+<p>这个我没有深入了解。Dynatrace确实强在APM上，但我不清楚他们是否在推广agent的observability。以前大家都做全观测，现在唯一的新变化是agent或LM的observability。Dynatrace过去主要强在APM，现在可能在链路方面有积累。我没有分析过他们和ClickHouse的Langfuse谁更强，但他们有用户基础和增量，尤其是在私有化用户方面有存量。</p>
+<p><b>最近发布的Nightshift SRE方案背后的模型是GPT？</b></p>
+<p>这两个新品都没有绑定模型。如果你看ES的inference service，你可以选择GPT 6，也可以选择Opus 5.5，或者Fable 5.1。</p>
+<p><b>5月GA的Elastic Workflow是一个完整的SOAR方案？是否是ES后续的重点安全产品？</b></p>
+<p>它不是一个完整的SOAR方案，只是一个自动化执行的功能。一个完整的SOAR方案最重要的能力是对接各种下游系统，能够执行playbook或runbook，也就是我定义的流程都能执行。ES内部也发现，在做这个方案时，很多用户有需求，但ES的集成还不完整，比如各种防火墙、路由器设备、网络防火墙、交换机等都还没有对接。这部分需要补全，目前有专门的团队负责。它本身是ES SOC方案中的自动化执行部分。Defend是ES推的EDR方案，不属于SOAR方案的部分。一般来说，它会和ES的SIEM部分放在一起。如果客户要做一个安全运营中心，就是SIEM加上Workflow，基本能完成大部分安全运营中心的工作。</p>
+<p>如果客户用的是标准产品，比如Palo Alto Networks、ServiceNow、Cisco等，ES可以对接并完整执行SOAR链路。如果客户用的是ES没见过的设备，比如深信服、齐安信或其他不太知名的厂商，因为ES没有针对这些接口开发API，这部分就需要客户自己开发。这时方案就不完整。所以ES需要覆盖各种常见安全设备的集成。至少CEO已经明确表示要提高这项工作的优先级，会有专门的团队负责。Workflow的更新可能不会随着主版本更新，而是单独更新，这也说明这项工作的优先级较高。即使主版本没有更新，也可以通过网络获取新的集成。</p>
+<p><b>现在客户对ES的需求，主要还是以SIEM为主？EDR层面是否已经对获客和收入有实质帮助？</b></p>
+<p>目前还是以SOC为主。一般ES提供SIEM方案后，会推荐加上Workflow和自动化执行，逐步渗透到SOC的各项功能。至于EDR，目前还没有太多用户案例能与CrowdStrike或微软Sentinel等产品竞争。通常客户购买新的方案后，如果EDR还没采购，ES有机会推荐自家的EDR产品。</p>
+<p><b>DT只做了runtime防护？他的客户怎么配置完整的安全方案？</b></p>
+<p>DT主要是做运行时防护，并不是完整的安全方案。如果客户需要完整方案，SIEM肯定要另外采购，EDR一般会用CrowdStrike或微软的解决方案。</p>
+<p><b>是否看到DT在日志管理上的观测显著获取份额的显著趋势？在从谁身上抢的份额？</b></p>
+<p>不一定是从其他厂商那里抢份额。如果你看到他们财报表现较好，很可能是在原有客户基础上实现了扩展，这些客户本来就是他们自己的。可能原先这些客户使用的是一些开源产品，现在他们重做了引擎后，用户愿意使用DT的产品来做日志相关的工作，包括日志的摄入、存储和使用。但通常来说，至少和ES之间，用户重叠并不多，不一定是从ES这里抢走了份额，而是新增的市场机会。例如，如果他们做了agent的可观测性，agent产生的日志量很大，这部分可能被他们吃下了。从销售角度看也很容易理解，如果APM和指标监控用DT做，agent产生的大量运行日志也会直接用DT，不会再额外搭建一套日志系统。如果DT的销售能说服客户在DT上做日志管理，这部分日志很可能来自agent的可观测性场景。</p>
+<p><b>DT提到过去半年其日志年化收入翻倍，ES的日志收入规模和增速怎么对比？</b></p>
+<p>ES日志这块面临的竞争其实很大。现在做日志的厂商非常多，云厂商本身以及内存数据库等都在做。ES的日志业务增长肯定是最慢的，而且有很多客户原先用ES，现在出现了流失的情况。DT的日志收入主要来自现有客户的扩展，尤其是在新场景下。日志场景最核心的一定是存储效率，谁的存储效率高，谁就有可能获得客户。但DT的产品本身并不是以效率为主，原先做APM时效率并不突出，而是依靠对应用和行业的理解，能够有效关联原先APM数据。因此，DT的增长并不是传统定制业务的日志转到DT，而是新的业务场景，比如agent业务产生日志，通过销售手段纳入进来。日志的痛点很简单，就是写入速度要跟得上日志产生速度，存储效率要高，第三是查询时能搜到，门槛其实不高。DT的引擎一直不是以效率和压缩、效能或成本优化为主，所以如果现在增长很快，很可能是agen t相关的可观测性数据带来的，但不能推导出DT能把传统日志业务也吃下来，这基本不太可能。</p>
+<p><b>过去一个季度是否看到模型赋能下PoC和订单落地显著加快？</b></p>
+<p>ES在推广ES 2.0时，后续密集发布了很多新存储模式，基本都是以列存方式为主。以前ES并不太关注列存，早期就给公司内部提过ClickHouse的问题。以前ES主要关注Planck，认为应该做解决方案，从解决方案层面提升客户粘性，做高价值内容。现在明显感受到客户真正的痛点不在那儿，如果跟着Splunk做，只会一起陷入困境。所以现在才开始直面竞争，但ES在列存方面其实是追赶者。现在还没有看到爆发性的增长，因为竞争对手早就有这个功能，ES只是慢慢补齐。以前在劣势存储竞争场景下，ES一直在掉量。现在只能说列存能帮助ES止跌、稳定，有可能重回增长，但目前还没有看到明显的增长。公司现在增长主要还是在搜索引擎这一块。</p>
+<p><b>后续这些新品都会基于列存架构推出对成本或者利润率的影响？</b></p>
+<p>这个肯定有影响。原先一个客户可以卖100万，有了列存后，可能只能卖30万，客户节省了70%的存储，这会直接反映在ES承担的资源规模上。ES只能通过license方式补回来，这个功能必须是企业版才能用，企业版价格比以前涨了30%。现在新卖的基本都是企业版，所以只能看增量客户。存量客户如果加上这个功能，还要看销售情况，ES只能保证存量客户用了这个功能后，订单规模不下降，只是他们会扩大使用场景。ES尽量保证销售规模不降，因为有了这个功能后，如果客户数据量不变，需要的节点数会减少。E S只能建议客户把更多数据接入。虽然这是企业版功能，但从经济效益看，肯定存在缩量风险，这也是ES之前迟迟不跟进这个功能的原因。其实DT和Splunk也一直没有跟进类似的功能。</p>
+<p><b>列式存储业务只能靠需求的绝对增长去弥补理论上节点缩减带来的影响？</b></p>
+<p>这个功能进来后，大家都很难维持高利润，ClickHouse的推广就是用十个场景，原本需要十个节点，现在只需要一个节点，成本减少90%。客户只买一个节点，收入只有原来的十分之一，但总比没有客户好，所以要做这样的竞争。整体来看，如果没有新的ag ent带来的可观测性数据增长，大家都用列存的话，可观测性市场肯定会慢慢缩水。但现在因为有模型带来的数据增量，有些厂商在增长，有些则没有看到特别明显的因为列存缩量带来的影响。</p>
+</div>
+</main>
+</body></html>

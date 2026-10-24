@@ -1,0 +1,368 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.16 | GP | Software | Ravio: Compensation Benchmarking Data Moat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.16 | GP | Software | Ravio: Compensation Benchmarking Data Moat</h1>
+<p class="orig">原标题：Ravio: Can Its Compensation Benchmarking Data Deliver a Sustainable Competitive Advantage?</p>
+<p class="tags">#software</p>
+<p class="meta">GuidePoint · 2026-10-16</p>
+<div class="body">
+<p>Primary:</p>
+<p>Ravio Technologies Ltd.</p>
+<p>Associated:</p>
+<p>Trove Information Technologies, Inc.</p>
+<p>Figures Hr Uk Ltd</p>
+<p>Aon UK Limited</p>
+<p>Mercer Limited</p>
+<p>PayScale, Inc.</p>
+<p>Salary.com, LLC</p>
+<p>OpenComp, LLC</p>
+<p>Viewpoint:</p>
+<p>Former Executive</p>
+<p>Moderator: Prajnya Hegde (PH)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Oct 16, 2026</td><td>34 Min Read</td></tr></tbody></table></div>
+<p>Joanna Dobrodziej (JD), Former Chief of Staff - Ravio</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The discussion examined Ravio’s position in compensation benchmarking and management software. Traditional providers such as Aon Radford, Mercer, and Korn Ferry primarily collect compensation information through periodic surveys. Newer platforms including Ravio, Pave, Figures, and Compa connect directly with HR systems, enabling fresher data and reducing self-reporting errors.</p>
+<p>Ravio’s strongest product-market fit is among technology-focused startups and scale-ups, particularly small and medium-sized employers. Larger enterprises remain dominated by established providers with broader datasets across industries and job categories.</p>
+<p>Ravio offers three main products:</p>
+<p>Benchmarking: Compares salary, equity, bonuses, and benefits by role, seniority, geography, company size, industry, and funding stage. Bands: Helps employers establish pay ranges, allocate budgets, and identify employees paid above or below target ranges. Pay equity: Supports consistent compensation for comparable work.</p>
+<p>Benchmarking data is the natural entry point because compensation-management workflows require reliable market information.</p>
+<p>Key Insights</p>
+<p>Direct HR-system integration represents the central innovation of newer platforms, providing more current and potentially more accurate information than survey-based models. Winning customers already using benchmarking tools is easier than creating demand among first-time buyers because replacement customers already recognize the need. Dataset breadth and depth are critical competitive advantages. Limited industry and role coverage could constrain newer providers. Pay-transparency regulation should support demand, although adoption is expected to develop gradually as national enforcement and reporting obligations take effect. AI creates opportunities through automated job matching, new workforce categories, and faster market analysis. It also threatens newer platforms as incumbents modernize their offerings. Customer retention depends primarily on data accuracy, geographic and role coverage, HR integrations, product breadth, and pricing.</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>Competitive Landscape</p>
+<p>Provider</p>
+<p>Positioning</p>
+<p>Advantages</p>
+<p>Challenges</p>
+<p>Ravio</p>
+<p>Pave</p>
+<p>Technology-oriented startups and scale-ups</p>
+<p>Real-time integrations and broader compensation workflows</p>
+<p>Must expand dataset coverage</p>
+<p>Modern compensation platform, initially workflow-led</p>
+<p>Strong software foundation with benchmarking added later</p>
+<p>Competes on coverage, integrations, and AI</p>
+<p>Figures</p>
+<p>Modern benchmarking-led platform</p>
+<p>Similar integration-based model to Ravio</p>
+<p>Requires continued dataset expansion</p>
+<p>Aon Radford, Mercer, Korn Ferry</p>
+<p>Large-enterprise incumbents</p>
+<p>Extensive datasets, established relationships, broad coverage</p>
+<p>Compa</p>
+<p>Newer integrated provider</p>
+<p>Real-time data approach</p>
+<p>Survey data can become outdated; modernization may be slower</p>
+<p>Faces the same scale and coverage requirements</p>
+<p>Quantitative Insights</p>
+<p>Metric</p>
+<p>Detail</p>
+<p>Typical target size</p>
+<p>Demand becomes more meaningful around 200–300 employees</p>
+<p>Example annual pricing</p>
+<p>Starts at 5,400 for a 250-person company</p>
+<p>Major incumbent revenue example</p>
+<p>Approximately 6 billion across all business lines</p>
+<p>Estimated benchmarking share</p>
+<p>Roughly 10%–20% of incumbent revenue</p>
+<p>EU reporting threshold</p>
+<p>Initial obligations cover employers with at least 150 workers</p>
+<p>Later EU threshold</p>
+<p>Employers with 100–149 workers face a June 2031 reporting deadline</p>
+<p>Reporting commencement</p>
+<p>Larger covered employers begin reporting in June 2027</p>
+<p>PH: Hi everyone, my name is Prajnya Hegde and I'm a senior analyst at Guidepoint Insights. I would like to welcome you all to today's call on Ravio. We are delighted to have with us Joanna Dobrodziej, who previously served as Chief of Staff at Ravio. Hi Joanna, thank you for joining us today.</p>
+<p>JD: Hello.</p>
+<p>PH: So to begin, could you please provide a brief overview of your professional background and tell us a little bit</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>about your roles, about your responsibilities during your time at Ravio?</p>
+<p>JD: Absolutely. So I started my career in management consulting where I was responsible for driving client impact across different industries and functions and that included financial services, healthcare, retail, manufacturing, etc. After this I was an investor at the Growth Fund in London where I was looking into Series B+ companies across different industries and understanding what drives businesses, what makes a good investment and therefore which companies should we be investing in. And then I became a Chief of Staff at Ravio, where my responsibilities span across advising founders on the strategy, products, market expansion, as well as operating the business day to day. So driving cross-functional projects and providing different analysis on the competitive landscape and pricing.</p>
+<p>PH: Great. Thank you for that introduction, Joanna. So let's start this discussion with the basics, right? Could you give us an overview of the compensation benchmarking, compensation management industry, which Ravio currently falls in? Like in your own words, how does the market works and who are the main providers within the segment?</p>
+<p>JD: Yeah, absolutely. So the compensation benchmarking market, it's ultimately, if we think about it at the highest level, it's providing accurate compensation data to companies across all sizes. And the market, I think we can split it in 2 main aspects. So 1 is the traditional compensation benchmarking providers, which PH: Okay.</p>
+<p>JD: is companies like Aon, Radford, Mercer, Korn Ferry. And those companies, they are able to provide the compensation benchmarking data based on integration, based on the surveys that they run with the companies. So they once a year usually run a big survey across different companies in the space in order to obtain the accurate information about what is the most recent compensation. The challenge of this obviously is that the data very quickly becomes outdated because the market is moving much quicker than the yearly or even twice a year compensation survey, right? So before the results come into the market, they already become almost obsolete. So then you have the second part of the market, which is the newcomers, which is the companies like Ravio, like Pave, like Figures, like Compa and those players have a different approach to compensation benchmarking. They aim to provide the data via direct integration to companies, so they integrate with the HR systems, like for example the ADP workforce or Ashby or Bamboo HR or Charlie, and aim to pull the data about the compensation of the employees directly from those systems. And what it does, it's at a high level 2 things. So first one is it allows companies to get the data real time. So it's a picture of the market as it is today, not 6 months before. And the second one is that it allows to have more precise data because it pulls them directly from the HR system rather than through survey that is self-reported. So it allows to avoid the errors.</p>
+<p>PH: Correct. So Joanna, a couple of follow-up questions here, 2 segments that you mentioned. So based upon your understanding, what is the rough estimate of the market that is currently still dominated by the first segment that is by the traditional method through Aon, Mercer and other companies?</p>
+<p>JD: Yeah. If you think about the traditional providers, they usually serve large companies, enterprise companies, so you can think about basically Fortune 500 companies.</p>
+<p>PH: Hmm.</p>
+<p>JD: And in terms of the estimation of the market, there is not a... There is sort of no publicly available, easily available information of what the overall total addressable market is. But PH: Right.</p>
+<p>JD: If someone was to estimate it, probably the approach that I think we commonly use also in consulting is that you look into the revenues of those players because the market... You can clearly see that it is quite consolidated. So there</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>is basically really 4 players that are dominating the vast majority of the market, which PH: Then JD: is, as I mentioned, Aon Radford, which is Mercer, which is Korn Ferry. And those players, they are public companies. So you can see what the revenue of those players is.</p>
+<p>PH: Good day.</p>
+<p>JD: And so, for example, and estimate the market from there, right?</p>
+<p>PH: Exactly.</p>
+<p>JD: So, for example, Aon Radford, they are publicly stating that their revenue is around 6 billion now.</p>
+<p>PH: Yeah.</p>
+<p>JD: This revenue, it's obviously not only from the compensation benchmarking, because those businesses usually have multiple businesses. So then there needs to be a sort of reasonable assumption of what share of their revenue is actually coming from the compensation benchmarking, and this probably is around, fair to assume, like 10% to 20%.</p>
+<p>PH: Hmm.</p>
+<p>JD: And so therefore, a person can basically run math, I think, quite easily on what could be the overall market.</p>
+<p>PH: Yeah.</p>
+<p>JD: Right. So those are those 4 companies' publicly available revenues times the share that actually comes from the compensation.</p>
+<p>PH: So what do you think, which areas or which segments do you think would be a better fit for the newer platforms like Ravio, Pave, Figures, etc.? Do you feel that such areas are currently under-penetrated or there exists some untapped opportunities for them to expand and grow?</p>
+<p>JD: Yeah, so if we think about the market more broadly, there is one area that is well-established players, dominating the enterprise companies. And those are companies that basically all of them do the compensation benchmarking. So that's sort of like established market that exists, that can be tapped by existing players, but also newcomers, if they are able to build up the relevant base and the relevant benchmarks from the companies that are in this segment, right? In terms of the size of the company, because companies want to compare to the companies that are similar size to them, right? Like the enterprise will compare themselves within the enterprise, and the smaller businesses will compare themselves within smaller businesses. So, that's one part of the market. Then the second part of the market is the smaller to medium-sized businesses, and here really we think about businesses that are I think probably from like 200-300 range because the business needs to be large enough to actually also care about the compensation benchmarking enough, right? But obviously there are some exceptions, there might be smaller businesses that are already very forthcoming and they would like to also provide a fair and an expectation... They would like to fulfill employees' expectations towards their fair salary, but obviously that need grows with the size of the company, right?</p>
+<p>PH: It JD: So those are at a high level 2 segments, and I think where those newcomers started, all of them, and they are particularly strong in, is the smaller segment of the companies. And that's how they build up their database and their revenue pools as well. And that's true across Ravio, Pave, Figures.</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>PH: Right. So to summarize, what would you say like within small, medium and large enterprise segments, which customer segment do you feel are ideal product market fit for a company like Ravio?</p>
+<p>JD: So ideal product market fit is probably within the smaller size companies as those companies are more willing to probably test it out, connect the data, etc. Having said that, you can see in terms of the companies that Ravio but also Pave, etc. are reporting to work with and that's also publicly available information. You can see it on their website, right? You can see the companies that are customers. You see that those are mostly the tech forward companies and mostly in this sort of startup/scale up mode, right? So you can see it. They are quoting Octopus Energy, they are quoting Bugbase. So those are some of the companies that they are working with.</p>
+<p>PH: So in terms of industry concentration, do you think the majority of the concentration is within technology and tech-enabled businesses like startups or do you think there is an opportunity for the company to expand beyond these sectors into other verticals, industry verticals?</p>
+<p>JD: So I think the main focus, I think, and again, you can see it from the companies that they work with on their website as well, right, is for those players to work with the tech companies. And those are usually the companies that are also... they care much more about being able to offer competitive salary ranges and being able to actually compete for the top talent with the top salaries, right? So this is definitely a segment that is prone to go into the compensation benchmarking.</p>
+<p>PH: Mm-hmm.</p>
+<p>JD: Now, if you think about the expansion to other segments, it's obviously possible because those players, especially larger companies, they are using the compensation benchmarking providers. However, you could also perhaps argue that those companies are not... the first movers in terms of incorporating new solutions, I think that's one. And then another one is they are also likely to be less bothered about this very fierce competition over top talent, right? So I think this is probably more of a... probably more difficult market to crack.</p>
+<p>PH: So, we discussed with these small, medium, large enterprises, the small to mid are the better product market fit for the products of Ravio, right? In such scenarios, when the growth of the company is taken into consideration, does the growth, customer growth, come from new businesses that are experiencing or that are even evaluating this compensation benchmarking platform for the first time? Or does it usually come from the customers who want to switch from the previous providers, maybe the traditional providers, maybe the competitors for that matter?</p>
+<p>JD: So it can come from both. So there is both demand from the companies that are already aware of the compensation benchmarking and already have traditional providers and they're searching for a better solution. And therefore, they could be willing to try newcomers, as well as companies that are smaller, but want to actually be able to provide accurate compensation to their employees. So I would say those are the 2 segments of the market.</p>
+<p>PH: Yeah. So, roughly, based on your estimate. So, let's go to the next question. So, I'll JD: I'm sorry, Prajnya, it's quite hard to hear your question. I don't know if you could repeat it.</p>
+<p>PH: Sure, I'll just repeat it. Thank you. So, let's go to the 2 aspects, right? So, if we refer to the idea, what is the space between the 2 of them? To out of estimate, what is the split between a customer looking for and a customer looking for a replacement other than the customer experiencing the platform for the first time?</p>
+<p>JD: I'm really sorry, but you keep breaking up, so it's quite hard to understand.</p>
+<p>PH: Okay. I'll just... Is it audible here? Hello?</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>JD: Hello, yeah.</p>
+<p>PH: Can you hear me now?</p>
+<p>JD: I can hear you now.</p>
+<p>PH: Okay. I'll just repeat my question, okay?</p>
+<p>JD: No, but you keep breaking up, so I'm not sure. My internet shows it's full bar, so I don't know if it's on your side or...</p>
+<p>PH: Okay, is it still breaking from my end?</p>
+<p>JD: Now it's a bit better, so let's try again.</p>
+<p>PH: Okay, sure. So, what do you think, what is your rough estimate of the split between the customers looking for this platform for the first time versus customers looking for a replacement?</p>
+<p>JD: Yeah, I think... this question is hard to answer without revealing any proprietary information, but I can tell you in general, in terms of when you think about any adoption of the solution, right, I think. When there is already an established market, right, it PH: Hmm JD: Is easier to basically convince customers that you can adopt the solution because they already understand that there is a need. They already have this need and they basically are fulfilling it. So, what you need to do there to convince the customer to switch to you is you need to be able to provide a better product than the existing solution, and that's how you convince the customer to switch to you, right? In general, in any business. Whenever it comes to companies that don't have certain solutions, it's a bit trickier path because you first need to develop the need in the customer. So, you need to convince them that this need actually is helpful for them, right? So, you need to prove that it's either saving them the money or that it's basically optimizing their operations or that it's, I don't know, helping them attract new customers and whatever, right? So, it's much more difficult in any business to create the market than to serve the existing market.</p>
+<p>PH: Great. So, could you tell us about the company's business model in your own words? Like, what are the various products that the company offers and what value proposition do the customers usually get from using the platform?</p>
+<p>JD: Yeah, absolutely. So, I mean, when you look at the website, you can see 3 main products that Ravio offers.</p>
+<p>PH: Hmm JD: First one is the compensation benchmarking, and that's also how the company has started. And then you have 2 products that are in the compensation management, which is Bands and pay equity.</p>
+<p>PH: Good night.</p>
+<p>JD: Compensation benchmarking is basically the solution to provide the data about where is the compensation market standing, right? So this is basically allowing companies to benchmark themselves into how much they are paying versus how much the industry is paying, based on the position, based on the location, and based on the employee level. What I mean by level, this is, for example, like manager versus supervisor versus expert.</p>
+<p>PH: Hmm.</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>JD: And what are the components of the benchmarking is a comprehensive view. So it's the base salary, the equity, so the shares in the company, it's variable, which is bonus, it's benefits, so it's things like maternity leave, things like this, and that's sort of how you can think about what the benchmark is. And then in terms of how you can filter it, you can compare people across the same industry, the same headcount, so size of the company, the funding stage, so here we mean the Series A, Series B, etc., the location, and those are sort of the available filters. And then, if you think, so that's sort of the first product, and that's this product that is allowing mostly comp managers to see whether employees that are currently hired in the company are in the right level in terms of the compensation, but can also help hiring managers to see whether a new person that gets hired could be hired at a certain level of the salary, right?</p>
+<p>PH: Right.</p>
+<p>JD: And then there are 2 other products, which is Bands, and this product sits within the compensation management, so it's more of a workflow tool. And this basically allows companies to, when they do their compensation management cycle, to set certain bands for their employees and then see how many people that are in a certain position in a certain space are within the band range that the company set versus are behind the market maybe versus are above the market.</p>
+<p>PH: Hmm.</p>
+<p>JD: So it allows to basically make sure that people are paid equally for the same work. So you see all your employees and you see what is their salary and you see where they are placed within the band that you set for that role.</p>
+<p>PH: Good day.</p>
+<p>JD: And this allows companies to balance budget and people objectives. It allows to understand when you allocate certain budget for certain roles, how it will play out across different roles and also if you want to adjust it, if you want to be more competitive or less competitive versus the market. It will basically help you do that. And this is mostly targeted to help companies manage their compensation cycle easier and faster than they do currently, because often quite a manual work that they do.</p>
+<p>PH: So, how does the 3 segments of the company contribute plays an important part in contributing to the benchmark itself, right? So, how does the company attract and retain such participating companies or participating employers towards benchmark and what usually motivates such companies to share their compensation data because that's quite sensitive in terms of sharing, right? So what motivates a particular company to share their data with Ravio?</p>
+<p>JD: Yep. So you can see, and it's also publicly available information on the website, that in order to get the data to be a customer, basically you need to share the data as well. So it's the model: give to get. And this is basically the motivation for the companies to then share PH: Okay.</p>
+<p>JD: the data as well, so you can see it on the website.</p>
+<p>PH: So how do you think this approach of Ravio in contributing to its benchmarking data is different from the traditional providers such as Mercer, Radford for that matter, as well as the other competitors such as Pave and Figures? Do you think this approach differentiates the company from the others in the market?</p>
+<p>JD: Yeah, as I mentioned earlier, in terms of the traditional providers like Radford, Mercer, etc., how they operate is they use surveys in order to get the data. So that is a very different approach because how the survey typically works is that you send it out, as I mentioned, once or twice a year, and then people will take their time to fill it. You don't have that much oversight on the quality of how people fill it, but also you will experience a lag in terms of the data</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>information coming, right? Because it obviously takes time. You need to set up the survey, then people fill it, and then you need to analyze the data and only then you can release it back to the market as information, right?</p>
+<p>PH: Okay.</p>
+<p>JD: So from that perspective, the approach that new players are taking, which is direct integration with the HR system, is innovation in the market.</p>
+<p>PH: Also, because we discussed earlier, the company's customer concentration is majorly into technology or tech- enabled startups and small to mid-sized companies. So do you think that can be one of the disadvantages for Ravio in general if we compare that to the other traditional players that might have a better coverage in terms of industry verticals, in terms of job descriptions and other criteria?</p>
+<p>JD: Yes, in the compensation benchmarking space, you want to ensure that you have the comprehensive data sets. All the providers in the space, this includes Radford, Mercer, but also newcomers like Pave, Ravio, Figures, all those providers will continuously aim to get more and more data from companies in terms of the breadth of the data, in terms of the depth of the data, continue to expand the roles and descriptions, so that's basically very true for all the players in the space. Today. And from that perspective, I think that's a constant sort of evolution of the space.</p>
+<p>PH: So, of the 3 offerings, which are the most differentiated according to you, which have seen the strongest customer adoption and growth for the company?</p>
+<p>JD: Sorry, can you repeat the question because you're breaking up again. I'm really sorry, but I'm not sure if it's internet connection or...</p>
+<p>PH: Yeah, no problem. Is it okay now? Am I audible clearly?</p>
+<p>JD: Yeah, now it's better, yeah.</p>
+<p>PH: Okay. So of the 3 offerings that the company provides, that is benchmarking, bands and pay equity, which product do you think is most differentiated? Which product do you think is experiencing strongest customer adoption and growth?</p>
+<p>JD: Yeah, here I don't want to disclose any proprietary information. That's not something that is available easily based on the desktop search. I don't think I can reveal that.</p>
+<p>PH: Okay. So in terms of entering the platform, which product do you think acts as an entry point within the platform and then that leads to the upselling and cross-selling within the other 2 products?</p>
+<p>JD: Yeah, I mean, so if you think about in general how compensation and management works, and it's based on the publicly available information, is that you need good data in order to be able to run the compensation benchmarking cycles. So from that perspective, all the companies that are doing the compensation management basically need to get from somewhere the benchmarking data for the positions and for the relevant geography in which they are. So they can get it from the traditional players or from the newcomers. And then further down the line in terms of the compensation management, then you have the workflow tools that are setting up the bands, then it's basically managing the compensation end to end and things like this.</p>
+<p>PH: Yeah.</p>
+<p>JD: And so you can see basically those components of the compensation management cycle.</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>PH: Lastly, on the product front, right? Have you seen or do you see currently any product gaps or any feature gaps within the Ravio platform if we compare that to the other players, both traditional and new modern players that you think the company should incorporate in order to add value proposition to its customers?</p>
+<p>JD: Yeah, and so it's an interesting question. So if you think about how sort of the evolution of the market is, and it's also based on the publicly available information, is that the traditional players, obviously what they are offering is the compensation benchmarking. So this is data and this is how they started with their business.</p>
+<p>PH: Right.</p>
+<p>JD: Then you have players like Ravio and Figures. There are the players who are adopting similar approach, so starting with the compensation benchmarking. So basically the data product that offers and then moving on to the compensation management workflow tools, which is, for example, the band. And then you have another approach, which is Pave, which is the company that started from the US and this company started the opposite way so they started with the compensation software. And then they started to build out the benchmarking solution for their customers. Yeah, so you can sort of see those two approaches into ultimately compensation benchmarking.</p>
+<p>PH: So next, could you walk us through the company's revenue model, like how does the company make money and what are the various products or various streams through which it generates revenue?</p>
+<p>JD: I'm really sorry, but you might want to change the connection because it's really... it's basically breaking up.</p>
+<p>PH: Okay, one second, I'll just try this. Is it better now?</p>
+<p>JD: Yep, now it seems to be better.</p>
+<p>PH: Okay. So I'll just repeat my question, okay? So could you walk us through the company's revenue model? Like how does the company make money and what are the various streams through which it makes money?</p>
+<p>JD: Yeah, so you can see it on the website, in terms of what are the core products that the company offers? And PH: Mm-hmm.</p>
+<p>JD: This is, as I mentioned, the first core product is the benchmarking data. Then you have 2 other products that are in the compensation management, which is bands and pay equity. And then in terms of how the company makes money, you obviously have one aspect of this that is the customers that we, I think, already discussed in terms of what are the companies that the company is working with. You have them also on the website. So, those are the tech providers like Mollie, Bolt, etc.</p>
+<p>PH: Good day.</p>
+<p>JD: And then the other component, obviously, is the pricing. So, that's something that is not publicly available as the information. However, you can see also on the website that pricing will depend on the company size and the models that the company selects together with the market data needs. Pricing also... you can see that the pricing, this is an example from the website of the pricing for a 250-person company starts from 5,400 per year. So, you can basically, based on this, conclude on the business model of the company.</p>
+<p>PH: So, how does Ravio's pricing, if compared with the other providers, traditional compensation as well as the new providers in the market, do you feel the company has a pricing advantage, and does the company have any pricing power in hand if we compare that to the others?</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>JD: So, pricing is obviously something that it's sensitive information to discuss. So...</p>
+<p>PH: Yeah.</p>
+<p>JD: I don't want to reveal any proprietary information. You can basically see, as I mentioned, on the website, you can see the price for Ravio, how it starts from. In terms of Mercer and Radford, it's also something some companies actually provide some sort of guidance in terms of what their pricing could be, but it will really depend on the size of the company on the market etc. So I think you can basically take it into consideration at a very granular level as well in order to conclude on this. And you can see some of the publicly available information, like some quotes on the conversation, but I think it's also something that needs to be considered at the level of granularity that is appropriate.</p>
+<p>PH: And also, as we discussed earlier, the company's customer base is within small and medium-sized businesses. So do you think that these customers are quite price sensitive when it comes to any change in pricing? Have you seen such scenarios within the company?</p>
+<p>JD: So I cannot speak about the scenarios within the company. I can tell you in general from my experience as an investor that price sensitivity will depend on how crucial the solution is to the core of the business of the company. So if the solution is critical to the business operation.</p>
+<p>PH: Yep.</p>
+<p>JD: Then the price sensitivity is lower. If the solution is nice to have and it's more that the company can actually operate without a solution, then the price sensitivity is obviously... companies will be quite sensitive to the price of that solution. So I think this will all depend on the fact if the solution in general is considered as critical to the business or if the solution is considered as nice to have, whether the business can operate without it.</p>
+<p>PH: So how large do you think is the total addressable market, that is TAM, for Ravio across both compensation benchmarking and management? What factors will you take into consideration while calculating the TAM or the size of the TAM?</p>
+<p>JD: Yeah, so this again is something that I can draw from my experience in consulting and investing. Because usually you would look at the beginning, what are the businesses that could be attracted in terms of the solution? And here we said in terms of the business sizes, the large players as well as the smaller companies.</p>
+<p>PH: Yes.</p>
+<p>JD: Then you would look into, on the large business side, you can look into the revenues of those companies and basically what share could be of those revenues attributed to compensation benchmarking. On a smaller size of the businesses, you basically can... Look into how many businesses are there in the geographies that the company operates. Then assume some sort of adoption of the solution. And then look into the average price that the company might be willing to pay with regards to those type of solutions. So we can make some reasonable assumptions on what the total addressable market could be in both of the segments based on this.</p>
+<p>PH: Okay. So on an industry level, what do you think are the biggest opportunities and biggest challenges or risk for this industry going forward, and what impact do you think will it have on revenue?</p>
+<p>JD: Yeah, absolutely. So in terms of the overall industry trends, right, I think there's a few interesting things to think about. I think one is that there is definitely some push for the transparency in terms of the compensation, and I think that's the expectation that is shaped by, from one side, the regulation. So we've seen in Europe, the pay transparency regulation. We see also some similar efforts in the US.</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>PH: Yeah.</p>
+<p>JD: And then the other side is from the employee side, right? The push for like equal pay for equal work and things like this. So that's an interesting trend that will continue to shape the industry. And obviously it's not something that changes overnight. It takes time, with all the regulations, like we saw in terms of the sustainability regulations in Europe, it also takes time before it has impact across businesses, but it's definitely something that is there. And then, I think there is another trend obviously that impacts all businesses across different industries, which is AI. And this is, I think, interesting for the compensation management, compensation benchmarking market on 2 fronts. So I think first front is in terms of new roles appearing in the space. So there's...</p>
+<p>PH: Mm-hmm.</p>
+<p>JD: We see there's a lot of roles that are connected specifically to AI and PH: Yeah.</p>
+<p>JD: AI management roles. All the time popping new roles that have not existed in the past. That is an interesting trend in terms of the supply side. There is also an interesting trend if we think about the demand side. The fact that on the side of the companies that are doing the actual compensation benchmarking and compensation management, you have companies investing in some automation, being able to map jobs more efficiently and this type of thing. That is quite an interesting trend that we can see in the market in terms of both opportunities as well as challenges. One interesting thing to call out with AI particularly is that this is something that is present across all the industries and is disrupting all the industries that we know. But in compensation management, it is quite interesting because it is all about data. It is very interesting to see whether the old players will be able to modernize and how fast they will be able to do it. For example, Aon Radford is advertising now on their website that they are doing enhancements, and as AI redefines the workforce skills and competencies, they are launching new capabilities. They are launching the capability to integrate the data and get real-time insights from the companies, so it seems they are also going in that direction. It would be interesting to see whether they succeed in doing so. They are advertising that they will be able to do that AI-enabled job matching and compensation assistant for the companies, and also to provide real-time labor market insights based on the... Based on the signals... That is quite an interesting announcement just from one of the players in the space. But there might be more stuff happening there. For example, also on Mercer, Comtrics side and things like this. That is a very interesting development in the market to watch for.</p>
+<p>PH: So, 1 question on regulation, right? How significant do you think the regulation will have its impact on Ravio or any compensation benchmarking business in general? If you take Europe for that matter, it recently came out with EU pay transparency directive. What impact do you see of this rule on such companies? Do you see it creating a sustained source of demand or is it only the opportunity for the short-term period?</p>
+<p>JD: Yeah, it's a really good question. If you think about it, the EU pay transparency is not that super new. It's been there since May 2023. It's something that already has been adopted. European Commission proposed it even in</p>
+<ol><li>It's not that new. But obviously, as with all the European regulation, it does take time before they actually fully</li></ol>
+<p>get enforced, right? If you think about the timelines that the European Commission is publishing, they're saying that the deadline for EU countries to transpose it into the national law was June 2026 and then the first reporting deadline for the employees with 150 plus workers is going to be June 2027, so next year. And the first reporting deadline for the companies that are large, that are basically smaller than that, so 100 to 149 workers, it's June 2031.</p>
+<p>PH: Okay.</p>
+<p>JD: So that's quite interesting. Because obviously the expected sort of uplift in terms of the regulation and should that now come into place. Because we've been into this quite a long time already now, in terms of the European</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>Transparency Directive. So we can now think whether the companies start to adopt to this and in what extent, because they will obviously need to start reporting with more transparency next year in terms of the larger companies. So I think it would be a quite interesting year to see how this European pay transparency directive actually come into play. And I think there also probably it's quite interesting also to see the parallel from other markets. So you can think about similar directives in sustainability front and etc. So I think it's quite interesting to see how those play out in the market.</p>
+<p>PH: Thanks. So coming towards the next part that is on competition. What do you think, how does Ravio perform or differentiate itself from the other key players in the market? What do you think is the 1 competitive advantage that the company has that differentiates Ravio from the others?</p>
+<p>JD: I think here, obviously, without revealing any proprietary information about the company, you can see what those companies are. When you look at their website, you can see what they are sort of, all of them advertising as their core competitive advantage. And I think that's often what customers care a lot about. So you can see when you look at Ravio, but also then Pave, also Figures, you can see what they sort of stress out on their website as important. And I think they basically try to convince customers that they have access to a large pool of data. So everybody's quoting how many customers already trusted the company and how many companies integrated with the company. So I think this is what the companies are marketing. They are also marketing themselves basically on what data sources you can use with regards to the integrations. So I think they try to basically market themselves based on how many integrations to different HR working tools you actually have. And then PH: Mm-hmm.</p>
+<p>JD: I think probably one more thing that they are trying to now also differentiate themselves in terms of different companies in the space. So you'll see on Ravio website, you'll see on Pave website, you'll see on Figures website, it's also how AI-first those companies are. So I think those are some of the differentiating factors for the companies. And I think maybe perhaps also a last point that I think is also present on all the competitive websites, on all the providers, you'll see is also them advertising themselves on how many compensation tools you actually can access. So they all list what compensation management solutions, broader than just benchmarking, you are able to access. So those are some of the dimensions in which you can think about comparing those providers between each other.</p>
+<p>PH: So on a scale of 1 to 10, with 10 being the highest rank, how would you rate Ravio in terms of, firstly, product and platform performance and, secondly, customer support? How would you rate Ravio? And if you want, you can also add competitors to it.</p>
+<p>JD: Yeah. So that's obviously on the mindset; if I was to share this, it would obviously be proprietary information, so I don't want to share anything that is non-public. I think the way a person, if a person were to evaluate those companies, I think the best way is to ask customers of the companies. That's often what we also used to do when we were basically in the investor hat: you would go and you would interview the customers of those players and PH: Yeah.</p>
+<p>JD: You will then ask, basically, the questions around the performance of the platform, you will ask them about the service, you will ask them about how overall they are happy with the solution and I think that's a quite easy exercise that will allow you to compare the players in the space.</p>
+<p>PH: So from a company standpoint, what do you think are the major factors driving customer retention for Ravio? And conversely, what are the major factors for customer churn? And in terms of churn, which other alternative would a customer prefer when they are looking for a switch from Ravio?</p>
+<p>JD: Yeah. And so I think here again, without revealing any proprietary information about the company, you probably can look in general at the compensation benchmarking space and think through what would make a customer churn</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>from one provider to another.</p>
+<p>PH: Mm JD: And I think here, those are the factors that basically all the companies are also advertising on their website with regards to what is the strongest competitive advantage, right? Because it's ultimately what the customers care for, for those companies, right? So if you look again at the websites of Ravio, of Pave, of Figures, right? If they're advertising what the customers will care about. So, you think, accurate data, right? If a customer has accurate data or not from a given company, then would they stay with the company or would they turn, right? This is accurate data across different roles and across different markets, right? And that's why all those companies are advertising basically the relevance of the data, right?</p>
+<p>PH: Hmm, today.</p>
+<p>JD: And then obviously another point also mentioned, right, in terms of supporting the relevant integration, right, to the relevant HR, right? Obviously, for the customer to be with the company, obviously it needs to support the relevant integration, right? That's another thing that is marketed on the website, right? And then I guess if you look at one last aspect that I mentioned that is advertised on the website is the comprehensiveness of the solution, right? So which basically building blocks of the solution I can get as a customer in terms of the compensation management, right?</p>
+<p>PH: Yeah.</p>
+<p>JD: So I think that's true for the overall industry and that would be true also for any other industry in terms of when you think about what the company, what the customer actually wants in order to stay with 1 company or the other. And then I think perhaps the last component, I think it's, again, this would be with also any company really, as companies obviously know who are the providers in this space, right? And then they would obviously also compare the prices in this space, right? So that's also a component that all the companies need to think about.</p>
+<p>PH: Great. That brings us to the end of today's discussion, Joanna. Thank you once again for joining us and sharing such valuable insights on Ravio.</p>
+<p>JD: Great. Thank you very much.</p>
+<p>PH: Thank you. Have a great day. Bye.</p>
+<p>JD: Thank you. Bye.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+</div>
+</main>
+</body></html>

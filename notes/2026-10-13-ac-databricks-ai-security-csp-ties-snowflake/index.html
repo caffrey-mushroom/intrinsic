@@ -1,0 +1,186 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.13 | AC | Software | Databricks: AI Security, CSP Ties &amp; Snowflake</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.13 | AC | Software | Databricks: AI Security, CSP Ties &amp; Snowflake</h1>
+<p class="orig">原标题：Databricks调研：数据云平台、CSP及大模型公司在AI安全方面投入对比，AI时代客户数据产生速度变化，中短期与Azure、AWS、GCP合作调整，以及与Snowflake竞争优劣势等</p>
+<p class="tags">#software #cloud #security</p>
+<p class="meta">AceCamp · 2026-10-13 · article 70567944</p>
+<div class="body">
+<h2>摘要</h2>
+<p>本文核心要点包括：1，	数据云平台、CSP及大模型公司在AI安全方面投入对比2，	Databricks与Snowflake竞争对比3，	AI时代客户数据产生速度变化4，	与Azure、AWS、GCP合作变化</p>
+<p>以下为专家观点：</p>
+<p><b>1，随着海外AI模型的快速迭代，相应对客户的用量以及DataBricks的策略有何影响？</b></p>
+<p>模型的演化是一个重要议题，包括RSI技术的发展以及Anthropic等公司提出的放缓发展步伐的倡议。从DataBricks的角度来看，模型领域的竞争已是一片红海。公司已明确决定，不会亲自进入基础模型研发这个赛道。公司倾向于利用日益廉价的模型来提升数据的价值，而非直接参与模型研发的竞争。公司对模型发展需要放缓或“RSI”即将到来的观点持怀疑态度。真正的智能爆炸，即所谓的递归自我改进（Recursive Self-Improvement），需要满足一个关键前提：模型能够以持续减少的算力和更短的训练时长进行自我演进。然而，当前观察到的情况是，各大公司仍在持续大规模采购GPU和TPU，并且模型的训练时长，特别是后训练（post-training）和对齐阶段的时间仍在增加。这种物理限制的存在，使得递归缺乏一个清晰的收敛边界，因此判断“RSI”在现阶段难以实现。</p>
+<p>Databricks认为，当前许多关于模型威胁论的讨论，背后有商业和资本层面的考量，旨在吸引更多市场关注和资本支持。因此，公司并未过多回应此类论调。不过，从企业安全的角度来看，Databricks确实认识到无边界的AI Agent可能带来的风险，例如利用漏洞进行网络攻击，这是Databricks企业客户高度关注的问题。为此，Databricks在2026年推出了名为Lakehouse Monitoring的产品，利用AI Agent来识别网络威胁，并加强网络安全（cyber security）能力。Databricks将此视为一个重要的商业机会，核心在于为大模型能触达的空间定义清晰的边界，防止其无限制地访问和操作。</p>
+<p><b>2，在帮助企业客户升级和应用新型大模型的过程中，观察到了哪些具体的挑战？贵公司为此提供了怎样的解决方案？</b></p>
+<p>在实践中，大模型的升级并非简单的版本号替换，而是一个复杂的系统工程。以2026年8月OpenAI推出的Astra模型为例，当时市场反响热烈，宣称其模拟现实能力强大。Databricks协助许多客户进行了升级，但随后发现开销急剧上升，部分客户的系统在升级后甚至完全紊乱，原先能够正确回答的问题也出现错误，导致了一次较为严重的系统中断，许多客户最终选择回滚到旧版本。问题根源在于，模型升级不仅改变了token优化和上下文长度（context length），客户在升级过程中也未能做好充分的回滚准备，如上下文迁移方案等。</p>
+<p>基于这些经验，Databricks现在建议客户在模型升级时采取更为谨慎和系统化的流程。Databricks为客户提供了一套大语言模型升级的标准化流程，强调逐步将新模型推向生产环境。具体步骤包括：首先，将一小部分（例如30%）的查询流量切分给新模型进行冒烟测试（smoke test）；其次，充分准备好上下文数据和系统提示词（system prompt）；最后，在验证稳定后再逐步扩大流量，并始终备好完善的回滚计划。这套流程确保了在生产环境中，大模型的升级是可控且安全的，因为模型本身只是整个应用系统中的一个环节，需要其他配套组件的协同。</p>
+<p><b>3，在数据隐私与安全治理领域，模型厂商、PaaS平台服务商和云厂商分别扮演什么角色？</b></p>
+<p>Databricks认为，像Databricks这样的PaaS平台服务商在提供数据与AI安全治理方面更具针对性和优势。大模型厂商的核心在于发展其通用智能，通常缺乏针对特定垂直行业或单个企业的深度知识，不了解具体哪些数据应由谁访问。云厂商则更像基础设施提供商，主要职责是确保计算资源的弹性、低成本和高可用性，其业务重心并不在于客户应用的具体业务上下文或身份管理。</p>
+<p>相比之下，PaaS平台服务商直接管理客户的数据，并集成了客户的身份管理系统（identity management）。因此，在数据和AI资产治理层面，Databricks能够提供最合理的解决方案。行业趋势也印证了这一点，主流的数据治理平台，如Databricks的Unity Catalog和Snowflake的Horizon，均由Databricks这类大数据厂商推出，而像Azure之前的类似产品现已下线。Databricks的Unity Catalog自2015年开源并推出以来，是业界首个能够统一管理数据和AI资产（包括追踪数据血缘、管理AI应用权限、为隐私数据打标签等）的治理平台，Databricks在这方面动手最早，也积累了最深厚的专业知识。</p>
+<p><b>4，相较于云服务提供商提供的类似功能，贵公司的核心竞争优势体现在哪些方面？如何吸引那些目前仅使用CSP服务的企业客户？</b></p>
+<p>Databricks在争取只使用CSP服务的客户时，主要强调以下几个核心价值定位。首先是统一治理（Unified Governance）。对于规模较大的企业，Databricks会指出，如果仅依赖单一CSP（如Azure）进行元数据和数据血缘管理，当该CSP出现故障或企业出于备份、容灾需求而采用多云策略（如同时使用AWS和GCP）时，治理体系将无法兼容和迁移。而Databricks提供的是一个跨云解决方案，在可用性和灾难恢复（disaster recovery）方面具备天然优势，为实现真正的统一治理奠定了基础。</p>
+<p>其次，Databricks的核心产品，包括用于治理的Unity Catalog和用于机器学习的MLflow，均基于开源技术。这为客户提供了极大的灵活性和自主权，避免了厂商锁定。相比之下，CSP的方案往往是专有的，例如GCP的BigQuery使用非开源的数据格式，而Azure的AI Foundry或GCP的Vertex AI训练出的模型也与特定平台绑定。如果客户采用Databricks的开源方案，其数据和AI资产将具备高度的可移植性，不会被锁定在任何单一的云平台上。</p>
+<p><b>5，Databricks的核心价值定位是什么，特别是在统一治理和数据智能方面？</b></p>
+<p>Databricks的核心价值定位主要体现在两个方面：统一治理（Unified Governance）和数据智能（Data Intelligence）。首先，平台基于开源技术，避免了客户被特定厂商的技术栈锁定（lock-in）。这种开放性使得对数据的追踪、修改、血缘关系分析以及权限管理等能够实现统一化，避免了因使用不同闭源系统而导致的碎片化管理问题。其次，Databricks专注于数据领域，致力于将数据与AI进行深度、天然的结合，从而实现数据智能，而非通用智能（General Intelligence）。例如，其Lakebase数据库的设计目标之一就是为了更好地服务于AI Agent，支持在秒级时间内快速创建和销毁临时数据库以完成特定任务，或快速实现数据格式转换以支持即时查询，所有产品都围绕数据智能进行构建。</p>
+<p><b>6，Databricks与Snowflake在产品策略、技术路线和市场竞争方面存在哪些主要差异与各自的优劣势？</b></p>
+<p>Databricks与Snowflake在多个层面存在显著差异。Snowflake的核心优势在于其产品的简易性，客户通过图形化界面即可轻松上手。自2024年6月新任CEO上任后，Snowflake显著加快了在AI领域的步伐，其Cortex产品发布虽晚，但后续推出的Snowpark Container Services（Snowpark容器服务）以及今年（2026年）发布的Hybrid Table等产品，使其在AI投入和产品进化上有所超越，例如Cortex已拥有7,000个用户。</p>
+<p>Databricks的优势则在于其更宏大的技术愿景，即构建一个统一的平台。其技术路线始终围绕统一性展开，旨在融合AI与数据、交易型数据库与分析型数据库。无论是早期的Lakehouse还是现在的Lakebase，都坚持使用单一数据副本，通过查询引擎应对不同业务场景，而非拼接不同的技术组件。相比之下，Snowflake的Hybrid Table被认为是将原有的Iceberg体系与Postgres进行组合，并非一个完全统一的解决方案，这也是Databricks在某些产品推出速度上显得稍慢的原因。</p>
+<p>此外，在生态合作方面，Databricks更具中立性和灵活性。它可以在AWS、Azure、GCP三朵云上销售，并与Anthropic、OpenAI、Google等主流大模型厂商均建立了战略合作伙伴关系，为客户提供了更广泛的云厂商和模型选择。而Snowflake目前主要在AWS上售卖，其Cortex AI在商业合作上与Anthropic绑定较深，尽管也能通过External Model连接Azure AI和Gemini，但在中立性上有所不同。</p>
+<p><b>7，近期客户在Databricks与Snowflake之间的迁移情况如何，以及两家公司在客户服务与市场策略上有何不同？</b></p>
+<p>客户在Databricks与Snowflake之间的双向迁移情况一直存在。</p>
+<p>两家公司在客户服务和市场策略上差异明显。根据客户的反馈，Snowflake对中国客户的亲和度（customer intimacy）较低。Databricks虽然在中国大陆没有办公室，但其销售和售前工程师团队在售前阶段会与客户进行深度互动，共同探讨和设计架构。相比之下，Snowflake的售前工程师较少，主要依赖其产品的易用性，并通过免费的售后支持（开工单）来弥补售前投入的不足。客户可以先使用产品，遇到问题再通过工单解决。而Databricks的模式是前期介入更深，亲和度更高，但售后支持是收费的，客户需要签订至少一年的合同才能获得开工单的权限，这与Snowflake的免费售后模式形成了对比。</p>
+<p><b>8，如何评估数据平台的用户粘性，尤其是在各家推出AI产品后，这对用户粘性产生了怎样的影响？</b></p>
+<p>数据公司的用户粘性相对较好，因为存在“数据引力”，客户数据量增多后迁移成本较高。相比之下，AI模型的粘性最弱，客户更换模型供应商（如从Anthropic更换）仅需修改URL和endpoint，非常便捷。对于数据公司而言，无论是Snowfla ke还是Databricks，客户粘性都比较高。</p>
+<p>为维持并提升客户粘性，关键在于识别客户流失的风险点。观察发现，当Snowflake客户的数据量超过2PB，且慢查询占系统总量的15%左右时，其开销会急剧增长（这是一些客户转移至Databricks核心原因）。这主要是因为Snowflake的技术栈在数据量增大时，其按capacity unit计费的模式会导致成本阶梯式跃升，例如从中等集群升级到大型集群，价格会翻倍。</p>
+<p>相比之下，Databricks采用DBU（Databricks Unit）计费，其底层的Spark和MPP机制在数据量增加时能更好地控制成本，避免了成本的急剧跳升。因此，在进行POC时，尤其是在数据量巨大（如超过1TB）且查询和并发量持续增加的场景下，Databricks的成本优势会非常明显，而Snowflake则会出现成本陡增的情况。利用这一点，Databricks倾向于接触那些数据积累量巨大的长期客户，向他们展示潜在的成本优化空间，从而可能导致Snowflake的客户流失。</p>
+<p><b>9，进入AI时代以来，客户数据的产生速度是否有明显增加？这种增长是处于加速状态还是相对稳定？</b></p>
+<p>AI时代客户数据的产生速度确实有非常明显地增加。仅结构化数据的有机增长，月度环比就达到6%，这意味着在没有任何销售干预的情况下，数据量每年会翻一番。在此基础上，AI应用带来了大量非结构化数据，如PDF文件、图片等，进一步推动了数据总量的显著增长。</p>
+<p>这种增长在初期经历了一个加速阶段，尤其是在Databricks推出向量数据库和Agent等功能时，客户需要一次性地将存量的非结构化数据导入平台，导致数据量激增。目前，这一波导入高峰已过，数据增长速度已趋于平稳。</p>
+<p><b>10，目前从云服务厂商获取的GPU算力是否存在紧缺？其价格是否有变化或上涨？</b></p>
+<p>GPU的capacity（产能）目前仍然相当紧张。Databricks与三家主流云厂商都有合作，这为Databricks在采购时提供了一定的议价空间。目前，Databricks采购的GPU和TPU capacity主要来自AWS，其次是Google。Databricks近期从微软采购的GPU较少，因为微软的涨价幅度很大，这可能与Databricks在市场上和其自有产品存在竞争关系有关。AWS没有涨价。Google方面，由于其内部大量使用TPU，且TPU对客户基本是透明的，Databricks无法直接采购特定数量的TPU，因此其GPU订单量本身就比较小。</p>
+<p><b>11，Databricks算力结构大概是怎样的？未来这一供给格局是否会发生变化？</b></p>
+<p>从收入贡献来看，目前微软占比最高，其次AWS，其余为Google。微软占比较高的一个重要原因是，在微软平台上，Databricks被视为一方服务（first-party service），微软的销售人员销售Databricks产品可以获得更高业绩配额。而在AWS和Google Cloud Platform上，客户需要通过Marketplace安装Databricks，这两家云厂商的销售人员销售Databricks只能获得小部分业绩配额，因此微软销售团队的推广动力更强。</p>
+<p>未来，公司计划增加在AWS和GCP上的业务量，并希望将Databricks也发展成为AWS的一方服务，而非仅仅通过Marketplace提供。不过，由于AWS自身拥有EMR、Redshift、Athena等众多数据服务产品，要实现这一目标存在一定难度。尽管如此，Databricks期望AWS贡献的收入总额能够持续增加。</p>
+</div>
+</main>
+</body></html>

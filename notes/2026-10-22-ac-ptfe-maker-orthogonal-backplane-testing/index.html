@@ -1,0 +1,204 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.22 | AC | PCB | PTFE Maker: Orthogonal Backplane Testing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.22 | AC | PCB | PTFE Maker: Orthogonal Backplane Testing</h1>
+<p class="orig">原标题：PTFE大厂专家谈正交背板测试进展及行业近况</p>
+<p class="tags">#pcb #materials</p>
+<p class="meta">AceCamp · 2026-10-22 · article 70568326</p>
+<div class="body">
+<h2>摘要</h2>
+<p>以下观点来自行业资深专家：1.在PCB领域的应用中，PTFE最核心的特性是其卓越的介电性能。它的介电常数和介电损耗都非常低，并且能在宽广的频率和温度范围内保持高度稳定，偏移极小。2.在PCB加工中使用PTFE材料存在多个显著难点，这些难点源于PTFE材料的固有特性。3.应用于PCB领域的电子级PTFE对纯度要求极高。纯PTFE的介电常数约为2.1，介电损耗在万分之二至万分之三的水平，任何杂质的存在都会削弱其电性能。</p>
+<p>1.PTFE材料具备哪些关键特性？尤其是在PCB领域的应用中，其最突出的性能是什么？</p>
+<p>PTFE（聚四氟乙烯）是由四氟乙烯单体均聚或与少量改性单体共聚而成的高分子材料。其分子结构为全氟骨架，当为均聚物时，碳链上的氢原子完全被氟原子取代，使得整个分子结构呈电中性，无偶极矩。碳氟键的键能极高，且碳骨架被氟元素紧密包裹，这赋予了PT FE优异的化学稳定性和热稳定性。</p>
+<p>在PCB领域的应用中，PTFE最核心的特性是其卓越的介电性能。它的介电常数和介电损耗都非常低，并且能在宽广的频率和温度范围内保持高度稳定，偏移极小。从电性能角度衡量，PTFE是目前所有树脂材料中表现最优异的，这也是其应用于PCB领域最突出的优势。</p>
+<p>2.在PCB加工过程中，使用PTFE材料会面临哪些技术难点？</p>
+<p>在PCB加工中使用PTFE材料存在多个显著难点，这些难点源于PTFE材料的固有特性，无论是国产还是进口树脂都存在这些问题。</p>
+<p>首先，PTFE材料本身质地偏软，存在冷流现象，这导致其在压合及后续使用过程中，PCB板的尺寸稳定性较差。</p>
+<p>其次，PTFE的热膨胀系数非常大，远高于PCB中常用的铜箔以及M8、M9等碳氢树脂。在与M8、M9等材料进行混压时，PTFE层的热胀冷缩速率显著快于其他材料层，这极易在加热和冷却过程中导致板材之间发生翘曲，这是目前样品被退回的主要原因之一，也是生益科技和沪电精密等公司正在着力解决的核心问题。</p>
+<p>再次，PTFE具有一定的成纤性，在钻孔时容易产生拉丝现象，导致孔壁出现毛刺，这与传统玻纤布和碳氢树脂基材钻孔后产生粉末状碎屑不同。</p>
+<p>最后，PTFE的表面能极低，表现出优异的不粘接性。这使得在钻孔后的沉铜工艺中，铜难以在孔壁内均匀附着和铺展。因此，采用PTFE基板的PCB加工必须增加等离子体处理或钠化处理等表面活化步骤，而传统的环氧树脂基板大多无需此工序。</p>
+<p>3.针对PTFE在PCB加工中遇到的质地软、热膨胀系数大以及沉铜困难等问题，目前行业内有哪些主要的解决方案？</p>
+<p>行业目前主要通过以下方式应对这些技术挑战。针对质地偏软和热膨胀系数过大的问题，最主要的解决方案是在PTFE中添加硅微粉进行改性。硅微粉（球形二氧化硅）作为一种硬质无机填料，其热膨胀系数比PTFE树脂小一百多倍。添加硅微粉不仅能提高复合基材的整体硬度，还能有效降低复合材料的热膨胀系数，使其趋近于两种材料的中间值，从而改善与铜箔等其他材料的匹配性。</p>
+<p>对于因表面能低而导致的沉铜困难问题，目前的工艺解决方案是在沉铜工序前，对PTFE表面进行活化处理。具体方法包括采用等离子体处理或使用钠盐类化学品处理，以改变PTFE表面的化学状态，提高其表面能，从而使铜能够更容易、更均匀地在其表面铺展附着。</p>
+<p>4.应用于PCB领域的电子级PTFE与普通化工领域使用的PTFE，在材料特性和技术要求上有何区别？</p>
+<p>两者最主要的区别在于纯度和杂质含量。应用于PCB领域的电子级PTFE对纯度要求极高。纯PTFE的介电常数约为2.1，介电损耗在万分之二至万分之三的水平，任何杂质的存在都会削弱其电性能。因此，电子级PTFE的纯度要求非常高，例如昊华科技宣传其产品达到5N级别，即纯度高于99.999%。</p>
+<p>其次，在分子量方面，电子级PTFE也有特定要求。它需要达到足够高的分子量以保证材料的力学稳定性，但又不能过高，因为分子量过大会影响材料的粘度和粒径，不利于与硅微粉等填料均匀分散。目前，适用于该领域的PTFE分子量通常在五六百万左右。</p>
+<p>从分子结构和分子量区间来看，普通化工领域也会使用类似品级的PTFE，但其对纯度的要求远低于电子级。</p>
+<p>5.应用于AI服务器PCB的PTFE树脂，其纯度需要达到什么级别？</p>
+<p>应用于AI服务器PCB领域的PTFE树脂，其纯度要求至少达到4.5N（99.995%）以上，理想状态是达到5N（99.999%）级别。例如，昊华科技宣称其通过英伟达认证的产品为5N级，满足M10级别的电性能要求；东岳集团的产品电性能也基本达到了同等水平，纯度级别相近。</p>
+<p>6.实现这种高纯度的技术难点在哪里？</p>
+<p>实现这种高纯度的技术难点贯穿于整个生产过程。首先，生产电子级和化工级PTFE的设备不能共用，以避免交叉污染。电子级PTFE的生产从原料、设备、管线到后续的洗涤环节，都有极为严苛的要求。其次，PTFE树脂的后处理洗涤难度很大。由于PTFE是强疏水性材料，水很难渗透到颗粒内部带走杂质。因此，洗涤过程需要极高的水压或水流进行强力冲洗，这意味着能耗高、洗涤次数多，且洗涤效果相对有限。这就要求在合成阶段，通过对原料、工艺和设备的精密控制，尽可能降低初始粗产品的杂质含量。</p>
+<p>7.PTFE在PCB覆铜板的制造中有哪些具体的应用工艺？</p>
+<p>在PCB覆铜板的制造中，PTFE主要通过两种工艺进行应用。第一种工艺，以上市公司生益科技为例，是直接向肯特股份或沃特股份等供应商采购已预先制成的、经硅微粉改性的PTFE薄膜，然后将该薄膜与铜箔直接压合，形成PTFE覆铜板。</p>
+<p>第二种工艺是覆铜板制造商自行完成从薄膜制备到压合的全过程。具体而言，是将PTFE与硅微粉混合改性后，通过刮膜工艺自制薄膜，随后立即将铜箔附着在薄膜两侧进行压合。</p>
+<p>此外，在AI服务器应用兴起之前，PTFE覆铜板已应用于5G天线和毫米波雷达等领域。这类应用的制造工艺与传统覆铜板类似，即使用PTFE的浓缩乳液浸渍玻纤布，经烘干形成硬质基材板，最后再将铜箔压合在基材板两侧。</p>
+<p>8.生益科技前述两种PTFE覆铜板制造工艺（外购薄膜与自制薄膜）之间存在哪些主要区别？</p>
+<p>这两种工艺的主要区别在于对材料配方的控制能力和产品的定制化程度。当采用外购成品PTFE薄膜的工艺时，覆铜板制造商（如生益科技）通常是采购供应商的标准化产品牌号，其性能参数是固定的。</p>
+<p>而采用自制薄膜的工艺，制造商则可以在前期自主进行配方调试。他们可以调整PTFE树脂与硅微粉的比例、掺杂方式等，并对不同配方下的产品进行电性能及其他各项性能的测试与优化。这赋予了制造商更大的灵活性和对最终产品性能的掌控力。</p>
+<p>9.目前PTFE在PCB领域的应用成熟度如何？特别是在新兴的AI服务器领域表现怎样？</p>
+<p>PTFE在PCB领域的应用成熟度需分场景讨论。在5G天线、汽车毫米波雷达和低轨卫星等早期应用中，PTFE覆铜板技术已相对成熟。这些应用大多采用含有玻纤布的PTFE基材，且对介电性能的要求相对较低。在此类应用中，生益科技等厂商生产的覆铜板成品率可达90%以上，下游PCB板的加工成品率也超过85%，产品稳定性和加工成熟度都很高。</p>
+<p>但在AI服务器领域，PTFE的应用尚不成熟。该领域对信号传输速率要求极高（如337G甚至448G），实验验证表明传统玻纤布会对高频信号产生显著干扰，因此必须采用“无布方案”。目前，生益科技等厂商开发的是一种混压结构方案，即在信号传输的关键层采用经硅微粉改性的无布PTFE覆铜板，而在结构层、电源层等非关键层则沿用M8或M9树脂与玻纤布的组合，以保证整个PCB板的尺寸和结构稳定性。在这种新兴应用下，尽管生益科技将PTFE膜与铜箔压合成覆铜板的工序已较为成熟，成品率可达80%至接近90%，但整个AI服务器用PCB的加工和应用仍处于探索阶段。</p>
+<p>10.在服务器PCB的制程端，使用PTFE基材面临哪些技术挑战？</p>
+<p>在PCB制程端，若按80层板计算，需要采用超高层混压结构，这导致成品率非常低，不足50%。近期还出现了翘曲现象，其根本原因是PTFE基材与碳氢体系基材（如M8、M9）的热膨胀系数不匹配，导致缺陷产生。因此，PTFE在该领域的应用目前还不成熟。</p>
+<p>11.目前国内有哪些PTFE厂商能够为服务器应用提供PTFE材料？</p>
+<p>在5G应用领域，国内一线PTFE供应商主要是昊华科技和东岳集团，此外巨化和永和也有批量供应。具体到英伟达的项目，由于覆铜板主要由生益科技生产，其PTFE树脂供应商基本锁定在昊华科技和东岳集团两家，其中东岳集团目前的份额相对更大。</p>
+<p>12.针对英伟达项目，昊华科技与东岳集团的PTFE产品性能是否存在差异？</p>
+<p>从产品性能来看，两家公司均为国内一线PTFE生产商，整体工艺技术水平相当，在实际使用中几乎没有差距。根据生益科技的反馈，尽管昊华科技的5,000吨特供产线能够稳定生产5N级产品，并且是国内唯一获得英伟达认证的产线，但东岳集团的产品在实际应用中表现并无差异。</p>
+<p>13.既然昊华科技的产品获得了英伟达认证，为何其供应份额反而较小？</p>
+<p>东岳集团份额较大的原因在于其与生益科技存在长期的历史合作关系。早期生益科技在开发5G和毫米波雷达用PTFE覆铜板时，从使用进口树脂转向与东岳集团合作开发国产电子级树脂，合作效果良好，从而建立了稳固的客户粘性。因此，在当前项目中，由于东岳的树脂性能达标，生益科技会优先选择使用。</p>
+<p>14.生益科技采购PTFE的供应链模式是怎样的？</p>
+<p>生益科技的PTFE来源主要有两种模式。第一种是直接向外部采购PTFE膜成品，主要供应商是肯特股份和沃特股份，这两家公司提供改性PTFE薄膜，生益科技采购后直接进行覆铜板的复合压合。</p>
+<p>第二种模式是直接采购PTFE树脂，主要向东岳集团和昊华科技采购，然后由生益科技自行进行复配（主要是添加球形硅微粉）、拉膜，最终制成复合板。</p>
+<p>由于肯特股份和沃特股份生产的PTFE膜也用于其他领域，因此无法通过追溯其树脂采购来源来判断覆铜板所用PTFE的具体供应商。</p>
+<p>15.针对PCB板的翘曲问题，生益科技在其两种PTFE采购模式下分别采取了哪些应对措施？</p>
+<p>翘曲问题的解决方案不仅涉及PCB制程厂的压合工艺优化，生益科技自身也在进行改进。目前，生益科技主要通过调整其自研复配方案来应对，即提供两种不同硅微粉添加比例的覆铜板。其思路是，在多层板压合时，靠近中间的板层使用球形硅微粉掺杂量较少的覆铜板，而靠近两侧的板层则使用硅微粉改性用量较大的覆铜板，以期在理论上改善整体的热膨胀系数。这种测试和改进主要基于其自主拉膜和复配的PTFE膜。</p>
+<p>对于向肯特股份等供应商直接采购膜的模式，目前采购的是其现有牌号产品。若未来市场放量，生益科技需要提供两种规格的PTFE覆铜板，可能会要求肯特股份等供应商根据其性能或配比要求进行定制化开发。</p>
+<p>16.目前生益科技在CCL压制环节以及下游PCB制程环节的良率分别是多少？</p>
+<p>生益科技在CCL（覆铜板）压制环节的良率很高，大约在80%至90%之间。良率瓶颈主要出现在下游的PCB制程端，即沪电股份、深南电路等厂商使用覆铜板制作PCB板的过程中。</p>
+<p>目前，78层混压正交背板的整体良率相比之前已有显著提升。其中，沪电股份近期遇到的翘曲问题对良率造成了影响，尽管后续送样的产品有所改善，翘曲程度被控制在要求范围内，但问题尚未完全解决。根据供应链的判断，该产品的良率至少需要达到60%以上才具备量产的可能性。</p>
+<p>17.除了生益科技，目前还有哪些厂商在为英伟达项目提供PTFE覆铜板或PCB板的样品？</p>
+<p>在大陆厂商中，除了市场关注度最高的生益科技，专注于PTFE覆铜板的中英科技也已进入送样阶段，但其早期并未参与该项目。在台湾厂商方面，形成了一个“台系组合”，由台光电子、台虹科技和欣兴电子三家公司合作。该合作于2026年8月前后启动，旨在联合攻克PTFE覆铜板的应用。其中，台虹科技提供PTFE基覆铜板，台光电子提供碳氢体系的M8、M9级覆铜板，由PCB制造商欣兴电子负责压制。他们主要针对正交背板项目进行联合开发，同时也在进行交换板的样品送测。</p>
+<p>18.与大陆厂商相比，台系厂商在英伟达PTFE板项目上的进展如何？</p>
+<p>台系厂商由于启动时间较晚，目前尚处于项目早期阶段，主要进行一些初始性能的验证、测试以及压合工艺的优化，类似于生益科技已经完成的工作。他们可能在进行小批量样品的制作，但尚未达到沪电股份、深南电路那种在英伟达终端设备上进行批量PCB样品联机联调的深度。</p>
+</div>
+</main>
+</body></html>

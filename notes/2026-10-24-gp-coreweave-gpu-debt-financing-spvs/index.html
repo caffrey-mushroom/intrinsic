@@ -1,0 +1,314 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.24 | GP | Cloud | CoreWeave: GPU Debt Financing &amp; SPVs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.24 | GP | Cloud | CoreWeave: GPU Debt Financing &amp; SPVs</h1>
+<p class="orig">原标题：CoreWeave and GPU Financing: Former Strategic Treasury Manager Discusses Debt Financing Alternatives, SPV Mechanics, and the Nvidia Collateral Wrapper</p>
+<p class="tags">#cloud #financials</p>
+<p class="meta">GuidePoint · 2026-10-24</p>
+<div class="body">
+<p>ESMO 2026: MRNA and MRK — The INTerpath-001 Data Leak in Melanoma</p>
+<p>Primary:</p>
+<p>MRNA</p>
+<p>MRK</p>
+<p>Associated:</p>
+<p>REPL</p>
+<p>IOVA</p>
+<p>BNTX</p>
+<p>BMY</p>
+<p>REGN</p>
+<p>IMTX</p>
+<p>IMCR</p>
+<p>Viewpoint:</p>
+<p>Academic KOL - Physician</p>
+<p>Moderator: Delaney Pacitti (DP)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Oct 23, 2026</td><td>22 Min Read</td></tr></tbody></table></div>
+<p>Inderjit Mehmi (IM), Oncologist - Angeles Clinic and Research Institute</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The discussion assessed a Phase III trial of a personalized mRNA neoantigen vaccine combined with pembrolizumab for resected stage 2B through stage 4 melanoma. The expert considered the recurrence and metastasis findings unexpectedly strong and potentially practice-changing.</p>
+<p>Current adjuvant care commonly uses pembrolizumab or nivolumab, while clinically node-positive disease is increasingly treated with neoadjuvant immunotherapy. Adoption of the vaccine combination will depend on subgroup outcomes, payer coverage, manufacturing capacity, and tissue-handling logistics.</p>
+<p>Key Insights</p>
+<p>The expert expects the combination to become a preferred adjuvant option if benefits remain consistent across disease stages. Favorable results could strengthen treatment recommendations for stage 2B patients, whose decisions are currently more preference-sensitive. Mature overall survival data are not considered necessary for initial prescribing because existing PD-1 adjuvant therapies were adopted based on recurrence and metastasis benefits. Clinically node-positive patients may remain better suited to short-course neoadjuvant therapy, particularly when a strong pathological response can eliminate further treatment. The most important follow-up is stage-specific analysis, especially for stages 2B, 2C, 3A, recurrent 3B, and clinically node- positive disease. The expert also wants recurrence-site data, particularly for liver and central nervous system metastases. Strong adjuvant efficacy could reduce the future population eligible for metastatic and post-PD-1 therapies.</p>
+<p>Competitive Landscape</p>
+<p>Approach</p>
+<p>Positioning</p>
+<p>Advantages</p>
+<p>Challenges</p>
+<p>Personalized vaccine plus pembrolizumab</p>
+<p>Potential new adjuvant standard</p>
+<p>Strong efficacy signal and manageable tolerability</p>
+<p>High cost, individualized manufacturing, tissue retrieval, and payer scrutiny</p>
+<p>Pembrolizumab or nivolumab alone</p>
+<p>Established adjuvant standard</p>
+<p>Familiar workflow and broad clinical use</p>
+<p>Lower perceived efficacy than the combination</p>
+<p>Neoadjuvant ipilimumab plus nivolumab</p>
+<p>Favored for palpable or clinically node-positive disease</p>
+<p>Short course and possible treatment cessation after major pathological response</p>
+<p>Toxicity and no direct comparison with the vaccine combination</p>
+<p>Targeted therapy</p>
+<p>Option for eligible BRAF-mutated disease</p>
+<p>Established survival evidence</p>
+<p>Limited to mutation-defined patients</p>
+<p>Metastatic cellular and immunotherapy programs</p>
+<p>Used after recurrence or in advanced disease</p>
+<p>Options for difficult-to-treat patients</p>
+<p>Addressable population may shrink if adjuvant outcomes improve</p>
+<p>10/24/2026 at 07:06 AM UTC</p>
+<p>Quantitative and Clinical Insights</p>
+<p>Metric</p>
+<p>Trial enrollment</p>
+<p>Randomization</p>
+<p>Current active adjuvant share of practice</p>
+<p>Expected share after adoption</p>
+<p>Daily melanoma volume</p>
+<p>Vaccine schedule</p>
+<p>Neoadjuvant comparison</p>
+<p>Manufacturing target</p>
+<p>Preferred postoperative initiation window</p>
+<p>Adverse-event rates discussed</p>
+<p>De novo advanced disease share</p>
+<p>Reported detail</p>
+<p>Approximately 1,150 patients</p>
+<p>2:1</p>
+<p>30%–40%</p>
+<p>45%–50%</p>
+<p>15–20 patients</p>
+<p>9 doses plus one year of pembrolizumab</p>
+<p>2 doses in selected patients</p>
+<p>42–45 days</p>
+<p>Within 12 weeks</p>
+<p>20% versus 26%</p>
+<p>10%–15%</p>
+<p>The vaccine’s added toxicity was described as limited mainly to injection-site reactions and short-lived flu-like symptoms. Stage 2B and 2C implementation may be harder because tumor tissue can be dispersed across dermatology, surgery, and outside pathology facilities.</p>
+<p>DP: Good afternoon. Thank you so much for joining. This is Delaney here with Guidepoint. I have Dr. Mehmi on the line with me. We're going to be discussing the update from Merck and Moderna's Interpath-001 study, Phase III study of Pembrolizumab in adjuvant melanoma. Audience, if you have questions, send them in to me. I'll ask on your behalf. Other than that, you can just follow along. Dr. Mehmi, thank you for your time today. Before we get fully started, would you mind just giving us a recap of your melanoma practice, about how many patients you'll see in a year and how they're currently being treated?</p>
+<p>IM: Right, so I'm a medical oncologist in the Southern California area with a large melanoma practice. On an average day, I see about 15 to 20 melanoma patients and I'd say about half of them are early stage disease and half are late stage. A number of these are options. Early stage disease is typically treated in the adjuvant setting with Pembrolizumab, or Nivolumab, or in a lymph node-positive disease, if they are an appropriate candidate, then with neoadjuvant Nivolumab. And that's been ongoing practice and that's been pretty steady for the past, I'd say, I've been at my current job for 6 years. For the last 4 years, that's been a steady stream of patients.</p>
+<p>DP: About what portion, I guess, total do you think... what total portion of patients are you currently treating with an adjuvant immunotherapy?</p>
+<p>10/24/2026 at 07:06 AM UTC</p>
+<p>IM: I'd roughly say if I'm seeing about 15 to 20 patients a day, 4 days a week, I'd say close to 30% to 40% of those patients are adjuvant patients that are on active single agent PD-1.</p>
+<p>DP: Exactly. And then I'm wondering, are most of your patients who are eligible for adjuvant therapy, do you typically go forward with that or is it a discussion or only some patients want to do adjuvant therapy? Out of all that are eligible, what total percentage?</p>
+<p>IM: If this discussion proceeds to the patient, but most of the 2C and node-positive patients seem to go on to therapy, in my experience.</p>
+<p>DP: All right, so looking at the INTerpath-001 study. We got earlier this year the press release stating that they had a positive study from both endpoints and perhaps the MFS. We have now the RFS hazard ratio was released at 0.58. I guess how impressive is this to you relative to your expectations? Is this something that you would consider practice changing?</p>
+<p>IM: It's absolutely practice changing. I mean, when you're looking at 38% risk reduction in distant metastases and also reduction in death, it's quite impressive. To be completely honest, I didn't think this data was going to be this robust. My fear that I've discussed with, you know, all the parties involved in this trial was that the benefit in stage 2B and C disease was going to lead to less robust benefits. The reason I'm saying it's a larger set, stage 2B...</p>
+<p>DP: Sorry, I'm going to cut you off for a second. You're breaking up a little bit.</p>
+<p>IM: Can you hear me now?</p>
+<p>DP: Yes, I can hear you now. It was kind of cutting in and out when you were talking about the stage 2B patients.</p>
+<p>IM: Right, so if you look at the pembrolizumab or nivolumab data, there's about 1/3 of patients that can surgically be cured from and they won't need any adjuvant options. And when you're looking at staging, the number of patients that are staged at 2B, 2C is much larger than stage 3 disease. So I was afraid that having the 2B and 2C was going to sort of bring the overall numbers down for Interpath trial as a whole. So I'm quite impressed. I mean, I still want to see subgroup analysis to see if the benefit for 2C is as robust as for the node-positive disease. But overall, this data looks fantastic.</p>
+<p>DP: Yeah, maybe when we see the full data, what kind of subgroup analysis are you going to be looking out for?</p>
+<p>IM: So most of the subgroup analysis that I'm interested in is the stage, you know, the subgroup analysis by stage. What's the benefit for 2B? What's the benefit for 2C? And for stage 2B that recurred or 3B that recurred, because that's how they included stage 3B patients if they had recurred in the last 6 months. And then what's the benefit for clinically node-positive disease that was reflected in subsequent attempts for, you know, mRNA production? So those are, and what's the benefit for stage 3A? Because there wasn't a lot of patients that were included of that stage. So I think, I mean, that will give me a good estimation of how robust this data is, because my initial inclination based on what the Phase 2 data set was reported by Dr. Weber a few years back with mRNA-4157 with pembrolizumab versus pembrolizumab alone for a clinically node-positive disease or stage 3B disease that recurred in 6 months. And this data is stronger than that. So in a larger data set, you know, almost close to 1,150 patients, 2 to 1 randomization, and still showing such a good benefit, I think it's a great data set.</p>
+<p>DP: Thinking about how this will be adopted into practice, I guess if we're assuming that the subgroup effects are fairly consistent among the subgroups, among the stages, is this going to be like an automatic new standard of care for all patients receiving adjuvant therapy, or is this going to overall increase the number of patients that you would consider for adjuvant therapy?</p>
+<p>10/24/2026 at 07:06 AM UTC</p>
+<p>IM: I think it'll be both. For both stage 2B and 2C, a lot of the time we leave that discussion, especially for stage 2B disease, we let the patient sort of... Not let the patient, but it's a more patient-dependent decision for adjuvant therapy, whereas for 2C or higher disease, we're much more stronger in our recommendations for adjuvant therapy. So, yes, if the adjuvant therapy benefit across all subgroup stages is equal or very much similar, then I am going to be more stronger in my recommendations for stage 2B. I'm already for 2C and higher. And then, is it going to replace pembrolizumab or nivolumab as adjuvant therapy? With time, yes. I think early on, there are some logistics issues in production of mRNA. So I think it'll take time, but if the long-term benefit is as stated, and there's overall survival advantage, then yes, I think it'll be better care for the patients.</p>
+<p>DP: It's just for maybe the stage 2B and 2C patients. Are you expecting much variance in the hazard ratio for that subgroup? Maybe what would be? I guess, hold on, backtrack. First of all, is the 0.58 meaningful enough improvement to justify treating the stage 2B and 2C patients? And if there is variance in the hazard ratio, I guess, at what point would you decide not to treat those patients?</p>
+<p>IM: I think you had a connection issue for a minute. Can you hear me?</p>
+<p>DP: Oh, sorry, I couldn't really ask. Yes, I can hear you. What was your question? Can you hear me? Hold on. Is this better? Or can you not hear me again? Hello, hello.</p>
+<p>IM: Are you able to hear me now?</p>
+<p>DP: Not well. Quite sorted.</p>
+<p>IM: Okay, I apologize for that. Can you hear me a little bit better? Because my signal is much stronger at this moment.</p>
+<p>DP: Yeah, you're coming through clear now. Am I okay?</p>
+<p>IM: Okay, fantastic.</p>
+<p>DP: You're okay?</p>
+<p>IM: Yeah, I'm clear. I'm sorry about that.</p>
+<p>DP: No worries, no worries. Okay, so we're backing up. I was discussing specifically for the stage 2, stage 2B, stage 2C patients. I was wondering if the overall hazard ratio remains the same or similar for that subgroup, the 0.58, by treating these patients. And if there's variance in the hazard ratio, I guess, at what point is it no longer justified for you to want to treat those patients when you could be doing observation?</p>
+<p>IM: I think it wouldn't be up to me. I'm wondering if the hazard ratio for 2B, 2C isn't as good as what it is for stage 3 or node-positive disease. Then I don't know because the early reports of how much this vaccine is going to cost. So I'm wondering if it's going to become cost prohibitive from the payer point of view. When they are able to say, hey, if you're able to use alone, you can get a certain benefit. Whereas the benefit is much stronger with the combination in node-positive disease. So I think if the hazard ratio is slightly different, it wouldn't change my decision to go to an intismeran with the Pembro, but I do wonder what the payer is going to say.</p>
+<p>DP: Interesting. I guess based on the viral inclusion data, we're hoping the potential FDA label would look the same or similar. If they have a label for those patients, would you still expect to have some issues with payers?</p>
+<p>IM: Yeah, I practice in California. The insurance field is very fractured and I do run into trouble with some of the payers saying there's no overall survival benefit. And so do we need to, you know, do that? So, yeah, I've heard some issues.</p>
+<p>10/24/2026 at 07:06 AM UTC</p>
+<p>So it's not unheard of. And the cost of an intismeran is quite steep. So I wonder if they're going to play that ball as well.</p>
+<p>DP: Yeah. I was wondering how this would fit into kind of the overall treatment paradigm if you have patients who are eligible to receive a neoadjuvant therapy or also the adjuvant intismeran and Pembro... portion of patients would have that overlap? Is that a large group of patients and would it be a choice of choosing between neoadjuvant therapy and adjuvant therapy?</p>
+<p>IM: I think that is the question. That is probably right now the standard of care for node positive disease or palpable disease is upfront neoadjuvant, either pembrolizumab alone or ipilimumab and nivolumab. I work with 3 surgical oncologists who specialize in melanoma surgery and any time they come across a treatment-naive recurrent patient or a node-positive melanoma, they send them to me for neoadjuvant approach. And I've seen very similar if not identical practice experience in the community as well where the community surgical oncologists are well versed in these approaches and asking medical college to treat things. So, and there's no head-to-head comparison in the adjuvant setting. I think the biggest challenge to intismeran and pembrol combination is going to be those clinically node positive patients. I think there are going to be a handful of the patients that will get resected and then come through. Those are excellent candidates, but the newly diagnosed node positive patients, my inclination still is to take them through if they need them. Those are only 2 doses and after 2 doses, if they have complete pathological response or near pCR, then they don't need to be on any therapy. So versus 9 doses of intismeran with 1 year of Pembro, that's a lot of therapy and a lot of clinic visits. So I think that the challenge is going to be for those patients and deciding, do they want to go for 1 year of therapy or do they go with 2 doses of ipi/nivo and subsequently not take any?</p>
+<p>DP: Do you have patients currently on Pembro monotherapy as their adjuvant therapy or do you mostly just do ipi/nivo?</p>
+<p>IM: So most of the 2B/2C are on adjuvant Pembro. And I don't have any node positive patients that are on adjuvant Pembro. Maybe some of the 3s, but that are node positive. But none of the clinically node positive patients in my practice are on adjuvant Pembro. They've gone through neoadjuvant therapy. And that is the practice. That's pretty much standard of care. You know, I mingle with most of the KOLs in the melanoma space and everybody is doing this. I'm not alone in it.</p>
+<p>DP: I see. I've been thinking about what that would look like if intismeran comes on the market here. Is there a portion of patients that are receiving adjuvant Pembro that you could add intismeran onto? And what would happen if that were the case?</p>
+<p>IM: I think that's not. I don't think you can transition the patients who are already immunotherapy exposed. I don't know if the parents are going to allow that. If they are very early on in there, because typically you can give up to 2 or 3 doses of pembrolizumab while they are producing the vaccine and then at the 3rd dose of pembrolizumab is when the combo comes in. So if somebody is around that, then you can transition them to the combo once approved, but that's going to be a handful of patients. But the ones who are well into their 1 year of pembrolizumab, I don't know, transitioning them to the combination, I don't know what kind of benefits it provides them. I think the benefit that's established is that you start your therapy at the start of the pembrolizumab. Because the benefit diminished if you waited much longer. I don't know. I think I lost you again.</p>
+<p>DP: Can you hear me?</p>
+<p>IM: Yes.</p>
+<p>DP: Dr. Mehmi, are you with me? Can you hear me? Okay, I can hear you now. I think I lost you for a second again.</p>
+<p>10/24/2026 at 07:06 AM UTC</p>
+<p>Hello? Are you listening?</p>
+<p>IM: I can hear you, you're not coming in very clearly, it's very choppy.</p>
+<p>DP: Oh no. How about now? Can you hear me?</p>
+<p>IM: Can you just call me on my cell phone? It'll be much easier.</p>
+<p>DP: Through this portal, it's not. Okay, gotcha. We'll be back in a second and continue. Okay, bye. Thank you.</p>
+<p>IM: Hello?</p>
+<p>DP: I think we're good. I think you're back. I can hear you pretty well now.</p>
+<p>IM: Oh, it's much better. Oh, my gosh.</p>
+<p>DP: Oh, thank goodness.</p>
+<p>IM: Sorry about that.</p>
+<p>DP: Okay. So discussing adoption, you had said that patients that are early on PEMBRO, you could consider adding. What about your patients that are currently being under observation or under surveillance? Would you, when intismeran becomes available, would you consider?</p>
+<p>IM: Yeah, I think so. Most of the benefits from adjuvant therapy, it's been well established that if you can get to it within, you know, 12 weeks of surgery, that seems to keep their adjuvant benefit intact. The longer you wait, the less robust benefit that you'll have. So if somebody's been on surveillance for, say, 6 months or 12 months, then I will continue to survey them and then pick their treatment option once they relapse.</p>
+<p>DP: So I'm going to try to quantify a little bit. If we're assuming that the effect is consistent amongst subgroups, I guess what total percentage of your 2B patients do you think we get the combination? What total percentage of the 2Cs, the 3s, and the respective stage 4s? Per stage, what portion of each population do you think would get the combination?</p>
+<p>IM: If the benefit is comparable across all subgroups of stages, then I am not shy about considering all of my adjuvant patients for intismeran. That's essentially what it is. From any patient who is a candidate for adjuvant therapy from stage 2B through 4, and they're fully resectable, you can use intismeran with PEMBRO for them. I'm not shy about using the combo because when you look at the adverse event profile, it's very much similar, 20% versus 26%. Most of the adverse events from intismeran was injection site reaction and nothing else. There may be some flu-like symptoms for 24-48 hours post-injection, but I think since the adverse event profile is so favorable, then any patient who is a candidate for adjuvant therapy should be able to go to it, and we'll consider that once intismeran is available.</p>
+<p>DP: Okay. Excellent. And then what level of impact would you expect on total overall adjuvant therapy for your practice? If you think about how many patients you're currently treating adjuvantly, how many patients are under surveillance I guess overall?</p>
+<p>IM: I think right now probably 30% to 40% of my patients are on adjuvant options and it'll probably go up to 45% to 50% because some of the 2B patients and some of the 2C actually decide not to go through adjuvant therapy. So those will come along because now all of a sudden we're talking about relapse-free survival numbers in the 80%, not the 60% or 70%. We're talking about 80%. We're talking about hazard ratio of 0.5 to 38% sort of survival without</p>
+<p>10/24/2026 at 07:06 AM UTC</p>
+<p>progression and adverse event profile that is so good so I think all those numbers speak highly for the combination and you'd have to consider that for all stages of resectable disease.</p>
+<p>DP: You said before that the RFS, DMFS we've seen is quite impressive to you. Does not having a mature OS yet, is that going to in any way hinder your initial prescribing? Would you be waiting for any additional?</p>
+<p>IM: No, I mean the only adjuvant option that has overall survival benefit is ipilimumab. But we don't use ipilimumab because of its toxicity. We use pembrolizumab based on its relapse-free survival benefit and its metastasis-free survival benefit, same for nivolumab. In BRAF-mutated space, the V600E has overall survival benefit with targeted therapy. So we've been using Pembro and Nivo like water for these adjuvant options without the overall survival benefit. I think as long as the DMFS benefit and RFS benefit is there, I think we should be able to use this option, the combination option without any reservation.</p>
+<p>DP: On maybe a little bit of the logistics side of things, and you already brought up concerns about getting coverage for some of the subgroups, thinking about the manufacturing, I think Moderna has said approximately 42 to 45 days, I think, is the hope for the manufacturing turnaround time. Does that seem reasonable, I guess to you, how does that sound? And I guess, are there any kind of delays in the manufacturing that would reduce your willingness to prescribe, or perhaps increase manufacturing failure rate? What do you think is acceptable in terms of the manufacturing of it all?</p>
+<p>IM: Right. There are multiple steps to this, right? 1, Moderna has to get their hands on the tissue. And then the tissue goes through QAQC to see if they're even able to produce the neoantigen vaccine and then produce it and send it back to us. In the phase two study, like I said, they gave 2 doses of Pembro 3 weeks apart and then on the third dose is when the mRNA vaccine came in. So they gave themselves more than enough time to produce the vaccine and deliver it to their sites. But that was in a trial, small number. Now all of a sudden, they're expanding. These patients are going to be in the thousands. So I think that will cause some logistics issues because, 1, some of the early-stage disease, for example, 2B2C disease is resected by the dermatologist and they're sent to the surgical oncology offices for wide local excision and considered a sentinel lymph node biopsy. So not only is the tissue in 2 different places and which tissue is sent, if tissue from 1 side is adequate or not, all those. And then the dermatology offices use a number of different pathology labs and then Moderna and Merck will have to kind of connect with all of them to get the tissue. And I see that as a problem. It's not so much a problem for the node-positive disease because that is taken care of by a surgical oncologist, and most of these surgical oncologists are in the hospital settings, and there you can track the tissue much better, in my opinion. So, but for 2B2C, I think they are going to run into a little bit of logistics of tracking the tissue down, getting that tissue. Is it adequately sent to them? It's not in any way altered by freezing, thawing, or any of those options. So there's going to be a learning curve for them for 2B2C disease. But for node-positive disease, it shouldn't be a problem.</p>
+<p>DP: Interesting. I feel like a lot of moving parts in this.</p>
+<p>IM: Exactly.</p>
+<p>DP: I'm thinking about just down the line, if the intismeran and pembro combination becomes kind of the default adjuvant standard of care and a large portion of patients are receiving it. When we think about metastatic melanoma, potential implications for that population, I guess, would having intismeran or N-pembro combination, is it going to have any effect on how early you consider the post-PD-1 therapies like RP1 or Entadvy?</p>
+<p>IM: Sure.</p>
+<p>DP: For the Immatics therapy?</p>
+<p>10/24/2026 at 07:06 AM UTC</p>
+<p>IM: Yeah, I mean, I think so the number of patients with recurrent disease is going to get smaller. So that's going to shrink that whole space. For Immatics, there'll be de novo advanced disease patients. That's about 10% to 15%. They'll still be candidates for all those options. But the patients who are early stage, go through adjuvant... some of them will not have any more recurrences, so they won't need any post-recurrent options. And some will have delay in their recurrences, so they won't need those options. So those are all sort of... challenges, good challenges in a sense in patient care for other products. And their space for RP1, for Ipinivo, for Immatics IMA203, pre-positive, HLA-positive space to tebentafusp, with Nebo or whatever PD1 they're using in their trial. Literally, so all those options, they're going to have to wait. And it does change that space. And for a good reason, because you're not having... the whole point is to reduce the number of patients with advanced disease, because advanced disease is what leads to death.</p>
+<p>DP: Maybe before we wrap up, kind of anything else that you're excited to see or going to be specifically looking out for in the ESMO presentation?</p>
+<p>IM: So at the uveal melanoma... for the uveal melanoma space, I'm looking for the IDEAS data. I think they're going to update that. We should have some of the newer agents that have been studied abroad in combination with PD-1, some of the HDAC inhibitors, looking at their data, that should be good. And then, in the future, we're looking at TAB- EAM data. We're looking for IMA203 data to see what it does or shows in their Phase III study. And then ongoing, TIL therapy with lifileucel with pembrolizumab versus pembrol alone, even though the design is flawed, but it is what it is at this point. So that data should be good because that's frontline TIL therapy. I think those are some of the things that I'm looking for in the next year or so.</p>
+<p>DP: Oh, great. I kind of meant more so with the INTerpath study, but I appreciate the snapshot of the landscape as well, things you have your eye on.</p>
+<p>IM: Absolutely.</p>
+<p>DP: Maybe related to INTerpath specifically, anything from the full data set that we're going to see that's important to you?</p>
+<p>IM: I think that the data leak that you guys have is pretty... I didn't think they were going to give you this snapshot of like, hey, most of the subgroup analyses show that all stages are benefiting equally, but I need to know the numbers. I want to see that forest plot to see how 2B2Cs and the node positive disease compare to each other and where we think we can sort of maximize the benefit and minimize financial and other toxicities. And also in the future, I think where the recurrences are, because all of our previous adjuvant options haven't been able to prevent any liver metastases, any CNS metastases. The biggest benefit was in lungs only. So, I'd love to see the follow-up and see where the metastases are being sort of inhibited.</p>
+<p>DP: And yeah, maybe just one kind of broader picture. How encouraging is the data we've seen in melanoma? Thinking about kind of a read-through as to some of the other indications they're exploring, like bladder cancer, like lung, renal, uterus, do you think there's a good amount of read-through from what we've seen in melanoma?</p>
+<p>IM: I think so. When you take, melanoma has been the poster child for immunotherapy. You know, none of the other disease spaces have been able to replicate numbers anywhere close to what it is in melanoma. So I think the same thing is going to follow, even with mRNA vaccine or other options, with immunotherapeutics, that the best benefit is going to be in cutaneous malignancies and then the others will follow, but the benefit isn't as robust.</p>
+<p>DP: I see.</p>
+<p>IM: So I think that'll stay true for mRNA vaccine or other options as well.</p>
+<p>10/24/2026 at 07:06 AM UTC</p>
+<p>DP: Excellent. Well, thank you so much, Dr. Mehmi, for your time today. This was great. Sorry for our disconnects there, but I got what I needed. So thank you so much for answering all my questions. And thanks, audience, for listening with us.</p>
+<p>IM: All right. Fantastic. Sorry about the connection on my end as well.</p>
+<p>DP: No worries. Have a good afternoon, everyone, and enjoy. Bye-bye. Take care. Bye.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>10/24/2026 at 07:06 AM UTC</p>
+</div>
+</main>
+</body></html>

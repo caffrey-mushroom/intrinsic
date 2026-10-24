@@ -1,0 +1,182 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.18 | AC | PCB | CCL &amp; PCB Check: M9/M10 &amp; ASIC Material Strategies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.18 | AC | PCB | CCL &amp; PCB Check: M9/M10 &amp; ASIC Material Strategies</h1>
+<p class="orig">原标题：CCL及PCB市场调研：M9、M10应用预期，Rubin、TPU V8及Trainium材料供给策略差异，Arm架构及x86架构AMD、INTC CPU产品需求对比，PCB供应商竞争格局展望 – 英伟达_谷歌_亚马逊_台光_生益_斗山_ARM_AMD_INTC_胜宏_鹏鼎</p>
+<p class="tags">#pcb #materials #asic</p>
+<p class="meta">AceCamp · 2026-10-18 · article 70568044</p>
+<div class="body">
+<h2>摘要</h2>
+<p>本文核心要点包括：1，	M9、M10应用预期2，	Rubin、TPU V8及Trainium材料供给策略差异3，	Arm架构及x86架构AMD、INTC CPU产品需求对比4，	PCB供应商竞争格局展望</p>
+<p>以下为专家观点：</p>
+<p><b>1，如何看待M9材料在后续产品中的应用前景，特别是考虑到M10的出现？哪些AI或ASIC产品可能会采用M9？</b></p>
+<p>业内普遍认为，随着M10材料的验证逐步完成，M9产品很有可能被直接跳过。目前，M9的主流方案是搭配石英布，但几乎所有PCB板厂都抵触使用石英布。石英布的硬度极高，不仅需要使用特制的硬钻针，还极易导致板材在加工过程中产生微裂，这对精密的电子线路是致命的。这也是为什么石英布的概念被讨论了两年多，但实际应用量非常有限的原因。</p>
+<p>据了解，台光的M9材料到2027年的月产量与M8的用量相比差距悬殊。终端客户如AWS和谷歌也意识到，采用M9加石英布的方案会带来供应链风险，包括板厂良率问题和材料获取难度。因此，未来的主流方案更可能是M8搭配二代玻纤布和四代铜箔，或是在下一代产品中升级为M9搭配二代玻纤布和四代铜箔。可以看出，四代铜箔将成为未来的标准配置，但石英布不会。此外，M10搭配二代玻纤布即可达到M9搭配石英布的效果，这也进一步强化了M9可能被跳过的预期。</p>
+<p><b>2，下一代GPU或ASIC产品主要采用何种材料方案？具体到谷歌、AWS和NVIDIA，它们各自的材料选型进展如何？</b></p>
+<p>目前新一代产品主要还是使用M8材料。至于更下一代的产品，以谷歌为例，有较明确的信息显示其下下一代TPU产品计划采用M9搭配二代玻纤布的方案。AWS目前主要采用M8加二代玻纤布，尚未有明确的升级讯息。NVIDIA方面，其Blackwell和R ubin系列产品目前仍停留在M8搭配一代或二代玻纤布的阶段。</p>
+<p>总体来看，谷歌在材料升级方面的规划相对明确，而其他厂商尚未大量导入M9加二代玻纤布的方案。不过，随着2027年信号速率要求的提升，芯片厂商可能会在下一代产品中更明确地导入M9、二代玻纤布及四代铜箔的组合，但2026年内出现这种明确信号的可能性较小。</p>
+<p><b>3，M10搭配二代玻纤布的应用前景如何？哪些厂商可能会率先采用？</b></p>
+<p>M10搭配二代玻纤布的方案目前仍处于非常前期的讨论阶段。2026年，ASIC和CSP厂商的核心关注点并非产品升级，而是应对现有物料的供应短缺。供应链的态度已经发生了显著转变，从以往被动接受设计，转变为主动影响设计决策。供应链会明确告知，不要设计无法量产的产品，否则将面临拿不到料的风险，从而影响项目进展。这种供应链主导的态度在2026年下半年尤为明显。当前，整个行业都在为确保玻纤布等关键物料的供应而努力，这使得厂商不可能去推行一些会让自己陷入供应困境的极端设计。</p>
+<p><b>4，从CCL厂商的角度看，材料供应和验证问题是否会影响未来GPU或ASIC产品的放量和迭代速度？</b></p>
+<p>是的，材料供应和验证问题确实会影响GPU或ASIC产品的放量与迭代。当前供应链的态度对产品设计的影响力显著增强。为了确保可量产性和物料供应稳定，设计方不得不放缓或暂停一些过于激进、依赖特殊物料的设计方案，例如正交背板项目就因此暂缓。这种趋势意味着，未来产品的迭代将更加注重供应链的成熟度和可行性，而不是单纯追求性能指标的突破。因此，CCL等上游材料的供应状况和验证周期，将直接制约下游芯片产品的发布节奏和技术演进路径。</p>
+<p><b>5，展望明年（2027年），上游物料短缺问题对NVIDIA的Rubin项目和Google的TPU V8项目将产生何种程度的影响，哪一个受到的冲击可能更大？</b></p>
+<p>目前观察，NVIDIA受到的影响相对较小，因为各方都会优先确保其供应。相比之下，Google和AWS的情况则有所不同。Google方面，其物料供应已有协议保障，这些协议具有很强的法律效力，涉及台光电子、松下以及台湾南亚公司，但具体细节不便透露。AWS的行动速度较晚，因此面临较大的不确定性，不过近期也正准备签订类似协议，并且台湾南亚与AWS之间也已达成某些默契。相较于Google和AWS的积极布局，NVIDIA在确保物料供应方面的动作并不明显，他们可能认为口头承诺已足够，尚未完全意识到问题的严重性。</p>
+<p><b>6，关于CPU业务，公司与哪些厂商的CPU板有合作？明年（2027年）CPU相关的上游PCB到CCL环节是否也面临短缺，短缺程度如何？</b></p>
+<p>下一代CPU需要使用M7等级的材料，因为M6等级的材料因介电性能问题已无法满足要求。目前，除了Google外，其他CPU厂商尚未与台湾南亚进行深入的细节沟通，因此台湾南亚难以准确掌握例如AMD等具体产品的市场需求量。</p>
+<p>从产能分配来看，未来ARM架构的CPU将优先获得供应。这不是由CCL厂商决定的，而是PCB板厂会根据订单价值进行自主选择。由于所有CCL厂商的供应都将实行配额制，例如台湾南亚给PCB的配额是每月30万张，他们会自行决定如何分配这些材料。鉴于ARM架构CPU产品的价格和利润极高，PCB板厂会优先将产能分配给这类产品，以满足Google、NVIDIA、AWS等CSP厂商的需求。因此，ARM架构CPU的CCL供应问题不大。相比之下，X86架构的产品可能会面临无法获得足够材料的困境，从而导致相应产品无法顺利生产。</p>
+<p><b>7，从CCL供应角度看，ARM架构的CPU是否因更容易获得产能而具备更大的增长潜力？</b></p>
+<p>是的，ARM架构的CPU厂商，特别是主要的几家CSP，已经意识到未来材料供应会非常紧张，并已采取了相应行动。相比之下，其他厂商可能因为过去一直能顺利拿到材料，而没有意识到问题的严重性。整个市场格局正在动态变化，每一季度的情况都可能因M8材料需求的增加而发生显著改变。</p>
+<p><b>8，关于AMD的CPU需求情况，以及其与Intel在明年（2027年）市场竞争格局的展望如何？</b></p>
+<p>目前看到的几乎全部是AMD的方案，无论是来自HP、Dell还是一些服务器厂商的订单，都集中在AMD平台，而Intel的方案则非常少见。据此推测，AMD可能会在市场上占据非常大的份额。Intel的速度可能比AMD晚一年，台湾南亚了解到的情况是，当AMD的产品即将量产时，Intel才准备开始打样，这意味着Intel的相应产品可能要到后年（2028年）第一季度才能推出。因此，在明年（2027年）的新平台中，将很少看到Intel的机型。</p>
+<p><b>9，针对GPU领域，如何看待PTFE材料未来的应用前景？</b></p>
+<p>台湾南亚将在下周的TPCA展会上正式推出M11材料，其介电性能水平已经非常接近PTFE。过去两年业界持续讨论PTFE，是因为当时没有性能相当的替代材料。尽管一些厂商尝试对PTFE进行改性，但两年多仍未成功。根本问题在于PTFE的CT值（热膨胀系数）过大，热胀冷缩特性难以改变，导致其在制造高层数（如78层）PCB板时良率极低，没有PCB板厂愿意大规模采用。随着M11材料的推出，包括台光电子和南亚新材等同业也已确认跟进，PTFE材料在这一应用领域将不再具备讨论价值。</p>
+<p><b>10，关于M11材料，目前市场上的竞争格局如何，特别是贵司的进度以及其他厂商的情况？</b></p>
+<p>台湾南亚可能是市场上第一家推出M11材料的厂商，台湾南亚对外比较含蓄地称之为M10.5产品，但实际上就是M11。目前观察，其他厂商的进度似乎没有台湾南亚快。</p>
+<p>台湾南亚展示该产品即代表具备了送样的能力，但不会急于推进。台湾南亚听说NVIDIA下一波测试就会涉及M11的产品，因此台湾南亚很有机会在这一波测试中立即送样。不过，台湾南亚的送样目标不会是CSP，因为CSP厂商现阶段采用M11的可能性很低。目前展示M11主要是为了彰显研发实力，对近期的量产没有直接帮助，表明台湾南亚具备设计和生产M11产品的能力。</p>
+<p><b>11，从材料厂商的角度看，如何看待PCB供应商未来的格局演变，特别是沪电、胜宏等厂商？</b></p>
+<p>从材料厂商的角度观察，并结合当前的股价表现，可以发现胜宏的光环似乎不如以往。主要原因是HDI技术已逐渐普及，鹏鼎以及景旺，甚至未来的方正都切入了NV供应链。这改变了过去两三年前胜宏在某些领域一家独大的局面。胜宏自身也意识到其在NV的占有率会下降，因此一直在积极开发谷歌及其他客户。</p>
+<p>未来PCB厂商需要具备全面的产品线才能胜出。当前鹏鼎产品线齐全，涵盖mSAP、光模块和HDI。尽管其高多层板目前并非顶尖，但已有的中阶产品足以提供有力支撑。此外，景旺也具备相当的发展机会。行业趋势是“大者恒大”，在未来的竞争中，拥有更多机台设备才能走到最后，单一产品线的厂商会受限。在大陆厂商中，沪电、景旺和鹏鼎前景可观。未来的高阶HDI产品对精度要求越来越高，甚至可能需要使用mSAP的产能来生产。谁拥有更丰富的mSAP经验，谁就更有可能在高阶HDI上实现高良率。另外，鹏鼎长期为苹果代工，习惯于用苹果的高标准来要求产品。因此研判，拥有苹果代工经验的鹏鼎未来会后来居上，尤其当谷歌、亚马逊等客户转向高阶HDI设计时。</p>
+<p><b>12，台系厂商金像电在HDI方面的能力和市场地位如何？</b></p>
+<p>金像电目前最大的挑战在于其HDI布局。尽管他们一直在采购HDI设备，但下一代产品可能会让他们感到非常吃力。其HDI产线主要集中在常熟厂区，而该厂区过去以生产NV为主，因此在良率上可能无法与胜宏、鹏鼎匹敌，只能硬着头皮去做。不过，就目前而言，金像电在交换机等高多层板产品线上已经有足够的业务量，即使没有做到顶尖的HDI，短期内问题不大。此外，金像电与AWS签有保供协议，确保了其在AWS供应链中的份额相当稳固。再加上谷歌GPU以及交换机的订单，现有产能基本可以满足需求。</p>
+</div>
+</main>
+</body></html>

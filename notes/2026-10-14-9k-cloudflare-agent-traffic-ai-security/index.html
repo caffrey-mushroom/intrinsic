@@ -1,0 +1,223 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.14 | 9K | Security | Cloudflare: Agent Traffic &amp; AI Security</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.14 | 9K | Security | Cloudflare: Agent Traffic &amp; AI Security</h1>
+<p class="orig">原标题：cloudflare离职专家||AI Agent请求量提升15倍，AI应用被入侵比例从10提升到20%，推动2026年Security for AI增量，金融、医疗和电商领域率先爆发，非网络技术型跨国企业潜在需求巨大，但存在签约后延后使用的情况，主要因为使用环境、方式、模型和风险出现较大变化</p>
+<p class="tags">#security #agents</p>
+<p class="meta">Meritco 久谦 · 2026-10-14</p>
+<div class="body">
+<h2>摘要</h2>
+<p>AI Agent将安全端点推向用户侧，请求量一年增长约1,400%，访问控制、提示词注入与合规成为主要缺口。AI Gateway单季或增长30%到40%，大客户加速进场；Cloudflare依靠边缘架构、零数据留存和产品生态获益，但部署常因需求变化延后数月至半年。</p>
+<h2>要点</h2>
+<ol><li>2026年Security for AI市场的主要增量可能来自AI Agent：其请求量一年内增长约1,400%，即17倍左右，非人类流量占比已超过一半，AI模型或应用被入侵比例可能从此前10%到13%升至20%左右</li><li>AI Gateway已在2026年成为独立AI安全品类，近期一个季度涨幅可能达到30%到40%；大客户开始加速进场，每增加约50个小型付费用户可能带来一个企业级用户，前者月付5美元到200美元，后者年订单可达几十万到上百万美元</li><li>Cloudflare企业级需求主要由合规、成本和AI Agent治理驱动，欧洲医疗等场景要求数据留在欧盟境内，Cloudflare凭借分布式边缘、第三方中立性和不保留数据形成优势；迁移至开源模型后，使用成本可能下降约80%</li><li>潜在安全需求最大的可能是拥有大量线上资产但缺乏强安全团队的非科技类大型跨国公司，相关能力预计在6到12个月内逐步成为行业最佳实践，但AI工具和风险锚点快速变化也可能拉长市场共识形成周期</li><li>部分客户签约数月甚至半年后才正式使用，主要因模型政策、应用场景和安全需求持续变化，客户通常需额外花费一到三个月重新进行概念验证并配置身份管理、日志、监控、敏感信息处理及平台集成，而非因产品本身无效</li><li>成熟客户的增购正从单一SKU转向预充值资金池，覆盖缓存、日志分析、路由调度、模型调用、AI Agent请求、MCP服务器操作及沙盒资源；同时终端、中间层和服务器端承担不同安全职责，整个防护链条难以由单一环节替代</li></ol>
+<h2>Q:目前，生成式AI和AI Agent分别对Security for AI需求产生了怎样的影响？能否量化说明，例如安全检查点或工作量增加了多少？</h2>
+<p>A:传统生成式语言模型，如ChatGPT，并未创造非常多新的安全需求。从市场变化来看，尤其是2026年Security for AI市场的主要增量，可能来自AI Agent带来的安全需求。生成式AI本身的安全问题主要包括是否向模型泄露敏感数据，以及是否利用AI生成非法或不合规内容。这更接近大模型语言治理，而非最终用户侧的安全，相关产品需求大致由大模型厂商或提供推理能力的终端厂商覆盖。</p>
+<p>但AI Agent将端点推进到了用户侧。每位AI Agent用户最终都相当于在控制一个可能产生威胁的攻击性工具，或者暴露了一个可能遭受外部攻击的生产平台。AI Agent继承了原有网页、网站、App及数据所有者面临的全部安全风险，同时增加了语句注入、提示词注入等额外安全需求。量化来看，AI Agent请求量在一年内增加了约1,400%，即17倍左右；请求流量中，一半以上已经转变为非人类流量。</p>
+<p>已有AI模型或应用被入侵的占比，在这一年内可能也接近翻倍。此前看到的统计大约为10%到13%，2026年相较2025年可能已经达到20%左右；这部分数据可能来自此前看到的[Guardian]数据。针对AI Agent的攻击多数源于访问控制弱点，例如缺少身份验证、暴露可供外部访问的API，以及提示词注入。这恰好是此前AI产品未能覆盖的部分。换言之，从大模型发展到AI Agent，产生了新的安全需求和可被攻击的缺口。</p>
+<p>自2025年底Claude Code等编码类AI Agent爆红后，许多领先企业，无论属于AI、科技还是零售行业，都开始率先使用AI Agent提升办公效率或推进AI转型。但相应的安全治理场景并未同步成熟，包括AI Agent使用权限、数据泄露及MCP服务器是否被滥用等。多数网络安全产品目前的成熟度远远落后于新AI Agent产品的发布速度。因此，从大模型的对话式生成发展到AI Agent期间存在明显缺口，导致安全产品往往只能事后补漏，而无法预先提供防御。</p>
+<h2>Q:Cloudflare网络安全产品近期的增长趋势如何？从客户数量和签单进展看，在AI Agent放量的背景下，增长是否有所加快？如有相关数据，希望能够说明；如无数据，是否有典型案例，例如某些领域新增了大量客户，或某个大客户显著增加了支出？如果部分领域增长明显，具体是哪些领域？</h2>
+<p>A:目前没有特别公开的数据，但行业内存在一些与实际情况相对吻合的数据。AI Gateway等产品以前并未出现在Gartner等机构的分析报告中，而到2026年，相关AI安全市场已经将其列为独立品类。近期一个季度可能有30%到40%的涨幅，这部分有望成为增长较快的爆发点，主要由AI Agent安全治理需求推动。</p>
+<p>大客户的增长速度相对更快。过去，AI Agent产品的客户绝大多数是自助付费用户，即pay-as-you-go customer，客户自行购买小型产品并按量付费；现在大客户已经开始进场。整体增速可能已经处于较高水平。头部大客户与小客户在客户数量上的比例可能约为1:50。</p>
+<p>如果一款针对AI Gateway或AI Agent安全治理的新产品吸引了大量个人开发者和自助付费用户，通常也会按一定比例带来企业级合同订单。因此，这仍是增量较快的业务部分。</p>
+<h2>Q:您提到的50:1，是金额比例还是客户数量比例？</h2>
+<p>A:这是客户数量比例。金额方面，小客户与大客户没有可比性。对外可见的活跃用量等数据通常按客户数计算，例如个人和企业各自都计为一个客户，但二者贡献的金额可能存在指数级差异。免费用户、初创公司等小型客户每月付费可能在5美元到200美元之间；大约每增加50个此类付费用户，可能会增加一个企业级用户，而企业级用户每年可能对应几十万到上百万美元的订单。</p>
+<p>两类客户的价格无法直接比较，不同企业级用户的单价也完全不同，但用户数量可以直观反映变化。Cloudflare面向开发者的平台如果涌入大量用户，例如一个季度增加3,000个用户，或出现数以万计的新注册账户，按约50:1的比例，可能会带来相应数量的企业级合同。这只是观察到的大致比例，并非具体、精确的数据。</p>
+<h2>Q:请介绍一个较典型、较早开始实际使用安全产品的客户案例。近几个季度，该客户是否进行了扩容，产品用量是否发生变化？该客户具体属于哪个行业和应用场景？</h2>
+<p>A:大致有四类场景，对应四类用户。第一，保护员工使用AI，即常见的Shadow AI治理，包括如何控制员工正确使用AI或仅使用指定AI。第二，保护AI Agent访问，例如MCP工具涉及的身份验证和权限控制。第三，保护AI应用，例如面向大模型厂商或AI服务提供商的保护，这类需求较多出现在电商场景，攻击者可能通过提示词注入侵入系统。第四，安全构建AI，例如客户自行部署、调优或训练AI模型，以及保障AI内部使用安全。</p>
+<p>这些场景都出现得较晚。能够追溯到使用时间较长的客户，最初使用的是最基础、最早期的AI Gateway功能。当时AI Agent尚未像现在这样发达，也未进入大量接入AI Agent并实施安全控制的阶段。客户主要使用AI缓存、内容可观测性及保护员工使用AI的功能。当企业内部AI流量经过Cloudflare时，产品会审查其中是否存在数据安全问题或敏感信息，并封禁或阻断相应内容。</p>
+<p>AI Gateway还提供缓存功能。虽然目前绝大多数大模型厂商已经区分缓存计费和非缓存计费，但AI Gateway中间层仍能提供成本更低的缓存模式。例如，金融机构开展行业研究分析时，不同员工可能从事大量重复工作:一名员工在某个国家查阅资料并撰写研究报告，另一名身处其他国家、隶属同一公司的员工可能也要执行相同任务。两人调用AI工具时，AI Gateway可以通过中间缓存层和语义缓存识别出二者寻找的是同一份资源，从而不再调用大模型重复执行相同任务。</p>
+<p>这是Cloudflare最早针对大模型使用场景提供的业务。目前来看，这部分业务大概率没有特别明显的增长点，因为大量使用AI、比拼Token消耗量的阶段已经过去。更早一些，例如四五月份，企业可能还会以Token使用量证明自身是否实现AI化，以及是否利用AI提升了工作效率。现在受价格因素和安全治理要求影响，企业已不再从生产层面要求大量消耗Token，因此这部分需求正在下降，并未继续扩张。</p>
+<p>从另一个方向看，这些公司开始加强安全治理并使用更多安全类产品，部分客户逐渐转化为以合规需求为主。例如，欧洲医疗平台面临非常严格的合规要求。当地数据安全法规要求个人信息不得离开相应数据区域；医疗行业还涉及健康数据库等敏感数据，必须在特定国家或区域内托管，或通过相应审核认证。因此，医疗数据存在硬性约束，需要满足当地云合规要求，并将数据留在欧盟境内。</p>
+<p>在这一框架下，客户需要由合规分布且覆盖全球的运营商提供AI服务，Cloudflare这类产品具有原生优势，其中包括保护AI Agent访问和保护员工使用AI两大部分。同时，客户也会考虑成本。例如，从原有的Claude Opus或Sonnet迁移至[JLM 5.3]等开源模型后，成本可能下降约80%，日常使用成本仅为原先Opus的约20%。整套数据合规、边缘存储、文件信息、日志监控及中间合规组件，可以保证数据仅在欧盟节点运行，不离开相应数据区域。这可能是目前影响最大的因素，也是推动企业级用户选择Cloudflare的重要诱因。</p>
+<p>这类用户正在逐步增多。除金融研究机构和医疗平台外，还包括电商零售、家居零售，以及类似Shopify个人卖家店铺的场景。其原因一是合规，二是Cloudflare作为第三方平台不保留数据，能够更好地满足企业的安全需求。如果AI安全解决方案供应商本身采取重资产模式、保留大量数据，且自身的数据安全保障不足，客户在全球部署安全体系时大概率会避开这类供应商。</p>
+<p>公开资料中也有相关案例。例如，英国某政府机构在招标零信任身份管理类AI安全产品时，评标过程中发现，零信任身份管理系统的最大用户已经是AI，而非真正的人类，因而需要推倒原有招标方案并重新设计。这些需求目前仍处于非常早期的阶段，未来半年大概率会大幅扩展。AI安全治理会带来许多需求，但影响最大的仍是合规基座，包括数据存放位置、保存的内容，以及是否满足当地法律法规。</p>
+<p>微软、AWS等厂商也能实现类似功能，但它们的数据和基础设施模式更重，可能无法做到零数据留存。Cloudflare这类纯SaaS公司只提供可观测、控制和监控，数据经过后即离开；客户的实际生产业务与大模型厂商或自部署大模型直接互通，中间仅设置监控层或管理层。AWS、微软等平台更重，数据最终可能仍需在其基础设施上处理，对客户而言也可能构成安全合规风险。不过，这只是一种可能性，因为目前相关具体规定尚不十分明确。</p>
+<h2>Q:是否可以理解为，跨境电商、医疗和金融场景目前更容易获得预算，而且相关预算会率先大幅提升？进一步看，哪些行业潜在的增量安全需求最大？这些行业的潜在需求较大的原因是什么？</h2>
+<p>A:目前潜在安全需求最大的可能是非科技类大型跨国公司。前述电商企业本身属于科技公司，因此可以较早看到它们开始投入预算。其网站、整体流程运维和庞大的在线支付系统通常均由自身开发，说明它们具有很强的开发能力。由于业务涉及资金，这类在线电商企业一般拥有较强的安全和风控团队，对AI安全更敏感，也更重视及时实施合规和控制，因此其需求会率先显现。</p>
+<p>另一类是非技术型公司，例如内容媒体平台，或通过电商渠道销售商品的家居企业。这些公司并非重度网络科技公司，但拥有大量线上资源，而且可能是较先进的大型跨国公司或世界500强企业，对不同地区的合规、自有内容保护和安全性都有较高要求。只是由于缺乏庞大的安全团队，它们对自身安全需求的认知往往不够清晰。</p>
+<p>部分客户是在看到AI Gateway及AI Agent安全治理的整套产品后，才意识到自身存在相关安全需求。这部分客户可能受到最大的影响，未来会不断发现自身在相关能力上的欠缺。随着高科技先行企业广泛使用相关产品并形成行业共识，这些能力会像传统网络安全从防火墙、抗DDoS发展到VPN和零信任一样，逐渐成为行业最佳实践。</p>
+<p>当相关能力成为行业最佳实践后，所有已在互联网上拥有大型门户或重要资产、较为依赖互联网，但自身并非科技公司或强安全公司的存量客户，都会开始采用这些最佳实践。市场形成这一共识可能需要6到12个月。但按照当前AI的变化速度，这一过程也可能被拉长，因为6个月后安全锚点和暴露出的风险可能再次发生变化。AI工具的变化速度快于此前互联网时代。</p>
+<h2>Q:是否有客户在已有云原生防护的基础上，又增加了Cloudflare产品，并比较过其他与Cloudflare类似的竞品方案？在已经增加第三方防护的情况下，客户最终选择Cloudflare的原因是什么？</h2>
+<p>A:这类客户较为常见。绝大多数大客户并非在Cloudflare和云厂商之间二选一，而是同时选择两者。客户通常既使用AWS、GCP、Microsoft Azure等云产品，也使用第三方SaaS；中间层可能使用Cloudflare或Akamai，零信任产品可能选择Cloudflare或Zscaler。成熟的企业级客户不会把所有资源放在同一个平台上，而会让整体流程、真实服务器和边缘计算相互备份，其中一个出现问题后可以迁移至另一个平台，区别仅在于以哪个平台为主。</p>
+<p>选择边缘平台时，除合规外，另一个硬性考量是成本。基础云产品的成本通常不够透明，例如AWS会对数据流入和流出双向收费，且单价较高；从性能看也未必特别理想，因为AWS采用集群式服务。如果Cloudflare支持相应产品，客户会尝试将其迁移到边缘，以获得更快的响应。边缘节点覆盖全球，可以在靠近客户的端点处理请求，同时将安全能力从单点迁移至全球云边缘。</p>
+<p>面对大型流量攻击，微软、AWS等集群式服务天然不如分布式边缘架构。Cloudflare的设计能够将流量分散至各个端点，避免单一端点过载或承受过大冲击。另一个原因是Cloudflare属于中立的第三方CDN。客户自行部署AI时，无论使用GLM、Kimi等开源模型，还是调整权重以适配自身业务，有时都会回避与自身业务存在潜在竞争关系的云厂商，因为训练数据和进出流量均存放在对方云上，可能存在潜在泄露或被同行参考的顾虑。</p>
+<p>Cloudflare相对中立，主要提供基础设施，也不具备特别高级的计算功能，因此客户可以更放心地将部分训练数据放在Cloudflare，再通过该平台调度和训练自有模型。不过，这种倾向更多发生在AI发展早期。进入AI Agent阶段后，客户选择Cloudflare更多是出于产品能力，包括较快的更新速度、对AI Agent全套SDK的支持，以及近期发布的多项产品，使AI产品更易观测、控制和管理。</p>
+<p>Cloudflare面向不同角色销售时会采用不同的产品表达，但实际销售的是同一套能力。AI Gateway及AI Security治理方案一方面面向CTO，强调成本管理、监控、可视化、可编辑路由、控制员工使用成本和提升工作效率；另一方面面向CISO或CSO，强调安全功能、恶意行为识别和数据隔离。这两个方向背后实际是同一套产品，彼此支撑、相互补足。</p>
+<p>对于不希望维护庞大安全团队、只想直接使用成熟SaaS服务的企业，Cloudflare的一站式解决方案较难替代。基础云和公有云厂商也在开发类似产品，其自定义能力可能优于Cloudflare。Cloudflare更像盒装产品，能够开箱即用，且各项功能集成在一起。如果客户内部安全流程非常独特，关注点与通用模型不一致，需要高度定制的能力，可能仍需选择公有云厂商自行开发和部署，但这也要求客户对自身业务有更深入的理解。</p>
+<h2>Q:目前，许多云厂商与第三方安全企业之间形成了共存关系，也有云厂商与第三方开展直接销售合作。您如何看待这种模式？虽然合作可能扩大销售规模，但是否会影响第三方未来对产品的独立定价？</h2>
+<p>A:这取决于公司的定位。有些公司的SaaS业务较为单一，例如Akamai主要提供内容分发和全球网络覆盖，其AI能力也是集群化的；Zscaler主要提供零信任身份安全和身份管理；Palo Alto Networks则从传统防火墙出发，通过不断收购包括AI在内的产品扩展安全架构，但自身缺少完整的运行节点，需要依托云基础设施。对于产品范围较窄的SaaS企业，确实需要与基础云厂商共同搭建商业模式。</p>
+<p>很多情况下，第三方无法凭空创造需求并说服客户购买，而必须融入客户的日常使用场景。几乎所有客户都离不开公有云基础设施，因此第三方可以在这一基础上展示自身安全能力，例如说明客户正在使用的AWS能够实现哪些功能，再配合第三方产品打通内部AI Agent管理场景。这是此类公司的产品思路。Cloudflare则有所不同，它从SaaS公司逐渐发展得更接近公有云，但采用纯分布式部署，属于边缘云公司。</p>
+<p>几乎每家主流安全公司的核心产品都与Cloudflare存在竞争关系，但这些公司彼此之间又相对独立。因此，Cloudflare更像分布式、边缘化的AWS，只是更便宜、更轻量，同时也更固定，无法进行过多定制。市场上较少看到Cloudflare与基础云厂商高调联合销售，但其他产品较为标准化的公司会与云厂商联名推出整套联合解决方案。</p>
+<p>这种合作确实可能产生影响。例如，Palo Alto Networks的安全产品搭配Google Cloud销售，可以同时利用云服务器的全球分布和Palo Alto Networks的安全能力。客户过去在机房部署Palo Alto Networks硬件防火墙，上云后可以使用Google Cloud服务器，同时继续使用Palo Alto Networks网络安全防火墙。二者位于同一基础设施中会更加便捷，也实现了虚拟化。但反过来，如果Google Cloud自行开发出更强的防火墙，也可能完全替代Palo Alto Networks的产品，因为客户的物理数据原本就在Google Cloud上，迁移成本较低。</p>
+<p>这类第三方很难深度绑定客户的设备环境，只能在自身产品结构中设置迁移门槛，例如将外部防火墙、身份认证和网络组网等能力绑定在一起。Cloudflare的所有产品均位于同一生态内，客户可以同时开启或关闭，并自主选择使用哪些功能。Cloudflar e并非通过单一产品锁定用户，而是依靠完整生态，让用户获得更好的使用体验、更便捷的管理和更透明的价格。因此，其他第三方更容易受到供应链挤压，Cloudflare受到的影响相对较小。</p>
+<p>Cloudflare不参与的云计算市场仍由公有云承担；但对于公有云和Cloudflare均能提供的产品，多数客户仍更愿意增加一个第三方安全控制或综合平台。这样可以部署多个混合云，无须将全部产品绑定在一家云厂商上。客户可以同时使用两到三家云，并在前端部署Cloudflare，将这些云整合起来，从而提供更多部署方式。</p>
+<h2>Q:目前是否存在客户签订合同后，迟迟没有实际使用产品，或没有将产品投入生产的情况？如果存在，主要原因是什么？</h2>
+<p>A:确实存在客户签约数月甚至半年后才开始使用的情况。但这并非签约后不再使用，而是等待较长时间后才开始使用。尤其是2026年签订的订单:2025年底编码类AI Agent开始出现，2026年进入爆发期，客户签订了大量AI Gateway、AI安全治理和监控管理等订单。但部分客户刚准备使用时，整体环境又发生了变化，包括模型的地区使用政策，以及Amazon Bedrock、Cloudflare等中转方案，都可能受到政策变动影响。</p>
+<p>另一个原因是，企业从接入AI发展到需要AI安全治理，中间可能相隔一到两个月。刚开始接入时，客户可能将产品视为OpenRouter一类的路由中介或后端中转软件，之后才发现还需要管理和控制功能。与此同时，Cloudflare的AI Gateway也在快速发展，最早只有简单的日志管理、监控和基础控制功能，几个月后才逐步增加用量控制和更细致的安全控制。即使到现在，它也不能被定义为完全成熟的产品，仍属于持续发展的Beta版或测试版产品。</p>
+<p>在整个过程中，用户环境、大模型厂商和AI Agent使用逻辑都在变化，导致客户无法直接投入使用并迅速消耗完订单。例如，客户可能签下一年500万美元的用量，最初设想是让全公司工程师大量使用Opus，只要Cloudflare提供稳定的云中转，就能消耗完订单。但合同谈判和签署可能耗时一个月，等到企业真正部署时，可能已经出现新的信息泄露风险，管理层开始要求增加身份管理；模型也在持续更新，并新增图片生成等能力，而客户此前并未考虑这些需求。</p>
+<p>后续还可能出现新的终端能力，客户需要重新设计管理、计费和安全控制方式。这并非签单后不使用，而是签单后进入事后概念验证阶段，因为最初概念验证所针对的场景已经不存在，取而代之的是更复杂的新场景。客户可能花费一到三个月，围绕新场景和新功能反复测试，最终完成安全治理、日志、监控、敏感信息处理和平台集成的全部配置，接入Cloudflare后才正式开始消耗订单。</p>
+<p>还有一些海外公司在接触AI时，并不真正清楚自身要实现什么目标，只是将原有安全预算扩展到AI Agent。它们原有的概念和条款主要针对人类安全控制，这是传统零信任订单中容易出现的问题。签约可能并非专门针对AI，只是将AI纳入原有条款，签约后却不知道如何使用。对于大型企业，要合规、正式地将AI Agent纳入真实工作环境，并将使用方式写入明确的管理条例，往往需要较长周期。因此，相关项目可能暂时停滞，待企业完成内部调整并明确真实需求后才开始使用。</p>
+<p>目前没有发现客户因产品本身无效而在签约后将其长期搁置的案例。绝大多数情况是签约后需求发生变化，或客户尚不清楚应如何使用，因此需要继续研究，从签约到最终使用可能相隔半年。部分客户可能至今仍未开始使用，但这并不意味着其会一直搁置，只是暂时尚未理清使用方式。</p>
+<h2>Q:对于较早签单并开始使用的客户，是否出现了增购，包括增加额度或合同金额？增购主要是购买新功能，还是将原有功能扩展至更多部门或业务？如果属于功能扩展，具体增加了哪些功能？</h2>
+<p>A:以下仅根据接触到的案例介绍可能出现的情况，供参考。</p>
+<h2>Q:介绍一个典型案例即可。例如，客户在实际使用并明确使用方式后进行了增购，具体新增购买了哪些产品，或扩展了哪些使用范围？</h2>
+<p>A:客户具体增加了多少无法确定，但可以确定存在增购。例如，前述一家金融研究公司最初使用产品，主要是为了降低推理成本，通过缓存、路由控制和审计减少生产环境直接调用大模型的次数，降低Token用量或账单，同时提升可观测性，使管理者能够看到员工访问了哪些内容。这是该产品最初的用途。</p>
+<p>该公司目前大概率采用预充值资金的方式，投入金额可能已显著高于此前订单。最初，该公司只使用某项单一功能降低AI使用支出，可能按单个SKU计费；现在则可能将大额资金预先充入Cloudflare。例如，假设预存700万美元，客户将不再按单一SKU计费，而是从资金池中扣除所有产品用量产生的费用，包括日志存储与分析、路由调度及调用原厂模型的费用。</p>
+<p>如果客户希望减少对昂贵模型的使用，可以通过Auto Router将请求调度至Cloudflare自有模型或Kimi Code等模型，从而减少对高价标准大模型的调用。其他AI安全产品也按照用量计费，例如AI Agent请求次数、MCP服务器调用及读写操作次数、沙盒使用数量，以及启动容器环境并连续运行72小时执行代码审计等任务。计费依据包括调用次数、占用内存、CPU时间和存储空间。</p>
+<p>客户会持续消耗资金池。该客户从使用单一产品、按SKU购买简单的缓存和日志管理，扩展为预先存入大额资金并使用Cloudflare全部AI相关产品，这可以视为跨合同扩容。现在AI相关产品的增购已不完全表现为针对某一功能增加固定金额，而是客户发现整个平台可用后，采用资金池方式预存费用；未来推出的新功能也可以直接使用，无须绑定某项单一功能。</p>
+<h2>Q:目前，企业会在终端入口和后端等不同位置进行内容检查。这主要是因为各安全企业原有业务所处的位置不同，还是因为不同位置的安全效果存在差异？如果未来要保障整个链条的安全，是否需要在每个环节进行内容检测？</h2>
+<p>A:安全实际上是一条链。用户的手机或电脑是终端，用户访问的网站或App是中间层，最终的真实服务器和大模型，例如Claude或OpenAI，则属于后端服务器，大致可以分为三个节点。假设用户要求AI搜索购物网站上的冲锋衣价格，在用户下达命令时，终端是否安全属于终端安全产品负责的范围，例如CrowdStrike或360。此类产品需要防止AI修改不应修改的内容、访问本地敏感文件，或在输入法中被注入其他内容，从而保障终端设备自身安全。</p>
+<p>请求发出并调用某个网站的信息后，就会到达Cloudflare所在的中间层。网站所有者需要保护网站免受恶意入侵，这一部分可以称为边缘防火墙或边缘安全，只有确认请求无害后，才能将其转发至真实服务器。中间层既可以是购物网站，也可以是公司网关。员工从公司电脑向外发出请求时，中间层会检查其中是否包含公司内部代码、AWS密钥或API密钥等，符合特定格式的文件都会被拦截。这属于中间件安全。</p>
+<p>请求到达大模型内侧或最终端点后，又涉及另一类安全。模型侧需要判断进入模型的内容是否在恶意收集用户信息、是否包含恶意注入，以及模型是否真正理解了用户语义。用户也可能通过修改提示词绕过模型自身的安全防线。例如，模型原本不能用于黑客攻击，但用户可能设法规避拒答机制。这属于模型侧或服务器侧的终端安全。</p>
+<p>即使请求经过前端清洗后大概率无害，也不能排除其绕过中间层的情况。Cloudflare本身也存在技术限制，例如请求内容过长时，可能只能读取前约2,000字节，不可能持续等待后续字节并反复验证，于是攻击行为可能隐藏在后半段。这时，服务器端仍需设置一层安全防火墙兜底，例如Palo Alto Networks或Prisma等产品，对进入服务器的内容再次进行检查。</p>
+<p>服务器端安全与边缘安全、终端安全的侧重点不同，它需要判断请求是否会影响自身使用场景和性能。即使请求内容合法，如果造成性能压力或内存溢出，也可能被判定为非法请求。因此，各层安全虽然存在共性，但侧重点不同。极端情况下，如果链条中的某个端点能够做到绝对完美、安全且客观，理论上可能不再需要其他安全层；但在现实中，设备即使保护了自身，也仍可能通过链条伤害其他主体。</p>
+<p>因此，整个安全链条上的每一环大概率都不可或缺。每一层都有责任将风险限制在自身环境内，而且每个端点主要保护自身这一层。手机和电脑的终端安全保护本机，并不负责服务器或网站安全。即使大模型侧的AI安全能力很强，中间件防火墙仍然需要存在，因为中间件不仅处理复杂攻击，还负责流量清洗、提升访问速度、标记用户，以及限制每名用户每分钟的访问次数等。各环节承担的责任不同，无法完全相互替代。</p>
+<h2>Q:从内容检查领域的竞争看，许多企业一方面使用规则功能，另一方面也引入自行微调或训练的小型安全模型配合内容检查。是否可以理解为，企业原有的数据优势及模型本身的质量，决定了其在内容检查环节的核心竞争力？</h2>
+<p>A:这些因素确实有影响，但整体影响可能没有那么大。对终端安全的影响最大，例如CrowdStrike这类安装在手机和电脑上的产品。随着端点和AI Agent数量增加，端点行为也越来越新，无法只依靠简单的模式识别。网络协议具有固定形式，例如HTTP协议格式相对明确，较容易识别恶意请求；但在端点上，谁在操作电脑、如何操作、输入了什么，以及试图访问哪些内容，这些行为都很难标准化。</p>
+<p>因此，如果一个模型能够比其他软件识别更多内容，或更准确地判断用户意图，确实会形成核心竞争力。但在服务器和边缘等其他链条上，流程本身较为标准化，模型质量的影响没有那么大。而且在生成式AI出现以前，这类技术就已经存在，过去通常称为机器学习或启发式引擎，本质上也是AI，只是不是生成式AI。</p>
+<p>Cloudflare过去判断用户行为是否来自机器人时，使用的就是机器学习和启发式引擎，通过鼠标位移等行为判断用户是否为机器人。因此，现在虽然概念发生了变化，但实际效果相似。区别在于，对于算法类需求，AI可能比传统算法强很多，不需要特别复杂的算法支持；一个足够优秀的模型便能较准确地判断用户意图。</p>
+<p>近期出现了一些判断型AI模型，包括Cloudflare推出的模型家族和市场上的Decider等，主要用于边缘判断。它们并非推理型AI，而是需要在约100毫秒或几十毫秒内快速判断用户意图的是与否，或完成相应分类。不同模型的响应速度可能存在明显差距，这类场景未来可能形成较大的性能差异。</p>
+<p>对于传统安全模型，这类判断型模型未来可能产生较大影响，但仍需等待实际落地。此类模型通常需要针对特定工作场景或企业自身的AI工作流进行调整，才能实现高准确率和高速度，因此更像最终交付给企业的产品，而非包装成通用安全产品直接对外提供服务。终端安全也会受到较大影响；但对于中间层的基础防火墙、防注入等能力，影响可能不会特别大，更多可能只是概念层面的变化，因为能力较强的厂商在启发式引擎和机器学习时代已经达到了较好水平。</p>
+<p>以上仅供交流探讨，不构成投资建议</p>
+</div>
+</main>
+</body></html>

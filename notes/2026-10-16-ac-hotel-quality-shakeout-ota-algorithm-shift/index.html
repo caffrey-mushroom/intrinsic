@@ -1,0 +1,205 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.16 | AC | Internet | Hotel Quality Shakeout &amp; OTA Algorithm Shift</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.16 | AC | Internet | Hotel Quality Shakeout &amp; OTA Algorithm Shift</h1>
+<p class="orig">原标题：酒店业品质化洗牌，OTA流量算法变革，对佣金、广告收入以及平台补贴的综合影响</p>
+<p class="tags">#internet #consumer #china</p>
+<p class="meta">AceCamp · 2026-10-16 · article 70568090</p>
+<div class="body">
+<h2>摘要</h2>
+<p>OTA流量分配算法由佣金驱动转向综合评估，佣金权重显著下降。中高端单体酒店受影响最大，特牌新政后佣金率普遍下调，综合获客成本有望下降。大型连锁集团受影响较小，因其自有渠道占比高，下调门店佣金以测试流量稳定性。酒店行业趋势转向品质竞争，高品质酒店获客成本降低，而依赖高佣金买量的低质单体酒店将被加速淘汰。</p>
+<p><b>以下是专家观点：</b></p>
+<p><b>﻿区域内华住集团旗下酒店在不同获客渠道的占比情况，特别是OTA渠道的构成是怎样的？</b></p>
+<p>上海区域，自有渠道是华住酒店最主要的获客来源，这部分预订主要通过华住集团的官方APP完成。OTA渠道的占比在9月份约为13%，在OTA渠道中，携程是主要构成部分；其余由美团、飞猪等渠道构成。除线上渠道外，剩余约20%的客源来自门店协议客户及部分长包房客户，这些属于门店自身的销售渠道。</p>
+<p><b>华住集团与携程合作时，主要采用哪种佣金率档位？不同档位的合作模式是如何决定的，以及为什么不选择“特牌”这一档位？</b></p>
+<p>华住集团层面与携程统一签署的是基础流量合作，即最低档位的佣金合作。如果单体酒店希望获得更多流量，可以申请升级至“金牌”档位，但这需要通过华住酒店区域管理层审批。华住酒店主要合作的档位是“金牌”或基础的“普牌”。华住集团不允许旗下酒店与携程签订“特牌”合作。“特牌”合作具有排他性，一旦签订，酒店将不能在美团、飞猪、抖音等其他第三方平台上线。由于华住集团与美团等其他平台也存在战略合作关系，为避免被单一渠道深度绑定而影响与其他平台的合作机会，集团层面禁止签订“特牌”协议。</p>
+<p><b>行业内哪些类型的酒店更倾向于与携程签订“特牌”合作？其签约比例大概是怎样的？</b></p>
+<p>签订“特牌”合作的主要是单体酒店，而非大型连锁酒店集团。根据了解，单体酒店签订“特牌”的比例非常高，中档及中高端定位的单体酒店（通常在携程平台上为三钻及以上）中，与携程进行深度战略绑定的意愿更强，其“特牌”签约率也更高。</p>
+<p><b>根据两年前的数据，全国酒店市场的总体规模以及中高端酒店与携程的合作模式（如特牌、金牌）分布情况是怎样的？</b></p>
+<p>根据大约两年前的统计数据，全国各类酒店（含低端至星级）的总数接近50万家。在这50万家酒店中，三星级及以上酒店的占比略低于30%。如果将市场细分为不同层级，中高端及以上酒店的数量约为15万家。</p>
+<p>在这部分中高端酒店中，与携程签订“特牌”（独家合作）的比例相当高，全国范围内估计在60%至70%之间，尤其在一、二线城市，该比例会更高。这主要是因为中高端酒店的客源以商务客为主，房价较高，因此需要借助携程的流量支持。相应地，这部分酒店中签订“金牌”的比例大约在20%至30%。而签订基础合作的酒店极少，因为基础合作几乎无法带来有效流量，其主要作用仅限于新开业酒店的初期上线展示，酒店在正式运营后通常会迅速升级为“金牌”或“特牌”以获取流量。</p>
+<p><b>对于经济型及单体小酒店而言，它们与携程的合作模式分布有何不同？连锁酒店集团在选择合作模式时又有哪些特点？</b></p>
+<p>经济型及单体小酒店通常采取多渠道策略，与携程签订“特牌”的比例较低，根据初步统计大约在20%左右。在不考虑大型连锁集团的情况下，这类单体酒店签订“金牌”的比例估计在20%至30%。</p>
+<p>大型连锁酒店集团则有显著区别，它们大部分拥有强大的自有流量渠道，因此极少会选择“特牌”合作。它们与携程的合作更多是出于战略关系维护，通常只会选择基础合作以获取一定的稳定流量。对于核心区域的门店，基础合作已经足够，因为挂“金牌”的意义不大。</p>
+<p><b>2026年9月之后，新的算法政策带来了哪些变化？与旧政策相比，新政策在流量分配上对价格和质量权重的调整，对酒店业者而言意味着什么？</b></p>
+<p>新旧政策最大的区别在于，旧政策纯粹以佣金驱动，即佣金比例越高，获得的流量和获客能力就越强。而新政策则采用五个维度进行综合评估，佣金不再占据主导地位。这意味着即使酒店挂了特牌或金牌，也未必能获得大量流量，因为新政策类似“木桶效应”，要求酒店补齐所有短板，五个维度同步提升，而非仅靠单一高佣金。</p>
+<p>对于重运营的集团而言，由于原本就不依赖高佣金获客，而是侧重于运营和自有渠道，因此新政策的影响不大。然而，新政策对单体酒店，尤其是不属于连锁体系的酒店，带来了显著利好。在旧政策下，资金实力强的单体酒店可以通过高佣金或“金字塔”等付费工具获取流量优势，而新政策下，即使不投入高额佣金，只要酒店注重内部管理、品质和服务提升，其获取的流量可能与高投入的酒店相差无几。</p>
+<p>此外，新政策解决了旧政策下普遍存在的“高流量、低转化”的弊端。旧政策下，高投入能带来高曝光，但这些流量未必能有效转化为订单。新政策将“友好度”作为一个独立维度，直接关联曝光量与转化率。如果酒店转化率低，将被视为对客户不友好（例如基础服务不到位或到店无房），友好度评分会下降，进而影响后续的流量扶持。</p>
+<p><b>新政策除了佣金之外，是如何通过其他维度来评价酒店运营并分配流量的？</b></p>
+<p>新政策主要通过五个维度进行评估。第一是基础的信息维度，这是所有酒店都会做的常规工作。第二是“友好度”，即曝光量与转化率的比值。平台给予高曝光后，如果酒店转化率低，友好度评分就会下降，下个周期的流量扶持可能会减少。第三是“品质度”，这个维度不再像过去一样只看点评分数，因为点评分可能存在“刷分”情况。现在平台更关注门店的实际卫生管控、平台投诉率等实质性指标，点评内容和片段的重要性超过了单纯的分数。第四是“欢迎度”，这主要反映客人的真实下单情况。第五是“服务费”，也就是佣金，其在新政策中的主导地位已经下降，但费率档位基本保持在10%至15%的区间。</p>
+<p><b>新政策的推出对携程平台的总佣金收入会产生什么影响？</b></p>
+<p>新政策的实施预计会对携程的佣金收入产生影响。在旧政策下，为了获取高流量，大部分酒店都倾向于选择高佣金模式，并且会额外使用“金字塔”等付费工具，这为平台带来了可观的收入。新政策推出后，由于流量分配不再单纯依赖佣金，许多酒店取消了高佣金的特牌设置，这将直接导致OTA平台佣金收入的减少。</p>
+<p><b>在新政策实施前，酒店支付给OTA平台的佣金费率是怎样的，特别是中高端酒店的情况如何？</b></p>
+<p>之前的特牌佣金费率上限是15%。目前据了解，实际执行的费率普遍维持在12%或12.5%左右。对于中高端酒店而言，大约80%的门店会选择挂特牌，并按照15%的费率上限支付佣金。因此，从15%下调至12%左右，意味着每家门店的佣金支出减少了2到3个百分点，这对于庞大的酒店存量市场而言，是一笔不可小觑的费用。</p>
+<p><b>除了基础佣金外，“金字塔”工具的费用结构和转化效果是怎样的？在新政策下，其使用情况和效果发生了哪些变化？</b></p>
+<p>“金字塔”是独立于15%基础佣金之外的额外广告投入，酒店可以根据自身需求充值，例如1,000元、5,000元或10,000元不等。在旧政策下，投放“金字塔”可以提升酒店排名以获取流量。进客高峰期通常在下午2点到5点，酒店会选择在此期间集中投放。根据过往经验，大约投放300元可以转化一到两间房。然而，新政策下，“金字塔”的使用频率有所下降。主要原因是新政策将酒店品质、网评内容、差评率和友好度等因素纳入流量分配的考量。如果酒店在这些维度的表现不佳，即使投入资金购买“金字塔”，也无法有效获得流量和排名提升。</p>
+<p><b>对于使用“金字塔”工具的单体酒店而言，其综合佣金成本能达到多高？新政策对这部分成本有何影响？</b></p>
+<p>在旧政策下，部分单体酒店为获取流量会大量投入“金字塔”，其综合佣金成本相当高。根据与这类酒店加盟商的沟通，他们的实际综合佣金率远高于15%的基础佣金。新政策实施后，由于流量分配机制的改变，单纯依靠“金字塔”的效果减弱。如果综合考量基础佣金下调和“金字塔”投入减少带来的影响，这部分酒店的佣金成本损失可能接近十个百分点。</p>
+<p><b>新的流量政策对连锁酒店的佣金成本和入住率分别产生了什么影响？</b></p>
+<p>新政策对连锁酒店的影响力度小于单体酒店。在佣金成本方面，确实有所下降，但影响范围有限。佣金成本的下降主要体现在金牌门店，因为在新政策下，它们可能不再需要维持金牌身份。因此，对整个连锁体系而言，佣金成本的下降幅度并不显著，因为华住酒店原本就不主要依赖特牌来获客。</p>
+<p>在入住率方面，获客成本确实下降了，但从2026年9月份的整体数据来看，新政策对流量和OCC的影响目前看来不大。</p>
+<p><b>2026年9月份的RevPAR表现如何，与去年同期和上月相比有何变化？</b></p>
+<p>区域的2026年9月份RevPAR与去年（2025年）同期相比，同比下滑约5%。与2026年8月份环比，也呈现下降趋势。作为参考，2026年8月份的RevPAR与去年（2025年）同期相比，下滑幅度较小，约在2%至3%。因此，9月份的经营表现确实有所转差。不过，由于携程的新政策是在8月底至9月初才推出的，目前尚无法明确判断业绩下滑是归因于宏观经济环境变化，还是平台流量政策调整所致。</p>
+<p><b>近期是否因应中秋、国庆等旺季，对旗下酒店在OTA平台的佣金策略进行了调整？具体调整情况如何，例如是否将部分门店的佣金率从12%下调至10%？</b></p>
+<p>华住酒店在2026年9月初对旗下五家门店进行了一项统一调整，取消了此前的“金牌”等级，将其全部转为基础等级。相应地，这五家门店的佣金率也统一从12%下调至了10%。此项调整是品牌事业部的统一要求，主要目的之一是在降低成本的同时，观察OTA渠道的订单占比是否会因此出现大幅下降。</p>
+<p><b>在将佣金率从12%下调至10%后，是否观察到流量有显著变化？对于即将到来的旺季，如果流量表现不佳，是否有预案，例如重新上调佣金率？</b></p>
+<p>9月份属于行业的传统淡季，下调佣金后，华住酒店观察到OTA渠道的订单占比并未出现大幅下降。华住酒店的下一步计划是在10月份旺季期间持续观察，如果届时订单比例下降超过三个百分点，华住酒店可能会采取相应措施。这是一个逐步尝试的过程，如果旺季表现不理想，华住酒店会考虑将佣金率回调至11%或12%进行测试，以找到最佳平衡点。</p>
+<p><b>OTA平台是否支持对佣金率进行灵活、高频次的动态调整，例如每日调整或精确到小数点后一位？商家在实际操作中采用怎样的调整周期？</b></p>
+<p>平台后台支持商家自主进行佣金率的调控。但在实际运营中，华住酒店不会进行每日调控，因为这种高频次的操作不利于观察调整带来的实际效果。无论是价格调控还是佣金调控，华住酒店都采用周期性的调整策略，通常以一周或半个月为一个观察周期，以便更准确地评估调整对实际流量和获客能力的影响。</p>
+<p><b>考虑到部分集团型酒店可能减少了广告投放，而单体酒店可能维持惯性投放，这是否会对平台的整体广告收入和流量分配逻辑产生影响？</b></p>
+<p>集团型酒店在广告投放上确实会相对谨慎，而许多单体酒店出于惯性思维，在短期内可能仍会较多地使用广告工具。这种分化的投放行为确实可能对平台的流量分配产生影响。</p>
+<p><b>OTA平台自身的补贴政策（例如发放折扣券）近期有何变化？这些变化对商家有何影响？</b></p>
+<p>平台补贴依然存在，例如折扣券、打包价等形式。但关键的变化在于补贴的发放权限。以往，平台方可能会为了与其他渠道竞争或在特定时间段吸引流量，在不征求商家同意的情况下，直接通过后台强制性地为商家发放折扣券或进行补贴，这有时会导致商家在客流量已经很高的情况下收益受损。根据新规，这类补贴的发放权限已经下放给商家，与广告投放权限类似，由商家根据自身的流量和经营状况自主决定是否参与以及何时参与，平台不再进行强制性操作。</p>
+<p><b>在新的平台政策下，商家是否会减少补贴投入？如果补贴权限交由商家掌握，他们更倾向于直接降价还是继续提供补贴？</b></p>
+<p>从运营角度看，商家可能会减少补贴投入。如果商家掌握补贴权限，他们更可能选择直接降价而非提供补贴。原因在于，若以高价进行补贴，商家不仅需要承担补贴费用，还要按照补贴前的较高价格向平台支付佣金。例如，一个售价300元的房间，提供20元补贴，商家需要承担部分补贴成本，同时仍按300元的价格基数支付佣金。相比之下，直接将价格降至280元，则无需承担这部分佣金成本，因此商家更倾向于直接降价。</p>
+<p><b>携程推出新政策后，美团、飞猪等其他平台是否会跟进类似的分配机制和权重调整？这对整个酒店行业的供给端，尤其是单体酒店，会产生怎样的影响？</b></p>
+<p>其他平台如美团、飞猪大概率会跟进调整。作为行业龙头，携程的新政将引导市场趋势，其他平台若不改变，其获客能力和渠道可能会被携程抢占。</p>
+<p>这一系列变化将对酒店供给端产生洗牌效应，核心是引导酒店提升品质。过去依赖烧钱补贴获客的模式将不再有效，迫使酒店，特别是大量单体酒店，必须通过提升自身品质来吸引客户。对于原本品质较好但投入营销费用不多的酒店而言，这是一个利好，因为它们可以在成本下降且恶意竞争减少的环境中获得更多流量。反之，品质较差的单体酒店若想继续生存，则必须增加投资以提升品质，这实际上也提高了其综合获客成本。</p>
+<p><b>在新的竞争格局下，连锁酒店集团与单体酒店相比，是相对受益还是受损？</b></p>
+<p>从连锁酒店集团的角度看，整体上是占有优势并受益的。首先，连锁酒店的主要客源并非完全依赖携程等OTA平台，因此受平台政策变动的影响相对较小。其次，从短期来看，新政策带来了运营成本的下降，例如佣金率可能从12%降至10%，这符合当前行业降本增效的趋势。在整个行业净收益普遍下降的背景下，当无法有效开源时，降低成本成为首要选择。因此，短期内成本的下降对连锁酒店是明确的利好。</p>
+<p><b>平台政策调整对酒店行业的整体价格趋势和品质导向有何影响？</b></p>
+<p>理论上，酒店行业的整体价格会趋于回升，行业将更加注重品质建设。新政策下，高品质的酒店能以更低的成本获得更多流量，而那些不愿意投入资金提升品质的酒店将被市场淘汰。这会促使整个行业向提升品质和价格的方向发展。短期来看，这是一个明确的走向。但从长期看，实际的成本是增加还是下降，仍需持续观察。</p>
+<p><b>市场需要多长时间来观察和适应这项新政策，从而判断其对平台佣金率和广告收入的最终影响？</b></p>
+<p>市场至少需要一个季度的时间来进行观察和评估。一个完整的季度能够覆盖淡季（如9月）和旺季（如国庆所在的10月），从而可以更全面、均衡地评估新政策带来的影响。目前，由于政策刚刚推出，各方都处于摸索和观望阶段，正在密切观察流量变化以及新政策对酒店的实际扶持效果。因此，现阶段很难对携程最终的佣金率、广告收入以及平台补贴变化等综合影响做出准确定位。</p>
+</div>
+</main>
+</body></html>

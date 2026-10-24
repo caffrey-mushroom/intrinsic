@@ -1,0 +1,260 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.12 | GP | Networking | CDN &amp; Edge AI: Cloudflare, Akamai, Fastly</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.12 | GP | Networking | CDN &amp; Edge AI: Cloudflare, Akamai, Fastly</h1>
+<p class="orig">原标题：CDN and Edge AI: October 2026 Channel Partner on Cloudflare, Akamai, and Fastly</p>
+<p class="tags">#networking #security #cloud</p>
+<p class="meta">GuidePoint · 2026-10-12</p>
+<div class="body">
+<p>Associated:</p>
+<p>NET</p>
+<p>AKAM</p>
+<p>FSLY</p>
+<p>Viewpoint:</p>
+<p>Industry Consultant</p>
+<p>Moderator: David Guo (DG)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Oct 12, 2026</td><td>23 Min Read</td></tr></tbody></table></div>
+<p>Alpesh Shah (AS), Vice President of Security Strategic Alliance - Myriad360</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The discussion assessed Cloudflare’s third-quarter 2026 channel performance, fourth-quarter outlook, AI gateway adoption, zero- trust positioning, and broader competition in CDN, edge computing, and agentic AI security.</p>
+<p>Cloudflare’s third-quarter bookings were described as roughly flat, reflecting delayed purchasing decisions and shifting customer priorities rather than lost business. Momentum and pipeline activity improved entering the fourth quarter, supporting a healthy full- year outlook.</p>
+<p>Enterprise security budgets are increasingly focused on governing AI agents, machine communication protocols, access permissions, rogue behavior, and token consumption. However, adoption remains early, pricing models lack consistency, and customers are overwhelmed by rapid product launches.</p>
+<p>Key Insights</p>
+<p>The expert expects Cloudflare’s annual business to remain healthy despite third-quarter deceleration. Agentic AI poses a more immediate concern than frontier models because agents can obtain broad access and act autonomously within enterprise environments. Cloudflare’s AI gateway is viewed as technically promising, but customer response remains limited and its control capabilities require further maturity. AI-native startups currently offer faster deployment and quicker value than large platforms. This prompted substantial follow-up discussion about their competitive impact. Startup durability is uncertain. Customers may eventually consolidate with broad platforms to reduce dashboard complexity. Cloudflare has notable advantages in global reach, threat intelligence, difficult international markets, and reduced outbound data-transfer costs. Identity security remains a significant portfolio gap. The expert suggested an acquisition could accelerate Cloudflare’s position. Demand for bot visibility and content-scraping controls is strengthening, particularly among media customers.</p>
+<p>Competitive Landscape</p>
+<p>10/13/2026 at 04:09 AM UTC</p>
+<p>Company or group</p>
+<p>Positioning and advantages</p>
+<p>Challenges</p>
+<p>Cloudflare</p>
+<p>Strong global edge footprint, traffic visibility, zero-trust controls, channel strategy, and favorable data-transfer economics</p>
+<p>Early AI gateway adoption and limited identity-security capability</p>
+<p>AI-native startups</p>
+<p>Faster deployment, specialized agent governance, and token-usage monitoring</p>
+<p>Long-term viability and renewal retention remain uncertain</p>
+<p>Palo Alto Networks</p>
+<p>Strong fit for customers already using its firewalls and centralized management</p>
+<p>Less compelling where Cloudflare’s edge or developer platform is established</p>
+<p>Okta</p>
+<p>Considered a leader in identity, non-human identity, and agent security architecture</p>
+<p>Focused more narrowly on identity</p>
+<p>AWS, Microsoft Azure, Google Cloud</p>
+<p>Deep cloud integration and broad ecosystems</p>
+<p>Outbound traffic charges and less global threat visibility</p>
+<p>Fastly and Akamai</p>
+<p>Established CDN and edge competitors</p>
+<p>Weaker channel visibility and maturity than Cloudflare</p>
+<p>Quantitative Insights</p>
+<p>Metric</p>
+<p>Detail</p>
+<p>Third-quarter 2026 growth</p>
+<p>Approximately flat; business was retained but did not expand meaningfully</p>
+<p>Prior tracked growth</p>
+<p>Roughly 15% to 20%</p>
+<p>Full-year growth outlook</p>
+<p>Approximately 15%, with modest variability</p>
+<p>Cloudflare edge footprint</p>
+<p>More than 325 points of presence</p>
+<p>Estimated internet traffic visibility</p>
+<p>About 21% of global traffic</p>
+<p>Startup renewal decision window</p>
+<p>Approximately 12 to 24 months</p>
+<p>Cloudflare channel transition</p>
+<p>Announced roughly 2.5 years earlier</p>
+<p>Workforce reduction timing</p>
+<p>Approximately four to five months before the discussion</p>
+<p>DG: Hello everyone, this is David from Guidepoint. I will be your moderator today. On the phone with us today is Alpesh Shah, and our discussion today will be around Cloudflare's third quarter '26 business trends and the broader CDN and edge market, including the generative AI security and AI gateway adoption. So thanks, Alpesh, for joining us. Why don't you give us a brief introduction to your background to start with?</p>
+<p>10/13/2026 at 04:09 AM UTC</p>
+<p>AS: Absolutely. Good morning, everyone. My name is Alpesh Shah. I run the cybersecurity strategic and alliances team at Miria 360 that allows me to define the go-to-market strategy, identifying the right alliances, partners, and vendors to work with and work with clients, and also help to enable the internal engineering and sales team. So happy to answer any questions regarding any specific for Cloudflare related as well as any other enterprise cybersecurity vendors.</p>
+<p>DG: Great. And then just a quick disclaimer. Please leave the discussions to your own observation in the industry. Don't share any material non-public information about any public companies, including early product roadmaps, earnings figures, or confidential customer contract terms. Okay. Right, and then for the audience, if you have anything you want to add to the conversation, please send them to ask@guidepoint.com and we'll get your question in. So Alpesh, I think last quarter we were tracking the Cloudflare growth of roughly 15% to 20% in the book. So how did the third quarter '26 booking land so far? And then you can just walk us through some of the drivers behind the current growth rate.</p>
+<p>AS: Still, if you were to compare between Q3, which is ending September, versus the Q2, I would say it's pretty much flat from a growth perspective. So we have not lost any business, but we haven't gained any significant business either. But starting into Q4, I think the momentum has picked up a little bit. The pipeline is looking pretty healthy as well for Cloudflare from a perspective. So that's where we are overall. The Cloudflare business is healthy for us from a year-over-year perspective. It's not concerning at all and a very healthy business.</p>
+<p>DG: Understood. So it sounds like it was a deceleration then. It's a quarter, as in it's flat year over year, right?</p>
+<p>AS: Yeah, the Q3 is flat, yeah.</p>
+<p>DG: Was that sort of like a surprise to you? Because previously we're tracking like these 15% to 20% growth on a year- over-year basis.</p>
+<p>AS: I wouldn't call it surprised me because I think sometimes in the industry things do go as planned and sometimes it does not for various reasons because the clients probably are evaluating multiple vendors, so they haven't decided which vendors to go with. Sometimes the business priorities change so that can push off the deal to a different quarter. So many reasons go into play from a growth perspective or closing the business into specific quarter. So I'm not super surprised because Q4 is always, I would say, pretty aggressive and healthy for us compared to any other quarters in the entire year. So we are hoping to close a decent amount of business in Q4.</p>
+<p>DG: Understood. Okay, so speaking of Q4, what is your current projection of the year-over-year growth?</p>
+<p>AS: Yeah, around 15%. If you were to ask me year over year, so if I were to project my entire year, 2026 versus 2025 for Cloudflare, I would be 15 points plus minus, I will end up over there.</p>
+<p>DG: Okay. I think you said previously that the frontier model's vulnerability was the fears that pushed clients to set aside more security budget, but now trying to spend it. How much of the money started to turn into signing the deals and then gaining momentum into the end of the year?</p>
+<p>AS: So 1 thing that I want to be very transparent about is that we don't see any direct... yes, the frontier models are driving a lot of fear, a lot of uncertainty and a lot of unknowns for clients to spend or allocate more money for the budget. Has everybody started spending towards that? Probably the answer is no, because the 1 major thing I think that we are seeing not related to the frontier model but related to the agents and the agentic AI security is probably driving a lot more fear than the frontier models because they both are sort of correlated because agents have gained tons of capability and also gained tons of access within the environment and if that is coupled with the frontier model</p>
+<p>10/13/2026 at 04:09 AM UTC</p>
+<p>it can really create a lot of challenges for the client. What we are seeing right now is that because of agentic AI security behavior or rogue agent behavior, clients are really looking to spend more money into governance part of agentic AI security, which is the most important thing to understand, what sort of agents, what sort of MCP servers are being run in my environment, who has access to that, what kind of access they have, and how can we monitor and prevent any sort of a rogue agent access in the environment. So that is where I think majority of the clients are really paying attention and also allocating budgets toward that part of the domain.</p>
+<p>DG: Got it. Okay. And I think one of the major changes for the entire enterprise industry is that everyone is moving the larger deals toward the pools of funds and then the consumption-based contracts, including Cloudflare. So how are your clients reacting to that change? And how does it change the way that you scope or quote? What's the forecast of renewals?</p>
+<p>AS: So one thing I think is very clear and very evident in the industry right now is that the pricing model is varying in various factors. Like, some are putting the pricing based on the number of users, some based on the number of tokens, some based on the number of utilization. So it's all over the place. I think there is no standardization across the industry, unfortunately, right now. So we are hoping that 2027 will bring that sort of a maturity and standardization across the industry. Coming to Cloudflare on their token-based model or utilization model, we don't know how that is going to play out or not. Right now, I don't... we haven't seen any kind of client making any fuss about it or any kind of an adverse reaction to that so far. But still, it is early days. If you ask me to make any kind of an educative decision about what would happen and what would not happen, correct? In fact, next week, I'm heading to the Cloudflare Connect Summit and we are one of the vendors sponsoring the event as well. And I have a lot of executive meetings lined up to really get some more understanding from the Cloudflare management team what they are seeing across the board. But so far, no either positive or negative thing that we are seeing from the client.</p>
+<p>DG: Understood. Okay. I think they also, one of the incremental during the quarter was that Cloudflare launched their Identity-Aware AI gateway in August, which AS: Yes.</p>
+<p>DG: ties, yeah, each of the AI requests to users. What's the initial feedback and reaction for that?</p>
+<p>AS: I'm very aware of it that the agentic AI gateway capability that released sometime in August, because I'm part of a partner advisory meeting as a partner advisory council with Cloudflare. I have a lot more other information I receive that as well. So far, I don't think we have seen any kind of very excitement from any of the clients yet, but that could be coupled with many things because what is happening in this industry right now is that things are moving so fast at a pace which is sort of impossible for people to take a grasp of it. 1 day is Cloudflare, second day is CrowdStrike, third day is Palo Alto and then so many other disruptive vendors are coming so the noise is so much right now which has really taken over and that is where I think the industry as a whole is struggling if you ask me like which particular vendor to standardize and why and what particular product to really focus from that within the vendor. Yes, Cloudflare has released that agentic AI gateway capability for looking at all the MCP communications and identify the rogue communications and whatnot but since then there's a lot more other information has also come from the frontier model so keeping up with everything is just becoming very unscalable from a capability perspective so far nothing from any client that we work with. I'm personally excited about Cloudflare product because I like it technically is very sound but from the industry we haven't seen any sort of a positive or negative signals yet.</p>
+<p>DG: Got it. Because I think, you know, last time you said that the capability was also in the early stage of development. You said that the Cloudflare could see the agent traffic but has not been able to control it. How has that changed over the past quarter and what kind of clients actually enforce the control today and then from what standpoint is Cloudflare closing the gap there?</p>
+<p>10/13/2026 at 04:09 AM UTC</p>
+<p>AS: Yeah, so I will have a lot more. Unfortunately, I haven't spoken to Cloudflare probably in the last month or so regarding the technical capabilities. So that is why I am going to be in front of them on Monday and Tuesday of next week to get some more clarity and understanding from a product roadmap perspective and a maturity point of view. So right now, I just don't have a lot more data point to share with you, unfortunately. You know, like any other vendor, Cloudflare also has to get mature very fast, correct? But 1 thing I will share with you that in last quarter or so, we do have positioned and sold successfully some of the more disruptive vendors in the same space with many clients because what we have realized is that the newer vendors who are very organic and they just come out of this new space completely, they probably initially get a little bit edge over the enterprise vendors like Cloudflare and some other big names out there in monitoring and controlling the agentic AI traffic, agentic AI security and whatnot. So some of those new disruptive vendors have gained some business in many client spaces that we are working with. So I wanted to share with you and your audience with some other data points around that.</p>
+<p>DG: Oh, yes, please go ahead.</p>
+<p>AS: Yeah, so that's what I'm saying. So some of the newer names, for example, like Noma Security or Onyx Security or things like that. Those are the couple of names that I have seen who have gained some business in the market space because they are very disruptive in the agentic AI security space to begin with. And they are born out of that space to begin with, correct? So we are seeing some successful business close with those vendors and there are a few more names out there, for example, like Quiller is another name out there which is gaining a lot more momentum and we are seeing a good amount of pipeline with them as well. So when it comes to agentic AI security, 1 thing I want to share with you and the audience here is that some of the newer disruptive vendors are definitely very faster to the market. Their time to value after installing and configuring the product is faster than other enterprise vendors. So those are some early signals that we are seeing right now in the market, and enterprise vendors are acquiring some new startups or maybe they are having organic growth on their own, but they still have a lot to catch up compared to the disruptive vendors, specifically in the agentic AI security.</p>
+<p>DG: Understood. I think that's a really interesting dynamic to see all the startups starting to catch up. And I think other major competitors like Fastly and Akamai are also part of the conversation, and they have posted really strong growth over the past quarter. So have either of those been showing up more in your deals now?</p>
+<p>AS: So one thing I would be also very transparent about is that Fastly is not as channel and partner-friendly a vendor compared to Cloudflare. So Cloudflare announced about 2 and a half years ago that they are going to completely channel first or 100% channel motion down the road, and we are seeing that they are in that direction, they are adopting that motion. Fastly, we are not seeing that, and same is with Akamai. Akamai is working toward the channel program and channel-first kind of a thing, but they are not 100% there yet. So because of that, no channel strategy or no channel maturity, we are not seeing a lot more visibility into that part of the business.</p>
+<p>DG: Understood. Okay. I think you mentioned that the token spending is becoming a major problem. And can you just walk us through how clients are trying to control their model costs today and then which tools they're evaluating and then how Cloudflare is sort of standing against the new AI security startups?</p>
+<p>AS: Yeah, so I think the token spending has definitely become a major problem for every organization that's out there. No one realized how fast the token gets utilized, and at the end of the month, end of the year, you see a very huge bill. So to solve that, I think some of the newer vendors, as I mentioned, they are including that tokenization or token economics or tokenomics... whatever the new term they use... to provide the overall picture of the usage of the tokens in the organization. So not only the agentic AI security, but they are also having a module to see the picture of the usage and utilization of the tokens. So some of those vendors I mentioned, they didn't have those solutions to begin with, but now they are adding that as a line item, that we will also help you to visualize the amount of tokens being used in your organization and who is using how many tokens, etc. I believe Cloudflare is also having that product</p>
+<p>10/13/2026 at 04:09 AM UTC</p>
+<p>coming out as well, or already came out because I haven't seen that announcement at least to my inbox. But that is something we are seeing other platform vendors, for example, like Palo Alto and CrowdStrike, are also going to announce some of those tokenomics SKUs as well to help the client. So, again, as I mentioned earlier, the industry is moving super fast. This was not a problem 2 months ago. Now, all of a sudden, it has become a problem. So everybody is coming out with a new release of the product to help the organizations to look at the economics. Disruptive vendors are already providing that. I think I spoke to another stealth startup who just came out probably 2 months ago, a company called Dante Security, and they also have that module to begin with. Harmonic Security is another one. I mean, the name goes on. There are so many organizations and vendors out there who are really providing these solutions across the board. Now, one thing I want to be also very cautious when I make those comments is that, yes, those disruptive startup vendors are providing and they're probably faster than the enterprise vendors like Cloudflare or Palo or CrowdStrike, but how many of them will survive tomorrow is going to be a very, very big challenge because there is so much out there for everyone to grab and many, many clients out there who are looking for more of a platform approach than a best of the breed so maybe in the beginning they are adopting a best of the breed approach because the platform vendors do not have the mature solution right now and everybody needs to have some sort of a security or tokenomics so they are going with disruptive vendors but if the renewal comes in next 12, 18, 24 months, will they continue with them or they will go with the platform vendor like Cloudflare or other out there is a question that remains in front of us. How that will change, what will happen, we do not know, but we are seeing the clients are getting very overwhelmed with the best of the breed with too many dashboards so maybe eventually they might use some sort of an AI to view everything together to provide a single sort of a pane of glass and dashboard or they might just go with a platform vendors where everything is baked in so there's a lot happening it's a long-winded answer unfortunately but that's what we are seeing right now in the industry.</p>
+<p>DG: Got it. Okay. So I guess, you know, when clients are comparing, if they're interested in or are agents on Cloudflare versus the hyperscalers—AWS, Azure, and Google—which workflows go to Cloudflare versus stay with the hyperscalers, and what's the deciding factor for this comparison?</p>
+<p>AS: So when it compares to Cloudflare with others, I think the advantage what I personally feel that Cloudflare has over the others is because their security and their point of presence across the globe... I mean 325 plus or whatever the new number is at, the number of POPs—that really gives them a very strong advantage over the other hyperscalers, number one thing. So number two, the amount of traffic they see across the globe, which is I believe 21% of the global traffic that they have the visibility into. So that helps them with tons of threat intelligence, which is something other hyperscalers do not have. So that can be an added advantage that Cloudflare has. And the third thing, many of our global clients who are looking for a zero trust capability, for example, where they have offices in some of the Asia Pacific countries like China, for example, or maybe Russia or some other countries where it's not easy to do business from a US perspective—in those countries, Cloudflare is able to provide a lot more granular policy control, a lot more faster throughput for the traffic, and in those instances, Cloudflare is definitely winning the market compared to any other security vendors or hyperscalers. And the fourth one that I would say is that hyperscalers like Google, like AWS, like Azure, they all charge for outbound traffic leaving their cloud. Well, if you look at the workers platform from Cloudflare, you don't see that kind of a bill coming from Cloudflare. So from an economic perspective, that is another advantage that is coming from Cloudflare. So if you put all those together, I personally feel Cloudflare is winning in those areas.</p>
+<p>DG: Understood. Okay. So I guess, you know, last time you said that the data protection, the software-defined wide- area network, and then the identity as the Cloudflare One, the 3 gaps. So like which has improved since the summer, and which ones still cost you the deal?</p>
+<p>AS: So from an identity security, which is the biggest area from any client that we are seeing right now, okay, where momentum is picking up to spend more money on the identity and agentic AI security. From that perspective, I don't</p>
+<p>10/13/2026 at 04:09 AM UTC</p>
+<p>believe Cloudflare has released any product yet that I am aware of. And that is another area of conversations that I will have at Cloudflare Connect Summit next week in San Francisco. There are other players, for example, like Okta is improving by day in a very drastic manner for agentic AI security, overall identity security, and non-human identity. And they have released some of the biggest reference architecture and they also announced some sort of a partnership with many vendors together to build something the industry can digest, industry can accept. So Okta is leading the pack from that perspective, but when it comes to Cloudflare for any identity security, we have yet to see which could be a substantial player in the market. But I would say that probably could be good for Cloudflare because certainly, I don't see Cloudflare developing something on their own organically for identity security. So acquiring a sort of a disruptive startup in that space that can help them gain the advantage and gain the market share could be a good move for Cloudflare. But that's just me, you know, seeing from outside in for Cloudflare.</p>
+<p>DG: Understood. Okay. I think when clients are, you know, last quarter, you said that none of your clients were engaging with the pay-per-crawl or content licensing. Like how has that changed with Cloudflare's OpenAI research pilot or its AI search visibility tools that just launched, especially for your media clients?</p>
+<p>AS: You mean for the media clients like looking at the bot traffic who are, you know, scraping the websites and stealing some of the information?</p>
+<p>DG: Yeah, correct.</p>
+<p>AS: Okay. That area is definitely picking up the conversations because I think Cloudflare or maybe some other industry vendor released some of the report where the bot traffic is gaining more and more on the internet. So as the bot traffic gains the traffic momentum and tokenomics come into play, if you couple that together, I think the solutions from Cloudflare, which is probably unique by itself because no other vendor that I know of provide the kind of bot visibility and bot traffic scraping solutions out there. So media clients are definitely asking us looking into it. The pipeline that we have strong today is probably some of the mixture of that as well. So how much we have closed, it's difficult to say that the majority of the business that we have closed is coming from the bot scraping solutions from Cloudflare, but clients are asking about that and the momentum is picking up around the bot traffic visibility.</p>
+<p>DG: Got it. Okay. So I think going back to the Cloudflare One and the competitive positioning, like you're also a Palo Alto Diamond partner. So how do you decide whether to pitch the Cloudflare next to the Prisma Access or how would you compare the two?</p>
+<p>AS: Yeah, that's a very good question. So many other parameters go into play like why we should pitch Cloudflare or Palo Alto or maybe other XYZ tools. Many things. 1, what are the main use cases the client is trying to solve? Because the number 1 thing is the use cases. These are use cases, for example, as I mentioned, that they have global presence and they're looking to have a granular policy control for some of the very challenging countries like China, Russia and other countries to have... that's where they have the office and that's where they want to deploy the zero trust solution. Then Cloudflare becomes a very natural point of conversation during that time. However, if the use cases are, for example, "Hey, I already have Palo Alto firewalls within my 10 to 15 different offices, we are looking to retire some of the GlobalProtect VPN solutions," and in those cases, Palo Alto Prisma Access becomes a very natural conversation because you are already living and breathing the Palo Alto platform. You are familiar with it and having a Strata Cloud Manager (SCM) from Palo Alto will give you an added advantage to monitor and control all the policies from a single dashboard. That's probably where Palo Alto will be a preferred choice compared to Cloudflare. And then sometimes like we also ask, "Hey, do you already have some cloud presence and some cloud DevOps that you are looking into and you are using Cloudflare CDN in some capacity?" Then let's explore the solutions from Cloudflare where you can couple the Cloudflare workers platform along with the zero trust, then that can give you a lot more advantage from security perspective, as well as the economy perspective, correct? So again, it's depending on the use cases, we come up with the right suggestions and product recommendations to the clients.</p>
+<p>10/13/2026 at 04:09 AM UTC</p>
+<p>DG: Got it. Okay. So I guess, you know, for your business and your communication with Cloudflare, you said that the partner support was returned back to normal after their workforce cut. So what concrete changes has the partner channels for you after that? And anything that you want to highlight because of the impact from that workforce cut?</p>
+<p>AS: Yeah, so when the workforce reduction happened, I don't know, maybe 4 or 5 months ago now, I believe, so initially, the support has dipped because suddenly it happens. But because I have the relationship and the connections with the management, it helped me to understand what they are doing and how are they going to do it. So since then, yes, we do have a dedicated support now from a channel perspective. Now, from a general perspective, we do speak on a regular cadence, you know, from what business activities we have to do to grow the business, et cetera. And so certainly we are getting the support. They are also giving us a lot more marketing support as well to grow the business. So yes, it has changed. Now we do have a dedicated support from Cloudflare to grow the business together.</p>
+<p>DG: Understood. Okay. Any previews you want to highlight for the Cloudflare Connect next week?</p>
+<p>AS: Nothing much. I mean, I'm also very excited for the Cloudflare Connect conference. If you ask me, I'm super excited to see what it brings, what new announcement, what exciting product that they might be released, etc. And more importantly, I'm very excited to see some of the executive management over there to have in-person meeting to talk about some of the activities to grow the business and win the business together. So that's what I'm looking forward to. You know, in this day and age of digital communications like Zoom and whatnot, meeting face to face and developing the strategy and go to market can help you to grow the business further. So that's what I'm excited about. And then whatever the new things come out from the summit.</p>
+<p>DG: Okay, that's great. I think those are all the questions that I have for you today. Thanks so much for this discussion. Let's stay connected because we have more follow-up calls around Cloudflare and also the AI security market, okay?</p>
+<p>AS: Sounds good. Thanks. Have a good day. Bye. Okay, bye.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>10/13/2026 at 04:09 AM UTC</p>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,179 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.18 | AC | LLM | Anthropic Hits Profitability Early: Margin Math</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.18 | AC | LLM | Anthropic Hits Profitability Early: Margin Math</h1>
+<p class="orig">原标题：Anthropic的盈利目标达成：C端封号效益凸显 _  毛利率增长惊人 _ 新加坡据点成立 _ 达标口径的换算逻辑分析 _ 问题的主体已经发生了换位</p>
+<p class="tags">#llm</p>
+<p class="meta">AceCamp · 2026-10-18 · article 70568141</p>
+<div class="body">
+<h2>摘要</h2>
+<p>1、市场都知道Anthropic能在26年实现全年盈利转正，只不过没想到在26Q3就完成了这个目标，速度比预期更快。但是，符合其IPO阶段需要强有力信息来压制舆情、给投资者信心的诉求2、另外，此次发布数据的口径、调整说明并为具体给出，还需要审视其计算逻辑，例如是否存在分成双算、训练成本的划分等，都对于计算数据存在一个较大的潜在的影响3、结合其26年Q3的全年ARR接近800亿美元的数据，实际上的总营收仅有330亿美元左右，以3/4的比例来算，相差接近270亿美元，尽管年底有冲刺但是差距更不用说。这种数据对于Open AI来讲或者业内的ARR数据来讲，是一个较大的负面影响，即真实完成率与ARR之间存在40%～50%的差距4、Anthropic的新加坡办事处成立，剑指东南亚一带明确。主要是全球人均消耗第二的水平，是强有力的市场保障</p>
+<h2>1、背景</h2>
+<p><b>根据近期最新市场消息显示，Anthropic PBC告诉潜在投资者，Anthropic的第三季度营收达到168亿美元，已实现正的自由现金流，调整后毛利率为85%，调整后营业利润率超过11%。公司最早将于2026年11月9日当周开始为其IPO正式进行市场推介，有望在感恩节前开始交易。并且，市场预计Anthropic最晚将在今年年底前上市。根据前期数据整合，目前Anthropic的2026年前三个季度的总营收为：</b></p>
+<p><b>47.3亿美元（Q1） + 115~116亿美元(Q2、首次实现调整后营业利润转正) + 168亿美元(调整后盈利、正现金流) ～= 330.3亿美元 ～ 331.3亿美元之间</b></p>
+<p><b>其中，Q2的环比增速是145%、Q3的环比增速是45%，增速在基数上涨之后，呈现下降的趋势，总量增长势头也有所变换</b></p>
+<p><b>另外，再来从其ARR的数据来看，Anthropic截止2026年09月24日，其公司层面ARR约768亿美元，按照9月底结束的Q3来看，以800亿美元的数据折算，全年的ARR的3/4位数，总营收应该在600亿美元左右，但是结果仅仅是331亿美元左右。尽管可能年底有一个较大的数据突破，即各大公司可能在年底进行业务冲刺，后半场的数据结果可能相当于上半年的数据结果有一个梯度；但是这个梯度在单季度中的差距不应该是270亿美元左右</b></p>
+<p><b>所以，模型厂商的ARR数据，与实际的当年营收数据之间，存在一个较大的gap，目前从Anthropic的表现来看，差距接近40%～50%，其他模型厂商的表现也不会有太大的区别，所以这个ARR指标数据，存在较大的泡沫可能性</b></p>
+<p><b>另外，值的注意的是，Anthropic的毛利率在近几年来有了较大的突破，即在2024年，由于推理成本高昂，Anthropic的毛利率为-94%；在2026年前半段，其毛利率已攀升至60%左右；目前，其调整后毛利率为85%</b></p>
+<p><b>总结而言，随着算力成本的降低、以及模型厂商的用户量增加、价格的变化以及用量的变化为企业带来了营收的实质性突破，尽管前段时间爆发了几大舆情，但是笔者认为短期内对于Anthropic的营收并没有太大影响，后续的影响可能是一个渐进的过程。并且，此次全年的扭亏为盈比市场的预期来的更早一些，在2026年Q2的单季度扭亏为盈是为后续的盈利目标打下基础，但是市场整体的预期并没有想象到能够在Q3季度实现11%的营业利润率，这种数据的转变来的比较迅猛，只不过这里面有几个核心的口径计算逻辑值得市场注意：</b></p>
+<p><b>1、公司对外的是调整后的数据报告，但是调整范围的不透明：目前只是闭门投资者会口头披露，没有完整的调节reconciliation表。不知道有没有剔除法律、安全合规、销售费用、长期算力合同承诺相关的准备金等信息</b></p>
+<p><b>2、Anthropic的训练成本资本化vs费用化：即大模型训练是巨额投入。GAAP一般要求当期费用化；如果公司内部测算调整指标时，把训练成本资本化、多年摊销，会显著抬高当期调整后毛利</b></p>
+<p><b>3、大模型厂商一般依赖云厂商的渠道分销，这部分分销的分红或者提成的计算逻辑是否在营收中被剔除还是说进行了双算，细节并不清晰，也影响整体的结果</b></p>
+<p><b>最后，Anthropic在这个节骨眼放出这样的信息的，目的很明确：</b></p>
+<p><b>1、一方面也算是回应之前的市场舆情，在IPO阶段爆发的舆情需要有更强的信息来压制，给投资者足够的信心，以及撑起自身期望的估值</b></p>
+<p><b>2、再次塑造自身行业品牌影响，作为首个实现全年盈利的模型厂商，需要有足够的市场影响力和品牌影响力，上述数据是一个量化的证明</b></p>
+<h2>2、C端封号效益凸显</h2>
+<p><b>近期在用Claude、包括市场的整体反馈，有一个很显然的现象，即免费使用不会被封号，但是一旦充值20美元的服务，容易被封号，而是基本上是几万个号的大面积封锁。其实对于Anthropic的意图很明显，这种大面积的封号就是杜绝C端用户的薅羊毛。根据早期的市场测算，20美元的会员号，在满额度使用的情况下，对应API的价格会放大到9200美元，即放大了460倍，而且很多此类账号被用来拼单、中转站等，大面积封号也是其毛利率、营收贡献的一笔不少收入</b></p>
+<p><b>但是对于B端而言，一般是企业直签，以英伟达为例，员工基本直接使用Anthropic提供的Claude满血API，员工月度额度高达3～4万美元（近期又涨了），不仅仅是稳定性上，包括智能性上都有可靠保证。这也是Anthropic目前的逻辑，加大C端账号的封锁，保证B端服务供给的稳定性，Open AI也在走这条路，只不过Open AI现在封锁的力度并不是很大，核心是其还需要C端用户的数据来支撑企业数据，而Anthropic完全不care这个点</b></p>
+<p><b>所以，C端的大量封锁，一方面减少了蒸馏、用户薅羊毛的问题；另一方面提高了企业的API毛利率，也通过封号收获了一笔收益。</b></p>
+<p><b>但是，对于企业直签的B端而言，毫无影响。这种直接的多维度获益，也让Anthropic的封号力度、钓鱼执法力度加强。其实在国内，想使用满血版的Claude的模型，价格上可能已经并不亚于API的消费水平了，但是渠道仍然很受限，这种局面随着封锁的加强，会更加困难</b></p>
+<h2>3、Anthropic的新加坡据点成立</h2>
+<p><b>根据最新消息显示，Anthropic在近日宣布在新加坡设立办事处，并与新加坡数字发展及新闻部签署谅解备忘录。并且，其消费数据显示，新加坡的Claude人均使用量高达全球第二。从这个数据上来看，在新加坡已经沉淀大量高价值用户基础，并且，叠加与新加坡数字发展及新闻部签署AI安全谅解备忘录，笔者认为Anthropic的逻辑是借新加坡稳定、可预期的监管环境，拿到东南亚政企、金融行业的信任背书，来进一步拓展美国以外的海外市场</b></p>
+<p><b>另外，从客户结构上来看，东南亚金融、大型互联网集团可能有较强的付费意愿，会是属于Anthropic重点攻坚的高毛利B端客户。通过设立本地实体、组建区域销售与AI架构团队的方式，可以直接的面对客户，从而脱离远程线上服务模式。同时，新加坡主权基金GIC本身也是Anthropic重要投资方，落地本地办公室也具备资本层面协同价值</b></p>
+<p><b>最后，从竞争层面来看，Open AI、谷歌DeepMind早已布局过新加坡，Anthropic此时落子，也是抢占东南亚企业AI落地窗口期，争夺区域标准与客户资源。其站在IPO的时间窗口，东南亚的营收、ARR增量可进一步丰富投资者故事，证明营收增长具备跨区域复制能力，对冲北美市场增速放缓的担忧。换句话说，在用户付费质量高的地区，Anthropic一方面可以拓展出海增强市场的辐射力度，直接面对Open AI、谷歌等竞争选手；另一方面，公司的增长也离不开潜在的高价值用户，为了更好的拿到客户资源，需要在当地有面对面的对接方式，这是毋庸置疑的一步策略</b></p>
+<h2>4、总结</h2>
+<p><b>1、Anthropic在当前窗口期无论是是在新加坡的成立办事处，还是在当前时间点放出关键的，引起市场情绪的数据指标，本质上都是在为其接下来不长时间的IPO铺路。再加上之前市场或者友商都在集体爆发舆情，市场的情绪有所下降，Anthropic无论是为了这个市场，还是为了自身，都需要拿出可振奋的信息来刺激市场，完成自身的上市计划</b></p>
+<p><b>2、对于Anthropic的盈利数据和营收数据拆分来看，其中存在较多的不确定性、不明确性和巨大的GAP，例如其自身调整计算的策略，统计的口径等。但是，从截止Q3季度的营收总额和截止9月底的ARR数据来看，超过270亿美元的巨大差距，接近40%～50%的完成率，这种超预期与实际落地的效果对比，还是无法完全让市场相信其有足够的持续性、盈利能力。并且，结合未来的持续在算力方面的高投入，市场的担忧情绪完全可以理解</b></p>
+<p><b>3、尽管国外诸如Open AI、Anthropic、谷歌等厂商均在出海找市场，但是目前大模型在当前能力下缺的是用户自身的组织、场景、性价比的接受策略。随着市场的竞争加剧，使用者组织正在全面评估AI在各个环节的提效和稳定性表现，这已经不是AI模型厂商单方面能力不足的问题，而是市场的用户在审视自身与AI的协同问题和AI带来的价值问题。换句话说，市场的认知成熟度足够高的结果，是使用者会结合所处的环境来全面评估AI所带来的价值，以及真正的需要AI，这个问题严重影响B端消费者对于AI在未来的投入，和模型厂商在未来所面临的持续性问题，笔者一直在强调，即问题的主体已经发生了换位</b></p>
+</div>
+</main>
+</body></html>

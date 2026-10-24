@@ -1,0 +1,437 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.13 | 9K | Security | Security for AI Checks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.13 | 9K | Security | Security for AI Checks</h1>
+<p class="orig">原标题：Merit security for AI 调研(2026-10-13 11:00:00)</p>
+<p class="tags">#security #china</p>
+<p class="meta">Meritco 久谦 · 2026-10-13</p>
+<div class="body">
+<h2>音频信息</h2>
+<p>音频标题: 261013 - Merit security for AI 调研</p>
+<p>相关标的：undefined</p>
+<p>议题：</p>
+<p>完整音频链接：http://mw-meeting.oss-cn-shanghai.aliyuncs.com/audio/1791863944641-261013%2520-%2520Merit%2520security%2520for%2520AI%2520%25E8%25B0%2583%25E7%25A0%2594_20261013_115758.mp3</p>
+<h2>音频纪要总结</h2>
+<h2>AI安全行业专家访谈纪要</h2>
+<h2>1. AI智能体带来的安全需求变化</h2>
+<h3>a）从生成式AI转向生产环境中的AI智能体后，新增了哪些安全需求？</h3>
+<ul><li>传统生成式AI的安全重点主要包括：</li></ul>
+<ol><li>数据泄露防护；</li><li>提示词注入防护；</li><li>生成内容过滤。</li></ol>
+<ul><li>当AI进入智能体阶段后，安全防护重点由“保护提示词和响应内容”扩展至“保障自主操作全过程安全”，新增需求主要包括：</li></ul>
+<ol><li>机器身份与智能体身份管理；</li><li>API访问安全；</li><li>凭证保护；</li><li>工具调用安全；</li><li>智能体执行过程保护；</li><li>智能体之间的通信安全；</li><li>授权管理与最小权限控制；</li><li>持续监控及可审计性。</li></ol>
+<ul><li>相比基础聊天机器人交互，复杂程度适中的智能体工作流可能使安全决策点增加约5至10倍。</li><li>上述5至10倍为基于系统架构作出的估算，并非全市场范围的实测数据。</li><li>新增支出将主要集中在运行时保护、智能体身份管理、授权和持续监控。企业只有具备这些安全能力后，才会允许智能体在生产环境中独立运行。</li></ul>
+<h3>b）哪些AI安全能力最容易获得预算？</h3>
+<ul><li>更容易获得预算的功能包括：</li></ul>
+<ol><li>敏感数据保护；</li><li>智能体身份管理；</li><li>访问控制与最小权限管理；</li><li>提示词注入防护；</li><li>运行时监控；</li><li>行为审计与可追溯性。</li></ol>
+<ul><li>最强劲的增量支出机会预计来自自主智能体保护，尤其是能够访问敏感系统、客户数据或自主执行操作的智能体。</li><li>相比单纯的聊天机器人内容过滤，涉及交易、流程执行和系统权限的智能体更容易获得新增安全预算。</li></ul>
+<h2>2. AI安全预算来源与支出增长</h2>
+<h3>a）目前AI安全预算主要由安全部门还是业务部门承担？</h3>
+<ul><li>当前大部分AI安全支出仍来自CISO管理的安全预算，尤其是以下领域：</li></ul>
+<ol><li>数据保护；</li><li>威胁防护；</li><li>合规；</li><li>运行时安全。</li></ol>
+<ul><li>CIO、CTO以及实际部署AI应用的业务部门正在越来越多地参与共同出资。</li><li>通常情况下，业务部门负责提出和建设AI用例，安全部门负责制定审批条件并决定是否允许上线。</li><li>在银行、抵押贷款等金融服务场景中，如果AI智能体需要访问客户财务记录或执行交易，必须获得安全部门审批后才能投入生产。</li><li>最终CISO通常拥有否决权。当安全成为AI应用上线前的最后一道障碍时，解决方案既可能由CISO预算支付，也可能由业务部门负责人出资。</li></ul>
+<h3>b）AI安全支出更可能来自新增预算，还是现有预算重新分配？</h3>
+<ul><li>目前新增预算、预算重分配和供应商替换3种情况均存在。</li><li>短期内，绝大部分AI安全支出仍来自现有网络安全和IT预算。</li><li>企业初期通常会从传统应用安全、DLP和云安全等预算中重新分配资金。</li><li>随着AI智能体进入生产环境、访问敏感数据并执行交易，新增安全要求将为追加预算提供依据，因此新增预算正逐渐增多。</li></ul>
+<h3>c）为什么AI安全需求增长快于实际支出增长？</h3>
+<ul><li>AI工作负载可能增长至原来的5倍，但企业不会按照相同比例增加安全预算。</li><li>企业会通过以下方式控制净新增支出：</li></ul>
+<ol><li>利用既有许可证；</li><li>协商批量折扣；</li><li>整合安全供应商；</li><li>将AI安全能力纳入现有云平台合同；</li><li>复用原有应用安全、DLP和云安全能力。</li></ol>
+<ul><li>因此，AI安全产品的采用率和使用范围增长较快，但安全净新增支出增长相对温和。</li><li>新增预算最明确的机会集中在自主智能体保护、身份管理和云环境中的授权管理。</li></ul>
+<h2>3. 云原生安全与第三方独立厂商的竞争格局</h2>
+<h3>a）客户如何在云原生安全与独立安全厂商之间选择？</h3>
+<ul><li>当企业高度标准化地使用单一云平台时，云原生安全方案更具优势。</li><li>例如，以Microsoft为核心并使用Azure OpenAI、Entra、Defender和Purview的企业，选择原生安全方案可获得：</li></ul>
+<ol><li>更紧密的身份集成；</li><li>更便捷的部署；</li><li>集中式策略管理；</li><li>更低的增量采购成本。</li></ol>
+<ul><li>对于单一云环境中的基础提示词过滤和数据保护，原生安全能力通常已经足够。</li></ul>
+<h3>b）哪些场景下第三方独立厂商更具优势？</h3>
+<ul><li>在同时使用Azure、AWS、Google Cloud、Anthropic和内部托管模型的多云、异构环境中，第三方厂商更具吸引力。</li><li>Palo Alto Networks等第三方平台能够在不同云、模型和应用环境中提供统一的安全策略和可见性。</li><li>第三方厂商的差异化优势主要包括：</li></ul>
+<ol><li>高级AI红队测试；</li><li>智能体运行时保护；</li><li>跨平台资产发现；</li><li>专门化威胁检测；</li><li>多云环境中的一致策略；</li><li>跨云权限与执行控制。</li></ol>
+<ul><li>核心区别在于：原生厂商具备集成和成本优势，独立厂商具备跨平台覆盖广度、一致性和专业检测能力优势。</li><li>对于在多个环境中处理敏感数据和复杂权限的自主智能体，独立安全平台更容易证明其额外支出的合理性。</li></ul>
+<h3>c）云平台与第三方厂商合作时，客户如何签约和采购？</h3>
+<ul><li>市场上主要存在2种商业模式：</li></ul>
+<ol><li>客户直接与第三方安全厂商签约，由双方协商价格、容量和企业折扣；</li><li>客户通过Azure Marketplace或AWS Marketplace采购，由云服务商负责计费，第三方厂商仍可提供专属报价。</li></ol>
+<ul><li>云市场模式能够将交易计入客户现有的云支出承诺，从而简化采购流程、提高交易速度，并帮助第三方厂商触达大型企业客户。</li><li>该模式也会对第三方厂商形成一定压力：</li></ul>
+<ol><li>云服务商掌控市场和客户关系；</li><li>云服务商会收取交易费用；</li><li>云服务商也会通过自有原生安全产品参与竞争。</li></ol>
+<ul><li>云市场可以提高分销效率，但不一定提高第三方厂商的利润率或议价能力。</li><li>只有能够提供原生云工具难以复制的差异化防护能力，第三方厂商才能保持较强定价权。</li></ul>
+<h2>4. 新云厂商、AI安全初创公司与行业整合</h2>
+<h3>a）除头部云厂商外，哪些新云厂商正在提供安全能力？</h3>
+<ul><li>Microsoft、AWS和Google均已提供不同类型的AI安全产品。</li><li>Microsoft相关能力覆盖：</li></ul>
+<ol><li>Defender for Cloud；</li><li>AI威胁检测；</li><li>Purview数据保护和敏感信息管理；</li><li>Entra身份与访问管理；</li><li>Agent 365企业智能体管理与安全。</li></ol>
+<ul><li>CoreWeave、Lambda和Nebius等AI原生云厂商主要聚焦GPU基础设施和AI工作负载，并提供部分基础设施安全能力，包括：</li></ul>
+<ol><li>工作负载隔离；</li><li>加密；</li><li>身份管理；</li><li>跨平台管理。</li></ol>
+<ul><li>Fireworks AI、Together AI和Bastion等AI平台提供：</li></ul>
+<ol><li>安全模型托管；</li><li>私有化部署；</li><li>API服务；</li><li>身份验证；</li><li>企业访问控制。</li></ol>
+<ul><li>Lakera、Protect AI、HiddenLayer和Prompt Security等专业AI安全初创公司主要聚焦：</li></ul>
+<ol><li>提示词注入防御；</li><li>模型保护；</li><li>AI应用监控；</li><li>敏感数据泄露防护。</li></ol>
+<ul><li>小型AI云厂商通常提供基础设施层面的安全能力，专业AI安全供应商则在模型、应用和智能体运行时层面提供更深入的防护。</li></ul>
+<h3>b）单点AI安全厂商的生存空间是否会被压缩？</h3>
+<ul><li>仅提供1至2项AI安全功能的小型独立厂商将面临越来越大的竞争压力，主要风险是功能同质化。</li><li>如果厂商只提供提示词注入检测、基础智能体身份管理或API监控，大型平台可以将类似能力逐步整合进现有企业合同。</li><li>主要大型平台的竞争优势包括：</li></ul>
+<ol><li>Okta在身份生命周期管理和访问治理方面具有优势；</li><li>Palo Alto可以将AI运行时安全与网络安全、云安全和威胁情报结合；</li><li>Microsoft可以将身份、数据、办公软件、云服务及安全能力一体化；</li><li>CrowdStrike可基于终端和威胁情报能力向AI安全扩展。</li></ol>
+<ul><li>专业安全厂商不会完全消失，行业更可能出现持续整合。</li><li>大型平台也可能与专业厂商合作，而非自行开发所有高级安全能力。</li><li>在智能体授权、行为检测和自主威胁防御方面具有差异化技术的初创公司仍有发展机会，尤其是在复杂多环境场景中。</li><li>专业厂商的长期竞争壁垒必须来自经过实践验证的能力，例如：</li></ul>
+<ol><li>更高的检测效果；</li><li>更低的运行延迟；</li><li>更强的跨平台覆盖；</li><li>综合平台难以快速复制的专有能力。</li></ol>
+<ul><li>独立单点厂商将面临定价压力和市场份额挤压，领先专业厂商则可能成为收购标的，或扩展为覆盖更广的安全平台。</li></ul>
+<h2>5. Agent 365的购买驱动、产品定位与客户使用情况</h2>
+<h3>a）哪些需求最容易推动客户购买Agent 365？</h3>
+<ul><li>最明确的购买驱动因素是企业计划将AI智能体从试点环境投入生产环境。</li><li>当智能体需要访问以下资源时，安全需求尤其强烈：</li></ul>
+<ol><li>敏感企业数据；</li><li>Microsoft 365应用；</li><li>内部数据库；</li><li>客户财务记录；</li><li>内部业务流程和交易系统。</li></ol>
+<ul><li>金融服务行业最关注的问题包括：</li></ul>
+<ol><li>数据泄露；</li><li>未经授权的访问；</li><li>监管合规；</li><li>自主智能体行为的可见性与审计能力。</li></ol>
+<ul><li>Agent 365通过智能体清单、身份管理、治理和安全控制满足相关需求。</li><li>Purview负责数据保护，Defender用于发现恶意活动或已经遭入侵的智能体。</li><li>对已采用Microsoft 365、E3或E5，并希望扩大AI部署但不愿引入其他安全平台的客户，商业机会最为明确。</li><li>Agent 365与E5定位不同：</li></ul>
+<ol><li>Agent 365侧重智能体管理、治理和安全；</li><li>E5覆盖更广泛的企业安全与合规能力；</li><li>两者可以同时采购，但并非简单替代关系。</li></ol>
+<ul><li>最强烈的购买触发因素是安全团队明确要求：若缺少身份管理、最小权限、监控和审计能力，智能体将无法获得生产上线审批。</li></ul>
+<h3>b）购买AI安全产品的客户是否已经真正投入生产？</h3>
+<ul><li>当前客户主要分为2类：</li></ul>
+<ol><li>已在生产环境部署AI应用的组织，正在积极启用安全控制；</li><li>仍处于智能体试验阶段的组织，会在全面部署前提前采购相关能力。</li></ol>
+<ul><li>金融服务客户通常将安全视为AI应用能否投入生产的决定性条件。</li><li>当前实际使用最明显的能力包括：</li></ul>
+<ol><li>Purview敏感数据保护；</li><li>Entra身份和访问管理；</li><li>Defender威胁检测；</li><li>智能体活动监控和审计。</li></ol>
+<ul><li>采购许可证并不意味着客户已经使用全部功能。多数客户会先启用基础控制措施，再随AI工作负载进入生产环境逐步扩大使用范围。</li><li>预计未来几个季度，生产环境中的实际使用量增速将超过初始许可证采购量，特别是在客户由有限的Copilot应用转向与业务流程深度集成的自主智能体后。</li></ul>
+<h3>c）Agent 365整合原有功能后，能为客户带来哪些收益？</h3>
+<ul><li>Agent 365整合的首要价值是形成一致的安全和治理体系，其次是加快部署、简化采购和减少运营复杂度。</li><li>此前客户可能需要分别使用：</li></ul>
+<ol><li>Entra管理智能体身份；</li><li>Purview进行数据保护；</li><li>Defender进行威胁检测；</li><li>其他平台进行智能体开发和管理。</li></ol>
+<ul><li>整合后主要产生3方面收益：</li></ul>
+<ol><li>基于现有微软合作关系简化采购；</li><li>为安全团队提供集中化可见性，在不同智能体之间实施一致策略；</li><li>减少管理、集成和监控多个工具所需的人工投入。</li></ol>
+<ul><li>随着企业内部智能体数量从数十个增长至数千个，碎片化安全策略将形成明显运营风险。</li><li>整合平台的核心价值是帮助企业在不按比例增加人员的情况下扩大AI应用规模。</li><li>但整合不一定直接减少人员成本，也不意味着企业不再需要专业安全团队。</li></ul>
+<h3>d）Agent 365整合是否已经带来增量收入？</h3>
+<ul><li>整合能够带来增量收入，但短期最大机会是推动现有微软客户扩大安全产品采用范围，而非立即替换所有第三方厂商。</li><li>统一管理身份、数据保护、威胁检测和治理后，客户采购阻力降低，更容易扩大部署。</li><li>潜在收入来源包括：</li></ul>
+<ol><li>Agent 365订阅；</li><li>额外安全许可证；</li><li>Azure使用量；</li><li>更多受保护智能体和安全工作负载。</li></ol>
+<ul><li>仅提供基础智能体监控、身份可见性或与微软现有产品高度重叠能力的独立厂商，可能被部分替换。</li><li>在多云、自托管和异构环境中，微软整合优势会减弱，具体取决于第三方平台的集成深度和安全执行能力。</li><li>微软正在将Agent 365扩展至AWS、GCP及其他第三方平台，因此其多云能力并非消失，而是表现为：</li></ul>
+<ol><li>集中式可见性可以跨云扩展；</li><li>集成深度和安全执行能力因平台而异。</li></ol>
+<ul><li>微软预计将提高其在客户安全支出中的份额，但难以完全取代复杂环境中的专业安全厂商。</li><li>应重点关注的指标不只是Microsoft 365许可证销量，还包括：</li></ul>
+<ol><li>实际启用相关功能的客户数量；</li><li>每个客户受保护智能体的规模；</li><li>生产环境中的功能使用深度；</li><li>客户对现有合同的整合程度。</li></ol>
+<h2>6. AI安全产品定价模式与议价权</h2>
+<h3>a）订阅制和按使用量收费有什么区别？</h3>
+<ul><li>订阅制定价能够为客户提供更可预测的成本，适合企业预算管理。</li><li>按使用量定价会随实际工作负载、智能体交互、令牌数量和安全决策次数变化。</li><li>微软倾向于使用按用户订阅或按使用量收费，原因包括：</li></ul>
+<ol><li>企业客户重视预算可预测性；</li><li>微软已通过Microsoft 365建立成熟许可关系；</li><li>Azure AI和Copilot Studio天然适合按使用量变现。</li></ol>
+<h3>b）智能体数量增长、人工席位不变时，微软如何获得增量收入？</h3>
+<ul><li>微软并非完全依赖人工席位收费，增量收入可来自：</li></ul>
+<ol><li>为管理和治理智能体的员工提供Agent 365许可；</li><li>Azure AI服务按使用量收费；</li><li>Copilot Studio按智能体活动或使用量收费；</li><li>智能体交互和Azure基础设施使用增长；</li><li>附加安全功能和许可证扩容。</li></ol>
+<ul><li>即使员工人数保持不变，AI工作负载、智能体交互和安全检查量的增长仍可形成增量收入。</li></ul>
+<h3>c）未来是否会转向混合收费模式？</h3>
+<ul><li>预计未来将逐步形成混合收费模式：</li></ul>
+<ol><li>治理和管理能力按订阅收费；</li><li>智能体执行、安全检查和基础设施按使用量收费。</li></ol>
+<ul><li>转向混合模式的最大触发因素，是智能体活动增速显著高于员工人数增速。</li><li>当人工席位数量无法反映客户获得的价值和供应商实际服务成本时，按席位收费的重要性将下降。</li><li>短期内按席位模式不会消失，但未来几年，基于使用量、受保护工作负载和安全交易的收费占比将提升。</li></ul>
+<h3>d）主动咨询需求增强后，AI安全产品是否具备提价能力？</h3>
+<ul><li>随着企业在智能体上线前主动寻求安全防护，专业AI安全厂商的议价能力将增强。</li><li>需要区分单位价格和合同总价值：</li></ul>
+<ol><li>随着智能体数量、受检交易和安全功能增加，合同总价值预计上升；</li><li>单位价格可能保持不变甚至下降，原因是平台捆绑、规模折扣和市场竞争。</li></ol>
+<ul><li>定价能力最强的差异化能力包括：</li></ul>
+<ol><li>自主智能体保护；</li><li>智能体授权；</li><li>高级运行时保护；</li><li>跨云安全执行。</li></ol>
+<ul><li>单客户收入增长将主要由消费量增加和部署范围扩大推动，而不是持续提高单位价格。</li><li>例如，Palo Alto的AI网关在更高产品层级或更大消费量下，每10亿个token的单位价格会下降，体现了“合同总价值增长、单位价格下降”的并存关系。</li></ul>
+<h2>7. AI安全产品的成本结构与利润率</h2>
+<h3>a）令牌检查和授权决策的成本有何差异？</h3>
+<ul><li>令牌检查成本通常随流量增长而增加，尤其是供应商使用AI模型执行以下任务时：</li></ul>
+<ol><li>系统分析；</li><li>提示词注入检测；</li><li>数据泄露防护；</li><li>内容与行为风险识别。</li></ol>
+<ul><li>授权决策成本相对更低，因为多数授权判断可通过确定性策略引擎完成，无需每次调用大语言模型。</li><li>在同等防护水平下，基础设施总成本大致会随检查量增长。</li><li>随着规模扩大，供应商可以通过以下方式降低单位成本：</li></ul>
+<ol><li>模型优化；</li><li>批处理；</li><li>缓存；</li><li>使用更小型的专业检测模型；</li><li>采用确定性策略处理部分决策。</li></ol>
+<ul><li>因此，每100万token或每次授权决策的成本预计会逐步下降。</li></ul>
+<h3>b）AI安全产品稳态利润率可能达到什么水平？</h3>
+<ul><li>优化良好的AI安全平台，稳态毛利率预计约为70%至80%。</li><li>主要依赖轻量级授权和策略执行的产品，毛利率可能更高。</li><li>根据研发投入、销售效率和竞争性定价情况，长期营业利润率可能达到20%至30%。</li><li>核心前提是收入增长速度必须快于推理和基础设施成本增长速度。</li><li>以授权为主的安全产品，在结构上通常比需要使用昂贵模型检查每次交互的产品具有更高利润率。</li><li>作为参考，访谈者记忆中Palo Alto FY2026订阅与支持业务整体毛利率约为69.2%，FY2025约为72%；该数据为公司整体口径，并非特定AI安全产品数据。</li><li>AI安全需求增长并不必然带来利润率提升，规模折扣、平台捆绑和推理成本都可能形成压力。</li></ul>
+<h2>8. 中国市场的监管影响与竞争格局</h2>
+<h3>a）微软Defender退出中国市场后，相关需求将由谁承接？</h3>
+<ul><li>中国本土安全厂商预计将承接大部分增量需求，尤其是在以下客户群体中：</li></ul>
+<ol><li>政府机构；</li><li>金融机构；</li><li>受监管企业；</li><li>对数据本地化要求较高的企业。</li></ol>
+<ul><li>主要驱动因素包括：</li></ul>
+<ol><li>数据主权要求；</li><li>网络安全法规；</li><li>本地托管要求；</li><li>跨境数据传输限制。</li></ol>
+<ul><li>潜在受益厂商包括华为、阿里云、腾讯云、奇安信和深信服等，它们能够提供符合本地要求的部署与安全服务。</li></ul>
+<h3>b）Palo Alto等国际厂商是否仍有市场机会？</h3>
+<ul><li>国际厂商仍可参与竞争，主要机会来自：</li></ul>
+<ol><li>在华经营的跨国企业；</li><li>混合云环境；</li><li>需要全球统一安全策略的客户。</li></ol>
+<ul><li>其市场空间将取决于：</li></ul>
+<ol><li>监管合规能力；</li><li>本地交付能力；</li><li>客户数据能否留在中国境内；</li><li>是否能够满足本地托管和审计要求。</li></ol>
+<ul><li>外国服务提供商退出时，本土厂商将成为主要受益者；国际安全厂商仍会在部分跨国企业和混合云场景中发挥作用。</li></ul>
+<h2>9. AI减少企业员工后，对按席位收费模式的影响</h2>
+<h3>a）如果开发人员和安全分析师人数减少，按席位收费会受到多大影响？</h3>
+<ul><li>当员工人数保持稳定或下降，而智能体数量持续增加时，纯按席位定价将逐渐脱离AI安全的实际价值和工作负载。</li><li>例如，一家企业可能只有500名开发人员和100名安全分析师，但这些人员未来可能管理1000个乃至数千个自主智能体。</li><li>在纯席位收费模式下，即使智能体数量、安全事件和授权决策量大幅增加，供应商也难以获得对应的增量收入。</li><li>未来更可能形成双轨收费体系：</li></ul>
+<ol><li>对人类用户继续采用按席位订阅；</li><li>对智能体活动、受保护工作负载、安全交易和基础设施使用量按量收费。</li></ol>
+<ul><li>对Microsoft而言，可以通过Azure和Copilot Studio对额外AI使用量进行变现，同时保留Microsoft 365等产品的可预测订阅收入。</li><li>基于席位的定价短期内不会消失，但随着智能体部署规模扩大，其重要性将逐渐低于按使用量变现模式。</li></ul>
+<h2>结构化总结表格</h2>
+<div class="tbl"><table class="t wrap"><thead><tr><th>核心维度</th><th>当前状态</th><th>关键判断</th><th>增量机会</th><th>主要风险/限制</th></tr></thead><tbody><tr><td><b>安全需求变化</b></td><td>由提示词、内容和数据安全扩展至身份、授权、工具调用和运行时安全</td><td>中等复杂度智能体工作流的安全决策点可能增加5至10倍</td><td>自主智能体保护、运行时监控、身份与授权</td><td>需求增长快于实际预算增长</td></tr><tr><td><b>预算来源</b></td><td>目前主要来自CISO的安全及IT预算，业务部门开始共同出资</td><td>短期以预算重分配为主，生产部署增加后新增预算上升</td><td>金融、交易、敏感数据访问等高风险场景</td><td>现有许可证复用、批量折扣和供应商整合压低净新增支出</td></tr><tr><td><b>云原生安全</b></td><td>单一云环境中具备集成、部署和成本优势</td><td>基础提示词过滤、身份和数据保护通常已足够</td><td>利用既有云合同扩大安全产品渗透</td><td>多云、自托管环境中的执行深度有限</td></tr><tr><td><b>第三方安全厂商</b></td><td>在多云、跨平台和专业检测领域更有优势</td><td>跨平台一致性和高级能力是主要壁垒</td><td>高级红队、运行时保护、跨云执行、专门检测</td><td>单点功能同质化、平台捆绑和定价压力</td></tr><tr><td><b>行业整合</b></td><td>大型平台持续扩展AI安全能力</td><td>单点厂商承压，领先专业厂商可能被收购或平台化</td><td>差异化授权、行为检测、自主威胁防御</td><td>基础功能易被大型平台复制</td></tr><tr><td><b>Agent 365</b></td><td>聚合智能体清单、身份、治理和安全能力</td><td>最大价值是一致治理、集中可见性和规模化管理</td><td>订阅、安全附加许可及Azure使用量</td><td>多云环境下集成深度因平台而异</td></tr><tr><td><b>客户采用阶段</b></td><td>生产客户已启用基础控制，试点客户存在提前采购</td><td>实际使用量预计将在未来几个季度快于许可证采购量增长</td><td>从Copilot向业务流程型自主智能体扩展</td><td>采购许可证不代表全部功能已启用</td></tr><tr><td><b>定价模式</b></td><td>当前以订阅、席位和使用量收费并存</td><td>将逐步转向“治理订阅+执行及安全检查按量”的混合模式</td><td>智能体交互、token、安全决策和工作负载变现</td><td>单位价格可能因批量折扣和竞争下降</td></tr><tr><td><b>合同价值</b></td><td>主动咨询需求增强，合同总价值有望上升</td><td>收入增长主要来自消费量和部署范围，而非单纯提价</td><td>自主智能体授权、高级运行时保护、跨云执行</td><td>合同总额增长不等于单位价格上涨</td></tr><tr><td><b>成本结构</b></td><td>token检查成本较高，授权决策成本较低</td><td>规模化后单位检查成本有望下降</td><td>小模型、缓存、批处理、确定性策略引擎</td><td>推理和基础设施成本可能侵蚀利润率</td></tr><tr><td><b>利润率预期</b></td><td>优化后AI安全平台稳态毛利率预计70%至80%</td><td>授权型产品利润率通常高于重模型检查型产品</td><td>长期营业利润率可能达到20%至30%</td><td>需确保收入增速快于基础设施成本增速</td></tr><tr><td><b>中国市场</b></td><td>国际厂商受数据主权和本地合规要求限制</td><td>本土厂商将承接大部分增量需求</td><td>华为、阿里云、腾讯云、奇安信、深信服等受益</td><td>国际厂商的本地交付、数据驻留和监管合规受限</td></tr><tr><td><b>席位收费前景</b></td><td>短期仍将保留</td><td>随智能体数量快于员工数量增长，纯席位模式将弱化</td><td>按智能体活动、工作负载和安全交易收费</td><td>员工数量下降可能压制传统席位收入</td></tr></tbody></table></div>
+<h2>新版prompt提炼之后的转译</h2>
+<p><b>提问者：从生成式AI转向生产环境中的AI智能体后，新增了哪些安全需求？这些需求推动了哪些原有需求的变化？能否进行量化说明？</b></p>
+<p>回　答　者：从生成式AI转向生产环境中的AI智能体，显著增加了安全需求，因为安全防护的重点正从保护提示词和响应内容，转向保障自主操作的安全。</p>
+<p>传统生成式AI的安全重点主要是数据泄露、提示词注入和内容过滤。进入智能体阶段后，还需要保障机器身份、API访问、凭证、工具调用、执行过程以及智能体间通信的安全。</p>
+<p>与基础的聊天机器人交互相比，复杂程度适中的智能体工作流可能会使安全决策点增加5至10倍。这是我基于系统架构作出的估算，并非全市场范围内的实测数据。</p>
+<p>从支出增长来看，新增需求主要来自运行时保护、智能体身份管理、授权和持续监控等方面。企业只有具备这些安全能力后，才会允许智能体在生产环境中独立运行。</p>
+<p><b>提问者：在AI安全的支出预算方面，目前预算主要来自业务侧，还是原有的安全支出？换言之，相关预算仍由首席信息安全官拍板，还是越来越多地由业务侧负责人推动？此外，哪些场景或功能更容易获得AI安全预算？</b></p>
+<p>回　答　者：目前，大部分AI安全支出仍来自CISO的安全预算，尤其是数据保护、威胁防护、合规和运行时安全方面。不过，我们正日益看到CIO、CTO以及部署AI应用的业务部门共同出资。</p>
+<p>其中的区别在于，业务部门通常负责AI用例，而安全部门负责审批要求。以金融服务行业为例，在银行、抵押贷款等业务中，如果AI智能体需要访问客户财务记录或执行交易，通常必须获得安全审批后才能投入生产。</p>
+<p>更容易获得预算的功能包括敏感数据保护、智能体身份管理、访问控制、提示词注入防护、运行时监控和可审计性。我预计，最强劲的增量支出将来自对智能体的保护，尤其是能够访问敏感系统或自主执行操作的智能体，而不仅仅是聊天机器人的内容过滤。</p>
+<p>最终，CISO拥有否决权。当安全成为AI应用上线前的最后一道障碍时，相关解决方案可能由CISO或业务部门负责人出资。</p>
+<p><b>提问者：此前您提到，AI安全相关需求正越来越多地依赖企业现有的安全预算和云预算，而不是单独设立全新的独立预算科目。在实际采购中，这意味着企业会追加投入，还是会重新分配现有预算？是否可能出现更换供应商的情况，例如从第三方安全企业转向现有云服务商提供的云原生安全方案？此外，是否存在需求明显增长，但安全支出并未相应增加的情况？</b></p>
+<p><b>提问者：AI安全预算更可能来自新增预算，还是现有预算的重新分配？是否会出现供应商替换，例如从第3方厂商转向原生厂商？此外，您是否观察到AI安全需求不断增长，但相关预算支出仅小幅增长或没有增长的情况？</b></p>
+<p>回　答　者：这3种情况都存在。但短期内，绝大多数AI安全支出仍来自现有的网络安全和IT预算。随着AI智能体逐步进入生产环境，新增预算正变得越来越普遍。</p>
+<p>最初，企业会从传统应用安全、DLP和云安全等领域重新分配支出。当AI智能体开始访问敏感数据并执行交易时，就会产生新的安全要求，最终为追加资金提供依据。</p>
+<p>我们也观察到供应商整合。Microsoft、AWS和Google正越来越多地将AI安全能力捆绑到现有平台中，这对独立厂商形成了压力，尤其是在基础防护方面。</p>
+<p>需要特别区分的是，安全需求的增长速度仍快于实际支出的增长速度。企业可能将AI工作负载提高至5倍，但不会按相同比例增加安全预算，因为企业可以利用现有许可证、协商批量折扣并整合供应商。因此，AI安全的采用率在增长，但安全净新增支出的增长相对温和。新增预算的最大机会在于自主智能体保护、身份管理，以及云安全中的授权管理。</p>
+<p><b>提问者：随着Microsoft等云平台不断增强原生安全能力，客户会如何在原生安全能力和独立厂商之间进行选择？在哪些场景或用例中，客户认为原生安全能力已经足够？又在哪些场景或用例中，第3方独立厂商仍然更具优势？</b></p>
+<p>回　答　者：当企业高度标准化地使用单一云平台时，我会倾向于选择原生安全能力。</p>
+<p>回　答　者：例如，在以 Microsoft 为核心、使用 Azure OpenAI、Microsoft Entra、Defender 和 Purview 的环境中，原生安全解决方案能够提供更紧密的身份集成、更简便的部署和集中式策略管理，并可能降低增量成本。</p>
+<p>在复杂的多云环境中，第三方供应商更具吸引力。如果企业同时使用 Azure、AWS、Google Cloud、Anthropic 和内部托管模型，Palo Alto Networks 等供应商可以在这些环境中提供一致的安全策略和可见性。第三方供应商在高级 AI 红队测试、智能体运行时保护、成本、跨平台发现及专门检测方面具有差异化优势。</p>
+<p>关键区别在于，原生供应商具备集成和成本优势，独立供应商则具备跨平台覆盖广度和一致性优势。对于单一云环境中的基础提示词过滤和数据保护，原生解决方案通常已经足够；但对于在多个环境中处理敏感数据和权限的自主智能体，独立安全平台更有机会证明其额外支出的合理性。</p>
+<p><b>提问者：目前，我们看到越来越多的云平台与第三方供应商开展合作。在这种情况下，客户通常是与云厂商签约，还是单独与第三方供应商签约、议价和续费？从长期来看，这种合作模式主要会扩大第三方供应商的销售机会，还是可能削弱其独立定价能力？</b></p>
+<p>回　答　者：通常有2种商业模式。第1种是直接与第三方安全供应商签订合同，由客户直接与其协商定价、容量和企业折扣。第2种是通过 Azure Marketplace 或 AWS Marketplace 等云市场进行采购，由云服务提供商负责计费，第三方供应商仍可与客户协商专属报价。</p>
+<p>我认为，这种模式总体上有利于第三方供应商扩大销售机会，但也会对其定价能力形成一定压力。其中一项优势是，通过云市场完成的交易可以计入客户现有的云支出承诺，从而简化部分采购流程。</p>
+<p>回　答　者：这类渠道能够触达大型企业客户，但其劣势在于，云服务提供商掌控着市场关系，会收取交易费用，并且越来越多地通过自有原生安全产品参与竞争。在我看来，云市场能够改善分销效率和交易速度，但不一定能提升供应商利润率或谈判能力。当实力较强的第三方供应商能够提供原生云工具难以复制的差异化防护时，仍将保有定价权。</p>
+<p><b>提问者：目前有哪些新云厂商也在提供安全相关解决方案？它们的具体方案是什么，提供了哪些具体服务？这里所说的新云，是指小型公司或初创公司。</b></p>
+<p>回　答　者：如果指主要云服务提供商，它们都在提供自有的AI安全产品，但能力各不相同。Microsoft提供Defender for Cloud、用于AI威胁检测的Defender、用于数据保护和敏感性管理的Microsoft Preview、用于身份和访问管理的Agents，以及用于管理企业安全智能体的Agent 365。AWS和Google Cloud也提供相关产品。</p>
+<p>如果是指Microsoft、AWS和Google之外的新云厂商，目前也有一些AI原生云服务提供商和初创公司，正在将安全能力直接构建到自身平台中。例如，CoreWeave、Lambda和Nebius专注于GPU基础设施和AI工作负载，其中一些厂商提供基础设施层面的控制能力，包括隔离、加密、身份和跨平台管理。</p>
+<p>此外，Fireworks AI、Together AI和Bastion等AI平台提供安全模型托管、私有化部署、API、身份验证和企业访问控制。</p>
+<p>在专业AI安全领域，Lakera、Protect AI、HiddenLayer和Prompt Security等初创公司专注于提示词注入防御、模型保护、AI应用监控和敏感数据泄露防护。</p>
+<p>其中的重要区别在于，小型AI云服务提供商通常具备或提供基础性基础设施安全能力，而专业AI安全供应商则能够在模型、应用和智能体运行时层面提供更深入的防护。随着这些小型云服务提供商向高端市场发展，我预计……</p>
+<p><b>提问者：刚才您提到，智能体使身份与授权的重要性明显提升，这与 Okta 所从事的业务类似。目前，Palo Alto（PANW）也已通过收购补齐并强化了相关能力。在您看来，仅提供 1个或2个安全能力或安全功能的独立第三方企业，未来的市场份额和生存空间是否会受到明显挤压？</b></p>
+<p>回　答　者：确实如此。仅提供 1个或2个 AI 安全能力的小型独立供应商将面临日益加剧的竞争压力，尤其是在 Palo Alto、Microsoft、Okta 和 CrowdStrike 持续扩展平台能力的背景下。最大的风险在于功能同质化。</p>
+<p>例如，如果一家初创公司只提供提示词注入检测、基础智能体身份管理或 API 监控，大型平台可以逐步将类似功能和解决方案整合到现有的企业合同中。Okta 在身份生命周期管理和访问治理方面具有优势，而 Palo Alto 可以将 AI 运行时安全与网络保护、云安全及威胁情报相结合。</p>
+<p>我预计，专业安全供应商不会消失，行业更可能出现整合。大型平台也将越来越多地与专业安全供应商合作，而不是完全自行构建所有高级安全能力。在智能体授权、行为检测和自主威胁防御方面拥有差异化技术的初创公司仍有机会取得成功，尤其是在复杂的多环境场景中。但其长期竞争优势必须来自长期实践中已经得到验证的能力，包括更出色的检测效果、更低的延迟，以及综合性平台难以轻易复制的能力。</p>
+<p>最终，独立单点解决方案将面临定价压力，并可能被部分集成平台抢占市场份额；实力最强的专业供应商则可能成为收购标的，或进一步扩展为覆盖范围更广的安全平台。</p>
+<p><b>提问者：有哪些明确的AI安全需求，最常促使客户购买我们的Agent 365，或升级到1期产品？</b></p>
+<p>回　答　者：最明确的购买驱动因素，是将AI智能体从试点环境投入生产环境，尤其是当这些智能体需要访问敏感的企业数据、Microsoft 365应用或内部业务流程时。在金融服务领域，主要担忧包括数据泄露、未经授权的访问、监管合规，以及能否了解自主智能体的实际行为。</p>
+<p>Agent 365通过智能体清单、身份管理、治理和安全控制满足这些需求。Microsoft Purview提供数据保护，Microsoft Defender则帮助识别恶意活动和已遭入侵的智能体。</p>
+<p>对于已经采用Microsoft 365、E3或E5，希望扩展AI部署但不想引入其他安全平台的组织，商业机会尤其明显。不过，我会将Agent 365与E5升级区分开来。Agent 365是智能体管理和安全产品，E5则提供更广泛的企业安全与合规能力。客户可能会同时购买二者，但两者不必相互替代。</p>
+<p>我认为，最强烈的购买触发因素是安全团队认定，如果没有适当的身份管理、最小权限访问、监控和可审计性，AI智能体就无法获得投入生产环境的批准。</p>
+<p><b>提问者：目前市场上不同企业采用的定价和收费模式并不相同。按量付费与订阅制之间有哪些差异？微软为什么选择按照人类席位收费？如果未来Agent数量大幅增加，但人类席位仍然对应现有员工，微软将如何获得这部分增量收入？您认为微软未来是否会采用混合收费模式，其触发因素是什么？</b></p>
+<p><b>提问者：在这种场景和定价模式下，如果 AI 智能体数量增加，但人工席位数量没有增加，微软将如何获得增量收入？未来，微软是否也会采用混合定价模式？采用混合模式的触发因素可能是什么？</b></p>
+<p>回　答　者：订阅定价与按使用量定价的根本区别在于，订阅定价能够为客户提供可预测的成本，而按使用量定价则会随实际使用量变化。根据微软以往的做法，其更倾向于按使用量或按用户订阅收费，因为企业客户重视预算的可预测性，而且微软已经通过 Microsoft 365 建立了许可关系。</p>
+<p>不过，微软并非完全依赖人工席位定价。Agent 365 可以通过向负责管理和治理智能体的员工授予许可，创造额外收入机会；Azure AI 服务和 Copilot Studio 则可以通过按使用量收费，将智能体活动变现。因此，即使员工人数保持不变，微软仍可通过 AI 工作负载、智能体交互、Azure 使用量以及附加安全能力的增长获得增量收入。</p>
+<p>我预计，这一模式将日益趋向混合化，即将治理和管理相关的订阅收费，与智能体执行、安全检查及基础设施相关的按使用量收费相结合。最大的触发因素将是智能体活动的增长速度显著快于员工人数的增长速度。届时，按席位定价将越来越难以反映客户价值以及微软的服务成本。</p>
+<p><b>提问者：对于已经购买 AI 安全产品的客户，目前是否已经真正投入生产并持续扩大使用规模？还是很多公司只是购买了几百万额度计入账面，或采购相关产品以未雨绸缪，后续才会进一步使用和增购？具体而言，对于单独购买 Agent 365 和升级 E7 的客户，安全需求分别在采购决策中发挥了多大作用？根据后续客户反馈，他们真正使用了哪些高级安全功能，哪些功能可能仍停留在采购账单或规划阶段？</b></p>
+<p><b>提问者：从客户反馈来看，他们具体在使用哪些较高级别的安全功能或能力？客户只是采购并储备这些能力，还是计划将其投入生产环境？</b></p>
+<p>回　答　者：客户主要分为2类。已经在生产环境中部署AI应用的组织，正在积极部署安全控制措施；仍处于AI智能体试验阶段的企业，则通常会在全面采用前提前采购相关能力。</p>
+<p>以我接触过的金融服务行业为例，安全性往往是AI应用能否获准投入生产的决定性因素。如果智能体需要访问客户记录、内部数据库或金融交易，那么身份控制、数据保护和可审计性就会成为必要要求。</p>
+<p>目前实际需求最为显著的能力包括：用于敏感数据保护的Microsoft Purview、用于身份和访问管理的Entra、用于威胁检测的Defender，以及对智能体活动的监控。</p>
+<p>需要特别说明的是，采购安全许可证并不意味着客户正在使用其中的全部功能。客户通常会先启用基础控制措施，随后随着更多AI工作负载进入生产环境，逐步扩大使用范围。我预计，未来几个季度，生产环境中的使用量增速将超过初始许可证采购量，尤其是在部分组织从有限的Copilot应用转向与业务流程集成的自主智能体之后。</p>
+<p><b>提问者：关于Agent 365的整合，我们注意到该产品整合了许多原有产品的功能模块。这种整合具体能为客户带来哪些收益？主要体现为采购更简单、部署更快、管理人员投入更少，还是能够使整体防御策略更加一致、完整？</b></p>
+<p>回　答　者：Agent 365整合带来的最大收益之一，是实现一致的安全与治理，其次是加快部署并降低运营投入。</p>
+<p>回　答　者：此前，客户可能分别通过 Entra 管理智能体身份，通过 Purview 进行数据保护，通过 Defender 进行威胁检测，并通过不同平台开发智能体，整体较为复杂。Agent 365 将其中部分能力整合到更统一的管理体验中，主要从3个方面为客户提供帮助：第1，客户可以基于现有的微软合作关系，简化采购流程；第2，安全团队可以获得集中化的可见性，并在不同智能体之间实施更加一致的策略；最后，客户可以减少管理和监控多个工具所需的人工投入。</p>
+<p>不过，我认为其战略价值不仅限于节约成本。随着组织中的智能体从数10个扩展至可能达到数1000个，碎片化的安全策略将带来日益显著的运营风险。其价值在于，企业无须按比例增加人员，即可扩大人工智能的应用规模。但我并不认为整合必然会降低人员成本，也不意味着企业不再需要专业的安全团队。</p>
+<p><b>提问者：关于整合收益，您认为它是否已经实际转化为增量收入？例如，是否促使客户追加采购、扩大安全部署，或者替换部分第三方独立安全厂商？此外，在跨平台、跨云、自建以及第三方智能体等场景中，这种整合优势能够保留多少？</b></p>
+<p>回　答　者：我确实认为整合能够带来增量收入，但最大的机会在于推动现有微软客户扩大安全产品的采用范围，而不是立即替换所有第三方厂商。当客户能够通过更加统一的平台管理身份、数据保护、威胁检测和治理时，采购阻力会有所降低，也更容易扩大部署范围。这将为 Agent 365 订阅、额外的安全许可和 Azure 使用量创造机会。</p>
+<p>我也预计部分独立厂商会被替代，尤其是仅提供基础智能体监控和身份可见性服务的厂商。</p>
+<p>回　答　者：其数据保护能力与微软现有产品组合存在重叠。不过，我认为在多云和自托管环境中，其优势会有所减弱，或者说不再那么明显。微软可以扩展治理能力，以支持第三方智能体，但集成深度和执行能力取决于具体平台。因此，我预计其收入增长将主要来自以微软为核心的企业，并在异构环境中进行更具选择性的扩张。</p>
+<p>我认为，需要关注的关键指标并不仅是 Microsoft 365 的许可证销量，而是有多少客户实际启用了这些功能、客户如何扩大受保护智能体的部署规模，以及如何整合现有合同。</p>
+<p>需要特别说明的是，微软已经开始将 Agent 365 扩展至 AWS、GCP，即 Google Cloud，以及其他第三方平台。因此，我不会认为其多云优势正在消失。更准确地说，微软能够将集中式可视性扩展至云环境，但集成深度和安全执行能力仍会因不同的集成方式而异。因此，我预计整合将提高微软在客户支出中的份额，但不会取代复杂环境中的专业安全厂商。</p>
+<p><b>提问者：接下来想讨论产业议价权的问题。过去，第三方安全公司通常需要通过销售渠道主动接触大型企业并销售安全产品。但最近几个季度，似乎越来越多有安全需求的公司会主动联系第三方安全厂商，以获得安全防护或相关服务。从这个角度看，未来随着新安全功能或防护措施的推出，产品价格是否可能提升，例如单价或总体价格是否会上涨？</b></p>
+<p>回　答　者：是的，我认为主动需求会更强。</p>
+<p>回　答　者：强劲的主动咨询需求使专业AI安全厂商拥有更大的定价权，尤其是在客户将AI智能体投入生产环境前急需安全保护的情况下。不过，需要区分单位价格与合同总价值。</p>
+<p>随着客户部署越来越多的智能体、检查更多交易并购买额外的安全能力，我预计合同总价值将会提升。但部分产品的单位价格可能保持不变，甚至下降，因为微软、Palo Alto等大型平台正在捆绑更多功能，同时消费规模扩大也会带来更多批量折扣。</p>
+<p>定价能力最强的将是差异化功能，例如自主智能体、自主智能体授权、高级运行时保护和跨云执行，因为部分客户在这些领域的替代选择较少。我预计，单个客户收入的增长将主要由消费量提升和部署范围扩大驱动，而非单纯依赖单位价格持续上涨。</p>
+<p>强劲的主动咨询需求能够增强厂商的议价能力，但无法消除竞争性定价。例如，Palo Alto的AI网关明确规定，在更高层级或更高消费量下，每10亿个token的价格会下降。这也印证了合同总价值增长与单位价格可能下降之间的区别。</p>
+<p><b>提问者：下面一个问题是关于新推出的AI安全产品的成本和利润率。随着AI的出现，攻击面发生了很大变化，因此防护端可能也需要使用更多模型进行检测和防御，从而带来额外成本。据您估计，在实现同等防护效果的情况下，随着检测token数量和授权决策量大规模提升，公司的成本将如何变化？未来业务规模达到相对稳态后，security for AI产品的利润率大概能达到什么水平？</b></p>
+<p>回　答　者：我会将令牌检查成本与授权成本分开看待，因为两者的经济性差异较大。令牌检查成本通常会随流量增长而增加，尤其是在供应商使用AI模型进行系统分析、提示词注入检测和数据泄露防护时。授权决策的成本则低得多，因为可以通过确定性策略引擎处理，无需运行大语言模型。</p>
+<p>在保护水平相当的情况下，我预计基础设施总成本将大致随检查量增长，但随着供应商通过模型优化、批处理、缓存和更小型的专业检测模型扩大规模，每100万令牌或每次授权决策的成本应会下降。</p>
+<p>在毛利率方面，我对优化良好的AI安全平台的稳态估计约为70%至80%；对于主要依赖轻量级授权和策略执行的产品，毛利率可能更高。根据研发投入强度、销售效率和竞争性定价，营业利润率最终可能达到20%至30%。关键在于，供应商的收入增长必须快于推理和基础设施成本的增长。</p>
+<p>我预计，以授权为主的安全产品在结构上将比需要基于昂贵模型检查每次交互的产品拥有更高的利润率。作为参考，Palo Alto在FY 2026报告的订阅与支持业务毛利率，我记得是69%至60%、69%或70%，大约为69.2%，而FY 2025为72%。这是公司整体数据，并非Prisma Air的特定数据，也说明AI安全需求增长并不会自动带来利润率提升。</p>
+<p><b>提问者：关于地区政策对安全领域的影响，我们注意到微软Defender正在退出中国市场。您如何理解这一情况？未来这部分市场需求主要会由本地区的安全企业承接，还是会由Palo Alto等第三方独立厂商获取相关市场份额？</b></p>
+<p><b>提问者：像Palo Alto这样的厂商呢？</b></p>
+<p>回　答　者：我预计，中国本土安全厂商将承接大部分增量需求，尤其是在政府机构、金融机构和部分受监管企业中。主要驱动因素包括数据主权、网络安全法规、本地托管要求以及跨境数据传输限制。华为、阿里云、腾讯云、奇安信和深信服等公司能够通过本地部署的安全服务满足这些要求。</p>
+<p>Palo Alto等国际厂商仍可能参与竞争，尤其是在华经营的跨国企业客户中。不过，它们的市场机会将在很大程度上取决于监管合规、本地交付能力，以及客户数据能否留在中国境内。我预计，外国服务提供商退出市场时，本土厂商将成为主要受益者；国际安全厂商则仍会在部分跨国企业和混合云环境中发挥作用。</p>
+<p><b>提问者：最后一个相对开放的问题是，如果AI减少了企业员工、安全分析师乃至开发人员的数量，那么原本按照席位收费的模式或相关业务会受到多大影响？</b></p>
+<p>回　答　者：如果员工人数保持稳定，按席位定价将日益脱离AI安全所产生的实际价值和工作负载。例如，一家企业可能拥有500名开发人员和100名安全分析师，但同一批开发人员最终可能需要管理1000个乃至数千个自主AI智能体。在纯席位收费模式下，即使智能体、安全事件或授权决策的数量显著增加，厂商也未必能够获得相应的额外收入。</p>
+<p>我预计，厂商将继续针对人类用户采用按席位订阅的方式，同时针对智能体活动、受保护的工作负载和安全交易引入按使用量计费的模式。</p>
+<p>回　答　者：具体来说，这为 Microsoft 创造了机会，可以通过 Azure 和 Copilot Studio 将额外的 AI 使用量变现，同时保留可预测的订阅收入。我认为基于席位的定价模式短期内不会消失，但随着未来几年部分 AI 智能体部署规模扩大，其重要性相较于基于使用量的变现模式将有所下降。</p>
+<p><b>提问者：好的，我今天的提问到此为止。感谢您的时间，今天的会议先结束。</b></p>
+<p>回　答　者：好的，非常感谢您的邀请。</p>
+<h2>原文转译</h2>
+<p>本次电话会议仅服务于久期咨询客户及受邀客户，仅供研究交流，不构成投资建议。相关人员应自主做出投资决策并自行承担投资风险。久期咨询不因使用本次内容所导致的任何损失承担任何责任。专家发言内容仅代表专家个人观点，不代表本公司观点。本次会议内容不得涉及国家保密信息、内幕信息、未公开重大信息、商业秘密、个人隐私。不得涉及可能引发不当炒作或股价异常波动的敏感信息。不得涉及影响社会或资本市场稳定的言论。未经久期咨询事前书面许可，任何机构或个人不得以任何形式复制、录音、刊载、转载、转发、引用本次会议内容。否则由此造成的一切后果及法律责任由该机构或个人承担。本公司保留追究其法律责任的权利。感谢您的理解和支持。</p>
+<p>本次电话会议仅服</p>
+<p>好的。在我们这次会议开始之前呢，请您就以下陈述表明我同意或我不同意。您知道保密信息的定义，并同意不会在访谈中透露任何此类信息或任何其他的保密信息。</p>
+<p>Hi expert, before our interview, please confirm that you are aware of the definition of confidential information and will not disclose such information or other confidential information in this interview.</p>
+<p>Yep, I'm well aware and confirm.</p>
+<p>好的。首先第一个想跟您讨论一下，就是从生成式的AI转到现在生产式的agent之后，我们看到了哪些新增的安全需求，然后并且带动了哪些原有的一些需求的变化，最好能够量化地去说明一下。</p>
+<p>And our first question is that from the move of generative AI to the production AI agents, what kind of security for AI demand has been changing and it has been boosting what kind of original demand changes and can you quantify it?</p>
+<p>Um, I think the shift from generative AI to uh production AI is uh materially increasing security demands because right now what we're seeing is that we're moving from protecting prompts and responses to securing autonomous actions, right? Um, with traditional generative AI, you've got a focus that's primarily on data leakage, prompt uh injection and content filtering. Uh, with agents, um, we're now securing machine identities, API access, credential tools, executions and then as well as agent to communication. I would look at or I would estimate anywhere between 5 and 10x uh increase in security decision points, um, especially for moderately complex agent workflows that's compared to some basic chatbot interactions that's out there. Um, and that, you know, for me is a um, an architectural estimate, right? Not measured market wide. Um, in increased spending, I think the biggest incremental demand is coming from runtime protection, uh agent identity, authorization, continuous monitoring, things like that and then enterprises need those uh before allowing agents to independently um uh be in production. So.</p>
+<p>好的，然后下面第二个问题我想围绕就是关于securi security for AI的开支预算方面，然后首先第一个就是想请教一下，就是咱们目前看到的预算的来源主要是业务侧的还是原有的这种安全开支的？换句话说就是还是由原来的安全首席安全官来拍板，还是说更多的比例开始由这个业务侧的负责人来推动？然后以及就是什么样的场景更或者功能吧，更容易获得我们这个security for AI的一个预算？</p>
+<p>And the next question is about the security AI spending. I particularly want to understand about the source of this spending. Is it still coming from the security line, like decided by the chief security officer, or it is more coming from the business line? And also I would like to know about in what kind of use cases or features it is more likely to get this security for AI budget.</p>
+<p>So most of the security for AI spending still comes from the CISO's budget, uh security budget, particularly for data protection, threat protection and compliance and runtime. However, we are looking or we are increasingly seeing a shared fund from CIOs, CTOs and as well as business units that are deploying those AI applications. A distinction is that the business typically owns the AI use cases, right? Um while security owns the approval requirements. The financial services, for example, um or let's say in the financial services, banking, mortgage, right? Um an AI agent accessing customer financial records or executing transactions often can't move productions into security approval. Um some of those features are likely to receive funding, um fundings that are sensitive data, data data protection, agent identity, access control, prompt injection, uh prevention, runtime monitoring and uh uh auditability. I would expect that the strongest incremental spend uh comes from uh protecting agents that can access sensitive systems or take uh autonomous actions rather than just chatbots content filtering, right? Ultimately the CISO has a veto authority and the CISO or the business unit leader may fund the solutions with um when the security is the final barrier to launching an AI application.</p>
+<p>好的，然后以及就是之前跟您交流的时候有提到就是说AI的安全相关的需求正越来越多的去依赖到企业现有的一个安全和云预算，就像您刚才说的，而不是单独开辟这种全新的独立的这种预算科目。那这个我可以理解为就是在实际的采购当中，它意味着是要追加新的投入，还是说现有预算进行一个重新的分配？还是说可能我们会出 现替换供应商的一个情况，就比如说从第三方转向，第三方的安全企业转向这个我们现有的这种云，云的一些提供的原生安全。</p>
+<p>然后以及有没有就是说需求明显的增长之后，但是我们看到安全的支出却不怎么增加的一个情况？</p>
+<p>Okay, and for this kind of security for AI demand, so do you think this budget is still within the existing budget instead of coming from the new budget, newly set up budget items? And for this kind of budget... Uh, is it, uh, more likely to have the added new budget or just a reallocation of the existing budget? Or, uh, do you replace the, do you see the replacement of vendors, for example, from the third-party vendors to the more native vendors? And another question is that, uh, do you observe the situation of increasing security for AI demand, but, uh, feel increasing or little increase of the spending, the budget spending?</p>
+<p>Um, I'm seeing a combination of all three, right? But the majority of near-term all AI security spending is still, is still being funded through some of the existing cybersecurity and IT budgets, which incrementally, uh, uh, with the incremental budgets becoming more and more common with AI agents that move into those production, right? Um, initially, when you look at, uh, how companies are reallocating spend from traditional application to security to DLP and cloud security, when it comes to AI agents, they're beginning to access sensitive data, um, they're executing transactions, and then that creates new security requirements and then ultimately justified additional funding. And then we're also seeing vendor consolidation, right? Um, some folks at Microsoft, AWS, Google are increasingly, uh, bundling their AI security into some of the existing platform, which puts pressure on the standalone vendors, particularly for basic guardrails. So one of the important distinctions, uh, is that security demand continues to grow faster, uh, than actual spending. An enterprise might, so an enterprise might increase its AI workloads fivefold without increasing its security budget proportionally, um, because they can leverage existing license, negotiate volume discounts, consolidate vendors. So I see the growth in AI security adoption, but more moderate growth in net new security spending. The greatest opportunity for incremental budget is the autonomous agents, uh, protection, identity, authorization across cloud security.</p>
+<p>好的,然后下面一个方向我想跟您讨论一下,就是您刚才也提到,就是随着微软啊这些云平台它扩展自己的原生的安全能力,那么就是客户在这个独立厂商之间是如何选择的?首先第一个就是有哪些场景客户认为原生的这些能力已经足够,然后在哪些场景下却仍愿意向第三方安全去进行一个额外的付费?</p>
+<p>Mm. And as you already mentioned, uh, cloud providers like Microsoft has stronger native security capability. So I would like to know in what kind of...</p>
+<p>Sorry, can you repeat that? Uh, can you start that from the beginning? I'm sorry.</p>
+<p>Okay, okay. Uh, as you just mentioned, like companies like Microsoft has stronger native security capability, and I would like to know in what kind of scenarios or use cases you, uh, you would like to select or choose this native, uh, capability, and in what kind of use cases do you still prefer or do you think the third-party independent vendors are still stronger?</p>
+<p>Um, I would, I would favor a native security when an enterprise is heavily standardized on one cloud platform. Um, so for example, at Microsoft-centric environments using Azure OpenAI, Microsoft Entra, Defender, uh, Purview, native security, uh, offers tighter identity integration and simpler deployment, um, in my opinion. And then they have a centralized policy management. And then ultimately, this potentially lowers the incremental costs, right? The third-party vendors become more attractive in complex and multi-cloud environments. If, uh, so for if an enterprise operates Azure, AWS, Google Cloud, Anthropic, and internally hosted models, vendors like Palo Alto, uh, Palo Alto Networks can provide consistent security, uh, consistent security policies and visibility across those environments. I do see a third-party, uh, differentiation in advanced with AI, uh, red teaming, agents with runtime protection, cost, uh, across platform discovery, and then specialized detections. So that being said, the key distinction is that the native vendors have integrations and cost advantages, and then while independent vendors have a breadth of, uh, cross-platform and consistency advantage. So, um, for basic prompting, filtering, data protections within like a single cloud, native solutions are often pretty sufficient. Uh, but for autonomous agents operating across multiple environments with sensitive data, privileges, independent security, those platforms have a strong, uh, much stronger opportunity to justify their additional spending.</p>
+<p>好的，然后，呃，我们现在也看到有很多平台它在跟这个第三方进行合作嘛，那么在这种合作的过程当中，通常客户是和云厂商进行签约，还是说跟这个第三方进行一个签约、议价和续费的？然后以及就是，呃，这种合作的模式您认为是，嗯，往后看的话主要是扩大了第三方的这种销售的机会，还是说可能会削弱它的这种独立的定价的能力？</p>
+<p>And, uh, we are seeing, uh, more and more platforms, uh, cloud platforms working with the third party. And in this kind of scenario, do customers sign contract with the cloud providers or they sign the contract and negotiate price, uh, separately with the third party? And in this kind of cooperation model, do you think the third party had, the third-party vendors have more sales opportunity or actually it kind of, uh, reduced or weakens their, uh, ability to independently, uh, negotiate prices?</p>
+<p>Um, great questions, right? Uh, there are typically two commercial models. The first is the direct contract with the third-party security vendor where the customer negotiates pricing, capacity, and then the enterprise discount directly. The second is the purchasing through the cloud marketplace, uh, places like Azure Marketplace or AWS Marketplace where the cloud provider handles the billing, and then the third vendor can still negotiate a private offer with a customer. From, uh, from my point of view, I see, uh, I see this as a net positive for third-party sales opportunities, but with some pressure on pricing power. One of the advantages is that marketplace transactions can count towards existing cloud spending commitments, making some of the procurement much easier, giving third-party vendors to to large enterprise customers. The disadvantage on this side is that the cloud providers control the marketplace relationships, the charge transaction fees and as well as increasingly uh compete with their own native security products. So in my view, that's the marketplace uh uh improved distribution and uh deal velocity, but they don't necessarily improve the uh vendor margins or negotiate leverage. I think the strong third-party vendors will still retain uh pricing uh power when they offer differentiated protections that native cloud tools can't easily replicate.</p>
+<p>好的，然后下面一个问题是，就是有哪些 new cloud 的厂商现在也在做这个安全相关的一些方案？然后它的具体方案是怎么样的？然后还有就是具体提供了哪些服务？</p>
+<p>Um, and next question is about the new cloud. Is there uh what kind of new cloud uh companies are also um working on the security solutions and what are their specific solutions and what kind of specific services they provide?</p>
+<p>Um, I'm sorry. Can you uh I think I I think I got that, but let me I think the major cloud providers offer their own AI security, but in their capable capabilities different, right? Um, Microsoft offers a defender for cloud defender for AI threat detection, um, uh Microsoft preview for sensitivity for data protection, uh agents for identity and access management and an agent 365 for managing uh security enterprise agents. Um, you're asking about these, right? And then AWS and Google Cloud, right?</p>
+<p>Let me confirm. 老师您问的是新云是吧？New cloud 是他所回答的这些吗？</p>
+<p>对，是是新云，对。</p>
+<p>就是小公司创业公司。</p>
+<p>或者是小公司创业公司。</p>
+<p>Uh, we are particularly asking about the new new cloud, also like small companies and startups.</p>
+<p>Um, okay. Uh, I I think beyond when you think about beyond Microsoft, AWS, Google, right? We're also seeing some of the AI native cloud providers and startups building some of the security uh directly into their own platforms. So for example, you've got CoreWeave, you've got Lambda, you got Nebius that focuses on GPU infrastructure and AI workloads. Some of those are providing infrastructure level controls such as isolation, encryption, identity across management. And then you have AI platforms like Fireworks AI, Together AI, uh uh Bastion, uh which offers a security model hosting and private uh private deployments API and authentication and enterprise access control. Um, on the specialized AI security side, startups like Lakera, uh Protect AI, HiddenLayer, Prompt Security focuses on prompt injection defense, model protection, AI uh application monitoring and sensitive data leakage prevention. The um important distinction is that the smaller AI cloud providers generally have or offer foundational infrastructure security, whereas some of the specialized AI security vendors provide a deeper uh protection at uh the model application um as well as agent runtime layers. Um, as these small cloud providers move up the market, I'd expect expect them to increasingly partner with specialized security vendors rather than just build every advanced security capabilities with uh uh capabilities themselves.</p>
+<p>好的，然后下一个问题就是，刚才您也提到就是agent它使得这个我们所说的身份和授权的重要性有一个明显的提升，就像Okta它做的事情，当然像现在那个Palo Alto它现在已经收购补齐了这方面的一些能力，那么在您看来，就是如果是独立第三方去提供这种单一或者一两个这种安全能力的企业，后续的这个市场份额和生存空间是否会被明显的挤压？</p>
+<p>老师我确认一下您刚说的是Palo Alto吗？</p>
+<p>对，PANW。</p>
+<p>PANW这家公司，嗯。</p>
+<p>嗯，好的。</p>
+<p>And hi expert, as you just mentioned, the agent has made this identity and authorization more and more important, that's just like what Okta is doing. But as we can see, the Palo Alto has already uh improved or strengthened their capabilities in these aspects. So in your opinion, do you think those independent third party providing one or two security capability or security features, will they face more competitive pressure in the future market share or their uh or their market space?</p>
+<p>Yeah, um, great question. Absolutely. I think it's a small independent vendors offering only one or two AI security capabilities will face uh an increasing competitive pressure, particularly Palo Alto, Microsoft, Okta, uh CrowdStrike to expand their platform. The biggest risk is featuring uh feature commoditization. If a startup, for example, only provides prompt injection detection, basic agent identity or API monitoring, a larger platform can increasingly can increasingly bundle similar functions, similar solutions into an existing enterprise contract. Meaning, or for example, Okta has an advantage in identity lifecycle management and access governance, while Palo Alto can combine AI runtime security with network protection and cloud security and threat intelligence. I myself would expect the consolidation rather than the disappearance of specialist vendors. Startups with differentiated technology in agent authorization, uh behavioral detected uh detection, the autonomous threat prevention can still succeed, right? Uh but particularly com- particularly in a complex multi-environment. Uh but their long-term competitive advantage needs to come from what they've demonstrated over their track time, um in terms of better detection, lower latencies, capabilities that are uh that uh that broader platforms can't easily replicate. Ultimately, I'd expect standalone point solutions to face pricing pressures and potential lost shares to some of their uh integrated platforms, while the strongest specialists become acquisition targets or expand into uh broader security platforms.</p>
+<p>好的。呃接下来想就微软本身跟您讨论一些问题啊。首先第一个就是在您接触到的一些采购或者客户当中 有哪些明确的AI安全需求，最常使得这个客户去，或者是促进这个客户去购买了我们的Agent 365或者是升级到这个一期的这种产品？</p>
+<p>And the next more questions about Microsoft itself. So in the procurement or the customers you encountered, what kind of very clear AI security demand has boosted or has made the customers to purchase or procure your Agent 365, 365 or upgrading to the phase one product?</p>
+<p>The clearest purchasing driver is moving AI agents from piloting environments into productions, particularly when those agents need to access sensitive enterprise data, Microsoft 365 applications or internal business processes. Um, on the financial side of the services, the major concerns are things like data leakage, unauthorized access, regulatory compliance and visibility into what autonomous agents are actually doing. Agent 365 addresses that needs through agent inventory, identity management, governance and security control. Um, Microsoft Purview provides a data protection while Defender, uh, or Microsoft Defender helps identify malicious activities and, uh, compromise agents. The commercial opportunity, uh, specifically is particularly strong among organizations that are already invested into Microsoft 365, E3 or E5 that want to expand into their AI deployments without, uh, without introducing really another security platform. I would distinguish Agent 365 from an E5 upgrade though. Uh, Agent 365 is an agent management and a security offering. And then E5 is much more of a broader enterprise security compliance, uh, capability. Customers may purchase both of those, but does they don't have to automatically replace one another. I think the strong buying trigger is the security team that determines that AI agents can't receive production approvals without proper identity, um, least privilege expanses, uh, least privilege access, monitoring and, uh, auditability.</p>
+<p>嗯，好的。然后下面关于就是定价和收费的模式，因为现在市场上有很多企业它所采用的方式都不太一样。然后想让您对比一下就是您理解的按量的付费方式和订阅制有什么差异，以及就是为什么微软它选择了要按照人类的这种席位费来收费。然后如果后续这个Agent在大量增加之后，但是人类的席位费使用的还是这些员工的时候，那么微软如何去获得这部分的增量收入？然后以及就是如果说未来，您认为未来微软是否也会走向这种混合的收费的一个方式，触发的因素到底是什么？</p>
+<p>And next question is about pricing model. We know that different companies have a different fee charging or pricing model. And maybe you can help us to talk about the differences between the usage-based pricing and also the subscription pricing. And another question is that why Microsoft still choose to use the human seat-based pricing and in this kind of scenario, in this kind of model, if agent, if AI agents increase, but the human seats do not increase, how increase, how can Microsoft get the incremental revenue? And in the future, will Microsoft also adopt a hybrid pricing model? And what might be the triggers of using the hybrid model?</p>
+<p>The fundamental difference is that the subscription pricing gives customers predictable costs, while usage-based pricing scales with actual consumption. What we've historically seen from Microsoft, it favors per usage or per user subscription because enterprise customers value predictable budgets and Microsoft already established licensing relationships through Microsoft 365. However, Microsoft isn't relying exclusively on human seat pricing. Agent 365 creates an additional revenue opportunity by licensing the employee, the employees who manage and govern agents, while Azure AI services and Copilot Studio can monetize agent activity through consumption. So even if the employee headcount remains flat, Microsoft can generate incremental revenue through increased AI workloads, agent interactions, Azure consumptions, and additionally security capabilities. I personally would expect the model to become more and more increasingly hybrid, combining some of those subscriptions for governance and administration with consumption-based charges for the agent execution, the security inspection, and infrastructure. The biggest trigger will be when the agent activity grows significantly faster than the human headcount itself, so making that per-seat pricing less representative of both customer value and the Microsoft cost to serve, cost to serve.</p>
+<p>好的，然后关于下个问题是想了解一下咱们看到的现在使用这些AI的AI安全的這個产品的客户到底是否是真的投入了生产，然后持续扩大了使用。换句话说，想了解一下就是很多公司目前是就已经购买了几百万的额度放在账上，或者是说购买了咱们的产品，但是呢，他的目的是为了未雨绸缪，还是说他后续会进一步的使用和增购。那具体来说的话就是对于咱们单独购买Agent 365和升级E7的这个客户来说的话，这个安全的這個需求分别在这个采购决策当中起到了多大的作用，然后以及从后续的这个客户反馈，咱们看到的客户反馈来说的话，他们真正用这些高级的安全功能具体有哪些，然后哪些可能是只是停留在我们的这个购买的这个账单上面或者是规划当中，嗯。</p>
+<p>And for the customers already purchased the AI security products, do you observe them already put it into the production and even scale up, or they're just first do the procurement and they're just preparing for the future? Or in another word, I want to ask that in this procurement decision making, do customers, how much do this security demand play in their procurement decision? And also, uh, judged from the customer's feedback, what kind of quite high-level security features or capabilities are they specifically using? And, uh, are they just buying it and just reserve it, reserve this capability, or they are planning to put it into the production?</p>
+<p>Um, great question. Uh, I see two distinct customer groups. The organizations with AI applications already in production are actively deploying security controls, while companies are still experimenting with AI agents and are often, uh, purchasing capabilities ahead of full-scale adoptions. So, for example, in the financial services that I've experienced in, the security is frequently, uh, a deciding factor in whether an AI application receives production approval. If the agent, uh, accesses customer records, internal database, financial transactions, identity controls, data protection, auditability becomes, uh, essentially, uh, becomes essential requirements. The capabilities seeing the most practical demand are, uh, Microsoft Purview for sensitive data protection, Entra for identity and access management, Defender for threat detection, and as well as monitoring for agent activities. I think one of the important distinction to note for this call is that the purchasing a security license doesn't necessarily mean that every capability is being used. So customers often activate foundational controls first, then they expand the usages on more AI workloads, uh, as as those AI workloads enter production. My expectation is that the production consumption will grow faster than the initial license purchase over the next several quarters, uh, especially as some of these organizations, uh, from limited copilots, uh, copilot towards autonomous, uh, move towards autonomous agents, uh, that are integrated into their business processes.</p>
+<p>好的，然后下一个问题是关于就是咱们Agent 365的一个整合，就是因为咱们我看到就是咱们这个产品其实整合了很多咱们原有的一些产品当中的功能模块。那么这个产品的整合功能具体给客户带来了带来了什么样的收益？主要是在比如说采购更简单，部署更快，然后还是说管理的人员投入更少，然后或者是说防御的这种策略更一致，更更完整？</p>
+<p>Um, and next question is about the Agent 365 consolidation. We've observed that this product actually consolidates some, uh, a lot of the, um, original functions of the, of your products. So I want to understand for this kind of consolidation, how can it benefit customers? Is it more in, in the aspect of easier procurement, faster deployment, or, uh, they can invest fewer manage, management personnels, or it can make the whole defense strategy more consistent and, uh, more complete?</p>
+<p>I think one of the biggest benefits of Agent 365 is the consolidation is a consistent security and governance followed by faster deployment and lower operational Uh, complexity. Uh, previously customers might manage agent identities either through Entra or maybe through data protection or through Purview or threat detection through Defender, uh, and agents development, uh, through, uh, separate platforms. I think Agent 365 brings some of those capabilities into a more unified management experience. Ultimately, this helps the customer in three ways. One, uh, the procurement becomes simpler because they're working with an existing Microsoft relationship. Two, the security teams gain centralized visibility and more consistent policies across the agents. And last, they can reduce the manual, uh, efforts required to manage, uh, and monitor some of the multiple tools. But I would also argue that the strategic value is greater than just a cost savings as organizations scale from dozens to potentially thousands of agents, right, uh, or fragmented security policies become more and more significant operational risk. The benefit is being able to scale AI adoption without having to increase headcount proportionally. But I wouldn't claim that the consolidation automatically reduces staff costs or eliminates the need for specialized security teams.</p>
+<p>好的，然后，具体，呃，就这个问题再进一步想追问一下，就是说，整合的收益，就咱们所说整合收益目前看没看到实际的去促成了追加的这种采购，或者说扩大了这个安全的一个部署，呃，以及就是替换掉了比如说第三方独立的一些安全的企业。然后并且在这种，比如说在跨云或者是自建以及第三方的这种agent的场景当中，我们所提到的这个，您所提到的这些整合的优势还能够保留多少？</p>
+<p>And speaking of this benefit of consolidation, do you think it really translates to the, uh, revenue increase? And here I mean, for example, does it really boost, uh, more purchasing from customers or, uh, they expand this security deployment or they replace it with, uh, they they replace some of the third-party independent vendors? And also in the cross, um, platform or the cross-cloud platforms or the self-built, um, scenarios or use cases, do you think how much of this benefit or or the strength of the consolidation can be, uh, kept or can be retained?</p>
+<p>Um, yes, I do believe that the consolidations can trigger into incremental revenue, but the biggest opportunity is expanding the security adoptions within an existing Microsoft customers rather than just immediately replacing every third-party vendors. When customers can manage identities, data protection, threat detection, governance through a more unified platform, it does reduce procurement friction and makes it, uh, broader deployment easier. That creates those opportunities for Agent 365 subscriptions, additionally security licensing and Azure consumption. And then I also would expect the displacement of standalone vendors, particularly those offering basic agents monitoring, uh, uh, basic agents monitoring, identity visibility. data protections capabilities that overlap with Microsoft existing portfolio. However, um, I think the advantages become less and less uh multi-cloud and self-hosted or they become less pronounced in multi-cloud and self-hosted environments, right? Microsoft can extend the governance to support the third-party agents, but integration depth and and enforcement capabilities depend on the one platform. So that being said, I would expect the strongest revenue in Microsoft-centric enterprise with one more selective expansion in a heterogeneous environment. I think the key metric I'd watch is not simply 365 license sales, but really how many customers activate those capabilities? How do they expand the protect uh protected agents uh deployments and consolidate existing contracts. One of the important qualifications is that Microsoft is already expanding agent 365 into AWS, GCP, GCP being Google uh Google Cloud and the third-party platforms. So that being said, um, I wouldn't characterize the multi-cloud advantage as disappearing. Uh, it's more accurate to say that there's centralized visi- there's more there's more ac- I would say it's uh more accurate to say um there's centralized visibility uh that extends into cloud and then as well as uh depth and uh security enforcement still varies by different integrations. Um and that's why I would expect consolidations to increase Microsoft's share of customer spending but not eliminate specialized security vendors in complex environments. 好的。然後想討論一下就關於產業的議價權的這個問題。就因為現在有看到像那個一些公司表示自己原來就尤其是第三方的安全公司表示自己原來更多的是通過銷售去到別人大的公司裡面去開拓這種銷售渠道,然後去賣給別人,要去自己去聯繫。但是呢現在最近最近可能最近幾個季度吧,可能已經有很多的公司他會主動找到這些第三方安全公司來做這個安全的一些防護或者業務。那麼從這個角度上面來看,是否後續我們能看到就是隨著一些新的功能或者是新的這些防護的措施上來之後,使得這個我們原有的一些收費的價格要提升,然後或者是說我單額度的這個單價,要么就是總體的價格會有提升的這樣的現象。 And another question is also about the price of the security products. In the past, what we commonly observed was that the third-party security companies, they had to approach the big companies through their sales to sell their security products. But in recent quarters, it seems more and more companies with the security demand may proactively approach the third-party security vendors and to uh to get the security or the defense service. So from this perspective, uh can we say that in the future with some new security functions or the defense measures, the pricing may increase in the future? I mean, like for example, the unit price or the uh total price may increase? Um, yes, I think a stronger inbound Inbound demand gives specialized AI security vendors more pricing leverage, uh particularly when customers urgently need protection before moving AI agents into production. But I would distinguish unit pricing from total contract value. I do expect the total contract values to increase as customers deploy more and more agents into uh more and more agents inspect more transactions and purchase additional security capabilities. However, uh some of the unit prices remain flat, even decline because Microsoft, Palo Alto and large platforms are really bundling more functionalities uh while they uh while the volume discounts increase with consumption. Um the strongest pricing power will be differentiated capabilities such as autonomous agents, uh autonomous agent authorization, advanced runtime protection, the cross cloud uh uh enforce uh enforcement where some customers have fuel fewer alternatives. My expectation is that higher revenue per customers is primarily driven by a a great uh a greater consumption and a broader deployment rather than just sustained increased price per unit. Um inbound demand strength is strengthens negotiate uh uh inbound demand strength is strengthens negotiating leverage, but it doesn't eliminate competitive pricing. Um so for example, uh Palo Alto's AI gateway explicitly offers declining per billion token prices at higher tiers or higher consumption tiers. And it's supporting the distinction between growing contract values and then as well as potentially declining unit prices.</p>
+<p>好的，然后下面一个问题是关于就是咱们新做的这种AI安全产品的一些成本或者是利润率的一个情况吧。就是因为我们看到在现在AI带动了这个攻击面呢有很大的一个变化，所以说在咱们的防护层面其实也会用模型进行检测啊，所以它就会带来一些额外的一些成本吧。那么就据您预估的话，同等的这种防护效果之下，随着这个检测的token或者是授权决策量的一个大规模的提升，公司的这个成本会以会怎么样的一个变化？然后如果说未来规模提升到相对稳态之后呢，公司这种security for AI的产品，它的一个利润率的一个情况大概是怎么样的一个水平？对。</p>
+<p>Okay, and the next question is about the uh AI cost and also the uh margins. And I want to ask that because uh with the emergence of AI, it has changed the scope of attack. So uh in turn the defense side may also need more uh models to do the detection and uh the defense. So I want to know that uh in your estimation, if it's under the same level or the equivalent levels of protec- protection, how do the company's costs change as the volume of tokens inspected and also authorization decisions increase? And uh do you think in the future as and the level uh in the future what levels could these margins margins reach once the business achieve a steady state scale? I would separate token inspection costs from authorization costs because their their economics are quite different. Token inspection costs generally increase with traffic volume, especially when the vendors use AI models for um AI models for systematic analysis, prompt injection, detection, and data leakage prevention. Authorization decisions are much cheaper because they can be handled through deterministic policy engines without running a large language model. An equivalent protection level, I would expect a total of infrastructure costs to increase broadly with an an expect uh broadly with inspected volume, but some of the costs per uh million tokens or per authorization decisions should decline as vendors scale through modeling, optimization, batching, caching, and smaller specialized detections. Uh so for gross margins, my steady state estimates uh for well optimized AI uh security platform would be roughly between 70 and 80%, which is potentially higher for a uh product relying primarily on lightweight authorization and policy enforcement. Um operating margins could eventually reach anywhere between 20 and 30% depending on R&amp;D intensity, the sales efficiency, um sorry, the sales efficiency and uh some of the competitive pricing. The key is the vendors must be able to grow revenue faster than their inference and infrastructure costs. I would expect the authorization uh heavy security products to have structurally better margins than products requiring expensive modeling based on inspection of every interaction. So uh for context reasons, Palo Alto reported I think it was uh 69 to I think 60 69 or 70% uh I think it was like 69.2 in subscription and support gross margins in FY 2026 compared to uh compared to 72% in FY 2025. That's company-wide and not Prisma uh Air specific and that illustrates why growing AI security demand uh does not automatically translate into margin expansion.</p>
+<p>嗯，好的，然后还有一个问题就是关于咱们认为就是这种在安全领域地区政策的一些影响嘛，就因为也看到说微软的Defender现在在退出中国的这个市场，就咱们如何理解这个情况以及就是认为这块市场未来可能主要还是由本本地区内的这些安全企业所承接需求，还是说会有一些第三方的独立的这些像Palo Alto他们去拿这块的份额？</p>
+<p>Um next question is about some of the regional policies uh impact. As we notice that Microsoft Defender is exiting the Chinese market, so in the future do you think this uh market uh will this market demand demand in this market will be uh supported by the um security companies in this market or it might be uh served by some other independent third parties like Palo Alto.</p>
+<p>Um, great question. I would expect domestic Chinese security vendors to capture the majority of that incremental demand, particularly among government uh government agencies, financial institutions, and as well as some of those regulated enterprises. The primary drivers are data sovereignty, uh secure uh cyber security uh regulations, local hosting requirements, and restrictions on cross-border data transfers, right? Uh companies like Huawei, Alibaba Cloud, uh Tencent Cloud, uh Qi-Anxin, and uh Sangfor are really positioned to uh serve those requirements through uh locally deployed security. Palo Alto has an international uh international vendors may still compete uh particularly among multinational enterprises operating in China. However, um their opportunity will depend on heavily on regulatory compliance, local uh delivery capabilities, and whether uh customer data can remain within China. Uh my expectation is that domestic vendors benefit most from any market uh withdrawal by foreign providers, while international security vendors remain relevant in selected multinational hybrid uh multinational and hybrid cloud environments. Um, yeah. So.</p>
+<p>嗯，好的。然后最后一个可能相对开放一点的问题就是，呃如果说我们现在AI本身去减少了很多的用呃企业的这种员工啊，或者说安全分析师，呃甚至说是开发人员的这个数量的话，呃那么咱们本身就是原原来按照这种席位去收费的这种模式，或者说席位收费的这种业务本身，呃会受到怎么样多大的一些影响？</p>
+<p>And one more question. Uh as we know that AI is now reducing uh companies' uh number of employees, the developers, or even the security analysts. And under this kind of uh circumstances, um the seat-based um charging model, how will this kind of seat charge based seat-based charging model or pricing model be affected?</p>
+<p>Um, if an so let's take it from here. If an employee head count remains stable, I think the seat-based pricing becomes increasingly disconnected from the actual value and workload of AI security, right? For example, an enterprise might have 500 developers and 100 security analysts, but some of those same developers could eventually manage a thousand uh thousands of autonomous AI agents. Under a pure seat-based model, the vendor wouldn't necessarily capture additional revenue even though the even through a number of agents uh or security events or authorization uh decisions um uh security events and authorization decisions increasingly significantly, right? Um I would expect vendors to maintain a seat-based subscription for human users and then while they're introducing consumption-based pricing for agent activities, uh protected workloads, and security transactions. And so specifically for Microsoft, that creates an opportunity, right? Um, it's an opportunity to monetize additional AI consumption through Azure and as well as uh Copilot Studio, uh while retaining predictable subscription revenue. So I don't expect the seat-based pricing to disappear anytime soon, but I do expect it uh as its importance to declining relative to usage-based monetizations as some of the AI agents deployments scale um over the next few years.</p>
+<p>呃，好的好的。那我今天的提问就到此为止，然后谢谢专家的时间，然后我们今天会议就先结束。</p>
+<p>Okay, that's all for my questions. Thank you for your time.</p>
+<p>Yeah, absolutely. Thank you so much. Thanks for having me. Bye-bye.</p>
+<p>Bye-bye.</p>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,275 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.16 | GP | Security | Tailscale: Identity Networking &amp; NetBird Migration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.16 | GP | Security | Tailscale: Identity Networking &amp; NetBird Migration</h1>
+<p class="orig">原标题：Tailscale: Former Customer on Identity-Based Network Connectivity and Migration to NetBird</p>
+<p class="tags">#security #networking</p>
+<p class="meta">GuidePoint · 2026-10-16</p>
+<div class="body">
+<p>Primary:</p>
+<p>Tailscale Inc.</p>
+<p>Associated:</p>
+<p>NetBird GmbH</p>
+<p>Twingate Inc.</p>
+<p>ZeroTier, Inc.</p>
+<p>ZS</p>
+<p>NET</p>
+<p>OpenVPN, Inc.</p>
+<p>Viewpoint:</p>
+<p>Customer</p>
+<p>Moderator: Niraj Sheth (NS)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Oct 16, 2026</td><td>29 Min Read</td></tr></tbody></table></div>
+<p>Akash Singh (AS), Founder and Managing Partner - Portfolia AI</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The discussion assessed modern mesh networking and zero-trust access platforms, focusing on Tailscale and a client migration to self-hosted NetBird. Traditional VPNs were characterized as vulnerable to centralized bottlenecks, broad network access, latency, complex hybrid-cloud configuration, security exposure, and weak auditability.</p>
+<p>Tailscale was positioned as a developer-friendly, identity-based connectivity platform built on WireGuard. Its primary use cases include remote access, hybrid-cloud networking, service connectivity, SSH access, session recording, Kubernetes, and AI workload governance.</p>
+<p>Key Insights</p>
+<p>The expert considers Tailscale best in class for usability, rapid deployment, product polish, and developer experience. NetBird was selected for a 500-user financial-services client because self-hosting allowed control-plane data and audit logs to remain within the client’s environment. Compliance, rather than cost, drove the migration. Tailscale is generally preferable when organizations do not require control-plane ownership. NetBird is more compelling for data sovereignty, auditability, and reduced vendor dependence. Switching platforms is technically manageable, but policy conversion, endpoint replacement, identity integrations, network redesign, and operational retraining create meaningful friction. Aperture could extend Tailscale from networking into AI governance by centralizing model credentials, usage controls, audit logs, spending limits, and data-protection guardrails. However, it remains in beta with unclear pricing.</p>
+<p>Competitive Landscape</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>Platform</p>
+<p>Positioning and advantages</p>
+<p>Limitations and best fit</p>
+<p>Tailscale</p>
+<p>NetBird</p>
+<p>Twingate</p>
+<p>Highly polished mesh networking, broad integrations, managed operations, strong developer adoption</p>
+<p>Closed hosted control plane and growing per-seat costs; best for developer-led teams</p>
+<p>Open source, self-hostable, strong audit and sovereignty controls</p>
+<p>Smaller ecosystem and greater operational burden; best for compliance-sensitive organizations</p>
+<p>Fine-grained resource access and strong governance</p>
+<p>Cloud-only and less developer-friendly; suited to IT-led access control</p>
+<p>Cloudflare Zero Trust</p>
+<p>Browser access, large edge network, broader security suite</p>
+<p>Traffic traverses the provider’s infrastructure; best for existing Cloudflare users</p>
+<p>Zscaler</p>
+<p>ZeroTier</p>
+<p>Enterprise-grade inspection, compliance, and extensive security coverage</p>
+<p>Expensive, complex, and highly sticky; best for large regulated enterprises</p>
+<p>Self-hosting and strong IoT or embedded- device support</p>
+<p>Less polished experience and traditional network policies</p>
+<p>Quantitative Insights</p>
+<p>Metric</p>
+<p>Detail</p>
+<p>Tailscale scale estimate</p>
+<p>Nearly 40,000 paid business customers and about 300 employees by July 2026, versus more than 10,000 customers in early 2025</p>
+<p>Funding</p>
+<p>Approximately $160 million Series C at a roughly $1.5 billion valuation</p>
+<p>Tailscale pricing</p>
+<p>Standard about $8 and Premium about $18 per user monthly; Enterprise is custom</p>
+<p>Add-ons</p>
+<p>Extra devices or tagged resources about $1 monthly; selected exit-node access about $5 per five devices</p>
+<p>Cloudflare pricing</p>
+<p>Free for up to 50 users, then about $7 per user monthly</p>
+<p>ZeroTier pricing</p>
+<p>Free for up to 25 devices; paid offering around $5 per user monthly</p>
+<p>Migration profile</p>
+<p>Client had 500 users and had used Tailscale for more than four years</p>
+<p>Switching difficulty</p>
+<p>Tailscale medium-high; NetBird medium; Zscaler high</p>
+<p>Pricing was described as approximate and subject to change.</p>
+<p>NS: Good evening. This is Neeraj Seth. I'm Senior Analyst here at Guidepoint Insights. Welcome to our call on</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>Tailscale. Our advisor for today's call is Akash Singh, who is the founding and managing partner at Portfolio AI. Akash, thank you for joining us today. It's a pleasure to have you on our call. Could you please start off by providing us with a brief summary of your professional background?</p>
+<p>AS: Yeah, absolutely. Thanks, Neeraj. It's a pleasure to be here. So yeah, my background, look, it spans technical and go-to-market leadership at some large companies like IBM and Software AG. But right now, I run an independent advisory practice, Portfolio AI. My main focus is to focus on enterprise infrastructure and zero trust networking. Now, for this call specifically, I think what's really super useful is that I can bring insights around bridging deep technical architectures, especially from my recent experience about migrating from Tailscale to NetBird in early this year in Q1, Q2, and can definitely would love to go deeper in WireGuard based mesh overlays or self-hosted control planes, any data sovereignty considerations, any type of, you know, if I can help you or your institutional clients navigate vendor evaluations, I would love to help. Yeah. Is that helpful?</p>
+<p>NS: Yes, absolutely. Thank you so much, Akash, for the introduction and congrats on the great career. So before we start.</p>
+<p>AS: Thank you.</p>
+<p>NS: You have implemented Tailscale in Portfolio AI or you are also working with customer success something?</p>
+<p>AS: No, NS: So for which AS: firm? So this was a client in the US for my practice, Portfolio AI. And we had, they already had footprint of Tailscale last 5 years and I went into an engagement to be able to evaluate as they were going through a number of vendors and they, their C-level had some concerns about whether they should renew, whether they should switch and we ended up switching to NetBird, which is a strong competitor of Tailscale in the industry. Yeah, does that make sense?</p>
+<p>NS: Yes, absolutely. Well, let's throw some light around the VPN solution. So first, let's start with the traditional VPN solution. So can you help us understand that? What are the main challenges normally the organization face with traditional VPN solution and how is this mesh VPN platforms like Tailscale or NetBird addresses them?</p>
+<p>AS: Yeah, so there are actually quite a few challenges as of today which are top of the order for companies, especially in the enterprise scale. So I feel the best way, one of the best ways to answer this is maybe I explain what actually goes wrong. Why is it even a challenge? So we talk about number 1, the hub and spoke bottleneck. What it means is there is all traffic hairpins through a central gateway. Think about that, and that adds a lot of latency and it creates a capacity choke point. This is especially bad for cloud-heavy and multi-region teams. Just imagine some large companies who are managing their business across different time zones and different geographies. That's the number 1 challenge there. We call it the hub and spoke bottleneck. The second challenge with traditional VPNs is they get into a state of flat network level access. What it means is that once they are connected, users often reach the whole subnets. So a compromise like a laptop or stolen credential gives them a little bit of a lateral movement. And that slows down the process. Right. So there is speed issues there. Then we look into the large attack surface, which is the VPN gateway is an internet-facing appliance with a lot of open ports. And these devices have been a repeated target for vulnerabilities as well as active exploitation. So therefore, it's super useful to protect this. So that's another big challenge. The fourth is, it doesn't fit cloud and hybrid sometimes, right? So you got to connect hyperscalers like AWS, Azure, GCP, getting on-prem infrastructure, Kubernetes. It means that we are stitching together site-to-site tunnels, and this means that we will be having overlapping IP ranges and a lot of manual configuration, and this becomes very messy, right? So that's another challenge. I can go on, but I think I want to name a couple of more important ones. Cost is another one, right? Because you have appliance, then you have the license, and then you have the maintenance cost, which actually grows with scale and plus the staff time because they are the people who</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>actually run it. So that's another one. And also I want to point out on the user experience. The challenge is that it actually, organizations experience a poor user experience, because remember I mentioned about the latency earlier? So when you have slower connections, you have split-tunnel headaches, you have constant reconnects happening, right? So they are pushing people to work around the VPN, and this delays the whole network. This slows down, and the user experience comes down. One other I want to talk about, and this was kind of very important for Tailscale to NetBird migration, which is about compliance and auditability. Now, it's hard to show the least-privileged access and per-resource access logs to auditors and customers. For large customers with traditional VPNs, and hence why the NetBird was brought in, and I can go into further detail why Tailscale wasn't able to do it and how NetBird overcome it. But does this give you at a high level some main challenges organizations face with the traditional VPNs?</p>
+<p>NS: Yes, definitely. This was helpful. Now let's talk about Tailscale. We'll go in the later part of the call about why you switched from Tailscale to NetBird, AS: Yeah.</p>
+<p>NS: But let's first focus on Tailscale. So give us, how is Tailscale positioning itself into this market and what are the different use cases and the products which are offered by Tailscale? Can you give us an overview of Tailscale?</p>
+<p>AS: Yeah, so I feel Tailscale is a very strong product in the industry right now as we speak. And especially when you compare it with competitors like NetBird, whether it's NetBird in the cloud, the other 2 competitors are WireGuard and Cloudflare Tunnel. So my take when I take a project, you know, and we look into this Tailscale, I feel it has moved from a developer-loved mesh VPN into a more broader identity-based connectivity and access platform, and that's why I feel it is a very strong offering in the market. And I feel it still earns most of its revenue from the core product, right? And the newer lines are kind of the earlier stage. So some of the... I can maybe go down to some figures and I can share some market NS: Sure.</p>
+<p>AS: Positioning numbers with you to make it more realistic. The bottom-up adoption and now moving up into the market, engineers adopt it first because setup takes minutes and it spreads into your IT as well as security budgets. Investors love it. They have pointed to developer enthusiasm as a key driver from scale perspective. By July 2026, from my research, it was nearing about 40,000 paid business clients and roughly 300 employees, which is up from about 10,000 plus business customers in early 2025. And its last reported round was about 160 million Series C. So it's going big shots there in April 2025. So valuation is about 1.5 billion, but it has an AI tailwind. The company has said that AI companies are a major source of growth. The named customers include Instacart, SAP, Motorola and a few others. And I feel there is a bit of a trust signal here as well because they have SOC 2 Type 2, which is a very important compliance in this industry. On the competitive set, like I mentioned about our friends at NetBird, the others are Headscale, which is an open source. There is ZeroTier. They both are open source and self-managed overlays. NetBird is the open source challenger. And I have seen them challenging Tailscale in a number of engagements now. So Twingate and OpenVPN Cloud Connector is another ZTNA player which is pretty credible. But at the top end, you have the Cloudflare Zero Trust and Zscaler. So its pitch is simplicity and developer experience rather than being a full security suite. And the products it positions in the market are: 1, it's about the core tailnet product, which is basically a peer-to-peer WireGuard network with identity-based ACLs, single sign-ons, and MagicDNS. So typical use case is that it replaces your corporate VPN for all remote access to internal tools. The other important capability or product it has is... It's subnet routers and exit nodes. So you can kind of bridge the VPCs or on- prem networks together and route internet traffic through a chosen node. And a typical use case for this is when you have organizations with their infrastructure in a hybrid environment, so hybrid cloud and office to cloud connectivity, they would love it. Now, Tailscale SSH and session recording is another important offering they have, which is SSH using identity instead of key management. Recording is an enterprise tier feature for them and this is largely used in cases where engineers need access to servers and they need the audit trail for privileged sessions. Another couple of</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>them, I think there are quite a few, but I think I'll jump on to the main one here, the workload connectivity. It connects services and machines and not just people, so it's service-to-service networking. It can be used in use cases like CICD, multi-cloud and so on and so forth. It can also offer support for containers, Kubernetes, databases, funnels. There is a product called Aperture, which is in the beta stage right now. It's marketed for secure AI use and its main purpose, the use case it's tackling, is controlled access for AI workloads and tools. And I think they're counting on this a lot, so hopefully this gives you some good food for thought.</p>
+<p>NS: Yeah? Yes. Also, is Tailscale selling this as a bundled product or are they selling it as a point-in solution?</p>
+<p>AS: Yeah, you mean all these?</p>
+<p>NS: Yeah, all this.</p>
+<p>AS: So, firstly, the way Tailscale sells. It's a subscription model. It's not sold as separate parts; it's one product. It's 3 paid plans: you have the standard, then the premium, and then the enterprise, and they are priced per user per month. This is the difference between Tailscale and our friends at NetBird. Now each tier unlocks more of the same platform. I'll give you some numbers here. Standard is $8 per user per month, whereas premium jumps to $18 and enterprise is custom. It offers the core networking, the ACLs, the MagicDNS, the single sign-on. They come in the plans. So you aren't buying separate modules for each; you're buying a package. But at the same time, they also have features that are gated by tier and not sold as separate SKUs. Maybe I'll give you an example. So Tailscale SSH, flow logs, or the log streaming offering, they only start at premium level; they would not even come in standard if people buy that for $8, for example. The other is that they have usage-based add-ons. So what it means is that extra user devices are at an extra cost, $1 a month each. It sounds cheap, but when you are looking at 1,000 users and a multi- year contract, it goes up pretty fast. So, there are extra tagged resources beyond the included 50 users, which are $1 a month. So they go pretty high up from there. For example, they have these Mullvad VPN exit nodes, which are $5 a month per 5 devices, and then it moves forward from then on. And then there are also newer products which sit outside the core plans. Remember I mentioned Aperture? It's in the beta stage right now, but it's their secure AI use, and it's going to be one of their strong offerings coming forward. Once that is out, that is going to be separately packaged and priced and that's going to increase the overall package price as well. But what this means for customers of Tailscale is that it's a platform with tiered pricing, not a pile of point solutions. That's good for simplicity. One vendor, one invoice and one user model that's easy to forecast. But the downside, which matters for my client, is it was a FinTech payments company. When you are talking about compliance features and you need... you want to show logs and you are being billed per seat. These guys had bought per seat pricing across 500 users. And with Tailscale, if the users increase going forward, that makes it really expensive, as opposed to NetBird, which is a flat cost. That is why NetBird's self-hosted features included a model that looked more attractive. One caveat I would like to make here is, pricing and tier contents changed in April 2026. So we always have to go back and check what the live pricing is. My figures would be good ranges, so they should not be taken as exact. Yeah, but...</p>
+<p>NS: Understood. Now, let's talk about why did you advise your client to switch from Tailscale to NetBird? And also, can you do a comparative analysis in between Tailscale and NetBird in terms of the strength and weaknesses of both of the players?</p>
+<p>AS: Yeah, I think that would be a really good discussion because that's where we can kind of decipher things. So let's compare them. Even though we switched to NetBird, I still feel Tailscale is a very strong player. We switched because of a very specific reason. Like for many companies, I feel Tailscale is the better choice, and the switch only makes sense when you have a specific requirement, which NetBird needed, which was around compliance, requiring control plane ownership. So let's go through strengths. Number 1, Tailscale... I feel in my assessment, it's best in class for ease of use. And you know, it's polished. Like the MagicDNS, Tailscale SSH. The UX is beautiful. Excuse me. It has a mature ecosystem and the longest list of endpoint integrations. They got the Jamf, they got the 1Password, they have the</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>SOC 2 Type 2 compliance, they have a large customer base. I think we mentioned, nearing 40,000 payers business clients and a lot of strong funding coming into the business. So fully managed, so no ops burden, you can set up pretty quickly. And it has a broad product roadmap, including SSH, recording, Border Zero and Aperture, the beta. On the downside though... and this is what kind of triggered NetBird... it is closed source. It is hosted control plane. The client is open source, but there is no official self-hosting. There is a per seat pricing that grows with every hire. Companies grow by hundreds and thousands of employees. So this will grow pretty fast.</p>
+<p>NS: Yes.</p>
+<p>AS: And the key features like session recording, they sit only in the higher tiers. Remember, I was giving you an example of what was available in premium but not in standard, right? And then there is a very higher lock-in, Niraj, because it is really hard to answer the data sovereignty questions. Just imagine if a client of yours asks you specific details about your infrastructure, you can't. You cannot give because it's all locked in, like you don't have access to it, right, as a client. Now, if now I want to flip to NetBird because these weaknesses turn into strengths of NetBird. And the number one strength is it's fully open source, right? It includes the management server and it can be self-hosted with some features as cloud. So for example, my client was a fintech payments company. They took NetBird self- hosted and they put it in AWS, right? So there you go. It's self-hosted cloud. And then the control plane data and audit logs can stay in your own boundary. So now when my client's clients, my client's customers asked for audit logs, they just went into AWS and gave them the audit logs, right? It was all there within their boundary. And from cost perspective, it is a lower per seat cost slightly and a fixed cost self-hosted option. So it may be expensive when you initially buy it, but over time when you grow to 700,000 users, it actually turns out to be an advantage from cost perspective. There are posture checks, there are audit logs, and there is a SSO free when self-hosted. So there is a very lower vendor lock-in because it's open source. Having said that, it does have some risks or some downsides, weaknesses, right? It is younger, clearly much smaller company as compared to Tailscale, right? With a very shorter production track record. So self-hosting adds real ops burden to them, right? And when you talk about true high availability, like HA, it appears to be needing a paid license, which again costs more. And then you have these MDM integrations, which are cloud only, so that's not available. And then you have, you know, fewer polished features as compared to Tailscale. So it's a smaller ecosystem and it has an unverified SOC 2 status in my research anyways. So that's something which comes sometimes doubtful as well. Does this give you a good strength versus weakness? I can go into more depth if you like, but does this help to set NS: Yes.</p>
+<p>AS: the scene?</p>
+<p>NS: Yeah. Also, am I getting it correct in terms of... what I understand is... is that the case that NetBird is more suitable for a large enterprise who has its own resources and then who can self-host the network? Is that correct?</p>
+<p>AS: Oh, no... not necessarily. I guess my client was a mid-market client, so it wasn't a massive organization. It only had 500 users. And I think the way you were looking at it was from cost, but our switch was not based on cost. It was based on compliance. Any company, think about a large retail company which does not have a compliance requirement, right? I think they are better off staying on Tailscale if they don't have a compliance requirement and they can manage their number of users, engineers, you know, within the limits of packages of Tailscale. It will be more cost-effective. They will achieve a faster and a better UX and all the features like the MagicDNS and others which NetBird can't provide. NetBird's main advantage for my client was the audit logs. We could not provide audit logs if it was stored on Tailscale's infrastructure, right? It was kind of locked in. And... the C-level which sat on the buying committee, they wanted to plan something long-term and they don't want it to be locked in with a vendor who can't handle compliance. And therefore, they needed, you know, something with the open source. Now, they could have gone to NetBird Cloud as well, but NetBird Cloud... also kind of partially locks you in within the vendor, right? So it doesn't completely avoid the vendor lock-in and therefore the vendor do the NetBird self-hosted instead. Because... that's a</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>really good question.</p>
+<p>NS: Understood. Also, what I understand, there are other players as well in the market. Can you throw some light if we compare Tailscale with the players like Twingate, ZeroTier as well as a Zscaler, I guess, is coming up quite frequently and Cloudflare? How is Tailscale compared to these players?</p>
+<p>AS: Yeah, Twingate, Zscaler, yes, Cloudflare. What was the other one? You mentioned one more.</p>
+<p>NS: ZeroTier?</p>
+<p>AS: ZeroTier.</p>
+<p>NS: Yeah.</p>
+<p>AS: Yeah, I've heard of them. We, in our... Cloudflare is one of the massive ones. Zscaler is, of course, Tailscale and NetBird. ZeroTier, we didn't evaluate in our most recent, but I can give you my perspective on this. Like NS: Sure.</p>
+<p>AS: from when you look at, I want to start with architecture because that kind of lays everything. And by the way, are we okay with time because we are 29 minutes? Are we still NS: Yeah, yeah.</p>
+<p>AS: keep going? Okay, good. So Tailscale specifically, right, the architecture is all around the mesh overlay on WireGuard hosted control plane, right? And this is very similar to how, you know, NetBird also operates. However, Twingate is a totally different architecture. It's zero resource centric ZTNA, you know, and it's outbound only. So outbound only connectors and it's a different kind of architecture and so is Cloudflare. It's brokered through Cloudflare's global edge, which is like the access tunnel gateway. And Zscaler is similar to Cloudflare, it's brokered through, but its own Zscaler zero trust exchange. ZeroTier, on the other hand, my understanding with that is it's a Layer 2 in the network disciplines overlay with a custom protocol. So it is different. But if we start comparing their strengths, right, we've spoken about Tailscale and NS: Yeah, AS: NetBird. Let's talk about Twingate. From my analysis, I find it to be a very fine-grained software where it has very fine access to specific resources; it's very easy to roll out. It provides governance, more governance than Tailscale when we did the scoring. On the other hand, the downside for that is that it is a closed source and cloud hosted only. There is nothing self-hosted available. If there are companies in defense, government, finance, regulated companies who need their own instance for audits like my financial client, financial services client. So it is less developer friendly and like I said, no self-hosting. It is best for IT and security teams who want resource control. That is where the best fit segment goes. When we talk about Cloudflare, the best part about that is it's got a clientless browser access. It's bundled with secure web gateway and it has wider SaaS features, SASE. And it provides a large free tier so people can just go and try it and use it. On the flip side though, the traffic goes through Cloudflare. So it is less direct than a mesh and it's harder to keep control plane data in your own boundary now. So now on the pricing side, it offers a free tier up to 50 users and then it's about $7 per user per month and I think this stacks about the same as Tailscale if you remember. I think I was mentioning $8. Yeah. And I feel the best segment for these guys is the web app centric teams who are already using Cloudflare. So they are the best for Cloudflare Zero Trust stack. Now, similarly, if you sidestep on Zscaler Private Access offering, this is, I feel, this is one of those enterprise grade inspection and policy vendors. It is part of a very broader suite. It has very strong compliance positioning. It's an enterprise grade vendor. But at the same time, it comes with higher pricing, higher cost. So it provides custom pricing. It is heavier to deploy because it's complex. So there is a significant running cost, so the total cost of ownership goes higher. So I feel it is less suited to small or developer-led teams. My mid-market customer would not be suitable for this, for example. Pricing is always</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>custom quote because it's... and the best fit segment for them is large, regulated enterprises wanting a full security stack, great compliance positioning, large customers go for it. The ZeroTier I wanted to touch on was, my understanding with that is that it can self-host because it's a layer 2 offering. So it has layer 2 communication features and it is strong for Internet of Things and that kind of provides capability for embedded devices as well. But at the same time, I remember when we looked at, we didn't really go into head-to-head evaluation with Tailscale, but I do remember it is not as polished as its UX as compared to Tailscale. It still kind of has its ACL with very traditional network rules. It has a custom protocol rather than the WireGuard, so it doesn't look that polished. It does give free access to up to 25 devices because, as I said, it is strong for IoT and embedded devices, and beyond which there is open source, which is about $5 per user per month as well. So I think the best segment for this is companies who are investing in IoT, embedded and kind of network engineering led setups. So, yeah, now there are 3 ways they all differ, though. I mean, we have done a strength and weakness analysis, but I just want to dive into this. There is a concept of mesh versus edge. Tailscale, Twingate and NetBird. You can club them together because they give the lowest latency direct connections, whereas Cloudflare and Zscaler give the strongest inspection and logging, but every session passes through their own cloud and hence why the latency increases. So that's why, hence why mesh versus edge. That's how they differ. And the second. I think the sticking point here is what we look at in evaluations is who owns the control plane? Only NetBird and ZeroTier, they offer an official self-hosted path. Everybody else, including Tailscale, they all rely on the... No, no, no. So Tailscale specifically, they rely on a Headscale project. Headscale is open source, whereas Twingate and Cloudflare and Zscaler are cloud-only. So that kind of differentiates these vendors dramatically as well. And the last point is about what's the scope here? Because Tailscale and Twingate are access tools, whereas Cloudflare and Zscaler are much more broader security suites. So they can replace more of your stack and then, of course, it costs more as well because there's a lot more effort that goes in. So hopefully, Neeraj, this explains to you the comparative dynamics of it.</p>
+<p>NS: Yes, absolutely. This was quite helpful. Just last 2 questions. So, firstly, I want to touch base a little bit on the Tailscale's new offering which you earlier mentioned on the call on the AI side of the thing. Can you talk a little bit about that? And AS: Yeah.</p>
+<p>NS: Why do you see that that is a really good opportunity for Tailscale?</p>
+<p>AS: I think you're talking about the Aperture, right?</p>
+<p>NS: Yeah, yeah.</p>
+<p>AS: So it's their main new AI product. It is right now in beta as per my knowledge. It is an AI gateway that sits between your people or agents and LLM providers. The large language model providers like OpenAI and all the others. It will move Tailscale from network connectivity into AI governance. But right now it is still in beta, so we can only say what we know, what we have seen. I would break it down into 3 or 4 components. Number 1 is the gateway model. Every LLM request which passes through Aperture before reaching the provider... it makes sure that... I mean, that's the gateway model... that every LLM request must pass through Aperture before reaching the provider, and it uses Tailscale's identity layer to identify the user or device so you don't distribute API keys. Provider keys stay central and are injected automatically as relevant, which user or device needs it, which is really good. And secondly, it's about the visibility and control. Dashboards and audit logs show who used which model, what it cost, which tools agent called, including the MCP as well as your local tool calls. You and I can pretty much set budgets and per user spending limits and this will be really useful so our costs just don't scale indefinitely. The best part is it has guardrails. The hooks can strip or block PII, which is the personally identifiable information, and it can restrict specific agent tools before the request leaves your network. Therefore, the guardrails help it stay more responsible. Compatibility is another sticking point here because it works with coding agents that let you change the API-based URL, including Cloud Code, Codex, Gemini CLI. Providers at launch included OpenAI, Anthropic, Google Gemini, Amazon Bedrock, all of these. I think</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>what I really like is that it also includes the self-hosted endpoint and it also works in CI environments such as GitHub Actions, which is really useful when you look at the enterprise world out there. Aperture will also have... well, as per their website, at least... it also has partners like Apollo Research, Cribl for authorization and logging workflows, Cerbos, Oso. Looks like they have really planned it well. There are compatibility, partners, guardrails, visibility, and control. The pricing sources are slightly conflicting though. I can share what I know, but we'll have to go and check because it's in beta. Documents say it's free during alpha with 6 free users and for anything beyond that, contact Tailscale. The beta announcement says it's included on personal plans and available on all plans. There is a little bit of a conflict there, and Tailscale's product page says it can be purchased separately from paid plans and has no published pricing during alpha and beta. That was my view on pricing other than the product. Does this help you understand the product a bit?</p>
+<p>NS: Yes, definitely. Yeah. Just 1 last question. How sticky is the solution? Is it easy for a client to switch from 1 vendor to another?</p>
+<p>AS: Yeah. Are we talking just Tailscale or the entire?</p>
+<p>NS: Specifically, AS: yeah.</p>
+<p>NS: I want to focus on Tailscale, but you can give us an overall idea that also should be fine.</p>
+<p>AS: So, we can specifically talk about NetBird and Tailscale, but I'll give you a generic overview as well, because we've spoken about a few vendors here. Switching is moderately easy, technically. But the lock-in is mostly in the config side of things. It is not in contracts. Nothing is holding you. Tailscale as a vendor never held us to that, or "oh, you can't switch." This was mainly because our config was all stuck in Tailscale infrastructure, but it didn't take us too long to switch to NetBird. This is just my assessment from this client and a few others. But where the stickiness comes from, Niraj, is there are some sources of lock-in. 1 is the endpoint footprint. Every organization having a laptop, a server, a container that runs the vendor's client. You need to replace it across all the users. It means it's a massive help desk load. You're doing a managed rollout pretty much. These guys had 500 users. So there was some ops time taken into this, and hence why we had a little migration cost. 2 is the policy and the ACL model, ACL access lists. Your access rules are written in the vendor's model, and translating them is usually the hardest step because the models all kind of differ in how they work policy files, groups, resources. If you are translating everything, you know how long it will take, there could be errors, it takes time, so that's another where the stickiness comes. 3 is identity integration. What I mean by identity is single sign-on. The group sync and the provisioning. They are all wired to the vendor. So though your IDP may be Okta, it remains the source of truth, but it kind of carries it over. So that's another sticky point which organizations need to look into. And of course, there are embedded features like Tailscale has SSH, they've got MagicDNS, they've got session recording. When we moved to NetBird, we lost MagicDNS completely. We had SSH, but we didn't have that. Now, posture integration is another one. Session recording, and now, for example, Tailscale's having Aperture. Now, Aperture, once it goes live and people start using it and then they try to switch, that's going to have a lot of dependencies on how the companies use it. So that's another thing which companies will need to look into when switching. There is operational logic. When companies use, like this client of ours, they used Tailscale for over 4 years. They had runbooks, they had monitoring teams, they had team habits, which were kind of built into Tailscale, how it operates. So all of that needed to be unlearned and then relearned on NetBird. And then you, of course, have the network design, your subnet routers, your routing peers, DNS settings, and it all needs to be changed. And there could be overlap. And finally, there are contract terms. Mostly short for mesh tools because they are monthly or annual per seat, but it can be longer if it's some kind of an enterprise deal for a number of years. But relative stickiness for Tailscale... for Tailscale... when we lined all these up, my understanding... if we go from low, medium, high, Tailscale is medium-high. And that's largely because of its closed control plane rich feature. NetBird, which is self-hosted, I would say it's medium because you add the data and code. You own the data and code. You</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+<p>can switch whenever you want. NetBird Cloud, I would say it's medium to low because it's kind of a similar config lock- in, but it's a little bit of a supported path to self-hosting. So it's easier. Twingate would be medium because it has its resource-based model. It's closed and cloud only. Zero tier would be, I feel, medium to low because I feel Zero tier is simpler network model than the others. It's officially kind of has its own self-hosted controller, but because it works on layer two, so there is a lot of rework. And then you have Cloudflare Zero Trust. I would rank them a bit higher in switching costs because medium to high, perhaps because it gets a bit trickier as the more of its suite you adopt, which is the gateways, the tunnels, the browser access, then it's difficult to unadopt or migrate. It takes time and cost. And then Zscaler is the deadliest. That is the high, because 1, it's an enterprise product. Typically, the contracts run multi-year. There is a very broad inspection which goes through. There is a policy scope. There are deep integrations within the security stack and it gets a bit tough. But hopefully this gives you some glue around switching.</p>
+<p>NS: Absolutely, absolutely. Let's wrap it here, Akash. I guess we have already talked a lot on Tailscale. Thank you so much for your time and thank you so much for your productive thoughts on Tailscale. It was really nice talking to you. Have a good day.</p>
+<p>AS: Yeah, I hope it was useful and thanks for having me. Appreciate it. Have a good day. Bye.</p>
+<p>NS: Thanks. Bye.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>10/18/2026 at 03:35 AM UTC</p>
+</div>
+</main>
+</body></html>

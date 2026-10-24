@@ -1,0 +1,196 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.16 | AC | Hardware | MLCC Channel Check: High-Cap Tight, Low-Cap Glut</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.16 | AC | Hardware | MLCC Channel Check: High-Cap Tight, Low-Cap Glut</h1>
+<p class="orig">原标题：MLCC渠道调研：AI驱动高容市场偏紧，2027年中低容面临过剩风险</p>
+<p class="tags">#hardware #semis</p>
+<p class="meta">AceCamp · 2026-10-16 · article 70568081</p>
+<div class="body">
+<h2>摘要</h2>
+<ul><li>MLCC 原厂价格维持稳定，贸易端因前期炒作及消费需求下滑 20% 而出现价格回落，但仍维持在原厂价 2 倍左右。</li><li>行业稼动率普遍 &gt;90%，海外大厂订单能见度已排至 2027 年 6 月，AI、工业需求稳健，抵消了消费电子的疲软。</li><li>AI 客户下单趋于保守，采取滚动备货模式，现有库存预计可满足至 2027 年上半年，短期内难有大规模新订单释放。</li><li>扩产节奏审慎，日韩厂商预计 2027 年释放 15% 产能，国产厂商扩产 20%-25% 较为积极，但设备交付周期长达 12-18 个月。</li><li>高端高容市场因产能受限及验证壁垒（1-1.5 年）维持供需偏紧；中低容市场 2027 年将面临供过于求及激烈的价格战。</li><li>国产替代在新能源车领域因成本压力加速至 6-9 个月验证，但在 AI 服务器等高性能领域受限于技术指标，替代进展缓慢。</li></ul>
+<p><b>以下内容来自资深行业专家：</b></p>
+<p><b>Q&amp;A</b></p>
+<p><b>当前MLCC市场的价格走势如何，原厂与贸易商的报价是否存在差异？</b></p>
+<p>从2026年8月底至今，贸易市场端的价格呈现持续缓跌的趋势，尤其体现在常规中低容和一些大尺寸常规高容的物料上。相比之下，原厂的出厂价基本保持不变，甚至部分个别规格的价格有所上调，整体并未出现下调趋势。因此，当前价格下跌主要发生在贸易市场端，而原厂价格在前期上涨后维持稳定。</p>
+<p><b>针对不同规格的MLCC，例如小尺寸高容产品，其价格表现与常规产品有何不同？</b></p>
+<p>小尺寸高容产品的价格相对稳定。这主要是因为能够生产这类产品的厂家数量不多，市场供给相对集中。此外，小尺寸高容产品的需求大多由原厂直接供应给终端客户，很少流入公开的贸易市场，因此其价格不像常规品类那样出现明显下跌，基本维持在持平状态。</p>
+<p><b>贸易商与原厂在常规中低容及大尺寸高容产品上出现价格分化的主要原因是什么？</b></p>
+<p>价格分化的核心原因在于两者之间原本就存在显著的价差，而非单纯的报价滞后。在2026年6、7月份的价格高点，贸易市场的报价普遍是原厂出厂价的四到五倍。尽管目前贸易市场价格已回落，但仍维持在原厂出厂价的两倍左右。这种价差的形成，一方面是由于贸易商此前存在囤货行为；另一方面，贸易商主要服务于无法直接从原厂获得货源的中小型客户，这些客户只能接受更高的市场价格。随着2026年9月以来消费类市场需求显著下滑，依赖这部分客户的贸易市场价格随之回落。而原厂的客户结构更多元，包括大型客户以及A I、工业、汽车等需求相对稳定的领域，且原厂最初的产能规划也未向消费类客户大量倾斜，因此其价格体系受消费市场波动的影响较小。</p>
+<p><b>从终端应用来看，AI服务器、消费电子和汽车领域当前的需求状况以及未来的展望如何？</b></p>
+<p>2026年度，不同终端市场的需求表现分化显著。与2025年相比，消费类市场的需求和汽车市场的整体销量呈现下滑态势。相比之下，AI相关领域，包括AI计算卡、相关电源及其他配套产品，以及部分工业类应用，需求呈现增长态势。这种分化的原因之一在于，许多原厂将有限的产能资源优先供应给AI、工业和汽车等前景较好的领域，导致其他领域的客户因无法获得充足的物料而减少产量。同时，欧美市场的AI需求持续旺盛，只要与AI相关的产业，其需求量都保持着上升趋势。</p>
+<p><b>AI相关客户的拉货节奏和下单情况是怎样的，是否存在超量下单的现象？</b></p>
+<p>AI相关客户的超量下单行为主要集中在2026年五六月份。当前，这些客户的下单节奏已趋于保守，主要采取滚动备货的模式，即根据即时发货量补充相应订单，并未出现远超年度预估的大量新订单。目前的工作重点是完成2026年度内的订单交付。由于许多大型客户已在各品牌原厂处下单，即使2026年的订单全部交付完毕，其现有库存预计仍能满足到2027年上半年约半年的需求。因此，短期内除非服务器市场订单出现意外的激增，否则预计到2026年底前不会再有大规模的订单释放。</p>
+<p><b>目前渠道端的库存水位如何，贸易商和代理商的情况有何不同？</b></p>
+<p>渠道库存水位存在分化。一部分贸易商在2026年八九月份已将大部分库存抛售，而另一部分持观望态度的贸易商，其当前库存水位约在四个月左右。代理商的库存水位则从之前缺货时的一到两个月，上升至目前普遍约两个月，部分达到三个月。库存增加的原因在于，终端客户虽然已下达远期订单，但自身也保有一定库存，且原厂开始稳定供货，因此客户选择将部分库存风险暂时转移至代理商，并未急于提货。尽管供应有所缓解，但部分物料的交期仍长达16周左右，整体供应能力仅算勉强跟上需求，尚未完全充裕。</p>
+<p><b>近期渠道库存水平的变化趋势是怎样的，背后的驱动因素是什么？</b></p>
+<p>渠道库存水平相较之前有所下降，这主要是渠道商主动降低库存的结果。由于市场普遍预期价格将持续下行，渠道商倾向于降低库存水平以规避风险。对于许多在前期价格高点已经获利的渠道商而言，当前只要能以不亏本的价格将手中存货出清，整体上仍是盈利的，这构成了他们主动去库存的主要动机。</p>
+<p><b>目前MLCC行业的整体产能利用率（稼动率）和订单能见度情况如何？</b></p>
+<p>当前MLCC行业的稼动率普遍处于高位，各主要厂商基本都达到90%以上，处于比较满产的状态。这主要适用于海外大厂，包括日系、韩系、台系以及中国大陆的头部企业。相比之下，一些国产中小型或新进入的厂商稼动率可能没有那么高。由于2026年4月至6月期间接收了大量订单，许多MLCC厂商的订单能见度已排至2027年6月左右。即便在当前稼动率维持在90%以上的情况下，交付周期依然可以延续到明年年中。原厂会根据不同规格产品的需求波动，动态调整交付节奏，但整体稼动率会维持在90%以上，同时也会避免产能全开。预计到2026年年底，随着年初采购的设备陆续到位，可能会有更大批量的产能释放出来。</p>
+<p><b>当前MLCC市场的供需关系和价格趋势是怎样的？终端需求是否有明显变化？</b></p>
+<p>尽管中低容产品的订单和稼动率维持在较高水平，但市场趋势正在转向价格竞争。客户虽然仍有需求，但更倾向于寻求更低的价格，并会在不同供应商之间进行比价，这导致市场价格呈现缓慢下跌的趋势。目前供需关系依然偏紧，与前几个月相比变化不大。价格下跌和部分抛售行为主要是由于前期市场炒作导致价格过高。渠道贸易商手中持有的一些高价库存难以售出，造成了货卖不出去的表象，但根本原因在于价格。只要价格回落，货物仍然能够售出。从原厂端来看，其出货价格客户普遍能够接受，并且持续有新订单进入，因此不存在需求大幅下滑的情况。从终端需求来看，消费类等领域的需求在2026年全年维度上确实有所减弱，年度预测总量同比2025年是下降的。然而，这种下降已经平均分配到每个月，若仅观察近几个月的单月需求，与前两三个月相比，并没有出现剧烈的下滑。</p>
+<p><b>MLCC生产设备的交付周期是多久？不同规格产品的设备交付周期是否存在差异？</b></p>
+<p>目前MLCC生产设备的交付周期普遍在一年左右。具体来看，用于生产普通中高容和中低容产品的设备，交付周期大约为一年。而用于生产更高端超高容产品（例如226、476、107系列）的设备，交付周期则需要在此基础上再增加3到6个月。设备交付周期较长的主要原因是，设备制造商并未因为这一轮MLCC缺货潮而进行大规模扩产。同时，设备制造商自身也面临其上游部分元器件交期拉长的问题，这进一步延长了最终设备的交付时间。</p>
+<p><b>在当前设备交付周期较长的情况下，国产设备的替代进展如何？</b></p>
+<p>尽管日系和台系设备供应紧张，但国产设备的导入速度仍然较慢。主要原因是大型MLCC厂商对国产设备的认可度暂时不高。当前是各MLCC厂商，尤其是国产品牌抢占市场份额的关键时期，因此他们对于更换设备非常谨慎。厂商担心，如果仓促使用未经充分调试或精度存在差异的国产设备，可能导致产品出现大批量的不良品，从而引发严重的品质问题。目前许多国产厂商承接的是以往难以进入的大客户订单，若产品参数无法满足客户要求或出现品质波动，后果会很严重。因此，在这个阶段，厂商的首要目标是确保产品质量和市场份额，而非单纯降低成本，这使得他们对采用国产设备的动力不强。</p>
+<p><b>行业内主要厂商，特别是头部企业，对于扩产持何种态度？具体的扩产计划是怎样的？</b></p>
+<p>整体而言，各厂商对扩产持相对审慎的态度。日系厂商2026年的扩产计划普遍在15%至20%之间，这部分新增产能预计在2027年释放。台系厂商由于部分市场份额被大陆厂商挤占，扩产计划相对保守，预计增幅仅为10%左右。以三星为代表的韩系厂商，扩产幅度预计约为15%。相比之下，国产厂商的扩产计划则更为积极，由于市场份额持续增长，其2026年的扩产幅度普遍在20%至25%之间。尽管存在AI等因素带来的需求增长预期，但大部分厂商都经历过2018年后的市场变化，不愿重蹈覆辙。当时的大规模扩产导致了严重的供过于求和长达三四年的价格持续下跌。为避免当年价格断崖式下跌的情况重演，厂商在制定扩产计划时表现得较为谨慎，不会进行非常激进的产能扩张。</p>
+<p><b>目前国内MLCC瓷粉市场的供应格局是怎样的，国产瓷粉与日本产品相比存在哪些差异？</b></p>
+<p>当前国内MLCC瓷粉市场中，山东国瓷占据了约70%的市场份额，主要集中在中低容产品领域。其余30%的高端瓷粉市场则主要由日本供应商占据。这种格局的根本原因在于产品纯度的差异。国瓷在高纯度瓷粉的生产上，其颗粒粒径无法做到像日本产品那样精细和均匀，这导致其产品主要适用于中低容MLCC。因此，高容MLCC的生产厂商绝大部分仍向日本采购瓷粉。尽管国瓷也生产一部分用于普通高容产品的瓷粉，但目前主要使用者是一些新兴或中小型厂商。大型MLCC制造商在其高容产品线上基本不使用国产瓷粉，仅在中低容产品上广泛采用。</p>
+<p><b>不同国家或地区的MLCC原厂（如日系、韩系、台系及中国大陆厂商）在渠道管控策略上有何差异？</b></p>
+<p>各地区原厂的渠道管控策略差异显著。日系厂商的管控最为严格，能够追溯每一颗物料的渠道来源及最终客户。代理协议中明令禁止未经原厂许可的转卖行为，一旦发现，处罚措施严厉，轻则罚款，重则可能取消代理资格。日系厂商要求代理商必须提供详尽的客户项目信息和准确的预测数量，才会分配产能和接受订单。韩系厂商的管控严格程度次之，主要在缺货时针对高容产品进行渠道管理，并会告知代理商不得转卖，但通常不要求提供非常详细的项目信息。对于中低容产品，韩系厂商基本不设管控，允许代理商自由销售。台系厂商的管控重点在于特殊品，这类产品同样有禁止转卖的机制和相应的处罚措施。而对于常规的中低容产品，由于台系厂商在该领域份额已下降，且其高容产品多为贴牌日系，因此基本没有渠道管控。中国大陆厂商的渠道管控制度整体上最为宽松，通常不严格追溯物料的最终去向，只要代理商的订单需求量波动在合理范围内，原厂基本不会干预。</p>
+<p><b>在MLCC的渠道体系中，代理商和贸易商分别扮演什么角色，原厂的渠道管控主要针对哪一方？</b></p>
+<p>在渠道体系中，代理商直接与原厂合作，向原厂采购物料，并受到前述各原厂不同管控政策的约束。贸易商则不与原厂直接对接，无法从原厂获得货源。他们的货源主要来自两个渠道：一是从代理商处采购；二是从某些客户多采购的库存物料中购买。因此，原厂的渠道管控体系是直接针对代理商的，不涉及贸易商。</p>
+<p><b>当前MLCC厂商从消费类产品转向AI等高容产品的进展如何，这一过程中存在哪些技术约束？</b></p>
+<p>2026年以来，多数厂商已完成了大部分的产线转换。目前仍有较大转产需求的主要是日系厂商，因为他们尚未完全消化AI领域的订单，仍在持续进行产线调整以承接更多业务。相比之下，韩系和中国大陆厂商的转产动作已相对缓和，因为在2026年上半年（截至Q 3）已基本完成转换，当前主要是在维持现有产线，仅在应对部分客户的紧急订单时才会进行小规模的产线调整。</p>
+<p>技术上的主要约束在于转产是否涉及跨介质。如果是同类介质之间的转换，例如从X5R中低容产品转向X5R高容产品，仅需进行设备调试，大约3个月即可完成。但如果是跨介质的转换，如从X5R产线转向生产NPO或C0G等其他介质类型的产品，则原有的设备无法使用，必须采购新设备。许多高端产品（如C0G）无法通过直接转产实现，厂商需要通过购买新设备来完成扩产，这是主要的局限性所在。</p>
+<p><b>太阳诱电在高容MLCC市场的扩产策略为何显得较为激进，这对市场份额格局有何影响？</b></p>
+<p>太阳诱电在2026年的扩产计划确实较为激进，主要原因在于其前几年的产能相对较小。在海外AI服务器市场，MLCC的主要供应商是村田、太阳诱电和三星。为了获取更多AI订单，太阳诱电正积极扩大产能。然而，尽管策略激进，其市场份额的上升速度并未如预期之快，因为新设备的到位和产能的释放需要时间。自2026年6月至今，由于产能持续满载且设备扩充尚未完成，太阳诱电已明确告知客户，部分规格的产品已暂停接单。</p>
+<p><b>国产MLCC产品进入不同下游应用领域（如消费电子、汽车、服务器）的一线客户时，面临的壁垒和所需的验证周期是怎样的？</b></p>
+<p>国产MLCC进入不同领域的验证周期和壁垒差异很大。在消费电子领域，导入和替代速度最快，通常在3个月内即可完成验证并实现批量使用。在汽车领域，验证周期较长，基本需要一年左右。而在服务器领域，无论是AI服务器还是一般工业服务器，验证周期更长，大约需要一年到一年半。服务器客户对元器件的性能和可靠性要求极为严苛，单体设备价值高，因此更换供应商的意愿很低。特别是原本使用日系品牌的客户，基本不会考虑更换为国产品牌，因为国产产品在性能测试和验证标准上难以完全满足其要求。</p>
+<p><b>除了价格因素，当前部分MLCC物料供应紧张的局面是否会加速国产产品的导入进程？</b></p>
+<p>供应紧张确实对国产导入有一定影响，但影响有限。在汽车领域，尤其是新能源汽车，由于整车价格持续下降带来的成本压力，车企导入国产物料的意愿增强，验证周期也缩短至六到九个月，2026年国产MLCC厂商在一些国内知名新能源车企已取得不错的批量合作成果。然而，在服务器等对价格不敏感且对性能要求极高的领域，客户并不会因为供应紧张而轻易转向国产品牌。他们通常的解决方案是，首先在同品质等级的品牌中寻找多个供应商，或在同一品牌下与多家代理商合作。通过将订单分散给多家代理商，客户多数情况下仍能凑齐所需物料。因此，真正出现完全无法采购到的情况并不常见，更多是交期延长的问题，这并未构成迫使高端客户必须采用国产品牌的决定性因素。</p>
+<p><b>展望2027年，MLCC产业链面临的最大弹性和风险分别是什么？</b></p>
+<p>展望2027年，市场机会或弹性主要存在于高端和高容MLCC产品领域。受限于供应商产能以及客户导入替代品牌速度较慢，高容产品的市场缺口预计将维持在中高水平。原厂通常会采用“挤牙膏”式的供货策略，即便是缺货也会少量分配，这使得客户更换品牌的紧迫性降低，从而维持了高容市场的紧张态势。</p>
+<p>主要的风险则集中在中低容MLCC市场。预计到2027年，中低容市场将完全恢复到供需平衡甚至过剩的状态。该领域的供应链成熟，众多厂商（尤其是国产品牌）具备生产能力且产品质量已获得客户认可。因此，仅能生产中低容产品的厂商将很快面临激烈的价格竞争。这些厂商由于缺乏高容产品带来的议价能力，无法像综合性厂商那样通过高容产品的利润来平衡低容产品的低毛利，其盈利能力将面临巨大压力。与2026年相比，这些厂商在2027年的获利水平可能会出现大幅下滑。</p>
+</div>
+</main>
+</body></html>

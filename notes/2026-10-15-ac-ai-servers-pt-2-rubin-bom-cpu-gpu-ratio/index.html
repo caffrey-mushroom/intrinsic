@@ -1,0 +1,183 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.15 | AC | Datacenter | AI Servers Pt.2: Rubin BOM &amp; CPU-GPU Ratio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.15 | AC | Datacenter | AI Servers Pt.2: Rubin BOM &amp; CPU-GPU Ratio</h1>
+<p class="orig">原标题：AI服务器调研-2：Rubin机柜BOM成本拆分，CPU与GPU配比变化及AMD与INTC产品对比，存储、交换芯片等最新供需状态等 – 三星_海力士_美光_博通_AMD_INTC_麦格米特</p>
+<p class="tags">#datacenter #memory #semis</p>
+<p class="meta">AceCamp · 2026-10-15 · article 70567955</p>
+<div class="body">
+<h2>摘要</h2>
+<p>本文核心要点包括：1，	AI服务器存储、交换芯片等最新供需状态2，	CPU与GPU配比变化，AMD与INTC产品对比3，	Rubin机柜BOM成本拆分</p>
+<p>以下为专家观点：</p>
+<p><b>1，从AI服务器核心组件的角度看，当前哪些部件处于供需紧张状态，未来这种紧张态势将如何演变？</b></p>
+<p>当前及未来一段时间，AI服务器供应链的紧张环节主要集中在存储、网络交换芯片以及上游原材料三个层面：</p>
+<p>首先，在存储领域，HBM和SSD是目前最紧缺的组件。全球供应主要由三星、海力士和美光三家主导，其中海力士和三星占据主要份额。目前HBM和SSD的产能排期已至2027年底。随着RUBIN整机柜的推出，其采用的HBM3E等高端HBM芯片，因良率和产能问题将面临严重的供应紧缺。同时，RUBIN整机柜高密度的架构设计将完全采用SSD闪存盘，摒弃了传统机械硬盘，这将导致SSD需求急剧上升。因此，预计至少在2028年底前，HBM和SSD都将维持非常紧张的供需关系。这种需求压力不仅来自英伟达，也源于AWS、Meta等厂商在ASIC整机柜方案中对高密度、高性能存储的普遍需求。</p>
+<p>其次，网络交换芯片，特别是CPO光模块，是另一个瓶颈。从2027年开始，英伟达的CPO交换机将进入量产，需要大量光模块进行封装。在RUBIN平台上，光模块的速率将从200G/400G提升至800G、1T甚至1.6T，且使用数量也会增加。由于ASIC方案在网络架构上倾向于模仿英伟达，因此ASIC厂商也将跟进采用CPO光模块，进一步加剧市场需求。</p>
+<p>最后，在上游原材料方面，碳化硅的供应将非常紧张。无论是现有的18.3千瓦电源模块，还是未来的800V VDC和SST方案，其内部的功率元器件（如电容、电阻）都在从传统的硅基材料和氮化镓向碳化硅迁移。预计到2027年，碳化硅的供应和价格都将面临巨大压力。目前，碳化硅的供应交期已延长至48到52周，像光宝、台达这样的电源厂商现在就需要向英飞凌、TI等供应商下达明年（2027年）10月份的订单，凸显了其远期的供应短缺问题。</p>
+<p><b>2，在AI服务器的供应链中，除了GPU之外，还有哪些组件或原材料在未来两年内可能面临供应紧张的局面？</b></p>
+<p>在未来两年，碳化硅元器件的供应将非常紧张。如果缺乏强大的国产供应商介入，仅依靠传统的欧美头部企业将难以满足市场需求。此外，电容也是一个供应紧俏的环节。自某款产品开始采用后，无论是电解电容、薄膜电容还是超级电容，其使用量和单体容量均有所增加。传统的日本电容厂商产能扩张速度较慢。尽管一些AC厂商正在引入国产供应商，但由于电容产品验证周期长且难度大，预计国产供应商在整个电容供应链中的份额不会超过20%。因此，电源模块厂商仍将高度依赖日系电容供应商，导致供应持续紧张。目前，电容的交付周期普遍在36至42周，接近三个季度。</p>
+<p><b>3，当前CPU的供应情况如何？以及CPU与GPU的配比关系呈现出怎样的变化趋势？</b></p>
+<p>目前CPU的供应并不十分紧张。尽管自2025年起，传统计算型服务器市场已恢复正增长，扭转了2022年和2023年的负增长态势，但由于英特尔、AMD乃至NVIDIA等厂商的产能相对充沛，市场供应充足。CPU对制造工艺的要求不像GPU那样需要5纳米、3纳米甚至2纳米的尖端技术，通常14纳米或7纳米即可满足需求，因此整体市场供应相对宽松。</p>
+<p>关于CPU与GPU的配比，在不同应用场景下存在差异。在整机柜级别的部署中，CPU与GPU的配比通常为1:2，即一颗CPU对应两颗GPU，以实现管理与计算性能的最佳平衡。而在DGX服务器中，配比则为1:4，每台服务器配置两颗CPU和八颗GPU。</p>
+<p><b>4，客户在选择英特尔和AMD的CPU产品时是否存在特定的倾向性？不同类型客户的选择逻辑有何差异？</b></p>
+<p>客户在选择英特尔和AMD的CPU时确实存在不同的倾向性，这主要取决于应用场景。中小企业客户，特别是从事高性能计算、手游、端游或需要处理多用户并发应用的互联网公司，更偏向于使用AMD的CPU。其主要原因是AMD CPU的核心数量多，虽然单核性能不强，但非常适合同时处理多个计算量不大的任务，从而实现CPU资源的最大化利用。</p>
+<p>相比之下，英特尔CPU的特点是单核性能非常强大，但核心数量相对较少。这使其更适用于大规模AI推理或AI训练等应用场景。这类场景不要求处理大量并发任务，但对单个任务的运算速度有极高要求。因此，大型企业客户通常更青睐使用英特尔的CPU。</p>
+<p><b>5，从市场份额来看，英特尔和AMD目前的竞争格局是怎样的？</b></p>
+<p>目前，英特尔和AMD在CPU市场的份额比例基本达到了5:5。在此之前，该比例曾为7:3，后演变为6:4，显示出英特尔的市场份额在持续下降。AMD正在积极追赶，其策略一方面是逐步提升产品的单核性能，另一方面是提供比英特尔更具竞争力的价格，这使得AMD受到了绝大多数客户的青睐。</p>
+<p>然而，展望未来，AMD的市场份额达到50%后可能已接近顶峰，进一步反超英特尔的难度较大。英特尔的防守策略反应迅速，且其在大型企业客户中拥有稳固的用户基础。这类客户高度重视处理器的高性能，对价格的敏感度相对较低，更换平台的意愿不强。</p>
+<p><b>6，目前NVIDIA Rubin架构的GPU单卡价格以及整机柜的售价是多少？近期价格是否有变化？</b></p>
+<p>当前，Rubin架构的单颗GPU价值量大约在5万至6万美元之间。一个包含72个节点的Rubin整机柜售价约为600万至700万美元。近期价格确实出现了上涨，主要驱动因素是HBM和SiC等上游元器件价格的上涨。自2025年底以来，三星、美光、海力士等存储厂商持续提价，导致存储芯片（包括HBM和SiC）价格涨幅显著。这使得Rubin整机柜的初始价格从约600万美元上涨至接近700万美元。</p>
+<p><b>7，Rubin整机柜的BOM成本构成大致是怎样的？</b></p>
+<p>在Rubin整机柜的成本构成中，GPU是占比最大的部分。以单颗GPU价格5万至6万美元计算，72颗GPU的总价值就达到了约400多万美元，构成了成本的主要部分。</p>
+<p>除了GPU，电源系统价值约30万美金，PCB部分价值在15至20万美金之间。液冷系统的价值约为15万美金。铜缆连接器价值约10万美金，机壳、导轨等结构件价值在5至8万美金。内存是成本占比较大的部分，价值在50至60万美金。此外，生产运营成本及毛利合计约占10%。整体加总后，服务器总成本约为600多万美金。</p>
+<p><b>8，在服务器的各项成本构成中，近期哪些部分的价格变化趋势较为显著？展望未来，哪些部分的价格波动可能延续，特别是对于碳化硅等功率元器件，其价格在明年（2027年）预计会有何变化？</b></p>
+<p>近期价格变化最显著的部分是存储，其供应一直较为紧俏。对于碳化硅、电阻、电感等功率元器件，预计到明年（2027年）价格将趋于平稳。这主要是因为碳化硅的生产门槛不像HBM那样高，目前欧美已有众多厂商具备生产能力，当前的供不应求主要是由上游原材料（如硅粉）紧缺以及其应用场景广泛所导致的暂时性现象。随着未来产能的释放，特别是国产供应商的进入，预计将推动整体生产成本和市场价格下降。</p>
+<p><b>9，在英伟达供应链中，AI服务器电源的主要供应商有哪些，各自的市场份额如何？未来在电源领域，哪些供应商被认为更具发展潜力？</b></p>
+<p>在英伟达的供应链体系中，主要的电源供应商为光宝、台达和麦格米特。其中，光宝和台达合计占据了90%至92%的市场份额，而麦格米特的份额不超过10%。英伟达倾向于选择这些供应稳定的厂商。不过，在5.5千瓦等功率相对较低的电源模块市场，除了光宝和台达，欧陆通、麦格米特乃至国内的奥海等厂商均具备生产和出海能力。展望未来，在AI电源领域，欧陆通和麦格米特被认为有潜力提升其市场份额。澳海虽然也具备能力，但相较前两家，其竞争力稍弱一个级别。</p>
+<p><b>10，从Rubin服务器升级到采用800V VDC的Rubin Ultra服务器，其电源系统的价值量和毛利率预计将发生怎样的变化？</b></p>
+<p>在Rubin服务器中，电源系统的价值量约为22万美金。当升级到采用800V VDC的Rubin Ultra服务器后，预计电源系统的单台价值量将提升至40到50万美金。同时，该电源系统的毛利率非常可观，这是一个竞争尚不充分的高利润市场。</p>
+<p><b>11，随着服务器PSU的功率从5.5千瓦向12千瓦、15千瓦乃至18.5千瓦及以上提升，不同电源供应商的产品策略和市场定位有何差异？</b></p>
+<p>在高端PSU市场，光宝和台达在技术上处于领先地位，尤其是在18.5千瓦及以上的最前沿产品上，其研发和推出速度最快。他们的策略是专注于首发高端产品，以获取高额利润，并避免陷入价格竞争。</p>
+<p>相比之下，欧陆通和麦格米特等厂商的产品通常会落后光宝和台达一代，但他们擅长在技术已经成熟的产品线上进行快速跟进和成本优化。这种分工使得光宝和台达聚焦于技术前沿和高利润，而将成熟产品的价格竞争留给欧陆通、麦格米特等厂商。</p>
+</div>
+</main>
+</body></html>

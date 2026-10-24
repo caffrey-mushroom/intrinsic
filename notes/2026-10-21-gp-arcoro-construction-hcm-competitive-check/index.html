@@ -1,0 +1,341 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.21 | GP | Software | Arcoro: Construction HCM Competitive Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.21 | GP | Software | Arcoro: Construction HCM Competitive Check</h1>
+<p class="orig">原标题：Arcoro: Why Does This Construction HCM Platform Win or Lose Against Miter, hh2, and Lumber?</p>
+<p class="tags">#software</p>
+<p class="meta">GuidePoint · 2026-10-21</p>
+<div class="body">
+<p>Primary:</p>
+<p>Arcoro Inc.</p>
+<p>Associated:</p>
+<p>Miter, Inc.</p>
+<p>CRH</p>
+<p>TRMB</p>
+<p>ADSK</p>
+<p>PCOR</p>
+<p>Digital Business Integration, Inc.</p>
+<p>ADP</p>
+<p>Buildots Ltd</p>
+<p>LumberFi Inc.</p>
+<p>Viewpoint:</p>
+<p>Former Executive</p>
+<p>Moderator: Patrick Jamgocian (PJ)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Oct 20, 2026</td><td>30 Min Read</td></tr></tbody></table></div>
+<p>Andrey Ososkov (AO), Former Regional Account Executive - Arcoro</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The discussion examined construction-focused payroll, HR, timekeeping, safety, and compliance software, with emphasis on Arcoro’s competitive position against Miter, HH2, Lumber, and other vendors.</p>
+<p>Construction is difficult for general-purpose providers because of field-based workforces, state-specific labor rules, overtime requirements, fragmented systems, and slow technology adoption. Contractors also favor products with established industry references, creating a substantial barrier for new entrants.</p>
+<p>Arcoro primarily serves small and midsize contractors. Its ExakTime time-and-attendance product established its reputation, while broader HR and payroll modules have expanded its addressable market.</p>
+<p>Key Insights</p>
+<p>The expert estimates that more than 60% of contractors with roughly 5–200 employees still capture field information manually, leaving considerable digitization potential. Only about 20%–25% appear to operate substantially automated workflows. Arcoro’s principal advantages are longevity, strong contractor recognition, broad payroll and ERP connectivity, and industry partnerships. Its key weakness is the absence of product trials. The expert believes this causes lost deals because buyers increasingly expect hands-on evaluation before signing multiyear contracts. Miter appears to be gaining share, potentially through trade-specific targeting, flexible configuration, attractive pricing, or easier product evaluation. Products are often functionally comparable. Consequently, integrations, implementation, support, and price frequently determine purchasing decisions. Established vendors remain well positioned, but venture-backed competitors can sustain aggressive pricing and tolerate product shortcomings while pursuing growth.</p>
+<p>Competitive Landscape</p>
+<p>10/22/2026 at 00:15 AM UTC</p>
+<p>Company or group</p>
+<p>Arcoro</p>
+<p>Miter</p>
+<p>Positioning</p>
+<p>Advantages</p>
+<p>Risks or weaknesses</p>
+<p>Established construction HCM vendor</p>
+<p>Brand recognition, mature integrations, broad suite, ongoing product development</p>
+<p>No trials, limited customization, support or pricing issues can drive churn</p>
+<p>Fast-growing emerging competitor</p>
+<p>Possible trade specialization, flexibility, and aggressive pricing</p>
+<p>Exact differentiation and economics were uncertain</p>
+<p>HH2 and Lumber</p>
+<p>Construction-focused alternatives</p>
+<p>Can address similar core workflows</p>
+<p>No clear leadership advantage was identified</p>
+<p>QuickBooks and ADP ecosystem</p>
+<p>Large incumbent platforms</p>
+<p>Existing customer relationships and broad distribution</p>
+<p>May lack construction-specific depth</p>
+<p>Connecteam</p>
+<p>Growing field-work platform</p>
+<p>Partnership-led expansion, including ADP connectivity</p>
+<p>Less established construction heritage</p>
+<p>Autodesk, Procore, InEight</p>
+<p>Enterprise project platforms</p>
+<p>Broader end-to-end capabilities for large contractors</p>
+<p>Longer, more complex implementations</p>
+<p>busybusy and ClockShark</p>
+<p>Point-solution competitors</p>
+<p>Easier replacement and deployment</p>
+<p>Lower recent market visibility according to the expert</p>
+<p>Quantitative Insights</p>
+<p>Metric</p>
+<p>Addressable US construction firms</p>
+<p>Arcoro annual growth</p>
+<p>Expert estimate</p>
+<p>Approximately 180,000–220,000</p>
+<p>Approximately 15%–20%</p>
+<p>ExakTime share of Arcoro revenue</p>
+<p>Approximately 55%–60%, down from about 75%</p>
+<p>Basic annual payroll cost for 200 employees</p>
+<p>Cost with added modules</p>
+<p>Suite implementation</p>
+<p>Point-solution implementation</p>
+<p>Suite churn</p>
+<p>Point-solution churn</p>
+<p>Typical annual price increase</p>
+<p>Customer satisfaction</p>
+<p>About $80,000</p>
+<p>About $140,000–$150,000</p>
+<p>Roughly 4–6 months</p>
+<p>Roughly 2–4 weeks</p>
+<p>Below 10%</p>
+<p>Above 20%</p>
+<p>About 5%</p>
+<p>Approximately 80%–85%</p>
+<p>10/22/2026 at 00:15 AM UTC</p>
+<p>PJ: This is Patrick Jamgocian and I'm the Venture Capital Strategist here at Guidepoint Insights. Our call today is titled Arcoro, Why Does This Construction HCM Platform Win and Lose Against Miter, HH2 and Lumber? Our advisor today is Andrey Ososkov, who's the former Regional Account Executive at Arcoro. Andrey, thanks for joining us today. Could you please start off by providing us with a brief summary of your professional background and elaborate a bit on your role at Arcoro while you were there?</p>
+<p>AO: Yeah, absolutely. So I have 8 plus years of experience in the industry selling to contractors and owners in the space, primarily software as a service. During my time at Arcoro, I worked with several different contractors, worked with them on implementing new tools for time and attendance, HR, payroll, safety and compliance. Also during that time, I gathered a lot of information on the competitive landscape and where the industry stands currently and where it's heading in the future.</p>
+<p>PJ: Great. So just to begin with a top-down question, what makes payroll, HR, and accounting and construction more complex than other industries and why can't general payroll companies serve this end market?</p>
+<p>AO: Yeah, so general payroll companies really struggle with construction for several reasons. 1, they don't understand the industry very well. There are certain laws that are in effect, especially in California, that make it difficult to have the same model for construction when it comes to labor code, when it comes to operations between state lines, when it comes to certain laws like required lunch break or overtime. So that's kind of the biggest challenge for other providers. They're used to working with organizations where employees are not in the field as much and where visibility is easier to track. So that would be the main thing. The second thing is when you're working with contractors, everything has to do with is it proven in the industry? Who else is using the solution? So it's difficult to break into the space. A lot of companies struggle with that and they don't take off. The ones that do, it takes probably 3 to 4 years to really break into the construction industry in North America. And I speak from experience. I know when I worked at SoftwareOne, I was a value-added reseller. I was selling a European estimating platform to the construction space. Great success in Europe, Asia, not so much in North America because no one else was using it. And it was not a success because they didn't invest the time to really stick around long enough for the use cases to pick up and for it to spread. So that's another challenge in the industry.</p>
+<p>PJ: Okay.</p>
+<p>AO: And then the third and final challenge in the industry, I would say, is construction space is very old school. If you look at the research, you know, of all the industries, health care and such, construction is the slowest one to adopt new technology, not just software, everything. So a lot of the people you're working with, they've been at it since 1990,</p>
+<ol><li>They've been using spreadsheets. They're really good at what they do. But now the challenge is with a new</li></ol>
+<p>generation coming in and some of those people retiring, how can I do all of this with 1 person when all the knowledge is in their head or tribal knowledge? So they're having to really change. But it's still a difficult process because a lot of resistance in the industry is there. So for all those reasons, I would say that's kind of why other companies that are not construction focused suffer from breaking into that industry in that space.</p>
+<p>PJ: Okay. And how large is the TAM here? I mean, I think this world is, you know, small construction companies. Do you have a sense of how many there are in the US?</p>
+<p>AO: When you say small construction companies, do you have an idea of people working for them or revenue?</p>
+<p>PJ: I believe, correct me if I'm wrong, that the firms that would purchase Arcoro, Miter, HH2, and Lumber would have like maybe 200 employees or less. Is that correct?</p>
+<p>10/22/2026 at 00:15 AM UTC</p>
+<p>AO: Yeah, I would say that's fair. There are some exceptions, 1 or 2, but for the majority, yeah, I would say they would be around that use case, that user number. Sometimes, mom and pop contractors with just 5 employees, sometimes between 200 to 300, usually not more than that, because if they're a larger contractor and we're talking about Hensel Phelps or a contractor that's 0.5 billion plus in revenue a year, they probably already have an innovation team and they probably are looking at software that's all in one capital project end-to-end solutions. So they'd be looking at something like Autodesk, Procore, now at InEight. There's quite a few capital projects. Arcoro targets more of the medium market for the space.</p>
+<p>PJ: So how did they define the medium market?</p>
+<p>AO: I think it defined them, not so much they defined it. So when Arcoro started back in the late 90s, it was called ExakTime. Still a very popular name in the industry, and they still have a website for it just because so many contractors moved to different positions and they Google ExakTime. So because they started with their flagship product, which was time and attendance, they built out other capabilities, but that was their flagship product. Time and attendance is very straightforward, very simple, you know, make it easier to track employees out in the field. Now they have a lot of other capabilities, but because they started with that one, it was difficult to transition from that point solution to something that does project planning and estimating, integration to model 3D, 4D, BIM, project management, document controls. Usually companies that have evolved into end-to-end capital project software like that started in something like BIM, you know, Autodesk or InEight Estimating or Procore project management and expanded into the other categories to either be an end-to-end or at least market themselves as an end-to-end. Software that starts as a point solution to do something very specific like time and attendance is still valuable. But a lot more difficult to transition to an end-to-end platform just because, you know, it's a point solution. It's very straightforward. It's a shorter implementation cycle, shorter sales cycle. So because it's a shorter implementation, it's an easier product to sell and to get a user to adopt. They just replicate that sales motion, that expansion, rather than invest into the unknown of end-to-end solutions. And those larger contractors, they really do need the end-to-end solutions where implementation can take 6 months or 3 years, depending on how many modules they're onboarding and how many departments are using them and how configurable they want it to be to their project. So completely different.</p>
+<p>PJ: Well, I guess I was asking in terms of the number of employees, how does Arcoro define their end market?</p>
+<p>AO: As far as number of employees, I would say if they're trying to sell their payroll solutions, they would target larger contractors, even up to 300 plus employees, very, very rarely beyond 1,000, but there have been some use cases for that. When it comes to their flagship product, which is ExakTime, time and attendance, they target, I would say, between 5 to 150 to 200 employees maybe, and they have different tiers of the teams going after that.</p>
+<p>PJ: Okay. A different expert in this area told me that there's roughly 180,000 to maybe 220,000 construction firms in the US around that size, like 200, 300 employees or less. Is that, does that sound correct to you?</p>
+<p>AO: Oh, in terms of overall, contractors, subcontractors, absolutely. And especially if you're including specialty contractors, for example, painting or something that might be considered construction but not PJ: Okay.</p>
+<p>AO: When you include all of that, absolutely. There's so much out there. And even landscapers, they're also part of it because they have the same use case issue. They have employees out in the field with difficulty tracking where they are and what they're doing.</p>
+<p>PJ: All right. And this is going to be a difficult question, but I'd be interested to understand if you could split the end market between what percent is still on pen and paper or spreadsheets, what percent has adopted one of these</p>
+<p>10/22/2026 at 00:15 AM UTC</p>
+<p>softwares, Arcoro, Miter, HH2, but not fully? Maybe they just have one product like time and attendance software. And what percent has sort of close to a full HCM suite with payroll, et cetera?</p>
+<p>AO: Yeah, that is a million-dollar question. I would say that if we're talking about the contractors 5 to 200 space, I would say at least 60% of them are still on paper timesheets. Now, they might have a payroll solution, but they don't have a fully digitized system. So what I mean by that is there's still manual data transfer, somebody's still using paper. It might be the back-end solution, whether it's their accounting or their HR platform, might be digital, but they're still manually capturing data from the field and putting it into a back-end solution. How many have nothing in place, no back-end solution and just living off SharePoint and Excel? That number has come down quite a bit. The smaller ones, the 5 to 25 employees are still quite common, but that number is substantially less. And then how many have something in place, but it's not working correctly or it hasn't been adopted correctly? That's the hardest data point to figure out because a lot of them have a solution they're paying for, but because it hasn't been adopted properly or it hasn't been enforced to be used, there's a regression in the industry to go back to old behaviors, especially if they have seasonal employees or they have something go wrong with the implementation process and someone changes the payroll or HR and they're just not enforcing it. It goes back to the old ways of doing everything on paper. But I would say 60% plus still do it manually to capture data. The rest have something in place. How many of them have it fully automated where it's really working digitally? I would say probably like 20 to 25%.</p>
+<p>PJ: Okay. And how rapidly is adoption growing here of, you know, fully automated products? I guess if you take the revenue growth of these 4 players we're talking about, Arcoro, Miter, HH2 and Lumber, do you have a sense of at what rate this industry's revenues are growing?</p>
+<p>AO: At what rate the user rate is growing for each company or just in general?</p>
+<p>PJ: The revenues, if you take all of these 4 companies together, call them the industry, you know, at what rate are revenues growing for these 4 companies collectively?</p>
+<p>AO: That's a great question because a lot of it has to do with expanding existing accounts as the contractors are growing. And that is something that I am not as familiar with because I'm more in the acquiring new business and business development side of things but... I mean, PJ: Well, I mean, answered that way, at what rate is, you know, this 20% to 25% that has fully automated, at what rate is that cohort growing?</p>
+<p>AO: You know, I could tell you some of the indicators of when they're growing and what rate. It's hard to say at what rate because a lot of times what causes them to grow is merger or acquisition by another contractor. So that is large. It also depends on the type of contractor it is. So some contractors, you know, subcontractors that do specific work, they've been working with the same general contractors for 20 to 30 years, and they're not looking to grow. So they're very content where they are. Some contractors are on a mission for expansion. Those ones, you know, they're adding users because they need to, and they're adding software... expanding into new modules.</p>
+<p>PJ: What rate, though, is the revenue growing?</p>
+<p>AO: I can tell you that from my personal experience working with Arcoro, every year the revenue would probably grow anywhere from 15% to 20%, and that's including existing accounts and also just acquiring customers because PJ: Okay.</p>
+<p>AO: every year there's going to be some people that drop off or don't renew or close their business, but overall 15% to 20%, I think would be a fair estimate.</p>
+<p>10/22/2026 at 00:15 AM UTC</p>
+<p>PJ: Great. And do you think Arcoro's growth is representative of the industry? Like are the others growing in line or some of them growing faster?</p>
+<p>AO: You know, the market is so saturated, it's hard to say. I can say that, you know, some of the companies you're naming right now, yes, they're a competitor, but there's also a lot that are competitors that you haven't named, like Connecteam and busybusy and QuickBooks that is launching its own version of what Arcoro does. So it's hard to speak for those companies without having been directly involved in their working with them. Capability-wise, I know what they can do, but I haven't worked with them enough. I know they're still around. I know, for example, QuickBooks is very different from the other ones because they've been around forever. Connecteam is an Israeli- based company that I see is growing because they're partnering with ADP. And there's other ones that are probably falling off, like busybusy or ClockShark, that I don't come across them very much anymore.</p>
+<p>PJ: All right, so what most differentiates Arcoro from, you know, Miter, HH2, Lumber, and the others?</p>
+<p>AO: I would say the biggest one is Arcoro, even though they rebranded themselves as Arcoro when they merged with 2 other companies in 2018, is they've been around the longest. So they were around since '98 before an application, an app or a smartphone was even a thing. So brand recognition is huge. And it's not just the brand recognition for new contractors. A lot of these contractors, you know, operations managers or foremen who've used this legacy Arcoro product back then, 20, 25 years ago or 20 years ago, they come back and they're like, "Hey, now I'm working for another contractor, I want to use you because I've used you in the past." So that would be the biggest differentiator. Also, some of the other ones, I guess, don't have the same exact capabilities as Arcoro. Arcoro integrates with, and it's still growing, but yeah, it's something like 200 different ERP systems, which is the biggest... it can be the biggest challenge of acquiring a new client if something isn't a direct integration. And that ties in with Arcoro's partners. So they partner with Sage, Paylocity, even Procore, right? Although some of the things Procore does now is a direct competitor. But because of those partnerships, a lot of times when someone is looking for specific capabilities that Arcoro is doing, they come to us through those partnerships. Well, I would say legacy and presence in the industry is probably the biggest differentiator.</p>
+<p>PJ: I guess when Miter got VC backing and came into the space, is their product seen as next-gen and is Arcoro seen as legacy?</p>
+<p>AO: When which product came in, I'm sorry?</p>
+<p>PJ: Miter.</p>
+<p>AO: No, I wouldn't say ExakTime is seen as legacy because it has ongoing development. So it looks very different today than it did 25 years ago. And there's still new capabilities that are being rolled out into ExakTime. For example, scheduling capabilities for crews and PTO submissions, communications. Now there's an AI agent in there. So no, it's not legacy. It's just, maybe the best way to see it is 5 years ago, ExakTime was probably 75% of all revenue coming into Arcoro because those other programs were brand new. Now it's somewhere around 60% is still ExakTime, maybe even 55%. And then the other Arcoro suite solutions are bringing in 40 to 45% of the revenue. It's capturing more market share, which is exactly what Arcoro wanted, introducing new solutions for the contractors to pick from, but by no means is ExakTime considered legacy. It's still brand new rollouts every year and capabilities, so I wouldn't call it that.</p>
+<p>PJ: Great. So why does Arcoro win and why does it lose when it goes up against Miter, HH2, and Lumber?</p>
+<p>AO: Sometimes it comes down to specifics for those other ones. With Miter, for example, maybe they are more open to working with a contractor to configure something for them. Arcoro is a little bit... more of out of the box; they're not</p>
+<p>10/22/2026 at 00:15 AM UTC</p>
+<p>going to spend too much time hand-holding and configuring or adjusting something. If it's not, the other one too is probably the lack of giving clients some time to play around with a new tool. They don't do trials; that's been an issue for some of the accounts. What else can I think of? I would say those 2 really are the ones that stick out.</p>
+<p>PJ: Sorry, who doesn't do trials?</p>
+<p>AO: Arcoro doesn't do trials. So if somebody wants to, you know, try it out for 2 weeks, Arcoro wouldn't do that. Whereas a lot of the other competitors in the marketplace make it very simple to get people in the door that way.</p>
+<p>PJ: Just help me understand Arcoro's philosophy around that.</p>
+<p>AO: Their philosophy around that is that if someone is not being trained on adoption, then the trial is a waste of time for Arcoro and for the person using it because they won't know how to use it correctly. Arcoro doesn't trust them to do so. And I think in the past they used to have those trials and the close percentage was very low. Now that was, you know, before my time, so that was probably 10 years ago, but the marketplace has shifted now where the expectation is that you get to play with it or at least use it before committing to a 1 or 3 year contract. So I think, yeah, I think they could really benefit from exploring that and just maybe having them, the contractor, on a shorter leash where they have to complete a training before using it. But the fact that... You know, some contractors just don't purchase unless they get to at least, maybe not a live environment, but some kind of demo environment, test it out, and Arcoro doesn't let them do that. And a lot of the reason I think deals fall through is because of that.</p>
+<p>PJ: Are the other products more intuitive and easier to figure out in a trial?</p>
+<p>AO: The other products that are Arcoro?</p>
+<p>PJ: The competition that gives trials.</p>
+<p>AO: If it's time and attendance, then yes, absolutely. If it's safety and compliance, again, yes, point solutions. If it's something more complex like an Arcoro applicant tracking or payroll solution, or HR training solution, then no. But if you're talking about the more point solutions, then yes, 100%.</p>
+<p>PJ: So, would a Miter have a better win rate against Arcoro for that reason?</p>
+<p>AO: It's hard to say the exact win rates. I mean, it could be a factor. I don't know if it's the main factor. It also could come down to pricing. I mean, the contractor world is always haggling. It might come down to a number of things. It might come down to third-party software integration that's maybe not accounting. It could be an HR software integration. So, I mean.</p>
+<p>PJ: Okay, I understand what you're saying, but in terms of win rates, are one of these 4 players sort of standing out in terms of growth in the market?</p>
+<p>AO: Yeah. Standing out. That's a great question.</p>
+<p>PJ: Sort of, you know, seeing an above-average win rate at the expense of the others.</p>
+<p>AO: That's the hard thing to really get your finger on because all of these software companies sell different solutions. So if we're talking about just field operations and time and attendance, we can, yeah. But these companies are all selling, you know, at minimum 3 different modules. You know, there's HR, there's field operations and time and attendance, there's safety compliance and there's dashboard analytics. So, and sometimes the customers that each of them have just want one or the other or the whole suite, but usually it's probably just one or the other. I would say</p>
+<p>10/22/2026 at 00:15 AM UTC</p>
+<p>Miter though, they are definitely growing because 5 years ago they did not come up in the marketplace, you know? I didn't even know who they were. So, they're definitely expanding and they're probably taking a large chunk of the market share because 5 years ago, I again, didn't even know who they were.</p>
+<p>PJ: What is it about their product or their strategy, like, why are they winning?</p>
+<p>AO: Yeah. It could be a number of things. It could be that they are very specific with targeting a certain kind of contractor's trade. That's the other way to expand in this industry. If they are targeting concrete, and everyone in concrete knows who they are, then that way, a lot of contractors will just go straight to what they know, especially if they're transitioning from a manual process or if they're transitioning and they've been burned in the past with software adoption. So that could be a thing that Miter is doing really well. They're just going specifically to 1 trade. Capturing the market share in that trade and then slowly expanding to another trade versus trying to overstretch themselves on every type of contractor. It could be that they have really favorable pricing because they're trying to acquire as many contractors as possible and then slowly lifting their pricing after renewals. I know that's what Procore did, and Procore is an industry leader. They're killing it. But I don't have specific insights on each of these companies because I haven't worked with them... worked for them directly.</p>
+<p>PJ: In terms of product quality, are you able to rate these 4 companies on a scale of 1 to 10, with 10 being excellent?</p>
+<p>AO: All these companies can get the job done. They all can do everything, field operations, HR, they can get it done. The question becomes about adoption. How easy it is to get started with them? Is the support there? Is the training there? The second becomes integration of third-party software. Are they able to fully bidirectionally pull and push data between the third-party software that the contractor needs to theirs? And the last becomes, is the pricing favorable to the contractor? I guess what I'm saying is, if I'm looking at all 4 of these companies, and the integrations are there, and the adoption, they all say they can do it, of course. If the price is 20% difference or more, it's going to be really hard to come in and convince the contractor that the capabilities are 20% better or more capable at one of them than the other because they can all get the job done and you have to remember that 60% plus of the people they're discussing it with are already using paper manual processes so anything for them is going to solve for the problem they're looking to solve.</p>
+<p>PJ: Okay, then how price competitive does it get?</p>
+<p>AO: It gets very price competitive. Everything that's listed on the website will get special pricing depending on how large the accounts are and depending on how much the prospect is willing to share in terms of proof of a better quote. Contractors are all about bidding and outbidding, and the market share is saturated because 10, 15 years ago, there wasn't that many softwares out there. Now there's one that's coming out probably every 3 to 6 months or a foreign company from Israel or Europe or Canada. So it's super competitive with pricing.</p>
+<p>PJ: So what happened in this industry that a lot of new entrants came in?</p>
+<p>AO: What happened in the industry when a lot of what sorry PJ: What caused new entrants to come into this industry on the software side?</p>
+<p>AO: Because everyone's seeing the same thing that anyone who has a pulse in the industry. Lots of manual process, but lots of money and growth so need for adoption of technology because older generations are retiring. And now it's easier than ever to build a SaaS platform. Not saying something like capital projects like Autodesk or Procore, but when it comes to the stuff that we're discussing, HR software, payroll software, time and attendance, safety and compliance, more and more people out there know how to do it. And more and more venture capitalists out there are seeing that, hey, there's a lot of money in this industry, and they're still using paper. So a lot more people are just</p>
+<p>10/22/2026 at 00:15 AM UTC</p>
+<p>getting into it, hoping that they're going to be the next Procore. Yeah, technology, it's just way easier to start a software company today than 10 years ago, and there's a lot of money in construction and a lot of paper, a lot of spreadsheets.</p>
+<p>PJ: Interesting. Is Genda, which got acquired by Buildots and is now called Buildots Field, are they a major player here?</p>
+<p>AO: Genda? I know who Buildots is. I'm not as familiar. Let me... That's what I'm talking about. There's just always, I don't come across them very often.</p>
+<p>PJ: Okay. Give me a sense for a construction company with 200 employees. What would they pay for a payroll product annually? I'm just trying to get a sense of the price points here.</p>
+<p>AO: Yeah, if you're talking about payroll just as a back end, like an ADP, or are you talking about more than that?</p>
+<p>PJ: Give me the ADP fee back end and then more on top of that. I'm just trying to understand like how much they shell out a year for various products.</p>
+<p>AO: Yeah, so if they're doing just the bare necessities, probably around 200 employees. Say easily 80,000, if they're doing add-ons like mobile applications to capture field data or any of the other modules now that some of these guys offer. You know, compliance or safety, or they have partners that have the software that's an add-on. It could be easily 140,000 to 150,000. If they're doing integrations to other software, it could be anything depending on what the integration is or how they want the workflow to look. But for most of the time with these contractors, they're using something that's very straightforward, and they have a lot of other point solutions that don't communicate with their backend solution. It's really hard to rip and replace 5 point solutions if you have a one-in-all shop. So what ends up happening is a lot of times they're just changing point solutions that don't work or no longer fit their model or raise the prices on them. But yeah, I would say 200 employees.</p>
+<p>PJ: Okay.</p>
+<p>AO: And 80,000.</p>
+<p>PJ: What does churn look like in this industry? Annual churn for Arcoro or any of these players?</p>
+<p>AO: It probably would be broken up into different tiers. So if they have Arcoro's suite, then it's probably pretty low because it takes about 4 to 6 months sometimes to roll out the suite for the payroll and all the other little modules that go along with it like applicant tracking. So I would say probably less than 10% turnover for that. But if they have the point solutions like safety and compliance or the time and attendance, I'd say probably the churn would be 20% plus just because it's really not hard to implement those. You can implement that in 2 to 3 weeks, sometimes a month if there's some complications, but yeah.</p>
+<p>PJ: And would that 20% plus churn be largely driven by just switching for a better price?</p>
+<p>AO: It could be a number of things. It could be price. It could be there was a problem and support didn't reach out in time. They didn't feel good about it. It could be that they have a new person, a new COO that's doing an audit and they like to work with someone else because all these people have been in the industry forever and everyone has their background and their knowledge of what works best. So it could be that someone walks in, their CRO, they look and say, "I want to use BusyBusy because I know someone there or I used them in the past." But usually it's price increases or something happened during the year with customer service and support that didn't get resolved in time. And then they feel like they can get the same thing somewhere else better.</p>
+<p>10/22/2026 at 00:15 AM UTC</p>
+<p>PJ: What level of price increases does Arcoro target across its book each year?</p>
+<p>AO: I would say a standard 5%. A lot of times these contracts are 3-year contracts. So then after that, that could be interesting because a lot of times to get them in the door, they'll give them really favorable terms to win the deal. And then that was 3 years ago, a new person comes in, doesn't know the account, they give them standard pricing and it's insulting and they freak out because they probably have like a 40% discount for 3 years just to get started. So every account is going to be a little different depending on the term commitment and depending on the special pricing that they got to get in the door.</p>
+<p>PJ: Okay. And give me a sense of customer satisfaction at Arcoro. What are the main sources of praise from happy customers and what are the main complaints from those who are dissatisfied?</p>
+<p>AO: I would say that's hard because there's so many different clients and people that are onboarding them and company size. But I would say the biggest phrase is probably integration to payroll softwares. Some of the competitors out there don't have a direct integration; they have workarounds. Arcoro has direct integrations because they've had the software for almost 30 years and they work hard to get that. So, seamless setup and integration. Some of the things that are complaints are, "We didn't get to use it before we signed for this," and we didn't. So, back to the free trial. A lot of times, there's some feature functionality that they wanted, and they saw a demo, and they were told, "Yes, we can," and, "Yes, it does," and then they get it and it's not. And they complain that they didn't get to explore this product and now they have to use it for 2 years. That's a complaint that's coming up. But usually, again, the sales team is pretty good with uncovering all that because we really don't want to waste our time and theirs. And then feature functionality sometimes comes up. There's a new software out there that can do something with AI, and AI can mean so many things to so many different contractors. Maybe the AI ties into another software that can find the problem for them quicker that saves them 2 hours a day per HR employee, and the ROI there is huge. So it could be a number of things, but it's really hard to say a specific thing. I know for me personally... Usually they leave because of pricing or they leave because someone didn't give them attention when they had a problem.</p>
+<p>PJ: And if you could give me 2 numbers, on a scale of 1 to 10, how happy is the average Arcoro customer with, 1, the products and 2, the support?</p>
+<p>AO: I would say probably 85% happy. Arcoro has been at it a while. The motion is fluid. So yeah, I would say 80 to 85% happy on...</p>
+<p>PJ: Both on product quality and support?</p>
+<p>AO: Product quality and support, yes. If they're not happy, they're going to leave. It's not hard to leave.</p>
+<p>PJ: So just coming back to something you said earlier, you know, it sounds like you're saying there's 60% of the market left to penetrate, but there's new entrants coming in as well. I guess, is it still a good business or is the increased competition sort of offsetting, you know, how much more end market there is to penetrate and it's becoming a tougher business?</p>
+<p>AO: It's still a good business for established vendors in the SaaS space. Arcoro would be one of those because they're established. It's, you know, very difficult for someone new to come in and become profitable quickly because they're going to have to go through years of proving themselves in the industry by acquiring clients. And then if they're more complex, they have to do a proof of concept, which takes time, and then they're probably going to have to get lower in price because they're a new kid on the block. But for the established ones, it's definitely harder because it's more competitive, but they're still stronger and there's still growth.</p>
+<p>10/22/2026 at 00:15 AM UTC</p>
+<p>PJ: I guess, do the VC-backed companies like Miter and Lumber, which, you know, are not trying to be profitable, they can, as long as they're showing revenue growth, they can keep raising capital and price aggressively. Are they making the business harder for everyone else?</p>
+<p>AO: It's a great question. I would say so because right now, there are companies out there that have flaws that might have something not work, but because they can project growth and they have more funding, they can stick around longer to either fix the problem or continue that cycle until it blows up for them. And that creates more competition.</p>
+<p>PJ: Just if there's a common product between Miter and Arcoro, I'm curious, how much cheaper does Miter come in than Arcoro?</p>
+<p>AO: It all depends on the company's plan. For example, I know we're talking about Miter. For example, busybusy had the intention of selling the company. They wanted to acquire as many clients as possible to project revenue growth numbers and then sell the company. They didn't care if they were losing money in acquiring clients because the plan was to sell the company. I don't know what Miter's plan is. So if a company is doing that versus we're trying to build a company for investment in new technology, completely different models. I don't know, Miter. Back in... and I was just using an example for another one... so that's what I saw in the industry. So that's PJ: Nice.</p>
+<p>AO: Also something to keep in mind, what's the plan of the company? Are they trying to be a Procore or are they trying to build revenue and get a quick payout?</p>
+<p>PJ: All right. Andre, this was really helpful and those were all my questions. Thanks for doing this.</p>
+<p>AO: Yeah. I hope it was helpful for you and appreciate it. Thank you.</p>
+<p>PJ: All right. Enjoy the rest of the day. Bye.</p>
+<p>AO: You too. Bye-bye.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>10/22/2026 at 00:15 AM UTC</p>
+</div>
+</main>
+</body></html>

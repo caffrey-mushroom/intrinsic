@@ -1,0 +1,321 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.13 | GP | AI Compute | CUDA Moat &amp; Inference Software Wars</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.13 | GP | AI Compute | CUDA Moat &amp; Inference Software Wars</h1>
+<p class="orig">原标题：NVDA, AMD, and AVGO: The CUDA Moat and Inference Software Wars — SambaNova Senior Principal Engineer on Serving Frontier Models</p>
+<p class="tags">#semis #software #asic</p>
+<p class="meta">GuidePoint · 2026-10-13</p>
+<div class="body">
+<p>Primary:</p>
+<p>NVDA</p>
+<p>AMD</p>
+<p>AVGO</p>
+<p>Associated:</p>
+<p>NTAP</p>
+<p>Pure Storage Uk Limited</p>
+<p>GOOGL</p>
+<p>WDC</p>
+<p>SNDK</p>
+<p>AMZN</p>
+<p>MSFT</p>
+<p>P</p>
+<p>Viewpoint:</p>
+<p>Former Executive</p>
+<p>Moderator: Dan Kaplan (DK)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Oct 12, 2026</td><td>37 Min Read</td></tr></tbody></table></div>
+<p>Amitabha Banerjee (AB), Senior Principal Engineer - SambaNova Systems, Inc.</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The discussion examined AI inference infrastructure, focusing on NVIDIA’s CUDA ecosystem, open serving frameworks, alternative accelerators, AMD, custom silicon, and memory architectures. The expert specializes in full-stack inference performance, including latency, token generation, accelerator utilization, and capacity.</p>
+<p>NVIDIA GPUs remain the default platform because most models are trained and initially deployed through CUDA. Alternative accelerators target latency-sensitive and agentic workloads requiring substantially faster per-user output.</p>
+<p>Key Insights</p>
+<p>The expert expects NVIDIA GPUs to retain overwhelming inference-market dominance through 2028. Hardware-agnostic deployment is unlikely because new architectures require significant model compilation and optimization. CUDA’s strongest moat is its mature, highly optimized library ecosystem. Functional alternatives are relatively easy to create, but production-grade performance requires extensive engineering. vLLM and SGLang complement rather than replace CUDA on NVIDIA hardware. They improve caching, routing, load balancing, and deployment portability above the hardware layer. Premium inference is a key profitability opportunity. Basic open-model token pricing is viewed as insufficient, while faster service, stronger guarantees, and customized models can command higher prices. NVIDIA is increasingly supporting heterogeneous systems because GPUs are not ideal for every decode workload. Its strategy may combine acquisitions of threats with partnerships that keep NVIDIA hardware and software central. Benchmark leadership is not necessarily durable. Production readiness, rapid model support, manufacturing scale, and competition with NVIDIA’s next-generation products matter more.</p>
+<p>Competitive Landscape</p>
+<p>10/13/2026 at 04:06 AM UTC</p>
+<p>Company or technology</p>
+<p>Positioning</p>
+<p>Advantages</p>
+<p>Challenges</p>
+<p>NVIDIA and CUDA</p>
+<p>Dominant general-purpose inference platform</p>
+<p>Earliest model support, mature libraries, broad optimization community, high-volume throughput</p>
+<p>Less effective for low- batch, latency-sensitive decoding</p>
+<p>SambaNova, Cerebras, Groq, D-Matrix</p>
+<p>Premium-speed inference accelerators</p>
+<p>High per-user token rates and stronger decode performance</p>
+<p>Proprietary compilation, optimization burden, limited ecosystem</p>
+<p>AMD and ROCm</p>
+<p>Lower-cost GPU alternative</p>
+<p>Can approach NVIDIA on mature, optimized models; supports open frameworks</p>
+<p>New-model support and sustained optimization may lag</p>
+<p>vLLM and SGLang</p>
+<p>Hardware-abstraction and serving layer</p>
+<p>Simplified deployment, caching, routing, and API portability</p>
+<p>Cannot compensate for weak underlying model optimization</p>
+<p>Broadcom-backed custom silicon</p>
+<p>Potential performance-per- watt challenger</p>
+<p>Workload-specific efficiency</p>
+<p>SRAM-based architectures</p>
+<p>Quantitative Insights</p>
+<p>Low-latency specialist</p>
+<p>Very fast memory access</p>
+<p>Volume production may trail NVIDIA’s release cadence</p>
+<p>High cost and poor scalability for very large models and caches</p>
+<p>Metric</p>
+<p>Expert assessment</p>
+<p>Typical GPU per-user speed</p>
+<p>Approximately 20–30 tokens per second</p>
+<p>Premium accelerator target</p>
+<p>Around 300 or more tokens per second</p>
+<p>Optimization impact</p>
+<p>Performance may improve by 50–100 times</p>
+<p>Expected GPU inference share by 2028</p>
+<p>More than 90%</p>
+<p>Premium service example</p>
+<p>About 6 times the price for 2.5 times the speed</p>
+<p>Custom-chip production lead time</p>
+<p>Roughly 12–18 months</p>
+<p>Large model example</p>
+<p>Approximately 2.8 trillion parameters</p>
+<p>Coding prefix-cache hit rate</p>
+<p>Often above 90–95%</p>
+<p>10/13/2026 at 04:06 AM UTC</p>
+<p>DK: Hi everyone, my name is Dan Kaplan. Thank you for joining today's call with Broadcom, the CUDA Mode and infra-software awards. If you have any questions, please email me at ask@guidepoint.com and I will work your questions into the call. It is my pleasure to introduce Amitabha Banerjee, who is, as mentioned, the Senior Principal Engineer at SambaNova. Amitabha, thank you very much for being with us today. To kick things off, could you please outline your role as a Senior Principal Engineer at SambaNova?</p>
+<p>AB: Sure. I have been at SambaNova for about 4.5 years and prior to that, I came from VMware and before that, Oracle. So I was mainly in a networking and distributed storage systems background, and my role at SambaNova has been mainly full-stack performance engineering, so everything that goes between someone, a user, sending an inference request to the API, so everything that has to happen between the request coming to our servers and getting processed. So that includes how the request is processed through our top-layer web stack delivered to the inference engine, how inference is done, and all metrics like time to first token and output token rate, and essentially making sure that the entire inference operation works in a streamlined and performance-oriented architecture. And also, try to ensure that we can get the maximum utilization and capacity out of our accelerators so that we can both generate inference tokens as fast as possible as well as handle high volume of query requests.</p>
+<p>DK: Well, this was extremely helpful. Wonderful. That's really helpful. Thank you. Let's see. How would you describe SambaNova's publicly stated position in the AI inference market today?</p>
+<p>AB: Essentially, the AI inference market is mostly NVIDIA GPU dominated, right? So for most workloads, the market is captured by GPUs, but there are a few specific workloads for which the GPU architecture by design isn't good enough, right? And it's not good enough just because the GPU architecture depends on kernel-by-kernel execution of models and that creates a bottleneck because you have to constantly move data between GPU HBM and GPU compute and as you compute kernel-by-kernel and then this to-and-fro data movement is a serious bottleneck for inference and the way GPU tries to solve the problem is to run inference at a very high batch size so that you process a huge batch of requests at once so while you have to make the same number of data movements because you're processing a very high batch of requests you're still able to use the GPU compute as much as possible and generate a fair volume of tokens but it's important to remember that because we are running at a high batch size the per user speed is often low on GPU systems typically of the order of 20 to 30 tokens per second. So that speed works for many workloads, but the challenge is that some workloads, particularly agentic workloads, where you have to process multiple requests before you get a final answer, require much higher speeds per user than what the GPU is able to provide and that's where we find the role of these accelerators so there are plenty of accelerators in the market. As an example, Cerebras is one and Groq, which is acquired by NVIDIA, is another one and SambaNova is another one. There are other startups in this same phase like D-Matrix. So all these accelerators try to target the market territory which requires very high speed per user request, maybe of the order of 300 tokens per second or more and such high speed is typically required by agentic workloads and you know workloads which really need to be driven fast. So this is a market segment of premium token speed that most of these accelerator companies are targeting. So that's where SambaNova is positioned along with all the other accelerators that are there in the market against traditional GPUs.</p>
+<p>DK: Yeah, and which serving metrics like time to first token do you spend most of your time optimizing?</p>
+<p>AB: It's usually a combination of the decode output speed because that's the key metric that differentiates these accelerators versus GPUs. So you want the per user speed to be as high as possible and also be able to deliver the highest batch size while maintaining that speed. The challenge is always that as you increase the batch, as you go in order of higher batch sizes, the speed per user will decrease, and at a certain point, it's unviable because it's almost competing with GPUs. So you want to generate decode output tokens as fast as possible and at the highest batch size as possible. So that's one important metric. The second important metric is time to first token, and there are standard techniques of trying to reduce the time to first token which are probably already uniform across all operators, and GPUs and accelerators share you know the same trajectory there because the time to first token is often dominated by</p>
+<p>10/13/2026 at 04:06 AM UTC</p>
+<p>the input tiers of request processing rather than what's happening on the accelerator, and the third metric is also power consumption. So power is very key because your data center is primarily confined by power limitations, right? So you only have a limited amount of power in the data center, which means that you can only fit in a limited number of racks of accelerator hardware. So the lesser power your accelerator consumes, the more racks of accelerators you can actually fit in in the power budget of your data center. So these are the 3 relative metrics that are important.</p>
+<p>DK: That makes sense. We'd love to move on to the CUDA Mode. How much of today's inference stack still truly depends on CUDA?</p>
+<p>AB: Yes, so the way it's working is that CUDA is the lower layer, right? And the models are built on top of CUDA and then they get reused in different ways. So if you look at, let's say, the standard open source inference engines that many operators deploy, such as vLLM or SGLang, they are higher level inference engines. In the bottom, if they are using NVIDIA GPUs, they are always using CUDA, right? So it's not that they are replacing CUDA in any way. If they are using NVIDIA GPUs, they are always going through the CUDA framework. And it's also important to remember that most models are trained on NVIDIA GPUs, barring some now models from China which have now trained on Huawei accelerators. The bulk majority of models are models that are trained on NVIDIA GPUs. And so they're also trained on the CUDA code base, right? So the model is always brought up on the CUDA NVIDIA GPU code base. And so what that means is that when it comes to inference, the model is first also available on the CUDA architecture. So that's why all models come up on GPU first. Right now, to take the same model and to compile it in a non-CUDA architecture, which is necessary for other inference frameworks or inference accelerator frameworks, is a lot of work, right? So that's why you often find that the model is available on accelerators at a later date compared to when it gets first available on NVIDIA GPUs. So I don't think the CUDA Mode is getting threatened or replaced in any way because primarily models first come up over there and then models get served over there and it does take time for the non-CUDA frameworks to catch up with what is first made available on a CUDA framework.</p>
+<p>DK: But in order to do the inference on the model, you said, don't you need to... I'm sorry, in order to do inference outside of the NVIDIA ecosystem, you need to get off CUDA, right?</p>
+<p>AB: If you are operating outside the NVIDIA ecosystem, let's say you have your own accelerator, let's say you take the Cerebras accelerator or any other accelerator, they are not using CUDA, right? They have to take the model and compile it over their own architecture, right? And you're not using CUDA, but I wanted to also stress that that process is also pretty time-consuming, right? It is a lot of work to compile a model on a new architecture or a new accelerator. That's why it's much easier for a model to come up on CUDA because it's trained on the CUDA platform already. The inference is already available, whereas the same work has to be now done on other accelerator platforms.</p>
+<p>DK: How time-consuming? Is there some metric we could look at?</p>
+<p>AB: How time consuming? I would say it depends on the strength of the compiler architecture that different frameworks, different accelerator companies have. Essentially every accelerator company has its own compiler and so it depends on how robust your compiler is in recognizing existing templates that a model is using. As an example, for a family of models, usually things are more consistent, right? For example, if you go from the Kimi K2 to Kimi K3 or Minimax M2.7 to M3, it's more or less the same architecture but some things added. It's not very difficult to go from 1 model version to the next model version because usually by that time the compiler has already templates in place to compile the model, right? But let's say a fresh new model came up with a new architecture, it would be a lot of work to compile it on an accelerator or it will also be a lot of work to make it work on CUDA, but usually that work is already done as part of training and that's why running inference becomes simpler, whereas none of these accelerators are used for training, so running inference on the accelerator becomes the first job of transporting a model from a CUDA platform to the proprietary accelerator platform.</p>
+<p>10/13/2026 at 04:06 AM UTC</p>
+<p>DK: That is so true. That's a good shift. Here's a debate I would love your take on. Do vLLM and SGLang erode CUDA lock-in? Say by 2027.</p>
+<p>AB: No, they do not, right? Because for the majority of operators, they are using vLLM or SGLang. By operators, I mean neocloud sites. So all neoclouds that are using vLLM or SGLang use it on GPUs. And so they're using it on the CUDA framework. It's just that CUDA is the lower layer, and vLLM or SGLang is building on top of it. So by no means are they replacing CUDA. If they are using NVIDIA GPUs, they are intrinsically using CUDA and building on top of it, right? So they are not replacing it in any way. Yeah, now the thing is that vLLM is also deployed on non-GPU frameworks. So for example, vLLM is available on TPUs, and vLLM is available on AMD systems, and some other accelerators are also integrated into vLLM. So, you know, when vLLM is used for those accelerators, then you're really bypassing the CUDA mode.</p>
+<p>DK: You said...</p>
+<p>AB: Are they able to hear me?</p>
+<p>DK: Yes, AB: I don't know whether my voice is broken, but yeah, let's go ahead.</p>
+<p>DK: Got it. So which CUDA components, say, kernels, compilers, and libraries remain the hardest for rivals to replicate?</p>
+<p>AB: I think it's mostly the libraries and the templates. The way it's mostly working is that if you look at any model, the subcomponents of the model are, let's say, FlashAttention and KV cache, and so those kind of things that are already libraries which are first baked in into CUDA. And also not only that, they're also optimized. So one of the biggest moats that the NVIDIA CUDA has is that it's open source and lots of engineers, lots of researchers are working on the framework to optimize it on GPUs. A lot of work happens in the open source community and which CUDA immensely benefits from. So all these libraries are optimized not only by NVIDIA engineers, but also engineers, researchers across the whole ecosystem. Now, and that's why... when you bring up a model, it's very well optimized for GPUs because CUDA itself has been optimized by a lot of people. Now, what accelerator companies who are trying to provide CUDA alternatives have to do is they have to provide similar libraries as a replacement to support a model. Now, just supporting a library is not that difficult. You can quickly implement something to provide the functionality, but the challenge is optimizing the performance for the architecture of the accelerator. So it's relatively easier for all accelerator companies to bring up templates or bring up libraries that work, but making it perform to the best ability of the accelerator is a lot of hard work. And so that's the challenge that all accelerator companies face with respect to NVIDIA, that they have to do all the optimization themselves because there's no open source ecosystem trying to do the work for them, and they're also heavily competing with NVIDIA GPUs in terms of performance. So just bringing up a library and supporting a model is not sufficient; you have to also bring the model to the cutting edge of performance, deliver the fastest tokens per second, and that's where it becomes... that's where lies the challenge of competing against the CUDA ecosystem.</p>
+<p>DK: Is there some average numbers that you would say what's the difference in performance between optimized and non-optimized software? Is there a way to quantify that?</p>
+<p>AB: Well, I don't think this is very easy to quantify because it depends on model and architecture, but the difference can be huge, right? So it could be maybe even 50 to 100x difference between unoptimized and optimized software. And that's true for both GPUs as well as other accelerators. You know, all these accelerators, including GPUs, are easy to use, let's say, if you want to just do a small project out of it, but to really get to the extreme end of performance and utilization from the system, that's pretty hard.</p>
+<p>10/13/2026 at 04:06 AM UTC</p>
+<p>DK: That's very helpful. Then let's, for example, kind of going back to vLLMs and SGLang, how different are they versus CUDA in terms of optimization? Are those some of the programs where you could get 50 to 100x with CUDA versus the performance of those or not?</p>
+<p>AB: Mostly what vLLM and SGLang are doing, they are building on top of all the optimizations that are there in CUDA. They are working at a complementary level. They are not really competing with CUDA. Just as an example, what vLLM would do is that it would take the most optimized model and implement it in CUDA and use it. But it's just not... CUDA and GPUs are the bottom layer. It takes a lot of work to bring optimization performance to the end user. Just a simple example is prefix caching. In prefix caching, essentially what's happening is that the input from KV cache values are preserved. So that if the prompt is sent again or a modified prompt is sent again, the KV cache entries can be reused. That level of implementation is done at the vLLM layer. They use, they give you GPU HBM to keep the KV cache, but the implementation of how prefix caching is implemented lies in vLLM. Similarly, anything to do with inference routing, so you have a pool of machines and you have to decide how to load balance across the machines, including keeping in mind where prefix caching is preserved. The logic of routing inference requests is done at the vLLM or SGLang layer. There are all these implementations that are built on top. And then...</p>
+<p>DK: Let me reframe the question a little bit. If they're working with non-NVIDIA equipment, if they're working with AMD systems, how much does that lack of optimization matter? Okay.</p>
+<p>AB: So let's say if you're working with AMD systems, whatever vLLM has by itself, like prefix caching and other things, those will still work. But then you really would have to take the model which is built for the AMD systems and then the performance of that model on an AMD system relative to the performance of the same model on CUDA plus NVIDIA GPUs, it depends, right? So that's model by model and hardware by hardware comparison. So for some models, like, for example, GPT-OSS 120B, that's an old model that's probably well optimized on AMD, so you can have a close enough comparison. But usually what we find is that for any new model, you would find it hard to find an equivalent comparison on an AMD system compared to what is there on the NVIDIA ecosystem.</p>
+<p>DK: Let's move into NVIDIA. How does NVIDIA's dynamic serving frameworks strengthen the moat or concern the open stack log?</p>
+<p>AB: So your voice really faded away. Could you come closer to the mic?</p>
+<p>DK: Sure.</p>
+<p>AB: It's better now.</p>
+<p>DK: So how does NVIDIA's dynamic serving framework strengthen the moat or concede the open stack?</p>
+<p>AB: So, Dynamo is a bit different in the way that it gets into concepts of using more disaggregated architectures compared to the earlier frameworks, right? So, in the last 2 years, NVIDIA has started recognizing that their GPUs might not be best fitted for all frameworks, so they have also started advocating for a disaggregated architecture in some special use cases. And so Dynamo is kind of built to facilitate some of those architectures. So an example, the example NVIDIA provides is that using Dynamo you could run prefill on NVIDIA GPUs and NVIDIA GPUs are very good at prefill because prefill is compute heavy and NVIDIA GPUs are compute intensive works. So you can do prefill using NVIDIA GPUs and then they say that you can use decode using the Groq LPUs, right? And so that's in a more disaggregated framework. And similarly, you can also think about using some other accelerator like Cerebras or SambaNova for the decode cycles because these accelerators are much better for the decode operations which are more memory-bound. GPUs don't work for memory-bound workloads, so the only way they work around memory- bound workloads is to try to make it compute-bound by increasing the batch size. But the accelerators don't have this</p>
+<p>10/13/2026 at 04:06 AM UTC</p>
+<p>limitation. So Dynamo is mostly trying to facilitate a disaggregated architecture where you can use a mix and match of different hardware pieces to solve the same puzzle. And so that's where Dynamo is kind of helping grow the open source ecosystem around using more accelerators which do not have much in common but use them together to meet the same goal.</p>
+<p>DK: Wonderful. Yes, thank you for that. How portable are production service types across GPU vendors once a team adopts open frameworks?</p>
+<p>AB: How portable they are? With the use of vLLM and SGLang, I would say they're pretty portable. It is pretty easy for any new cloud operator to just deploy out-of-the-box vLLM on their hardware and make inference work. They're pretty easily portable, I assume, across vendors on the same GPU system. Just to deploy, it is not much work. I think most of the decisions come around what configuration you want to deploy. For example, whether you want to use tensor parallel deployment or you want to use expert parallel deployment or data parallel, and what is the configuration that would be best for your users. And decide how your data center will look like, how many racks you want to deploy, those kind of things. Most of the decisions for new cloud operators have gotten to that scale where you have to make data center-oriented decisions and how you want to deploy-oriented decisions that would benefit your use case, and you really don't have to worry about making inference work. Once you have decided your architecture, you have vLLM and it will generally work out of the box.</p>
+<p>DK: Sure. But how easy is it to move a production stack across GPU vendors, so say from NVIDIA to AMD?</p>
+<p>AB: So are you asking about an application or just a...</p>
+<p>DK: Yes, so let's say a customer has been using NVIDIA, right, and they want to move on to AMD because it's cheaper or maybe they like some other aspects of it. How easy is it for them to move?</p>
+<p>AB: I would say pretty easy because the way this is architected is that most end applications consume inference through APIs and the API is pretty standard on the OpenAI SDK format or the Anthropic SDK format, right? Most of the APIs look the same. From an application point of view, just switching endpoints is very easy. You just have to, let's say you had an endpoint supporting based on NVIDIA ecosystem and a different endpoint on an AMD ecosystem. Typically, both would support the OpenAI API format. All that you would need to do is change the endpoint from the application point of view. If you have an application that is using cloud-based API services, all you need to do is to change the endpoint and that's why the stickiness is very less for any deployment. It doesn't take much for a user to move from one instance operator to a different instance operator.</p>
+<p>DK: Really, the question that we're asking is, let's say for OpenAI, how easy it is for them to switch, or for any other LLM vendor who has been doing work or who has been doing their production on NVIDIA systems, how easy for them to switch GPU vendors.</p>
+<p>AB: Well, definitely, I think the complication is more on the deployment side than on the software side. So it's going to be more a question of I have GPUs in my data center, what will it take to deploy AMD accelerators in the same data center and make it work? Because from the point of view of software, as long as the model is supported in vLLM or SGLang on the accelerator architecture, it is pretty easy. So you're just essentially deploying vLLM over the new architecture. Now, I think the main point over here is that what happens when it's not vLLM supported? So as an example, let's assume that OpenAI is trying to move from their GPU architecture to the Cerebras-based architecture, which they've kind of have a contract already formed. So for that kind of thing, it's going to be a lot of work because the Cerebras architecture isn't supported by vLLM. And also what OpenAI has to do is that they have to take their proprietary model and get it compiled on Cerebras architecture and then support it. So just for someone who is in the business of deploying a closed source model on an unknown architecture, just for him to shift to another one, it's a</p>
+<p>10/13/2026 at 04:06 AM UTC</p>
+<p>decent amount of work. Because most likely that support would not be available. But at least for someone who is working on open source, as long as vLLM supports the architecture you want to move to, it's relatively easy because you just have to point vLLM to the other architecture. The legwork then will move to deploying the racks of that architecture because we are assuming that all the work of compiling the model on that architecture, optimizing the model and architecture, all that has already happened before that architecture, that model got supported on vLLM. So with that assumption, it's easy to switch. But let's say you didn't have that assumption, then just supporting a model on a new architecture is a lot of work, and making a model performant on a new architecture is a lot of work. Hi, are you still there?</p>
+<p>DK: I apologize, I'm going to mute. Taking all of that into account, what share of inference workloads could run hardware-agnostic by 2028?</p>
+<p>AB: The phrase hardware-agnostic is very loose, right? So if you mean that, you know, you can take the best-known model and run it on different architectures, that's probably not going to happen by 2028, right? I expect that for the most part, GPUs will be fairly dominant and will serve maybe 90% plus of the inference market, and other technologies will be just used on a case-by-case basis. And for those case-by-case basis, those people who are supporting the architecture will have to do the legwork of supporting the model on that architecture and do whatever is necessary. So I really don't see a place where you want to deploy a model and you have different accelerators available and you can pick and choose whichever you want. I see more of a place that if you want to deploy a model, you typically deploy it on NVIDIA GPUs, right? Unless you have some corner case where either you need much more performance per user or you are not having access to NVIDIA GPUs or something of that sort where you would really go towards a proprietary architecture and then do the legwork of making sure that you can deliver the model on that architecture. So for the most part, the ease of deploying inference on NVIDIA GPUs is just too easy, right? So most people will not deviate from that. So for most use cases, you'll still want to deploy inference on NVIDIA GPUs, apart from some corner use cases where you'll go to other accelerators, and that will be more of a choice and doing the hard work to gain something more than doing it just because you have an option.</p>
+<p>DK: Got it. Thank you. All right. Moving on to NVIDIA, management frames monetize tokens as a key demand driver. Is that how operators see it?</p>
+<p>AB: So could you just go over the question more? I see that you're going into monetization.</p>
+<p>DK: Management frames that monetize tokens is the key demand driver. Is that how the operators see it?</p>
+<p>AB: So the question is very nuanced, right? So essentially, you definitely need to monetize tokens and charge for tokens. But it's also true that if you look at the current price of tokens, at least for the open source models, the prices are too low to make a profit for any operator. So the models are getting offered at a much cheaper price than it's possible to make a profit. So essentially, the key to monetization is beyond just charging per token. It's more like providing some nuanced services for which you can charge extra. So those could be providing inference on a fine- tuned model for a particular consumer for which you'd be able to charge extra, or having more enhanced contracts to deliver certain SLAs based on performance for which you'd be able to charge extra. So I think monetization and profitability ultimately depend more on how creative you can get in defining your contracts and how well the market responds to them, because just charging by the token is really not going to work in this market.</p>
+<p>DK: Right. So, for instance, I think some of this would be fast inference, right? So is that... would that be an example of a monetized token and is that how operators look at it?</p>
+<p>AB: I missed the first part, so I didn't get to hear DK: Yeah, I was hearing some fast inference or low latency inference. Would it be one example of such a service or</p>
+<p>10/13/2026 at 04:06 AM UTC</p>
+<p>are there others?</p>
+<p>AB: For fast inference, right? So, for example, if you just try to get inference from Cerebras Cloud or SambaNova Cloud, those kind of things, right?</p>
+<p>DK: Yes.</p>
+<p>AB: Sorry, what's the question? What are we trying to...</p>
+<p>DK: So do you think is that one of the services that operators are trying to set up to better monetize their investment?</p>
+<p>AB: Yeah, definitely. And you can see it pretty wide across the ecosystem. For example, Anthropic has this thing where you can pay, I think, 6x more for 2.5x higher speed of tokens. Every operator is trying to set up a premier fast lane. Even amongst the new clouds, you would see that Fireworks has a Fireworks inference service for which, for specific models, the cost per token is going to be much higher. There's definitely going to be a market segment for premium inference tokens at a much faster speed and having more SLA bounds for which users would be ready to pay more, just because some use cases such as agentic inference use cases really need those guaranteed speed of tokens. You definitely see operators more and more trying to provide those services in the interest of getting higher monetary value of those tokens because that is one of the key drivers to profitability.</p>
+<p>DK: So, thank you. Some reports say that NVIDIA plans an investment in inference chips startup D-Matrix. If that happens, what would that signal?</p>
+<p>AB: So, I have not seen those reports, but I would not be surprised since NVIDIA made the acquisition of Grok, right? I would think that for any technology that NVIDIA sees as competing and which it can probably buy, it is going to take a shot, right? So I think D-Matrix's last valuation at the time of funding was about 2 billion. And so, whatever multiple of that NVIDIA might be wanting to pay, it's well within NVIDIA's budget, and it also gets a potential competitor in NVIDIA's lap. So, NVIDIA certainly has the muscle to do that and I'll not be surprised if they make the acquisition. Now, what it would help them more than what acquiring Grok technology is questionable because at the end, it's probably not similar technology, but it benefits NVIDIA in similar ways for the premium inference market. But yeah, if they do the acquisition or something else, it's going to be mostly in the lines of trying to take a threat away from the market rather than something which is very technologically necessary for them at this point.</p>
+<p>DK: Got it. Would NVIDIA backing an arrival inference silicon suggest interoperability strategy or acknowledgement of inference fragments in between different suppliers?</p>
+<p>AB: I think of late NVIDIA has started adopting this policy of trying to be more accommodative in the ecosystem and trying to partner in cases where you can. I think internally, for a long time, NVIDIA was saying that GPUs are all you need, and you don't need anything else. But I think from 2024 and beyond, they started publicly recognizing that for some specific decode workloads where you don't really want to run decode at a high batch size or for some specific use cases, NVIDIA GPUs don't have the best architecture, right? And so that's where they started building all these frameworks like Dynamo. So I think to their credit, to NVIDIA's credit, they were also the first to publicly say that GPUs may not be the best for a certain category of workloads and they started working with other accelerators to build a broader ecosystem. I think NVIDIA will try to probably play it both ways, right? They will try to acquire technologies that are extremely competing, but there will be still technologies like Cerebras, for example, with a market cap of 40 billion, it's probably not the best acquisition for NVIDIA if they wanted to, just because of the cost. And for those cases, I think their strategy would really be to use those accelerators within NVIDIA's ecosystem. So, for an example, if an instance operator uses Cerebras for decode and uses NVIDIA for pre-fill, it's still NVIDIA's win because NVIDIA is in the data center and they're also using NVIDIA software like Dynamo. I think that NVIDIA is trying to also adopt the</p>
+<p>10/13/2026 at 04:06 AM UTC</p>
+<p>broader accelerator ecosystem just so that it can remain dominant in whatever deployments in unique shape, and it's also important to remember that this is still a very nascent market. This is not really defined strongly in any ways. It's still unknown as to how, even in a year, how data centers might look like, how instances may look like, what's going to be the key workload, just because the progress in this market is very fast. Workloads keep changing, models keep changing, and the pace is so fast that it's very hard to predict how the best and most efficient deployment will be looking in a year from now.</p>
+<p>DK: Maybe it's just a very good question. How well do the GB200 and GB300 racks serve frontier models for inference and relative to their training reputation? Maybe what specific workloads are they good at and what percentage of those workloads, what percentage of total work do those workloads represent?</p>
+<p>AB: So GB300 and all, they are definitely serving all the latest models and they are good at generating high volume of tokens. I think for all models and for all NVIDIA architectures, it pretty much comes to the same thing that they are good at generating high volume of tokens at reasonably high batch size and they are poor at the extreme end of generating high tokens per second for relatively small users, and that doesn't really change much even as we go from generation to generation of NVIDIA architecture. It's just that the curve shifts northward and also NVIDIA generates curves in a way to make the architecture look better than what it really is. But from NVIDIA's point of view, they try to shift the curve so that it gets better and better at generating more volume and at much higher speeds even as we go towards the latest models. But at the tail, the extreme end of the curve where you really are looking for high tokens per second for low batch size or select users, that's where all these NVIDIA chips fall short, right? And so if you look at NVIDIA's architecture diagrams, even for the GB300, they try to show their curves both with GB300 as well as GB300 plus a Groq solution to show that if they were to incorporate Groq technology, they can really cater to users at the far end of the curve where you need much more tokens per second for relatively small users.</p>
+<p>DK: That is very helpful. Thank you. So what does an NVLink fusion opening to third parties mean for inference system design?</p>
+<p>AB: Sorry, I heard NVLink and would you repeat the question a bit slowly?</p>
+<p>DK: Well, what does an NVLink fusion opening to third parties mean for inference system design?</p>
+<p>AB: It's mainly that, you know, other inference operators, other accelerators can essentially use NVLink to incorporate their accelerator with NVIDIA's technology, right? So that's the main benefit and use case, and I think Groq incorporated this first, so Groq accelerator chips can work with NVLink and so other accelerator technologies can also do that. So I think the most notable partnership is between NVIDIA and Intel, where Intel will design its CPUs to be compliant with NVLink Fusion. And so essentially that's bringing in other accelerators and other CPUs into picture.</p>
+<p>DK: That is very helpful. All right, moving to AMD. Benchmark shows that MI365X trades on the performance per dollar lead with B200. Is that durable?</p>
+<p>AB: It's not really durable, but because benchmarks are run in a very controlled way and it's relatively easy to demonstrate the performance of a chip or an architecture on a benchmark compared to making it work in production. It also comes down to what is required to compile a model in the most efficient way for a platform. So for an example, for a benchmark solution, it's relatively easier for AMD to put all its engineers to compile the model in the best way for the chip and make it work so that you can showcase that in a benchmark, you would be coming close or you can beat NVIDIA. But the challenge is that this is just not going to be 1 model. The model is going to change in 2 months. And you have to keep a pace with NVIDIA every 2 months on the latest model and do after the next 2 months and so on. So it's mostly just keeping pace with NVIDIA, which is a challenge more than just showing that for a particular benchmark, your chip works better. And the other thing to also remember is that most of the chips do not come up at</p>
+<p>10/13/2026 at 04:06 AM UTC</p>
+<p>the same time. So it could be that you're comparing 1 chip against what NVIDIA is already having in the market, but the next NVIDIA chip would be coming up in 6 months. And maybe your chip for which you ran the benchmark, you're not even entering volume production in that time. So the time frames also matter a lot as to when you made the comparison and what is the time frame for the next chip that will be released relative to when you made the benchmark measurement?</p>
+<p>DK: Right. So let me shorten that. Where does ROCm still fall short of CUDA for production serving?</p>
+<p>AB: Sorry, where does, I missed the first word.</p>
+<p>DK: Where does AMD's ROCm still fall short of CUDA for inference production serving?</p>
+<p>AB: If you're asking how will AMD compete with CUDA for inference service, it's... I think the goal for any accelerator provider including AMD is to have the model work on their chip at a particular performance where it can compete in the market and support it on vLLM, right? So that's the main avenue to getting into production instances because all the new clouds, all the operators are kind of using vLLM, right? So if you want to provide your technology as an alternative to CUDA, you have to make your model work and make it available in vLLM and once that is done, the same can be deployed in production.</p>
+<p>DK: I have an impression that SGLang became the preferred stack for AMD in terms of deployment. First of all, is that the case and if so, then why?</p>
+<p>AB: I'm not probably the best person to answer that. That could be. I see vLLM adoption more than SGLang, I think, and I also work more with vLLM. I've not worked with SGLang, so I'm not familiar if AMD is targeting SGLang more so. Yeah, that could be the case, but I see a strong preference of vLLM in the community, and you know most new cloud operators I know also use vLLM. So I'm not sure of the AMD and SGLang part of the story.</p>
+<p>DK: Got it. Let's see. We'd love to move on to custom silicon here. Some reports say that OpenAI's Broadcom build inference chip beat GB300 on performance per watt.</p>
+<p>AB: So can you just repeat the last part? So what's the?</p>
+<p>DK: What are some of the gating factors in terms of deploying this at scale?</p>
+<p>AB: I think the gating factor is mostly volume production and also comparing where that would come. Many of these comparisons are not relying on the fact that it's an early prototype that the measurements were done in and the time that it would take for making the chip ready at volume would be a year or 18 months. And by that time, NVIDIA will have the next generation chip where they've been well into production, right? So many of these comparisons are not taking that into account. So it's probably easy to prove that on a chip that is just built-in prototype using HBM4 and other technologies. Your speed is more and your power consumption is less compared to the current generation NVIDIA chips. But all those miss the fact that in the 18 months that it will take for you to produce and deploy the chip in volume, NVIDIA will have the next generation of chip already being deployed in volume. And you're really... if you're competing at this point of time, you are actually competing with NVIDIA's next generation of chip. And you're also competing with the fact that even if you have Broadcom as a partner, getting to mass production deployment, it is some effort, right? And you have to keep all this in mind when you're making the comparison.</p>
+<p>DK: That's, again, that is very helpful. Maybe time for a last question. How do SRAM-heavy dataflow architectures compare with HBM GPUs on latency-sensitive inference serving?</p>
+<p>AB: So SRAM definitely is pretty fast, right? And that's why Grok, Cerebras, and all use SRAM and D-Matrix too. And so</p>
+<p>10/13/2026 at 04:06 AM UTC</p>
+<p>it's much faster than HBM. But the key is it's also more expensive than HBM. And so the crucial point is, you know, what size of model do you want to deploy? If you want to deploy a small model which you can fit in SRAM for the specific architecture, then definitely the speed will be very fast, right? But the question is usually the models are getting bigger and bigger, right? And so, for example, Kimi K3, it's like a 2.8 trillion parameter model. So the best performing models get bigger and bigger over time. And so fitting that model size in SRAM means that you really need a lot of chips interconnected with each other, right? So that becomes a very expensive to build and expensive to maintain solution. And also you need all the interconnect technology to make sure that the bottleneck doesn't shift to the interconnect, right? So you still want to operate in SRAM throughput range and solve all the memory bandwidth issues without making the interconnect the bottleneck. So the short summarization is this, right? If you had to deploy a small model, let's say even like GPT-style 120B, so in the 100 billion parameter model, yeah, SRAM will work because you'll need relatively few chips to make SRAM work. But as soon as you get to more bigger models with more number of experts where you need a large memory footprint to even deploy the model, you would need more SRAM, more chips, and the solution won't scale. The other thing to remember is that with the arrival of prompt caching, prefix caching, most coding use cases rely on prefix caching a lot. So coding use cases have over the 90% or 95% prefix cache hit rate. And in the GPU case, all the prefix cache is actually mostly in HBM and then sometimes offloaded to host DRAM storage and other forms of storage, but it's primarily in the GPU HBM. So the large HBM that GPUs have also help in the case of prompt caching. Now, you can do prompt caching in SRAM too, but it's going to be a very expensive solution, right? And you'll not have sufficient SRAM to meet the requirements of prompt caching. So, in these kinds of use cases, the SRAM technology really doesn't work just because of the scale of what you would need.</p>
+<p>DK: Thank you very much for joining us, for being with us today. Thank you everyone who was able to join the call. It was a wonderful call. So again, thank you and hope everybody has a wonderful day.</p>
+<p>AB: Yes, thanks a lot. Thanks a lot for the chat.</p>
+<p>DK: Cheers.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>10/13/2026 at 04:06 AM UTC</p>
+</div>
+</main>
+</body></html>

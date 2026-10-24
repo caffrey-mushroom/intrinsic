@@ -1,0 +1,217 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.19 | AC | Agents | AI Agent Compute: CPU Demand &amp; x86 vs Arm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.19 | AC | Agents | AI Agent Compute: CPU Demand &amp; x86 vs Arm</h1>
+<p class="orig">原标题：AI Agent算力调研_消费级_企业级Agent驱动CPU_GPU算力需求增长,Agent任务量与CPU核心需求测算,x86_Arm异构CPU演进及TCO效率竞争-聚焦OpenAI_AMD_Intel_ARM等</p>
+<p class="tags">#agents #semis</p>
+<p class="meta">AceCamp · 2026-10-19 · article 70568224</p>
+<div class="body">
+<h2>摘要</h2>
+<p>1、消费级/企业级Agent驱动CPU/GPU算力需求增长, 2、Agent任务量与CPU核心需求测算, 3、x86/Arm异构CPU演进及TCO效率竞争。</p>
+<p><b>以下为专家观点：</b></p>
+<p><b>过去一至两年，Muse等消费级智能体有哪些关键进展？如何看待包括OpenAI及其他前沿模型实验室在内的产品与竞争策略演变？</b></p>
+<p>过去一至两年，行业从简单的“大语言模型（LLM）加工具”转向经过系统工程构建的智能体运行时。2024—2025年前后，许多消费级智能体可以演示任务，但在实际生产环境中并不可靠。例如，一个包含10个步骤、每步成功率为90%的工作流，端到端成功率仅约35%。对Muse而言，主要开发重点包括改进规划、重新规划、工具选择、浏览器及计算机操作中的界面理解与动作定位、持久记忆、执行有重大影响的操作前的验证，以及基础设施层面对失败步骤的恢复。从经济性看，重点是通过在常规步骤中使用规模更小的活跃模型、渐进式KV缓存、推测解码、批处理，并将大模型留给高难度推理，将一项长时间自主任务的成本从数美元降低到数十美分。第二个变化是，Token吞吐量不再是衡量GPU的首要指标。一个消费级智能体可能只生成1万至5万个有效输出Token，却会进行20至100次模型调用，在持续运行数分钟的过程中，反复处理大上下文中的屏幕截图。Muse已成为一个推理系统层面的问题，涉及GPU利用率、任务编排、内存带宽、KV缓存容量、多模态编码器和异步工具执行。因此，即使模型的名义参数量更小，智能体产品对加速器的需求也可能与传统聊天机器人推理存在显著差异。在竞争策略方面，技术路线明显趋同，但产品策略并不完全相同。共同架构是分层体系：由强推理模型处理困难决策，由成本更低的模型完成路由和重复步骤，再由运行时管理工具、记忆、权限、验证和恢复。差异化正从基础模型能力最强，转向成功完成每项任务的成本、端到端可靠性、延迟分布，以及智能体能够安全执行操作的环境数量。从GPU投资角度看，核心含义是：消费级智能体带来的单个活跃用户推理算力需求增速，可能远高于日活跃用户数（DAU）的增速。若将传统对话场景的单用户每日算力消耗设为1倍，一个每天完成5至10项多步骤任务的成熟智能体可能消耗5至20倍算力。这些需求将由大型推理模型、小型专用模型、视觉模型和大量CPU端执行共同承担，而非由一个超大模型持续占用GPU。</p>
+<p><b>公司如何计算Muse这类消费级智能体的CPU需求？随着产品成熟，到2030年，这类需求预计将如何变化？</b></p>
+<p>Muse的CPU需求需要根据多个因素的乘积计算，包括DAU、每个DAU的任务数、每项任务的运行时间，以及运行期间的实际CPU利用情况，不能直接由DAU推导。随后还需针对并发、峰均比、冗余和基础设施开销进行调整。对于当前的Muse，公司采用的基础假设为13万DAU，每个DAU每天主动发起5至7项任务，每项任务实际经过时间为3至4分钟。任务运行期间，实际占用的CPU核心当量约为0.6至0.9核。一项持续4分钟的智能体任务，并不消耗4个CPU核分钟，因为大量时间用于等待GPU推理、网站、API、浏览器及外部工具。当前规划的中值约为每项任务2个实际CPU核分钟。计入重试、记忆检索、安全、可观测性和其他运行时开销后，每日CPU消耗约为150万至180万核分钟。容量模型为：每日CPU核分钟＝DAU×每个DAU的任务数×每项任务的CPU核分钟×基础设施乘数。由此计算，每日约为179万核分钟，按平均负载折算，相当于约1,240个持续占用的CPU核心。不过，在配置容量时，公司会采用约3倍的峰均比、60%至70%的目标利用率，并为区域冗余及故障切换预留余量。因此，该工作负载对应的部署容量约为6,000至9,000个物理CPU核心。展望2030年，随着运行时、执行机制、缓存和Arm服务器能效的改善，每次基础操作消耗的CPU时间将下降。但由于智能体将完成更多工作，单用户的总体CPU需求仍会增加。</p>
+<p>最主要的放大因素是单用户任务数增加。如今，用户可能要求Muse寻找并比较3家酒店。到2030年，用户只需说“帮我安排这次旅行”，智能体就可能持续运行数小时甚至数天，查询价格、监控航班并与各类服务交互。用户只发起一项任务，基础设施却可能执行2 00个底层智能体动作。同时，需要区分4类独立工作负载，不能只看单个智能体对应多少CPU：1）交互式编排，包括Python运行时、远程过程调用（RPC）和工具；2）计算机或浏览器执行，CPU负载较重；3）检索与记忆，包括嵌入向量查询、排序及状态管理；4）后台智能体。因此，假设100万个并发智能体就需要100万个CPU核心，过于激进。如果任意时刻只有20%的智能体实际执行CPU工作，每个活跃会话平均占用0.7核，则在计入基础设施开销之前，仅相当于14万个活跃核心。投资层面的含义是：随着推理深度、多模态处理和模型调用增加，单个DAU对应的GPU需求增速应高于CPU需求增速。但当数亿用户都可能拥有持续执行后台工作的智能体时，CPU需求仍会非常庞大。</p>
+<p><b>假设到2030年，每个DAU每日任务数增加到50项，是否合理？这些任务会有哪些特征？</b></p>
+<p>合理。在2030年高采用率情景下，每个DAU每天50项任务可以作为规划假设，这里的“任务”指一次智能体执行或一个工作流。每个DAU每天30项任务属于保守预测，50项是成熟智能体的中性情景，85至100项则属于激进情景。每天50项任务，相当于清醒期间每小时约3项，其中许多可能是用户无感知的后台任务，例如查收邮件、监控价格或更新日历。</p>
+<p><b>建模时应如何区分2030年的简单任务与复杂任务？应如何正确计算相应的CPU需求？</b></p>
+<p>对于2030年情景，应对不同复杂度的任务进行组合建模，避免为每项任务统一设定一个偏高的核分钟数。软硬件效率提升应能抵消部分复杂度增加。2030年的任务组合可以假设为：</p>
+<p>简单任务：占比40%，实际经过时间为2至3分钟，平均实际占用0.5个CPU核心，每项任务消耗1至2核分钟。</p>
+<p>复杂智能体任务：占比45%，实际经过时间为8至12分钟，平均实际占用0.8至1.2个CPU核心，每项任务消耗6至14核分钟。</p>
+<p>非常复杂、长时间运行的任务：占比15%，实际经过时间为20至40分钟，平均实际占用0.7至1.3个CPU核心，每项任务消耗14至50核分钟。</p>
+<p>若将简单、复杂和非常复杂任务分别简化为每项1.5、9和25核分钟，再按占比加权，平均每项任务约消耗8.4核分钟。若每个DAU每天50项任务，则每个DAU每天约消耗420个CPU核分钟。在1亿DAU下，每天共消耗420亿核分钟，在预留容量余量之前，相当于约2,900万个持续使用的核心。需要注意，不能因为2030年的任务能力比今天强5倍，就直接把当前复杂任务的CPU消耗乘以5。一项持续30分钟的智能体工作流，可能有20多分钟用于等待GPU推理、网站、API、人工响应及预定事件。实际经过时间可能大幅增加，但实际CPU时间未必同步增加。最大的两个放大因素是：每个DAU每天50项任务，以及复杂任务占比从目前的15%至25%，转向2030年复杂和非常复杂任务合计占55%至65%。相较于假设每项任务都单纯占用更多核心，这一模型为CPU需求增长提供了更有力的依据。</p>
+<p><b>消费级智能体与企业级智能体，在计算CPU需求的关键因素上有哪些差异？</b></p>
+<p>企业级智能体的计算方式有明显差异，模型的基础由用户转向智能体工作者与工作流，许多任务无需人工直接发起。主要差异如下：</p>
+<p>主要需求单位：消费级智能体为DAU；企业级智能体为活跃智能体或工作流。</p>
+<p>每日任务数：消费级智能体每位用户10至50项；企业级智能体50至500项以上。</p>
+<p>每项任务CPU核分钟：消费级智能体约4；企业级智能体5至20。</p>
+<p>典型实际经过时间：消费级智能体3至10分钟；企业级智能体5至30分钟。</p>
+<p>人工触发程度：消费级智能体较高；企业级智能体明显较低。</p>
+<p>后台执行占比：消费级智能体10%至50%；企业级智能体50%至90%。</p>
+<p>并发程度：消费级智能体适中；企业级智能体很高。</p>
+<p>例如，一个企业级编程或IT智能体每天处理200项任务，每项消耗8核分钟，则每日产生1,600核分钟。一个成熟消费级智能体每天完成50项任务，每项消耗4核分钟，则每日产生200核分钟。因此，前者的CPU工作量约为一个消费级智能体DAU的8倍。此外，高频机器间智能体是另一类重要需求，例如客服分流、安全监控和财务对账。它们每天可以执行500至5,000个小动作。尽管每个动作仅消耗1至3核分钟，其利用情况却可能接近持续运行。企业级CPU需求的计算公式为：活跃企业级智能体数量×每个智能体每日任务数×每项任务核分钟。随后乘以1.2至1.5倍的工作流开销系数，以计入检索、数据库、沙箱、可观测性和智能体间通信。投资层面的关键区别在于：消费级需求取决于人数及使用强度，企业级需求取决于已部署的数字员工及其利用率。到2030年，企业级智能体每个活跃智能体每日消耗的CPU核分钟将明显更高，尽管消费级智能体可能拥有更多独立用户。预测企业级需求时，智能体活跃小时数、每个智能体每小时任务数等指标，比月活跃用户数（MAU）或DAU更能直接反映服务器利用情况。</p>
+<p><b>应如何理解企业级智能体的“服务器利用率”？不同类型智能体的典型利用率是多少？</b></p>
+<p>企业级智能体的服务器利用率，指一天中智能体实际消耗算力的时间占比，而非员工或客户使用它的小时数。公司将“智能体每日活跃小时数”定义为智能体实际执行工作的时间总和。一个智能体可能全天候部署，但实际只累计6个活跃小时，其余时间处于空闲或等待状态。典型利用情况如下：</p>
+<p>员工助理（Copilot）：每天部署8至10小时，实际计算1至3小时，利用率为10%至30%。</p>
+<p>编程智能体：每天部署8至12小时，实际计算3至6小时，利用率为25%至50%。</p>
+<p>客服智能体：每天部署24小时，实际计算8至16小时，利用率为35%至65%。</p>
+<p>后台事务或流程智能体：每天部署24小时，实际计算6至12小时，利用率为25%至50%。</p>
+<p>机器间智能体：每天部署24小时，实际计算12至20小时，利用率为50%至85%。</p>
+<p>因此，一家企业拥有1万个企业级智能体，并不意味着需要1万个持续占用的CPU核心。若平均每个智能体每天实际计算6小时，在活跃期间占用0.8个CPU核心，则计算为：1万个智能体×6小时/天×60分钟/小时×0.8核＝每天288万个CPU核分钟。按24小时平均，相当于2,000个持续使用的CPU核心。这是按每个已部署智能体衡量的，一个企业客户可能部署50个智能体，另一个则可能部署5万个。基础设施预测公式为：企业级每日CPU核小时＝已部署智能体数量×每个智能体每日活跃小时数×活跃期间平均CPU核心数。也可以从任务数量角度进行交叉验证。对于成熟企业级智能体，“智能体每日活跃小时数”是更合适的指标，因为独立任务的界限会变得模糊。一个编程智能体可能工作4小时，衍生出数百次工具调用和子任务；此时，记录4个智能体活跃小时、平均占用0.9个CPU核心，比统计300项独立任务更有意义。</p>
+<p><b>假设到2030年部署10亿个企业级智能体，是否可作为自上而下模型的合理基础？</b></p>
+<p>到2030年部署10亿个持久化数字员工，属于激进的上行情景，并非中性规划假设。更扎实的方法是依据可覆盖的劳动人口和非人工操作型智能体，自下而上估算数量。2030年的预测模型可以包含以下驱动因素：</p>
+<p>可覆盖的知识工作者：规划假设为8亿至11亿人。</p>
+<p>企业级智能体渗透率：规划假设为55%，对应3.6亿至7.15亿名已启用智能体的工作者。</p>
+<p>每名已启用智能体的工作者对应的持久化智能体数：规划假设为0.8个，折算为约5亿个企业级智能体。</p>
+<p>共享及流程智能体：单独计入，估计为1亿至2.5亿个。</p>
+<p>持久化企业级智能体总数：合计中性情景约为6.2亿个。</p>
+<p>因此，2.5亿至3亿个是较保守的估计，5亿个可作为中性情景。若一名员工可以拥有多个独立智能体，例如分别用于编程、研究和日程安排，或者将大量不与员工绑定、由机器运行的智能体纳入统计，10亿个的假设就更有依据。对于算力假设，关键是将智能体活跃时间与CPU占用量区分开来。一个企业级智能体可能在工作流中活跃10小时，但由于等待GPU推理、API调用、网络响应及其他延迟，其平均CPU占用可能仅为0.5至1.5核。若假设每个智能体活跃10小时、占用4个CPU核心，则意味着极其庞大的基础设施需求。</p>
+<p><b>对于消费级智能体市场，假设2030年达到40亿MAU和25亿DAU，是否合理？</b></p>
+<p>预测2030年全球消费级智能体达到40亿MAU和25亿DAU，属于高采用率但具有合理依据的情景。该情景假设智能体被嵌入即时通信、搜索、操作系统、社交应用和助手之中，不局限于Muse这样的独立应用。由此得到62.5%的DAU/MAU比率较为激进，但如果智能体融入日常数字生活，则仍属可能。公司的内部模型采用45%至65%的DAU/MAU比率。对于2030年，较低采用率情景为30亿至40亿MAU，以及13.5亿至25亿DAU。40亿MAU的假设比25亿DAU更容易接受。公司会以20亿DAU作为基础设施需求的中性情景，以25亿作为高情景。计算CPU需求时，一旦确定DAU，MAU的重要性就会降低。若每个DAU每天50项任务，每项消耗4个CPU核分钟，则每个DAU每天消耗200核分钟。在25亿DAU下，每日合计5,000亿核分钟，在利用率和容量余量调整之前，相当于3.47亿个持续使用的CPU核心。公司最需要进行压力测试的假设是：这25亿DAU中的每一位用户，每天都完成50项、每项消耗4核分钟的任务，因为这意味着全球范围内极深的智能体使用程度。</p>
+<p><b>能否进一步说明2030年消费级智能体任务的CPU工作负载特征，特别是25%的CPU附加率和每项28核分钟这两个假设？</b></p>
+<p>25%不应被视为基础意义上的CPU附加率，因为几乎100%的智能体任务都会用到CPU。更有意义的问题是：有多少任务会产生足够多的增量CPU工作量，从而需要采用较大的核分钟假设？这一比例应从任务架构推导。2030年的消费级智能体工作负载可以分为CPU强度不同的若干任务类别：</p>
+<p>LLM对话与推理：占任务总量的30%，其中5%至15%为CPU重负载任务。</p>
+<p>搜索与检索：占比15%，其中20%至40%为CPU重负载任务。</p>
+<p>浏览器与网页智能体：占比20%，其中70%至90%为CPU重负载任务。</p>
+<p>计算机操作智能体，包括应用执行、虚拟机或容器、浏览器：占比10%，其中80%至95%为CPU重负载任务。</p>
+<p>编程与数据执行：占比10%，其中80%至100%为CPU重负载任务。</p>
+<p>个人及生产力操作：占比10%，其中30%至60%为CPU重负载任务。</p>
+<p>后台监控：占比5%，其中20%至50%为CPU重负载任务。</p>
+<p>按上述类别加权分析，约30%至40%的任务会产生显著的CPU执行负载。对于2030年，更准确的CPU重负载任务占比中性情景为35%，低情景为25%，高情景为50%。至于28核分钟，对于CPU重负载任务子集，这是合理假设，但不能将其作为每日全部1,200亿项任务的全体平均值。例如，一个浏览器或计算机操作工作流持续20分钟、平均占用1.4个CPU核心，即消耗28核分钟。14分钟占用2核，或者7分钟占用4核，也可得到相同结果。这些组合适用于浏览器使用、编程沙箱、文档处理、本地执行和多模态处理。对2030年建模时，更准确的方法为：</p>
+<p>25%至40%的任务较复杂、CPU密集，每项消耗20至30核分钟。</p>
+<p>其余60%至75%的任务较轻，每项消耗0.5至5核分钟。</p>
+<p>由此得到全体任务的加权平均值约为每项7至13核分钟。使用这一加权均值，更适合估算2030年的CPU需求规模。</p>
+<p><b>随着消费级和企业级智能体成熟，应如何从效率和总拥有成本（TCO）角度，评估x86、Arm及内部定制设计等不同CPU？</b></p>
+<p>评估CPU时，首要依据并非架构类型（x86或Arm）或单路基准测试成绩，关键指标是每投入1美元数据中心总拥有成本（TCO），能够完成多少有效智能体工作。随着智能体成熟，CPU作为加速器周边编排与执行层的作用越来越重要。主要采用的TCO效率公式为：成功完成的智能体任务数÷基础设施总成本。具体评估CPU时，还会分解为多个因素：每路每秒完成的任务数、每项任务能耗、每项任务核分钟、内存容量和带宽、I/O、虚拟化密度，以及软件兼容性。以相同智能体工作负载下三种平台的归一化比较为例：</p>
+<p>每路智能体任务数：x86为100，Arm为120，定制Arm为135。</p>
+<p>服务器功耗：x86为500W，Arm为380W，定制Arm为350W。</p>
+<p>每瓦性能：x86为1.0倍，Arm为1.6倍，定制Arm为1.93倍。</p>
+<p>CPU采购成本：x86为1.0倍，Arm为0.8倍，定制Arm的有效成本为0.62倍。</p>
+<p>每美元对应内存容量：x86为1.0倍，Arm为1.1倍，定制Arm为1.3倍。</p>
+<p>这意味着，选型标准的权重大致为：每瓦性能30%，每美元性能25%，内存子系统15%，I/O与加速器连接能力15%，软件运行时兼容性10%，可靠性和可管理性5%。普通Web服务器非常看重单线程性能，而对于智能体服务器，更重要的是高效运行数千个异步运行时、浏览器、容器和检索调用的能力。因此，每路内存容量和带宽非常重要。到2030年，市场不会由单一CPU架构主导。x86在要求兼容性和高性能执行的场景中仍将保持优势；Arm对可控的超大规模部署很有吸引力。市场将形成异构CPU资源池，并以TCO作为决定因素。跟踪的两项核心指标为“每100万项智能体任务的美元成本”和“每100万项智能体任务的千瓦时能耗”。两者分别由每项任务核小时乘以每核小时成本、每核功耗（千瓦）推算，再折算到100万项任务。</p>
+<p><b>与英特尔相比，AMD在智能体工作负载中有哪些具体优势，尤其是在核心密度和能效方面？</b></p>
+<p>对于AMD优势的直观判断总体正确，但需要区分核心密度、每瓦性能和每核性能，AMD并非在每个方面都领先英特尔。两家公司在通用核心方面都很强，但AMD通常在每瓦性能上更具吸引力，至强（Xeon）在这一指标上也在改善。AMD的EPYC 9005系列每路最高可提供192个Zen 5c核心，特别适合智能体工作负载。高核心密度有助于服务器整合。例如，AMD可以将原本需要1.3台英特尔服务器承担的工作负载，整合到一台单路服务器中，由此带来的TCO优势超过单纯的CPU效率优势。在实践中，凭借更高吞吐量，AMD可以将一项复杂任务在英特尔平台上的28核分钟计算量，降低到相当于23至25核分钟，同时实现更好的服务器整合。</p>
+</div>
+</main>
+</body></html>

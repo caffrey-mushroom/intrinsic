@@ -1,0 +1,238 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.21 | 9K | AMZN | AWS Q3 Preview: Bedrock &amp; Open Weights</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.21 | 9K | AMZN | AWS Q3 Preview: Bedrock &amp; Open Weights</h1>
+<p class="orig">原标题：亚马逊离职专家|亚马逊云科技 Q3 收入预期为 462 亿美元，同比增长 39%，Amazon Bedrock 环比增长 43% 至 43 亿美元，开放权重模型增速最快，中国模型贡献 3.5 亿美元；预计截至 2026 年底装机容量将达 23 吉瓦，驱动 2026 年约 2200 亿至 2300 亿美元的资本支出，并在 2027 年约为 2900 亿美元； AWS Trainium 降低客户成本 40% 至 50%，同时在折旧与电力约束下保护aws利润率</p>
+<p class="tags">#cloud #llm</p>
+<p class="meta">Meritco 久谦 · 2026-10-21</p>
+<div class="body">
+<h2>摘要</h2>
+<p>亚马逊云科技第三季度增长由 AI 和 Amazon Bedrock 带动，收入预期为 462 亿美元，Amazon Bedrock 达到 43 亿美元。开放权重模型通过更低成本、定制化和更便捷的无服务器部署获得份额，中国模型在该季度产生约3.5 亿美元收入。预计年内装机容量将达 23 吉瓦，但电力仍是关键瓶颈。上升的资本支出和折旧对利润率构成压力，AWS Trainium 更低的成本和约十个百分点的边际优势为利润提供实质性保护</p>
+<h2>要点</h2>
+<ol><li>第三季度亚马逊云科技收入预期约为 462 亿美元，同比增长 39%，同时 Amazon Bedrock 达到 43 亿美元，环比增长 43%，几乎占亚马逊云科技收入的 9%，并受约 4960 亿美元剩余履约义务支持</li><li>第三季度 Amazon Bedrock 的模型构成为 66% Claude、17% Amazon Nova、15% 开放权重模型和 2% OpenAI；开放权重收入达到 6.5 亿美元，环比增长约 82%，因性价比、定制化、高</li></ol>
+<p>token 编码工作负载和无服务器 API 访问降低了部署摩擦</p>
+<ol><li>五个中国开放权重模型在第三季度产生 3.5 亿美元收入：深度求索仍为最大，达到 1.17 亿美元但增速最慢，而 Kimi 从第二季度到第三季度增长最快，增长 75% 达到 4900 万美元，其次为 MiniMax 增长 56% 和</li></ol>
+<p>GLM 增长 52%</p>
+<ol><li>亚马逊云科技已装机电力容量从 2025 年底的 16 吉瓦上升到 2026 年第三季度末约 21 吉瓦，并预计年内达到 23 吉瓦，约有 3% 未售出；2027 年潜在的 31</li></ol>
+<p>吉瓦估算尚未得到验证，电力、电网接入、许可和监管是扩张的最大约束</p>
+<ol><li>亚马逊资本支出估计在 2026 年约为 2200 亿至 2300 亿美元，2027 年集中估计为 2900 亿美元，约增长 28%；2027 年可能新增约 7.3 吉瓦的 AI 容量，按容量划分约 60% 为 AWS</li></ol>
+<p>Trainium、40% 为 NVIDIA，但按支出接近 50:50</p>
+<ol><li>AWS Trainium 每单位输出成本约比 AWS 上的 NVIDIA 方案低 40% 至 50%，并带来约高出十个百分点的 AWS 边际率；其推理比重可能在 2027 年从 60% 上升到 70%，有助于在折旧压力可能将边际率拉向</li></ol>
+<p>32% 的情况下，将运营边际率维持在接近 35% 的水平</p>
+<h2>Q:Q3 AWS 的收入增长是多少，包括同比和环比增长率，是什么推动了这种增长？</h2>
+<p>A:总体来看，AWS 收入预计约为 462 亿美元，四舍五入约为 460 亿美元。这表示同比增长 39%。Amazon Bedrock 是增长最快的组成部分，产生了 43 亿美元，相当于环比增长 43%，几乎占 AWS 收入的 9%。</p>
+<p>AWS 的增长从 17% 逐步推进到 20%、24%、28% 和 37%。具体的季度标注可能有混淆，但意图是说明增长在加速，驱动因素是 Amazon Bedrock 和 AI。另一个主要因素是在手订单：RPO 约为 4,960亿美元。Amazon Bedrock 的收入也出现了环比上升，从 7 月的 13.2 亿美元升至 8 月的 14.3 亿美元和 9 月的 15.6 亿美元。Q3 总收入为 43 亿美元，而 Q2 为 30 亿美元。</p>
+<p>在 Q3 的 Amazon Bedrock 收入中，Claude 约占 66%，Amazon Nova 占 17%，开源开权（open-weight）模型占 15%，OpenAI 占 2%。这些数据仅适用于Q3，不适用于年初至今（YTD）期间。</p>
+<h2>Q:从 Q2 到 Q3，模型分布发生了怎样的变化？Anthropic 在 Amazon Bedrock 收入中的占比是否变大，Amazon Nova 是否获得了份额，或者不同模型之间的趋势是什么？</h2>
+<p>A:在 Q3，Anthropic 占 66%，Amazon Nova 占 17%，开源开权模型占 15%，OpenAI 占 2%。开源开权类别包括 DeepSeek、GLM、Qwen、Kimi 和 MiniMax。开源开权的收入为 6.5亿美元。其中，五个中国模型占 3.5 亿美元，而 Llama、Mistral 和其他模型占 3.0 亿美元。</p>
+<p>Claude 的份额从 Q2 的 68% 下降到 Q3 的 66%，而 Amazon Nova 从 20% 下降到 17%。开源开权模型从 12% 增至 15%。OpenAI 从 0.7%（或不到 1%）上升到2%。因此，开源开权模型是最大的增长杠杆。中国模型录得最强的环比份额增长，而 Claude 和 Amazon Nova 失去份额，OpenAI 则从非常小的基数大约翻了一番。</p>
+<h2>Q:谁在使用开源开权模型和 Amazon Nova？Amazon Nova 的份额似乎在下降，Anthropic 的份额相对稳定，而 OpenAI 在从很小的基数增长。为什么 Amazon Nova 在下降，为什么开源开权模型在增长，哪些客户在推动它们的使用？</h2>
+<p>A:Amazon Nova 2 Lite 被用于客户服务聊天机器人、文档处理和业务流程自动化。这些是企业后端的用例，主要出现在大型企业的医疗、金融服务和部分制造业领域。就 Q3 而言，Amazon Nova 的拆分为 11% 图像和 8%视频，涉及 Canvas 和 Reel。这些产品在媒体公司中的使用更为普遍。</p>
+<p>开源开权模型环比增长约 82%，有四个主要原因。首先，它们在价格-性能上具有显著优势：一些更大的开源开权模型现在在 API 成本的一小部分下匹配专有前沿系统的性能。AI的一大挑战是许多项目仍停留在概念验证阶段，因为公司无法以经济可行的方式在生产中部署它们。更低的成本使得生产部署更为可行。</p>
+<p>第二，编码和 agent 工作负载产生大量 token。agent 流程每个任务可能使用 50 到 100 倍的 token。GLM 4.7 和 MiniMax 2.1 旨在进行自主编码并产生非常大的输出，因此编码需求和 token量是中国模型表现良好的重要原因。第三，AWS 减少了获取和使用这些模型的摩擦：想要特定模型的客户可以通过 AWS 访问该模型，而 AWS 不会干预模型选择。</p>
+<p>第四，开源开权模型提供定制化能力。客户可以在 AWS 内部将 Kimi 等模型进行微调并保留其数据。许多来自拉美和亚太地区的客户会为本地需求调整这些模型。使用 Amazon Bedrock还有助于解决数据可能被转移到中国的担忧。中国的开源开权模型公司若希望进一步提升采用率，可以通过雇佣能够直接与 AWS 和 Azure 对接并发展客户关系的人员来改进，因为剩余的一些障碍与文化和商业接触相关。</p>
+<h2>Q:关于第三点，AWS "不干涉" 的意思是什么？你能更详细地解释吗？</h2>
+<p>A:以前，在 AWS 上运行开源开权模型需要大量工程工作，包括租用 GPU、搭建服务器和重写代码。AWS 现在通过一个即插即用的 API 提供同一模型，将实现时间从数周缩短到数小时。客户不再需要租用 GPU、搭建服务器或重写部署代码。</p>
+<p>最大改变涉及托管。该服务现在是完全托管且无服务器的：客户调用 API 即可，无需预置 GPU 或管理机器学习基础设施。此前，他们必须在 Amazon SageMaker 或 Amazon EC2 上自行托管、预留GPU、部署模型并扩展系统。新方法显著更简便，摩擦也远小得多。</p>
+<h2>Q:对于中国模型，你有收入或 token 消耗的数据吗？在 AWS 上增长最快的是 Kimi、DeepSeek 还是其它模型？</h2>
+<p>A:这五个模型都在增长。Kimi 增长最快，其次是 MiniMax 和 GLM。DeepSeek 仍然是收入最大的模型，但增长最慢并且在失去份额。</p>
+<p>DeepSeek 在 7 月产生了 3300 万美元，8 月为 3900 万美元，9 月为 4500 万美元，Q3 总计 1.17 亿美元。其 7 月到 9 月的增长为 36%。GLM 在相应月份产生了 2100 万美元、2700 万美元和3200 万美元，总计 8000 万美元，增长为 52%。</p>
+<p>Qwen 在 7 月产生了 2000 万美元，8 月 2400 万美元，9 月 2800 万美元，Q3 总计 7200 万美元，环比增长 40%。Kimi 在 7 月产生 1200 万美元，8 月 1600 万美元，9 月 2100万美元，总计 4900 万美元。数据显示其从 Q2 到 Q3 增长了 75%。Kimi 增长最快，但基数较小。</p>
+<p>MiniMax 在 7 月产生 900 万美元，8 月 1200 万美元，9 月 1400 万美元，总计 3500 万美元。其增长率为 56%。Kimi 和 MiniMax 是增长最快的模型之一，但两者的基数都较小。</p>
+<h2>Q:Q3 的 AWS 增长集中度如何？同比收入增长中有多少来自前五或前十大客户，增长是由几家大公司推动还是由更广泛的客户基础推动？</h2>
+<p>A:前十大客户对 Amazon Bedrock 同比增长的贡献约为 40%。更准确地说，其贡献约为 40% 至 42%。</p>
+<p>未提供具名客户名单。基于 AWS 更广泛的客户基础，该群体可能包括媒体和金融公司，例如 Netflix 和 Apple 只作为示例性可能性，而不是确认属于前十大中的成员。可用信息表明，最大客户包括以 AI 为本的应用公司以及编码和agent 平台，但并未提供确定的名单。OpenRouter、Salesforce、Perplexity、Intuit 等是可能的例子，但没有数据证明它们确实位于十大客户之中。</p>
+<h2>Q:能否将 Q3 的 AWS 收入在 AI 和非 AI 工作负载之间进行拆分？在 AI 收入中，有多少来自训练，多少来自推理？</h2>
+<p>A:在 Q3，AI 大约占 AWS 收入的 16%，非 AI 工作负载占 84%。在 AI 收入中，约 69% 来自推理。四舍五入后，大约三分之二来自推理，三分之一来自训练。相应的美元金额可以基于总 AWS 收入约 460 亿美元来计算。</p>
+<p>按收入来源划分，Amazon Bedrock 完全为推理（100% 推理）。Anthropic 的计算或 IaaS 大约 60% 是推理；OpenAI 大约 40% 是推理；Amazon SageMaker 大约 50% 是推理。</p>
+<h2>Q:在 Q3 末，有多少 AWS 容量可供客户使用，在 Q4 预计将新增多少容量？</h2>
+<p>A:截至2026年第三季度末，AWS的已装机电力容量约为21吉瓦，较2025年末的16吉瓦增长。几乎没有未出售的容量；大约有3%仍未售出，这意味着容量基本上已全部承诺。</p>
+<p>对于2026年第四季度，AWS预计将新增约2.1到2.15吉瓦，四舍五入约为2吉瓦。最初称这将使AWS在2027年底达到23吉瓦的说法不正确。更正后的数字是到2026年底大约23吉瓦。因此，容量在2026年内从16吉瓦增加到23吉瓦，增长了7吉瓦。</p>
+<p>2027年的估算为31吉瓦，意味着较2026年23吉瓦水平再增长约8吉瓦。然而，2027年的数字尚未完全核实，需要进一步验证。因此估算的进程是2025年16吉瓦、2026年23吉瓦，并可能在2027年达到31吉瓦。</p>
+<h2>Q:亚马逊在2026年和2027年的预期资本支出是多少？</h2>
+<p>A:对于2026财年，估算为2220亿美元，四舍五入约为2200亿美元。高支出的一个主要原因是内存、SSD和HDD价格上涨。大部分支出与AWS和生成式AI相关。第三季度的CapEx运行率大约为570亿到600亿美元。第四季度大约为625亿到648亿美元，或大致在600亿到650亿美元之间。</p>
+<p>2026年的主要估算为2200亿美元，尽管可能达到2300亿美元。这些数字并非基于准确的CFO数据，因此应将2026年的估算视为大约2200亿到2300亿美元的范围。</p>
+<p>将8吉瓦乘以假定的每吉瓦300亿美元的简化计算并不能直接映射到年度CapEx。支出可能发生在某一年，而相应的产能在后一年投产。折旧、通胀、定价和其他因素也会影响两者关系。因此，在某一年购买产能或在账面上记录CapEx并不等同于同年该产能就会投产。</p>
+<h2>Q:亚马逊在2027年会将资本支出提高多少，以及期望这些投资带来怎样的回报？</h2>
+<p>A:2027年的中心CapEx估算约为2900亿美元。这将相对于以2026年约2200亿到2300亿美元为基数的大约增加28%。更宽泛的估计区间为2840亿到3150亿美元。没有确切的CFO数据，不同系统得出不同数字，因此这些数值应视为估算而非精确金额。</p>
+<p>更广的组织背景是，亚马逊在减少员工人数的同时增加基础设施支出，将更多资金投入到芯片和产能上。未提供单独的投资回报率数值估算。</p>
+<h2>Q:在2026年第四季度和2027年新增的产能中，NVIDIA GPU和AWS Trainium的占比如何？</h2>
+<p>A:在2026年第四季度，预计将新增约1.5吉瓦的AI产能。分配大约为55% AWS Trainium和45% NVIDIA。</p>
+<p>对于2027年，预计将新增约7.3吉瓦的AI产能，分配大约为60% AWS Trainium和40% NVIDIA。这意味着大约4.4到4.5吉瓦的AWS Trainium产能。然而按美元计，分配将更接近50:50，因为NVIDIA系统每吉瓦的成本约为AWS Trainium的1.5倍。</p>
+<h2>Q:你预计裁员趋势会在2027年和2028年继续吗？</h2>
+<p>A:我认为这一趋势会继续。公司似乎在使用各种理由减少员工数，同时替换的招聘可能成本约低30%。</p>
+<p>尚不清楚该趋势会持续多久。一个担忧是更优秀的员工可能会离开，导致留下的员工队伍变弱。俗话说，A级员工带来A级员工，而B级员工带来C级员工。</p>
+<h2>Q:在第三季度，AWS的营业收入和营业利润率是多少？考虑到增加的资本支出、折旧和裁员，预计2026年和2027年的营业利润率是多少？</h2>
+<p>A:在第三季度，AWS的营业利润率约为37.4%。更安全的估计范围是37%到39%。营业收入约为173亿美元，营收大约为460亿美元。</p>
+<p>对于2027年，预计的营业利润率范围大约为35%到37%。由CapEx激增带来的折旧可能使利润率降低约三个百分点。GPU价格上涨和相关溢价将带来额外压力。</p>
+<h2>Q:对于可比的生产工作负载，AWS Trainium相比NVIDIA为客户节省多少费用？对AWS的利润率有何影响？</h2>
+<p>A:对于可比工作负载，AWS Trainium方案在每单位产出上比AWS上的NVIDIA方案便宜约40%到50%。相对于较旧的NVIDIA H100和NVIDIA H200实例，差距最大。相对于NVIDIA GB300 Blackwell，差距较小：AWS Trainium大约便宜35%，而相对于NVIDIA H100和H200大约便宜50%。其中大部分使用来自像Anthropic这样的大客户，其工作负载为AWS Trainium进行了优化。</p>
+<p>AWS在AWS Trainium上的利润率约高出十个百分点，上下约半个百分点。因此AWS Trainium起到了利润保护器的作用。如果没有它，2027年的折旧上升可能会将AWS的利润率推向约32%，而不是大约35%。AWS在每吉瓦的收入上有所放弃，因为AWS Trainium每吉瓦产生的收入低于NVIDIA，但它改善了盈利能力和自由现金流。</p>
+<h2>Q:哪些工作负载在AWS Trainium上运行？训练和推理的占比分别是多少？</h2>
+<p>A:大约60%的已装AWS Trainium产能运行推理工作负载，40%运行训练工作负载。推理份额正在增长，并可能在2027年达到70%。许多原生AI客户直接租用产能，Anthropic是主要客户。主要工作负载类别为LLM推理、前沿模型预训练，以及强化学习和后训练工作负载。</p>
+<p>Anthropic在大型集群上使用AWS Trainium进行前沿模型预训练和强化学习后训练。亚马逊则将其用于Amazon Nova和前沿模型训练、Alexa、Rufus和广告工作负载。推理份额上升是因为生产部署在增加。许多项目已经超越概念验证阶段，推理的增长速度快于训练。Amazon Bedrock环比增长43%，而AWS Trainium的每token成本大约可以是NVIDIA H200的一半。</p>
+<p>训练工作负载预计会迁移到更新的芯片，大型训练任务将在2027年末迁移到AWS Trainium 4集群，尽管没有确切日期。较旧的AWS Trainium 2集群将被改作推理使用。预计2027年的构成大约为70%推理和30%训练。</p>
+<h2>Q:在AWS与Anthropic和OpenAI的合作方面有什么最新进展？</h2>
+<p>A:Anthropic仍然是AWS的AI锚定租户，即一个主要锚定客户。该安排覆盖最多5吉瓦以及十年内超过1000亿美元。附注中的营收数字约为168亿美元。计算协议覆盖最多5吉瓦的新产能及AWS Trainium 2到AWS Trainium 4。双方关系依然稳固。</p>
+<p>附注还显示Anthropic的营收为168亿美元，并指出其增长正在从147%放缓到45%。最初称增长在加速的说法已更正为在放缓。</p>
+<p>OpenAI正在成为第二个锚定客户，但规模仍小，约占Amazon Bedrock营收的2%。自6月以来已进入一般可用状态。在微软对新GPT模型的独家权结束后，AWS开始寻求与OpenAI建立更大势头。与Anthropic相比，OpenAI在企业销售方面仍不够成熟。</p>
+<p>大型企业为AI分配了可观预算，但常常不确定该构建哪些应用。有些企业实际上可能有10亿美元可用，但仍在寻求如何部署的指导。AWS的官方立场是支持多模型并让客户选择，但在实际操作中，Anthropic仍然是AWS的主要模型合作伙伴。</p>
+<h2>Q:AWS在开放权重模型上的利润率是更高还是更低？对于Anthropic，AWS的分成大约占客户收入的8%到10%吗？</h2>
+<p>A:AWS在开放权重模型上的营业利润率约为45%。Anthropic对应的数字约为41.2%，因此开放权重模型的利润率略高一些。</p>
+<p>据描述，Anthropic还产生了约3.5个百分点的营业利润，这部分利润是以多年合约的形式签订的。AWS并非简单地选择开放权重模型而放弃Claude。Claude有助于赢得客户，而开放权重模型有助于客户在采用后管控成本。Anthropic长期合约锁定的利润和其在获取客户方面的作用，解释了为什么即便开放权重模型能带来更高的利润率，AWS仍然继续支持Anthropic。</p>
+<h2>Q:企业级AI是否正在从概念验证向生产环境转变？这一过渡的主要驱动因素和瓶颈是什么？</h2>
+<p>A:是的。企业级AI正在从概念验证向生产化转变。生成式AI助手和编码代理已经在生产规模运行，尽管自治代理仍主要处于试点阶段。主要瓶颈是集成、可观测性、治理和成本——而不是模型质量。</p>
+<p>可观测性是一个特别重要的瓶颈，这也是为什么像Datadog这样的公司在推出具代理能力的AI和LLM可观测性产品时可能表现良好。如果一个客户在云服务上花费1亿美元，约20%到25%可能会分配给可观测性。企业在衡量代理行为和结果方面仍然存在困难。</p>
+<p>德勤的一条数据表明，38%在试点代理，11%在生产中部署了代理。其他证据包括AWS的AI运行率超过250亿美元并以三位数速度增长、Amazon Bedrock在六个月内新增客户、Anthropic收入上升，以及像Claude Code和Codex这样的编码代理表现强劲。这些数据点表明正在发生生产端采用。治理、安全、可观测性以及无法衡量结果仍然是主要制约因素。</p>
+<h2>Q:截至六月底和九月底，Amazon Bedrock的客户数是多少？如果可能，能否也提供其他期末数据，以便估算每位客户的平均支出并将增长区分为客户增加和单客户支出上升？</h2>
+<p>A:截至2026年3月底，Amazon Bedrock约有128,000名客户。到6月底，约有195,000名客户；最初的20万的数字已更正为19.5万。</p>
+<p>到8月底，Amazon Bedrock约有225,000到230,000名客户。到9月底，约有245,000到255,000名客户。</p>
+<h2>Q:Amazon Bedrock业务是否存在季节性？</h2>
+<p>A:没有明显的季节性。Amazon Bedrock还太年轻——于2023年末才开始全面可用——且增长速度太快，尚未形成清晰的日历模式。增长主要由模型发布和生产部署驱动，而非季节性。存在轻微模式，包括工作日与周末差异、夏季放缓以及年终预算周期，但这些尚不足以确立明确的季节性趋势。</p>
+<h2>Q:有传闻称电力短缺阻止了AWS按预期增加那么多千兆瓦容量。是否属实，即AWS可能有可用芯片但因无法获得足够电力而无法将其投入运行？</h2>
+<p>A:这是真的，或至少在某种程度上是真的。AWS正在以前所未有的速度扩充算力，但增长速度仍赶不上需求增长。需求超过可用容量，而电力是最大的制约因素。其他瓶颈包括芯片、内存和劳动力，但电力远为最重要。</p>
+<p>美国的电力部门监管非常广泛。增加电力供应需要与公用事业公司及NRC、FERC等机构协调。额外电力无法立即获得，因为该过程耗时多年。本来可能需要十年的项目，或许可缩短到四年，但电力可得性仍是一个重大问题。</p>
+<p>公共政策上也存在对数据中心的抵制。一些社区反对在其区域内发展数据中心，形成了另一个约束。因此，即便芯片可用，电网容量、许可、监管、公用设施建设周期和地方反对都可能延迟算力上线。</p>
+<p>以上仅供交流探讨，不构成投资建议</p>
+</div>
+</main>
+</body></html>

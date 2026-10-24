@@ -1,0 +1,314 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.19 | GP | LLM | Reflection AI BEAM vs Kimi &amp; GLM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.19 | GP | LLM | Reflection AI BEAM vs Kimi &amp; GLM</h1>
+<p class="orig">原标题：Reflection AI: Will Its Open-Sourced BEAM Challenge Kimi's and GLM's Enterprise Advantage?</p>
+<p class="tags">#llm #china</p>
+<p class="meta">GuidePoint · 2026-10-19</p>
+<div class="body">
+<p>Primary:</p>
+<p>Reflection AI, Inc.</p>
+<p>Associated:</p>
+<p>2513:HK</p>
+<p>Beijing Moonshot AI Technology Co., Ltd.</p>
+<p>NVDA</p>
+<p>Viewpoint:</p>
+<p>Industry Consultant</p>
+<p>Moderator: Elfy Yin (EY)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Oct 19, 2026</td><td>21 Min Read</td></tr></tbody></table></div>
+<p>Brandon Loomis (BL), Former Senior AI and Data Engineer - Baseten</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The discussion assessed Reflection AI’s Beam model as a lower-cost, open-weight competitor to Kimi, GLM, Llama, Mistral, and other enterprise AI models. The expert focused on whether Beam’s sparse mixture-of-experts architecture can sustain coding quality, reliability, and cost advantages under production workloads.</p>
+<p>The broader themes included Chinese models’ international expansion, developer ecosystems, NVIDIA’s vertical integration, enterprise switching costs, and increasing scrutiny of AI spending.</p>
+<p>Key Insights</p>
+<p>Beam’s architecture appears promising for efficient coding workloads, but benchmark results are not sufficient evidence of a durable advantage. Multi-file coding, debugging, long-running agents, and repeated tool use are more meaningful tests. Total task-completion cost matters more than token pricing. Retries, reasoning steps, latency, GPU consumption, monitoring, integration, and human correction can eliminate apparent savings. Enterprises are unlikely to replace Kimi or GLM immediately. They would first test Beam on selected workloads and switch only if it provides materially better cost-to-performance without reducing reliability. Open weights improve infrastructure control and data privacy, but enterprise trust also requires clear licensing, reproducible evaluations, security, documentation, and stable production performance. NVIDIA support could accelerate Beam’s distribution and optimization, while also creating significant CUDA-related lock-in risk. The expert expects continued demand for smaller, task-specific models as companies increasingly require measurable returns from AI spending. Chinese models are expected to gain US users, although compliance, data governance, export controls, geography, and local support may restrict enterprise adoption.</p>
+<p>Competitive Landscape</p>
+<p>10/20/2026 at 05:08 AM UTC</p>
+<p>Model or company</p>
+<p>Positioning and advantages</p>
+<p>Challenges and threats</p>
+<p>Reflection Beam</p>
+<p>Potentially efficient for coding agents; open weights; strong NVIDIA distribution and optimization</p>
+<p>Unproven production reliability, text-only limitations, immature ecosystem, and hardware lock-in risk</p>
+<p>Kimi and GLM</p>
+<p>Competitive pricing, growing communities, and international adoption</p>
+<p>Compliance concerns, weaker ecosystem maturity, and pressure from cheaper alternatives</p>
+<p>Llama</p>
+<p>Established self-hosting, fine-tuning, and developer ecosystem</p>
+<p>New entrants may compete through lower operating costs or easier deployment</p>
+<p>Mistral</p>
+<p>Flexible enterprise deployment options</p>
+<p>Faces broad competition across open-model ecosystems</p>
+<p>NVIDIA Nemotron</p>
+<p>Benefits from direct platform ownership and marketing support</p>
+<p>May compete with Beam for NVIDIA resources and attention</p>
+<p>Gemini</p>
+<p>Multimodal capabilities across text, images, and video</p>
+<p>Potentially higher cost for workloads that need only adequate task-specific intelligence</p>
+<p>Quantitative Insights</p>
+<p>Metric</p>
+<p>Significance</p>
+<p>23 billion active parameters per token</p>
+<p>Supports lower inference requirements, subject to routing quality</p>
+<p>Claimed 3–4 times lower generation FLOPs</p>
+<p>Potential advantage versus GLM-class capability, but requires production validation</p>
+<p>100% trained on NVIDIA GB200</p>
+<p>Indicates deep NVIDIA optimization and possible portability concerns</p>
+<p>Processing reduced from about 20 minutes to under 20 seconds</p>
+<p>Example of measurable AI-driven operational value</p>
+<p>Next 6–12 months</p>
+<p>Chinese models are expected to gain users but face enterprise adoption barriers</p>
+<p>Through 2026 and into 2027</p>
+<p>The expert expects model pricing to continue declining</p>
+<p>EY: Good day everyone and welcome to today's call. This is Elfy with Guidepoint Shanghai Insight Team. I'm a TMT analyst covering the AI sector and moderator today. As generative AI shifts from lab breakthroughs to global commercial scaling, the competition among open-weight models has intensified, creating massive implications for enterprise tech stacks and cross-border supply chains. Today, we are deep diving into Reflection AI, a highly watched player backed heavily by NVIDIA, and analyzing how its newly released model, Reflection Beam, is shaking up the</p>
+<p>10/20/2026 at 05:08 AM UTC</p>
+<p>international expansion plans of Chinese AI leaders like Kimi and GLM. We will evaluate Beam's actual cost advantages, its technical viability under heavy enterprise workloads, and the strategic dilemmas of NVIDIA's deepening vertical integration across hardware platforms and models. Joining us today is Brandon Loomis. So welcome, Brandon. Before we officially kick off our discussion today, could you please introduce your professional background?</p>
+<p>BL: Thanks for sharing all the details. This is Brandon Loomis. My background is mostly in AI and data engineering. At my most recent company, I was working on the production of a large range of model systems and RAG, model evaluation, and large-scale data processing. I have to say a lot of my work involved just figuring out how to make AI systems reliable at scale while keeping the latency and the cost under control. So I'm particularly interested in how Beam steps up against Kimi and GLM in real enterprise workloads, especially when you look beyond the benchmark scores at the actual cost of running these systems on the production side. Thank you.</p>
+<p>EY: Okay, thank you. Let's discuss the most straightforward question, that is how Beam performs and whether its technical edge is real and sustainable. So here is the key data of Beam. It adopts an MoE structure. The total parameter is 501 billion with an active parameter of only 23 billion. So does this sparse design hurt deep semantic consistency because of how expert routing works? When it tackles co-reasoning across files and modules, do we need to pay an extra price for this sparse design?</p>
+<p>BL: I understand. That's a good question.</p>
+<p>EY: Mm.</p>
+<p>BL: From my point of view, the main trade-off is consistency versus efficiency. With a 101 billion parameter model activating only 23 billion parameters per token, Beam can reduce the inference cost. But the expert routing adds some kind of complexity. For coding tasks that span multiple files, the model still needs to keep track of the shared context and dependencies and the changes across the modules. If the router sends related parts of the task to different experts, then the coordination can become a challenge. You can manage that with good training and evaluation, but I want to see the real multifile coding benchmarks and some production results before saying the advantages are sustainable.</p>
+<p>EY: Mm-hmm.</p>
+<p>BL: Yeah.</p>
+<p>EY: Okay, thank you. And officially, it was announced that its capabilities on coding and agentic works can benchmark with GLM 5.2 while requiring only 3 to 4 times less generation FLOPs. In other words, Reflection is not building a larger or dense model. Instead, it aims to realize an intelligence per token or intelligence per FLOP by relaying. All the agents succeed because they keep trying and thinking deeper when they fail. If we push into more reasoning effort to catch up with Kimi or DeepSeek or GLM or whatever, will that token advantage disappear? If we were running Beam, how would you design an experiment to measure this trade-off curve?</p>
+<p>BL: I understand. In your scenario, I'd measure it by running the same set of coding tasks at different reasoning budgets. I'd track pass rate and the total tokens as well as the inference cost and end-to-end latency, including the retries. I'd also include the harder tasks that involve multiple files, debugging, and running tests. The agent can look good on example benchmarks, but you know the struggle with the real project, right?</p>
+<p>EY: Mm-hmm.</p>
+<p>BL: I'd compare Beam with Kimi and GLM at the same cost and latency levels. The key question is, "How much does</p>
+<p>10/20/2026 at 05:08 AM UTC</p>
+<p>another round of reasoning actually improve the success rate?" If Beam reaches similar results with fewer FLOPs and low total cost even after retries, that's a real advantage. But if it needs many more tasks, then I'd say the savings can disappear pretty quickly. That's my thought.</p>
+<p>EY: Okay. Does this prove that a smaller parameter MoE route works or is it just a flaw in that specific test?</p>
+<p>BL: That's a great question. Honestly, I would say this proves some kind of small active model design is better across the board. It shows the architecture can be very efficient on particular coding workloads. To prove its real advantage, I would test Beam across different coding tasks, especially multi-file changes and debugging long-running agent workloads, and also compare the success rates at the same compute budget, including all retries and extra reasoning. If Beam keeps performing well across these tests, then we can say we have the evidence the advantage is real. If the results are only a hold on the benchmark, then I would treat them as promising, but not conclusive.</p>
+<p>EY: Okay, thank you. And another interesting thing is that Beam's RL scores were still increasing when the training finished. So does this mean the ceiling is nowhere in sight or are the extra gains from RL already slowing down, especially for the marginal effect?</p>
+<p>BL: I understand. I'm careful about the coding either way. Even though the RL reward was still climbing when the training stopped, it suggests the model may not have fully recovered... I mean, the coverage. There could be room for further improvement, but rising reward alone doesn't prove the model can keep getting better in real coding tasks. I'd look at the held-out benchmarks and actual task completion rates and whether the gains hold up on harder problems. Also, I'd watch the training stability and the cost of each additional improvement. The key question is whether more training produces meaningful gains in real-world performance, not just a higher real-world score.</p>
+<p>EY: Mm-hmm. Thank you. Text-only right now, but Gemini or GLM at least can handle images and videos. So when businesses deploy AI agents, will text-only limits become a real deal breaker?</p>
+<p>BL: I understand the scenario. It becomes a real problem in long-running agents, especially when they're working across a large codebase and analyzing documents or calling tools repeatedly. Every retry adds more tokens and latency and costs, and eventually the agent can lose important context or hit the context window limit. For businesses, I look at the total cost to complete a task, not just the price per token. Good context management, retrieval, and summarization can help. In the case where the model needs too many reasoning steps to finish reliably, then that becomes a real deployment problem.</p>
+<p>EY: Okay, thank you. The next topic is what many investors, no matter in China or overseas, care about most: whether Beam will impact Kimi or GLM's global expansion plan. Beam claims to offer the same capability at a lower cost. Do companies regard it as a cheaper alternative for Kimi and GLM or just a replacement of Chinese models?</p>
+<p>BL: That's an interesting question. I think most companies will look at Beam as another option first, rather than just replacing Kimi or GLM completely. If Beam can deliver similar coding or reasoning quality at a lower total cost, then that's attractive, especially for companies running agents at scale. But they will also care about the reliability, deployment options, data privacy, and support. I don't think the companies will switch just because a model comes from a different country. They will switch when performance, costs, and operational benefits make sense for their business.</p>
+<p>EY: Okay, thank you. Because many people believe that GLM or Kimi is a cheaper alternative to Anthropic or OpenAI, will Beam become a cheaper alternative for GLM and Kimi?</p>
+<p>BL: Exactly. That's right.</p>
+<p>10/20/2026 at 05:08 AM UTC</p>
+<p>EY: Okay, some companies like Cloudflare already use Kimi or GLM currently, so what would make them switch to Beam and what would stop them? Is it actually expensive and hard to move to a new model?</p>
+<p>BL: Regarding that, I think the switching model is not that hard technically, especially when the company already uses a standard API. The big challenge is making sure that the new model behaves consistently in its existing workloads.</p>
+<p>EY: Mm-hmm.</p>
+<p>BL: They need to retest the tool calling and coding accuracy, latency, failure rates, and then the total compute cost in production. For companies like Cloudflare, Beam would need to show clear cost-to-performance advantages without hurting the reliability.</p>
+<p>EY: Mm-hmm.</p>
+<p>BL: If the savings are small, there's not much reason to switch. But if it delivers similar results at much lower cost, then they'll probably test it on the workloads first rather than just replace Kimi and GLM overnight.</p>
+<p>EY: Besides the token cost, what other costs do you think about when switching models?</p>
+<p>BL: I'm sorry? Would you like to say that again?</p>
+<p>EY: Besides the token price, what other costs will the companies consider when they decide to switch their models?</p>
+<p>BL: I look beyond the token price. The companies also pay for the retries, the longer reasoning, GPU usage, and latency, and the engineering work needed to integrate and monitor models.</p>
+<p>EY: Mm-hmm.</p>
+<p>BL: Switching from Kimi and GLM to Beam is not necessarily difficult at the API level, but validating quality across real workloads takes time. If Beam delivers the same success rate at a lower total cost, then it's worth testing. But if it needs more retries and creates more failures, then those savings can disappear.</p>
+<p>EY: Mm-hmm. Okay. So, being open source now, if clients host it themselves instead of paying for APIs, how can Reflection make money? Or Reflection doesn't want to make money at all?</p>
+<p>BL: That's interesting. I think Reflection can still make money through enterprise support, hosting, inference, and optimized deployment tools. Even though companies run Beam themselves, EY: Mm-hmm.</p>
+<p>BL: Basically some customers want full control over their infrastructure while others would rather pay a provider to manage everything. The real opportunity is making Beam easier and cheaper to run at scale. But open sourcing the model doesn't automatically create a profitable business. Reflection still needs to turn into paid services or some kind of infrastructure revenue.</p>
+<p>EY: Mm-hmm. Okay. Actually, Qwen and GLM rely heavily on cloud platforms like AWS to reach clients. So if NVIDIA pushes Beam through Hugging Face or other platforms in their ecosystem, will that crowd out the shelf space for Chinese models?</p>
+<p>BL: I think that's a really important question. From my point of view, NVIDIA could make some kind of competition tower, especially if it brings models and deeper software and hardware together in one ecosystem; that could make</p>
+<p>10/20/2026 at 05:08 AM UTC</p>
+<p>deployment easier for enterprises. But I don't think it automatically pushes Chinese models out. Kimi and GLM can still compete on model quality, cost, and the open ways to access them. For Reflection, the opportunity is to make Beam efficient and easy to run across different infrastructure rather than just depending on one cloud or hardware provider.</p>
+<p>EY: Mm.</p>
+<p>BL: Maybe.</p>
+<p>EY: Hmm.</p>
+<p>BL: Ultimately, enterprises will choose what gives them the best combination of performance, cost, and control.</p>
+<p>EY: Okay. Actually, for open source models, the competition has already shifted from lab benchmarks to community ecosystem.</p>
+<p>BL: Okay.</p>
+<p>EY: From your point of view, what is Kimi or GLM's ecosystem compared to Beam or other open source models like Llama or other competitors?</p>
+<p>BL: Kimi and GLM have some kind of disadvantage in community adoption because developers already know other models and how to build tools and workloads around them. Llama also has a strong ecosystem, especially for self- hosting and fine-tuning. Beam needs to build the same level of trust and integration; getting listed on Hugging Face or being supported by NVIDIA helps with distribution. But what really matters is if a lot of developers can run it easily, get good results, and keep their own costs down. The model that wins won't necessarily be the one with the best benchmark score; it will be the one developers keep running and using in real products.</p>
+<p>Some kind of getting good results and keeping their own cost down. So the model that wins won't necessarily be the one with just some kind of benchmark score, it will be the one developers keep running and using in real products.</p>
+<p>EY: So if the ecosystem of open source models is so important, do you think there's any room for the latecomers, for the new players to catch up because they entered this game at a late stage?</p>
+<p>BL: Mm-hmm. Yeah, that's right. The ecosystem is really important because developers don't just choose the model, they choose the tools and the workloads around it. Kimi and GLM already have a growing developer community, integrations, and deployment options. But Llama has a more established open model ecosystem, and Beam can still catch up, but it needs more than good benchmarks; it needs reliable APIs, easy deployments, fine-tuned support, and strong performance on real workloads. The good news is that Llama is not the only one. New players can move quickly if their model is genuinely cheaper or easier to use. Developers will try it, but keeping them is really the challenge.</p>
+<p>EY: Okay, thank you. And next topic I want to discuss is their relationship with NVIDIA.</p>
+<p>BL: Okay. I'll tie it up. Beam was trained 100% on NVIDIA's GB200. If NVIDIA buys them, will they lock future versions into CUDA and NVIDIA hardware? What happens to clients who want to use different chips? Regarding NVIDIA, this is really interesting. There is a risk, I think. The main risk is vendor lock-in. If the future versions of Beam depend heavily on NVIDIA's CUDA ecosystem, customers running AMD or other accelerators could face extra engineering work or lose access to some optimizations. The key is that Reflection keeps the inference stack portable and supports different hardware backends. NVIDIA gives them a strong performance advantage, but enterprise customers still want the flexibility. They don't want to just redesign the infrastructure every time they change the models.</p>
+<p>10/20/2026 at 05:08 AM UTC</p>
+<p>EY: So what if NVIDIA controls the whole stack, like the platform, the model, and the chips? Does that make things easier for developers or does it create a huge risk of vendor lock-in?</p>
+<p>BL: I think I understand this scenario. NVIDIA's ecosystem makes the deployment easier because the developers get optimized kernels, inference tools, and strong hardware support in one place.</p>
+<p>EY: Mm-hmm.</p>
+<p>BL: As I mentioned before, vendor lock-in is a real risk. If Beam depends too heavily on CUDA-specific optimizations, customers using AMD or other chips may face a higher migration cost and weaker performance. I want Reflection to keep the inference stack portable and test the performance across different hardware. That way, enterprises can benefit from NVIDIA today without losing the flexibility to switch later.</p>
+<p>EY: Okay, so another interesting thing is that NVIDIA has its own open source model, the Nemotron series.</p>
+<p>BL: Mm.</p>
+<p>EY: If their own models become better than Beam, how will NVIDIA split its compute power and marketing push between them?</p>
+<p>BL: NVIDIA would have to balance the scales. Its own models help sell the platform while Beam and other open models bring more developers onto NVIDIA's hardware. If NVIDIA's own models become stronger, then it may give them more marketing support. But I don't assume that they'll stop supporting competitors. The big question is whether Beam delivers enough performance or cost savings to justify NVIDIA continuing to invest in it. For enterprise customers, having several strong models on the same infrastructure is actually valuable because it gives them more choice and reduces dependencies on a single model provider.</p>
+<p>EY: Mm.</p>
+<p>BL: Yeah.</p>
+<p>EY: Okay, thank you. And the next topic is about their open source strategy and adoption challenge. So, Beam opens its weights but keeps its success and training math secret. How is this different from Meta's Llama or Mistral when they try to win over enterprise trust?</p>
+<p>BL: Regarding the difference from Meta's Llama or Mistral, I think there are several main differences, but the main one is how much transparency the enterprise gets. With open weights, companies can run Beam on their own infrastructure and control their data, but they still cannot fully inspect how the model was trained or the reproducibility of the training process. Meta has built a strong development ecosystem while Mistral has also focused on giving businesses flexible deployment options. For Reflection, open weights are a good starting point, but enterprise trust will depend on model availability, clear licensing, security, and consistent performance in production.</p>
+<p>EY: Mm-hmm.</p>
+<p>BL: Yeah, I think so.</p>
+<p>EY: Okay. Well, we saw that Kimi K3 went viral on Hugging Face right after launch. If Beam opens under Apache 2.0 as well, what will be the biggest hurdle in getting developers to fine-tune it from scratch?</p>
+<p>BL: The biggest hurdle? Getting developers to trust Beam enough to use it on real products. Often, open weights</p>
+<p>10/20/2026 at 05:08 AM UTC</p>
+<p>help, but the developers also need easy setup, good documentation, and reliable tools. They need clear benchmark results they can reproduce. Kimi K3 gained attention because developers could quickly try it and see what it could do. Reflection needs the same hands-on momentum. If Beam is harder to deploy or it doesn't work at all with existing tools, developers may simply stick with Kimi, GLM, or Llama, even though Beam looks cheaper on paper.</p>
+<p>EY: So more and more companies actually realize that they don't need the SOTA model; they only need just enough model. Do you think it is an opportunity for models like Beam? Or is the smaller model only a scientific fantasy and a game for those model vendors that is sufficient in capacity?</p>
+<p>BL: I think that makes sense. It's a real opportunity for Beam. Most companies don't need the biggest model for every task. They need a model that's good enough, affordable, and things like that. A small, active model can be attractive for coding agents and high-volume enterprise workflows. The important code is generated quickly, but the trade-off is the quality. If Beam has too many retries or struggles with complex tasks, the savings can disappear. I see the opportunity to deliver a wider level of intelligence at a lower total cost, not just to have fewer active parameters.</p>
+<p>EY: So have you observed a more conservative trend in the AI budget in the US market now?</p>
+<p>BL: It's interesting. I'm just going to be honest because we are seeing more pressure to justify AI spending. Especially in US companies, they still want to invest, but they need to see a clear business return. That's an opportunity for Beam because it could offer enough intelligence for a specific task without paying for a much larger model. But the key is proving the savings in production. If a cheaper model requires more retries, more compute, and more engineering work, the business case gets weaker. Efficient and task-specific models have real opportunities, especially for companies running AI agents at scale.</p>
+<p>EY: So have you ever seen the clear business return so far? Because many people in China say they're just like taking a hammer and finding a nail. They have SOTA models, they have very strong models, but they don't know how to use them and where to use them.</p>
+<p>BL: I've seen the business value from the production systems, especially when you reduce the processing time and manual work. At Avela, for example, we cut the operational data processing time from maybe 20 minutes to under 20 seconds. That's amazing. That's a result the business can measure directly. For Beam, I'd look for similar proof. I mean low cost, successfully completed tasks, less human intervention, and reliable output quality. If it can deliver those results on real enterprise workloads, then that's a much stronger selling point than benchmark scores alone.</p>
+<p>EY: Mm-hmm. Okay, thank you. And for the pricing, this year we have seen many price drops for many vendors, no matter in China or in the US; even Anthropic drops their token price proactively. Do you think this trend will continue in the rest of 2026 or even in 2027?</p>
+<p>BL: Prices will keep coming down through the rest of 2026 and into 2027, especially as the inference gets more efficient and competition increases.</p>
+<p>EY: Mm-hmm.</p>
+<p>BL: I don't expect every model to get cheaper at the same rate. The biggest shift will be toward pricing based on actual performance. Companies will look at how much it costs to complete a task successfully, including the retries and extra reasoning, rather than just the price per token. For Beam, that's where the opportunity is. If Reflection can deliver reliable results with less compute, then it can compete even though there are other providers that keep cutting their prices.</p>
+<p>EY: Okay, thank you. Generally speaking, for the next 6 to 12 months, what's your prediction on the LLM markets in</p>
+<p>10/20/2026 at 05:08 AM UTC</p>
+<p>the US, especially for the landscape? Will the Chinese models be increasing sharply or will they decrease their market shares because of some export controls or geographical things?</p>
+<p>BL: Over the next 6 to 12 months, I expect Chinese models like Kimi and GLM to keep getting users in the US, especially among developers looking for lower cost and low-latency options.</p>
+<p>EY: Mm-hmm.</p>
+<p>BL: But that adoption won't automatically translate into huge market share because enterprises care about data security, compliance, and support. The way data is processed, export controls, and geography could create additional barriers. My theory is that the Chinese models will become stronger competitors. The winners will be the ones that prove they can deliver reliable results at lower total cost, not just cheaper tokens.</p>
+<p>EY: Mm-hmm. Exactly. Okay. How do you define reliable results? Many people think that reliability means that the data can be audited, and some people believe reliability means that every time you tell the models to do 1 thing they will generate the same thing for you instead of like...</p>
+<p>BL: Reliable result means the model can solve the task correctly and consistently, not just get it right once. I look at the task success rate, factual accuracy, tool calling errors, latency, and the customer completed tasks. For coding agents, I'd also look at whether the code passed the test and whether changes across multiple files work together. In production, I run the same evaluation set across different models and track failures over time. If the model is cheaper but needs more retries and human fixes, it's not necessarily the better choice.</p>
+<p>EY: Yeah. Okay, thank you. I have 1 last question. Kimi and GLM are already making money abroad, especially in the US. Do you think it works for them to generate deep vertical customization and local support? Or is it more economic for them to provide a standard product all around the world?</p>
+<p>BL: The best strategy is to start with a standard product and then offer deeper customization to larger enterprise customers.</p>
+<p>EY: Mm-hmm.</p>
+<p>BL: The standard API is cheap to maintain and lets them reach more developers, but big companies often need private deployments, security controls, integration with existing systems, and support in their own time zone. The key is not to customize everything for every customer. I think it builds a common platform that can handle most needs, and then they can charge extra for specialized services. That gives Kimi and GLM a way to grow internationally without making the business too expensive to operate.</p>
+<p>EY: Mm-hmm. Okay, thank you.</p>
+<p>BL: Uh-huh.</p>
+<p>EY: That's all for my questions today. Thank you for your participation and let's end up here.</p>
+<p>BL: My pleasure. Yep, my pleasure.</p>
+<p>EY: Okay. Thank you. Have a nice day. Bye.</p>
+<p>BL: Have a nice day. Bye-bye.</p>
+<p>10/20/2026 at 05:08 AM UTC</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>10/20/2026 at 05:08 AM UTC</p>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,183 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.22 | AC | Memory | Memory Survey Pt.2: LTAs, HBM4 Yield &amp; NAND</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.22 | AC | Memory | Memory Survey Pt.2: LTAs, HBM4 Yield &amp; NAND</h1>
+<p class="orig">原标题：存储行业调研-2：存储大厂长协进展及不同客户高低价对比，HBM4良率及涨价预期，服务器、手机和PC领域NAND价格表现及2027年市场展望 – 海力士_美光_长鑫_长存_WDC_闪迪</p>
+<p class="tags">#memory</p>
+<p class="meta">AceCamp · 2026-10-22 · article 70568246</p>
+<div class="body">
+<h2>摘要</h2>
+<p>本文核心要点包括：1，	存储大厂长协进展及不同客户高低价对比2，	服务器、手机和PC领域NAND价格表现及2027年市场展望3，	HBM4良率及涨价预期</p>
+<p>以下为专家观点：</p>
+<p><b>1，DRAM存储领域长期协议中提到的“高低价”机制具体是如何运作的，它与“限价”有何不同？</b></p>
+<p>“高低价”机制是为长期协议设定的一个价格浮动区间，具体数值因客户而异，属于商业敏感信息。该机制包含一个价格上限和一个价格下限。举例来说，假设2026年第四季度服务器存储的单GB价格约为3美元，协议可能会根据未来一到两年的价格模拟设定一个价格上限，例如5美元。一旦市场价触及此上限，供应商便不能再对该客户提价。同时，协议也会设定一个价格下限，通常会参考历史低点，例如以2025年第三或第四季度的出货价为基准。设置下限的目的是为了保障供应商的基础利润，确保其有持续投资的动力，避免未来出现亏损。这个价格区间通常较大，旨在平衡双方的利益。</p>
+<p><b>2，不同客户之间签订的“高低价”协议，其价格区间的差异有多大？</b></p>
+<p>不同客户的价格条款存在差异。通常情况下，美国客户获得的价格上限可能会相对高一些，而中国的互联网客户则可能相对低一些。这在公司内部也是一个相对的定价策略。</p>
+<p><b>3，如何理解不同客户之间5美金和4.5美金的定价差异？定价策略主要基于哪些因素？</b></p>
+<p>定价策略并非简单地区分客户地域，而是基于购买力、未来投资趋势、市场公开信息、公司自身利润率要求、董事会及股东预期以及未来一到三年的投资规划等多个因素综合判断的结果。</p>
+<p><b>4，目前三星长约的签订情况如何？主要覆盖哪些客户群体？</b></p>
+<p>长约主要针对大型互联网客户。目前，中国市场能签订三年及以上长约的客户中，字节跳动尚有部分协议待完成，其他主要客户已基本覆盖。对于所有大客户，至少都有一年期的协议，在中国市场通常称为MOU，在海外市场则称为LTA。美国市场的五家主要客户已经全部完成签约。</p>
+<p>需要明确的是，这些长约主要针对服务器客户。PC客户和中国的手机客户并未签订此类长约。不过，苹果公司是一个特例，由于其PC与手机业务捆绑，采购量巨大且能接受高溢价，因此签订了长约。三星手机业务也同样签订了长约。</p>
+<p><b>5，从需求角度看，2024年及未来的市场走势如何？如果出现需求不足，长约客户是否需要承担相应责任？</b></p>
+<p>倘若出现服务器订单严重不足的情况，可能预示着整个电子行业的系统性风险。不过，至少在2024年内，市场需求是有保障的。一个相对合理的预期是，服务器市场将保持综合增长，例如季度增速约10%；PC市场已接近需求临界点，届时可能出现5%以内的季度或半年度微涨；手机市场则需视具体情况而定。</p>
+<p>从2026年第三季度的数据看，PC出货量同比下降了约20%，手机市场也基本是同样降幅。预计2026年全年，PC出货量可能下降10%至13%，而手机的全年平均降幅可能更高。</p>
+<p><b>6，如何看待长鑫存储的产能扩张及其在市场中的策略和进展？</b></p>
+<p>市场整体趋势确实是希望海外原厂将更多产能分配给服务器市场，而将中低端消费类产品的需求转移给长鑫存储。然而，长鑫存储内部也存在产品策略的竞争。服务器产品的价格可能比手机产品高70%-80%，比PC产品高30%-40%，因此长鑫存储自身也有强烈的意愿进入高溢价的服务器市场分一杯羹，而不仅仅是承接消费类产品。尽管其当前主力产品仍是手机内存，尤其供应国内的华为、小米等客户，但其内部对于是否要加大服务器投入存在博弈。</p>
+<p><b>7，NAND市场的现状、价格趋势以及2027年的展望如何？与DRAM市场有何不同？</b></p>
+<p>NAND市场的基本逻辑和整体趋势与DRAM市场相似，但存在几个显著差异。首先，NAND市场的原厂数量更多。其次，中国的NAND厂商长江存储奉行的市场策略与长鑫存储不同。长江存储的产品价格比国外厂商至少便宜15%，而长鑫存储在服务器和PC等主要产品上与海外大厂并无明显价差。凭借价格优势，长江存储2026年在中国国内市场的占有率有望突破45%，甚至达到50%。具体到客户层面，在手机领域，长江存储在部分客户中的份额已经实现了这一目标。</p>
+<p><b>8，长江存储在NAND市场的竞争优势、市场份额及其对行业价格的影响？</b></p>
+<p>长江存储在NAND市场的价格优势比长鑫存储在DRAM市场的价格优势更为显著。在OV（OPPO/Vivo）供应商体系内，长江存储的份额预计在35%至40%之间，并且在PC的份额也正逐步突破40%。从产能和技术角度看，长江存储在NAND领域处于领先地位。其全球市场份额已超过15%，可能接近20%。在全球NAND市场格局中，除三星占据约30%的份额外，其余厂商的份额多在10%左右。若长江存储的市场份额接近20%，其排名可能已升至全球第二或第三位。NAND市场的供应商相对分散，各家份额相近，因此客户尚有一定的议价能力，这与供应商高度集中的DRAM市场不同。</p>
+<p><b>9，2026年第三季度至第四季度，服务器、PC及手机市场的NAND产品价格走势如何？</b></p>
+<p>2026年第三季度至第四季度，NAND产品的价格普遍呈现10%至15%的增长。具体到不同市场：服务器市场，第三季度的平均单价已超过0.45元，预计第四季度将超过0.50元；PC市场，第二季度的单价约为0.38元，预计第四季度将超过0.40元，涨幅在10%至15%之间；手机市场，第三季度的平均单价约为0.30元，其中海外供应商的价格在0.28至0.29元左右，预计第四季度将超过0.30元，达到0.31至0.32元的水平。手机市场的价格涨幅可能会略微追赶PC和服务器市场，但具体情况仍需观察中国厂商的反应。</p>
+<p><b>10，NAND市场在TLC与QLC技术路线上的发展趋势如何？不同技术路线对PC、服务器和手机等下游应用市场产生了哪些具体影响？</b></p>
+<p>当前NAND行业的技术路线主要分为TLC和QLC两类。供应商正积极推广生产效率更高、容量更大的QLC产品。在PC市场，QLC的渗透率最高，已接近50%。服务器市场也在逐步导入QLC，但进展相对缓慢，目前渗透率低于20%，2027年的目标是达到30%至40%，主要挑战在于QLC存在擦写寿命的短板，更适用于冷数据存储而非热数据。服务器客户采用的单片QLC容量已超过120TB。然而，由于近期价格上涨，PC和手机的单机存储容量出现回缩趋势。PC的主流容量从512GB到1TB回落至51 2GB附近；手机原计划向512GB的平均容量发展，现已退回至256GB。QLC在手机市场推广困难，因其最低容量通常从512GB起步，而这在当前市场属于高端配置。这种供需错配导致NAND在部分手机产品上可能出现库存积压。因此，在中国大陆的渠道市场，一些模组厂如江波龙、佰维等正在积极促销其大容量NAND产品，例如将1TB产品的售价定得仅略高于512GB产品，以缓解资金压力。</p>
+<p><b>11，三星在NAND市场的定价主导权和报价策略是怎样的？其长协机制与DRAM市场相比是否存在差异？</b></p>
+<p>NAND市场的定价主导权主要由两家韩系厂商掌握，但两家美系厂商和一家日系厂商也拥有重要话语权。在报价策略上，WD的反应速度极快，通常是率先行动的厂商。NAND的长协机制与DRAM基本一致，条款和限制因素类似，通常在同一份合同中签订。长协客户主要覆盖海外五大CSP和国内三大CSP厂商。</p>
+<p><b>12，如何看待长江存储与长鑫存储未来在NAND和DRAM领域交叉布局的趋势？</b></p>
+<p>据悉长鑫存储计划进入NAND领域，而长江存储也计划涉足DRAM市场，并且双方的样品可能已经推出。据了解，长鑫存储正在组建NAND研发团队。预计在一到两年内，这种交叉布局将形成一定规模。相较而言，NAND的技术门槛可能低于DRAM。</p>
+<p><b>13，关于三星HBM4的良率情况，以及它是否会影响NVIDIA相关服务器的出货？</b></p>
+<p>目前听到的信息显示，三星HBM4E的质量相对稳定，未听说有重大的质量问题，所有测试均已完成，应处于正常出货阶段。尽管中国大陆地区基本没有HBM业务，但在大中华区的台湾市场，由于不受美国禁令影响，存在对超威等客户的出货。从另一个角度看，NVI DIA的GPU不仅带动了HBM的需求，也推动了SOCAMM（将LPDDR颗粒焊接在板上，用于服务器）的应用。过去服务器很少使用低功耗的LPDDR，但现在基于ARM架构的服务器中，SOCAMM的比例已超过30%。数据显示，在过去一个季度，AR M架构服务器的产值占比已接近45%。因此，NVIDIA需要确保LPDDR的稳定供应，而三星是该领域最大的供应商。若三星供应受限，将直接影响NVIDIA服务器的出货。此前，三星HBM3E虽存在一些小问题，但NVIDIA最初可能希望扶持海力士以制衡三星，但最终发现仅靠海力士和美光的产能无法保证出货，加上整体DRAM市场缺货，因此可能放宽了某些要求。综合来看，HBM的供应不存在大的问题，主要挑战在于产能爬坡。</p>
+<p><b>14，HBM市场未来的盈利能力和定价趋势将如何演变？</b></p>
+<p>2026年HBM的消耗量巨大，但从2026年第一季度开始，其盈利率已被传统DRAM产品超越。不过，2027年的定价谈判即将开始，预计届时HBM的价格将出现暴涨。</p>
+</div>
+</main>
+</body></html>

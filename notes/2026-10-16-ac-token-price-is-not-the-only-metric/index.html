@@ -1,0 +1,173 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.16 | AC | LLM | Token Price Is Not the Only Metric</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.16 | AC | LLM | Token Price Is Not the Only Metric</h1>
+<p class="orig">原标题：Token 价格并不是用户、厂商所唯一关注信息：可替代性 _ 可控性 _ 效率的提升 _ 组织结构的适应性也是考量在内的指标</p>
+<p class="tags">#llm #ai-demand</p>
+<p class="meta">AceCamp · 2026-10-16 · article 70568085</p>
+<div class="body">
+<h2>摘要</h2>
+<p>1、全球市场都在盯着AI token的价格，以及价格与几年前的变化，得出当下token在同智能性情况下的廉价性。但是从C端消费上来看，其价格、消费人群的长尾分布、以及价格被平均均摊等众多因素影响之后，相较几年前单纯的价格～价值匹配，意义不大2、另外，市场在主推token 套餐，以及技术上由匹配模型到推理模型，再到技术工具封装的agent等，对于token的消耗也并不是几年前的量级，所以从量价关系来看，对比的影响面也过于单一3、最后，市场用户对于token价格敏感性是显然存在的，只不过除了价格敏感性之外，还有可控性、安全性、效率的闭环真实提升以及组织结构的适应性来考量AI的业务接入，这几点在实际场景落地中不可避免的要被审视</p>
+<h2>1、背景</h2>
+<p><b>市场上近期不少消息一直在强调AI token的价格降低，但是目前对于AI当下市场的痛点，并不单纯是价格的问题，而是用户、厂商的关注角度已经发散，价格已经不再是评价市场对于AI热度影响的唯一标准。只不过AI的价格可以有推动作用，推动作用的力度关于市场反馈。当下AI token市场价格变化动态总结如下：</b></p>
+<p><b>1、根据市场消息显示，BenchLM平台 10月更新的统计数据显示，尽管近一年前沿大模型（该平台综合排名前十的大模型）定价有所回升，但前沿大模型token价格较2023年3月时已下降84%</b></p>
+<p><b>2、Epoch AI一项近期最新研究指出，达到同等性能水平的AI成本自2023年以来以每季度约47%的幅度下降，一年之内推理成本降至原先的十三分之一。即AI的性能在不断迭代的同时，普惠性已经给到了社会。这种普适性的提升，也符合当下用户的消费习惯，根据笔者之前调研的消费数据来看，其实这种情况也在助长不付费用户的心理和认知，毕竟其使用场景有限性和对AI要求的有限性，基本被AI的迭代所代替，这也是C端平均付费率上不去的核心原因之一。详细分析参考：</b></p>
+<ul><li><b>全球C端AI付费情况分析：长尾分布特征明显 / 付费率有待提升 / 国内 VS 国外对比情况 / token消耗场景等：</b><b>https://www.acecamptech.com/article/detail/70567985</b></li></ul>
+<p><b>最后，市场一直在强调token的价格变化，特别是对比早期，但是这里有几个比较大的隐藏信息没有直接凸显出现：</b></p>
+<p><b>1、往后，特别是当下的模型、以及场景更多是agent形态，配合到了大量的推理过程和历史的上下文，加载在模型的使用过程。即便模型的价格不涨，但是头部用户的消费支出，是不降反升的形态，例如，C端消费者的top级别，月消费在900美元以上，这是4.5份 gpt pro会员的订阅量</b></p>
+<p><b>2、Token的价格不能看平均价格，而是要看头部价格的变化，特别是coding plan或者其他套餐的量的变化。市场上的平均价格总体被低价、低质的模型所平均，即便是用top10使用量的模型，头部的价格还是被末尾的价格所拉平。但是，用户的消费习惯呈现长尾分布，对应的AI token的价格，其实也是长尾分布，第一梯队的长江价格始终凭借模型的能力来主导其token的单价。而且，第一梯队的厂商仅仅对比第一梯队的竞争选手，而不是去看市场整体的token价格，毕竟厂商们、用户们的投入和回报完全不同</b></p>
+<h2>2、价格不是唯一考量的因素：可替代性 / 可控性 / 效率的提升 / 组织结构的适应性的思考也不可避免</h2>
+<p><b>目前从头部厂商在市场上的行径以及消息来看，价格因素并不是主要导致，而更多是可替代性 / 可控性 / 效率的提升 / 组织结构的适应性的思考。毕竟，作为使用方而言，考量的是消费价值所带来的业务提升和AI赛道的跟随性：</b></p>
+<p><b>1、对于可替代性而言：无论是中小企业、还是头部厂商，哪怕是对外输出的云厂商，都不想自家的服务被单方面的绑定；这种情况和模型公司并不想被单一芯片厂商绑定的情况如出一辙。不被绑定的优势很明显，定价权和分润权可以洽谈，而不是被直接锁定，没有回旋的余地。另外，其实市场还有一点忽视了技术上的考量，即单一模型厂商服务的稳定性，现状了解到目前存在震荡的情况；但是，如果是可替代性的选择存在，那么可以降低失效带来的业务风险。即站在使用方视角来看，可替代性本质是构建技术供应链的冗余缓冲，避免单一服务商出现版本迭代、接口调整、服务中断时，业务链路被动停摆。多候选方案并存，也可以倒逼各模型厂商持续优化服务能力，而不会因独占合作丧失迭代动力</b></p>
+<p><b>2、可控性是安全的一大反馈：无论是Anthropic、Open AI等第一梯队模型厂商，其安全性问题频繁爆发在市场视野。作为企业端而言，使用模型之后的可控性、安全性是核心关注的点，即便降低效率，也需要确保业务在接入模型后的安全，这也是大厂逐渐在替代三方厂商的主要原因。无论是国内的阿里、还是Meta、微软等，都是在降低外部模型使用频率而选择使用自身的模型+工具，即便自身工具+模型的效果不如外部大厂的效果好。这种退而求其次的方式是把安全、可控放在了首要的考虑位置，而不是外部模型带来的降本增效的效果。市场使用方评价视角的切换，对于模型厂商的处境而言，是加剧其尴尬位置的助推器。并且，通过厂商自身技术的迭代和发酵，长时间的积累也有助于本身的发展，所以短期是处于阵痛期、而长期是一种获益的发展模式</b></p>
+<p><b>3、效率提升背后的付出，复合的支出成本开始被慎重对待：较多机构、市场分析师的分析角度，普遍容易把AI效率简化为推理速度、单次调用耗时这类表层指标，但企业使用AI时，逐渐的成熟评估会把AI提升效率的评估，换算成端到端业务闭环的综合效率，而非模型本身纸面性能。虽然，当下模型性能已经较之前有了不少的提升，但是具体落地到企业业务场景时，仍然还是会产生大量隐性成本，这部分支出正在被企业重新审视、审慎权衡</b></p>
+<p><b>站在企业的成本角度来看，除了显性的token调用费用之外，企业还需要支出的成本包括业务数据适配、接口联调、异常问题排查、结果校验、持续优化等配套人力投入。所以，很多项目初期只核算调用费用，低估长期运维人力成本，则会出现模型推理变快，但整体业务落地效率反而下滑的悖论现象，本质上是忽略了人力成本在AI时代下的支出。特别是在非规则类、确定性的场景上，这种人力成本的支出会更高。</b></p>
+<p><b>最后，站在更深的层次上来看，企业对待效率的取舍还要结合业务容错成本。即外部模型在复杂业务流程中输出幻觉、格式错乱等不可预估的问题，会带来下游人工复核成本，严重时甚至引发业务差错。在企业进入规模生产后，使用方不再只追逐单点能力跃升，转而评估全链路投入。这种转变，也不是单纯追求省钱，而是去评价效率增益能否覆盖全部配套支出。即企业的效率评估逻辑已经从模型本身快不快转向业务接入模型后，整个业务流程能不能稳定、低成本地持续提效。这种认知变化，正在削弱了纯外部模型厂商的竞争优势，使用方不再为纸面性能买单，而是核算完整业务链路下的综合投入与收益，这也是很多大厂减少外部模型依赖的重要底层动因</b></p>
+<p><b>4、组织结构的适应性的思考也不可避免：市场经历了3年多的AI发展，在考虑接入AI时，或者考虑AI工具与大模型的场景落地，已经不再是单纯的技术采购问题，而是毫无疑问的会触动企业内部业务流程、权责分工、岗位职能等。组织结构能否适配AI能力，也成为了企业选型时无法回避的隐性约束，这点在市场讨论中往往被低估。正如现在国内较多大厂的选择，AI coding场景成熟的过程中，程序员、产品等的职业划分、岗位定位、能力要求等，都在较短的时间里发生了翻天覆地的变化，备受冲击。并且，为了适应AI发展对人员的要求，以及对组织机构管理的要求，均提出更新的要求。这也是目前不少大厂在做的一件事情，阿里、字节、微博、小红书等，包括接触到的央企、国企IT等，都在逐渐适应这种变化而去调整自身的组织以及人员岗位</b></p>
+<p><b>另外，大厂之所以选择自研或自建模型体系时，核心价值的考量也包括能够顺着自身组织架构去设计落地路径，匹配内部的分工体系、数据流转机制、审批、开发风控流程。可以去选择分阶段、分部门小范围试点，按照组织接受节奏逐步推广，同步培养内部懂业务又懂AI的复合型团队，让组织逐步适应AI带来的工作模式变化，而不是外部的信息、能力强势介入，这种情况并不会给组织足够的缓冲带和时间。所以，在AI时代下，组织结构的适配，其实也在考验企业对AI能力的自主掌控权，这点并不是token价格所能够影响的方面。所以，企业在做AI选型时，会同步评估方案对组织的冲击程度，而不是引入一套外部技术体系倒逼组织强行变革。这一维度考量，和前面可替代性、可控性、综合效率判断形成共振，越来越让企业来考量AI的价值，而非单纯token价格的价值</b></p>
+<h2>3、总结</h2>
+<p><b>1、目前市场仍然在聚焦token的价值和价格关系，但是站在企业方角度来看，多维度的思考已经是常规状态，AI对于企业的助力，需要的全局视角，而不是单点视角，市场分析容易忽略这点</b></p>
+<p><b>2、对于企业而言，AI的舆论爆发背后隐藏了是对安全、可控的担心以及强管控的需求，无论是第一梯队的舆论还是其他厂商爆发的问题，均可能引起企业在做AI业务结合的独立审视，这点并不是价格所能够左右的情况</b></p>
+<p><b>3、组织架构的适应性以及人员的适应性在AI时代被提出来，但是市场并不会过多关注。正如AI coding场景，国内大厂、央国企都在做动态适应，人员的能力要求、组织架构的适配、管理等，都是不可忽视的一部分</b></p>
+</div>
+</main>
+</body></html>

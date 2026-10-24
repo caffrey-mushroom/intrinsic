@@ -1,0 +1,203 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.13 | AC | Internet | BOSS Zhipin: Bernstein Recovery Playbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.13 | AC | Internet | BOSS Zhipin: Bernstein Recovery Playbook</h1>
+<p class="orig">原标题：BOSS直聘：Bernstein的修复剧本与当前的投资机会</p>
+<p class="tags">#internet #china</p>
+<p class="meta">AceCamp · 2026-10-13 · article 70567986</p>
+<div class="body">
+<h2>摘要</h2>
+<p>BOSS直聘二季度收入增长14.1%，经调整经营利润增长19.2%，付费企业扩张与成熟市场商业化已经贡献增长，AI招聘工具也开始增加收入。这些变化正在兑现Bernstein上调评级时的公司层面判断；当季经营现金流同比下降10.2%，盈利改善转化为现金的速度仍受营销和缴税支出影响。历史复盘显示，2022年底至2023年初公司的超额收益依赖强烈的需求恢复预期；当前招聘景气和宏观催化偏弱，修复更依赖盈利增长与资本回报。与2022年底相比，公司当前利润率和资本回报安排更成熟，Q3收入指引中点与二季度增速接近。笔者认为，Bernstein的超额收益判断，已经获得二季度收入与经营利润提速、商业化推进和股东回报的支持。当前公司具备较成熟的盈利基础。</p>
+<p>6月5日，证券研究机构Bernstein以“2022—2023年剧本”为题，将BOSS直聘的评级上调至“跑赢大市”，目标价提高至18美元。8月26日，在二季度财报发布后，它又将目标价上调至19美元。</p>
+<p>这套判断有一条明确的盈利和估值路径：中国互联网估值回到低位，部分公司通过提高盈利、回购和分红改善股东回报；BOSS直聘还具备蓝领渗透、AI商业化和较多现金，因而有机会获得超额收益。Bernstein在6月报告中比较了互联网公司的自由现金流收益率和现金占比，把这两项作为修复依据。<img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567986_06c14be75707340a.webp" alt="" loading="lazy"></p>
+<p>数据来源：Bernstein，2026年6月5日</p>
+<p>截至10月12日美股收盘，BOSS报16.10美元，较9月29日反弹13.62%。二季度财报后的最初涨幅一度在9月回吐，近期股价已转入明显修复。</p>
+<h2>一、经营正在改善，商业化与股东回报成为更强的驱动力</h2>
+<h3>二季度业绩与股东回报</h3>
+<p>公司8月25日公布的二季度财报显示，收入23.99亿元，同比增长14.1%，较一季度7.6%的增速明显提高；经调整经营利润10.50亿元，同比增长19.2%，利润率升至43.8%。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567986_9c397196d5232359.webp" alt="" loading="lazy"></p>
+<p>数据来源：公司公告；付费企业为截至6月底的过去十二个月累计口径，月活跃用户为当季平均口径。</p>
+<p>二季度收入成本只增加1.6%，低于收入14.1%的增幅，推动毛利率升至约87.0%，同比提高约1.6个百分点。销售及营销费用因世界杯推广等支出增加38.3%，研发费用增加3.5%，管理费用下降29.7%，总成本费用增幅控制在6.1%。即使剔除股权激励费用减少的影响，经调整经营利润仍增长19.2%，显示平台在增加营销投入时继续释放经营杠杆。</p>
+<p>公司当季GAAP净利润增长173.1%，包含被投企业公允价值变动带来的14.66亿元投资收益及相关税费。经调整净利润为10.29亿元，增长9.4%，低于经营利润增速，主要受到所得税费用增加影响。</p>
+<p>二季度经营活动现金流净额为9.45亿元，同比下降10.2%。公司公告解释，广告营销支出和税款支付增加，收到的利息及投资收入减少；客户现金回款增长抵消了部分影响。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567986_2ff7235a36e9925c.webp" alt="" loading="lazy"></p>
+<p>公司8月宣布约2.3亿美元年度股息，加上当时年内已完成的超过3亿美元回购，合计超过2025年经调整净利润的100%。此前公司还提出，从2026年起连续三年，每年分红与回购合计拟不低于上年度经调整净利润的50%。</p>
+<p>分红直接返还资金，回购若带来扣除激励后的股数净减少，则提高剩余股份对应的盈利。公司已有较高利润率，资本回报能够让投资者在需求复苏之前，先分享经营积累。</p>
+<p>从上半年合计看，笔者据中报计算，经营现金流减现金资本开支约为20.16亿元，上年同期20.14亿元，基本持平。二季度经营利润增长较快，世界杯营销、缴税和资本开支增加则消耗了部分现金。</p>
+<h3>高线城市商业化与AI、蓝领服务</h3>
+<p>三四五线城市继续优先扩大用户渗透，一线和较成熟的二线城市则在用户增长基础上，逐步提高付费率和单次招聘“达成”的收费；这一调整已进行一段时间，并对本季收入增长作出贡献。</p>
+<p>公司业绩会交流表示二季度ARPPU，即每付费客户平均收入，同比增长约7%，活跃企业付费率连续四个季度环比提高。管理层将客单增长归因于服务效率和服务价值提升，其中包括AI功能组合扩大带动客户增加支出。</p>
+<p>另一方面，AI已经应用于招聘匹配、沟通和面试，并开始推进商业化。二季度业绩会上管理层表示每天已有超过1万场AI面试，部分白领和蓝领大客户认可AI面试及简历筛选方案，AI赋能及闭环业务相关收入环比快速增长。企业购买的服务开始从信息展示和沟通工具，延伸到筛选、面试及候选人交付。</p>
+<p>Bernstein在8月26日的二季报点评中记录，AI赋能招聘工具相关收入约8000万元，高于一季度约5000万元。按其记录计算，这部分收入约占二季度总收入的3.3%。这一规模已能提供增量，当前公司整体增长仍主要依靠企业招聘服务基础、付费转化与客户支出扩大。</p>
+<p>公司披露，当季研发费用4.31亿元，同比增长3.5%，增加主要来自云服务费用。管理层在二季度业绩会上表示，公司优先推进AI应用和小模型，将维持当前投入节奏，不会为AI投入牺牲现金流安全。</p>
+<p>Bernstein的二季报点评还指出，蓝领业务占整体收入的比例继续提高。制造、物流和城市服务岗位往往需要批量、重复招聘，标准化沟通、筛选和面试更容易在这些场景应用。蓝领服务扩大企业覆盖，AI则提高每次招聘服务的效率，两者有机会共同增加客户支出。</p>
+<h2>二、历史超额依赖需求预期，本轮修复更依靠公司自身</h2>
+<p>以2022年10月31日美股收盘为起点，至2023年1月31日，BOSS前复权股价上涨122.34%，中概互联网ETF KWEB上涨76.40%，超额涨幅45.94个百分点。若持有到2023年6月底，BOSS累计涨幅降至37.72%，略低于KWEB的40.26%。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567986_b21d3953b00dd028.webp" alt="" loading="lazy"></p>
+<p>数据来源：Wind</p>
+<p>当时，防疫政策优化和经济重启预期推动了互联网板块修复，招聘业务对企业经营预期的敏感性又放大了BOSS的上涨。公司已于2022年6月恢复新用户注册，前期积累的用户恢复与年底的需求预期相衔接；中美审计风险缓解，也改善了中概股的风险偏好。</p>
+<p>公司的利润随后确实增长。Bernstein财务表列示，2023年收入增长约32%，经调整经营利润率从2022年的12.5%提高至27.5%。但股价在此前已快速反映恢复预期。半年后超额回吐，说明当期盈利增长本身不足以维持此前的上涨斜率。</p>
+<p>2024年的924行情也有类似的时间差：BOSS在9月底初段跑赢KWEB，持有至10月底，累计涨幅却低于ETF。历史支持BOSS在部分复苏交易中有较强弹性。</p>
+<p>当前公司已有较高经营利润率，AI开始收费，股东回报的规模和安排也更明确。相较当年，投资者能够依赖更多已实现盈利和资本回报。需求端则缺少疫后重启式推动：公司8月25日给出的Q3收入指引为24.1亿至25.0亿元，同比增长11.4%至15.6%，中点约13.5%，与Q2接近。该展望支持双位数增长延续。管理层预计世界杯费用在Q2、Q3较均匀确认，Q3利润率与Q2大致相当。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567986_669ee305c419ee2d.webp" alt="" loading="lazy"></p>
+<p>笔者认为，Bernstein剧本在盈利与资本回报层面的依据较强。当前更可能出现的是公司逐步提高盈利、持续返还现金，市场随着兑现程度提高估值。</p>
+<h2>三、9月减持冲击后，价格修复已经展开</h2>
+<p>以财报前8月24日收盘为起点，至8月26日，BOSS上涨22.02%，KWEB仅上涨0.11%；市场最初给出了积极反应。随后至9月11日，BOSS从高点回落12.74%，板块也在下跌，部分财报涨幅已先行回吐。</p>
+<p>9月两笔减持进一步增加了压力。港交所披露确认，腾讯旗下Image Frame出售3664.81万股A类普通股，均价60.67港元，交易事件日为9月14日。SEC文件确认，创始人赵鹏旗下Techwolf于9月21日通过大宗交易出售1517万股A类普通股，价格56.90港元。两笔合计约30.87亿港元，折合约3.93亿美元。</p>
+<p>行情与事件时点相互印证。9月14日，BOSS下跌6.02%，KWEB上涨0.53%，BOSS成交量约为前一交易日的6.4倍；9月21日，BOSS下跌2.43%，KWEB上涨1.41%。两次均明显偏离板块，结合已披露的出售规模，笔者认为，集中减持是9月相对走弱的重要主因。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567986_d2ab7eebe8f901de.webp" alt="" loading="lazy"></p>
+<p>数据来源：Wind；股东交易依据港交所权益披露及SEC Form 4</p>
+<p>股份出售完成后，供给压力存在阶段性缓和的条件。9月29日至10月12日，BOSS反弹13.62%，明显高于KWEB的1.56%。相对财报前的8月24日，BOSS累计上涨8.18%，KWEB下跌5.71%，超额涨幅扩大至13.90个百分点。笔者认为，集中股份供给曾压制经营重估，近期明显反弹表明价格修复已经展开。</p>
+<h2>四、反弹后的估值与左侧机会</h2>
+<p>Bernstein在8月26日的模型中预计，公司2026、2027年经调整归母净利润分别为40.30亿和46.38亿元，经调整摊薄每ADS收益分别为人民币8.68元和10.21元。该模型预计2027年收入增长约11.7%、经调整归母净利润增长约15.1%，每ADS收益增长约17.6%。</p>
+<p>按10月12日16.10美元收盘价、Bernstein预测数据及人民币兑美元6.80的换算假设，BOSS对应2026年约12.6倍、2027年约10.7倍经调整市盈率。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70567986_e3a5a4aa8681ac74.webp" alt="" loading="lazy"></p>
+<p>公司6月底现金、短期定存和短期投资剔除权益证券后约188亿元，以9月底股本和10月12日收盘价估算的股权市值约75.69亿美元，按上述汇率换算后，现金约占市值36.5%。</p>
+<p>笔者认为，随着市场对公司提价持续性、AI收费和客户留存的更高认可，2027年估值有望提高至14—15倍。</p>
+<h2>结论</h2>
+<p>BOSS直聘二季度的经营改善已有具体表现：付费企业数量增长，客单与付费率提高，经调整经营利润增速快于收入。AI招聘工具开始贡献收入，公司的投入方向集中于应用和小模型，管理层也明确了维持投入节奏与现金流安全的经营取舍。</p>
+<p>Bernstein的超额收益判断，已经获得二季度收入与经营利润提速、商业化推进和股东回报的支持。当前公司具备较成熟的盈利基础。9月集中减持解释了此前重要的交易压力，9月底以来股价已明显反弹并跑赢板块，价格修复正在展开。</p>
+<h2>风险提示</h2>
+<p>本文所述观点仅代表笔者个人研究和分析，不构成任何投资建议。文中涉及的公司、行业及市场分析均基于公开信息和合理推测，可能存在信息滞后或理解偏差。投资有风险，入市需谨慎。</p>
+</div>
+</main>
+</body></html>

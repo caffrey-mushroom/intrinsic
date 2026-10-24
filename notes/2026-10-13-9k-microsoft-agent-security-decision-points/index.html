@@ -1,0 +1,222 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.13 | 9K | Security | Microsoft: Agent Security Decision Points</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.13 | 9K | Security | Microsoft: Agent Security Decision Points</h1>
+<p class="orig">原标题：微软离职专家|估计生产级 AI 代理比基础聊天机器人产生 5 倍到 10 倍的安全决策点，主要推动运行时防护、代理身份、授权和监控的需求，值得区别需求的增长≠实际支出的增长，未来几个季度消费额的增长会明显超出最初的购买，但净新增的安全支出斜率相对低一些；当代理进入生产并需访问敏感数据或业务流程时，Microsoft Agent 365 受益于生产批准要求和订阅-按量混合化变现；在复杂多云环境中独立厂商保持优势；优化的 Security for AI 平台最终可能实现 70% 到 80% 的毛利率和 20% 到 30% 的营业利润率</p>
+<p class="tags">#security #agents</p>
+<p class="meta">Meritco 久谦 · 2026-10-13</p>
+<div class="body">
+<h2>摘要</h2>
+<p>生产级 AI 代理预计会使安全决策点增加约 5 倍到 10 倍，从而使身份、授权、运行时防护、监控和可审计性成为生产部署的前提条件。支出仍主要依赖现有的安全与 IT 预算，因此采纳速度超过新增预算的增长。Microsoft受益于平台整合与混合变现方式，而差异化的第三方在多云环境中仍然具有相关性。优化后的 Security for AI 平台毛利率可能达到 70% 到 80%，营业利润率可能达到 20% 到 30%</p>
+<h2>要点</h2>
+<ol><li>从基础聊天机器人向生产级 AI 代理的转变预计将在中等复杂度工作流中产生 5 倍到 10 倍的安全决策点，这是一个基于架构的估算而非支出度量，运行时防护、代理身份、授权和持续监控的增量需求最大</li><li>多数近期 Security for AI 支出仍来自现有的网络安全和 IT 预算，最初从应用安全、Data Loss Prevention 和云安全中重新分配；由于企业可以复用许可证、获得规模折扣并整合供应商，需求增长快于净新增支出</li><li>当代理进入生产并需要访问敏感数据或业务流程时，Microsoft Agent 365 的采购成为主要触发因素，同时 Microsoft Entra、Microsoft Purview、Microsoft</li></ol>
+<p>Defender、最小权限访问、监控和可审计性成为安全审批的前提条件</p>
+<ol><li>在单一云环境中，本地原生安全在集成和成本上具有优势，而在多云和自托管部署中，Palo Alto Networks 及其他独立厂商可通过跨平台策略一致性、先进的运行时防护、专门化检测和独立执行为额外支出提供理由</li><li>随着代理活动超出人工规模，安全定价预计将越来越呈现混合化，将用于治理与管理的订阅与用于执行、检查、基础设施、受保护工作负载和安全事务的按量计费相结合；更高的合同价值主要应来自更广泛的部署而非持续的单位价格上升</li><li>一个优化良好的 AI 安全平台在稳态下毛利率大约可达 70% 到 80%，营业利润率可达 20% 到 30%，其中以授权为主的产品在结构上比对每次交互使用基于模型检查的产品更具盈利性，因为确定性策略决策显著更便宜</li></ol>
+<h2>Q:随着从生成式AI向生产化AI代理的转变，出现了哪些新的安全需求，现有的安全需求发生了哪些变化，这些变化能否量化？</h2>
+<p>A:我认为，从生成式AI向生产化AI代理的转变在实质上增加了安全需求，因为关注点正从保护提示和响应转向保护自主执行的动作。传统的生成式AI主要关注数据泄露、提示注入和内容过滤。而对于代理，安全还必须覆盖机器身份、API访问、带凭证的工具、执行过程以及代理之间的通信。</p>
+<p>我估计安全决策点增加大约为5倍到10倍，尤其是对于中等复杂度的代理工作流，相较于基础聊天机器人交互。这是一个架构层面的估算，不是对市场上增加支出的测量。最大增量需求来自运行时防护、代理身份、授权和持续监控。在允许代理在生产环境中独立运行之前，企业需要这些能力。</p>
+<h2>Q:AI安全支出的主要来源是什么？仍然来自安全预算并需要首席信息安全官（CISO）批准吗，还是越来越多来自业务部门？哪些用例或功能最有可能获得AI安全资金？</h2>
+<p>A:大多数AI安全支出仍来自首席信息安全官的安全预算，尤其是用于数据保护、威胁防护、合规和运行时安全。然而，来自首席信息官（CIO）、首席技术官（CTO）和部署AI应用的业务单元的共享资金也越来越普遍。业务方通常拥有AI用例，而安全职能则拥有审批要求。</p>
+<p>在金融服务领域，例如银行或抵押贷款，访问客户财务记录或执行交易的AI代理通常在没有安全审批的情况下无法进入生产。最有可能获得资金的功能涉及敏感数据、数据保护、代理身份、访问控制、防止提示注入、运行时监控和可审计性。</p>
+<p>我预期最强的增量支出将来自保护能够访问敏感系统或执行自主动作的代理，而不是基础的聊天机器人内容过滤。最终，首席信息安全官拥有否决权，当安全是上线AI应用的最后一道障碍时，资金可能由首席信息安全官或业务单元负责人来承担。</p>
+<h2>Q:如果AI安全需求越来越依赖现有的安全和云预算，而不是新设立的预算类别，那么采购是否涉及额外支出、现有预算的重新分配，还是供应商替换——例如从第三方安全厂商转向云原生安全？是否存在需求显著增长而安全支出几乎没有增加的情况？</h2>
+<p>A:我看到的是三者的结合。大多数近期的AI安全支出仍通过现有的网络安全和IT预算来资助，尽管随着AI代理进入生产，增量预算变得更常见。最初，公司会从传统的应用安全、数据防泄露（DLP）和云安全中重新分配支出用于AI代理。当代理开始访问敏感数据和执行交易时，会产生新的安全需求，最终可以证明额外资金是合理的。</p>
+<p>供应商整合也在发生。Microsoft、AWS 和 Google 正在越来越多地将AI安全整合进其现有平台，这对提供基础防护的独立供应商施加了压力。</p>
+<p>一个重要的区别是，安全需求的增长速度仍快于实际支出的增长。一个企业可能将其AI工作负载增加五倍，但并不一定按比例增加安全预算，因为可以利用现有许可证、协商批量折扣并整合供应商。我看到AI安全采用增长强劲，但净新增安全支出增长更为温和。增量资金的最大机会在于自主代理防护、身份、授权和云安全。</p>
+<h2>Q:随着 Microsoft 等云供应商扩展其原生安全能力，在哪些场景下这些能力是充足的，哪些场景下客户仍愿意额外支付独立第三方安全厂商？</h2>
+<p>A:当企业在单一云平台上高度标准化时，我会倾向于使用原生安全。例如，在以 Microsoft 为中心的环境中使用 Azure OpenAI、Microsoft Entra、Defender 和Purview，原生安全提供更紧密的身份集成、更简单的部署和集中化的策略管理。在我看来，这可能降低增量成本。</p>
+<p>在复杂的多云环境中，第三方供应商更具吸引力。如果企业同时运行 Azure、AWS、Google Cloud、Anthropic 和内部托管模型，像 Palo Alto Networks这样的供应商可以提供跨这些环境一致的安全策略和可见性。第三方还可以通过高级的AI 红队测试、代理运行时防护、跨平台发现和专门的检测来实现差异化。</p>
+<p>关键区别在于，原生厂商具有集成和成本优势，而独立厂商则提供更广的跨平台覆盖和一致性。对于单一云内的基础提示过滤和数据保护，原生解决方案通常足够。对于在多个环境中运行、拥有敏感数据权限并需要独立安全性的自主代理，第三方平台更有机会证明额外支出的合理性。</p>
+<h2>Q:当云平台与第三方安全厂商合作时，客户通常是与云提供商签约，还是与第三方单独签约、协商定价并单独续约？这种合作是扩大了第三方厂商的销售机会，还是削弱了他们的独立定价能力？</h2>
+<p>A:通常有两种商业模式。第一种是与第三方安全厂商直接签约，客户直接协商定价、容量和企业折扣。第二种是通过云市场购买，例如 Azure Marketplace 或 AWS Marketplace，由云提供商处理计费，而第三方厂商仍然可以与客户协商私有报价。</p>
+<p>我认为这对第三方的销售机会总体上是正面的，尽管会对定价能力施加一些压力。市场交易可以计入现有的云支出承诺，使采购更容易，并为第三方厂商打开大型企业客户的渠道。缺点是云提供商控制市场关系、收取交易费用，并且通过自身的原生安全产品进行日益激烈的竞争。</p>
+<p>市场提升了分发和交易速度，但并不一定改善厂商的利润率或谈判杠杆。当第三方厂商提供原生云工具难以复制的差异化防护时，依然可以保留定价能力。</p>
+<h2>Q:包括较小公司和初创企业在内，哪些新型云(neocloud)供应商正在开发安全解决方案？他们提供哪些具体的解决方案和服务？</h2>
+<p>A:除了 Microsoft、AWS 和 Google 之外，面向AI的云供应商和初创公司正在把安全直接构建到他们的平台中。例如，CoreWeave、Lambda 和 Nebius 专注于 GPU基础设施和AI工作负载。其中一些提供基础设施级别的控制，如隔离、加密、身份和访问管理。</p>
+<p>像 Fireworks AI、Together AI 和 Baseten 这样的 AI 平台提供安全的模型托管、私有部署、API 认证和企业访问控制。在专门的 AI 安全领域，初创公司如 Lakera、Protect AI、HiddenLayer 和 Prompt Security 侧重于防范 prompt 注入、模型保护、AI 应用监控和敏感数据泄漏防护。</p>
+<p>关键区别在于，较小的 AI 云提供商通常提供基础性基础设施安全，而专门的 AI 安全供应商在模型、应用和 agent运行时层面提供更深入的保护。随着较小云提供商向高端市场迈进，我预计他们会越来越多地与专门的安全供应商合作，而不是自行构建所有高级安全能力。</p>
+<h2>Q:AI agent 的出现使身份和授权变得更为重要，Okta 的业务反映了这一点，同时 Palo Alto Networks 在这些领域也增强了其能力。只提供一两项安全能力的独立第三方，未来会面临显著的市场份额和生存空间压力吗？</h2>
+<p>A:绝对会。仅提供一到两项 AI 安全能力的小型独立厂商将面临加剧的竞争压力，尤其是当 Palo Alto Networks、Microsoft、Okta 和 CrowdStrike扩展其平台时。最大的风险是功能商品化。如果一家创业公司只提供 prompt 注入检测、基本的 agent 身份识别或 API 监控，大型平台可以越来越多地将类似功能捆绑进现有的企业合同中。</p>
+<p>例如，Okta 在身份生命周期管理和访问治理方面具有优势，而 Palo Alto Networks 能将 AI 运行时安全与网络防护、云安全和威胁情报结合。我预计会出现整合，而不是专门厂商的消失。在 agent授权、行为检测和自主威胁防御方面拥有差异化技术的初创公司仍有成功的机会，尤其是在复杂的多环境场景中。</p>
+<p>他们的长期竞争优势必须来自于展示出更好的检测能力、更低的延迟，以及更广泛平台难以复制的能力。独立的点解决方案将面临定价压力，并可能被整合平台蚕食市场份额，而最强的专门厂商可能成为收购目标或扩展为更广泛的安全平台。</p>
+<h2>Q:在客户采购决策中，哪些明确的 AI 安全需求最常促使客户购买 Microsoft Agent 365 或升级到相关的更高阶产品？</h2>
+<p>A:最明确的购买驱动是将 AI agent 从试点环境推向生产，尤其是当这些 agent 需要访问敏感的企业数据、Microsoft 365 应用或内部业务流程时。在金融服务业，主要关注点包括数据泄露、未授权访问、合规监管以及对自治agent 实际行为的可见性。</p>
+<p>Microsoft Agent 365 通过 agent 清单、身份管理、治理和安全控制来满足这些需求。Microsoft Purview 提供数据保护，而 Microsoft Defender 有助于识别恶意活动和被攻陷的agent。在已经投资 Microsoft 365 E3 或 E5 的组织中，商业机会尤其强，因为这些组织希望在不引入另一个安全平台的前提下扩大其 AI 部署。</p>
+<p>我会将 Microsoft Agent 365 与 E5 升级区分开来。Microsoft Agent 365 是一个 agent 管理与安全产品，而 E5提供更广泛的企业安全与合规模块。客户可能会同时购买二者，但这些产品并不自动互相替代。当安全团队认定在没有适当的身份、最小权限访问、监控和可审计性的情况下无法批准 agent 上线时，这就是一个强烈的购买触发点。</p>
+<h2>Q:基于使用量的定价与订阅定价有什么区别？为什么 Microsoft 选择以人类席位为基础定价？如果 agent 数量大幅增加而人类席位保持不变，Microsoft 如何产生增量营收？Microsoft 是否会在未来采用混合定价模型，以及什么会触发这种变化？</h2>
+<p>A:根本差异在于订阅定价为客户提供可预测的成本，而基于使用量的定价则随实际消耗而扩展。历史上，Microsoft 更偏好按用户订阅，因为企业客户重视预算可预测性，且 Microsoft 已通过 Microsoft 365建立了既定的授权关系。</p>
+<p>不过，Microsoft 并不完全依赖人类席位定价。Microsoft Agent 365 通过为管理和治理 agent 的员工授权创造了额外的营收机会，而 Azure AI 服务和 Copilot Studio 则可以通过消耗来对agent 活动进行变现。即使员工人数保持不变，Microsoft 也可以从增加的 AI 工作负载、agent 交互、Azure 消耗以及额外的安全能力中获得增量营收。</p>
+<p>我预计该模型将越来越趋向混合，把治理与管理的订阅费与针对 agent 执行、安检和基础设施的按消耗计费相结合。最大的触发因素将是 agent 活动增长远快于人力规模，使得按席位定价无法准确反映客户价值和 Microsoft 的服务成本。</p>
+<h2>Q:那些购买了 AI 安全产品的客户，是否真的将它们投入生产并持续扩大使用，还是有些客户只是为了未来预留容量而购买？对于购买 Microsoft Agent 365 或升级到与 E5 相关能力的客户来说，安全在采购决策中有多重要？哪些高级安全功能是真正被使用的，哪些仍仅停留在账单或规划阶段？</h2>
+<p>A:我看到两类明显不同的客户群体。已经有 AI 应用投入生产的组织会积极部署安全控制，而仍在尝试 AI agent 的公司通常会在全面采用之前预先购买能力。在金融服务领域，安全往往是 AI 应用能否获得生产批准的决定性因素。</p>
+<p>如果 agent 访问客户记录、内部数据库或财务交易，则身份控制、数据保护和可审计性成为基本要求。当前实际需求最大的能力包括用于敏感数据保护的 Microsoft Purview、用于身份和访问管理的 Microsoft Entra、用于威胁检测的 Microsoft Defender，以及对 agent 活动的监控。</p>
+<p>购买安全许可证并不一定意味着每项能力都被使用。客户通常先启用基础控制，然后随着更多 AI 工作负载进入生产再逐步扩大使用。我预计在未来几个季度内，生产端的消费将比最初的许可证购买增长得更快，特别是当组织从有限的 copilots向集成到业务流程中的自治 agent 转变时。</p>
+<h2>Q:Microsoft Agent 365 将若干现有产品的通用模块进行了整合。这种整合为客户带来了哪些好处？主要好处是采购更简便、更快部署、降低管理人员需求，还是更一致且更全面的防御策略？</h2>
+<p>A:Microsoft Agent 365 整合带来的最大好处之一是更一致的安全与治理，其次是更快的部署和更低的运营复杂性。此前，客户可能通过 Microsoft Entra 管理 agent 身份，通过 Microsoft Purview管理数据保护，通过 Microsoft Defender 进行威胁检测，并通过独立平台进行 agent 开发。Microsoft Agent 365 将其中一些能力带入更统一的管理体验中。</p>
+<p>这对客户有三方面的帮助。首先，采购更简单，因为客户可以通过现有的 Microsoft 关系进行采购。第二，安全团队获得了集中化的可见性，并且在各个 agent 之间能实施更一致的策略。第三，管理和监控多种工具所需的资源更少。</p>
+<p>其战略价值超过了简单的成本节约。当组织从几十个 agent 扩展到可能成千上万个时，分散的安全策略会成为日益严重的运营风险。其收益在于能够在不按比例增加人手的情况下扩展 AI的采用。然而，我不会声称集中化就能自动降低人员成本或消除对专业安全团队的需求。</p>
+<h2>Q:把集中化带来的好处转化为推动额外购买、更广泛的安全部署或替代独立第三方供应商的增量收入的可能性有多大？在跨云、自托管和第三方 agent 场景中，可以保留多少集中化的优势？</h2>
+<p>A:我认为集中化可以产生增量收入，但最大的机会是扩大现有 Microsoft客户中的安全采用，而不是立即替代每一个第三方供应商。当客户能够通过更统一的平台管理身份、数据保护、威胁检测和治理时，采购摩擦会减少，更广泛的部署也会变得更容易。这为 Microsoft Agent 365 订阅、额外的安全许可和 Azure的消耗带来了机会。</p>
+<p>我也预计会有一些独立供应商被替代，特别是那些提供基础 agent 监控、身份可见性或与 Microsoft 现有产品组合重叠的数据保护能力的公司。然而，在多云和自托管环境中，Microsoft 的优势会不那么明显。Microsoft可以将治理扩展到第三方 agent，但集成的深度与强制执行程度取决于平台本身。</p>
+<p>我预计在以 Microsoft 为中心的企业中，收入机会最强，而在异构环境中的扩展会更有选择性。关键指标不仅仅是许可销售数量，而是有多少客户启用这些能力、扩展受保护的 agent 部署以及整合现有合同。</p>
+<p>需要重要说明的是，Microsoft 已经在将 Microsoft Agent 365 扩展到 AWS、Google Cloud Platform及第三方平台，因此我不会将其多云优势描述为消失。更准确的说法是集中可见性可以跨云扩展，但安全强制执行的深度仍随集成情况而异。我预计集中化会增加 Microsoft 在客户支出中的份额，但不会在复杂环境中消灭专业安全供应商。</p>
+<h2>Q:以前第三方安全公司必须派出销售团队接触大型企业，但在最近几个季度，更多客户主动寻求他们的安全保护。随着新功能和防御措施的引入，这种更强的需求会否导致单价或合同总价值上升？</h2>
+<p>A:更强的入站需求在定价上为专业 AI 安全供应商提供了更大的杠杆，尤其是在客户急需保护以便在将 AI agent 推向生产前的情形下。然而，我会区分单价和合同总价值。我预计随着客户部署更多agent、检查更多事务并购买额外的安全能力，合同总价值会增加。</p>
+<p>一些单价可能保持不变甚至下降，因为 Microsoft、Palo Alto Networks 等大型平台在打包更多功能，同时随着消耗增加体量折扣也会提升。最强的定价能力将出现在差异化能力上，例如自治 agent授权、先进的运行时防护和跨云强制执行，这些领域客户的替代选择较少。</p>
+<p>每位客户的更高收入主要将由更大消耗和更广部署驱动，而不是持续性的单价上升。入站需求增强了议价能力，但并不消除竞争性定价。例如，Palo Alto Networks 的 AI Gateway 明确在更高消耗层级上提供每十亿 token下降的价格，这说明了合同价值增长与单价可能下降之间的区别。</p>
+<h2>Q:AI 已显著改变攻击面，防御产品可能使用模型进行检测，从而带来额外成本。在等价保护水平下，随着被检查 token 量和授权决策大幅增加，公司成本将如何变化？在业务达到稳态规模后，Security for AI 产品可能达到怎样的利润水平？</h2>
+<p>A:我会把 token 检查成本和授权成本分开看，因为它们的经济属性相当不同。token 检查成本通常随着流量量增加而上升，尤其是当供应商使用 AI模型进行语义分析、提示注入检测和数据泄露防护时。授权决策则便宜得多，因为可以通过确定性策略引擎来处理，而无需运行大型语言模型。</p>
+<p>在等价的保护水平下，我预计随着被检查量的增加，总体基础设施成本会普遍上升。然而，随着供应商通过模型优化、批处理、缓存和更小的专用检测模型实现规模效应，每百万 token 或每次授权决策的成本应会下降。</p>
+<p>就毛利率而言，我对一个优化良好的 AI 安全平台的稳态估计大约为 70% 到 80%，对于主要依赖轻量授权和策略执行的产品可能更高。营业利润率最终可能达到 20% 到 30%，这取决于研发强度、销售效率和竞争定价。</p>
+<p>关键在于供应商必须让收入增长速度超过推理和基础设施成本的增长。以授权为主的安全产品在结构上应具有比需要对每次交互进行昂贵模型检测的产品更好的利润率。作为参考，我认为 Palo Alto Networks 在 FY2026报告的订阅与支持毛利率约为 69.2%，而 FY2025 为 72%。该数据是公司范围内的，并非 Prisma AIRS 专属，但它说明了为什么 AI 安全需求增长并不必然带来利润率扩张。</p>
+<h2>Q:应如何理解地区政策对安全市场的影响，包括有报道指出 Microsoft Defender 退出中国市场？未来的需求主要会由本地安全公司满足，还是像 Palo Alto Networks 这样的独立国际供应商能夺得部分市场？</h2>
+<p>A:我预计本地中国安全厂商会夺得大部分新增需求，尤其是在政府机构、金融机构和受监管的企业中。主要驱动因素是数据主权、网络安全监管、本地托管要求以及跨境数据传输限制。</p>
+<p>像 H公司、Alibaba Cloud、Tencent Cloud、Qi-Anxin 和 Sangfor 这样的公司有能力通过本地部署的安全服务满足这些要求。像 Palo Alto Networks这样的国际厂商仍可能在中国的跨国企业中竞争，但其机会将高度依赖于合规性、本地交付能力以及客户数据能否留在中国境内。</p>
+<p>我的预期是，本地厂商将从任何外国供应商的市场撤退中获益最多，而国际安全厂商将在特定的跨国与混合云环境中保持相关性。</p>
+<h2>Q:如果 AI 导致企业员工、开发者甚至安全分析师数量减少，基于人头计费的商业模式和定价将受到多大影响？</h2>
+<p>A:如果员工人数保持稳定，基于席位的定价会越来越无法反映 AI 安全的实际价值和工作量。例如，一家企业可能有 500 名开发人员和 100 名安全分析师，但这些开发人员最终可能会管理数千个自主 AI代理。在纯粹的基于席位的模式下，即便代理数量、安全事件和授权决策显著增加，供应商也不一定能获得额外收入。</p>
+<p>我预计供应商会继续对人工用户维持基于席位的订阅，同时为代理活动、受保护的工作负载和安全交易引入基于消耗的定价。对微软而言，这为通过 Azure 和 Copilot Studio 将额外的 AI消耗货币化创造了机会，同时保留可预测的订阅收入。</p>
+<p>我不认为基于席位的定价在短期内会消失，但随着未来几年 AI 代理部署规模的扩大，我预计其相对重要性会相对于基于使用的变现方式下降。</p>
+<p>以上仅供交流探讨，不构成投资建议</p>
+</div>
+</main>
+</body></html>

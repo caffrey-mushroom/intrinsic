@@ -1,0 +1,468 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.11 | FUNDA | Security | Cloudflare: AI Drives CDN &amp; Security Budgets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.11 | FUNDA | Security | Cloudflare: AI Drives CDN &amp; Security Budgets</h1>
+<p class="orig">原标题：Cloudflare — AI 驱动下的内容分发与安全预算增长</p>
+<p class="tags">#security #networking</p>
+<p class="meta">Funda · 2026-10-11</p>
+<div class="body">
+<p>FSLY, NET, AKAM, AMZN, GOOGL, FFIV, PANW, CRWD, Content Delivery Network</p>
+<p>Expert · Senior Account Manager, Top global cloud security provider Wooding, Stella</p>
+<h2>摘要</h2>
+<ul><li><b>取决于统计范围的预算增速</b> — 据该行业专家估计，2026 年纯内容分发网络预算增长约 10%-15%，而内容分发网络应用、安全和性能合计预算增长 20%-30%。对于 2027 年，其先估计纯内容分发网络增长 10%-20%，随后又称实际增速可能更高；包含网络安全的更广泛预算预计增长 30%-40%。</li><li><b>AI 驱动的安全需求</b> — 该行业专家估计，客户安全预算增长 20%-30%；若非在大语言模型供应商处投入大量 token 费用，增速可能更高。AI 使用是采购的主要驱动因素，包括对 AI Gateway 护栏和模型级限流功能的需求。</li><li><b>安全附加产品的合同增量</b> — 据该行业专家估计，单独购买 API 接口安全和机器人管理产品通常可使现有合同金额增加 20%-30%。在另一个粗略的 API Shield 示例中，约产生 10 亿次请求的大客户每月合同增量约为 1 万-2 万美元。</li><li><b>内容分发网络的高安全产品附加率</b> — 该行业专家表示，由于 Cloudflare 为托管网站免费提供不限用量的分布式拒绝服务防护，仅购买内容分发网络的情况很少。其估计，70%-80% 的内容分发网络客户会以某种形式使用网络应用防火墙。</li><li><b>超额用量变现</b> — 据该行业专家在其本人经手的合同中观察，2026 年所见合同条款对超出约定额度的用量明确约定了计费安排。在超过额度的客户中，用量通常比合同约定水平高 10%-20%。</li><li><b>Fastly 在所观察地区的出现频率有限</b> — 该行业专家在其负责的佛罗里达地区约每 10 笔交易遇到 Fastly 1 次，在接近两年内合计仅遇到 3-4 次，其中 2026 年为 1-2 次。其明确承认带有偏向性的个人估计是，Cloudflare 在正面竞争中的胜率为 60%-70%，Fastly 为 30%-40%。</li><li><b>价格差距被竞争性折扣削弱</b> — 该行业专家认同，在同类方案比较中，Fastly 可能比 Cloudflare 便宜 20%-25%。不过，其回忆称，在多家供应商同时竞标的竞争性交易中，折扣幅度可达公开标价的 90%，具体视交易情况而定。</li><li><b>多内容分发网络架构增强韧性</b> — 据该行业专家观察，大客户通常会使用 3-4 家而非仅 2 家内容分发网络供应商。服务中断提升了客户对备用供应商的需求，也使多内容分发网络架构更加普遍。</li><li><b>自助服务优势与转化阻力</b> — Fastly 同样提供自助服务，但该行业专家认为 Cloudflare 的自助方案提供了明显更多的价值。客户每年支付 250 美元即可获得基本所需的全部功能，这既能成为进入客户账户的切入点，有时也会降低客户升级到企业方案的意愿。</li><li><b>活跃的平台整合需求</b> — 该行业专家估计，其经手交易中有 30%-40% 包含将其他供应商流量或工具进行整合的内容。其表示，Cloudflare 可利用折扣空间增加收入，同时降低客户的总体成本。</li><li><b>广泛的网络安全投入重点</b> — 身份管理、智能体安全、数据防泄露、应用安全和数据安全被列为客户重点关注领域。该行业专家还观察到对 AI 网关的需求，这类产品可分析或拦截提示词，并保护与大语言模型的交互。</li></ul>
+<h2>关键要点</h2>
+<ul><li><b>预算增长强劲但预测精度有限</b> — 该行业专家将 2026 年纯内容分发网络 10%-15% 的增速，与内容分发网络、安全和性能合计 20%-30% 的增速进行了区分。其在回答过程中将 2027 年纯内容分发网络增速从 10%-20% 上调为可能更高，因此该判断更适合作为方向性估计，而非精确预测。</li><li><b>安全产品扩大内容分发网络客户支出</b> — 据该受访专家本人负责客户的观察，约 70%-80% 的网络应用防火墙附加率、API 接口安全或机器人管理产品带来的 20%-30% 单独增量，以及客户 10%-20% 的超额用量，为基础内容分发网络支出之外提供了多条扩张路径。</li><li><b>AI 既是需求催化剂也是预算约束</b> — AI 使用提升了客户对模型护栏等安全控制的需求，但在大语言模型供应商处的 token 支出也限制了客户可进一步分配给安全产品的预算。</li><li><b>Fastly 带来的挑战不仅是定价，更在于交易出现频率</b> — 尽管同类方案被认为便宜 20%-25%，Fastly 在该行业专家负责的佛罗里达地区仍仅约每 10 笔交易出现 1 次。不过，对 Fastly 的既有熟悉度及本地客户团队与决策者的距离仍可能决定单笔交易结果。</li><li><b>韧性需求支撑多供应商支出</b> — 客户通常使用 3-4 家内容分发网络供应商，并希望通过备用供应商应对服务中断，表明即使某一家供应商获得最大流量份额，客户架构也并非赢家通吃。</li><li><b>Cloudflare 的分销模式以转化阻力换取覆盖面</b> — 每年约 250 美元的自助服务形成低成本获客入口，但该行业专家表示，其较高价值也可能使客户不愿升级至企业方案。</li><li><b>整合已成为重要销售路径</b> — 据该行业专家估计，其经手交易中有 30%-40% 包含整合内容，平台广度和折扣灵活性因此成为 Cloudflare 竞争方式中的常见要素。</li></ul>
+<p>ST</p>
+<p>Stella</p>
+<p>我们目前对 Cloudflare 和 Fastly 都很感兴趣。首先，关于安全产品，根据您的观察，总体而言，大客户今年和明年的安全预算增长率大概是多少？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>关于客户的安全预算，我认为肯定增长了至少 20%-30%。如果不是因为他们现在把大量资金花在各大模型公司的 token 上的话，增幅很可能还会更高。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>推动这些采购决策的主要原因是什么？在与 Cloudflare 的对比评估中，Fastly 通常处于什么位置？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>我认为采购决策的核心在于 AI 的使用。如果他们现在大量使用 AI，就会希望确保以最安全的方式来使用它。例如，客户非常感兴趣的一个 Cloudflare 解决方案是 AI Gateway，您可以在其中设置防护栏和使用限制，对不同模型的使用量进行限流等等。</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>在我个人负责的佛罗里达州客户区域内，我参与的大约每十个项目中可能才会碰到一次 Fastly。</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>我很少见到 Fastly，尤其是在安全领域。除了 Web 应用防火墙之外，Fastly 更多是一家应用性能和 CDN 公司。CDN 和负载均衡器才是大家真正广泛使用它们并为人所熟知的产品，这也是我主要看到的情况。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>Fastly 在 9 月下旬也推出了几款新产品，例如运行时控制、AI 防火墙和 API 保护。它们与 Cloudflare 的同类产品（如 Firewall for AI）相比表现如何？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>内容防火墙是 Cloudflare 去年推出的功能，最初名为 Pay-per-crawl（按抓取付费）。这是机器人管理内嵌的一项功能，客户可以启用它。如果有大型网络爬虫（例如 OpenAI、Google 或 Anthropic 的爬虫）为了获取内容而抓取网站，网站方即内容所有者就可以对访问其网站内容的行为进行收费。这正在改变我们如今所理解的互联网模式，因为以往的模式很大程度上依赖流量，并通过广告来获取收入。但现在人们不一定会亲自访问实际的网站，而是在自己的 ChatGPT 或 Gemini 窗口中直接查看弹出的所有内容，导致内容公司损失了大量的广告收入。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>如果客户增加一些安全产品，比如机器人管理或 API 安全等，您通常会看到总合同金额有多大程度的增长？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>机器人管理和 API Shield 都是相当昂贵的 Layer 7 产品。这很大程度上取决于客户账户所分配的请求量。通常该解决方案本身会收取一笔基础费用，在此基础上再按每百万次请求加收费用。例如，仅作为粗略的参考数字，在账户中添加 API Shield 可能需要每月额外支付 2,000 美元，外加每百万次请求 1 美元。对于处理约 10 亿次请求的大型客户而言，这相当于每月为合同增加至少 10,000 到 20,000 美元。因此这很大程度上取决于客户的规模，但从百分比来看，如果单独添加 API 和机器人管理，通常会在现有合同基础上带来约 20%-30% 的增长。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>Fastly 在中小企业客户中究竟有没有竞争力，还是说那基本上完全是 Cloudflare 的天下？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>就我本人负责的客户来看，Cloudflare 在中小企业市场上处于明显领先位置，这也是其自助服务模式带来的结果。我还没仔细看过——Fastly 有自助服务模式吗？</p>
+<p>ST</p>
+<p>Stella</p>
+<p>我觉得没有，至少目前还没有。</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>我确认一下。我原本以为他们不提供，因为 Cloudflare 其实也有自助服务。Fastly 也提供自助服务，比如免费试用和按使用量付费，你直接用信用卡注册就行。但在这些功能上，没有哪家公司像 Cloudflare 这么大方，简直难以置信。很多时候，自助套餐的性价比实在太高，客户根本没兴趣转去购买企业套餐，所以就一直留在自助套餐上。这就是 Cloudflare 在 SMB 市场如此成功的原因——客户每年只需花 250 dollars，基本就能获得所需的一切。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>也许您应该去试试 Fastly，他们的大多数客户都是大型企业客户。</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>其实 Cloudflare 的大客户可能也更多。只是自助服务确实创造了巨大价值，也是进入这些客户大门的第一步。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>回到 CDN 业务：在那些采用多 CDN 架构的大型客户中，流量通常如何在 Cloudflare、Akamai 和 Fastly 之间分配？背后的驱动因素又是什么？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>这肯定因客户而异，不同客户之间没有统一的分配比例。但就我接触过的大客户而言，他们肯定采用多 CDN 策略。比如，在我见过的一个典型多 CDN 客户中，大约 50% 的环境部署在 Cloudflare 上，其余份额分配给 Akamai、AWS 和 GCP。AWS 和 Google 占据了该市场的很大一部分，因为它们是超大规模云服务商。AWS、Google 和 Azure 也都提供 CDN 和 Layer 7 解决方案，而且由于企业已经依赖它们提供云存储服务，因此很容易顺带采用它们的这些产品。 至于多 CDN 策略中的 Fastly，如果客户长期使用 Fastly，其大部分环境——可能是 30%-50%（或 40%-50%）——会部署在 Fastly 上，其余则分配给其他 CDN。企业采用多 CDN 架构时，通常不只是使用两个 CDN，而是一般会使用三个或四个。</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>考虑到去年发生的几次宕机——不知道你是否还记得，AWS 发生过宕机，Azure 发生过宕机，Cloudflare 也发生过宕机——如今采用多 CDN 架构实际上更加普遍了。许多公司都在争取部署这种架构，以便在某家 CDN 提供商发生故障时能够拥有备用方案。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>关于价格，我听说对于同类方案，Fastly 可能会比 Cloudflare 便宜 20%-25%。这与您所看到的情况相符吗？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>是的，根据我的观察，我认为这是准确的。但以我的经验，当供应商知道自己处于竞争性竞价情形时，通常愿意给出非常大的折扣，在某些情况下，折扣幅度可达公开标价的 90%。所以，如果你明确让对方知道这是竞争性交易，供应商在价格上会有较大弹性。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>90% 的折扣？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>是按公开标价计算的。折扣是以该方案应有的总标价为基础计算的，而不是以任何特定供应商的报价为基础。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>当 Cloudflare 在交易中输给 Fastly 时，主要原因是什么？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>价格是一个因素。公司内部也可能有一位用过 Fastly 的现有 IT 人员，他们对 Fastly 平台很熟悉。这种情况经常发生，某些应用开发人员或IT主管习惯使用某款产品，换工作时就会把该产品带到新公司。这是大家经常看到的现象。此外还有定价因素，以及本地客户团队的关系——比如如果 Fastly 的销售代表离客户很近，经常带他们外出应酬，而 Cloudflare 的销售代表远在偏远地区、根本接触不到决策客户，这也会产生很大影响。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>今年 Fastly 与 Cloudflare 的总体赢单率是多少？与去年相比如何？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>坦白讲，这对我来说很难回答。关于 Fastly 与 Cloudflare 的总体赢单率，我当然对 Cloudflare 有所偏向。我觉得在我看到的竞争性交易中，Cloudflare 赢下的比例很高。我认为公司击败Fastly的概率大概在 60%-70% 左右，所以 Fastly 大概在 30%-40%。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>明白了。</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>是的，我认为两家公司在规模和市场地位上的差异，业内普遍了解。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>在您负责的大客户中，今年您看到了怎样的流量增长，对明年又有何预期？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>我看到了哪些流量路由？你是什么意思——是指流量从哪里来、流向哪里吗？</p>
+<p>ST</p>
+<p>Stella</p>
+<p>比如合同中约定的承诺保底用量？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>比如地理上用量从哪里来、流向哪里？</p>
+<p>ST</p>
+<p>Stella</p>
+<p>不，是指总业务量。比如在签订合同时，通常会规定合同涵盖的使用量或业务量。有时他们的使用量在承诺保底用量之内，有时……</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>没错。有时他们用得更少，有时用得更多。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>根据您对今年对比去年的观察，以及对明年的展望，这种增长情况如何？是在增加、减少，还是持平？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>我认为增长非常强劲。就我本人经手的客户而言，不少客户的实际用量超过了合同约定的承诺用量。在我经手的合同中，我看到过超额用量条款，要求客户对超出分配上限和限额的用量付费；我今年所见的合同条款中包含关于超额费用的明确表述。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>那是否有某种普遍的的标准，比如他们超出了多少？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>在我经手确实超量的客户中，通常至少超出了10%-20%，这个幅度已经相当可观了。作为销售代表，我的部分工作就是跟进这些客户，要求他们调整合同至合理规模，并收取这笔额外的费用。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>明白了。回到赢率的问题，关于这 30%-40% 的赢率，如果是指 2025 年，您认为这些年赢率会有怎样的变化？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>您是想了解 2026 年还是 2027 年的情况？</p>
+<p>ST</p>
+<p>Stella</p>
+<p>对比以往和现在，您觉得来自 Fastly 的竞争是变得更加激烈了，还是基本持平？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>我认为来自 Fastly 的竞争基本持平。在这个时代，就我本人在交易中的观察而言，Cloudflare 在应用层的竞争力很强，这主要是因为其非常专注于开发者平台，以及企业构建 AI、开发 AI 智能体和保障 AI 安全所需的各种工具。我个人并不认为 Fastly 在竞争层面上有明显增长。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>您觉得 Akamai 也在增长吗？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>我认为 Akamai 正在实现增长，尤其是考虑到已公开宣布的与 Anthropic 达成的 AI 相关大单。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>但那基本上是在边缘计算方面，而不是 CDN。那AWS、Azure以及那些超大规模云厂商呢？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>他们表现也很不错，都在增长。随着 AI 智能体的推出，互联网流量只会呈指数级持续增长。因此，所有这些不同的虚拟机监控器（hypervisors）、云计算公司和 CDN 提供商都在同时经历迅猛的增长。并不是所有业务都流向单一供应商；整个行业和市场都在共同增长。</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>至于各家公司之间如何分配份额，作为一名业务仅限于佛罗里达州客户的销售代表，我对整体市场并没有太多了解。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>佛罗里达州作为一个样本确实挺好的。在所有这些厂商中，如果要挑一家，您认为最具竞争力的对手是谁？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>可能是 AWS。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>在那些纯新增的企业级大单中，您与 Fastly 正面对决的频率有多高？过去几年这种情况有何变化？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>我在这里工作快两年了。在我的职业生涯中，跟 Fastly 竞争的大概总共也就三四次，坦白说今年只有一两次。所以我觉得情况一直相当稳定。我并没有觉得碰到他们的次数变多或变少，基本跟去年一样。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>在你看来，Fastly 的 Compute 和 Cloudflare 的 Workers 之间的产品差距是什么？比如在开发者生态、数据存储或定价方面？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>根据我看到的一切，我觉得 Cloudflare 目前在开发者领域做得非常出色。显然，我的视角有些局限，因为我在这里工作，我看到的所有发布动态都来自公司。所以很自然地，作为员工，我对产品发展的感受不可避免地受到内部所见信息的影响，这一视角本身也是有局限的。老实说，我甚至都不知道Fastly也有开发者平台。我相信他们的平台也在增长，就像这家公司一样。目前提供这类产品的所有厂商都在经历迅猛增长，因为这就像淘金热一样。Cloudflare、Fastly、AWS、Azure 都在卖淘金用的铁铲和牛仔裤；这家公司卖的是淘金的工具。公司卖的不是金子，公司本身也不是金子——AI 才是金子。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>如果卖的是工具，那确实是一门好生意。</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>确实，百分之百如此。</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>我对整体CDN市场有一个问题。您认为在2026年，客户会在 CDN 上投入更多资金、分配更多预算吗？与去年相比，您认为这个市场是否仍保持着很高的增长率？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>百分之百是的。</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>我想了解一下根据您的观察，2026 年的增长率会是多少，2027 年又会是多少，以及背后的核心驱动因素。因为据我理解，CDN 正在变得更加商品化，价格会更低，但客户可能出于某些原因使用更大的流量规模。所以我想了解客户的整体支出情况。</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>是什么让你觉得——或者可能是我理解有误——CDN 会变得更加商品化？仅仅是因为建了更多的数据中心，还是有别的原因？</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>不，这是我从其他行业专家那里听说的。他们告诉我，他们分不清云服务提供商的 CDN 与 Cloudflare、Fastly 这类服务的区别。所以他们认为 CDN 算是一种通用商品化产品。</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>确实如此。除非你真的很在乎几毫秒的更快传输速度，否则它们基本上都是一回事。另外，如果他们需要某家厂商平台上提供的工具或其他解决方案，那也是合理的。</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>您提到了延迟等指标。哪些类型的客户更看重低延迟？在这些指标上，您认为市场上哪些提供商的服务最好？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>据我所见，我认为 Cloudflare 和 Fastly 的交付速度最快。Akamai 拥有的数据中心最多，因此 Akamai 提供的产品定制化程度要高得多，配置非常复杂，而且高度针对具体业务及其特定的配置需求量身定制。如果客户有特定的用例或地理路径需求，明确希望在哪里托管内容，以及大多数用户在哪里连接特定应用程序，在这种情况下 Akamai 可能会脱颖而出，成为速度最快的一家。但总体而言，在开箱即用和易用性方面，我认为 Cloudflare 更胜一筹，这也是这家公司的优势所在。他们向公司展示的数据以及我看到的数据表明，公司的交付时间是最快的。从这个意义上说，Fastly 和 Akamai 也是排名前两位的竞争对手。在速度和性能方面，像 Fastly、Akamai、F5 和 Cloudflare 这些更专注的 CDN 提供商，在 CDN 业务上的表现会更好，速度也会比大型虚拟机云服务商更快。</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>看来 Akamai 和 Fastly 为客户（尤其是大型企业）提供了更多定制化解决方案，对吧？相比 Cloudflare 这可能是一个优势，因为 Cloudflare 使用的是统一平台，并且尽可能少地提供定制化服务，对吗？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>确实如此。Akamai 成立的时间要长得多，所以很自然地，他们拥有更多合作已久的老牌、传统和大型客户，这些客户早已将 Akamai 嵌入到自身的基础设施中，不想经历推倒重来的麻烦。因为公司销售的是基础设施，一旦在某个客户账户中站稳脚跟，他们就极少也很难把你替换掉。我认为续约率大概在 80%-90%，甚至远高于此。</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>回到 CDN 总体预算的话题：根据你对客户的观察，他们 2026 年的 CDN 预算相比去年增长率是多少？您对他们 2027 年相比 2026 年的 CDN 预算预估又是多少？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>与去年相比，这家公司今年肯定实现了增长。正如我之前所说，我认为仅 CDN 应用、安全和性能方面的预算就增长了大约 20%-30%。明年客户预算可能也会以类似的速度增长。因此，如果明年的增速再次达到 30%-40%，我一点也不会感到意外，甚至可能超过 40%。增长势头非常强劲，尤其是有这么多新开发者注册自助服务套餐来构建项目，再加上鼓励初创公司基于 Cloudflare 进行开发的项目——我相信其他供应商也有类似的项目。不过，总的来说，回答你的问题，我认为未来一年我们会继续看到巨大的增长，短期内没有任何放缓的迹象。我非常确定，预算至少可以同比增长 30%-40%。</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>但那 20%-30% 的增长率数字包含了网络安全预算，对吧？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>噢对，包含了。</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>如果剔除网络安全，增长率的百分比是多少？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>仅针对CDN吗？如果仅看 CDN，大概在 10%-15% 左右。</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>我认为这仍然是一个加速的增长率，对吧？对于2025年，该增长率可能不到 10%。就整个市场——整个 CDN 市场而言，2025 年的增长率不到 10%，对吧？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>是的。</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>所以今年增长率超过了 10%。那么增长率加速的关键驱动因素是什么？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>我认为自然是因为有更多的网站和应用程序正在部署。鉴于利用人工智能构建产品变得如此容易，自然会有更多内容被构建并部署出来，我认为这就是一个巨大的驱动因素。与此同时，CDN 也是用户体验和性能层面的重要组成部分。确保配置合适的 CDN 非常重要，因为不仅构建的内容变多了，而且确保其提供无缝体验比以往任何时候都更加重要，而 CDN 就是实现这一目标的一部分。单凭这两个因素，可能就推动了这一增长。</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>确实如此。那么根据您的预估，2027 年纯 CDN 市场的增长率会是多少？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>单纯是 CDN？我现在想想，至少大概在 10%-20% 之间吧。说实话可能更高。大概率会更高。</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>为什么会更高？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>因为现在我仔细想了想并解释了它的增长幅度和构建规模，这让我意识到它可能还会高得多。除非我考虑的方向不对，但随着构建变得如此容易，自然有更多的东西被构建和部署。此外，人们花在社交媒体、网络和手机上的数字化时间只增不减。小孩子四五岁拿着 iPad 长大，就已经在上网访问网站和应用程序了，而这些都离不开 CDN，对吧？所以我觉得……</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>明白了。另一个问题是关于基于 CDN 庞大客户群体的交叉销售。对于 Cloudflare 和 Fastly 来说，他们会交叉销售自己的网络安全产品，对吧？那么根据您的观察，在 CDN 合同中搭售网络安全产品或服务的附加率大概是多少？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>单纯只购买 CDN 的客户非常少见。他们选择 Cloudflare 的 CDN 的一个很大原因，是这家公司为托管在公司这里的任何网站都免费提供不限量的 DDoS 防护。仅凭这一点，他们购买的 CDN 自然就包含了网络安全功能。通常情况下，如果他们使用 CDN，他们也会使用 WAF、Bot 管理和 API 安全。通常 WAF 是最容易上手使用的。一旦附加了 WAF，就我负责的客户来看，我估计购买 CDN 的客户中大约有 70% 也在某种程度上使用 WAF，即使只是设置一个简单的重定向规则之类的。这也是在使用 WAF，属于网络安全范畴。所以附加率大概在 70%-80%。</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>我认为这适用于小型企业或小型客户，但中大型企业呢？因为对他们来说，可能拥有更强的 IT 团队，能够自己将安全和 CDN 整合在一起。你认为这种情况有所改变吗？因为可能出于其他因素，客户希望削减预算来省钱，所以他们更愿意把 Cloudflare 作为一个整体方案来使用，因为这样更划算？你认为 2026 年相比去年，这种情况有什么变化？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>所以你问的是关于整合或者 IT 成本节约的问题？是想对比这几年的情况吗？</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>对，就是这一领域的平台化趋势。</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>百分之百如此，我每天都能看到这种情况。我现在正处理好几个交易，都是在设法将其他厂商的流量或工具整合到 Cloudflare 中。我认为 Palo Alto 也在做同样的事情。安全领域一直以来都是公认的非常拥挤的赛道，因为存在太多不同的攻击途径，同时又有太多不同的单点解决方案。管理这些确实挺让人头疼的，比如要管理所有不同的合同，还要面对各种不同的工具和管理控制台，还得知道怎么去使用它们。因此对客户来说，平台化显然是一条捷径。我认为那些销售平台化解决方案的公司——比如 Cloudflare、Palo Alto、CrowdStrike 这些巨头——才是真正在这个数字化时代和 AI 热潮中蓬勃发展的企业。所以我认为这绝对会有所帮助。我见得很多，也在跟进一些交易。如果公司了解客户的花销，因为利润率很高，公司就能拿到很大的折扣力度，因此在很多产品上降价的灵活性都非常大。所以通常情况下，这对 Cloudflare 来说是新收入，客户省了钱，大家实现了双赢。我想说今年我经常见到这种情况——我正在跟进的交易中，大概有 30%-40% 都包含某种形式的整合部分。</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>Palo Alto 正试图向客户销售更多的网络安全产品，CrowdStrike 也想向客户销售更多产品，Cloudflare 同样如此，对吧？您怎么看这些平台型网络安全公司之间的竞争？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>是的，这绝对也是我正在目睹并参与应对的事情。我认为这种竞争非常普遍，而且愈演愈烈。如今客户自身的认知度也非常高，最终真正取决于他们的所见所感以及市场营销。当然，也许我有些主观偏见，但我感觉与其他厂商相比，Cloudflare 的市场营销确实做得非常好。因此我觉得，在如今正在形成的这种整合趋势中，这一点将起到非常关键的作用。是的。</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>谈到边缘计算方面，我认为 Akamai 在 GPU 和 CPU 投资上非常积极，以构建其边缘计算网络，对吧？从我的角度来看，Cloudflare 并没有在 GPU 采购上投入那么多的资金。您如何看待客户对边缘计算的需求？为什么这两家公司在战略方向上会有所不同？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>你觉得 Cloudflare 在这方面失去了一部分业务吗？我不知道；说实话，我对边缘计算这块业务不太熟悉。我知道公司有 Workers AI，而 Workers 就是公司的边缘计算产品，非常受欢迎，但成本也很高。如果是小型企业，我认为 Cloudflare 在这方面做得非常好；但一旦涉及大型交易，比如 Akamai 已公开宣布的那笔大型 AI 相关交易，所需投入相当可观，因为必须前期投入大量资本才能交付算力。所以我觉得目前整个算力领域有点令人担忧。由于需求极高而供应有限，相关数字非常虚高。显然，正如我之前所说，当整个行业都在增长时，公司自然也能分得一杯羹、取得良好表现。但在你提到的这些供应商中，最终谁会赢得最大的份额，这很难说。正如你所说，Akamai 在那个领域可能会表现得更好。</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>根据您的观察，您如何看待接下来几个季度的客户需求？它会保持类似增速，还是可能会面临一些挑战？</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>是的，市场很关注 Cloudflare 的营收增长能否持续。那么从你的观察来看，这种趋势是否可能保持，还是说可能会面临一些挑战？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>就我经手的客户来看，需求会继续增长。我认为目前的主要挑战在于，公司仍在为支持增长进行大量投入，这一进程仍在进行中。与此同时，关于你提到的增长率，我认为这家公司今年以及不久的将来可能会保持更快的增长；但很自然地，当基数变大时，所看到的实际增长率数值可能会有所下降，这纯粹是数学上的基数效应。所以出于这个原因，增长率本身可能会有所回落，但我认为随着这家公司经历这轮 AI 热潮，未来几年每年的总体支出金额仍将保持显著增长。</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>还有一个问题：客户是否已经开始为他们 2027 年的预算制定计划了？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>是的，当然。</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>是的，他们早在九月份甚至更早就开始做预算了，这取决于他们的财年等情况。他们通常在财年结束前五到六个月就开始规划。所以是的，预算规划已经完成了。相比往年，预算确实略有增加。</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>好的，所以目前他们的整体 IT 预算会略有增加，对吧？那么对于网络安全、整体网络安全而言，我认为它的增长率会更高，对吗？那么在网络安全领域，客户明年倾向于在哪些垂直细分领域增加支出呢？我认为可能是身份管理或者是智能体安全这类领域？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>我认为身份管理和智能体安全绝对非常关键——实际上所有领域都是如此，对吧？比如数据安全、各类应用级安全，因为网络传输的流量大幅增加。我认为整个网络安全市场总体上都在大幅增长。现在甚至出现了新的工具，比如用于保障与大语言模型对话安全的AI网关，同时数据防泄露（DLP）在防止输入敏感数据、拦截提示词、分析提示词等各个方面也都非常重要。这是我目前看到的一个巨大应用场景。因此我认为所有网络安全产品及整个市场在未来一年都将继续快速增长。</p>
+<p>WO</p>
+<p>Wooding</p>
+<p>在 DLP 方面，您认为该市场中哪些厂商具有竞争力？以前这应该是一个非常小众的市场，对吧？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>是的。很多人直接通过微软的授权许可使用随附的 Microsoft Purview，所以这种情况很常见。但Cyera也是DLP领域一家非常热门的初创公司，看起来发展得相当不错。Palo Alto 包含 DLP 功能，Zscaler 以及基本上所有零信任厂商都随附了某种 DLP 产品，因此这些产品自然非常受欢迎。CrowdStrike 也是如此；实际上每家主流安全厂商都拥有某种 DLP 解决方案。过去几年网络安全市场基本上就是这样：处于顶层的企业资金最雄厚，能够迅速收购所有热门初创公司，从而让这些单点解决方案融入其平台中。</p>
+<p>ST</p>
+<p>Stella</p>
+<p>关于网络安全预算，他们基本上没有特定的偏好，只是预算整体增加，对吗？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>不过你说的偏好具体是指什么？</p>
+<p>ST</p>
+<p>Stella</p>
+<p>比如在身份管理上投入更多，而在数据安全上投入较少，或者是类似这样的偏好？</p>
+<p>EX</p>
+<p>Expert · Senior Account Manager</p>
+<p>我相信他们肯定是有偏好的。我刚才只是说总体预算会增加。但从我观察到的客户需求来看，身份管理显然是重点方向之一，正如你指出的。任何类型的云安全和智能体安全都将成为重点。能够同时覆盖云安全与端点保护的平台，需求也较为强劲。所以客户的偏好很大程度上会由市场趋势决定：身份管理、智能体安全、DLP 以及各类数据安全和数据结构化，这些将是主要的偏好方向。</p>
+</div>
+</main>
+</body></html>

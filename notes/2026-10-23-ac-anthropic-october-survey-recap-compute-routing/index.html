@@ -1,0 +1,206 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.23 | AC | LLM | Anthropic October Survey Recap: Compute &amp; Routing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.23 | AC | LLM | Anthropic October Survey Recap: Compute &amp; Routing</h1>
+<p class="orig">原标题：Anthropic10月四场调研总结_ 提前锁定算力后的兑现条件, 大客户支出回落后的请求变化与模型路由选择, Opus 5.5降价后与Astra的部分高难任务总成本比较</p>
+<p class="tags">#llm #ai-demand</p>
+<p class="meta">AceCamp · 2026-10-23 · article 70568393</p>
+<div class="body">
+<h2>摘要</h2>
+<p>1、客户降低模型支出后，调用量变化与2027年收入增长的关系。2、算力承诺提前锁定后，复杂代理可靠性与利用率兑现的条件。3、Opus与Astra在高难任务中的成本比较，以及人工复核对升级的影响。</p>
+<p>本报告基于笔者 2026 年 9 月 18 日至 10 月 22日完成的四场专家访谈。主线是三个问题：需求是否真实，算力承诺能否兑现，模型竞争力能维持多久。文中数字均为访谈口径，未做外部核验。以下先给笔者的总体判断和推理链，再按主题展开证据。</p>
+<p>#</p>
+<h2>一、核心结论</h2>
+<p>笔者的总体判断：Anthropic 2027 年的核心命题不是「需求有没有」，而是「可靠性门槛什么时候跨过去」。这个门槛同时决定收入增速、算力利用率和价格战的终结时间。</p>
+<p>以下五步推理基于四场访谈的事实，是笔者的推断，不是任何受访者的原话。基于事实的分项结论见各章开头。</p>
+<ol><li>收入端是「以量补价」。价格在通缩，旗舰降价 20%，客户把 60–70% 的请求路由到便宜模型。但用量在三个维度同时扩张：客户数、每客户工作流数、任务复杂度。复杂任务的单任务 Token 量随模型升级上升 1.3–2</li></ol>
+<p>倍，简单任务可能持平或下降。总量增长的主驱动是任务结构向代理工作流迁移。笔者的判断是，总量增速仍然跑赢降价。</p>
+<ol><li>成本端的最大赌注是算力承诺。承诺跑在需求前面是常态，兑现取决于代理工作流能否在 12–24 个月内跨过可靠性门槛。跨过去，容量爬坡到 80–90% 的利用率。跨不过去，用量增长会失去最大的引擎，利用率爬坡变慢，价格通缩的压力持续更久。</li><li>竞争端的护城河和裂缝都很清楚。护城河在长上下文编程、多文件代码库和合规工具链。裂缝在最高难度任务的推理效率，单价便宜 60% 也可能输掉总账。</li><li>增量市场里金融和医疗最确定，但合规要求和部署成本会拖慢落地速度。</li><li>验证这个框架最直接的指标，是 Anthropic 的实际 Token 调用量增速。Token 调用量增速也是下一步最该补的数据。</li></ol>
+<h2>二、需求与收入：需求真实增长，但客户在收紧花钱方式</h2>
+<p>根据笔者的调研，Anthropic 的企业基本盘在增厚。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568393_2e8082e312bd0684.webp" alt="" loading="lazy"></p>
+<p>2027 年预算的方向是增加，但花法更谨慎。客户在引入季度固定预算和月度限额，防止代理 24 小时运行失控。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568393_33814d0ece5e8b09.webp" alt="" loading="lazy"></p>
+<p>行业结构上，科技、软件和编程仍是最大板块。笔者的判断是，金融和医疗的占比还会继续上行。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568393_8dbc51c1074f8d03.webp" alt="" loading="lazy"></p>
+<p>增长来源的拆解如下。这三组区间有重叠，不能加总。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568393_de019ada77117c52.webp" alt="" loading="lazy"></p>
+<p>渠道上，直销的比重在上升。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568393_6a5a3b8f02326d09.webp" alt="" loading="lazy"></p>
+<p>#</p>
+<h2>三、算力承诺：采购跑在需求前面是正常规划，兑现看代理爬坡</h2>
+<p>算力承诺与需求之间存在时间差，但这是行业惯例，不等于过剩。容量通常先于需求锁定。所以新容量上线的初期利用率可能只有 60–75%，工作负载成熟后升至 80–90%。需要注意，这组利用率是规划情景，不是实际运营数据。</p>
+<p>承诺的逻辑是代理工作流放大推理量。单次用户请求可触发数十次后台模型调用。如果员工每天几十次提示变成代理每天数百次调用，算力需求可能放大一个数量级。这个放大情景是示例，不是已实现的结果。</p>
+<p>供给侧还有一个值得记录的信号。谷歌的算力正在变紧，原因之一是把 GPU 转到谷歌云（GCP），以更高价格租给 Anthropic 等公司。</p>
+<p>#</p>
+<h2>四、模型竞争力与定价：Opus 5.5 是标杆，但领先方式已经变了</h2>
+<p>根据笔者的调研，Opus 5.5 目前是业界公认的 SOTA 模型，但领先不靠绝对能力。它的 Elo 分数比第二名 Fable 5.1 Max 高十几分，胜在可读性和响应速度，速度快约 2–3 倍。它的参数量约 5T，明显小于 Fable 5.1 Max 的 9.7T，推理效率更高。分工上，Claude 强在长上下文编程、多文件代码库修改和复杂文档分析。OpenAI 在严格 Schema 和固定 API 顺序的工具流中更可预测。</p>
+<p>价格战已经开始。Opus 5.5 比上一代低 20%、快 30%，典型工作负载的任务成本约降 40%。Opus 5.5 Max 的定价低于 Fable 5.1 Max。Opus 5.5 Medium 的性能追平上一代 Opus 5 High，但价格只有三分之一。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568393_b29aee849164ee17.webp" alt="" loading="lazy"></p>
+<p>但单价不等于总账。按 API 单价 Opus 5.5 比 Astra 便宜约 60%，Sonnet 5.5 便宜约 80%。但部分高难任务用 Astra 反而更便宜，例如 3.50 美元对 Opus 5.5 的约 6.00美元。原因是弱模型在复杂任务上会烧掉更多思考 Token。</p>
+<p>企业用量结构反映了这种分层。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568393_fba26936a9a7af75.webp" alt="" loading="lazy"></p>
+<p>下一代模型的信息有两条。Anthropic 手中最强的模型是 Mythos 2，A 榜约 60 分，只比 Opus 5.5 高一两分，不构成断代领先，参数量接近 10T。同时 Anthropic正在开发新的旗舰模型，目标是在任务完成成本上对标 Astra。</p>
+<p>高价订阅方面，Google 和 Anthropic 原计划推出 300 美元套餐，可能跟随 OpenAI 调至 500 美元。但即便如此这项服务仍然亏损。</p>
+<p>其他收入线索有三条。Anthropic 为礼来等大型药企用专有数据从头训练垂直模型，收取服务费。科学研究负载占商业推理需求的 1–5%，2027 年不会成为主要收入来源。内部研发方面，AI 生成 40–70% 的常规研究代码，20–40%的实验分析可以自动化。但实验设计仍由人主导。</p>
+<p>#</p>
+<h2>五、升级、迁移与 Token 消耗：双驱动，迁移按工作负载发生</h2>
+<p>笔者的结论是，Token 增长由模型升级和任务变长双驱动。新代模型做复杂任务的 Token 用量按 1.3–2 倍规划，增量的拆解如下。Opus 5.5 做同一任务的 Token 消耗是 Opus 5 的 2 倍。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568393_06715fe217368daa.webp" alt="" loading="lazy"></p>
+<p>任务本身也在变长。这组数字是工程估计。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568393_75d4844dc46d6958.webp" alt="" loading="lazy"></p>
+<p>升级有稳定节奏。迁移慢的原因是客户要重跑评估和回归测试。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568393_b6fc7446145b241a.webp" alt="" loading="lazy"></p>
+<p>升级有三个触发因素：成功率可测量的提升、更低的总成本、旧模型做不到的新能力。升级的经济门槛也很明确。如果新模型把人工复核比例从 15% 降到 2–3%，两倍 Token 价格也更便宜。笔者判断，还需 2–3个模型世代，才能跨过很多复杂流程的门槛。</p>
+<p>迁移按工作负载发生，不是整家公司更换供应商。编程迁移最快，金融、医疗和法律因合规和系统集成慢得多。OpenAI 客户向 Anthropic 的迁移同样在发生，驱动是可测量的任务表现提升。AWS Bedrock等渠道只起简化采购和部署的作用。</p>
+<p>#</p>
+<h2>六、落地瓶颈：卡在可靠性和组织，不在模型够不够聪明</h2>
+<p>笔者的结论是，瓶颈按任务复杂度分化。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568393_843f69b7d038fb34.webp" alt="" loading="lazy"></p>
+<p>可靠性方面，20–30 步的工作流里一致性是大问题。受控环境的编程任务成功率可达 70–90%。根据笔者的调研，复杂编程和企业流程在 12–24 个月内有明显改善。但不可预测环境的全自动执行要 3–5年以上。复杂任务执行慢的主因是串行执行，不是算力或模型大小。解法包括用小模型处理简单步骤、并行执行和减少推理循环。</p>
+<p>金融和医疗的瓶颈是隐私合规、遗留数据库、数据孤岛和推理错误的责任归属。应对方案是私有云隔离、MCP 连接器、引用追踪和审计链。但部署成本不低。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568393_a53dc877e234e88e.webp" alt="" loading="lazy"></p>
+<p>人机协同的验收标准是 90% 的案例自动处理、10% 路由给人工。如果 30% 的案例都要人工复核，商业价值就有限。未来 6–12 个月，金融知识工作和客户运营的采用速度最快。因为这两个领域从第一天起就不需要完全自主。工程上，系统架构约70–80% 可以复用，例如评估框架、重试逻辑和审计日志。其余由现场工程师（FDE）按客户适配。</p>
+<p><b>收拢成一句话：需求是真的，悬念在执行。</b>接下来几个季度，笔者会持续跟踪需求、可靠性和价格三个方向的变化。如果关键信号走弱，本报告的框架就需要重检。</p>
+</div>
+</main>
+</body></html>

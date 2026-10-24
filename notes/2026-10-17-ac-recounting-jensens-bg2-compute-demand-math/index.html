@@ -1,0 +1,229 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.17 | AC | AI Demand | Recounting Jensen's BG2 Compute Demand Math</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.17 | AC | AI Demand | Recounting Jensen's BG2 Compute Demand Math</h1>
+<p class="orig">原标题：重算黄仁勋BG2访谈的算力需求账：OpenAI和Anthropic，真的没那么重要吗？</p>
+<p class="tags">#ai-demand #llm</p>
+<p class="meta">AceCamp · 2026-10-17 · article 70568138</p>
+<div class="body">
+<h2>摘要</h2>
+<p>黄仁勋从“买算力做什么”出发，将需求拆成基础计算、前沿实验室和初创企业，为理解这一轮建设提供了很好的框架。笔者结合历史收入与资本开支测算，认为传统计算约占三分之一，大体处于合理范围内。</p>
+<p>不应把全部资本开支的回报压力，都放在OpenAI和Anthropic身上，但实验室的贡献可能仍高于访谈中的描述。按新增容量测算，全部前沿实验室可能占今年英伟达新增算力的35%左右，明年可能向40%靠近。两家公司的重要性没有市场此前想象的那么高，但仍然很强。</p>
+<p>对于最后约三分之一的需求，笔者认为，仅用初创企业解释还不够完整。成熟企业自行部署开源模型、行业模型和Agent，也是重要来源。 这些应用会持续消耗算力，却未必体现为两家实验室的ARR，值得纳入后续的需求跟踪。</p>
+<p>市场讨论AI资本开支时，经常把数万亿美元的基础设施建设，与OpenAI和Anthropic两家公司的收入直接放在一起。</p>
+<p>两家实验室的收入能否继续翻倍？它们能否赚到足够的钱，支撑这么多数据中心？</p>
+<p>英伟达创始人黄仁勋在10月15日的BG2访谈中给出了另一种划分：约三分之一来自数据处理、仿真、经典机器学习等基础计算；约四分之一至三成来自五六家前沿实验室；另外约三分之一来自大量新兴公司的算力租用需求。</p>
+<p><b>这个框架最有价值的地方，是把算力需求放回整个经济体。</b></p>
+<p>但其中几个比例，仍然值得重新核算。</p>
+<p>笔者的判断是，既有计算业务有能力支撑约三分之一的需求底盘；前沿实验室在今年新增英伟达算力中的占比，可能更接近35%，明年还有向40%提高的空间；实验室之外，则存在大量成熟企业、行业机构和自行部署模型的应用需求。</p>
+<p>下文分别通过历史收入、资本开支和新增GW检验这些需求的数量级，各项估计采用不同方法，不构成英伟达正式披露的收入分部。</p>
+<h2>一、40%与80%：英伟达正在拿走更多建设价值</h2>
+<p>黄仁勋提到，英伟达约一半业务来自CSP，在这些客户资本开支中的份额约40%；另外一半来自企业本地部署、新云厂商等客户，对应份额约80%。</p>
+<p>英伟达最新季度Hyperscale收入约487亿美元，简单年化约1948亿美元。公司在业绩会上提到，五大超大规模云厂商2026年资本开支预计接近8000亿美元。两者直接相除，只有约24%。</p>
+<p>但CSP资本开支还包括土地、机房、供电和其他长期基础设施，英伟达主要参与其中的计算与网络设备。</p>
+<p><b>图 1 CSP设备投入口径下的英伟达收入占比</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568138_1de3ae7b455ef50f.webp" alt="" loading="lazy"></p>
+<p>资料来源：英伟达FY2027第二季度业绩资料；设备比例为笔者假设，笔者测算。统计时间：2026年10月16日。</p>
+<p><b>将分母收窄到相关设备投入后，40%的数量级就能够接上。</b></p>
+<p>这一解释也有公司披露作为参考。Google在2026年第二季度表示，技术基础设施投入约60%用于服务器，另外40%用于数据中心及网络设备；微软则表示，约三分之二资本开支用于短寿命资产，主要是CPU和GPU。两家公司的分类不同，但都说明设备是投入中的主要部分。</p>
+<p>非CSP客户的80%，也可以沿着同一条逻辑理解。</p>
+<p>一家新云厂商如果租用已经通电的机房，自身资本开支会更集中在IT设备；一家大型CSP如果自行建设园区，则需要同时承担更多长期基础设施投入。同样一笔英伟达设备采购，放在不同的投入结构中，占比会明显不同。</p>
+<p>与此同时，英伟达每GW能够提供的产品越来越多。公司披露的收入机会，从Hopper时期约180亿美元/GW，提高到Blackwell约250亿美元，再到Vera Rubin约400亿美元，覆盖CPU、GPU及多种网络产品。</p>
+<p><b>英伟达的增长，既来自客户建设更多算力，也来自每一GW建设中采购更多英伟达产品。</b></p>
+<h2>二、没有这轮生成式AI，原有计算业务也不会停止增长</h2>
+<p>黄仁勋关于传统计算的核心判断是：人们仍然需要购物，企业仍然需要处理数据，金融机构仍然需要反欺诈，工业和科研仍然需要仿真。</p>
+<p>这些需求早于ChatGPT存在，也会随着数字经济扩张继续增长。</p>
+<p>笔者从两个方向检验，它们今天可能有多大。</p>
+<p>首先，看英伟达在生成式AI爆发前的数据中心业务。</p>
+<p>为了与2026自然年对应，笔者用截至2020年1月的FY2020近似2019年，用截至2023年1月的FY2023近似2022年。对应数据中心收入分别为29.83亿美元和150.05亿美元，三年复合增速约71.3%。<b>这一阶段的增长发生在本轮生成式AI需求爆发之前，更多体现了加速计算在云服务、科学计算和传统机器学习等场景中的渗透，以及GPU承接部分原由CPU完成的工作负载，带动计算预算向英伟达转移。</b></p>
+<p>如果从2022年出发，假设这条增长轨迹再延续四年：</p>
+<p>150.05*亿美元* × (1 + 71.3%)4≈ 1293*亿美元*</p>
+<p>这个体量，相当于英伟达当前数据中心收入年化的约36%，或者全公司收入年化的约34%。</p>
+<p><b>因此，“原有业务大约能占今天三分之一”，在历史趋势外推下有数量级支持。</b></p>
+<p>这是一组包含早期AI、GPU渗透提升及Mellanox并购贡献的历史轨迹，增长假设偏积极。它适合检验体量，不能直接等同于当前传统计算收入的实测值。</p>
+<p>第二条路径，是观察生成式AI爆发前的云及互联网平台投资。</p>
+<p>采用微软、Google、Meta、AWS和Oracle的历史投入作为代理，2021年合计约881亿美元，2022年约1191亿美元。其中Amazon采用AWS分部资产新增，避免将大量仓储物流投入算入计算需求。</p>
+<p>假设此后维持20%的自然增长：</p>
+<p><b>图 2 既有云及平台投资按20%增长外推至2026年</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568138_ae72258778813bdb.webp" alt="" loading="lazy"></p>
+<p>资料来源：Microsoft、Alphabet、Meta、Amazon及Oracle历史年报和业绩公告，笔者整理、测算。统计时间：2026年10月16日。注：AWS为分部资产净新增，含租赁；微软、Oracle采用各自财年，结果为近似代理。</p>
+<p>两条路径虽然不同，但都指向一个判断：<b>既有计算需求本身，就可能支撑今天约三成的投资底盘。</b></p>
+<p>而英伟达还可以从这些预算中提高份额。</p>
+<p>过去由CPU承担的数据处理、科学计算、仿真和推荐任务，正在逐步迁移到加速计算平台。对于客户而言，任务可能没有变化，但完成同样任务的设备、效率和采购对象发生了变化。</p>
+<p>所以，传统需求对英伟达的意义，包含两部分：原有业务继续增长，以及英伟达在原有计算预算中获得更多份额。</p>
+<p>综合上述两组测算，黄仁勋所说的传统计算约占三分之一，大体处于合理范围内。</p>
+<h2>三、实验室仍然重要，今年新增需求可能更接近35%</h2>
+<p>黄仁勋强调，不应该把所有基础设施投资都压在OpenAI和Anthropic两家公司身上。这个提醒成立。</p>
+<p>不过，前沿实验室在新增算力中的占比，可能高于访谈里给出的25%—30%。</p>
+<p>首先需要分清存量与增量。</p>
+<p>Semianalysis的测算显示，2026年底OpenAI和Anthropic合计约占全球AI算力存量的28%；与此同时，两家当年新增约7GW，全球新增约19GW，增量占比接近37%。</p>
+<p><b>图 3 前沿实验室的存量份额与新增份额</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568138_84406839ddda0ffc.webp" alt="" loading="lazy"></p>
+<p>资料来源：BG2访谈展示图，图中标注SemiAnalysis及Dylan Patel于2026年8月25日的Dwarkesh访谈。图中均为预测值；笔者据图整理，统计时间：2026年10月16日。</p>
+<p><b>存量份额约28%，与新增份额接近37%，可以同时成立。</b> 当实验室扩张快于其他客户时，它们会先在新增需求中占据更高比例，再逐步提高存量份额。</p>
+<p>进一步看英伟达，需要扣除实验室使用的其他芯片。</p>
+<p>笔者采用全球新增约20GW、其中英伟达新增容量份额80%的工作情景，对应英伟达新增约16GW。</p>
+<p>OpenAI全年新增总容量约3.6GW，其中非英伟达容量按0.3—0.5GW处理，英伟达部分约3.2GW。Anthropic采用更多Trainium和TPU，其新增英伟达容量取约1.5GW。再为Meta、Gemini、xAI等其他实验室合计设置约1—1.5GW的新增容量情景：</p>
+<p><b>图 4 前沿实验室新增英伟达算力的情景测算</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568138_47c4ca3f2437a37b.webp" alt="" loading="lazy"></p>
+<p>资料来源：MBI OpenAI及Anthropic容量模型；笔者调整芯片结构并测算。统计时间：2026年10月16日。注：全球新增20GW、英伟达份额80%及其他实验室1—1.5GW均为工作假设，占比按新增容量计算。</p>
+<p>OpenAI的非英伟达供给已经有具体依据。AMD表示，初始Helios系统已在OpenAI安装运行；Cerebras披露的合同安排要求2026年底前提供250MW容量；OpenAI自研Jalapeño也有年底初始部署目标。</p>
+<p>Anthropic的非英伟达供给规模则更大。 公司披露，与Amazon的扩容协议预计在2026年底前带来接近1GW的新增Trainium容量；与Google的TPU扩容合作预计在2026年上线超过1GW容量。</p>
+<p><b>从新增容量看，前沿实验室，尤其是OpenAI和Anthropic，对英伟达需求的贡献，可能比黄仁勋在访谈中的描述更高。笔者估计，今年全部前沿实验室的占比约为35%，明年可能进一步向40%靠近。</b></p>
+<p><b>黄仁勋提醒市场把视野扩展到传统计算和更广泛的企业需求，这一点是合理的。但实验室仍是新增需求的重要来源。市场此前可能把过多的资本开支回报压力放在了两家公司身上，它们的实际需求份额也未必像访谈中描述的那么低。</b></p>
+<h2>四、企业自部署AI，是实验室之外的重要需求</h2>
+<p><b>黄仁勋把最后约三分之一的需求，主要归因于大量新兴公司的算力租用。</b>他的描述是：\*\*当前正处于新一轮计算平台转型的初期，各行各业正在涌现出成千上万家初创公司。它们的业务从消费应用延伸至物理AI、生物AI和材料科学AI。这些公司通过租用英伟达算力开展业务，因此，他把这批客户贡献的约三分之一业务，理解为服务下一代应用的云计算，并将其类比为AWS所承担的平台角色。</p>
+<p><b>笔者对这个比例持保留态度。初创企业确实在快速增长，但仅靠这部分客户，能否支撑如此大的算力需求，目前还缺少充分的数据验证。</b></p>
+<p>笔者倾向于认为，更完整的需求版图，应当包含大量成熟企业新增的AI应用，尤其是企业自行部署开源模型、训练行业模型，以及建设自有Agent系统的需求。</p>
+<p>一家银行租用GPU，部署自己的金融模型；一家制造企业利用内部数据训练工业模型；一家企业将开源模型接入研发、客服和经营流程。这些都会产生新增算力需求，也可能通过CSP或新云厂商采购，但不会直接体现为OpenAI和Anthropic的ARR。</p>
+<p><b>这里需要区分的是，成熟企业原有的计算业务，与成熟企业新增的AI应用。</b></p>
+<p>电商、推荐、数据处理和传统仿真，可以放在前面的既有计算需求中；同一家企业新部署的模型、Agent和AI工作流，则应该进入这里。客户是一家老公司，并不意味着它的所有计算投入都属于传统业务。</p>
+<p>这也与笔者此前讨论的企业AI架构一致：企业保留自己的数据、记忆、上下文和业务流程，根据任务选择闭源模型、开源模型或自有模型。随着更多流程进入这套系统，企业自身就会成为持续消耗算力的主体。</p>
+<p>因此，<b>笔者更愿意把最后这块理解为广泛的企业与应用AI需求，初创企业只是其中一部分。</b> 它包括成熟企业、金融机构、工业与医疗、主权及区域应用，也包括新兴公司。</p>
+<p>对这部分需求，只看初创企业融资，或者只看两家实验室的收入，都容易遗漏。更值得观察的是：企业究竟部署了多少自有模型和Agent，它们消耗多少算力，以及这些应用创造的收益，能否支持持续投入。</p>
+<h2>结论</h2>
+<p>黄仁勋这次提供了一个很好的需求分析框架：从算力最终用来做什么，理解这一轮建设。 CSP更多体现采购和承载渠道，从应用角度区分传统计算、前沿实验室和更广泛的企业AI需求，更有助于看清增长来源，也为后续持续跟踪提供了清晰的分类。</p>
+<p>不应把整个基础设施建设的回报压力，都放在OpenAI和Anthropic两家公司身上，这个方向是正确的。但按笔者的测算，全部前沿实验室可能占今年英伟达新增算力的35%左右，明年可能进一步向40%靠近。因此，OpenAI和Anthropic的重要性没有市场此前想象的那么高，但仍然很强。扩大需求观察范围，与认真跟踪实验室的扩张和回报，同样重要。</p>
+<p>以上为个人分享内容，仅供参考，不构成任何投资建议。</p>
+</div>
+</main>
+</body></html>

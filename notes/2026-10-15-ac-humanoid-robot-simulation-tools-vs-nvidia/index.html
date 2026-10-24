@@ -1,0 +1,200 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.15 | AC | Robotics | Humanoid Robot Simulation Tools vs NVIDIA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.15 | AC | Robotics | Humanoid Robot Simulation Tools vs NVIDIA</h1>
+<p class="orig">原标题：人形机器人仿真工具分析—底层求解器、仿真引擎、与英伟达差距</p>
+<p class="tags">#robotics #software #china</p>
+<p class="meta">AceCamp · 2026-10-15 · article 70568059</p>
+<div class="body">
+<h2>摘要</h2>
+<p>以下观点来自行业专家：1.自研底层求解器具备显著的战略优势。首先，英伟达的底层技术并非开源，直接进行二次开发存在限制。其次，从产业安全的角度看，目前绝大多数模型的训练都依赖于英伟达的技术体系。2.若有国产厂商能将底层求解器以及基于此的刚体和柔性体仿真都做到很高的水平，确实会倾向于选择国产方案。3.当机器人本体或应用场景发生变化时，之前采购的仿真数据，尤其是在post-train（后训练）阶段使用的数据，将不再适用，需要重新采购。</p>
+<p>1.光轮的核心产品及其技术特点是什么？</p>
+<p>光轮智能是全球首家物理AI/具身智能数据基础设施独角兽企业‌，不做机器人本体、不研发通用大模型，专注为自动驾驶、人形机器人等领域提供全链路的合成数据与仿真评测基础设施。</p>
+<p>光轮最核心的产品是其自有的仿真底座，名为“simon foundry”，定位为一个仿真数据工厂。该产品的核心技术优势在于能够处理复杂的物理变化，包括对刚体、柔性体以及物体接触的精确模拟。</p>
+<p>2.在仿真效果方面，光轮的表现如何？</p>
+<p>根据内部评估（满分100分），在刚体物理仿真方面，光轮的评分为83分，而85分被定义为优秀，70分为及格。在柔性体仿真方面，优秀标准为80分，光轮目前的评分为64分，显示出在这一领域仍有提升空间。</p>
+<p>3.如果国内有厂商能够从底层自研求解器，相较于在英伟达技术上进行二次开发，其核心优势体现在哪些方面？</p>
+<p>自研底层求解器具备显著的战略优势。首先，英伟达的底层技术并非开源，直接进行二次开发存在限制。其次，从产业安全的角度看，目前绝大多数模型的训练都依赖于英伟达的技术体系，若未来底层技术被限制，将对整个产业造成巨大冲击。因此，尽管国内自研技术在现阶段可能与英伟达存在差距——例如英伟达最新的求解器是其与谷歌DeepMind及迪士尼研究院合作的顶尖成果，包含了大量复杂的可微分物理算法——但拥有自主可控的底层技术是至关重要的。</p>
+<p>4.如果一家国内公司自研的底层求解器在效果上能与英伟达媲美，是否会成为优先选择？选择仿真软件供应商的核心考量因素是什么？</p>
+<p>若有国产厂商能将底层求解器以及基于此的刚体和柔性体仿真都做到很高的水平，确实会倾向于选择国产方案。但选择并非仅看价格或单一的求解器性能。一个完整的仿真解决方案需要实现一体化，除了高性能的求解器，还必须包括丰富的数据资产、完善的评测体系以及高效的训练平台。</p>
+<p>5.您提到的“评测体系”具体是指什么？</p>
+<p>评测体系指的是一套用于数据校验和评估的系统。以光轮的“RoboFinals”系统为例，当仿真数据生成后，在进入数据库之前，需要通过一套包含多种算法的数据校验基准进行自我评测，以确保数据的质量和有效性。光轮智能发布的RoboFinals是全球首个对Newton引擎做原生适配的具身评测平台，是光轮把自研的评测能力开放对接Newton生态，Newton是英伟达、谷歌DeepMind、迪士尼研究所2025年9月联合开源的Linux Foundation顶级开源物理仿真引擎。</p>
+<p>6.国内仿真软件公司与英伟达的主要差异是什么？</p>
+<p>国内公司目前处于追赶英伟达的阶段。差异集中在底层技术底座、生态壁垒、商业化路径三大维度。</p>
+<p>英伟达‌以GPU算力为核心根基，仿真产品完全绑定自身CUDA生态，Isaac Sim等工具底层基于Omniverse Kit闭源内核，天然适配RTX/A/H100等高端显卡，英伟达拥有几十年积累的全球开发者生态，配套完整的机器人资产库、ROS2接口、强化学习框架Isaac Lab，英伟达‌：采用“上层工具开源免费+底层内核/硬件收费”的模式，中小企业内部研发可免费用Isaac Sim，但大规模集群并行训练、云平台商用服务必须购买Omniverse Enterprise企业订阅。</p>
+<p>7.当机器人本体硬件或应用场景发生迭代时，之前采购的仿真数据是否仍然适用？跨本体或跨场景的模型训练是如何实现的？</p>
+<p>当机器人本体或应用场景发生变化时，之前采购的仿真数据，尤其是在post-train（后训练）阶段使用的数据，将不再适用，需要重新采购。对于pre-train（预训练）阶段，虽然旧数据可以保留，新本体的数据也可以加入，但通常也需要从头开始重新进行完整的训练，因此成本依然较高。若要实现世界模型或VLA模型跨多本体的泛化能力，在预训练阶段就必须将不同机器人的本体结构文件（即UIDF文件，包含了机器人的核心参数）提供给仿真数据供应商。供应商会基于这些不同机器人的结构参数，在多个场景文件中分别运行仿真并采集对应的数据。通过这种方式，将多个本体和场景的数据整合在一起进行训练，从而实现模型的跨本体能力。</p>
+<p>8.考虑到机器人本体和场景的迭代会导致历史数据失效，是否意味着每年都需要持续采购大量新的仿真数据，而不是一次性采购达到某个总量即可？</p>
+<p>是的。以实现良好体验可能需要累计1,000万小时数据，其中300万小时为仿真数据为例，这300万小时并非一次性采购的总量。由于机器人本体和应用场景会不断迭代，导致旧数据在post-train阶段失效，因此需要持续投入。这意味着每年可能都需要采购例如300万小时规模的新数据，以支持新一代本体和新场景的模型训练。</p>
+<p>9.物理仿真引擎是否具备泛化能力？例如，在更改硬件参数后，是否无需大量调整即可直接导入新参数进行仿真？</p>
+<p>仿真引擎不具备泛化能力，因为它并非模型，而是由固定的代码构成，类似于游戏引擎。其本质是软件，无法像模型一样实现泛化。</p>
+<p>10.对于提供仿真引擎服务的公司而言，其核心护城河与领先优势体现在哪些方面？这类公司是否会随着经营时间的增长而规模扩大？</p>
+<p>这类公司最核心的优势在于其长期的技术积累，特别是底层的引擎和核心算法，这构成了其主要护城河。例如，一家名为Vertex Studio的工业场景仿真公司，已在该领域深耕超过20年。仿真引擎的开发需要数十年的积累，即便是像Unity这样的游戏开发引擎，也发展了近20年。</p>
+<p>11.除了求解器能力外，仿真服务公司长期积累的资产库是否构成其核心优势？即服务客户越多，资产库越全面，从而降低交付新客户的成本？</p>
+<p>需要区分两种情况。对于单个、独立的物理资产，例如一个杯子的模型，是可以进行复用的。如果资产库中已存在上千种杯子模型，当新需求出现时，若已有模型不匹配，则需要重新建模，但新建的单个模型后续可以复用。但对于为特定客户定制的、由多个资产组合而成的完整场景，例如客户的工厂或现场环境，通常会签订协议，规定这些定制化的数据和场景不可复用。因此，虽然服务经验和可复用的单个资产模型能带来一定优势，但项目中的定制化部分限制了资产库的直接复用。</p>
+<p>12.在仿真建模过程中，3D扫描技术扮演何种角色？是否可以通过扫描直接完成物理属性的赋予？</p>
+<p>3D扫描是建模流程的一部分。使用3DGS等设备进行扫描后，可以生成物体的CAD文件。然而，这并非终点，还需要在此CAD文件的基础上，对大量的物理参数进行手动校准和修正，才能完成最终的建模。</p>
+<p>13.是否可以开发一套基于AI的系统，实现物理参数的自动标定与赋值，从而将这套工具交付给客户，简化建模流程？</p>
+<p>目前，一些其他公司正在探索这个方向，存在一定的产业分工。例如，一家名为“其域创新”的公司，其业务专注于通过设备扫描和AI技术来解决物理参数自动标定的问题。</p>
+<p>14.以光轮公司为例，其为特定项目提供的仿真服务，其非标化程度如何？交付周期通常是多久？</p>
+<p>服务的非标化程度尚可。根据2026年6月至7月的项目经验，其工程团队的交付周期是可以接受的。例如，一个包含417个场景的项目，交付周期为28天，即四个工作周。在交付过程中，并不会所有内容都完全重新建模，会存在部分复用。</p>
+<p>15.除了求解器和资产库之外，仿真服务公司还有哪些因素能构筑其长期竞争优势？</p>
+<p>公司的核心优势主要体现在其长期的技术积累，尤其是底层引擎和核心算法。这些是需要数十年时间沉淀的，构成了难以逾越的护城河。</p>
+<p>16.仿真引擎供应商如何通过数据回流机制建立其核心壁垒？</p>
+<p>仿真引擎供应商的核心壁垒之一在于其数据回流机制。具体而言，供应商通过其仿真平台生成的数据，会先经过内部的评测模型与体系进行评估。随后，这些数据会被应用于实际的运行测试中。如果在测试中出现失败案例，系统会将这些失败的数据进行回流，返回至仿真平台。平台会利用这些失败案例对模型进行二次优化和重新生成，从而持续改进数据质量。这种闭环的反馈与迭代过程，类似于光轮的Rope Stack模块，能够积累大量真实场景的部署反馈和失败案例，从而构筑起技术护城河，避免市场陷入简单的价格战。</p>
+<p>17.预计到2030年，单一自动驾驶公司在仿真数据上的投入规模将达到多少？届时，仿真行业的商业模式将以销售工具为主还是以销售数据为主？</p>
+<p>预计到2030年左右，单一自动驾驶公司每年采购约300万小时的仿真数据是可能实现的。未来的商业模式将主要以销售数据为核心，而非传统的销售工具软件。</p>
+<p>18.对于已经成熟且可直接使用的仿真平台，其私有化部署的收费模式与成本构成是怎样的？</p>
+<p>仿真平台提供私有化部署服务，其收费模式并非一次性买断，而是采用基础年费加功能模块付费的组合方式。例如，一年的基础费用可能为500万元，但这仅开放了资产库和部分功能模块。客户若要使用场景组建、标定、数据回流、评测等全套系统，则需要为这些功能模块或插件单独付费。根据过往在自动驾驶领域的经验，一套完整的私有化部署方案，其年度总费用预计可达一两千万元。</p>
+<p>19.当前仿真数据在Pre-training和Post-training阶段的占比分别是多少，未来有何变化趋势？</p>
+<p>当前，在VLA（Vision-Language-Action）模型训练中，用于Pre-training的仿真数据占比约为15%。用于Post-training的仿真数据占比在10%至15%的区间内。预计未来这一比例将提升至30%。</p>
+<p>20.高质量的仿真数据在多大程度上能够替代真实世界的Ego数据和视频数据？</p>
+<p>理论上，如果仿真数据做得足够好，完全可以全部使用仿真数据进行模型训练。高质量的仿真能够将对Ego数据和视频数据的替代比例提升至80%-90%，甚至有可能实现100%的替代。例如，速度公司曾展示过一个完全基于仿真数据训练的demo，其效果表现已相当不错。</p>
+<p>21.是否存在一种技术，能够直接为真实世界的视频数据赋予物理特性标定，从而降低数据成本？</p>
+<p>存在这样的技术路线，被称为“4D空间智能”。该技术能够为视频数据添加物理属性，如果得以实现，将极大降低数据成本。其原理是在一个虚拟空间中部署大量机器人，让它们自主执行海量任务，并在过程中自动完成物理属性的标定。目前，包括无界动力在内的一些公司正在探索这一方向，但这同样是一项非常复杂的技术。</p>
+<p>22.如果一家公司在仿真引擎技术上取得领先，是否意味着它可以通过大规模生成数据来超越竞争对手？</p>
+<p>是的，可以这样理解。如果一家公司的仿真引擎技术足够领先，能够生成高度逼真的数据，那么它就可以通过投入更多的算力资源（例如购买GPU卡）来大规模、快速地生成训练数据。理论上，只要算力充足，就可以在数据量上远超行业内的其他所有竞争者，例如率先达到1,000万小时的训练数据规模。</p>
+<p>23.在自动驾驶技术发展中，仿真引擎和为视频数据赋予物理特性的“4D空间智能”技术，哪一个难度更大？</p>
+<p>两者都非常重要，但仿真引擎的研发难度可能相对更高。仿真引擎是整个技术体系的底层基础，其稳定性和可靠性至关重要，如同根基一般不能动摇。而为视频数据赋予物理特性的技术，其核心思想是将视频中的表征进行抽象，并赋予其物理特性，这与Yann LeCun所研究的方向有相似之处。</p>
+</div>
+</main>
+</body></html>

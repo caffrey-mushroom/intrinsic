@@ -1,0 +1,188 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.16 | AC | Software | Ontology PoCs &amp; Open-Source Eroding Closed Models</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.16 | AC | Software | Ontology PoCs &amp; Open-Source Eroding Closed Models</h1>
+<p class="orig">原标题：大厂Ontology搭建流程和挑战，开源模型显著侵蚀SoTA闭源收入。PoC客户用量显著增加，AI和非AI核心业务增长趋势和动力等。DeepSeek_Kimi_GLM_OpenAI_Anthropic_Snowflake</p>
+<p class="tags">#software #llm</p>
+<p class="meta">AceCamp · 2026-10-16 · article 70568074</p>
+<div class="body">
+<h2>摘要</h2>
+<p>/ 垂类AI大厂Ontology PoC对客户需求提升显著。/ AI部分核心业务下滑原因，开源模型对闭源的侵蚀。</p>
+<p>【以下为专家观点汇总，具体细节仅供参考。】</p>
+<p><b>Databricks在Q3的AI业务收入预期？</b></p>
+<p>初步预期财季Q3的AI业务收入预期环比有所下降。主要原因用户对模型的调用更多是从闭源模型转向开源模型，OpenAI和Anthropic的用量减少了，目前GLM 5.2、K3和DeepSeek4.1这三个开源模型占据了总Token消耗的超六成。虽然Token占比高，但开源模型的计费只有原来闭源模型的1/6，最贵的是Cloud Opus，现在开源模型的费用只有它的1/6，所以收入下降较多。</p>
+<p><b>AI业务各业务线的收入变化和驱动？</b></p>
+<p>细分来看， 主要板块中基本预计Vector Database的收入是增长的。主要是因为大家在做agent相关应用时，会将大量非结构化数据，如图片、文档等，存入向量数据库。CPU的model serving也有小幅增长，像模型API调用、AI runtime、也是较为有机的增长。batch inference基本持平。</p>
+<p><b>Agent Bricks的收入包含在AI runtime里？AI runtime还包括哪些内容？</b></p>
+<p>Agent Bricks的收入包含在AI runtime中。AI runtime负责开发环境，对外暴露的endpoint是model serving，开发在AI runtime，推理在model serving。AI runtime还包括所有AI相关的开发，比如Genie、Genie CODE、Genie ONE，以及客户自建的RAG（检索增强生成），都可以在这里实现并通过model serving对外提供服务，所有AI开发相关内容都在AI runtime里。</p>
+<p><b>除了转向开源导致收入下降外，还有其他导致收入疲软的原因吗？比如客户需求和整体预算等？</b></p>
+<p>除了转向开源模型外，客户预算也是一个因素。某模型客户降有部分业务不再放在迁移到了自建的开源平台进行大数据管理。另外一个客户此前被收购失败，导致一些API业务停用。目前来看，收入下降主要由模型切换和大客户业务调整共同导致。</p>
+<p>Q3这边的客户，基本上因为9月份发布了K3和DeepSeek 4.1，有三五个客户不再用OpenAI，转向这些开源模型。他们觉得开源模型效果也不错。另外，Databricks有一个叫智能路由（smart router）的功能，8月21号正式上线（GA）。一旦GA后，使用的客户就更多了，因为有些客户只用GA的功能。smart router会把简单问题路由到开源模型，只有复杂归因或深度思考才用商业模型。</p>
+<p><b>能看到客户转向开源模型后用量有明显变化吗？</b></p>
+<p>看到token数量增加了，预期token消耗数量Q3比Q2整体增加了超过四成。</p>
+<p><b>非AI业务的收入和毛利情况如何？</b></p>
+<p>非AI业务最近两个季度都是较为有机的增长，毛利最高的是serverless， Interactive Cluster，和DLT。整体来看，非AI业务的平台毛利一直比较稳定，水平很高。</p>
+<p><b>此前Astra和旧版本的兼容问题客户是不是已不用再关注了，因为全切换到开源上了？</b></p>
+<p>对，差不多。</p>
+<p><b>OpenAI的态度是什么？</b></p>
+<p>OpenAI现在在Databricks这边的使用量已经减少了。</p>
+<p><b>有没有听说Snowflake那边也有类似的下滑？或者他们的客户也转向开源方案导致预算下降的情况？</b></p>
+<p>没有听说Snowflake有类似的情况，因为它本来就是商业化的，只能通过自己的平台调用Anthropic。而且他们也没有像Databricks一样提供这些开源的推理引擎和推理环境，所以我觉得他们应该没有这种趋势。</p>
+<p><b>Databricks给客户搭建ontology需要多久？这会不会极大增加客户的粘性？</b></p>
+<p>Ontology现在是Databricks非常推荐给客户的专业服务，Databricks会帮客户构建ontology。目前在东南亚，也就是ASEAN加GCR这边，大概有十几个客户已经完成了ontology的搭建。像已经搭建完毕的客户案例中，一个是金融公司A，另一个是金融公司B。金融公司A的搭建大约用了三个月；金融公司B大概用了两个多月。搭建完成后，客户的agent准确率提升非常明显。Databricks有整体的报告显示，客户认为准确率、延迟、业务上下文的匹配程度都有很大提升。金融公司A那边最终搭建了两张知识图谱，一部分业务是赛马，搭了一个knowledge graph，另外还涉及篮球、足球等博彩业务，也搭建了一个knowledge graph。整个知识图谱大概有十几万个节点，规模在几百K节点左右。</p>
+<p>客户对Databricks的依赖程度，目前Databricks搭建完后会给客户提供培训，回顾整个搭建过程，并交付一个资产，指导他们将来如何组织数据。ontology不是一次性的，需要持续演进和抓取信息。除了知识图谱作为交付成果，还会有业务流程，包括如何打标签、业务标签、追踪血缘等内容。将来如果客户按照这一套方法在公司内部推进，其实可以脱离Databricks，自己管理业务流程和ontology。所以客户未必会长期依赖Databricks，这也可能降低Databricks的溢价能力。整体来看，客户对数据治理更熟悉后，在厂商选择和溢价方面，反而会提升自己的议价地位。</p>
+<p><b>搭建完ontology后，对Databricks的查询、数据库存储规模等，有没有显著提升？</b></p>
+<p>这个提升非常明显。首先在搭建过程中就会提升，因为需要进行大量的测试和评估，Databricks会带着一些查询和数据集过去。搭建完成后，公司内部会有更多人来提问，推广到更多业务部门。以金融公司A为例，已经看到月环比增长超过九成，当然基数也不高。金融公司B目前还没有明显增长，他们动作比较慢，后续应该也会提升。</p>
+<p><b>怎么看搭建完成后客户后续迁移的风险？ontology的搭建流程？</b></p>
+<p>是的，其实在其他地方也可以复用这些内容。这对Databricks提升客户粘性没有太大作用。不过Databricks觉得客户还是挺认可Databricks把这套体系搭建起来，也许因此更信任Databricks，未必会选择迁移。但确实，如果迁移到其他平台，基本也是一样的。</p>
+<p>第一步Databricks会先创建一个business context diagram，也就是业务上下文图。Databricks会和客户了解数据平台周边有哪些系统，比如salesforce、crm、erp等，包括下属单位、合作伙伴系统等，先通过discovery meeting构建整体context。然后Databricks会把context里的实体相关metadata抽取出来，放到Databricks的unity catalog里。metadata有了之后，Databricks会自动打一些technical tag，然后让客户找他们的sme（subject matter expert）去打业务标签。标签打完后就会自动生成ontology。接下来Databricks会跑smoke test，用之前收集的一大堆问题基于ontology去获取答案。Databricks有一个evaluation data set，基本是一万个有ground truth的问题，问完后和ground truth比对，评估准确率。如果达到客户要求，比如有的客户要求85%，有的95%，达标后就进入pilot阶段。通常会先选一个配合度高的业务部门上线，上线一周后再评估问题准确率。如果依然达标，就可以交付ontology，客户后续可以自行扩展到更多业务团队和使用场景。Databricks每两个月会做一次review，复盘这两个月的问题准确度、客户满意度等，再看ontology本身的知识图谱规模有没有变化，或者用算法计算knowledge graph的密度。Databricks希望知识图谱是高密度的，而不是特别分散、膨胀的图。</p>
+<p><b>整个流程大概需要三个月左右吗？之后直接投入生产吗？还是还需要几个月试运行？</b></p>
+<p>对，差不多三个月。投产要看客户情况。比如金融公司A，整个公司IT部门影响力大，所以会直接上线并全面铺开。而像某保险客户公司，业务分布在挪威、瑞典、美国、英国、香港等地，作为保险公司也比较保守，会先在每个地区做pilot，再正式上线。</p>
+<p><b>大中华和亚太地区的15个左右客户，完成的这两套方案，都是一个月十几K、几十K的小规模客户吗？</b></p>
+<p>对，都是和Databricks关系比较好、用量不是特别大的客户。Databricks第一批不太想动大客户，影响大。第一批选择的是比较安全、关系好、能承受失败且规模可控的客户，基本都是十几、二十K、三十K这样的规模。</p>
+<p><b>往中大型客户推进，大概什么时候会开始？</b></p>
+<p>中大型客户至少要等ontology GA。目前产品是gated public preview，计划明年（2027年）Q1 GA。</p>
+<p><b>这15个客户就是gated preview的全部客户吗？后续数量还会增加很多吗？</b></p>
+<p>目前就是这些客户，后续数量也不会增加很多。</p>
+</div>
+</main>
+</body></html>

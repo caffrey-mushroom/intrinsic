@@ -1,0 +1,223 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.16 | AC | Optical | Optical EIC Deep Dive: 400G to 1.6T &amp; CPO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.16 | AC | Optical | Optical EIC Deep Dive: 400G to 1.6T &amp; CPO</h1>
+<p class="orig">原标题：光互联电芯片EIC行业深度：产业图谱_演绎逻辑_从400G到1.6T单模组价值量提升多少_CPO时代EIC被增强或削弱分析_各大EIC厂商能力点评</p>
+<p class="tags">#optical #semis</p>
+<p class="meta">AceCamp · 2026-10-16 · article 70568106</p>
+<div class="body">
+<h2>摘要</h2>
+<p>随着AIDC光互联发展到今天，“光学”的部分基本已经被市场充分挖掘（EML，硅光+CW，薄膜铌酸锂等），但市场对于“电芯片”的认知或许依然有待深入探索。</p>
+<p>本文主要进行光模块电芯片的产业研究（主要讨论核心电芯片包括：DSP、TIA、Laser Driver、Modulator Driver），包括电芯片的分类（产业图谱），每种电芯片的作用，每种电芯片从400G到1.6T的单模组价值量变化（随速率提升的增长逻辑），以及未来是否有被替代的风险，以及业内EIC玩家的能力圈点评。</p>
+<h2>一、   电芯片基础、BOM占比、产业图谱</h2>
+<h2>1.     电芯片简介</h2>
+<p>目前网上比较少有电芯片的拆解示意图，个人通过AI制作了一个，但或许和实际的电芯片位置仍有偏差，下图仅供参考。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568106_ba1207180d8f6efe.webp" alt="" loading="lazy"></p>
+<p>很多人困惑光芯片和电芯片的分类应该如何划分，可以粗略理解成“直接产生/接触”光的，可以理解成光芯片，不直接接触光的，理解为电芯片（光芯片直接参与光信号的产生、调制、传输或探测；电芯片主要负责电信号的处理、驱动、放大和控制）。此处用表格的形式把光芯片和电芯片分类：</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568106_7e877d1e7016f56b.webp" alt="" loading="lazy"></p>
+<h2>2.     成本占比</h2>
+<p>引述野村对光模块成本的拆解，可见成本构成基本如下，以下为800G光模块材料成本构成（左，传统DSP EML，右，硅光可插拔）</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568106_3e298fd3d4a4b0b0.webp" alt="" loading="lazy"></p>
+<p>以下为1.6T光模块材料成本构成（左，传统DSP EML，右，硅光可插拔）</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568106_4063468fcf87b231.webp" alt="" loading="lazy"></p>
+<p>这个研究的局限性主要是没有单独列举MZM Driver和Laser Driver，笔者初步判断主要原因是DSP里面或许已经涵盖了这两个产品；在传统Retimed（带DSP）800G/1.6T数通光模块中，EML Driver和SiPh MZM Driver集成进DSP的方案已经非常成熟，且是Broadcom、Marvell等头部DSP供应商重点推广的路线。（如：博通BCM83628同时支持EML与SiPh。Marvell Ara采用3nm DSP和集成光调制器Driver）</p>
+<p>从上面的成本构成里面可以看出，DSP/MCU/CDR是最大的单项成本中心。无论EML还是硅光，DSP相关成本都显著高于TIA，而硅光方案DSP相关成本占比高于EML约7–8个百分点。除了DSP/CDR以外，EIC占BOM最大单项是TIA。</p>
+<p>以下是笔者按1个800G DR8可插拔光模块，尽可能细分的芯片种类重新整理的一个成本拆分</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568106_5c74209f5efbab3c.webp" alt="" loading="lazy"></p>
+<h2>3.     电芯片价值量</h2>
+<p>另一个研究来源于TERIPHIC论文，里面涵盖了一些常见EIC的ASP（原文单位是欧元）</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568106_af742662c7d016b6.webp" alt="" loading="lazy"></p>
+<p>为方便浏览，以下为笔者的简化版（单位：欧元）</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568106_ba04831d40374c32.webp" alt="" loading="lazy"></p>
+<p>通过这个论文可以比较出TIA和Modulator Driver的价值量变化，可见，</p>
+<ul><li><b>TIA</b>：从400G的€2增长到1.6T的€8，单模组价值量提升4倍。</li><li><b>Modulator Driver</b>：400G采用BiCMOS Driver，成本€2；1.6T采用InP-DHBT Driver，成本€120，表观提升约60倍（但需要注意是不同类别产品）。</li></ul>
+<p>综上，一个光模块里面最重要的几个EIC分别是DSP/CDR、TIA、Modulator Driver、Laser Driver。</p>
+<h2>二、   分不同的EIC分析增长逻辑</h2>
+<h2>1.     DSP / CDR</h2>
+<p>如果从标题看，可以发现我们把DSP和CDR放在一起讨论，包括本文之前引述野村的图也可以看出，DSP和CDR放在了一起统计，主要原因是在AIDC高速数通光模块的实际场景之中，DSP和CDR往往集中在一起。</p>
+<p>DSP往往是EIC里面成本占比最大的项目，而DSP在400G到1.6T的情况下，更多是1个模组仅需要1颗，所以单模组价值量提升更多是直接提价，而数量不增长。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568106_ad84383af841c508.webp" alt="" loading="lazy"></p>
+<p>但DSP在后期可能面临被取代的风险，在CPO时代，随着CPO将光引擎移动到Switch ASIC附近，二者之间的电连接距离显著缩短，因此部分原本必须由独立DSP完成的工作，可以由Switch ASIC内部的SerDes和相关PHY电路承担。</p>
+<p>一些已经推出样品的，取消了DSP的产品包括：Broadcom的102.4T CPO交换芯片BCM78919，其集成Condor 3nm SerDes，能够直接驱动共封装光引擎，并不需要沿用传统可插拔模块中的完整独立DSP架构。</p>
+<p>对于一些DSP公司而言，明面上的风险可能是DSP被取代的风险，但不排除这些厂商利用自身IP开发光引擎ASIC、光I/O Chiplet及定制交换芯片，或者正在布局更多的芯片类型。</p>
+<p>2026年Marvell发布的Teralynx T100已达到102.4Tbps，管理层在投资者日进一步展示了200T、400T交换芯片及针对Scale-Up的UALink、ESUN产品路线。</p>
+<p>Marvell已经开始从DSP拓展到TIA、Driver等EIC，且具备硅光PIC设计能力，并且正在将EIC与PIC整合为完整的光引擎。</p>
+<h2>2.     TIA跨阻放大器</h2>
+<p>PD负责把光信号转换为微弱电流，TIA负责把这个微弱电流转换并放大成后续芯片可以处理的电压信号。</p>
+<p>TIA并不是一个光模块1颗TIA，而是随着通道数，和通道速率而逐步量价齐升的，以典型DR系列光模块为例：</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568106_93009d3059fa7555.webp" alt="" loading="lazy"></p>
+<p>展望NPO/CPO时代，TIA作为光电转换后的核心模拟前端仍不可或缺，有望持续受益于AI数据中心光互联带宽扩张。</p>
+<h2>3.     Laser Driver激光驱动</h2>
+<p>Laser Driver并不是一个光模块1颗TIA，而是随着通道数，和通道速率而逐步量价齐升的，</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568106_b8b5adee353adef8.webp" alt="" loading="lazy"></p>
+<p>从数量维度来看，光模块由400G DR4（4×100G）升级至800G DR8（8×100G）时，发射通道数量由4路增加至8路，若采用独立Quad Driver方案，所需芯片由1颗增加至2颗，带动单模块Driver价值量由11美元提升至22美元。</p>
+<p>从价格维度来看，随着单通道速率由100G升级至200G，Driver需要具备更高的模拟带宽、更优的信号完整性及更严格的功耗控制能力，对高速模拟电路设计、先进制程及封装工艺提出更高要求，推动单通道ASP提升。</p>
+<h2>4.     Modulator Driver调制器驱动</h2>
+<p>Modulator Driver似乎是400G到1.6T增量最大的EIC，增长逻辑是“光通道数量增加＋单通道速率提高带来的价值量提升”。从400G DR4的4×100G向1.6T DR8的8×200G演进，Driver通道数量翻倍，同时单通道速率提升增加模拟带宽、线性度和输出摆幅的设计难度，为单位通道ASP提升创造条件。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568106_f9e2f3735657bb40.webp" alt="" loading="lazy"></p>
+<p>但有些DSP存在集成的可能性，如果1.6T采用Marvell Ara DSP，结论可能完全不同。Marvell官方的Ara产品资料显示，单颗1.6T DSP已支持8×200G光侧接口，并集成高速Laser-Modulator Driver。因此，采用Ara直接驱动方案的1.6T模块，不需要再单独购买这8路高速EML Driver芯片。</p>
+<h2>5.     从400G到1.6T，每种芯片的单模组价值量提升多少？</h2>
+<p>以下为笔者通过统计通道数，单通道价值量，计算得出从400G到1.6T的单模组价值量增长情况</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568106_3ea7422859db19d8.webp" alt="" loading="lazy"></p>
+<h2>三、   EIC玩家点评</h2>
+<h2>1.     Optical DSP</h2>
+<p>笔者通过研究，认为DSP的第一梯队包括Broadcom、Marvell，第二梯队包括Credo、MaxLinear、Cisco / Acacia，以下为几家公司的横向对比：</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568106_833fbe073de6229a.webp" alt="" loading="lazy"></p>
+<p>博通在先进制程及下一代400G/lane光接口技术方面具备领先优势；Marvell凭借多代PAM4 DSP产品矩阵及1.6T DSP规模化出货，建立了较强的商业化壁垒。与此同时，Credo依托低功耗SerDes技术积累及硅光集成能力，逐步拓展高速光DSP市场；MaxLinear凭借Keystone成熟出货基础向1.6T Rushmore升级；Cisco旗下Acacia则依托相干DSP与硅光技术积累进入1.6T PAM4市场。</p>
+<h2>2.     TIA</h2>
+<p>重点公司包括Semtech、MACOM、Broadcom、MaxLinear等</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568106_51cb0fc1283e0d46.webp" alt="" loading="lazy"></p>
+<h2>3.     Laser Driver</h2>
+<p>笔者认为，Laser Driver的第一梯队包括MACOM、Semtech、Marvell，重点竞争独立Driver市场；第二梯队主要是博通、Credo，这类公司的做法主要是将高速Driver集成进DSP。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568106_70030e4c27085f7f.webp" alt="" loading="lazy"></p>
+<p>Laser Driver后续的关注点，不只是速率升级带来的单通道ASP提升，还有独立Driver能否被DSP集成，这或许会让一些第二梯队玩家从集成方面抢占第一梯队（独立Laser Driver）的市场。</p>
+<h2>4.     Modulator Driver</h2>
+<p>笔者认为第一梯队主要是MACOM和Semtech，其他的是第二梯队。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568106_d97c143db37c7956.webp" alt="" loading="lazy"></p>
+<p>全球高速Modulator Driver市场呈现MACOM、Semtech、Marvell等独立模拟芯片厂商，与Broadcom等DSP集成厂商并行竞争的格局。未来需要观察市场是继续保持“独立芯片”还是走向集成化。</p>
+<p>在Modulator未来需要考虑2个维度，第一个是单通道速率的增长，单波200G的下一个时代需要布局单波400G；第二个是材料的变化，除了需要支持硅光方案以外，也需要储备薄膜铌酸锂调制技术。</p>
+<p>文中观点来自笔者根据互联网公开信息整理。</p>
+<p>文中引述观点为机器翻译，为确保理解准确性，请读者自行阅读相关原始文献。</p>
+<p>以上内容仅为个人观点，不代表任何投资建议，请自担风险。</p>
+</div>
+</main>
+</body></html>

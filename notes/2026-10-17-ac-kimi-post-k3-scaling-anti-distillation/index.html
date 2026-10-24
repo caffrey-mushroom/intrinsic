@@ -1,0 +1,189 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.17 | AC | China AI | Kimi: Post-K3 Scaling &amp; Anti-Distillation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.17 | AC | China AI | Kimi: Post-K3 Scaling &amp; Anti-Distillation</h1>
+<p class="orig">原标题：大模型行业调研-Kimi：K3后参数量持续提升挑战及解决方案，海外SOTA模型反蒸馏影响，国内5T参数模型展望</p>
+<p class="tags">#llm #china</p>
+<p class="meta">AceCamp · 2026-10-17 · article 70568026</p>
+<div class="body">
+<h2>摘要</h2>
+<p>本文核心要点包括：1，	K3后参数量持续提升挑战及解决方案2，	训练数据结构变化，海外SOTA模型反蒸馏影响3，	国内5T参数模型预期</p>
+<p>以下为专家观点：</p>
+<p><b>1，Kimi发布K3模型后，在后续更大参数模型的scale up（例如K4）过程中，目前进展如何，遇到了哪些具体挑战，以及相应的解决方案是什么？对于下一代模型（如K4）的推出时间和能力有何展望？</b></p>
+<p>K3.1 flash版本预计将于本月（2026年10月）发布，而K3.5目前正处于预训练阶段，预计要到明年（2027年）才能推出。K4模型的研发尚处在非常早期的原型架构阶段，预计至少要到2027年第二或第三季度才会有进一步进展。</p>
+<p>在K3.1、K3.5及K4的训练过程中，主要遇到以下三个挑战：</p>
+<p>第一，跨节点的all-to-all通信带宽成为瓶颈，主要源于MoE架构中路由选择带来的开销。当模型总参数从K3的2.8T翻倍至K4的5.4T，甚至未来扩展到7T或8T时，即便专家数量维持在512个，在千卡规模下进行跨节点token路由也可能引发严重的网络拥堵和显卡等待。对此，Kimi采用专家并行与分层路由相结合的调度策略，将激活率最高的共享专家和核心专家固定在节点内，从而将跨节点通信量减少约40%。同时，结合异构调度和全链路重叠等技术，进一步缩短整体通信时间。</p>
+<p>第二，超大稀疏比引发的路由退化问题。当稀疏比达到极端水平（例如K4的28:1），会导致小部分通用专家的负载超过80%，而其余大量专家的利用率则非常低，造成容量浪费。为解决此问题，Kimi计划引入自适应约束机制，在预训练的路由阶段，根据动态亲和度丢弃部分专家，以拉平各专家的利用率，并通过加权方式将闲置与高负载专家进行结合。</p>
+<p>第三，高质量训练数据的枯竭。当前模型训练越来越依赖合成数据，但在自博弈（self-play）过程中，若缺乏外部判别模型（reward model）进行有效纠偏，大量生成的多步思维链（Chain-of-Thought）会出现套路化作弊或重复模式，导致模型逻辑能力无法随规模扩大而提升，甚至可能引发模型坍塌。Kimi的解决方案是，利用K3专门微调出一个判别模型，用于白盒蒸馏（即自蒸馏），并结合多环境沙盒进行验证。由于难以从外部（如Claude）获取蒸馏数据，Kimi主要依靠自建的判行模型进行计算蒸馏来辅助训练。</p>
+<p><b>2，K3.5和K4模型的参数量分别是多少？在持续进行模型扩展的过程中，算力是否构成制约因素？</b></p>
+<p>K3.5模型的参数量设定为3T，K4模型的参数量则计划翻倍至5.4T。</p>
+<p>目前算力情况尚可。Kimi主力算力池主要由H100、H200以及少量B200组成，集群规模能够支持当前的研发。虽然算力上限确实存在一定不足，但Kimi主要通过压缩技术来应对。通信延迟是另一个影响因素，特别是在MoE专家跨卡通信时会产生等待。当前模型效率受到了一定影响，但并非最主要的瓶颈。Kimi当前的工作重心更多地放在通过自蒸馏和后训练等方法来提升模型能力。</p>
+<p><b>3，在数据层面，后续模型（特别是K3.5）的训练数据来源结构是怎样的？</b></p>
+<p>在自训练方面，Kimi主要采用PRM（Process Reward Model）引导的自我博弈强化学习。具体而言，模型在代码执行器和形式化数学等沙盒环境中自主生成多步思维链进行推导，并通过验证器运行结果作为奖励信号，以防止出现套路化作弊。同时，Kimi使用一个由K3微调而来的判别模型（teacher model）对自博弈生成的轨迹进行分级、去重和微调。</p>
+<p>外部采购内容包括向海天瑞声等供应商购买指令精调、长程agent操作等数据，以及海外多语种、多模态文本和跨国红队对抗测试数据。此外，Kimi还会采购一些金融、法律等领域的授权数据库。</p>
+<p>针对K3.5模型的后训练（post-training）数据，Kimi规划的总量最高约为10T。</p>
+<p><b>4，展望未来，大模型的后训练（post-training）是否会更加依赖于自博弈（self-play）的生成方式？</b></p>
+<p>是的，未来后训练会比较依赖自博弈的生成方式，这已成为后训练的一个主要支柱。其原因在于：首先，截至2026年，天然的优质语料已基本耗尽，这并非个别现象，而是行业内主要参与者共同面临的困境。其次，通过API调用外部黑盒模型进行蒸馏的通道已不复存在，若仅依赖特定模型进行蒸馏，最终只能无限逼近该模型，而无法实现泛化能力的突破。最后，依赖人工专家标注的高质量数据成本极高，单条成本可达数百甚至数千元，无法满足大规模采购的需求。因此，自博弈成为当前阶段最可行的路径。未来的后训练将主要以自博弈为核心来提升模型能力，并辅以自蒸馏等模式进行能力的边缘扩展。</p>
+<p><b>5，请详细解释自博弈（self-play）的具体流程、其生成数据的特性，以及主要适用的场景，例如是否更侧重于代码生成等领域？</b></p>
+<p>自博弈可以理解为一种主动试错的学习机制，其核心在于模型扮演提问者、解题者和对抗性验证者等多种角色，在具备客观规则的场景下，通过生成大量解题轨迹并依据运行结果进行自动纠偏，从而突破现有经验的上限。其流程大致分为四个步骤：第一步是环境与问题生成，基于逻辑规则或形式化题目，在严格的沙盒环境（如Python执行器）中进行。第二步是多路径展开与自我搜索，模型针对同一问题进行多次采样（例如30条），生成带有深度思考过程的长思维链轨迹，或进行分支探索。第三步是奖励判定，系统会丢弃不可靠的轨迹，并对优质的求解过程给予正向奖励。第四步是模型迭代，在奖励模型完成后，将大量获得正向奖励的样本输入模型进行训练，并替换掉负向样本，从而实现模型的持续迭代优化。</p>
+<p>自博弈的核心应用场景主要包括三类：第一，数理逻辑证明，如奥数题，这类场景需要清晰、复杂的推导过程，是应用最广泛的领域。第二，代码生成与Bug修复，这需要结合完整的单元测试和软件工程场景，模型通过逻辑分析来修复Bug。第三，长程Agent的工具链调用，例如模型需要按顺序调用多个（如5到10个）API，进行数据抓取、比对，并判断环境状态，完成一个复杂的任务。</p>
+<p><b>6，关于模型蒸馏，当前是完全无法使用，还是因成本显著上升而放弃？</b></p>
+<p>蒸馏并非完全不可用。此前被限制的是依赖外部大模型API的蒸馏路径，例如通过调用Claude等国外模型的API来提取其思维链进行蒸馏。由于近期这些外部API通道被封禁或熔断，这种外部蒸馏模式已无法进行。因此，Kimi转向了内部蒸馏，也称为自蒸馏。</p>
+<p><b>7，与蒸馏海外SOTA模型相比，采用自蒸馏方式在效率或模型能力提升方面是否存在差异？</b></p>
+<p>自蒸馏与蒸馏海外SOTA模型相比，主要差异在于模型最终能达到的“智商”上限，而非效率。从效率角度看，蒸馏过程本身是相似的。但由于自蒸馏的天花板是Kimi自身最强模型的能力，因此通过这种方式提升模型的智能化水平可能会相对慢一些，智商上限会低一些。</p>
+<p><b>8，在海外模型隐藏其思维链后，业界是否探索出新的方法来执行类似蒸馏的工作？未来从海外模型中获益的可能性是否会非常有限？</b></p>
+<p>目前存在几种潜在的变通方法，但直接在预训练阶段进行蒸馏已非常困难。第一种方式是采购并私有化部署海外的顶级开源模型，例如在海外服务器上部署Llama系列模型，但其智能水平与Claude等闭源模型仍有较大差距。第二种方式是在海外设立独立的技术实体，利用该实体与海外云服务商（如Google Cloud的Vertex AI）签订商用API协议，但这种方式面临数据出境的合规问题，数据经过清洗和筛选后，可利用的价值链可能有限。第三种方式是利用判别器进行交叉验证，即不直接蒸馏模型的文本输出，而是在评测和数据清洗阶段，将Kimi模型的输出与海外模型的输出进行比对。通过分析两者在评测结果上的差异，找出问题所在，从而间接提升自身模型的智能水平。目前来看，主要的可行路径集中在这些方面。</p>
+<p><b>9，若海外市场采取反制性政策措施，将对国内哪些开源模型产生较大影响？</b></p>
+<p>这类措施将对整个行业产生影响，而非特定某一家。目前国内几乎所有模型厂商都在进行蒸馏操作，例如智谱AI的GLM、千问等。</p>
+<p><b>10，公司在数据采购方面是否会购买如3D数据、芯片设计数据或具身智能数据等特定领域的独特数据？</b></p>
+<p>公司会采购部分此类数据，但数量不多。数据采购的重点主要集中在长文本解析以及高价值Agent落地相关的领域。具体而言，采购较多的数据类型包括：第一，金融和商业领域；第二，法律与合规文书；第三，生物医药及学术文献。相比之下，具身智能等领域的数据在大模型训练中使用较少，因其商业化价值相对有限。公司的采购策略与模型迭代方向主要基于对后续商业化前景的判断，例如航空航天等领域的数据对大模型训练的价值不大，因此不会采购。</p>
+<p><b>11，在国内各大模型厂商竞相扩大模型参数规模的背景下，哪几家公司或哪一类参与者可能率先在例如5T参数级别的base model上取得突破？</b></p>
+<p>在国内市场，DeepSeek和Kimi公司在模型架构方面可能相对领先。平台型公司中，阿里巴巴的千问团队和字节跳动的豆包大模型团队也处于前沿。字节跳动目前已在进行3T参数模型的研发，预计很快会推进到5T。综合来看，平台型厂商中，阿里和字节具备优势；而在模型架构探索方面，Kimi与DeepSeek可能更为前沿。</p>
+<p><b>12，对于训练5T参数级别的超大规模模型，模型架构的创新与基础设施的限制，哪一因素更为关键？</b></p>
+<p>成功训练5T参数级别的模型需要三个核心要素，缺一不可。首先，架构是决定性的，具有一票否决权。这包括是否采用如KDA或MLA之类的混合专家架构、KDA的具体比例、能否实现如28:1或32:1的超高稀疏度激活压缩，以及单个token的激活参数能否控制在200B以内。其次，在架构确定的基础上，需要强大的工程能力配套。这涉及到如何通过高速网络降低延迟、如何压低算力利用率、如何在万卡集群运行中有效避免故障，以及如何实现算力的快速切换。最后，也是最核心的，是数据，特别是通过自博弈（sel f-play）合成的数据。没有高质量、大规模的数据，即使具备了先进的架构和工程能力，也无法训练出有效的模型。</p>
+<p><b>13，各大模型厂商在训练数据获取能力上存在哪些差异，这种能力与哪些因素强相关？</b></p>
+<p>各家厂商的数据获取能力与其自身业务生态和资源积累密切相关，因此各有优劣。字节跳动的优势在于其海量的短视频数据，使其在多模态、全模态理解、图文生成及娱乐内容方面表现突出，但在数理、长文本和编程能力上则相对普通。阿里和腾讯分别依托电商和公众号生态，在长文本内容处理上具备优势，但在特定业务链路的专注度上可能稍弱。Kimi公司则聚焦于博弈、数学代码以及采购的金融数据，因此在超长文本解析（如100万甚至未来200万token）、多步骤Agent规划以及数学代码推理方面是强项，但缺乏短视频和社交领域的数据。DeepSeek在代码和数学挖掘方面能力很强，这得益于他们对DeepMind相关研究的语法重构和清洗，并使用证明器驱动，因此在代码生成、形式化逻辑推导和数学蒸馏方面表现优异，但在纯文本、多模态常识和中文语料方面则受限。智谱AI在代码和数学方面表现尚可，但在多模态常识覆盖上存在短板。因此，当前市场格局并非一家独大，而是百家争鸣，各厂商基于其自有资源、内容积累和技术架构，形成了各自的差异化优势。</p>
+<p><b>14，未来国内各模型厂商是否会普遍加强内部的百科蒸馏和自博弈数据生成，这是否会导致各家在自身优势领域形成数据闭环，难以弥补其他类型数据的短板？</b></p>
+<p>各厂商确实会加强自博弈和内部蒸馏，这种趋势可能导致在各自优势领域形成数据闭环。不过，也存在另一种可能性，即未来厂商之间可能会进行相互蒸馏。如果无法从海外顶尖模型进行蒸馏，那么在国内模型之间进行交叉蒸馏或许会成为一种新的策略。</p>
+</div>
+</main>
+</body></html>

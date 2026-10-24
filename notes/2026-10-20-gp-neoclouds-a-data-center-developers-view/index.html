@@ -1,0 +1,292 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.20 | GP | Cloud | Neoclouds: A Data Center Developer's View</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.20 | GP | Cloud | Neoclouds: A Data Center Developer's View</h1>
+<p class="orig">原标题：Neoclouds: IREN, Lambda, Northern Data, TensorWave, CoreWeave — A Data Center Developer’s View</p>
+<p class="tags">#cloud #datacenter</p>
+<p class="meta">GuidePoint · 2026-10-20</p>
+<div class="body">
+<p>Primary:</p>
+<p>IREN</p>
+<p>NB2:GR</p>
+<p>TensorWave Inc.</p>
+<p>Lambda, Inc.</p>
+<p>CRWV</p>
+<p>Associated:</p>
+<p>AMD</p>
+<p>MRVL</p>
+<p>DLR</p>
+<p>EQIX</p>
+<p>META</p>
+<p>GOOGL</p>
+<p>AMZN</p>
+<p>VRT</p>
+<p>NVDA</p>
+<p>RUM</p>
+<p>Together Computer, Inc.</p>
+<p>Viewpoint:</p>
+<p>Former Executive</p>
+<p>Moderator: Eileen Segall (ES)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Oct 19, 2026</td><td>27 Min Read</td></tr></tbody></table></div>
+<p>Greg Pettine (GP), Co-Founder and EVP of Business Development - Colocation Technology Services (CTS)</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The discussion examined how AI-focused neoclouds emerged from GPU-rendering and cryptocurrency-mining infrastructure. Former miners gained an early advantage through existing power agreements and experience operating dense computing environments.</p>
+<p>AI data center development is constrained primarily by electricity access, followed by permitting, community acceptance, financing, equipment availability, engineering capacity, and skilled labor. Development timelines have lengthened substantially, while rising project costs and weak tenant credit make neocloud projects harder to finance.</p>
+<p>Key Insights</p>
+<p>The expert considers power procurement the industry’s dominant bottleneck. A nearby transmission line does not guarantee sufficient generation or a practical delivery date. Inference capacity appears unlikely to face near-term oversupply because enterprise and agentic AI demand remains underserved. Large, remote training campuses may face greater long-term overbuild risk, although the expert does not view excess capacity as an immediate concern. Neoclouds are among the least attractive tenants for developers because they generally lack investment-grade credit and require more design guidance. Colocation and powered-shell models appear less risky than owning GPUs and reselling compute, provided leases have credible financial backing. Modular, factory-built electrical, cooling, and computing-space systems could materially accelerate deployment.</p>
+<p>Competitive Landscape</p>
+<p>10/20/2026 at 05:01 AM UTC</p>
+<p>Segment</p>
+<p>Positioning</p>
+<p>Advantages</p>
+<p>Risks</p>
+<p>CoreWeave and Lambda</p>
+<p>GPU compute providers</p>
+<p>GPU expertise and exposure to strong AI demand</p>
+<p>Expensive financing, weaker credit, and contract-duration mismatch</p>
+<p>Former mining operators, including IREN and Northern Data</p>
+<p>Major hyperscalers</p>
+<p>Power-rich infrastructure converters</p>
+<p>Existing sites and power agreements</p>
+<p>Remote locations and exposure to large training-campus demand</p>
+<p>Build directly and lease from established operators</p>
+<p>Strong credit and financing access</p>
+<p>Cannot internally deliver capacity quickly enough</p>
+<p>Large colocation operators</p>
+<p>Preferred development partners for hyperscalers</p>
+<p>Proven execution, scale, and low capital costs</p>
+<p>Often prioritize very large projects over neocloud deployments</p>
+<p>Startup developers</p>
+<p>Serve smaller neocloud and enterprise requirements</p>
+<p>Flexibility and access to underserved projects</p>
+<p>Difficult fundraising and execution constraints</p>
+<p>Modular infrastructure vendors</p>
+<p>Supply prefabricated systems</p>
+<p>Faster installation and controlled manufacturing</p>
+<p>Several offerings remain early in commercialization</p>
+<p>Quantitative Insights</p>
+<p>Metric</p>
+<p>Detail</p>
+<p>Typical development timeline</p>
+<p>Increased from about 18 months to 24–36 months</p>
+<p>Load study</p>
+<p>Study cost</p>
+<p>Previously 3–6 months; now potentially 6–12 months or longer</p>
+<p>Approximately $1 million per 100 MW in one cited market</p>
+<p>Power availability</p>
+<p>Delivery may require 5–7 years</p>
+<p>Example project cost</p>
+<p>About $600 million for roughly 40 MW of critical IT load</p>
+<p>Construction cost</p>
+<p>Approximately $15 million per critical MW</p>
+<p>Cooling overhead</p>
+<p>Around 20% of total site power</p>
+<p>Lease pricing</p>
+<p>Roughly $150 per kW monthly for strong-credit tenants versus $200–$250 for neoclouds</p>
+<p>Lease mismatch</p>
+<p>Building leases of 12–15 years versus customer contracts of 3–5 years</p>
+<p>Large-campus delivery</p>
+<p>A 500 MW campus may require 4–5 years</p>
+<p>Enterprise demand</p>
+<p>Frequently 5–10 MW per requirement</p>
+<p>10/20/2026 at 05:01 AM UTC</p>
+<p>ES: Hi, everyone. This is Eileen from Guidepoint. I'll be your moderator today to discuss the topic Neoclouds, IREN, Lambda, Northern Data, TensorWave, CoreWeave, a data center developer's view. On the phone with me, I have Greg Pettine. And Greg, a quick disclaimer, please don't discuss security prices, valuations, investment holdings, or investment recommendations, and please limit the discussion to your own observations in the industry. Don't share any material non-public information about any public companies, including unreleased product roadmaps, unannounced earnings figures, specific clients by name, or confidential customer contract terms. And for those listening on the call, if you have any questions, please send them to ask@guidepoint.com and I can read your questions anonymously. Now with that all being said, Greg, would you please start with describing your background that would be relevant to the topic of this call today and welcome.</p>
+<p>GP: Well, thank you. 26 years in the data center industry. I've been both on the vendor as well as owner-operator side, worked with companies like CBRE, Schneider Electric, T5 Data Centers, done a couple startups based on providing edge services, so have a pretty good ecosystem and very strong network in the industry.</p>
+<p>ES: Wonderful. And given that context and from your perspective as a data center developer and services executive, would you please give us a high level overview of why and how the Neoclouds started to appear when you started seeing them and whether you see them as a durable long term part of the AI infrastructure trend?</p>
+<p>GP: Sure. I mean, you got to go back, right? Almost 4 years ago, next month. In December, right, when ChatGPT was released, everything changed, just a tectonic shift in the industry and as far as demand goes. I mean, at that time, a 30 megawatt data center was considered large. Now that's really an edge deployment. So really everything changed. The Neoclouds came about. In many cases, CoreWeave, specifically, had lots of experience with GPUs, high-density compute, going back 6, 7, 8 years ago, and primarily their workloads were for rendering. Then they got in a bit for a while into Bitcoin mining. And then saw a trend, it was always doing the rendering and then saw a trend to utilize that infrastructure for training loads for AI and then started seeing a lot of the other Bitcoin miners that had access to PPAs or power purchase agreements at sites where they were doing mining, they started seeing this 3 years ago that there might be quite a revenue stream to convert that power from mining into high-performance computing to support the build out of AI training facilities, primarily for the hyperscalers, and then, you know, some of these Neoclouds that didn't necessarily have backgrounds in mining also started gathering as many GPU clusters as they could. And building those specific vertical models, industry models to support the training that was being done. So it's been a crazy time in the industry for sure.</p>
+<p>ES: Yeah, and thank you for that background. Neoclouds' growth obviously depends on turning land and electricity into working data centers or leasing space in one. Would you walk me through how data centers get built, the main steps to get from a plot of land with some power nearby to a running, usable AI data center? How long does each step take these days? Where do projects most often get stuck?</p>
+<p>GP: So it's all about power, and that's why the Bitcoin miners, everybody on the list, the topic for today's discussion, primarily were former Bitcoin miners. So they understood how to get these power purchase agreements done for their mining purposes for the last 8, 9 years when they got into it. And so they had a head start in that they already had the power purchase agreements, let's say, for 300 megawatts. They really were utilizing 200 for mining, let's say, so they had a head start. So that's number one, is you got to get the power. And now that is extremely difficult to get in the queues. It used to be that the utilities, Georgia Power or any of the utilities that work through ERCOT in Texas or PPL in Pennsylvania, what have you, any of the independent system operators would do a load study for free, four years ago if you came to them. Again, you were looking for 50 to 100 megawatts max at that time and the load studies were basically free and they didn't take 3 to 6 months to figure out how they were going to serve you. And you could get those across the finish line certainly within a year. And it was either free or very inexpensive. As that demand is just an exponential increase in demand and people that have power land have just inundated these independent system operators and utilities with load requests. And so the process has all changed. Now it's extremely expensive to get a</p>
+<p>10/20/2026 at 05:01 AM UTC</p>
+<p>load study done, and those load studies in many cases are several hundred megawatts, and it's taking a minimum of a year, and it could be, depending where you are and who you're working with, Georgia Power, if you're looking for 200 to 300 megawatts, you're probably looking at at least 1 million per 100, so 200 to 300, you'd be looking at $2 to $3 million that is non-refundable for the load study. And that's by law they have to serve you, so they're going to do that study. Could take 6, 12 months and it's a matter of okay, when can they get you that power? Could be 5, 6, 7 years. And then if you go ahead and say, okay, let's go ahead and do an engineering study to lock that in, that's a problem. And that's another commitment. That's several million bucks. So the cost is very high and the wait is very long. So I'll stop there answering any questions on the power procurement.</p>
+<p>ES: Yeah, sure. Could you kind of explain a bit further what is a load study, what it involves? And I think I heard you say now a minimum of a year for that. How long did it used to take before this explosion of AI?</p>
+<p>GP: Oh, you could get it done in 3 to 6 months probably. The load study is really the utility figuring out how are they going to serve you, right? Where are their high voltage transmission lines in the proximity? I mean, generally, you're not going to ask for a load study. You can do a desktop reconnaissance right now and figure out here's a lat-long or address of a plot of land and there's a transmission line going through it. And you can get online and figure out that's a 345 kV voltage or high voltage transmission line. That's great. Now, 345 kV can serve maybe 500 megawatts of power. So in your mind, you're like, okay, we think we have a good location. We know the landowner, we think we can get a deal done, either a 100 year land lease or buy it. For 100, 200 acres, what have you, and you'll submit that to the utility. Now they have to basically go through all the resource planning, what are all the requests that are coming in, not just from data centers, but other high-load users, residential. So they basically have to figure out where that power is coming from and generation, right? I mean, generation and transmission, where's that generation coming from? You may be able to serve 500 megawatts, but where are they... what generation plant are they going to be able to use, and transmission? And that's all generation and transmission, or G&amp;T, which in many cases is a different entity to the distribution utility, which is generally going to be your local municipality that's going to take that high voltage and step it down into lower voltages that can actually serve industrial loads or even residential. So that's kind of what a load study entails is understanding the generation resource planning and where you're going to be able to step down that high voltage line.</p>
+<p>ES: Got it. And so it sounds like power is a big deal, hard to get, a major constraint. What about getting things like equipment, chips, labor, community pushback? What else is involved in this build-out timeline and how has that changed recently?</p>
+<p>GP: So once you have the power committed, and that would be a PPA, that is not a will-serve letter, big difference. A will-serve letter just basically agrees that you're asking for 200 or 300 megawatts, we agree we will serve you that, but we need to go through a load study to figure out how long that's going to take. So you got to get it all the way through to where you have a purchase, a power purchase agreement done. Once that's done or you think that's going to be done, then you have to move in to other entitlements around permitting. Is that land that you're looking at, is it zoned properly? If not, how are we going to get the zoning changed? And that's going to go through the local municipalities and that's where you're going to... generally they're going to announce. And nowadays, you better be meeting with that community in parallel. If you think you're going to get that PPA done, then you're going to have to start committing resources locally, meeting the constituents not only on city council and the authority having jurisdiction around permitting. But you need to figure out, hire PR firms, political operatives in those areas. You need to figure out who's on your side and who isn't. And because the minute these projects are announced locally, we're working on a project in Ohio, a 50-megawatt project and looks good. We believe we're going to get the PPA done. We've gotten the load study done and it looks good. We've visited a couple times, and this is a small, relatively small community. We've met the mayor, the council members, there's 7 of them. 2 of them are huge proponents, 2 are absolute not going to happen. So we have really 2 on the fence. We hired a public relations company to help us. We</p>
+<p>10/20/2026 at 05:01 AM UTC</p>
+<p>built the website to explain the project. The project was publicly released via the local television station, newspaper, and Facebook page on Tuesday. And by Thursday, there's already 3 Facebook groups that have popped up opposing this data center. So anyway, that's part of it. So you've got to get through that. You've got to figure out who's on your side. And in many cases, we're hiring professionals to start knocking on doors, local. I didn't know any of this. But you can hire groups that can come in and mobilize local people that you've educated that are like, yeah, the tax base is going to go 30% higher. They've committed to buying a new fire station, which we have. It's all good on the, and the misinformation on water usage and air quality. Here's the facts. Here's the real facts. This is not misinformation. And you may have to go door to door, and that's what we're probably going to have to do. So let's say you got that done. Now you got to start doing and you have the zoning done. Now you have to start doing the master planning, which could take. You hire an architectural engineering firm, and they put together that conceptual design or master plan like you would for any development project. And once you have that done, that'll take 3 months, assuming you can find a firm that's not completely booked. Everybody's extremely busy, and get that done. Now you can start marketing it to the off-takers, and the off-takers could be Neocloud, could be hyperscale, although for our case, a 50-megawatt data center is not likely to be hyperscale. That's too small, although they are now starting to look at smaller inference nodes, smaller again, it sounds ridiculous now compared to 4 years ago with 30 to 50 megawatts. So there are some needs for that or enterprise, ideally. Okay, so you can go through the broker channel, you can go direct, and what they want to hear, the off-takers, whoever it is, is you have to defend what's known as an RFS, a ready-for-service date. So you're going to, with the master plan, with your PPA, with the zoning improvements, you're saying, okay, we can deliver 25 megawatts in Q1 of '28, which right now would be pretty good. You'll get a bite on that for sure. And 25 megawatts in Q2 or Q3 of '28. Great. Now you got some letter of LOIs from these off-takers. And now you've got to be able to underwrite it because you've got to go get capital now. Now you go to the markets. And if they're not investment grade, which none of the Neoclouds are, some of them are getting backstopped and credit wrappers through NVIDIA, AMD, some of the hyperscalers, but power we've gone up and down as far as who's going to backstop them. Now it's kind of a one-off deal. They look at each project. So you have to find somebody that can be underwritten with an LOI, and you take it to the capital markets, 50-megawatt site. That yields about 38 megawatts of critical IT load because you have all the cooling infrastructure on top of that that's taking 20% of the power. So let's make it easy, 40 megawatts of critical load at Greenfield, you're looking at probably $15 million a megawatt now, so that's a $600 million project, 40 megawatts times $15 million. And so you've got to go find equity. You can probably lever that with, depending on who the off-taker is, let's say it's an enterprise, let's say it's IBM or something like that, that's going to take the power or a hyperscaler, you could probably lever that by 80%. Neocloud or somebody else, maybe 65%. So you still have to go get roughly $200 million of equity and another $400 million of debt. Good, you got that. Now you got to figure out... now you got to move into pre-construction and design, full design through construction drawings. That takes another minimum 4 to 6 months, probably do it in 4 months maybe. Then you can break ground, but you have to start pre-ordering equipment because the lead times on certain equipment is way out. So even though you think you can deliver in Q1 of 28, you have to do your pre-construction, understand all your long lead items. Among the long lead equipment, that's transformers because you're probably going to have to build a substation to step down that power, UPSs, long lead items, backup generators, those are long lead items. So you're trying to fit all that in within 16 months so that you can deliver on that. And now you can move into lease once you have the financing, and they're on your way. Okay, well, you still have to find a general contractor that has a local presence. They can bring in the mechanical, electrical. That's hard to find. Certainly anybody with data center experience, and then you're going to need all the skilled labor on the electrical, mechanical side. These are journeymen, and that's hard to find. So it's difficult. It's difficult right now.</p>
+<p>ES: Yeah, it sounds like it. And in terms of a timeline and couldn't count up all the years and months there, what would be like a rough time frame to get a data center built versus say 5 years ago, just in terms of years?</p>
+<p>GP: This same project, you could probably from start to finish, you found the land, or you found the power in the land and started discussions. 18 months, probably now it's at least 24 to 36 months, probably start to finish.</p>
+<p>10/20/2026 at 05:01 AM UTC</p>
+<p>ES: Interesting. And so all I'm hearing about right now is the constraints to building, whether it's the power, the community pushback, the labor, the equipment. However, there are people concerned that there might be eventually too much AI data center capacity built. Do you think, do you see that being potentially an issue? And if that is possibly or realistically an issue of too much being built, what kind of time frame would be realistic for that to be the case, given all these constraints?</p>
+<p>GP: Yeah, you could really bifurcate it now and from training to inference workloads where now. A year ago, it was 80% to 85% of the capacity being designed and in some form of build or process of development was all training. And these are massive, primarily Bitcoin, former Bitcoin mining sites that are being converted to AI learning for the hyperscalers, whether that's East or West Texas.</p>
+<p>ES: Yeah.</p>
+<p>GP: Crusoe project or some of the bigger ones, hyperscalers directly in Nevada and Louisiana and dozens of others like that. Now we're starting to see a lot more inference requests, and those are, again, smaller 30 to 50 megawatt sizes, starting to see enterprise get interested in building their own inference and training sites, basically just for sovereignty and security issues. But the inference, which is really where the agentic AI is going to be served, it is fine. I don't see any issue with overbuild there. We're still behind on even the requests coming pretty heavily to move into that agentic AI environment. So that's fine. I think the large training campuses that are being built, it's just an arms race. They have no idea how much capacity, they being primarily the Anthropic, OpenAI of the world primarily. Just it's an arms race. They just are trying to get as much power online as they can as quickly. We're so far behind that I don't... maybe by 2030 as we catch up that there, you know, potentially is going to be a slight overbuild, but there's so many constraints. I just... that's... I don't see that as a concern right now.</p>
+<p>ES: And if we got to that point in 2030, it sounds like the places that would show up first would be maybe these big campuses in remote areas where they do the training, the former Bitcoin miners, or would it be brand new developers getting in late to the game?</p>
+<p>GP: No, I agree. I think it's going to be the campuses that already have the power and are starting some form of construction. I mean, these 500 megawatt data center facilities, even with all of the entitlements and you're breaking ground, that's... it's going to take 2 years to get 100 megs and then probably a year or at least 8 months for every 100 megs after that. So even to deliver 500 megs is going to take another 4 to 5 years, even if you have everything going and full speed. So, I don't see an issue, not right now, but yes, I would agree it would be those large learning campuses that could be exposed because they're so big.</p>
+<p>ES: And the hyperscalers like Microsoft, Amazon, Google, you know, they have the money to build their own AI data centers and they also rent from the Neoclouds. What's made them hard for them to build more quickly at scale? And do you think that gets easier for them over the next few years and what could that mean for the Neoclouds?</p>
+<p>GP: They're not outsourcing capacity to the Neoclouds. They're just leaving it up to the Neoclouds to deliver those GPU clusters live. So the hyperscalers have 2 choices. One, they build their own or they outsource primarily to the large co-location operators, whether that's QTS or Vantage or Digital Realty or Aligned or Compass or, right, I mean, the 15 large hyperscale co-location providers. So they're doing both. They can't build all their own capacity fast enough. They don't have the resources. So they've partnered with these large operators for years, way before this demand hit. They've been working with them on nothing quite at this scale. So those large co-location operators understand the requirements that the hyperscalers need, so they're very efficient. And they can get, you know, the cost of capital is on par or not a lot more than the hyperscalers. The Neoclouds are... that's obviously they're trying to get that capacity built and they're going to these operators as well. But the large hyperscale operators that I mentioned generally aren't doing any Neocloud work or very little because the requirements are still way smaller,</p>
+<p>10/20/2026 at 05:01 AM UTC</p>
+<p>right? They're working on multiple hundreds of megawatt contracts for the hyperscalers or directly with Anthropic or OpenAI and they, you know, they don't need to be bothered with it. The Neoclouds are now being served primarily by startup operators like myself that have been in the industry a long time, but that are really building their own platforms. And certainly there's interest from private equity to fund companies like ours, but not until you get something across the finish line, right? And that's hard, like I said. So the Neocloud, we're kind of the redheaded stepchild right now, and plus they're difficult to underwrite. We wouldn't, none of our capital partners, even the banks on the debt side, would look at doing a project for a Neocloud that doesn't have very strong credit wrappers or backstops from a credit-worthy partner, right? We're more interested in really working with the enterprise investment grade than these Neoclouds. So I'm not sure where they're going to get their capacity built. I think they're struggling with that right now.</p>
+<p>ES: With CoreWeave's bond yields rising recently, how do you see costlier financing affecting new data center projects in the Neocloud industry?</p>
+<p>GP: Well, the good news is that you can charge a premium for rent or lease rates, right? If you're charging an investment grade tenant $150 per kilowatt per month, you can charge these Neoclouds $200 or $250. Now, they're going to have to put down a pretty large deposit for you to even consider doing anything. But I mean, in their minds, they're like, look, we can just make it up on the back end. We're printing money with our agents and delivering that capacity to the hyperscalers or... so, it's, yeah, there's huge risk there, for sure. Not only from an operator, owner- operator's perspective like ours, to sign a lease, and these are 15-year leases, regardless how much, it's just, and it's difficult right now, though. You're not going to get anything underwritten for anybody unless they're investment grade. I think that'll change, loosen up after the first of the year. That's what most people are saying. But certainly, you know, the elections have pretty much just squashed any underwriting considerations unless it's investment grade right now. Everything's on hold.</p>
+<p>ES: Interesting. And that's because of the elections you were saying in January that uncertainty will be lifted?</p>
+<p>GP: Yeah, it's because of the elections, but then, you know, the holidays are coming, so I think it'll be January before we start to see some loosening of the markets to fund these non-investment grade tenants.</p>
+<p>ES: And what's the difference for a landlord between leasing directly to a big company like Microsoft or Google and leasing to a smaller Neocloud whose rent might be guaranteed by a hyperscaler?</p>
+<p>GP: Well, really the only difference there is that the Neoclouds are more difficult to design and build for because they don't... they don't have the experience in the mechanical, electrical, plumbing design, build, commissioning. They just don't understand it. So trying to get their requirements locked down is much more difficult. Takes much more time, a lot more changes to the scope. So it's a lot more complex. You're having to educate them on why you're not going to... they may ask for a certain liquid cooling design, but you're coming back to them saying, "Well, our backup, right? Tier three, we need 5 nines of reliability." And you're coming back to them saying, "Well, wait a minute. If we go 4 nines, or if we design this without backup generators, here's what your capital, CapEx, savings is going to be and ultimate OpEx savings is going to be. Can you live with that?" Then they got to go back to the hyperscalers and pass all that by, so it's just another step in the design build process that stretches everything out, makes it more expensive, and time is money. So that's the difference.</p>
+<p>ES: It sounds like they're sort of on the bottom of the list of attractive people to rent to.</p>
+<p>GP: I would say so, yes. Yeah, that's a good way to put it.</p>
+<p>ES: And then over the next 2 or 3 years, which business model looks more sustainable and attractive to you? The</p>
+<p>10/20/2026 at 05:01 AM UTC</p>
+<p>Neocloud model, like the CoreWeaves and the Lambdas, which own the GPUs and rent the computing power to customers, or the other being the co-location or powered shell model, like Terawolf or Galaxy, where the company provides the building and power and leases it to Neoclouds and hyperscalers?</p>
+<p>GP: Well, I can only speak to the second scenario because that's my experience. So I do think, you know, the yields on being a co-location operator owner and leasing that power and space and network is less risky. Again, you have to be able to get them underwritten, but it's, you know, it's a known... you're basically just solving for their issues of demand. And we're not having to worry about is there demand? As long as those leases are backstopped, that's all we care about. And, there's obviously still risks there, but the first model of owning and those GPUs and leasing that compute is proven to be very successful with the cloud. It's no different than the cloud. And obviously that's been hugely successful for companies. Certainly, Microsoft, Amazon, and Google. So I don't see much difference, but the demand for cloud services has proven out over the years with a pretty consistent 18% CAGR every year. They know what their expansion is going to be for the cloud and pricing. The AI GPU is still very early innings.</p>
+<p>ES: And one concern for the Neocloud is a mismatch between long data center leases and shorter customer contracts. For example, data center leases of 12 to 15 years against the Neocloud customer contracts, which might be, say, 3 to 5 in some cases. In your experience in this industry, is a gap like that normal or unusual?</p>
+<p>GP: Oh, I think it's unusual in that we just haven't seen those underlying metrics like that, right? This is also new. So I would say it's new. I don't know. I guess new is unusual as well. So we'll see. We'll see.</p>
+<p>ES: Yeah, in your opinion, when a tenant's customer contracts are much shorter than their building lease, what kind of protections, you know, would a landlord ask for, such as like guarantees, minimum rent, termination fees, you know? What are the things they would look for or ask for?</p>
+<p>GP: All of those, for sure. The termination fees would be pretty onerous. That's part of if you're going to lease to those entities, you have to also consider, okay, if they do vacate after 5 years and break their lease, how can we reposition this data center for other workloads? Could be the same workload, but you got to go find another off-taker. The design is pretty specific to a high-density GPU cluster, right? So it's not like we're going to design and build a direct liquid-to-chip high-density data center and then be able 5 years later to say, "Well, we don't need that. We can do air cool because we're just going to work with CPUs and not GPUs," for whatever reason. That's difficult. But you are looking at that, how if it happens, how do we find another tenant to take this power?</p>
+<p>ES: Yeah, I'm curious. I mean, it sounds difficult. What kind of timeline would it take for a landlord to re-let that kind of specific build-out? Or if they had to rebuild it for another customer, how long would that take?</p>
+<p>GP: Yeah, it just, the hope is that you're still going to have... I mean, you could have certain Neoclouds go out of business that you're leasing to and pretty much backfill it pretty quickly with someone else. It would really take another Neocloud that has the same rough requirements for cooling and redundancy and network. Now, if the whole business model of agentic AI collapses, then we're all in trouble. So, that would be the worst-case scenario.</p>
+<p>ES: But I imagine there would be other enterprise customers or hyperscalers that might want that kind of configuration for their own agentic AI that you could also let through?</p>
+<p>GP: Yeah, no, that's a really good point. I think enterprise demand for building their own models with utilizing their own data sets is really starting to pick up speed. So, yes, if that were to happen, I think enterprise demand is really going... we're very early in that. And I think that is what's going to be very attractive and is attractive to owner operators building, quote unquote, smaller inference sites like us. It's that the enterprise, and it's out there... you work with CBRE, JLL, Cushwake, they're running with requirements from enterprises for certainly 5 to 10 megawatt type</p>
+<p>10/20/2026 at 05:01 AM UTC</p>
+<p>demand that they can't find anywhere. So you may have to go multi-tenant instead of having one Neocloud. You break up that capacity and sell smaller chunks, 5, 10, and have multi-tenant facilities which adds complexity around security and network and all that, but that can be done.</p>
+<p>ES: That makes sense and is interesting, and unfortunately we only have a minute and a half or 2 left, so I just wanted to give you a chance to wrap up here and mention... ask you if there's anything we didn't touch on that you think is relevant for investors to think about in this space that they should know or anything that you want to emphasize.</p>
+<p>GP: I think the modular design is going to be really important, and there is already modular design around, you know, putting electrical components, switchgear, UPS on a skid and doing that pre-manufactured, pre-fabricated in, you know, manufacturing sites and delivering that ready to go and cooling infrastructure as well. But we're starting to see actual white space in the GPU clusters with all the cooling and network infrastructure. There are now vendors that are building that in conditioned spaces, higher quality, much faster, and bringing it out. So I think that could really relieve some of the constraints around timing to build that infrastructure. So I think modular design around the white space is really going to change. I wouldn't say a game changer, but it's going to help immensely on the speed to market.</p>
+<p>ES: And when do you see those kind of modular designs making it to the market?</p>
+<p>GP: We're starting to see some production go into place. Vertiv has some production going in. Companies like InfraPartners, Flexnode, there's some others. So a lot of them are in prototype now, but we're starting to see some production go out. Certainly, InfraPartners is delivering for N-Scale and Northern Data right now at a significant pace, so I think that'll come. They're all starting to build facilities, you know, prefabricated facilities here in the States, so it's happening.</p>
+<p>ES: Okay, interesting. All right, Greg, we ran out of time here, but thank you so much for sharing your insights. Really appreciate it. And thank you everyone for listening. Thank you. Bye-bye.</p>
+<p>GP: Take care, everyone.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>10/20/2026 at 05:01 AM UTC</p>
+</div>
+</main>
+</body></html>

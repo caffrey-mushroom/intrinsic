@@ -1,0 +1,211 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.19 | AC | China AI | Compute Leasing: LLM Clients &amp; Token Factories</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.19 | AC | China AI | Compute Leasing: LLM Clients &amp; Token Factories</h1>
+<p class="orig">原标题：算力租赁产业调研_科教_大模型客户结构与增值服务, GPU资产回收期及租赁竞争格局, Token工厂替代与2027年算力供需变化 - 聚焦智谱_MiniMax_利通_协创_万国_世纪互联</p>
+<p class="tags">#datacenter #cloud #china</p>
+<p class="meta">AceCamp · 2026-10-19 · article 70568212</p>
+<div class="body">
+<h2>摘要</h2>
+<p>· 方向：围绕算力租赁需求从传统科研计算向大模型服务、行业应用及Token调用模式延伸的方向展望。· 结构：围绕专业算力租赁、传统IDC和大模型Token服务在客户群体、盈利模式及服务能力上的分化展望。· 节奏：围绕新增算力中心交付、国产GPU生态完善及Token计费普及对GPU租赁供需和资产回报的影响节奏展望。</p>
+<p><b>以下是调研纪要总结：</b></p>
+<p><b>· 客户结构与服务壁垒：</b>专家称公司自2015年开始布局超算服务，核心客户集中在985、211高校及科研院所，优势主要来自集群调度、代码优化、超算监控及客户资源积累。科教客户以项目型需求为主，部分租期约1年，且存在预存科研经费的模式，回款稳定性相对较好。大模型企业需求更偏长期，当前与智谱、MiniMax合作较多。与万国数据、世纪互联等传统IDC厂商相比，公司主要提供GPU调度和性能优化等增值服务，而非单纯机房及机柜出租。</p>
+<p><b>· GPU供给与投资回报：</b>专家称低端卡则因供给增加出现价格竞争。超算中心项目可行性分析通常按照2.5至3年投资回收期测算，当前行情较好时可能约2年回本，但市场转弱时3年也未必能够收回投资。专家认为GPU硬件使用周期较长，回本后仍可继续创造收益，但实际盈利还取决于租金、利用率、机房及运维成本。</p>
+<p><b>· Token工厂与2027年展望：</b>专家预计2027H1算力租赁市场整体仍较平稳，H2随着2025至2026年建设的超算中心陆续交付，资源紧张程度可能缓解。大模型企业正通过Token计费提供远程算力服务，部分原本需要租赁GPU的客户转向直接调用模型，推动传统机器租赁需求发生变化。客户在选择GPU供应商时更重视集群规模，例如需要500卡集群的客户未必考虑只能提供100卡的供应商；国产GPU在部分专业领域已有应用，但高校和科研客户仍主要依赖CUDA生态，软件兼容性和使用习惯是国产替代的主要制约。</p>
+<p><b>以下是专家观点：</b></p>
+<p><b>Bryce Wang：国产GPU与H20相比，性能及实际应用表现如何？</b></p>
+<p>专家：国产高端芯片的理论性能接近A800、A100，有些训练性能甚至超过H20，但推理性能可能稍弱。国产芯片整体表现不错，但生态环境尚未完善，难以全面推广，目前主要在特定行业逐步应用。</p>
+<p><b>Bryce Wang：国产GPU整体处于供需紧平衡、相对平衡，还是相对宽松的状态？</b></p>
+<p>专家：这些卡公司介入不多，因为通用性较弱，公司主要服务通用客户，主要以英伟达等国际品牌为主。国产卡不是公司的主营项目，支持能力也不如H公司、英伟达的卡强。</p>
+<p>国产芯片目前还是以厂家主导为主，代理商的参与度相对较低。</p>
+<p><b>Bryce Wang：公司主要服务哪些大模型、互联网及CSP客户？</b></p>
+<p>专家：主要客户在财报中都有披露，包括赛力斯、智谱、小鹏、长安、奇瑞等。此外，还有一些由高校教授创办或担任顾问的企业，这些企业可能在国内知名度不高，但获得了国外风投的支持，突然获得融资后会有较大需求。整体来看，大模型和生物领域的客户占比较多。</p>
+<p><b>Bryce Wang：这些客户的新增算力需求主要来自新模型训练、模型扩容，还是推理服务增长？</b></p>
+<p>专家：他可能会借助国内比较成熟的模型，对项目进行定制化需求的改进。基础模型可能采用国外或国内的模型，然后在某一行业内进一步深耕，基于大模型进行更深入的开发。</p>
+<p><b>Bryce Wang：这些客户如何配置自有算力、公有云及第三方租赁算力？</b></p>
+<p>专家：像公司的科教用户，基本上是科教领域新成立的企业，项目型特征明显，可能只租用一年，项目结束后就不再需要。后续如果有下游客户需要，公司会用极少量的机器做一些调整，或者让下游客户自备几台机器运行应用。整体来看，没有特别长期的需求，长期需求主要来自于Token工厂。Token工厂主要是大模型企业，目前主要在抢占注册用户和客户。</p>
+<p><b>Bryce Wang：对其他算力租赁公司有哪些了解？</b></p>
+<p>专家：租赁公司方面，常见的就是一些国资委背景的国企投资的数据中心。</p>
+<p>Bryce Wang：对协创数据、万国数据、世纪互联等公司有哪些了解？</p>
+<p>专家：世纪互联和万国，万国原来主要做数据中心，强项并不在GPU，而是以IDC为主。它的主要数据来源于原有的CPU业务。随着AI领域火热，机房会转租一部分GPU设备，但这并不是他们的主业。世纪互联等属于老牌IDC厂商，与公司没有太多竞争关系，服务模式也不同。公司的服务模式是接入机器后，进行代码和技术调优，提供增值服务。他们则主要是搭建机房，上游搭建机器后放在机房，下游再租出去，仅负责租赁，机器性能的优化与他们无关。</p>
+<p><b>Bryce Wang：还了解哪些同业公司？</b></p>
+<p>专家：公司合作最多的是三大运营商。此外，还有地方科委投资的超算中心，他们有资金投入，可能到2025年投完后发现管理能力较弱，因此会与公司合作，公司通过客户引流与他们合作较多。协创数据原本是做服务器的，AI业务并非以租赁为主。万国和世纪互联主要是在AI火热时转租机柜和机房，不是专业做GPU租赁，主要为中小企业解决机房供电和管理问题。</p>
+<p><b>Bryce Wang：科教类研发客户选择公司的主要原因是什么？</b></p>
+<p>专家：公司在超算领域的核心客户是科教领域，尤其是985、211高校。从2015年开始，公司在理工类985高校的超算领域市场占有率最高，与曙光合作较多。公司的服务模式起源于集群调度和超算中心监控软件，因此能为客户提供更好的代码调优和相关支持。公司一直在原有主业基础上做增值服务，目前企业客户大多是高校老师推荐的资源，而非市场主动开发。如果通过市场开发，利润会很薄，竞争也非常激烈。</p>
+<p>公司自2015年开始做超算，最初通过广州超算租用部分机器再转租出去，本质上是“资源转租中介”。但主业一直是集群调度软件。经过多年沉淀，客户主要集中在科教领域。科教领域的最大优势是没有坏账，老师们都有预算，资金支付有保障。最困难的几年，公司都是靠学校的预存款度过的。预存款模式下，客户可能提前存入科研经费，项目结项后才使用，甚至可能明年或后年才用。</p>
+<p><b>Bryce Wang：如果竞争对手有类似GPU资源和服务，通过价格竞争能否争取公司的科教类客户？</b></p>
+<p>专家：科教领域客户被抢走的概率不大。有些客户，比如刚毕业的博士或博士后，资金紧张，会更在意价格，可能会选择更便宜的服务。但如果是老教授或院士，他们并不在意价格，更看重项目顺利完成和以往的合作经验，对公司有信任。年轻老师更注重性价比，老教授则更看重合作关系和服务保障。</p>
+<p><b>匿名投资者：对行云科技和利通电子有哪些了解？</b></p>
+<p>专家：利通电子的盈利能力较强，是腾讯云的大供应商，参与腾讯云大模型等合作。除了供应机器，与英伟达也有长期合作关系，资金和资源都很雄厚，利润较高。行云科技听说过，但了解不多。</p>
+<p><b>Bryce Wang：最近几个月GPU采购成本有没有上涨？采购价格与租赁报价哪一方变化更大？</b></p>
+<p>专家：现在的拿卡基本上是这样的模式，在Q2阶段，很多客户会有部分预定，这些卡要到2027年才能供货，所以目前公司拿卡的概率不大。高端卡公司拿不到，低端卡只能找一些类似GeForce的卡。价格基本上没有太大波动，低端卡的议价能力更强。作为民企，资金实力无法和国资背景企业竞争。</p>
+<p><b>Bryce Wang：当前算力租赁公司的投资回报和投资回收期大致是什么水平？</b></p>
+<p>专家：投资回收期原则上来说，建一个超算中心，在做可行性分析时，基本上两年半到三年可以回本。GPU的优势在于，虽然内存、电源等部件可能三五年就需要更换，但GPU卡可以正常使用十年。三年后纯利润会比较高。目前行情下，两年基本可以回本，但如果市场环境不好，三年都可能回不了本。</p>
+<p>公司最早做超算中心项目可行性分析时，乐观估计两年半回本。回本后机器并不会报废，还可以继续使用五年，后面两年半主要是电费支出，大致是这样的模式。</p>
+<p><b>Bryce Wang：计算投资回收期时，参考的租金价格大致是什么水平？</b></p>
+<p>专家：这要看投资期和市场行情。在紧缺时期买设备肯定贵，正常情况下会综合考虑机器、机房、人工等总成本，再进行分摊。如果市场平稳，租金能体现机器的价格。</p>
+<p><b>Bryce Wang：明年（2027年）上半年和下半年市场会有怎样的变化？</b></p>
+<p>专家：明年上半年市场会保持平稳状态，下半年应该会有很大缓解。原因是英伟达的Blackwell卡可能无法在国内使用，国内如阿里、H公司昇腾960等芯片也会陆续推出。此外，国内很多超算中心在2025、2026年承建的项目将在2027年上半年集中交付，下半年市场压力会减轻。目前国外订单已排到Q2，很多超算中心还在等卡，预计2027年上半年会有不少交付，下半年市场会有所缓解。</p>
+<p><b>Bryce Wang：为什么认为明年（2027年）下半年市场会缓解？有没有可能出现新的算力需求爆发，比如下一个大模型训练或更多推理场景？</b></p>
+<p>专家：从大模型来看，目前处于训练结束后的平稳阶段。2023年下半年经历了“百团大战”，各类企业都在做模型，但现在很多模型项目其实是亏本的。目前还没有看到2027年下半年会有新的风口。从大模型角度，暂时没有明显的新需求爆发迹象。</p>
+<p><b>Bryce Wang：目前行业客户类型是否增加？工业、医疗等应用领域是否出现更多小规模客户，带动整体算力需求？</b></p>
+<p>专家：现在大模型企业高速扩张，虽然很多项目亏本，但目的是抢占市场份额。客户类型越来越丰富，很多原本做小规模租赁的企业也在转型。大模型通过Token计费，替代了很多传统机器租赁的计算需求。部分客户不再租机器，而是直接用Token工厂完成训练和推理，这种转型趋势很明显。</p>
+<p><b>Bryce Wang：什么是Token工厂？它对算力租赁市场有何影响？</b></p>
+<p>专家：Token工厂指的是大模型企业通过Token计费，客户可以远程调用算力完成项目，无需再租用本地机器。很多客户原来租用本地机器，现在转向按Token或流量计费，解决了不再租机器的问题。这也是为什么明年上半年市场依然平稳，因为Token工厂还在高速发展，大模型厂家持续扩充机器，确保高峰时段算力充足。很多企业会转型使用Token，而不是以租机器为主。</p>
+<p><b>Bryce Wang：AI下游应用场景是否持续多样化？是否看到更多行业开始规模化使用AI？</b></p>
+<p>专家：现在大模型企业高速扩张，虽然很多项目亏本，但目的是抢占市场份额。客户类型越来越丰富，很多原本做小规模租赁的企业也在转型。大模型通过Token计费，替代了很多传统机器租赁的计算需求。部分客户不再租机器，而是直接用Token工厂完成训练和推理，这种转型趋势很明显。</p>
+<p><b>Bryce Wang：从单一客户的行为模式来看，这些客户更倾向于选择多个算力租赁厂商，还是集中于单一供应商？</b></p>
+<p>专家：目前各大模型厂商有不同侧重点，有的侧重代码，有的侧重知识库或其他细分领域。客户需求增加时，机器数量不一定同比增长，因为模型性能在不断优化。一般来说，客户不会绑定某一家供应商，而是根据集群规模选择。比如需要500片卡的集群，只要有供应商能满足就会合作，100片卡的集群则可能不考虑。客户对供应商没有完全绑定，绑定更多体现在其他合作模式上，比如公司可以通过自身客户资源为对方引流。</p>
+<p><b>Bryce Wang：客户切换算力供应商的难度大吗？</b></p>
+<p>专家：切换难度不大。大模型企业本身具备一定技术实力，标准机器的兼容性也较好，优化能力也有保障。与公司绑定较深的客户，主要是因为公司能为其引流，比如对方给公司折扣，公司再将折扣推向科教领域客户，这也是公司的优势。客户资源在公司手里，可以帮助合作方拓展市场。</p>
+<p><b>Bryce Wang：是否还有尚未讨论、但比较重要的产业现象？</b></p>
+<p>专家：其实主要有两点：一是机器租赁和Token合作是两个不同领域；二是目前行业关系较为紧密。如果有其他大模型厂家找公司合作，公司也未必能供货。整体来看，行业内担心绑定式合作较多，因为公司自身实力有限，无法支持更多单位或应急公司。目前合作较多的还是智谱和MiniMax。</p>
+<p><b>Bryce Wang：低端GPU供应相对充足的情况下，租赁厂商报价是否出现松动？</b></p>
+<p>专家：价格战确实有松动。低端卡市场供应充足，部分厂商有库存，会参与投标。比如发出一个标书，很多厂商都会来投，因为手里有货。如果是高端卡，没人来投标，因为没有现货。进入投标状态后，低价竞标会导致价格下行，盈利能力受到影响。</p>
+<p><b>Bryce Wang：科研院所目前对哪些国产GPU评价较好？</b></p>
+<p>专家：国产卡主要应用于石油、勘探、煤矿等特殊行业。科研院所的老师很多是海归，更倾向于使用英伟达，主要因为对CUDA的熟悉度高。虽然H公司等国产卡在硬件上有对应产品和中间件，但兼容性和软件生态相对较弱，市场占有率也较低。高校老师大多有海外经历，习惯使用N卡。</p>
+<p>Bryce Wang：科研院所试用国产GPU后，对哪些产品的评价较好？</p>
+<p>专家：这要看具体领域，有些领域用国产卡还可以，有些领域体验并不理想。H公司一直在完善生态，部分科研资金只能采购国产卡，但实际上很多项目还是变相使用国外卡。国产卡在硬件上理论性能强，但软件生态和易用性偏弱，市场占有率较低。主要原因是国外普遍使用CUDA，老师们回国后更习惯N卡。985高校的老师大多有海外经历，倾向于使用英伟达。</p>
+<p>目前来看，国产卡在特定行业有一定应用，但在科研院所和高校领域，英伟达依然是主流选择，主要受限于软件生态和用户习惯。</p>
+</div>
+</main>
+</body></html>

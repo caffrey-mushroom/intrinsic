@@ -1,0 +1,195 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.14 | AC | LLM | RSI Compute Costs &amp; Inference Provider Strategy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.14 | AC | LLM | RSI Compute Costs &amp; Inference Provider Strategy</h1>
+<p class="orig">原标题：RSI算力消耗仅少数玩家可承担，中短期落地挑战，数据采集成本显著上涨。推理服务大厂选择客户的考虑，自建推理集群的障碍等。OpenAI_Anthropic</p>
+<p class="tags">#llm #ai-demand</p>
+<p class="meta">AceCamp · 2026-10-14 · article 70568024</p>
+<div class="body">
+<h2>摘要</h2>
+<p>/ 北美推理服务龙头对推理需求展望。/ RSI落地的核心挑战，和数据采集成本的上涨等。</p>
+<p><b>以下是专家观点：</b></p>
+<p><b>﻿目前业界对于通过Optimizer或Auto Reward等方式实现模型自我优化的技术路线有何看法，哪种路线可能成为主流？</b></p>
+<p>关于模型自我优化的技术路线，例如Auto Reward，目前确实有许多大型厂商在进行探索。该方法论的核心是将编写Reward和模型自我探索规划结合，通过迭代来提升模型能力。从逻辑上讲，这种追求自动化迭代的思路是成立的。然而，其实际应用面临显著的挑战。首先，这种方法的算力消耗巨大，除了少数头部公司，大部分企业难以承受。模型可能会在没有任何收益的情况下进行长达数十小时的尝试。其次，在没有足够算力支撑的前提下，其有效性存疑。如果算力能达到现有水平的100倍，或许能实现“力大砖飞”的效果，否则该路线的可靠性不高。</p>
+<p><b>在当前算力限制下，与Auto Reward等自我优化方法相比，数据在提升模型能力方面扮演了怎样的角色？</b></p>
+<p>从最新的SOTA模型发展趋势来看，模型能力的进步基本上都源于数据。例如，Astra6在性能优化领域的表现非常出色，其能力提升主要归功于OpenAI为其提供了大量的性能优化相关数据。一个具体的案例是，过去处理4.1这类架构的模型优化，通常需要一个人耗时一个多月，或者两三个人加班一周才能完成。而近期有工程师使用Astra，仅用4个小时就基本完成了全部优化工作。这表明，相比于让AI在没有特定数据输入的情况下盲目自我尝试和优化，通过高质量、有针对性的人类数据进行定点优化，效率更高。人类在其中提供的最大价值并非数据本身，而是背后的洞察，这有助于构建人为的优化闭环，避免模型进行大量无效尝试。</p>
+<p><b>从AutoML到当前的大语言模型作为评估者（LLM as a judge），模型自我优化的核心逻辑有何演变？其在实际应用中面临哪些效率和准确性的挑战？</b></p>
+<p>当前的自我优化逻辑可以看作是早期AutoML思想的演进。2017至2018年，李飞飞提出的AutoML旨在让AI替代人类进行调参，但当时的方法多依赖于Grid Search等穷举式策略。现在，AI（如LLM as a judge）能够提供更抽象的洞察或分布信息来指导优化。然而，其核心挑战在于如何将这些洞察量化地、可靠地转换为下一轮训练的基础信号。这个转换效率和信号的可靠性是未知的。如果模型对齐稍有偏差，一轮迭代的算力投入就可能被浪费。为了获得一个准确的信号，可能需要与模型在时间和算力上进行多轮迭代，这其中的不确定性非常高。</p>
+<p><b>Auto Reward这类自我优化技术在面向企业客户的商业化落地方面，存在哪些主要障碍？中短期内其应用前景如何？</b></p>
+<p>此类技术在中短期内大概率仍将是前沿实验室的实验性项目，难以实现广泛的商业化上线。最核心的障碍在于，为客户构建可验证的奖励（verifiable reward）极其困难。在实际服务中，最大的问题往往是客户自身也无法清晰、准确地定义什么是“好”的标准。一旦这个标准得以确立，后续的技术实现，如让模型进行大量的rollout生成新轨迹并根据反馈进行训练，就相对容易解决，主要变为基础设施问题。然而，客户的需求表达常常不准确，即使根据其初步需求将模型能力优化到极致，他们也可能事后发现这并非其真实所需。考虑到当前AI的能力和迭代速度，指望其在企业服务中实现自我优化，尚不切实际。</p>
+<p><b>从长远来看，模型自我迭代的方法论是否成立？在中短期内，单纯增加模型参数和算力，而不增加数据，其收益如何？另外，当前高质量数据的获取成本是怎样的？</b></p>
+<p>从十年周期来看，模型自动化实现迭代的宏观方法论是成立的。但在中短期内，如果只是单纯扩大模型规模、翻倍算力，而没有相应的数据增量，其带来的收益可能比较有限。目前，高质量数据的获取成本极其高昂。对于更垂直的领域，如芯片设计或医疗导向的traje ctory，单条数据的价格甚至可以达到1万美元。在如此高昂的数据成本下，许多企业获取高质量训练数据变得非常不现实。</p>
+<p><b>近期观察到数据采集的成本似乎急剧上升，例如之前硕士生进行数据标注的时薪约为300至500美元，而现在类似工作的报价高达2000美元。这种量级的变化是从何时开始变得如此显著的？</b></p>
+<p>这种成本的急剧膨胀确实是最近一两年才出现的现象。去年（2025年）或今年（2026年）年初时，一些为OpenAI和Anthropic（OA两家）提供数据标注服务的朋友反馈，他们雇佣硕士及以上学历的学生做数学题等标注工作，当时的时薪报价是30 0多或500多美元。而现在，类似工作的报价已经达到了2000美元。当前市场已经形成了一个产业链，专门寻找濒临倒闭的公司，打包收购其全部数据资产，包括代码库、聊天记录等，作为训练数据。这种为获取数据而支付的极高溢价，其能否带来相应的转化价值，目前尚不明确。</p>
+<p><b>在垂直行业模型开发方面，是否意味着核心瓶颈在于数据获取，并且需要持续以高溢价的方式来解决？</b></p>
+<p>是的，数据是核心。OpenAI和Anthropic（OA两家）不可能覆盖所有应用场景，因此会优先选择能够泛化的核心领域作为切入点，例如编程和协同工作（co-work）。在这些领域取得成功后，它们会关注其他高价值的垂直行业。从长期来看，它们会选择客单价较高的企业级市场进行深耕。对于像安永、普华永道这类企业，提供模型定制化后训练和推理服务的可能性不大，因为这类项目的下单周期非常长，最终成交量也未必可观，投入产出比不高。</p>
+<p><b>目前北美企业在AI模型部署上有哪些主要路径？不同类型的企业，例如关注合规的大型企业或只需要小规模项目的公司，它们各自倾向于选择哪种方案，例如使用API、自建部署或寻求第三方服务？</b></p>
+<p>寻求Fireworks AI服务的客户，主要是对OpenAI和Anthropic（OA两家）的模型存在顾虑，需要Fireworks AI协助完成下游的落地部署，这包括后训练、寻找计算资源（例如在特定区域寻找GPU卡）以及模型上线运行等一系列环节。而选择OpenAI的客户群体则相对单纯，多为传统行业的公司。例如，一些对冲基金等金融机构，内部缺乏AI专业知识，在选择模型时会遇到困难。对于一个仅有40人左右、主要将AI用于研究工作的公司，通常会建议其直接使用Anthropic的API服务。选择Fireworks的前提是企业体量足够大，有明确的降本需求，或者出于合规考虑，需要使用开源模型且数据不能被备份。如果企业用量不大，同时对数据共享有诸多顾虑，直接使用闭源模型是最佳选择。许多传统企业甚至缺乏如何应用AI的基础指导，因此需要外部力量帮助它们将AI嵌入到内部工作流程中。</p>
+<p><b>从硬件角度观察，北美企业进行模型本地部署的趋势似乎在加速。从您的角度看，今年（2026年）企业在选择公有云服务与本地部署之间，是否存在明显的分化或加速趋势？</b></p>
+<p>今年（2026年）企业在AI部署路径上的选择确实呈现出一些趋势。一些大型企业出于数据安全、合规或隐私保护的考量，会倾向于在本地部署自己的开源模型。与此同时，也有企业信任大型云服务商，选择使用它们提供的公有云服务。从硬件出货情况来看，本地部署的趋势似乎比较明显。然而，从业内大厂的角度反馈，其公有云业务依然是市场主流，他们感受到的本地化趋势并不显著。</p>
+<p><b>企业在选择自建AI基础设施与使用第三方服务时，面临哪些核心的权衡与挑战？</b></p>
+<p>企业在选择AI基础设施路径时，核心在于其自身是否已明确长期战略。若企业坚持将模型部署在自有机房，虽然满足了某些特定需求，但必须承受由此带来的效率低下和后期产品落地速度极慢的代价。只有在集群实际运行后，企业才会意识到背后巨大的维护成本，例如集群频繁宕机、缺乏可靠的维护人员等问题。总而言之，不同企业会做出不同的权衡。部分企业若缺乏前瞻性规划，且内部没有明确的技术路线限制，那么采用类似JAM的方案可能是最省事的方式。</p>
+<p><b>对于选择自建GPU集群的企业，后续的运维工作是否构成显著挑战？大型云服务商提供的专属团队支持方案是否具有普适性？</b></p>
+<p>集群维护对于自建方案的企业而言是一个核心难题。尽管大型云服务商（如Google）有能力为超大型企业客户（例如雅诗兰黛、苹果或Meta级别）提供专属团队，甚至为其单独部署一套专用集群进行服务，但这套模式的根本缺陷在于无法规模化。对于年收入千万美元、估值数亿美元的成长期公司，大型云服务商几乎不可能投入专门人力进行支持。一旦需要规模化服务，该模式便会面临巨大挑战。例如，像Cursor这样需要上万张GPU的企业，几乎没有服务商能为其在全球范围内寻找并部署如此规模的算力资源。因此，这种高度定制化的“保姆式”服务存在明显的规模瓶颈。</p>
+<p><b>目前北美市场中，中小企业对AI算力及服务的需求情况如何？Fireworks在客户选择上有何标准？</b></p>
+<p>北美市场中，几乎所有有意愿应用AI的企业，或多或少都曾进行过垂询，其中也包括许多中小企业。然而，由于当前算力资源非常紧张，且服务精力有限，Fireworks AI无法为所有客户都提供解决方案。因此，在客户选择上会进行筛选，优先服务那些短期算力需求较大，或自身需求非常明确的企业。例如，仅融资额在2000万美元以上、估值数亿美元的企业数量就非常庞大，不可能为每一家都定制方案。</p>
+<p><b>当前市场中，是否存在核心需求简单、所需算力规模较小的企业客户？</b></p>
+<p>市场上确实存在这类企业。一些规模非常小的公司，其核心需求相对简单，如果需要采购GPU，可能仅需60多张卡即可满足需求，远未达到上百张卡的规模。</p>
+<p><b>对于一个64张卡的计算集群，是否仅需一到两人进行维护？</b></p>
+<p>仅有64张卡的集群，其日常维护的工作量相对较小，但相关的琐碎事务并不会减少。如果不对性能进行优化，例如直接使用S7浪之类的框架运行，并且系统具备一定的冗余来处理服务宕机等问题，那么一到两个人力是可能胜任的。这种规模的应用更接近于“个体户应用”而非企业级应用，只要不追求极致的延迟、吞吐量或推理速度，系统本身无需过多调试即可良好运行。</p>
+<p><b>OpenAI和Meta在C端产品（如Muse和dots）方面的进展如何？这些产品是否会成为未来的发展方向？</b></p>
+<p>这类C端产品是确定的发展方向，并且商业模式能够跑通。目前市场虽然不乏产品创意，但真正能为普通用户提升生产力或带来便利的产品依然稀缺，而Muse可能就是第一个突破口。据了解，Muse在技术架构上并未做大的改动，基本上是沿用了当年MS的代码框架，套用了Muse Spark自身的模型。同样，OpenAI新近推出的dots产品也采用了类似的模式。从中长期看，这类产品对大多数用户而言，可能演变成一个更好用的开放云平台（open cloud），善于使用者确实能从中获益。一旦产品获得积极的市场反馈，所有企业都必然会跟进。</p>
+<p><b>为什么谷歌、Meta、苹果、微软等大型科技公司在AI产品落地方面似乎普遍表现不佳？</b></p>
+<p>这是一个悖论性的现象。业界普遍认为，像谷歌这样的大型科技公司，只要能将基础层面的执行做到位，其产品结果通常不会差，因为它们无需过多宣传就能吸引大量用户。这同样适用于Meta、苹果和微软，这四家公司构成了多数用户对互联网的基本认知。然而，现实情况是这四家公司在产品执行上都表现不佳。因此，一旦其中任何一家，例如Meta，能够提升其模型能力并成功将产品落地，就能够自然而然地取得成功。</p>
+<p><b>对于像OpenAI这样缺乏自有流量入口的公司，其产品形态将如何发展，尤其是在打通第三方接口方面？</b></p>
+<p>OpenAI的产品形态正朝着其目前所见的DOS（操作系统）方向发展，这一战略路径是正确的。该公司在2025年经历了一个调整期，期间虽然在浏览器、应用、编译、代码等多个领域进行了尝试，但由于资源分散，并未在任何一个领域取得决定性胜利，甚至一度因模型研发落后而将强化学习团队的人员调往预训练部门。后期，公司战略思路变得清晰，将ChatGPT、Codex等所有产品统一整合到一个应用中，旨在将其打造为超级入口。从规模上看，这一策略是有效的，ChatGPT拥有庞大的用户基础，发展态势良好，已经积累了大量客户。因此，其入口的潜力并不比Meta弱。</p>
+<p><b>在数据层面，国内公司是否还有进一步的探索空间，特别是在合成数据方面？</b></p>
+<p>国内公司可以通过自研模型进行数据合成，例如使用大量的千问模型。这种方法的核心挑战不在于原始数据的质量，而在于能否在海量合成数据中有效识别出哪些是高质量数据、哪些是低质量数据。筛选和辨别优质数据的能力是合成数据策略中最关键的一环。</p>
+<p><b>企业本地化部署模型在北美市场的实际落地情况如何，特别是对于大厂之外的普通企业而言？</b></p>
+<p>尽管企业本地化部署的趋势确实存在，但在北美市场，算力短缺是一个严峻的现实问题。大型科技公司（大厂）通常能优先保障大客户的算力需求，但它们的经验和解决方案并不完全适用于大多数普通企业。绝大多数企业难以独立完成从采购硬件到部署运维的全流程闭环。虽然可以寻求Google等云服务商的帮助，但其服务费用高昂，本身就设定了很高的客户门槛。对于许多寻求解决方案的企业而言，它们同样面临寻找算力的难题。目前北美市场算力极度稀缺，即使是几十张或一百张卡的小规模算力集群，也仅适用于企业内部实验，若要将其作为对外服务的稳定基础设施，则会是灾难性的。这种算力短缺的局面甚至吸引了各种背景的资本涌入，包括来自国内外的房地产、矿业、比特币投资等领域的投资者，以及新加坡、马来西亚等地的华人家族基金。这些新入局者提供的云服务，其稳定性和可靠性存疑。因此，对于企业而言，使用几十张卡进行内部研发是可行的，但若想基于此构建对外销售的服务，则面临巨大挑战。</p>
+<p><b>对于需要一两千张卡的中大型企业，如果它们能自行采购硬件（例如向戴尔购买机柜和服务器），再寻求外部团队进行部署，这种方案在当前环境下是否可行？主要瓶颈是什么？</b></p>
+<p>这种方案在理论上可行，但实际操作中的核心瓶颈在于数据中心。目前，购买GPU卡和机柜本身并不困难，真正的挑战在于获得数据中心的接纳许可，并确保电力和网络等配套基础设施能够接入。在加州，一个拥有2000张卡的数据中心已属不小的规模。当前市场上更常见的是拥有60到200多张卡的小型数据中心。规模达到四五千张甚至上万张卡的大型数据中心已非常罕见，少数存在的也大多位于德克萨斯州或蒙大拿州等偏远地区，且数量相比2025年有所减少。2026年数据中心的建设面临较大压力，部分原因是来自当地社区的抗议。因此，对于一两千张卡的需求规模而言，获得数据中心资源已构成一个显著的门槛。此外，企业还需要组建一个五到六人的专业团队来维护算力设施，而这类既懂算力又懂云基础设施的复合型人才极为稀缺，企业需要与OpenAI、xAI等顶尖公司争夺人才。</p>
+<p><b>对于明年（2027年）若有十几吉瓦的算力全部投入推理市场，其潜在的市场影响和规模将如何？企业是否会为了维持算力价值而采取特定策略？</b></p>
+<p>如果明年（2027年）将十几吉瓦的算力全部用于推理，市场将面临巨大变化。首先，市场规模需要扩张至现有水平的十倍，因为当前用于推理的算力大约仅为一吉瓦多。其次，要让市场在规模扩大十倍的同时，还能接受与今年（2026年）相当的价格水平，这两点几乎不可能同时实现。因此，拥有如此庞大算力的企业，大概率不会将全部资源投入推理市场。一种可能的策略是，将部分算力用于加大预训练（pre-training）的规模或进行其他研究，即便这在某种程度上意味着“浪费”，其目的也是为了避免算力过剩。对于这些企业而言，维持算力的单位价值可能比单纯扩大推理服务的市场份额更为重要。</p>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,249 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.13 | AC | Agents | AI Agent CPU Demand: x86 vs ARM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.13 | AC | Agents | AI Agent CPU Demand: x86 vs ARM</h1>
+<p class="orig">原标题：AI Agent CPU调研_ 国产电商云财务Agent扩面后CPU用量大增的动因, 浏览器复用进程后的CPU开销, ARM长约后的x86_ARM采购选择</p>
+<p class="tags">#agents #semis #china</p>
+<p class="meta">AceCamp · 2026-10-13 · article 70567966</p>
+<div class="body">
+<h2>摘要</h2>
+<p>· 头部电动车品牌与国产电商云的Agent落地案例，不同部门的CPU用量变化及应用扩面的条件。· API编排、文档解析与代码沙箱的资源口径，并发、池化及工程优化对CPU测算的影响。· x86与ARM的兼容性、功耗和部署计划，企业任务选用高端或普通CPU的条件。</p>
+<h3>专家观点：</h3>
+<h3>Q&amp;A</h3>
+<h3>对于Agent任务中API与工具编排这类负载，其活跃状态下占用的vCPU核数以及单次任务消耗的vCPU秒数分别是多少？</h3>
+<p>API与工具编排属于普通的调度任务，负载较轻。通常情况下，3到4个vCPU可以满足其每秒的调度负载需求，这对应于大约2个物理CPU核。这类任务的存活时间非常短，通常在0.1秒或0.3秒的量级，因此单次任务的资源消耗很低。需要注意的是，具体的消耗会因使用的模型和其中的幻觉工程不同而存在差异，因此无法提供一个适用于所有场景的精确到毫秒级别的数据。</p>
+<h3>在进行智能体编排时，不同模型或其工程化实现会对调度产生何种影响？如果仅关注CPU调度执行本身，而不考虑智能体思考或等待GPU的时间，其资源消耗是怎样的？</h3>
+<p>智能体的能力取决于模型，而其运行生命周期的效率则取决于工程化实现。因此，不同的模型和工程实现会影响最终的资源消耗。在实测的产品运行环境中，一次典型的编排任务大约需要消耗2到4个vCPU，执行时间在0.1到0.3秒之间。</p>
+<h3>对于PDF文档解析任务，其vCPU资源消耗情况如何？解析内容的复杂性，例如是否包含图片、字体大小或文本密度，是否会影响处理耗时？</h3>
+<p>PDF文档解析的资源消耗主要取决于是否需要执行OCR。在不含OCR的情况下，处理一页PDF文档大约需要每秒6到8个vCPU。如果文档中包含图片或表格等需要进行OCR识别的内容，资源消耗会增加，通常需要每秒10个vCPU起步。解析时间是以单位时间内消耗的vCPU数量来计算的。文档中的字体大小或文本密度对解析耗时没有影响，关键影响因素是表格和图片的存在。</p>
+<h3>除了单次任务的资源消耗，并发量是否也是一个评估指标？典型的API编排任务并发量能达到多少？</h3>
+<p>并发量是产品层面的一个考量，通常在构建智能体时已经设定了CPU利用率的上限，用户无需过多关注。产品层面可以支持每分钟5,000甚至1万次的并发。对于轻量级的API编排任务，典型的并发量可以设置在256到512之间。这个并发量指标是针对一个虚拟机而言的，而非单个vCPU。</p>
+<h3>在执行一次编排任务时，实际瞬时占用的vCPU核数是多少？之前提到的2到4个vCPU是指负载消耗，还是指需要同时占用2到4个物理核心？</h3>
+<p>单次执行一个简单编排任务时，实际瞬时占用的vCPU资源非常少，通常在0.1到0.2个vCPU的粒度。之前提到的2到4个vCPU是指在并发较高的情况下，该负载在单位时间内所消耗的总资源量，而不是指单次任务需要同时占用多个核心。理论上，一个拥有4个vCPU的计算单元，在单位时间内可以并发处理数十个甚至上百个此类仅消耗零点几个vCPU的编排任务。目前的技术目标是希望将单次任务的消耗降低到0.0几vCPU，但当前为保证加载成功率，实际能做到的是0.1到0.2 vCPU的水平。</p>
+<h3>在评估资源消耗时，有两种计算方法：一种是计算并发任务在某一时刻占用的vCPU总量，例如100个并发编排任务，每个占用0.1个vCPU，即总共占用10个vCPU；另一种是计算任务在一段时间内消耗的总vCPU秒，例如1,000个编排任务在2分钟内完成，每个任务消耗0.2个vCPU秒。这两种计算方法是否都需要考虑集群的CPU利用率？</h3>
+<p>这两种计算方法的口径不同，对利用率的考虑也不同。 第一种方法，即计算特定时刻并发任务占用的vCPU总量，是不需要除以利用率的。这种计算方式关注的是任务执行瞬间所需的即时资源量。第二种方法，即基于总任务量和完成时间来规划资源池容量时，则需要考虑集群的CPU利用率。例如，当需要评估一个特定规模的集群能在多长时间内处理完一批并发任务时，利用率就成为一个关键参数。目前，Sandbox集群的CPU平均利用率通常可以达到50%至60%，在优化情况下可以达到65%至70%，而行业普遍水平可能在50%以下。</p>
+<h3>对于PDF文档解析任务，如果从资源消耗总量的角度看，解析一页需要消耗6到8个vCPU秒；那么从瞬时资源占用的角度看，执行这项任务需要占用多少个vCPU？</h3>
+<p>“消耗6到8个vCPU秒”的准确理解是，在执行PDF解析任务的每一秒，都需要消耗6到8个vCPU。因此，如果一个解析任务需要10秒钟完成，并且每秒消耗6个vCPU，那么总的资源消耗就是60个vCPU秒。这个“6到8个vCPU”即代表了任务执行期间瞬时占用的vCPU数量。这个资源消耗模型是固定的，不能通过减少vCPU数量来延长执行时间，例如不能将其拆分为使用3个vCPU执行20秒来完成。</p>
+<h3>对于一个需要消耗10秒乘以6个vCPU的任务，如果将其vCPU资源减半或减少至1个，同时延长执行时间，该任务是否仍然可以运行？</h3>
+<p>理论上可以运行，但这是一种较为理想化的情况。具体可行性取决于任务的复杂程度。对于纯文本PDF的文字提取这类简单任务，通常仅需0.1个vCPU即可满足。而对于包含图片等复杂元素的PDF解析任务，虽然通常需要6个vCPU或更多，但也可以通过降低vCPU配置来执行，例如使用0.5个vCPU处理一个带图片的扫描版PDF解析任务。这种情况下，任务肯定可以运行，但响应速度会变慢，延迟会显著增长。只要不低于任务运行所需的最低资源阈值，通过延长执行时间来换取较低的vCPU并发是可行的。</p>
+<h3>不同类型的检索任务分别需要消耗多少vCPU资源？</h3>
+<p>检索任务的vCPU消耗量因其具体类型而异。对于轻量级的本地检索，例如基于关键词的小型文本库检索，所需的计算资源大约为0.2 vCPU-秒。对于更复杂的向量检索，资源消耗会更高，大约需要1个vCPU-秒。综合来看，一个通用的检索任务资源消耗范围可以参考0.2至0.5 vCPU-秒。</p>
+<h3>不同类型的检索任务，其vCPU的消耗量分别是多少？</h3>
+<p>检索任务的vCPU消耗量因类型而异。向量检索的消耗量大约在1到2个vCPU秒之间。对于深度检索，例如处理大量长文档的场景，其消耗量显著增加，大约在3到5个vCPU秒的量级。这些数据都是以每秒消耗的vCPU数量来计算的，即在提供相应数量vCP U的情况下，任务可以在一秒内完成。</p>
+<h3>深度检索任务在实际部署时，最低和常规推荐的vCPU配置分别是多少？</h3>
+<p>对于深度检索任务，推荐的最低配置为0.3个vCPU。在常规应用中，通常会配置到0.5个vCPU以并行处理。至于轻量级检索任务，其vCPU需求更低，可以分配0.1、0.03甚至0.01个vCPU。目前，利用园区内的碎片化资源为智能体执行任务，最低已可以实现0.01 vCPU的分配。</p>
+<h3>浏览不同复杂程度的网页，其vCPU的消耗情况是怎样的？</h3>
+<p>浏览网页的vCPU消耗取决于页面的复杂性。对于简单的网页，大约需要2到3个vCPU。然而，对于包含复杂动态内容、GPU渲染或需执行脚本代码的重度网页，vCPU需求会大幅上升，可能需要60个vCPU左右，甚至上百个。这类任务还涉及页面截图或文件提取等操作。</p>
+<h3>在并发场景下，加载不同复杂程度的网页通常需要占用多少vCPU资源？最低启动配置是多少？</h3>
+<p>在并发加载场景下，对于包含动态内容、GPU渲染和脚本执行的复杂网页，通常会占用30到50个vCPU，并发数一般设定在20左右。对于以文本和少量图片为主的简单网页，并发启用时也需要十几个vCPU。网页加载任务存在最低资源要求，不仅是CPU时间，还涉及内存加载，因此最低也需要10个vCPU才能启动，使用如0.1或0.5个vCPU是难以运行的。</p>
+<h3>运行不同复杂度的网页浏览任务，例如轻度浏览、数据提取或页面截图，各自需要消耗多少vCPU资源？</h3>
+<p>轻度网页浏览任务可以适当降低vCPU消耗，但由于仍包含渲染和脚本代码执行，需要保持一定的资源。对于复杂任务，例如数据提取或页面截图，则需要消耗更多资源。</p>
+<h3>运行一个Python沙盒任务，根据其负载的简易和复杂程度，分别需要消耗多少vCPU？</h3>
+<p>简单的Python沙盒任务，如数据分析，大约消耗5到10个vCPU。对于复杂任务，例如涉及复杂循环、大文件处理或高级绘图的负载，则至少需要30到50个vCPU。</p>
+<h3>常规Python执行任务的vCPU配置标准是怎样的，以及推荐的并发数是多少？</h3>
+<p>常规的Python执行任务，至少需要配置20个以上的vCPU才能顺畅运行。对于这类代码执行任务，建议的并发数在40以上，最好能达到50或80。</p>
+<h3>为什么代码执行任务建议的并发数达到40以上，会高于网页浏览任务在智能体场景下的20并发？</h3>
+<p>代码执行的并发数设置得更高，是因为程序的执行逻辑通常比网页浏览更复杂，可能涉及更多的代码调用。网页浏览任务可以等待，通过降低并发来分散请求，用户可以排队。但程序执行具有即时性，如果并发数过低，一个包含循环或复杂逻辑的程序可能需要很长时间才能运行完毕。单位时间内更高的并发数意味着系统能接收并开始处理更多的请求，避免后续请求因并发池已满而被拒绝或标记为失败。程序的执行逻辑和复杂度决定了它需要更高的并发来处理，这与网页浏览的负载特性不同。</p>
+<h3>对于智能体开启网页这类任务，20的并发数是否为一个常规配置？</h3>
+<p>在智能体的单元执行场景下，通常不会配置过高的并发数，因此20并发对于智能体开启网页而言是一个常见的配置。</p>
+<h3>在代码沙箱中执行复杂代码任务，通常需要占用多少vCPU资源？</h3>
+<p>对于在代码沙箱中执行的复杂代码任务，通常需要配置大约40个vCPU。对于常规的复杂循环计算，40至50个vCPU是常见的配置。</p>
+<h3>在何种情况下，代码执行任务会需要几百个vCPU？常规串行计算与重度并行计算所需的vCPU配置分别是多少？</h3>
+<p>当涉及并行程序或并行计算时，可能会需要上百个vCPU。具体来看，常规的串行计算任务，保持在30至40个vCPU即可满足需求。而对于重度的并行计算，配置150至160个vCPU，甚至180个vCPU都属于正常范围，因为许多并行计算的量级可能更高。</p>
+<h3>在实际部署中，为单个客户请求并行运行30到40个vCPU是否常见？企业级复杂算力任务通常会部署多少vCPU？</h3>
+<p>目前为单个客户请求并行运行30到40个vCPU的情况比较少，仅在特定案例中出现过。对于企业中真正复杂的算力任务，常规配置大约在100个vCPU左右并行运行，这属于相对偏高的配置。一般而言，常规的程序执行任务，建议按照30个vCPU左右进行测算，因为这类任务不仅是简单的代码执行，还需要解决一个闭环问题，例如绘图等操作本身就非常消耗内存，过低的配置可能导致无法加载。</p>
+<h3>如果采用最新一代的CPU，例如英特尔第六代或AMD的192核第五代产品，vCPU的需求量是否会显著下降？下降幅度大概是多少？</h3>
+<p>是的，如果采用像AMD的192核第五代产品或英特尔最新一代的CPU，由于其单核性能、内存和缓存都更强，可以相应地降低vCPU的配置数量。预计可以降低30%至50%。根据CPU每一代产品的规格迭代来看，这是一个可以参考的数据。</p>
+<h3>前述vCPU消耗数据是基于英特尔哪几代CPU产品得出的？</h3>
+<p>上述数据主要是在英特尔的SPR和EMR这两代产品上运行得出的。在阿里云内部，这两款产品分别对应第八代和第九代。</p>
+<h3>除了代码执行，是否还涉及其他工作任务，例如重度的多模态文档构建或语音通话？</h3>
+<p>是的，也存在这类任务，但它们的情况会相对更复杂一些。</p>
+<h3>在多模态任务中，不同类型的负载，如图像处理、视频分析、图表生成和视觉编码，分别需要消耗多少vCPU资源？其具体的计算单位或衡量标准是什么？</h3>
+<p>不同多模态任务的vCPU资源消耗情况如下：</p>
+<ol><li>图像编解码、归一化、转换及切片等处理，处理一张图片大约需要12个vCPU。</li><li>短视频片段的多帧抽取与视频解码，处理5到10帧的片段大约需要消耗50至60个vCPU秒。</li><li>高分辨率图像计算，例如生成图表、工程绘图或处理大型表格，大约需要20至30个vCPU。</li><li>在沙箱环境中运行视觉编码任务，例如使用英特尔AMX技术将一张图像从H.265编码格式转换为H.266格式，单次运行大约需要30至40个vCPU。</li></ol>
+<h3>除了多模态任务，目前智能体还有哪些常见的、资源消耗较大的应用场景？</h3>
+<p>目前，除了多模态处理，智能体常规且已在生产环境中规模化落地的主要应用包括解析文档、执行检索任务以及代码浏览。其他更重度的应用场景尚未大规模落地。智能体技术自2026年才开始大规模应用，目前在生产环境中的最佳实践刚刚起步。</p>
+<h3>对于一个Agent产品的用户，平均每个活跃用户在执行任务时实际会占用多少vCPU资源？</h3>
+<p>在采用超分资源分配模式下，平均每个用户在实际执行任务时，消耗的vCPU资源大约为1到2个。尽管系统可能会为用户配置更高的资源上限，但实际运行时的平均消耗远低于此，以控制运营成本。</p>
+<h3>在C端和B端场景下，同时在线并执行任务的用户通常占日活跃用户的比例是多少？</h3>
+<p>并发在线执行任务的用户占日活跃用户的比例在不同场景下有所差异。在C端场景，由于短任务较多，该比例相对较高。而在B端场景，例如钉钉这类应用，由于长任务占比较高，并发在线用户的比例会低一些。</p>
+<h3>在用户能够拉起更多沙箱的情况下，并发用户中拉起沙箱的比例未来达到20%-30%是否合理？</h3>
+<p>如果用户能够拉起更多的沙箱，例如用于处理PDF文档、代码浏览、多模态预处理等任务，那么并发用户中拉起沙箱的比例有可能达到20%至30%。目前并非所有并发用户都能拉起沙箱，若未来这一功能普及，该比例可能会非常高。</p>
+<h3>现阶段用户拉起更多沙箱的主要瓶颈是什么，是智能体的可用性还是用户需求不足？</h3>
+<p>主要瓶颈在于智能体。用户需求是巨大的，但关键在于智能体是否足够好用，以及用户是否愿意使用。此外，智能体的数量也需要大幅增加。当智能体数量足够多，生态系统全面化之后，用户的所有长短程任务，包括自行构建的任务，都可以通过智能体沙箱来处理，从而推动其广泛应用。</p>
+<h3>市场上存在为每位用户配置2-4个vCPU或8个vCPU的现象，但实际活跃使用量可能仅为1-2个vCPU。这是否意味着服务商在运营中通过并发和资源池化技术，使得用户实际使用的资源与名义配置并不完全对应？</h3>
+<p>是的，产品配置中标明的vCPU数量通常是指其虚拟机的规格，类似于一个售价单位。在实际运营中，服务商会进行CPU的池化处理。此外，系统可能会根据不同的任务负载，通过推荐系统来动态推荐和分配资源。</p>
+<h3>在通过并发和资源池化技术处理不同用户的请求时，如何避免因共享内存池而导致的记忆混乱问题？另外，像Meta这类公司按用户分配资源的方式与主流CSP按任务分配资源的方式有何根本区别？</h3>
+<p>在资源池化中，确实会通过各类技术手段来避免数据混乱。关于资源分配方式，Meta的Muse可能是按用户维度进行切分，这种方式对于拥有自有数据中心且资金雄厚的公司或许可行。然而，主流CSP通常不会这样做，它们更倾向于从任务维度去切分和分配资源，这种模式更具成本效益。例如，一个用户可能同时拉起多个沙箱，每个沙箱占用的资源从0.01个vCPU到两三个vCPU不等。因此，分析这类服务的资源消耗应聚焦于任务维度，而非为每个用户分配一个持久化的VM。</p>
+<h3>Meta的Muse按用户切分资源的方式，与CSP的处理方法具体有何不同？如果Meta使用外部CSP，其资源请求是否会再次被CSP进行处理？</h3>
+<p>两者在资源超分的层级上存在差异。可以将物理服务器视为第一级资源。Meta在其物理服务器上创建VM，这属于第一次超分。而CSP在VM之上，会进一步进行资源的池化和调度，这可以理解为第二次超分。因此，如果Meta使用外部CSP的服务，CSP自身肯定会对其资源请求进行二次超分处理。</p>
+<h3>厂商在产品宣传中提到的“为每位用户分配一个虚拟机”的说法，在实际运营中是否意味着该虚拟机完全归属于单个用户？</h3>
+<p>这种说法更多的是一个产品概念或宣传口径，尤其是在进行成本核算时采用的视角，而非技术上的完全独占。在实际运营中，所谓的“个人虚拟机”仍然是可以被迁移或降配的。用户购买的是服务，底层资源，即具体分配了多少vCPU、内存或存储，以及这些资源位于哪个物理服务器上，对用户是透明的。这种宣传方式主要是为了便于统计和市场沟通，并不代表真实、恒定的用户资源消耗量。如果严格按照宣传口径为每位活跃用户配置固定的高性能虚拟机，对CPU的需求将是巨大的。</p>
+<h3>在AI Agent任务中，有哪些工程优化方法可以节省vCPU用量？具体的优化幅度是多少？</h3>
+<p>工程优化方法及其效果因具体场景而异。 对于单张图片的多模态处理任务，若采用英特尔的AMX技术，vCPU的消耗量可以降低约50%。对于浏览器类任务，可以通过任务池化的方式，复用已创建的浏览器进程实例，避免每次都进行冷启动，这种方法可以节省30%以上的CPU开销。此外，还存在其他多种优化手段。例如，通过任务熔断、优化镜像加载、利用基于K8s的沙箱容器技术，以及针对向量检索和Embedding采用大页内存等方式，综合可以实现10%至30%的vCPU消耗降低。</p>
+<h3>先前提供的各类任务vCPU消耗数据，例如基础浏览器消耗2-3个vCPU、动态复杂浏览器消耗上百个vCPU，是优化前还是优化后的标准？</h3>
+<p>先前提供的vCPU消耗数据均为优化前的状态，仅包含了部分优化，并非所有优化措施都已实施。因此，这些数据仍有进一步优化的空间。以浏览器任务为例，在当前基础上至少还可以再降低30%的消耗，即按照七折进行估算。</p>
+<h3>考虑到CPU资源可能出现的紧缺情况，从长期来看，各类AI Agent任务的极限优化潜力有多大？</h3>
+<p>各类任务的极限优化潜力存在差异。 对于多模态预处理任务，在现有优化基础上，常规情况下可以再下降20%至30%，在极致情况下，总优化幅度可以达到40%至50%。对于浏览器类任务，通过极致优化，总消耗量可以降低50%至70%。在特定的冷启动场景下，优化幅度甚至可能达到80%至90%，但常规评估以50%为准更合理。其他环节的优化潜力也相当可观。例如，通过快照克隆方式实现的预热池，在创建任务时可以减少80%至90%的CPU消耗；通过混合调度智能体任务，可以显著提升集群利用率，从而节省20%至30%的CPU消耗。目前已有专门团队在进行这些复杂的优化工作。</p>
+<h3>既然工程优化的空间如此之大，是否意味着长期来看CPU并不会持续紧缺，除非任务量出现十倍以上的增长？</h3>
+<p>尽管优化手段多样且幅度显著，但CPU资源在未来确定会面临紧缺。其根本原因在于，智能体的数量增长将远超十倍或百倍，预计会达到数百倍甚至千倍的量级。因此，当前市场对CPU需求的增长是被低估的。如果英特尔和AMD维持现有产能而不进行扩张，在未来三年内，其市场份额很可能会被ARM抢占。</p>
+<h3>业界对于智能体数量将实现百倍乃至千倍增长的预期，是否有具体的数据或信号可以支撑？</h3>
+<p>目前观察到，进行AI化转型的客户，其内部智能体的数量正在显著增加。例如，像比亚迪或米哈游等公司，其员工个人也开发和使用了大量智能体。这种增长趋势难以精确预估，因为智能体本身具备再创造新智能体的能力。一个智能体为完成复杂任务，可能会通过编写代码生成新的智能体进行协同工作，这就导致了数量的衍生式增长。物理世界的用户增长可以匡算，例如基于100万用户，假设每个企业客户部署1,000个智能体，可以得出一个大致的数量。但虚拟世界中由智能体自我繁衍产生的数量则难以估量。</p>
+<h3>以蔚来汽车为例，其上千个智能体在运行时，对CPU资源的实际消耗有多大增幅？这种增幅与百倍、千倍的智能体数量增长预期之间存在怎样的关系？</h3>
+<p>蔚来汽车的CPU使用量相比之前大约有3到5倍的提升。这一增幅是基于其当前主要将智能体应用于代码开发等相对单一的场景。之所以目前的CPU增幅3到5倍，远低于智能体数量百倍、千倍的潜在增幅，是因为当前企业内的智能体应用尚未全面铺开。未来，当智能体应用从研发代码扩展至财务、人力资源、供应链、采购乃至所有办公场景后，其对计算资源的需求将远不止3到5倍的增长。智能体应用目前仍处于起量初期，其潜力被市场低估。相关的基础设施，例如云服务提供商的环境，也是在2026年才准备就绪，例如在云栖大会上发布的智能体环境才刚开始运行。企业要广泛接纳智能体，前提是其运行必须稳定、安全、可审计、可观测且能持续运行，否则合规性与可控性问题将阻碍其应用落地。</p>
+<h3>除了蔚来汽车3到5倍的CPU用量提升外，是否有其他用户在智能体应用上表现得更为激进，其CPU增幅达到了更高的水平？</h3>
+<p>从目前情况看，阿里云内部是更为激进的用户。仅财务部门，其CPU使用量的增幅就达到了大约60倍。该部门的智能体应用渗透率目前已超过50%，并且仍在持续提升，未来目标是达到70%至80%。短期内实现100%渗透可能较难，但长期来看仍有空间。</p>
+<h3>在阿里云内部，除了财务部门CPU用量实现约60倍的显著增长外，其他部门的应用情况和CPU增幅如何？</h3>
+<p>供应链和人力资源部门的智能体应用规模也较大，但财务部门的增长最为显著，这与阿里云高层亲自推动有关。供应链部门的CPU使用量相较之前增长了大约10到20倍，其业务流程的智能体渗透率已接近40%。目前阿里云大部分部门都在朝着30%至50%的渗透率目标推进。</p>
+<h3>财务部门CPU增幅约60倍，供应链部门增幅10-20倍，这与智能体数量百倍、千倍的增长预期似乎存在量级差异，应如何理解CPU用量与智能体数量之间的关系？</h3>
+<p>此前所说的百倍、千倍增长指的是智能体的数量，而非CPU使用量的直接倍数。CPU用量与智能体数量之间并非线性关系。基于特定场景的测算，当智能体数量增加10倍时，CPU使用量大约会增加3到5倍。以此类推，如果一个客户的智能体数量增加100倍，其CPU用量的增幅也必然会远超3到5倍，可能会达到几十倍的水平，相当于在智能体数量增幅的基础上打了三到五折。因此，财务部门约60倍的CPU增幅，正是由其背后数百倍的智能体数量增长所驱动的，这得益于该部门极高的应用渗透率。</p>
+<h3>在实际运行智能体任务时，x86与ARM架构的CPU有何差异？在选型上应如何考量？</h3>
+<p>从当前的技术角度看，运行智能体任务时尽可能使用x86架构更为理想，因为它能更好地避免在CPU层面出现兼容性问题。然而，从云服务提供商的视角出发，ARM架构因其低功耗特性而具备优势。考虑到未来智能体数量将实现十倍、百倍甚至千倍的增长，数据中心的功耗管理将成为关键挑战。例如，阿里云已经设计了面向智能体的超算节点，单个机柜内可集成288个CPU，这正是为了应对未来大规模部署带来的功耗与密度挑战。</p>
+<h3>在AI Agent场景下，ARM与x86架构的适用性有何差异？未来在采购比例上预计会有怎样的趋势变化？</h3>
+<p>从生态视角看，ARM架构目前能够覆盖约95%的设备，而x86架构可以实现100%的覆盖。尽管ARM在实际落地中影响不大，但x86架构仍被认为能够更好地支持一些长程、复杂的任务。在采购比例方面，当前x86架构的占比接近80%。展望未来，预计x86仍能保持60%至70%的市场份额。阿里云近期与ARM达成了一项长期协议，并计划在未来重点推进ARM架构的落地应用，预计其市场份额最多可达到20%至30%。加上阿里云已有的RISC-V生态，x86架构仍将占据主导地位。</p>
+<h3>随着AI Agent渗透率的提升，其处理的工作负载是否会变得越来越复杂？</h3>
+<p>从智能体落地的角度来看，确实如此。随着部署的智能体数量增多、能力增强，其处理的工作负载会趋向于更复杂。例如，个人智能体处理的负载相对简单，而企业级智能体由于需要处理长程任务，其负载必然更为复杂。</p>
+<h3>在企业级Agent任务中，是否需要配置高端CPU？未来高端与普通CPU的需求结构将如何演变？</h3>
+<p>未来的CPU配置不一定都需要高端型号。例如，在一个拥有288颗CPU的超算节点中，配置高端CPU的意义不大，因为这会带来高功耗和高成本问题。选用类似海光等性能稍逊的CPU可能效果更好，因为智能体在运行时并非始终满负荷占用整个核心，可能只用到一至四个核心。然而，CPU的选择最终取决于具体的工作负载。如果负载较重，则需要选用高端CPU以保证执行效率。因此，未来CPU的配置将呈现一种混合状态，而非全部统一采用高端型号。</p>
+</div>
+</main>
+</body></html>

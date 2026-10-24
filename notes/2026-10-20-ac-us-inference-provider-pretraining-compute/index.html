@@ -1,0 +1,184 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.20 | AC | LLM | US Inference Provider: Pretraining &amp; Compute</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.20 | AC | LLM | US Inference Provider: Pretraining &amp; Compute</h1>
+<p class="orig">原标题：美国顶尖AI推理服务商谈AI预训练趋势、算力供给瓶颈与模型竞争格局</p>
+<p class="tags">#llm #ai-demand</p>
+<p class="meta">AceCamp · 2026-10-20 · article 70568237</p>
+<div class="body">
+<h2>摘要</h2>
+<p>后训练模式转向定制化，预训练与数据量重回核心。2025 年后训练基础设施趋于成熟，但定制化规模化难；行业共识回归大规模预训练与特定数据 mid-training，数据量对模型智能的贡献已超越架构创新。传统企业因成本压力从闭源转向开源/定制方案。某美国大型银行巨头等大客户因 Token 成本激增（年化已达亿美元级）寻求迁移。AI 原生应用对工具型软件冲击巨大，但难撼动渠道型巨头。某全球 CRM 软件巨头等拥有深厚行业惯性与海量私有数据的公司护城河稳固，甚至成为模型厂商争抢的接入对象。大模型竞争格局分化，某美国头部 AI 实验室稳健性优于某美国头部 AI 基础模型公司。后者 ARR 增长停滞且面临某美国最大社交网络公司、某美国消费电子与终端巨头等核心客户流失；中国模型中 K 系列效果领先（接近满分档），G系列紧随其后；某全球搜索与云巨头通过软硬全耦合设计（为其 Gemini 架构优化的专用芯片）强化推理速度。</p>
+<p><b>专家观点：</b></p>
+<p><b>Q&amp;A</b></p>
+<p><b>目前大模型训练领域，特别是后训练（post-training）环节，呈现出哪些新的发展趋势？</b></p>
+<p>当前大模型训练领域的整体趋势正从后训练转向预训练。所有大型实验室都在积极采购数据、增加算力，以进行更大规模的预训练。这一趋势导致数据价格被炒得非常高，无论中国还是美国的实验室都在通过各种途径寻找数据供应商，例如某传统行业巨头与某数据公司等现在也开始销售数据。</p>
+<p>对于后训练，其基础设施相较于几个月前已成熟许多。不过，与前沿实验室不同，公司所从事的后训练业务更侧重于根据客户的特定场景和数据进行定制化优化。这种定制化的后训练模式在中期内可能难以实现规模化。</p>
+<p><b>贵公司的 AI 基础设施服务在面向不同类型的企业客户时，遇到了哪些具体的市场挑战和机遇？</b></p>
+<p>公司的基础设施完全有能力支持客户从头开始进行综合性后训练，但目前承接的业务主要围绕客户数据进行场景化模型的定制。在市场拓展中，公司将客户分为三类，并面临不同的挑战：</p>
+<p>第一类是顶级科技大厂，如某美国头部 AI 实验室、某全球搜索与云巨头、某美国最大社交网络公司等。这些公司已经拥有自建的成熟基础设施，因此不是公司的目标客户。</p>
+<p>第二类是上一代的"独角兽"公司，如某外卖配送平台、某互联网券商平台、某出行服务平台等。争取这类客户的难度较大。尽管他们的 AI能力相对较弱，但组织规模庞大，内部存在政治阻力。公司的基础设施服务可能会被视为对其内部团队的威胁，从而遭到抵制。通常，这些公司会尝试自建团队解决问题，例如从某全球搜索与云巨头或某美国最大社交网络公司招聘人员模仿公司的模式。这个试错过程至少需要一年，例如从2025 年底开始招人，到 2026 年全年进行尝试。只有在内部尝试被证明失败后，他们才可能转向采购外部服务，这个决策周期非常长。</p>
+<p>第三类客户可细分为两类。一类是 AI 原生公司，如某 AI 编程工具公司、某 AI 法律科技初创、某 AI搜索问答初创等，这类客户公司有很高的把握可以争取到。另一类是公司下一阶段拓展估值（例如需达千亿美元级，对应年经常性收入需达数十亿美元级）所必须攻克的传统企业，如全球四大会计师事务所中的数家以及某全球顶尖战略咨询机构等。</p>
+<p>传统企业客户在采用大模型服务时，为何表现出从某美国头部 AI 基础模型公司等闭源模型服务迁移的趋势，以及在选择开源模型方案时面临哪些具体问题？</p>
+<p>传统企业客户正在积极寻求从某美国头部 AI 基础模型公司等闭源云服务中迁出，主要原因是成本问题。以某美国大型银行巨头为例，其内部网站开发等编码场景大量使用大模型，导致 token消耗成本急剧上升。据测算，其年化成本已接近亿美元级，并预计明年（2027 年）更高，这令他们难以承受。因此，他们正在与公司探讨解决方案，例如在他们的编码场景中使用某美国头部 AI 基础模型公司的编程 Agent 工具，但运行在某 AI推理云平台的模型（如某中国头部大模型 K 系列）上。通过采用 K 系列模型，公司可以帮助他们将年开销降低至数千万美元级，实现逾五成的成本削减。</p>
+<p>另一方面，选择某全球搜索与云巨头的开源模型方案也存在问题。该巨头对开源模型的支持态度并不积极，往往会通过各种方式引导客户转向其自家的 Gemini 模型。然而，目前没有企业愿意与其进行深度绑定，大家都希望保持切换模型的灵活性，以便在 K系列或 G 系列等模型表现更优时能够随时切换。</p>
+<p>尽管这些传统企业对开源方案的需求非常旺盛，但合作的主要障碍在于他们对 AI技术普遍缺乏深入理解。与科技公司不同，他们清楚地认识到自身的不足，并且不固执己见。然而，由于技术知识的极度匮乏，公司需要从非常基础的概念开始对他们进行辅导和支持，这使得提供系统性的、围绕其内部数据的解决方案变得非常复杂。</p>
+<p><b>某美国数据分析与 AI 平台公司与传统咨询公司（如某全球 IT 咨询与系统集成服务巨头、某全球顶尖战略咨询机构）相比有何区别？另外，公司目前的人员招聘策略反映了怎样的业务发展阶段？</b></p>
+<p>某美国数据分析与 AI 平台公司与传统咨询公司存在本质区别，其技术能力和解决方案的深度远超后者。</p>
+<p>在人员方面，公司目前正在多个垂直领域进行业务拓展，因此需要招聘大量执行层面的员工来完成具体工作，这可以理解为扩充执行团队以应对业务增长。许多解决方案层面的方法论可能已逐步被总结为标准化操作流程。例如，其数据建模平台就是将从多家公司业务中抽象出的数据模型，提炼成一套相对通用的方法论。因此，当前阶段新增的人力主要负责执行这些标准化流程。回顾其发展早期，例如2014 年至 2017 年期间，公司为吸引顶尖人才曾提供包括高额底薪和股票在内的极具竞争力的薪酬方案。</p>
+<p><b>当前大模型训练的方法论演进趋势是怎样的？模型架构与数据量在模型效果提升中的作用分别如何？</b></p>
+<p>大模型训练的方法论在演变。到 2025年下半年，行业已普遍认识到后训练，特别是强化学习，能够在基础模型现有能力之上实现一定程度的性能提升。然而，如果基础模型本身性能不佳，单纯依靠强化学习进行拔高的效果有限。因此，当前的重心已重新回归到更基础的方法上：首先进行大规模的预训练，然后利用特定数据集进行"mid-training"（小范围预训练），本质上是采用更直接、更依赖算力和数据的方法。</p>
+<p>在模型效果提升方面，数据量的决定性作用日益凸显，而模型架构创新的边际效益似乎在减弱。以中国的开源模型为例，某中国开源大模型（D 系列）和某中国大模型（G 系列）在模型架构上进行了有意义的革新。但从实际效果来看，某中国头部大模型（K系列）的表现却非常出色。K 系列的策略是投入海量算力和数据，甚至采用一些非常规手段获取数据，其成功反向证明了在当前阶段，模型智能水平的提升主要依赖于数据，而非模型架构的精巧调整。架构优化的作用可能更多体现在降低 KV cache占用、实现成本优化等方面。</p>
+<p><b>当前北美 AI 算力市场的供给情况如何？获取算力的主要瓶颈是什么？</b></p>
+<p>尽管硬件（如 HBM 内存、SSD）在整个产业链中确实存在短缺，但在北美市场，获取 AI 算力的最大瓶颈并非 GPU 卡本身，而是数据中心的可用性。</p>
+<p>实际上，在美国市场中可以找到 GPU 卡资源。例如，通过与某服务器与算力基础设施厂商的副总裁沟通，为满足到 2026年底约数十兆瓦的推理算力需求，对方表示可以提供高达上百兆瓦的资源。这表明市场上存在大量非传统的算力供应商。这些供应商背景多样，包括原先在不同国家从事房地产投资的商人、国内的能源行业富商、以及来自东南亚等地的家族办公室，他们并非传统的云计算服务商。此外，还有一些新进入的投资者，他们听说在美国投资算力能够实现一年回本、两年翻倍，便投入巨资（例如购置数千万美元级的豪宅用于社交）以获取行业资源。这些新晋参与者通常缺乏专业技术能力，其提供的云服务模式较为初级，仅仅是将采购的GPU 卡和机架部署在小型场地，并接通电力和制冷系统。</p>
+<p><b>海外客户对于使用中国背景的 AI 模型是否存在安全顾虑？</b></p>
+<p>完全没有。公司目前未曾听闻任何客户对中国模型提出过安全方面的疑问。模型本身只是一堆文件，并不存在固有的安全或不安全属性。所谓的安全问题，通常源于 Prompt 编写不当。如果客户确实存在安全方面的担忧，完全可以通过 harness等技术手段来解决。</p>
+<p><b>在闭源模型持续迭代的背景下，开源模型与闭源模型之间的技术差距是否会持续扩大？是否有方法可以弥补类似 COT（Chain-of-Thought）等能力的差距？</b></p>
+<p>差距不会拉得那么大。首先，闭源模型本身在许多通用知识性问题上的能力提升幅度也有限。只有在闭源模型能力大幅跃升而开源模型停滞不前的情况下，差距才会显著体现。但从业界观察来看，闭源模型近几个版本在宏观质量上并未展现出颠覆性的差异。</p>
+<p>其次，对于 COT 这类能力，长期来看其重要性可能会下降，并且现在已有成本略高但可行的方案来重构 COT。例如，模型生成答案后，可以要求其根据问题和答案反向构建思考过程。公司曾进行过类似尝试，例如公司发布的某自研模型（A系列），它本质上是公司自己训练的一个类似 K 系列的模型。公司的做法是，将开源模型生成的 COT 和内容结合起来，让模型进行一次自我总结，剔除思考过程中的冗余信息，生成一个"压缩版 COT"，然后用这个压缩版 COT去重新训练整个模型。通过这种方式，公司能将 K 系列模型的 COT 压缩约四成。这种重构方式虽然增加了一次推理生成和一次重构的步骤，但通过精巧的 Prompt 设计，可以在一定程度上规避这个问题。</p>
+<p><b>个人 AI 助理（如某 AI 个人助理 M 系列）的普及是否会导致 CPU 消耗的急剧增长？</b></p>
+<p>CPU 的消耗可能并不会那么大，整体上是可控的。主要有以下几点原因：首先，许多个人 AI 助理执行的是短程、轻量级任务。以 M 系列为例，其大部分应用场景并不复杂，更像一个轻量级的开放云平台。其 token消耗量远低于深度应用场景，例如，有用户反馈一个多月也未能用完免费赠送的十亿级 token，而重度编程辅助任务可能在一天内就能消耗十余亿 token。其次，目前缺乏能像编程一样深入且复杂的应用场景。编程任务可以并行启动数十个 agent，每个agent 都会占用数个 CPU 线程。而典型的个人助理任务，如生成早安摘要，仅需爬取若干信息源，通过两三个线程即可完成，资源占用很小。最后，当使用量增长到一定规模时，服务提供商会进行定向优化。例如，某 AI代理浏览器产品在无法解决的用户场景时会调用浏览器，这曾引发对其虚拟机消耗的担忧。但实际上，在其峰值约数十万用户同时在线时，并非为每个用户都配备一个独立的虚拟机，而是通过大量共享资源的方式来减少虚拟池的总开销。如果不进行这类优化，CPU成本可能会接近 GPU 成本，导致单个用户每月需收费高达数百美元才能覆盖成本，这在商业上是不可行的。</p>
+<p><b>在 AI 时代，软件公司被 AI 原生应用替代的可能性有多大？哪些类型的公司更容易受到冲击，哪些则具备较强的护城河？</b></p>
+<p>AI 公司更有可能在纯软件功能层面实现低成本复刻，而非替代那些拥有深厚行业洞察、客户关系和商业渠道能力的公司。对于那些二十年来功能形态固化的软件，AI 可以迅速生成功能一致的替代品。因此，像某 UI设计协作工具公司、某创意设计软件公司这类工具属性强的公司更容易受到冲击，AI 甚至可以直接生成最终的视频或图片成品，从而消解其工具价值。然而，对于某全球 CRM软件巨头这类公司，其护城河则非常深厚。首先，其产品拥有巨大的行业惯性，许多资深用户的职业生涯都深度绑定于该软件。其次，该巨头沉淀了海量的客户数据，这构成了其核心壁垒。这种数据和客户关系资产的价值极高，甚至可能出现某美国头部 AI基础模型公司或某美国头部 AI 实验室等模型公司主动寻求与其合作，希望将其服务作为接入对象接入自身体系。</p>
+</div>
+</main>
+</body></html>
