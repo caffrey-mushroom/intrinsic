@@ -140,7 +140,7 @@ for p in sorted(glob.glob(f'{kb}/acecamp 2/*/*.md')):
     body = re.sub(r'## 文章信息\n.*?(?=\n## )', '', body, flags=re.S)
     add(src='AC', date=date, orig=title, path=p, md=body, article=m.group(1), time=tm.group(2) if tm else '')
 
-# ---- top-level date folders: Merit audio (9K) and Substack copies not in Substack/
+# ---- top-level date folders: Merit audio (9K), own expert calls (Call) and Substack copies not in Substack/
 sub_norm = {}
 for r in recs:
     if r['src'] == 'Substack':
@@ -149,7 +149,14 @@ for p in sorted(glob.glob(f'{kb}/20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/*.md')):
     if CONF.search(p):
         continue
     day = os.path.basename(os.path.dirname(p)); name = os.path.basename(p)[:-3]
-    if day < since or '(audio)' in name:
+    if '(audio)' in name:
+        # own expert calls: any date (the published-list dedupe skips repeats)
+        t = read(p)
+        first, _, rest = t.partition('\n')
+        orig = name.replace('(audio)', '').strip() or first.strip()
+        add(src='Call', date=day, orig=orig, path=p, md=rest, top=1)
+        continue
+    if day < since:
         continue
     t = read(p)
     if re.match(r'\d{6} - Merit', name):

@@ -1,0 +1,637 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.22 | 9K | LLM | Fast Inference Use Cases Check III</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.22 | 9K | LLM | Fast Inference Use Cases Check III</h1>
+<p class="orig">原标题：Merit 快速推理应用场景调研III(2026-10-22 12:30:00)</p>
+<p class="tags">#llm #agents #asic</p>
+<p class="meta">Meritco 久谦 · 2026-10-22</p>
+<div class="body">
+<h2>音频信息</h2>
+<p>音频标题: 261022 - Merit 快速推理应用场景调研III</p>
+<p>相关标的：undefined</p>
+<p>议题：</p>
+<p>完整音频链接：http://mw-meeting.oss-cn-shanghai.aliyuncs.com/audio/1792647909023-261022%2520-%2520Merit%2520%25E5%25BF%25AB%25E9%2580%259F%25E6%258E%25A8%25E7%2590%2586%25E5%25BA%2594%25E7%2594%25A8%25E5%259C%25BA%25E6%2599%25AF%25E8%25B0%2583%25E7%25A0%2594III_20261022_134408.mp3</p>
+<h2>音频纪要总结</h2>
+<h2>专家访谈纪要</h2>
+<h2>1. 企业客户的模型选择与推理优化逻辑</h2>
+<h3>a) 企业客户选择模型时，优先考虑能力、速度还是成本？</h3>
+<ul><li>模型选择的首要标准是能否解决业务问题，而不是单纯追求推理速度。</li><li>实际决策流程通常为：</li></ul>
+<ol><li>明确客户的具体应用场景和能力要求；</li><li>通过通用或定制 Benchmark 验证模型能力；</li><li>在达到能力门槛的模型中，选择参数规模尽可能小、成本更低的模型；</li><li>再根据用户对时延、吞吐量和成本的偏好进行推理优化。</li></ol>
+<ul><li>几乎没有客户会先提出“必须达到每秒500个Token”，再从满足速度要求的模型中选择能力合适者。</li><li>不同场景对性能的要求明显不同：</li></ul>
+<ol><li>Coding Agent、Cowork等实时交互场景，更看重低时延和快速生成；</li><li>定制客服、法律文档搜索、反向推荐等场景，更看重整体吞吐量和单Token成本；</li><li>后台长程任务对实时速度不敏感，更适合采用低成本慢速推理。</li></ol>
+<h3>b) 推理部署中，速度、吞吐量和成本如何取舍？</h3>
+<ul><li>Kernel优化方法具有一定通用性，但优化后的模型可以采用不同部署方式：</li></ul>
+<ol><li>降低Batch Size，提升单请求生成速度，但Token成本会上升；</li><li>增大Batch Size，提升总体吞吐量并降低单位Token成本，但单个用户等待时间会增加；</li><li>对Prefill和Decode阶段使用不同硬件或配置，以满足首Token时延和生成速度要求。</li></ol>
+<ul><li>对Latency敏感的客户，可能要求：</li></ul>
+<ol><li>Time to First Token压缩至300毫秒以内；</li><li>生成速度达到每秒400个Token以上；</li><li>使用GB300完成Prefill，并通过降低Batch Size提升Decode速度。</li></ol>
+<ul><li>最终方案需要与客户协商，在业务体验、模型能力和成本之间寻找平衡，并非越快越好。</li></ul>
+<h3>c) Fireworks通常如何划分模型档次？</h3>
+<ul><li><b>高能力档</b>：适用于Coding、Cowork等复杂任务。</li></ul>
+<ol><li>主要包括千问高阶模型、Kimi K3、Kimi K2.5、智谱5.3、智谱5.2和DeepSeek V4；</li><li>智谱5.2使用量已经较少，当前更多使用智谱5.3；</li><li>近期DeepSeek V4的能力可能更强。</li></ol>
+<ul><li><b>中间档</b>：适用于对速度较敏感、但任务相对轻量的场景。</li></ul>
+<ol><li>主要包括千问Max或Plus、MiniMax、DeepSeek V4 Flash；</li><li>兼顾一定模型能力、推理速度和成本。</li></ol>
+<ul><li><b>低成本档</b>：适用于邮件回复、简单客服和基础工具调用。</li></ul>
+<ol><li>可使用千问30B、9B甚至3B模型；</li><li>如果后训练效果较好，小模型也能满足简单企业任务。</li></ol>
+<ul><li>某一时期真正具备竞争力的模型通常只有1至2个，因此客户实际可选择范围并不大。</li></ul>
+<h3>d) 高频交易、实时语音客服等速度敏感场景如何选模型？</h3>
+<ul><li>不会优先推荐1万亿参数以上的超大模型，因为无论如何优化，其速度都很难满足极低时延需求。</li><li>如果客户更重视智能水平、能够容忍一定时延，可考虑：</li></ul>
+<ol><li>参数规模低于4000亿的千问3.7、3.8 Max；</li><li>MiniMax等中等规模模型。</li></ol>
+<ul><li>这类模型适合信号捕捉、简单判断和固定流程，而不适合复杂代码生成等高难度任务。</li><li>如果模型规模限制在3000亿参数以下，其能力通常弱于1.5万亿参数以上模型，需要通过高质量业务数据进行SFT或RL，以弥补部分能力差距。</li></ul>
+<h3>e) 企业用户对模型品牌是否具有忠诚度？</h3>
+<ul><li>企业用户基本没有模型忠诚度，模型选择会随能力、成本和实际评测结果变化。</li><li>2025年，约80%的场景曾使用DeepSeek V3；Kimi K2推出后，短期内获取了30%以上流量。</li><li>企业切换模型的节奏通常慢于AI Native企业：</li></ul>
+<ol><li>不会因为某家厂商发布新模型就立即迁移；</li><li>会经过大规模、系统化Evaluation；</li><li>只有确认新模型在具体业务场景中更优后，才会正式接入。</li></ol>
+<ul><li>企业真正关注的是模型能否稳定解决业务问题，而不是模型厂商的品牌。</li></ul>
+<h2>2. Benchmark、后训练与企业模型评估体系</h2>
+<h3>a) 企业选择模型是否必须参考Benchmark？</h3>
+<ul><li>现阶段仍需参考Benchmark，但许多公开Benchmark的区分度已经下降。</li><li>不同Benchmark存在的问题包括：</li></ul>
+<ol><li>SWE-bench上多数模型表现过好，难以拉开差距；</li><li>Terminal-bench 2、3以及部分工具调用Benchmark过难，多数模型表现较差；</li><li>Benchmark过于简单或过于困难，都无法形成有效的能力梯度。</li></ol>
+<ul><li>对Coding Agent而言，客户常参考Terminal Bench、SWE-bench和MMLU。</li><li>专业企业会建立自己的评测体系。例如法律科技公司可构建Legal Bench，围绕真实问题建立任务集和综合评分体系。</li></ul>
+<h3>b) 为什么定制Benchmark更可靠？</h3>
+<ul><li>定制Benchmark可以直接反映模型在客户真实工作环境中的表现，包括：</li></ul>
+<ol><li>大文本搜索；</li><li>工具调用；</li><li>文档总结；</li><li>固定工作流执行；</li><li>专业知识与行业规则理解。</li></ol>
+<ul><li>对JP Morgan、安永等大型客户，Fireworks可以专门构建定制Benchmark。</li><li>但定制评测成本较高：</li></ul>
+<ol><li>可能需要3至5人投入一个多月；</li><li>对20万美元规模的小型合同而言，投入产出比不合理；</li><li>因此小客户仍以公开Benchmark和少量业务样本评估为主。</li></ol>
+<h3>c) 后训练在模型能力提升中发挥什么作用？</h3>
+<ul><li>后训练更适合能力校正和场景适配，但难以让模型大范围学习新知识。</li><li>如果要显著提升基础能力，仍需依赖预训练或Mid-training。</li><li>后训练的主要价值包括：</li></ul>
+<ol><li>针对企业数据进行SFT；</li><li>通过RL强化特定任务表现；</li><li>提升工具调用、工作流执行和专业场景适配能力；</li><li>纠正模型在特定任务中的输出偏差。</li></ol>
+<ul><li>后训练效果高度依赖企业能否提供高质量数据集，尤其是在中小模型上，数据质量将直接影响能力上限。</li></ul>
+<h3>d) Multi-Agent架构如何影响模型选择？</h3>
+<ul><li>当前多数AI Native产品采用Multi-Agent架构，一个Harness中会配置多个模型。</li><li>不同模型承担不同角色：</li></ul>
+<ol><li>顶层高能力模型负责规划和任务调度；</li><li>中间层模型负责工具调用、文档搜索和任务拆解；</li><li>小模型负责邮件回复、分类和固定流程。</li></ol>
+<ul><li>Cursor等Coding产品通常使用高能力模型进行顶层调度。</li><li>Manus等部分相对简单的场景，可使用Kimi系列模型进行调度。</li><li>大范围代码搜索和文档总结，更关注长上下文、文本检索和吞吐能力，不一定要求最强的工具调用能力。</li></ul>
+<h2>3. 企业客户结构与服务模式</h2>
+<h3>a) AI Native企业和传统大型企业的需求有何差异？</h3>
+<ul><li>AI Native企业内部技术能力较强，通常能够明确产品需求和模型能力边界。</li><li>其主要诉求是将推理优化、后训练和基础设施运维外包，从而集中资源优化自身Harness和产品体验。</li><li>Fireworks将通用推理优化做一次后，可以复制给多个客户；客户自行建设则只能服务自身业务，因此更愿意采购专业服务。</li><li>Replit、Cursor、Cognition等Coding Agent企业基本采用这一模式。</li></ul>
+<h3>b) 传统大型企业需要怎样的服务？</h3>
+<ul><li>传统企业内部通常缺乏大模型、Agent和推理基础设施相关人才，只能提出模糊的业务需求。</li><li>服务流程需要从业务教育开始：</li></ul>
+<ol><li>明确企业希望使用AI解决什么问题；</li><li>设定合理预期并解释模型能力边界；</li><li>拆解Harness和工作流；</li><li>判断任务属于文档搜索、工具调用还是固定流程；</li><li>划分子任务并配置不同模型；</li><li>完成部署、后训练和持续优化。</li></ol>
+<ul><li>这一过程本质上兼具咨询、市场教育和技术实施属性，交付周期更长。</li></ul>
+<h3>c) 两类客户的订单规模和销售周期有何差异？</h3>
+<ul><li>AI Native客户：</li></ul>
+<ol><li>决策链条短；</li><li>可能1个月内完成签约；</li><li>单笔订单规模可达500万美元。</li></ol>
+<ul><li>传统大型企业：</li></ul>
+<ol><li>销售和沟通周期可能达到9个月至1年；</li><li>需要完成内部教育、评测、合规和采购流程；</li><li>单笔订单可能达到5000万美元；</li><li>典型客户包括JP Morgan、安永、普华永道等。</li></ol>
+<ul><li>两类客户各有权衡：AI Native客户签约快但订单较小，传统企业签约慢但合同金额更大。</li></ul>
+<h3>d) 对美国本土模型有特殊要求的客户如何处理？</h3>
+<ul><li>公共事业、政府相关客户及部分北美大型企业，可能因合规或内部政策拒绝使用中国模型。</li><li>可选模型包括：</li></ul>
+<ol><li>NVIDIA Nemotron；</li><li>Google Gemma 4；</li><li>Meta的新开源模型。</li></ol>
+<ul><li>美国开源模型此前整体能力偏弱，部分订单因此无法承接。</li><li>Meta新模型上线后，可能改善公共事业和北美大型企业的本土模型选择空间。</li></ul>
+<h2>4. 快速推理的需求规模与实际性能</h2>
+<h3>a) 当前有多少企业推理需求属于快速推理？</h3>
+<ul><li>以Fireworks的To B业务为参考，快速推理需求约占整体业务的60%至70%。</li><li>其中约2/3与Coding相关，即Coding业务约占整体业务的50%。</li><li>典型快速推理场景包括：</li></ul>
+<ol><li>Cursor、Cognition等Coding Agent；</li><li>微软Copilot等Cowork产品；</li><li>Genspark的PPT生成；</li><li>Harvey的实时文档处理、分类、填表和案件关联信息生成。</li></ol>
+<ul><li>是否需要快速推理，核心取决于用户是否直接与AI互动：</li></ul>
+<ol><li>前台实时交互需要低时延；</li><li>后台异步任务更关注成本和吞吐量。</li></ol>
+<h3>b) 哪些业务不需要极快推理？</h3>
+<ul><li>大文档检索、批量搜索、后台总结和长程Agent任务通常不需要极快速度。</li><li>Harvey可在半夜用户较少时集中处理大量文档，只需保证足够吞吐量。</li><li>Meta Muse等C端Agent在执行预订饭店、搜索度假村等30分钟以上的长任务时，采用慢速低成本模式更合理。</li><li>对此类任务而言，快速完成中间步骤并不会明显改善用户体验，反而可能导致成本上升。</li></ul>
+<h3>c) 当前不同模型的推理速度大概是多少？</h3>
+<ul><li>Qwen 3或同类大型模型：约180至200 Token/秒。</li><li>Kimi K3：最快约200 Token/秒。</li><li>智谱5.2、5.3：</li></ul>
+<ol><li>通过Kernel、推测解码和KV Cache综合优化；</li><li>极限速度约460至480 Token/秒；</li><li>常规服务达到约400 Token/秒已基本足够。</li></ol>
+<ul><li>Qwen 72B：最快约200 Token/秒出头。</li><li>Llama 70B、千问32B或33B：</li></ul>
+<ol><li>使用B300及极限配置；</li><li>理想情况下可接近800 Token/秒。</li></ol>
+<ul><li>较小的千问模型：最快可接近700 Token/秒。</li><li>上述极值无法持续稳定达到，实际速度会受业务分布、推测解码命中率和请求变化影响。</li></ul>
+<h3>d) 为什么垂直场景更容易实现高速推理？</h3>
+<ul><li>垂直场景的Token分布更加集中，有利于提升：</li></ul>
+<ol><li>KV Cache命中率；</li><li>推测解码准确率；</li><li>Kernel执行效率。</li></ol>
+<ul><li>例如代码生成主要涉及英文、数字、标点、空格和换行，分布比通用问答更集中。</li><li>如果模型需要同时回答天文、地理、新闻等开放问题，会产生更多无效Cache，推测解码命中率也会下降。</li></ul>
+<h3>e) 推理速度是否会持续提高？</h3>
+<ul><li>随着新一代硬件铺开，前沿模型推理速度仍将显著提高。</li><li>去年年底，Kimi K2量化后在H100上运行：</li></ul>
+<ol><li>优化后约100 Token/秒出头；</li><li>需要使用16张卡；</li><li>未优化的SGLang或vLLM框架仅约30至40 Token/秒。</li></ol>
+<ul><li>当前Kimi K3在新硬件上可达到约200 Token/秒。</li><li>根据初步测试，Vera Rubin相对B300可能带来4至6倍吞吐提升：</li></ul>
+<ol><li>当前200 Token/秒的模型，完成适配后达到800 Token/秒并不困难；</li><li>理想情况下可达到800至1000 Token/秒；</li><li>但Vera Rubin的采购和租赁成本也会更高。</li></ol>
+<h2>5. Cerebras、Groq等高速推理ASIC的市场空间</h2>
+<h3>a) 快速推理ASIC是否具有真实价值？</h3>
+<ul><li>在模型能力满足业务需求的前提下，用户对生成速度的追求几乎没有上限。</li><li>如果模型能够以1500甚至4000 Token/秒运行，实时交互体验会明显改善。</li><li>在代码修改等场景中，极高速推理可让网页修改在约1秒内完成，用户几乎看不到代码生成过程。</li><li>当前Coding Agent执行任务可能需要半小时、数小时甚至十几个小时，因此速度提升具有明确价值。</li></ul>
+<h3>b) 为什么Cerebras等方案尚未大规模商业化？</h3>
+<ul><li>最大障碍不是速度，而是成本和量产能力。</li><li>如果使用Cerebras将Codex类产品提升至1000 Token/秒以上：</li></ul>
+<ol><li>月费可能达到2000美元；</li><li>即使按此定价，服务商也未必盈利；</li><li>极端使用情况下，每日算力成本可能达到数千甚至上万美元。</li></ol>
+<ul><li>如果推理速度提升3倍、价格却上涨5倍，大部分企业无法承受。</li><li>高价服务的潜在客户可能仅限于少数对冲基金、大型银行高管或高价值专业用户，市场规模有限。</li><li>如果服务规模不足，还需单独维护专用集群，缺乏可扩展性。</li></ul>
+<h3>c) Cerebras运行Kimi K3达到1000 Token/秒是否有市场？</h3>
+<ul><li>受访者判断，该组合目前基本没有规模化市场。</li><li>极高速度对应最高端用户体验，理论上应搭配能力最强的模型。</li><li>当前开源模型与顶级闭源模型仍存在明显能力差距，因此用昂贵高速芯片运行非最强模型，商业匹配度较低。</li><li>可能成立的有限场景是：</li></ul>
+<ol><li>客户拒绝受制于OpenAI或Anthropic；</li><li>必须使用开源模型作为基座；</li><li>已通过大量后训练构建垂直模型；</li><li>资金充足且极度重视用户体验。</li></ol>
+<ul><li>Cursor、Cognition等对速度要求较高的客户，目前也没有明确提出进一步提升至1000 Token/秒的需求。</li></ul>
+<h3>d) SRAM路线为什么更适合小型Dense模型？</h3>
+<ul><li>SRAM寻址方式不如HBM灵活，部署前需要预先规划模型各层及MoE拓扑。</li><li>每个算子主要访问周边SRAM，一旦需要全局寻址，速度会明显下降。</li><li>对MoE模型而言，如果需要在大量专家中跳跃访问，连续寻址效率较低。</li><li>因此：</li></ul>
+<ol><li>参数量较小的Dense模型更适配当前SRAM ASIC；</li><li>模型越稀疏、专家数量越多，推理表现越不理想；</li><li>运行超大模型可能需要修改模型架构，使其适配芯片。</li></ol>
+<ul><li>Cerebras曾因MoE寻址问题影响推理效率，尽管市场称问题已有改善，但其超大模型适配能力仍需验证。</li></ul>
+<h3>e) 高速ASIC长期发展的关键是什么？</h3>
+<ul><li>核心是软硬件协同设计，而不是单纯提升芯片峰值速度。</li><li>Google正在将硬件与软件团队进一步整合：</li></ul>
+<ol><li>围绕Gemini模型路线设计专用芯片；</li><li>模型架构固定适配芯片；</li><li>芯片也针对模型架构优化；</li><li>以牺牲通用兼容性换取极高吞吐量。</li></ol>
+<ul><li>任何定制芯片只要能够解决成本、量产和模型适配问题，用户不会拒绝更好的速度。</li><li>如果无法在价格上与英伟达GPU形成竞争，单纯的速度优势难以转化为大规模市场。</li></ul>
+<h3>f) OpenAI和Anthropic是否使用Cerebras？</h3>
+<ul><li>OpenAI目前没有公开的线上服务明确运行在Cerebras上，内部可能仅在部分小模型或测试场景中使用。</li><li>OpenAI的Ultra Fast版本仍主要使用英伟达GPU，通过极低Batch Size提升速度。</li><li>Anthropic目前主要使用：</li></ul>
+<ol><li>英伟达GPU；</li><li>Google TPU；</li><li>正在适配AWS Trainium。</li></ol>
+<ul><li>Anthropic目前没有明确使用Cerebras的计划。</li></ul>
+<h2>6. 前沿模型参数规模与演进趋势</h2>
+<h3>a) 当前前沿模型大致处于什么参数量级？</h3>
+<ul><li>当前主流Frontier模型重新回到约1万亿参数量级。</li><li>访谈中提及的模型规模包括：</li></ul>
+<ol><li>Anthropic Fable初始版本约10万亿参数，因成本压力蒸馏至约3万亿；</li><li>Opus 5.5约1万亿参数；</li><li>Kimi K3约2.8万亿至3万亿参数；</li><li>DeepSeek V4约1.6万亿参数；</li><li>Kimi K2.5约1.4万亿参数；</li><li>Astra约1.1万亿至1.4万亿参数；</li><li>So约8000多亿参数。</li></ol>
+<ul><li>大部分To B客户不会使用Fable等超大模型，实际使用较多的模型仍集中在1万亿参数左右。</li></ul>
+<h3>b) 为什么超大模型上线后又会缩小？</h3>
+<ul><li>上半年部分厂商曾上线约3万亿参数模型，但成本难以承受：</li></ul>
+<ol><li>用户单次提问可能被收取约40美元；</li><li>服务商自身推理成本过高；</li><li>企业客户难以规模化采购。</li></ol>
+<ul><li>因此，厂商会通过蒸馏将模型缩回约1万亿参数，以平衡能力和成本。</li><li>模型企业通常在两个极值之间循环：</li></ul>
+<ol><li>扩大模型规模，寻找能力突破；</li><li>能力突破后发现服务成本过高，再缩小模型；</li><li>下一代硬件推出后，再重新扩大模型。</li></ol>
+<h3>c) Kimi后续模型规模可能如何变化？</h3>
+<ul><li>如果Vera Rubin未能在明年一季度前大规模铺开，主流推理硬件仍将是B300和GB300。</li><li>当前主流部署通常以8张卡为一个节点：</li></ul>
+<ol><li>单卡约280GB；</li><li>8卡总显存不足2TB；</li><li>超过2万亿参数的模型部署难度明显提升。</li></ol>
+<ul><li>Kimi K3约2.8万亿至3万亿参数，在B300上部署需要：</li></ul>
+<ol><li>对中间层进行量化；</li><li>将MoE层压缩至FP4；</li><li>或使用16张GB300，导致成本大幅增加。</li></ol>
+<ul><li>因此，Kimi 3.1的模型规模预计可能下调至约1.4万亿至1.6万亿参数。</li></ul>
+<h3>d) 为什么市场仍以8卡节点为主？</h3>
+<ul><li>虽然后端物理机柜可能采用NVL72甚至更大规模，但Neocloud通常按8卡节点销售和调度。</li><li>Nebius、Together、Crusoe和CoreWeave等厂商普遍采用类似配置。</li><li>若客户直接购买Bare Metal，并从Kubernetes调度和Infra层重新搭建，可以跨更多GPU部署，但当前规模较小。</li><li>因此，模型设计仍需要考虑8卡节点的显存和通信边界。</li></ul>
+<h3>e) 明年模型规模是否可能扩大至5万亿参数？</h3>
+<ul><li>如果Vera Rubin大规模铺开，行业将重新获得扩大模型规模的动力。</li><li>明年更普适的最大模型规模可能提升至约5万亿参数。</li><li>Rubin Ultra、Feynman等后续硬件推出后，可能会有厂商尝试8万亿至10万亿参数模型。</li><li>但超大模型能否取得有效能力提升，仍取决于：</li></ul>
+<ol><li>是否有足够训练算力；</li><li>是否有足够高质量数据；</li><li>Scaling Law是否继续有效；</li><li>推理成本能否被商业化收入覆盖。</li></ol>
+<h3>f) 高质量数据是否会成为模型扩张瓶颈？</h3>
+<ul><li>公有数据基本已被大规模抓取，新增高质量数据越来越稀缺。</li><li>Agent工具链等高价值训练数据成本极高，一条完整任务链的成本可能接近2000美元。</li><li>即使Anthropic、OpenAI、Google和Meta，也难以长期承担无限制的数据采购成本。</li><li>大量高价值数据保持私有：</li></ul>
+<ol><li>司法案件卷宗难以完整开放；</li><li>汽车企业不会轻易共享内部专业数据；</li><li>金融、法律和企业流程数据也具有较高保密性。</li></ol>
+<ul><li>如果数据规模无法增长，模型从3万亿扩大到5万亿可能仍有效，但从5万亿扩大到10万亿未必产生明显增益。</li></ul>
+<h3>g) 大模型与小模型之间是什么关系？</h3>
+<ul><li>前沿实验室可能先训练一个内部最大模型，再蒸馏出多个不同版本对外服务。</li><li>小模型设计也会直接考虑硬件条件。</li><li>例如OpenAI某70B模型采用BF16时，可放入一张H200，并保留约一半HBM给KV Cache。</li><li>当前大模型通常不直接对外销售，而是：</li></ul>
+<ol><li>用最大模型蒸馏出中型模型；</li><li>再由中型模型蒸馏出更小模型；</li><li>分别服务高能力、低时延和低成本场景。</li></ol>
+<h2>7. 推理基础设施、硬件结构与Token价格</h2>
+<h3>a) Fireworks当前使用哪些芯片？</h3>
+<ul><li>Fireworks约90%的推理流量运行在英伟达GPU上。</li><li>AMD占比不到10%，但正在逐步增加。</li><li>英伟达GPU结构大致为：</li></ul>
+<ol><li>B300约占50%；</li><li>GB300约占25%；</li><li>剩余约25%主要为H200；</li><li>H100和A100占比极少，主要运行小规模日常任务。</li></ol>
+<ul><li>整体约2/3算力已属于Blackwell架构。</li></ul>
+<h3>b) 硬件升级对推理效率的贡献有多大？</h3>
+<ul><li>推理性能提升中，Fireworks的软件优化贡献可能约占1/3，硬件升级贡献约占2/3。</li><li>从H200升级至B200时：</li></ul>
+<ol><li>租赁价格约上涨50%至60%；</li><li>吞吐量可稳定提升约3倍；</li><li>单位Token成本和用户体验反而可能改善。</li></ol>
+<ul><li>对具备一定Token规模的企业客户，优先将H200替换为B200通常更经济。</li><li>软件团队的主要工作是让算子和自研Kernel适配新架构，而革命性提升主要来自硬件。</li></ul>
+<h3>c) 当前Token价格处于什么趋势？</h3>
+<ul><li>短期来看，Token价格稳中有升；长期以季度为单位观察，仍会因硬件升级而下降。</li><li>近期价格没有继续下降的原因包括：</li></ul>
+<ol><li>推理需求持续增长；</li><li>美国数据中心建设放缓；</li><li>Neocloud融资困难；</li><li>部分数据中心项目遭遇抗议、暂停或缩减规模；</li><li>明年供给可能低于预期。</li></ol>
+<ul><li>从5月至今，B300租赁价格上涨明显：</li></ul>
+<ol><li>5月底至6月初约3.6至3.8美元/卡时；</li><li>当前普遍超过5美元/卡时；</li><li>部分供应商报价达到6.4至6.5美元/卡时；</li><li>部分合同要求签订5年；</li><li>整体涨幅至少约30%。</li></ol>
+<ul><li>由于5月以后硬件架构没有革命性更新，吞吐量没有明显跃升，Token价格基本保持不变，甚至略有上涨。</li></ul>
+<h3>d) 老一代GPU是否会因模型扩大而失去需求？</h3>
+<ul><li>不会。市场上仍有大量简单场景和算力资源有限的用户。</li><li>邮件回复、智能助手等基础应用不需要前沿超大模型，小模型即可完成。</li><li>算力资源分布极不均衡：</li></ul>
+<ol><li>商业公司已经大量使用Blackwell；</li><li>许多高校博士生完成论文或课程项目时，可能只有两张A100；</li><li>对下游用户而言，H200仍是非常优质的资源。</li></ol>
+<ul><li>因此，A100、H100和H200仍会长期用于小模型、科研和基础应用。</li></ul>
+<h2>8. Fireworks经营情况与增长目标</h2>
+<h3>a) Fireworks当前ARR和后续目标是多少？</h3>
+<ul><li>按10月整月综合情况折算，当前Run Rate约为15亿美元。</li><li>财年Q4结束时的目标约为22亿至23亿美元。</li><li>Fireworks财年Q4截至次年3月，而非自然年12月。</li><li>预计增长节奏为：</li></ul>
+<ol><li>10月至11月召开产品发布会；</li><li>11月吸引新客户；</li><li>12月推动部分客户完成签约；</li><li>美国客户12月进入假期，通常到1月中旬恢复工作；</li><li>剩余时间集中推进至3月底财年结束。</li></ol>
+<h3>b) Fireworks未来的核心竞争力是什么？</h3>
+<ul><li>单纯Kernel优化的重要性有限，长期更关键的是：</li></ul>
+<ol><li>构建大规模、稳定、可靠的推理基础设施；</li><li>快速适配新一代GPU；</li><li>支持多模型评估、部署和切换；</li><li>为企业提供定制Benchmark、后训练和Harness设计；</li><li>稳定承载持续增长的企业Token需求。</li></ol>
+<ul><li>企业用户对模型没有忠诚度，因此平台需要保持模型中立，并能够快速接入最优模型。</li><li>随着传统大型企业客户增加，咨询、教育和解决方案设计能力将与底层推理能力同样重要。</li></ul>
+<h2>9. RSI与AI自我迭代判断</h2>
+<h3>a) 当前行业是否已经实现Recursive Self-Improvement？</h3>
+<ul><li>受访者认为，RSI在很大程度上仍属于市场营销概念。</li><li>行业一直在尝试让AI参与模型训练Pipeline，包括：</li></ul>
+<ol><li>数据标注；</li><li>Reward Model打分；</li><li>强模型为弱模型评分；</li><li>数学、物理等可验证任务的自动评价；</li><li>强化学习过程中的自动反馈。</li></ol>
+<ul><li>对于简单、确定性强的任务，可以使用Opus、Astra等强模型打分；如果对结果不够信任，再加入人工复核。</li><li>当前训练流程普遍是人类与AI协同，而不是完全由AI自主完成。</li></ul>
+<h3>b) 端到端RSI距离实现还有多远？</h3>
+<ul><li>完全由AI端到端完成数据生成、训练、评估和迭代，并形成自主闭环，距离现实仍然非常遥远。</li><li>现阶段只能称为部分环节实现了自动化或局部RSI。</li><li>智谱等公司提到在新版模型训练的某些步骤实现RSI，如果定义为使用K3、Opus等模型进行大规模数据标注和评分，可以视为局部RSI。</li><li>但这种局部自动化不等同于AI真正实现自主递归式能力提升。</li></ul>
+<h2>结构化总结表格</h2>
+<div class="tbl"><table class="t wrap"><thead><tr><th>维度</th><th>核心指标/问题</th><th>当前情况</th><th>未来趋势/判断</th></tr></thead><tbody><tr><td><b>模型选择</b></td><td>首要标准</td><td>先验证模型能力，再优化速度和成本</td><td>企业将更多依赖平台完成模型评估与推荐</td></tr><tr><td><b>模型分层</b></td><td>高能力模型</td><td>Kimi K3/K2.5、智谱5.3、DeepSeek V4、千问高阶模型</td><td>模型无品牌忠诚度，流量随评测结果迁移</td></tr><tr><td></td><td>中间档模型</td><td>千问Max/Plus、MiniMax、DeepSeek V4 Flash</td><td>服务轻量、速度敏感型任务</td></tr><tr><td></td><td>低成本模型</td><td>30B、9B、3B级模型</td><td>邮件回复、客服、简单工具调用需求长期存在</td></tr><tr><td><b>Benchmark</b></td><td>公开评测</td><td>SWE-bench偏简单，部分Terminal-bench偏难</td><td>大客户将更多采用定制Benchmark</td></tr><tr><td></td><td>定制评测</td><td>成本高，适合JP Morgan、安永等大型客户</td><td>成为大型企业模型选型的重要环节</td></tr><tr><td><b>快速推理需求</b></td><td>整体占比</td><td>约60%至70%</td><td>实时交互型Agent将持续推动需求</td></tr><tr><td></td><td>Coding占比</td><td>约占整体业务50%</td><td>仍是快速推理的主要应用方向</td></tr><tr><td><b>推理速度</b></td><td>Kimi K3</td><td>约200 Token/秒</td><td>Rubin适配后可能显著提升</td></tr><tr><td></td><td>智谱5.2/5.3</td><td>极限460至480，常规约400 Token/秒</td><td>极值受业务分布和推测解码命中率影响</td></tr><tr><td></td><td>小型模型</td><td>最高约700至800 Token/秒</td><td>更适合低时延、轻任务</td></tr><tr><td></td><td>Rubin预期</td><td>当前测试显示较B300提升4至6倍</td><td>前沿模型或达到800至1000 Token/秒</td></tr><tr><td><b>高速ASIC</b></td><td>Cerebras/Groq优势</td><td>可提供极高Token生成速度</td><td>成本、量产和模型适配是核心瓶颈</td></tr><tr><td></td><td>K3+Cerebras市场</td><td>当前缺乏规模化市场</td><td>仅适合资金充足、坚持开源和极致体验的客户</td></tr><tr><td></td><td>SRAM路线</td><td>更适合小型Dense模型</td><td>MoE越稀疏、规模越大，适配难度越高</td></tr><tr><td><b>模型规模</b></td><td>当前主流Frontier模型</td><td>约1万亿参数</td><td>成本约束下短期维持1万亿至2万亿</td></tr><tr><td></td><td>Kimi K3</td><td>约2.8万亿至3万亿</td><td>后续3.1版本或降至1.4万亿至1.6万亿</td></tr><tr><td></td><td>明年潜在上限</td><td>取决于Vera Rubin铺开</td><td>若硬件充足，可能扩大至约5万亿参数</td></tr><tr><td></td><td>长期上限</td><td>可能尝试8万亿至10万亿</td><td>高质量数据不足可能限制Scaling Law</td></tr><tr><td><b>硬件结构</b></td><td>NVIDIA占比</td><td>约90%</td><td>仍为核心推理平台</td></tr><tr><td></td><td>AMD占比</td><td>不到10%</td><td>正逐步增加</td></tr><tr><td></td><td>GPU构成</td><td>B300约50%，GB300约25%，其余以H200为主</td><td>Blackwell占比继续提升</td></tr><tr><td><b>节点形态</b></td><td>主流部署</td><td>8卡节点</td><td>即使物理机柜为NVL72，通常仍按8卡销售和调度</td></tr><tr><td><b>Token价格</b></td><td>短期趋势</td><td>稳中有升或基本持平</td><td>长期随硬件升级仍有下降空间</td></tr><tr><td></td><td>B300租赁价格</td><td>从3.6至3.8美元/卡时升至5美元以上，部分达6.4至6.5美元</td><td>数据中心供给不足可能继续支撑价格</td></tr><tr><td><b>客户结构</b></td><td>AI Native企业</td><td>签约快，约1个月，单笔可达500万美元</td><td>继续外包Infra、推理优化和后训练</td></tr><tr><td></td><td>传统大型企业</td><td>周期9个月至1年，单笔可达5000万美元</td><td>咨询、教育和定制交付需求增加</td></tr><tr><td><b>经营表现</b></td><td>当前Run Rate</td><td>约15亿美元</td><td>持续受企业AI需求推动</td></tr><tr><td></td><td>财年Q4目标</td><td>22亿至23亿美元</td><td>财年Q4截至次年3月底</td></tr><tr><td><b>RSI</b></td><td>当前阶段</td><td>训练、标注和评分环节局部使用AI</td><td>人机协同将继续深化</td></tr><tr><td></td><td>端到端自主迭代</td><td>尚未实现，距离较远</td><td>短期仍难形成完全自主闭环</td></tr></tbody></table></div>
+<h2>新版prompt提炼之后的转译</h2>
+<p>回　答　者：产品用户追求的可能并不是单纯的速度，而是降低成本。在进行推理时，kernel 的优化方式基本一致，但利用优化后的 kernel 为客户部署时，实际上存在多种不同的部署方法。</p>
+<p>例如，Cowork 或 Coding Agent 这类产品的用户通常会明确追求最快的推理速度。但对于定制客服，或者类似 Harvey 的大文本搜索、反向推荐等场景，用户可能并不特别追求推理速度，而是希望尽可能提高吞吐量，从而显著降低单个 token 的成本。只要用户能够接受更慢的速度，就不构成问题。因此，不同用户、不同场景的需求完全不同，不能简单地将所有模型都按照提升速度的方向进行优化。</p>
+<p>模型的选择必须基于模型能力。通常是在确定模型后，再考虑将其优化到多快，而不是要求某个模型必须达到每秒 500 个 token，同时不在意模型能力。首先需要确保模型能力达到一定水平，具体标准则取决于每个用户自身的 use case。</p>
+<p>如果是 Coding Agent，用户可能会参考 Terminal Bench、SWE Bench，甚至 MMLU 等 benchmark。更专业的公司，例如 Harvey，甚至拥有自己的 Legal Bench。它会针对自身场景和常见问题构建初始任务集，并根据各项任务在其环境中的执行水平，形成一套综合评分体系，这取决于用户自身的专业水平。</p>
+<p>现阶段，AI Native 企业的整合水平较高，是因为它们能够针对每个具体场景进行设计。当前大部分产品采用 Multi-Agent 架构，即一个 harness 中可能包含好几个模型。不同角色对应不同模型，也对应不同的能力范围和需求。</p>
+<p>一种较为通用的方式是，在顶层使用当前较好的模型进行任务调度。例如，Cursor 大部分情况下仍会使用 OpenAI 5.5、GPT-6.1 或 Astra 等模型。相对简单的场景中，例如 Manus，目前部分 use case 会使用 Kimi K3 进行调度。</p>
+<p>进一步下沉到底层，如果需要 Agent 完成大范围代码搜索、文档搜索和文档总结，可能不会特别追求模型本身的工具调用能力，而是更关注模型能否进行大范围文本搜索，以及是否具备较长的上下文能力。</p>
+<p>在开源模型中，针对这类需求，基本可以较为准确地选择智谱 5.3 和 DeepSeek V4。V4 Flash 可能稍弱，需要使用规模更大的 1.6T 版本。确定这2种模型后，还需要评估其模型能力差距，这也是当前大力推进后训练的原因。</p>
+<p>行业关注点早已不再只是快速推理。快速推理是 2024 年重点关注的方向，目前已经过去 2 年。</p>
+<p>回　答　者：模型能力成熟、能够服务产品场景后，就可以开始大规模部署。此时需要进一步考虑性能偏好，即增大吞吐，还是降低吞吐以提高每秒生成的token数。对此并不存在一个理论标准，无法简单界定达到多少就能满足客户需求，更多是竞争对手之间的性能比拼，而我们通常处于较领先的位置。</p>
+<p>以智谱的5.2和5.3为例，通过kernel、推测解码和KV cache等综合优化，速度可以提升至接近480个token每秒。但在实际为用户部署时，这一数据会出现波动。我们在社交媒体上也会明确说明，460、480这一极值不可持续，因为用户的use case会变化，推测解码机制可能不准确，概率分布也可能发生shift，这些因素都可能导致推理速度下降。总体而言，460、480可以算是比较极限的数据。</p>
+<p>如果运行Qwen 72B这类模型，最快可能也只有200个token出头。如果使用能力相对弱一些的模型，例如Llama 70B或千问的32B、33B模型，在最理想的情况下使用B300，采用比较极限的配置，速度可以达到接近800个token每秒。我们会将这类数据作为marketing内容展示给用户，但这并不意味着实际推理时必须这样配置。具体仍需经过实测，在整体成本与用户体验之间寻找平衡，并非速度越快越好。</p>
+<p><b>提问者：您提到客户通常先确定模型，再考虑速度。客户在选择模型时，通常会基于自身哪些需求和维度进行判断？例如高频量化交易、实时语音客服等场景，对速度的要求可能很高，客户最终会如何选择模型？</b></p>
+<p>回　答　者：一般而言，对于偏高频交易的场景，一开始通常不会推荐1万亿参数以上的模型，因为无论如何优化，这类模型都不可能达到很快的速度。</p>
+<p>针对类似场景，首先仍需了解客户对速度的容忍度。如果客户更偏向较高的智能水平，而对速度要求没有那么高，可以尝试千问的3.7、3.8 max，因为其参数规模不到4000亿；也可以尝试MiniMax这类模型。</p>
+<p>选择这类模型，也意味着其预期use case通常不是写代码等复杂任务，而是捕捉若干简单信号并进行简单判断。对此，我们会对用户当前业务流程能够提供的数据集提出较高要求，因为这决定了后期进行SFT或RL时，能够将模型能力提升到什么水平。</p>
+<p>如果模型参数规模限制在3000亿以下，其能力相较于1.5万亿以上的模型一定更弱，这是客观存在的差距。</p>
+<p>回　答　者：这取决于具体的应用范围。一般情况下，为用户推荐模型时，基本可以分为3个档次，每个档次可选择的模型并不多。</p>
+<p>对于最复杂的任务，例如 Coding 或 Cowork 场景，基本会选择千问、Kimi K3、Kimi K2.5、智谱5.3和智谱5.2。智谱5.2目前的使用量可能已经很小，主要是智谱5.3，近期DeepSeek V4的模型可能表现更好。</p>
+<p>中间档包括千问Max或Plus、MiniMax以及DeepSeek V4 Flash。这些模型可以执行对速度较为敏感、但任务相对轻量的工作。</p>
+<p>更便宜的档次适用于单纯回复邮件等任务，例如千问30B，甚至更小的千问9B。如果Post-train效果较好，用于回复客服类邮件和进行简单的工具调用，基本没有太大问题。</p>
+<p>初始分类通常如此，但仍需针对每个用户的具体案例进行分析。例如，我们运行千问3.8 Max时，有些客户会提出非常极限的性能标准。对于SWE-bench、MMLU或Terminal Bench等某项Benchmark，达到50分以上或60分左右即可，但同时会对模型提出非常极限的要求，例如Time to First Token必须压缩到300毫秒以内。对此，我们会直接使用GB300进行Prefill。生成阶段如果必须达到每秒400个Token以上，我们会调低Batch Size。</p>
+<p>这背后存在一系列取舍，Token的成本一定会变得更高，而用户对Latency也更加敏感。因此，最终方案基本是在与用户协商后确定的。</p>
+<p><b>提问者：从Firework的角度来看，通常会从哪些模型中进行选择，最终提供给客户使用？您刚才提到了Kimi、智谱、DeepSeek和MiniMax，除此之外还有哪些模型？</b></p>
+<p>回　答　者：主要就是这些，而且模型选择会随时间变化。基本可以100%确定，用户对模型本身没有任何忠诚度。</p>
+<p>例如，如果在25年问我这个问题，我们在25年的所有场景中，整整1年有80%使用的都是DeepSeek V3。到了8月份，Kimi推出K2后，该模型可能占据30%多的流量，但仍有相当一部分流量使用Kimi K3。</p>
+<p>企业级用户有几个特点。首先，其模型更新相对滞后。企业不会因为公众号发布某家大厂推出新模型的新闻，就立即更换模型，而是一定会进行大量、彻底的Evaluation，再决定某个场景是否接入新模型。</p>
+<p>目前，更进阶的案例会使用前面提到的K3和智谱5.3；中等难度的案例可能会使用MiniMax、千问或智谱。智谱也属于性价比较高的模型。</p>
+<p>回　答　者：较小的模型基本可能是小千万级别，例如9B、3B。部分偏公共服务导向的公司可能与美国政府有合作，或者内部倾向于不使用中国模型。这种情况下，可能只能尝试NVIDIA自己的Nemotron或Google的Gemma 4。</p>
+<p>目前，Meta的Mule Spark Open也已经上线。因此，我估计公共事业领域以及北美部分大厂，可能会愿意将模型切换到Meta的模型。对于公共事业导向的需求，我们此前会建议客户使用美国现有的开源模型，但这些模型的整体能力确实不理想。如果客户对模型的接受程度不高，又坚持使用美国模型，目前这类订单可能无法承接。Mule可以解决其中一部分需求。</p>
+<p>整体来看，在一定时间段内，某一类真正有竞争力的模型可能只有1、2个，因此用户即使进行尝试，也没有太多选择。</p>
+<p><b>提问者：我们的用户都是企业用户。企业用户通常是否有能力明确指定必须使用哪种模型，还是主要由我们进行评估并提出建议？</b></p>
+<p>回　答　者：现在由我们进行评估并提出建议的情况会越来越多。以前服务的AI native公司较多，这类公司内部通常具备技术能力，但需要集中精力推进自身产品迭代，因此没有精力处理infra方面的工作，例如推理优化、后训练等。这些工作本质上都是脏活累活。</p>
+<p>对我们而言，将这些工作做1遍，就可以服务很多客户；但对客户而言，做1遍只能解决自身的问题。因此，他们更愿意支付一定费用，由我们帮助解决相关问题，自己则集中精力优化harness。去年的大部分coding agent，例如Replit、Cursor、Cognition，基本都采用了这一路径。</p>
+<p>到了今年，随着整体业务规模不断扩大，不可避免地会接触一些我们所谓的“老登公司”。这类公司从上到下完全没有人了解相关技术。客户通常只会提出一个大致需求，我们需要从宇宙开天辟地第1天开始沟通，首先明确客户准备使用AI做什么。</p>
+<p>我们需要先为客户设定相对合理的预期，使其理解模型以及计划构建的agent的能力边界；之后再帮助客户拆解整个harness，明确具体是用于大文本搜索、工具调用，还是串联某1项固定工作流。整个过程需要由我们带着客户推进。</p>
+<p>随后，我们还会进一步分析具体应如何划分任务、使用哪些模型，以及不同模型各自的利弊。这与教育市场没有本质区别。后续的工作肯定会越来越吃力，但好处在于，“老登公司”的整体规模通常较大。</p>
+<p>例如，与Cursor签1个订单，总共1个月就能签下1个500万美金的订单。现在面对的可能是一批老头老太太，1个订单需要沟通9个月、1年才能签下1单，但1单的金额可能达到5000万美金，例如JP Morgan、安永、普华永道等。因此，两类客户各有trade-off。</p>
+<p><b>提问者：具体到模型选择，是否必须参考一些Benchmark，例如您提到的SWE-bench以及其他Benchmark？</b></p>
+<p>回　答　者：现阶段，参考Benchmark是必要的，但目前很多Benchmark已经不太可靠。例如，TAW-bench或Terminal-bench这类在强化学习和工具调用领域较常用的Benchmark，整体表现都不理想，尤其是最新版的Terminal-bench 2和3，大家的表现都不太好。</p>
+<p>但如果采用SWE-bench，大家的表现又都非常出色。这类似于考试出题：如果1张试卷过于简单，班里1/2以上的学生都能得到100分，就无法形成有效区分；如果试卷过于困难，班里1/2以上的学生不及格，同样没有太大意义。</p>
+<p>因此，要对模型形成较好的梯度判断，目前最可靠的方式是为用户构建自己的Benchmark。但这种方式的前置成本非常高，所以对于一些较大的客户，例如JP Morgan、安永，我们会为其构建定制Benchmark。小型公司基本还是以借鉴现有Benchmark为主。</p>
+<p>例如，整个项目谈成后，客户签署20万美金的合同，我们也不可能投入3至5个人，用1个多月专门为其构建Benchmark，因为成本并不合理。</p>
+<p><b>提问者：无论是参考现有Benchmark，还是帮助客户构建定制Benchmark，其中会如何考量速度，例如tokens per second？在您接触的公司或use case中，是否有特别重视tokens per second的情况？</b></p>
+<p>回　答　者：非常少，极少有客户会把tokens per second放在第1位。如果只追求速度，我可以全部采用千问9B，让token速度非常快，但这并没有实际意义。</p>
+<p>token的第1要务是解决业务问题，因此模型能力必须先通过客户的Benchmark。通过Benchmark后，再基于具体业务场景，选择达到门槛要求且规模最小的模型，并进行极致优化，评估最终能够达到多快的速度，以及客户能否接受。</p>
+<p>这是实际的业务决策流程。不会有客户一开始就要求，无论采用什么模型，都必须先达到500个token以上，再从中选择能力合适的模型。</p>
+<p><b>提问者：我此前对ASIC的研究较多，也可能有其他同事与您交流过。我的研究出发点之一，是评估一些快速推理ASIC，例如Cerebras，以及英伟达和Groq的PD分离方案，包括美国1级市场中的……</b></p>
+<p><b>提问者：有一些处于创业阶段的公司也在做快速推理。大家都希望实现更快的 tokens per second。您认为应该如何评估这些公司的潜在市场空间？</b></p>
+<p>回　答　者：快速推理本质上关系到用户体验。在模型本身能够满足业务场景需求的前提下，人类对于 token 生成速度的追求几乎没有上限。</p>
+<p>例如，如果现在有一款芯片，性能可能与英伟达的 GPU 相近，但能够达到每秒 1500 个 token，也就是 Cerebras 和 Groq 所做的事情，那么需要关注的是用户愿意花多少钱购买这种产品。再比如，过 2 个月或半年，又出现一款新芯片，声称能够达到每秒 4000 个 token，那么同样需要关注用户愿意花多少钱来换取这种用户体验。因此，对速度的追求几乎没有极限。</p>
+<p>4 月份时，我和 OpenCloud 的一位人士在 OpenAI 看过 GPT-5.4 在 Cerebras 上运行。从用户体验来看，效果极佳。生成 token 时几乎看不到代码生成过程。例如，让模型修改一个包含部分内容的网页，基本上只需要 1 秒。模型可以直接通过语音交互，用户看不到代码生成的瞬间，网页就已经修改完成。</p>
+<p>这种用户体验当然很好。现在，大部分程序员和软件工程师发出一个 prompt 后，需要等待模型运行半个多小时、1 个多小时，甚至 10 几个小时。因此，提高运行速度具有很大价值。</p>
+<p>但相应的问题是，现阶段一旦引入这类服务，成本基本不可控。此前我也与一些投资了 Cerebras 的对冲基金交流过。他们得到的消息是，OpenAI 今年要发布一个 ultra fast 版本，因此认为肯定会采用 Cerebras。实际上，最终发布的 ultra fast 版本仍然使用英伟达的卡，只是将 batch size 调到无限低。其用户体验也还不错，速度可能从原来的 100 多个 token 每秒提升至接近 400 多、500 个 token 每秒。</p>
+<p>如果采用 Cerebras，可能意味着 OpenAI 目前在 Codex 中的用户体验可以达到接近 1000 token 每秒以上，但成本可能达到每月 2000 美金，而且每月收费 2000 美金，OpenAI 也不一定能够盈利。这是目前最大的问题。因此，任何定制芯片能否降低成本，都是一个比较大的问题。只要能够解决成本和量产问题，我认为不会有用户拒绝这种芯片。</p>
+<p><b>提问者：GPT 的这个版本应该是 6.1。其 ultra fast mode 的最快速度，我看到有人说是每秒 300 tokens，并且使用的是英伟达 GPU。从您的角度判断，它为什么没有采用 Cerebras 的芯片？</b></p>
+<p>回　答　者：我认为首先要看它能够提供多少量。因为如果量上不去，就意味着……</p>
+<p>回　答　者：即使这个服务发布了，大部分情况下也可能会受到客户质疑。服务发布后能够卖给谁？首先，大部分人可能根本负担不起。所有人都在炒作，但实际上大部分人并未使用过。最终可能只有桥水，以及 JPMorgan 的部分顶级人士和高管能够使用这项服务。</p>
+<p>如果定价更激进，并且希望实现盈利，每月收费1万美金实际上并不够。以我今天在这里编写代码的情况来看，使用 GPU 一天可能也需要3000刀。我认为量产之后，如果定价激进一些，一天可能需要15000美金，大致会是这样的价格。这也决定了 OpenAI 可能会在价值观层面受到质疑。</p>
+<p>另外，如果服务规模不足，还需要专门安排人员维护集群，长期来看并不具备很强的可扩展性。因此，我认为这项服务本身还不是特别成熟，目前尚不适合单独打包发布。</p>
+<p>此前我们与 Cerebras 沟通过。23年时，他们的问题在于 SRAM 的寻址方式较为特殊。当时 DeepSeek 刚发布，MoE 模型也刚开始出现。Cerebras 的连续寻址方式会导致 MoE 推理速度变得极慢，相当于无法通过跳跃寻址找到对应 expert 的地址，只能按照1234567这样的顺序逐一查找。</p>
+<p>例如，在有256个专家的情况下，如果需要查找1、4、8，它会按照1，1234，12345678这样的方式找到所有专家的地址，因此推理效率并不高。基于这一问题，我们当时沟通后没有继续推进。</p>
+<p>目前有说法称，他们已经较好地解决了这个问题。但根据我4月份在 OpenAI 看到的情况，那个版本应该也是经过修剪的 GPT-4。如果运行超大模型，我认为 Cerebras 也不一定能够承载，或者需要调整模型架构，使模型适配 Cerebras 芯片。因此，这实际上是一个软硬件协同设计的问题。</p>
+<p>同样的逻辑，Google 也在推进。长期来看，Google 可能并不希望开发大量不同的模型架构，而是会沿着 Gemini 这条路线持续推进。因此，Google 目前也开设了一条新的支线，将硬件团队和软件团队合并，重新设计新架构的 Gemini，同时开发自己的芯片。芯片固定适配该模型架构，模型架构也固定适配该芯片。这样可以将理论推理吞吐提升至极高水平，但不会考虑任何兼容性。某种程度上，Cerebras 就是这一方向上的妥协。</p>
+<p><b>提问者：明白。这里的问题可能不一定属于您的工作范围。您是否了解 Cerebras、Groq 这类使用 SRAM 内存的方案？这类方案在 decode 环节可能会比较快。从目前市场情况来看，这条路线能够支持高速推理的模型参数量普遍不大。已披露的方案中，Cerebras 支持的模型规模最大。OpenAI 当时也发布过相关消息，Cerebras 在 GPT-3.5 上能够达到750 tokens每秒。您如何看待这一情况？</b></p>
+<p><b>提问者：NVIDIA和Groq之前有一则新闻，提到运行Gemma 4 31B模型时，速度可以达到每秒3000多个tokens。我想请教，这种技术路线目前能否运行3万亿或5万亿参数的模型，同时达到每秒1000多个甚至2000—3000个tokens？您怎么看？</b></p>
+<p>回　答　者：这就是我刚才回答的SRAM问题。SRAM本身的寻址存在局限，不像HBM那样灵活。因此，在部署模型时，需要事先规划整个模型各层乃至MoE架构的拓扑展开形式。在访问过程中，每个算子只能访问其周边的几个SRAM；一旦无法访问，就需要进行全局寻址，速度会非常慢。</p>
+<p>如果模型是dense架构，且参数量不大，就最符合目前这些ASIC的需求。模型越稀疏，在这种SRAM芯片上的推理表现就越不理想。</p>
+<p><b>提问者：明白。想请教一下，目前这些前沿模型大概处于什么样的参数量级？有多少万亿参数？</b></p>
+<p>回　答　者：我认为现在可能又开始出现反向变化。我们上半年的判断是，去年几乎所有frontier lab的模型都在向后训练转移。今年Anthropic推出了4.5和4.6，证明效果确实非常出色，因此所有厂商今年又开始转向预训练。</p>
+<p>我们自己也帮助用户进行了大量后训练，发现后训练可能更多用于能力校正，但并不能让模型大范围学习新知识。因此，如果希望大范围提升模型能力，还是要回到预训练或mid-training阶段。</p>
+<p>今年上半年，肉眼可见的趋势是模型规模持续扩大，已经很少见到1万亿参数以下的模型。但从下半年来看，我预计这一趋势可能再次反转。第1个版本的Fable，也就是Anthropic的Fable，最初采用了一个10万亿参数的模型，但发现成本端无法承受，因此先蒸馏到了3万亿参数。现在看到的Fable是3万亿参数模型，Opus 5.5是1万亿参数模型。</p>
+<p>Kimi是3万亿参数，目前无论在开源还是闭源模型中，我认为应该都是最大的。再下一个tier中，DeepSeek大约是1.6万亿参数，Kimi自己的K2.5是1.4万亿参数，Astra应该也是1万亿参数出头。因此，现在的frontier模型基本又回到了大约1万亿参数的量级。</p>
+<p>唯一比较例外的可能是Fable，但Fable并不向所有用户开放。例如，目前大部分To B客户都不太会使用Fable，因此使用较多的模型基本仍处于1万亿参数量级。</p>
+<p><b>提问者：明白。像Anthropic和OpenAI这样的公司，内部是否会有一个类似teacher model的模型，然后再用它去……</b></p>
+<p>回　答　者：内部可能有1个最大的模型，再蒸馏出不同版本，对外开放给客户使用，因此会有不同的参数量。这也基于硬件方面的考量。例如OpenAI的Luna版本模型有700亿参数，即70 billion。如果采用BF16精度，正好可以放入H200，占用1/2的HBM，同时还可以放入KV Cache。该模型的设计是因为OpenAI拥有大量H200，可以在1张卡上部署1个模型。因此，这是软硬件共同考量的结果。目前，大模型基本不对外销售，而是不断用大模型蒸馏出小模型，再用小模型蒸馏出更小的模型。</p>
+<p><b>提问者：以OpenAI提供服务的Astra或So为例，用户实际可以使用的模型大约有多少万亿参数？</b></p>
+<p>回　答　者：Astra应该在1.1.3、1.4左右，So大概在8000多亿。</p>
+<p><b>提问者：从您的角度看，用户实际可以使用的模型，参数量可能在1万亿至2万亿，或者2万亿至3万亿左右，是吗？</b></p>
+<p>回　答　者：是的。上半年，他们曾上线过一段时间的3万亿参数模型，但上线后发现成本端完全无法承受。一方面，用户抱怨问1个问题就要扣40美金；另一方面，他们自身也无法承受成本，因此又需要降低模型能力。现在不如直接将模型缩回1万亿参数。</p>
+<p><b>提问者：您如何看待后续用户实际使用的模型参数变化趋势？例如到明年，Kimi可能从K2升级到K3。您刚才提到，K3可能是2.8万亿参数的模型。如果升级到K4，参数量可能达到多少？</b></p>
+<p>回　答　者：我认为开源模型的参数量也会往下调整。至少到明年第1季度结束，模型能够做到多大，很大程度上取决于Vera Rubin何时能够大规模铺开。如果Vera Rubin未能大规模铺开，大部分推理算力可能仍然来自B300和GB300。</p>
+<p>这意味着主流配置仍然是单节点8张卡。1张卡有280G，8张卡不到2T，因此模型很难超过2T。如果坚持部署K3这类2.8T模型，在B300上部署时，需要对中间部分层进行量化，尤其是将MoE层量化并压缩至FP4，才能放入8张卡，否则只能走GB。</p>
+<p>回　答　者：B300方面，GB300如果不做优化，需要16张卡，成本会非常高，完全不如运行Opus 5.5。如果我是用户，也不会购买Kimi的模型。所以，Kimi当前版本是3，下一个版本叫3.1。到3.1版本，模型规模会开始下调，预计回到约1.4万亿至1.6万亿。</p>
+<p><b>提问者：从硬件角度看，英伟达推出的机柜大部分采用NVL72形式，后续还有NVL576，看起来1个节点可能包含数10张甚至数100张卡，目前则可能是72张卡。为什么您认为主流配置的单节点是8张卡？</b></p>
+<p>回　答　者：目前向Neo Cloud购买算力时，基本都是按节点购买，1个节点配置8张卡。即使后端的物理机柜是72张卡，在进行虚拟化时似乎也是按照8张卡划分。如果直接购买bare metal，并从Kubernetes调度的infra层重新搭建，应该也可以，只是目前规模不大。大多数情况下，Neo Cloud使用的并不是72张卡的机柜，而是原来以8张卡为1个组织节点的形式，配置B300 GPU，但并不是GB。</p>
+<p><b>提问者：这是否可能是因为推理服务以8张卡作为1个节点出售，而训练服务则会将更多卡统一出租？</b></p>
+<p>回　答　者：不是。这是数据中心硬件的setup，无论用于训练还是推理都一样。Nebius、Together、Crusoe和CoreWeave都是这样配置的。</p>
+<p><b>提问者：从需求侧看，目前快速推理服务在整个市场中的占比大约是多少？几年以后，例如到2030年，其占比可能达到多少？</b></p>
+<p>回　答　者：只能以我们整体服务的业务范围为例。我们在To B企业市场具有一定代表性。目前，采用快速推理路线的业务估计约占70%。在这70%中，约有2/3与coding相关，也就是约占整体业务的50%。因此，coding业务对速度有明确需求。</p>
+<p>回　答　者：用户始终需要与计算机或手机互动，因此 token 生成得越快，用户就能越早看到结果。例如，Cognition 推出的 Devin AI，以及 Cursor，基本都采用这一路径。</p>
+<p>另一类常见需求是 CoWork，也需要追求较快的 token 生成速度。例如微软的 Copilot，面向付费用户提供较好的用户体验。此外，Genspark 的 PPT 生成功能也有 token 加速需求。</p>
+<p>Harvey 则分为2类场景。一类是大文档检索等 background task，对速度没有太高要求，可以优先考虑成本。通常会在用户较少的半夜启动大量任务，集中完成推理需求，只要具备较大的吞吐量即可。</p>
+<p>另一类是面向用户的实时交互场景，包括文档处理 agent、分类、填表以及生成案件关联信息等。这些任务需要实时运行，因此仍有快速推理需求。我估计，目前快速推理需求整体约占6成至7成。</p>
+<p>在所有推理需求中，某个具体场景是否需要较快的推理速度，取决于用户是否需要直接与 AI 互动。如果不需要直接互动，逻辑上速度快慢并不重要。在这种情况下，通常会选择速度较慢但成本更低的方式。</p>
+<p>例如，现在各厂商都开始布局 C 端推理，Meta 的 Muse 也会对外采用慢速模式。只有当用户看着手机并提出问题时，才需要尽快响应。但 Muse 经常还会执行长程任务，例如预订饭店或寻找度假村，可能需要打开浏览器搜索30多分钟。此时后台采用快速模式还是慢速模式，对用户而言区别不大；但慢速模式更节省成本，因此会优先采用慢速模式。</p>
+<p><b>提问者：明白。这里还想请教一下，我理解目前客户中可能有50%是 calling 相关需求，约6成至7成存在快速推理需求。通常我们向客户提供的推理服务速度是多少，也就是每秒可以生成多少个 token？</b></p>
+<p>回　答　者：具体取决于模型。例如，Qwen 3 每秒大约可以生成180至200个 token；智谱的5.3、5.2，极限速度大约可以达到每秒460至480个 token，但常规服务达到每秒400个 token 基本就足够了。</p>
+<p>如果是较小的千问模型，最快可以接近每秒700个 token。除了 kernel 优化以外，用户的 use case 越垂直、越集中，推理速度也可以做得更快。</p>
+<p>回　答　者：例如，同一个模型如果需要回答天文、地理、时事新闻等各种问题，就会生成大量无效的 cache。但如果只用于编写代码，主流编程语言基本由英文、数字、标点符号、空格和回车组成，整体 distribution 非常集中，因此生成的 KV cache 命中率会更高。同样，在进行 speculative decoding，也就是推测解码时，猜中的概率也会更高，推理速度自然更快。</p>
+<p><b>提问者：明白。我想确认一下，例如我们提供 K3 的大模型推理服务时，目前最快的速度约为 200 tokens 每秒，可以这样理解吗？</b></p>
+<p>回　答　者：对。</p>
+<p><b>提问者：像 Cerebras 这样的公司也支持 K3，并且能将 K3 的推理速度做到 1000、1000多 tokens 每秒。这类服务的市场在哪里？作为领先的推理服务公司，我们似乎也没有提供如此高速的推理服务。那么，Cerebras 将 K3 做到 1000多 tokens 每秒，其市场在哪里？</b></p>
+<p>回　答　者：坦率地说，我认为没有市场。这种芯片一定要用于运行最好的模型。</p>
+<p>推理速度如此之快，某种程度上就意味着其客户是最高端的客户。举例来说，如果我设计的是90寸超清8K彩电，这台彩电是否可能安装在一个40平米的出租屋里？购买这类彩电的目标客户，一定是居住在250平米以上豪宅的用户。</p>
+<p>因此，如果追求极快的推理速度和极佳的用户体验，最好运行最好的模型。但坦率地说，我们自己也支持开源模型，目前开源模型与闭源模型在能力上仍然存在明显差异。</p>
+<p>只有一种非常有限的情况：用户不想受制于 Anthropic 或 OpenAI，因为它们是闭源模型，用户无法掌控模型，因此一定要选择一个开源模型作为基座，进行大量后训练，打造自己的垂直模型，完全运行自身的 use case；同时资金非常充足，并且追求极佳的用户体验，希望服务用户的场景越快越好。只有在这种情况下，才有可能将 K3 和 Cerebras 结合使用。</p>
+<p><b>提问者：明白。从您的角度看，Cognition 和 Cursor 都是我们的客户，对吗？</b></p>
+<p>回　答　者：对。</p>
+<p><b>提问者：在我们这些对速度要求可能最高的客户中，他们目前是否向 Fireworks 提出过进一步提升速度的诉求？</b></p>
+<p>回　答　者：没有。我认为可能还需要考虑用户体验。</p>
+<p>回　答　者：成本高到一定程度后，对企业而言，最重要的是确保落地产品至少不会造成过度亏损。产品一旦上线，Token单价可能会非常高，因此需要先找到对这类产品有需求的用户，或者单纯降低Cerebras芯片的价格。例如，用户每月仍然支付200美元，但Token速度可以达到1000个，那么用户一定会选择1000个的方案。但如果推理速度提升3倍，价格却上涨5倍，就难以承受。如果每天的成本达到1万多美元，基本上没有企业能够承受。</p>
+<p><b>提问者：请确认一下，Fireworks现在提供的推理服务是否都使用英伟达的卡？</b></p>
+<p>回　答　者：对，我们基本上90%使用英伟达的卡。目前也开始陆续使用AMD的卡，现在可能不到10%的流量在AMD上运行。</p>
+<p><b>提问者：GB、H200以及B卡、H卡的占比分别是多少？</b></p>
+<p>回　答　者：目前可能1/2是B300，1/4是GB300。剩余的1/4中，大部分是H200，还有极少一部分是H100或A100，主要用于日常运行一些小规模任务。</p>
+<p><b>提问者：目前Token价格呈现什么趋势？是否仍处于下降趋势？</b></p>
+<p>回　答　者：我认为现在可能是稳中有升。但从整体趋势来看，如果以季度为单位，价格一定是下降的。</p>
+<p>目前，推理优化所发挥的作用，例如Fireworks所做的工作，按照我个人非常主观的估计，可能只占1/3；另外2/3可能仍然得益于硬件本身的迭代。因此，我个人认为，Fireworks目前的优化工作并不是那么重要，更重要的是如何通过大规模、可靠的基础设施，稳定承载用户的推理需求。</p>
+<p>例如，从H200到B200，向大部分Neocloud租用时，价格差距约为50%到60%。也就是说，H200目前的价格乘以1.6，差不多就是B200的价格，但B200的吞吐量可以稳定提升3倍。</p>
+<p>对于我们这类企业级服务而言，如果用户的Token量及Token输入、输出量处于一定水平以内，我们肯定建议将H200全部更换为B200。这样可以用更少的卡处理更多Token，同时获得更好的体验和更低的成本，这一定会成为趋势。</p>
+<p>切换到新架构的卡后，速度自然会提升3倍。我们在这一过程中所做的工作，更多是让各种算子和自有Kernel适配这些新卡。因此，整体提升主要还是硬件的功劳。</p>
+<p><b>提问者：对于前沿模型，通过API按token计价的价格趋势是否基本一致？</b></p>
+<p>回　答　者：是的。过去1个月比较棘手的情况是，需求仍在增长，但美国的数据中心建设速度开始放缓。一方面受到中期选举和美债处于较高水平等因素影响，另一方面，neocloud融资困难且经常遭遇抗议，因此很多地区的数据中心建设项目被暂停，或至少缩小了规模。</p>
+<p>目前需求稳中有升，但当前缺乏供给，明年的供给可能也低于预期，因此算力价格又开始上涨。例如，5月底、6月初时，B300每张卡每小时大约3块6、3块8还能租到；现在的租赁价格普遍在5块多，部分要价较高的neocloud甚至会要求每小时6块多，达到6块4、6块5，并要求签订5年合同。不同供应商的价格跨度很大，但整体价格相比5月份上涨了不少，我认为至少上涨了30%。</p>
+<p>从5月份至今，硬件架构没有明显变化，吞吐量也不会出现革命性提升，但算力成本上涨了30%，因此token价格肯定没有下降，甚至可能略有上涨。</p>
+<p><b>提问者：如果按每百万token的价格，或者pay as you go模式观察token价格，而不是GPU价格，近期是否有所下降？因为GPU每次升级，例如从A100升级到B200，性能都会有较大提升。</b></p>
+<p>回　答　者：硬件升级基本发生在今年3到5月份，至少从5月份之后没有再发生硬件升级。大部分neocloud采用的都是B200加B300的配置，因此token价格没有出现较大变化。少数公司的价格偶尔有所下降，主要也是出于商业竞争，提前下调token价格。整体来看，价格基本没有变化。</p>
+<p><b>提问者：Fireworks目前的ARR情况如何？3季度的表现以及4季度的预期分别是多少？</b></p>
+<p>回　答　者：目前按这个月底折算的run rate约为1.5个billion，也就是15亿美金。到今年4季度结束时，我们的目标大约是22到23亿美金。</p>
+<p><b>提问者：10月底的run rate是按照整个10月计算，还是按照最后1周等更具体的时间计算？</b></p>
+<p>回　答　者：是按照整个10月的综合情况计算。</p>
+<p><b>提问者：Q4结束相当于是12月吗？</b></p>
+<p><b>提问者：12月的ARR是22到23亿美元，是这样理解吗？</b></p>
+<p>回　答　者：不是。我们的Q4截至明年3月，这是我们的fiscal year，即财年。我估计，11月以及10月、11月份，我们会召开一场发布会，11月份应该能吸引一批客户，12月份促成这部分客户签单，今年就结束了。因为12月份很多美国人都在休假，大家回来工作基本要到1月中旬，所以实际上距离3月底没有太长时间。</p>
+<p><b>提问者：关于模型演进和速度，整体推理服务的tokens per second是否会随着时间推移逐步提高？例如，我们现在运行的Kimi K3，能否称为当前开源模型中最好或最前沿的模型？</b></p>
+<p>回　答　者：可以。</p>
+<p><b>提问者：当前运行最前沿的开源模型，速度是200 tokens每秒。到明年年底，运行届时最先进、最前沿的开源模型，速度能达到多少？例如，是否能达到300？总体而言，tokens per second是否会随着时间推移逐步提高？</b></p>
+<p>回　答　者：当然会。根据我们目前的一小部分测试，将B300折算到VR Rubin上，吞吐量可能大约有4到6倍的提升。如果现在针对performance进行极致优化，能够达到200，那么在VR Rubin上完成适配后，达到800完全不难，预计可以达到800到1000个token。当然，VR Rubin性能很强，价格也很高。</p>
+<p><b>提问者：去年年底，针对当时最前沿的开源模型，我们提供推理服务时能够达到多少tokens per second？</b></p>
+<p>回　答　者：当时是Kimi K2，参数量大约也是1万亿。量化后在H100上运行，速度可能只有100 token出头，而且需要使用16张卡，这是优化后的结果。如果是在未优化的情况下，例如当时刚推出的SGLang或vLLM等开源框架，速度大约是30到40个token每秒。</p>
+<p><b>提问者：展望明年年底，也就是1年以后，真正用于推理服务的最佳开源模型是否仍会保持在1、2万亿参数，或者2万，而不会比现在的Kimi K3显著增大？</b></p>
+<p>回　答　者：不会。关键要看明年VR Rubin的铺开规模。一旦大规模铺开，行业就会重新获得继续扩大模型规模的动力。因此，如果VR Rubin能够铺开，我认为明年更普适的最大模型规模可能还会进一步提升。</p>
+<p>回　答　者：模型规模可能会拉到5万亿左右。所有开发模型的企业都在2个极值之间不断调整：先扩大模型规模，观察能力是否取得突破；突破后发现服务成本难以承受，再缩小模型规模。随着下一代硬件提供支持，模型规模又会继续扩大。这与游戏开发不断试探硬件加速边界类似：如果产品对硬件要求过高，大部分电脑无法运行，开发者就会根据用户反馈缩小游戏规模，模型开发也是同样的道理。</p>
+<p><b>提问者：按照这一逻辑推演，明年下半年可能会推出Rubin Ultra，后年到28年可能会推出Feynman。届时模型规模是否还会继续扩大，达到8万亿、10万亿？</b></p>
+<p>回　答　者：我认为一定会有企业尝试开发10万亿参数的模型，但目前市场上没有任何人能够保证超大模型一定可以成功。模型本身的scaling law建立在数据和算力都充足的基础上，在这种情况下，模型规模可以持续扩大。但如果企业在每个阶段进行预训练时无法获得新的数据，即使继续增加模型参数，产生的增值意义也可能非常有限。</p>
+<p>目前很多公司对数据的需求已经非常迫切，只要能够获得足够的数据，即使价格较高也愿意购买。但企业的资金终究有限。例如，一些数据供应商专门提供agentic tool case，包括agent调用、查询文档、调用多个工具、生成内容并最终完成任务。现在整条工具执行链的成本可能接近2000美金。即使是Anthropic、OpenAI、Google和Meta，也难以长期承受这样的投入。因此，有价值的数据正在日益枯竭。</p>
+<p>更高价值的数据往往不会对外提供。例如，在中国开发大模型，几乎不可能获得最高人民法院的全部案件卷宗；中国大部分电动汽车厂商也不太可能提供其内部的大量专业数据。从long term来看，大量超高价值数据可能仍将保持私有状态。</p>
+<p>公有数据爬取完之后，行业已经开始通过购买以及其他各种渠道争夺数据，但后续获取数据肯定会越来越困难。如果数据规模无法继续增长，单纯扩大模型规模的效果可能十分有限。经过多次实验后，企业可能会发现，从3万亿扩大到5万亿还有一定效果，但从5万亿扩大到10万亿可能已经没有明显作用，届时大家也就会停止继续扩大模型规模。</p>
+<p><b>提问者：如果到明年出现5万亿参数的模型，H200、B200、B300、GB等老一代硬件将如何处理？</b></p>
+<p>回　答　者：市场上一定会有大量算力资源有限的用户，也会有大量基础应用场景。例如，很多人使用的智能小助手，包括回复邮件等功能，都是相对简单的场景，使用小模型就可以完成。因此，不必担心这些老一代硬件无法被消化，它们一定会得到使用。</p>
+<p>现在整个市场的算力资源分布非常不均衡。像我们这样的商业公司，目前基本上2/3的算力都是Blackwell。但我们面试斯坦福或CMU的博士生时，如果询问他们完成期末作业、paper或thesis时使用哪些机器，很多学生会表示自己只有2个A100。上游很有钱，下游很穷，因此对这些用户而言，几个H200已经非常好了。</p>
+<p><b>提问者：您如何看待RSI，也就是recursive self-improvement？如果后续缺少足够的优质数据，RSI的进步速度是否也不会很快？</b></p>
+<p>回　答　者：我个人认为，RSI本质上是一种市场营销话术。现阶段行业所追求的其实一直都是RSI。最初发现大模型时，GPT-3.5的能力还比较有限，训练reward model需要依靠人工打分。后来从DeepSeek开始，我们现在之所以大量开展强化学习，是因为已经有很多其他方式可以进行打分，不一定需要依赖人工。例如，可以用一个很强的模型给一个较弱的模型打分；如果任务属于数学、物理等可验证问题，也可以编写数学表达式，通过验证结果进行打分。</p>
+<p>实际上，大家一直在探索模型训练pipeline中的哪些步骤可以由模型介入并实现自动化。现阶段，模型已经可以参与部分环节，例如数据标注。对于确定性较强、一看就很简单的case，完全可以调用Opus或Astra进行打分并支付相应费用。如果对模型输出不够信任，仍然可以让人工介入打分。因此，目前模型训练和数据标注流程或多或少都是由人和AI协同完成的。</p>
+<p>但如果追求Recursive AI所设想的最终RSI，也就是完全由AI端到端自主完成，通过AI训练AI并形成自我闭环，相当于AI在某种程度上实现自我迭代，我认为距离实现还非常遥远。大家只能朝这个方向努力，但我个人认为，目前这一设想仍然比较玄幻。</p>
+<p><b>提问者：目前部分步骤可能在一定程度上使用了RSI，但端到端全部使用RSI还比较遥远，可以这样理解吗？</b></p>
+<p>回　答　者：对，可以这样理解。</p>
+<p><b>提问者：前段时间，智谱的唐杰提到，他们在训练新版GLM模型时，已在某些步骤上实现RSI。如果按照这种定义，例如进行10000000量级的训练时，使用K3或Opus 5.5进行数据标注，也可以称为RSI，对吗？</b></p>
+<p>回　答　者：对，我也看到了这则新闻。</p>
+<p><b>提问者：您是否了解Anthropic会不会使用Cerebras进行推理？</b></p>
+<p>回　答　者：Anthropic目前好像没有使用Cerebras，主要使用英伟达的GPU和TPU，同时也在适配Trainium，应该主要是这3类芯片。目前应该没有使用Cerebras的计划。如果采用Cerebras，现在应该只有OpenAI。</p>
+<p><b>提问者：您对OpenAI使用Cerebras的情况是否有大致了解？</b></p>
+<p>回　答　者：目前没有太多相关消息，OpenAI应该完全没有公开的服务器在使用Cerebras。我猜测，其内部运行部分小模型时可能会使用。</p>
+<h2>原文转译</h2>
+<p>产品用户可能追求的本身并不是快，而是单纯的降成本。就是说你在做一个推理的时候，kernel 的优化都是一样去做，但是你给客户去做部署的时候，利用这个优化的 kernel，其实也有很多不同的部署方法。你比方说像这个，比如说 cowork 或者是 coding agent 的这一类，其实用户肯定是毫无悬念地去追求最快这件事儿。但是你比如说对于这种定制的客服啊，甚至比方说类似于 Harvey 这样，对吧，就是它去做一些这种大文本的搜索，甚至是反向推荐，可能它对于推理速度本身并不是非常追求。它追求的是你能不能尽可能把吞吐给我搞大。这样的话，你单个 token 的成本可以降得特别低，慢一点吧，只要用户无所谓，那就无所谓。所以完全就是不同的用户、不同的场景需求完全不一样。不是说我没跟个傻逼似的什么模型抓过来就是往快里去搞，这个就完全片面了。然后对于你用什么模型，这个一定是要基于模型能力来看的，就是你都是在定了模型之后，我们再考虑优化到多快的问题，不存在说有什么很诡异的客户说，我他妈就是必须一个模型得干到五百个 token 每秒以上，然后模型烂一点我也无所谓，不是的。就是你最后要追求的首先是模型的能力要达到一定水平之上，那这个要从每一个用户自己的 use case 来看。比方说如果是 coding agent 的话，他可能要去看比方说 terminal bench 和这个 SWE bench 这种东西，甚至有比如说 MMLU 这样的这种 benchmark。那你比如说搞得更专业一些的公司，比如说像 Harvey，Harvey 甚至是有自己的 legal bench 的，也就是说它针对自己的场景，针对自己常见的一些问题，它勾勒出了一个起始的任务集。那么你跟着它这个任务集，在它的环境下，比方说每一个任务执行完大概到一个什么样的水平，它有一套综合的打分体系，这个就是看用户水平了。就坦白讲，比如说现阶段为什么 AI native 的企业整合的水平比较高，是因为他们对于自己每一个场景下，而且你知道大部分现在都是这种 multi-agent 的架构，也就是说它一个 harness 里面可能有好几个模型。 对吧？那，不同的角色对应不同的模型，又对应了不同的能力范围需求。比较通用的一个方式是，可能顶层它会用一个目前比方说最好的模型来去做这个任务调度。比如说举个例子，像这个，当然 Cursor 大部分还是比如说 OpenAI 5.5啊，或者 GPT-6.1，或者是 Astra 这样的模型。然后比较简单一点的，你比如说像 Manus，现在其实它有一些 use case 是用 Kimi K3 去做调度的。然后再往下挖到比方说底层的话，举个例子，我可能需要一个这个 agent 帮我去做大范围的这种代码搜索或者是文档搜索，然后加上文档总结。那可能这部分我对于怎么讲，就是模型本身工具调用的属性就不是特别追求，但是我追求的是模型可以进行大范围的文本搜索且拥有比较长的上下文。那这个地方你比如说像现在在开源模型里边，你基本就比较准确地能定义到，比如说智谱的 5.3 加上 DeepSeek 的 V4，对吧？V4 Flash 甚至可能还稍微差一点，必须要 V4 大一点那个 1.6T 那个。那这两种模型你定义完了之后，你再需要去看它在模型能力上的差距还有多少，这个就是我们现在疯狂去推后训练的原因。所以早就不是什么快速推理了，快速推理是二四年玩的事，已经两年过去了，对吧？那后训练完了之后又…… 我现在OK，模型能力搞定了，对吧，能服务我这个产品的成熟场景了。那我开始要上大规模的部署了，好，这时候我们再去看它的preference，对吧，是增大吞吐还是放放放低吞吐来增大这个tokens per second。那比较极限的数据，当然这个其实没有一个说理论的一个值说你到多少就能搞定客户，更多的就是竞争对手之间相互比拼嘛，只不过我们通常情况下是比较领先的那一个。比如说像智谱的5.2和5.3，我们现在的kernel加上所有的这个比如说推测解码加上KV cache，综合的优化结果可以拉到接近480个token每秒。但实际上你真的去给用户部署的时候，这个数据也是会也是会浮动的，所以甚至我们自己发社交媒体也会去跟你讲，就是说拉到460、480这个极值是不可持续的，因为你用户的use case会变，推测解码的机制有可能不准，然后这个概率的分布可能会shift，它都可能导致你推理的速度会下降，但是generally可能460、480算是一个比较极限的数据。然后如果你比如说去跑Qwen 72B这种模型的话，你拉到最快可能也就是200个token出头。然后你比如说再弱鸡一点的，假设我去用个什么Llama 70B或者是比如说千问的那个32B、33B那个模型，你最理想的情况下，比方说上B300，基本上比较变态的极限config可以拉到接近800个token每秒。所以这个是我们会把它当做marketing的东西展示给用户来看的，但是完全不意味着你在实际推理的时候需要这么搞。因为你去这么搞，它大概就是你还得实测之后看看整体的成本和用户体验，你中间找一个平衡值，不是说越快越好的。</p>
+<p>嗯，OK，明白明白。</p>
+<p>诶我想请教一下您，就是，我想理解一下，就是说您比方说您说我听，就是您说比方说客户他先定模型，再考虑速度，那么，对，那么他定模型的时候，就是他会，这通常他是基于他自身的一些什么样的需求去选择模型呢？就比方说您像像什么高频量化交易啊什么的，或者是一些什么实时语音客服啊什么，我们之前有了解到可能他们就是说对速度的需求很要求很高。那就是我就想他选模型的时候，他有哪些就是维度去考虑去选择最后选择什么模型？</p>
+<p>呃，一般情况下，你比方说像这种偏高频交易的，你就可能上来你就不会太会去给他推1万亿参数以上的，因为你怎么优化吐血了它都不可能那么快，对吧。那我们现在比如说类似于这种场景，你可能先优先给他去搞的，当然首先还得看他对于速度的容忍度是多少哈，比方说他可能还是偏偏向比如说智能性高一点，但是速度上我可能要求没有那么高的，你可以给他比方说往千问的这个3.7、3.8 max，因为那个差不多4000亿不到，或者是像MiniMax这样的模型其实都可以去试。然后但是你要选择这个模型其实也就意味着你肯定指望他做的use case就不是什么高频交易了，sorry就不是不是什么写代码这种复杂的任务了，对吧，更多的就是他捕捉几个简单的信号，然后给你做一些简单的判断。那这块其实我们就对于用户比方说他自身当前业务流里能给出的数据集有比较高的要求，因为这个决定了我们后期比如说给他去做SFT或者RL的时候能够把这个模型的水平拉到什么什么什么段位，对吧。就是因为你模型如果卡到比如说3000亿以下，它的能力相较于1.5万亿以上的模型一定是弱的，这个就是这个就是就是你天王老子来了他也是这个状态。 对吧，所以你就得看它就是具体的这个scope。那一般情况下，你比如说给用户现在推荐模型，基本上就三个大段吧，而且你会发现可能每个大段能选择的模型没有那么多。比如说像我们讲最最最难的这种，呃比如coding啊或者cowork这种场景，那就基本上可能是千问Kimi K3、Kimi K2.5、智谱5.3、5.2，5.2现在可能都很小了，主要是5.3，基本就没了。对吧，最近可能DeepSeek V4的那个它的模型可能还要好一点。</p>
+<p>然后中间这段的话呢，就是我们前面讲的比如说千问的这个Max或者Plus，然后再加上MiniMax，然后再加上呃DeepSeek V4 Flash，这是中间一档。然后这一部分相当于就是说你可以执行一些相较于对速度比较敏感，但是任务比较轻量级的这种这种这种活，是可以干的。然后再便宜一档的，你比如说单纯我就是用它回个邮件，那可能比如说千问的30B，甚至再小一点，甚至什么千问的9B，如果post-train效果比较好的话，比如说回一些客服类的这种邮件，然后做一些简单的工具调用，其实也没有什么太大问题。所以初始分类肯定就是这么分类。但是还是每一个用户的case具体分析。就是你比如说像这个我们跑这个叫什么，比如说千问3.8 Max这个模型，经常比如说有的客户给的要求是一个非常极限的一个性能的bar，对吧？就是你比如说某一个benchmark，比如说SWE-bench或者是MMLU，或者是什么Terminal Bench，你给我跑到比如说50分以上，60分，差不多就OK了。但是呢对于这个模型我有非常极限的要求，比方说time to first token必须给我压到300毫秒以内，对吧，那我们就直接给你上GB300去做prefill。然后生成的时候比如说必须要拉到400个token以上，那我们其实就把batch size给你调低。当然这个背后就是一系列的trade-off对吧，就是它的token一定会变得更贵，然后这个用户对于latency更敏感。对，所以其实这个其实基本上还是跟用户协商之后的结果吧。</p>
+<p>嗯，OK，好的好的，明白。呃那那就是嗯，那我就从我们公司角度，Firework的角度就是通常是呃就是会从哪些模型里面去选选一些给最后最终让我们的客户去使用啊，就是您刚刚有提到像呃就是像像Kimi啊、智谱啊、DeepSeek、MiniMax，对就是啊是不是就呃还有没有哪些？</p>
+<p>其实主要就是这些，就是而且它是随时间变的。就是用户你基本上可以百分之百肯定就是他对于模型本身是一毛钱忠诚度都没有的。所以你比方说举个例子，如果是25年你问我这个问题，那我们25年可能所有场景里面整整一年80%都是DeepSeek V3。然后到了，哦不是，到了8月份之后，可能比如说Kimi当时出了K2，对吧，然后那个模型相当于呃可能能占一个百分之三十几的流量，但是还是相当一部分是在Kimi K3。就是企业级用户有几个特点，首先一个就是它的模型更新是相对比较滞后的，就是他倒也不会说啊今天什么什么量子位啊什么乱七八糟公众号发一个什么新闻说某某某大厂又什么掀桌子啦牛逼啦出了个新模型啦，然后这些企业就会光光赶着去换，不会的，他企业一定会去做大量的彻底的evaluation，再去决定比如说某一个模型某一个场景要不要接入新的模型。那呃所以你比如说像现在哈，你如果如果进阶一点的case就在咱们前面讲的K3，对吧，然后智谱5.3，然后中间一点的case，可能就是比如说MiniMax或者是千问，然后或者是这个智谱也算吧可能，智谱其实算算算算比较性价比比较高的一个模型。 然后小一点的模型基本上可能就是小千万，9B、3B这种小模型。然后有一些比如说偏公共服务导向的这种公司，比如说他可能跟美国政府啊有合作，或者说他整体内部的偏向就是不太想用中国模型，那这时候比如说可能就只能试一试，比如说Nvidia自己的那个Nemotron或者是Google的那个Gemma 4。但现在因为整体那个Meta的Mule Spark Open也已经上线了吧，所以我估计着就是所有公共事业这一部分的吧，有一些包括其中北美的一些大厂，可能会很愿意把模型切到Meta的这个模型上。因为之前你比如说像公共事业导向的这种这种需求，就是我们会给他建议用一些美国目前的这些开源模型，但是整体上能力确实不太行嘛。所以所以如果他对于模型接受程度不高，然后又非得标着美国模型不放，那可能就这个单子就目前就接不了，对吧。所以Mule其实是可以解决解决一些这部分的需求。对，但大概率就是这样吧。就是其实你一定时间段内能打的某一类的模型可能就只有一两个，所以用户其实试一试也没有太多的选择了。</p>
+<p>OK。好的好的。明白。那用户像咱们就是都是企业用户是吧，就是然后就是说这个企业用户他通常他自己有能力去说他就一定要什么模型吗，还是说都是我们来给他就是评估然后然后建议？</p>
+<p>现在后者会越来越多。就是原来你比如说你服务的是，你原来服务的是这种怎么讲，AI native的公司多。AI native的公司很多他们内部是有技术的，但是他们基本上可能要疯狂的去卷自己的产品迭代，所以就没工夫去管infra这块，对吧，比如说推理优化呀、后训练啊这些东西其实都是就是就是就是脏活累活嘛，对吧。所以对于我们来讲是相当于把脏活干一遍，我能服务好多人，但对于他们来讲干一遍就是干一遍。所以他们宁愿就是说我们现在就是付一点钱，你们帮我去搞定，对吧，然后我我疯狂的去卷我自己的harness。所以你看像去年的大部分的coding agent，就是什么Replit啊、Cursor啊、Cognition啊，其实基本上都是这一个路子的。然后到了今年呢，因为整体业务现在开始越来越大，就是你一定不可避免的要去接触一些我们所谓的这种你知道老登公司，对吧。老登公司就从上到下完全没有人懂，对吧。所以你基本上就是他来了就是我大概有这么一个需求，所以你要跟他从宇宙开天辟地第一天开始聊，就是OK，你到底要拿AI准备干啥，对吧。就是你要先给他设定一个相对比较合理的预期，他对于模型和他自己想构建的这个agent的能力范围，他要先有预期，然后你再帮他比如说把整整个这个harness给break down。OK，你具体要拿它来做大文本搜索还是工具调用，还是把你们的某一项固定的工作流串起来，对吧，就这个东西你是要带着他走的。然后我们再会深入到比如说你具体要怎么去划分，用哪些模型，哪些模型的这个利弊各是什么，其实就跟就跟就跟教育市场没有任何区别。所以你只能说后面这个活肯定是越干越吃力的，但是好处是在于因为整体上老登公司的规模还是比较大嘛，对吧。就你比方说你搞Cursor可能跟他签一个订单，总共一个月就能签订单，然后签一个500万美金的订单。那现在你可能搞的都是一帮老头老太太，然后这个一个订单跟他签九个月、一年能跟他签一单，但是好处就是他一单可能是5000万美金，对吧，就是像什么JP Morgan啊、安永啊、普华永道这种。对，所以其实各有trade-off吧。</p>
+<p>OK。啊，明白明白。 呃，然后，您看，对，我还想请教一下，就是想理解一下，那，那就是具体到选模型它，因为您刚才有提到，我也在学习哈，就是说，它是会去参考一些benchmark吗？就是，这这是，这，就说这也是个相当于是个必，必须的一个过程嘛，就是，您比方说像您说的SWE-bench或者是，刚刚您还提到一些其他的这种benchmark。</p>
+<p>对。</p>
+<p>对。</p>
+<p>它是这样哈，就是说，我们现阶段会发现，就是首先参考benchmark是必须。</p>
+<p>呃，但是你也会发现现在很多benchmark已经不靠谱了。</p>
+<p>因为你比如说像，像什么TAW-bench或者是Terminal-bench这种做强化学习和工具调用比较常用的几个benchmark，大家整体都很菜。</p>
+<p>对吧，尤其是最新版的这个，这个Terminal-bench 2和3，就是整体上大家都不行。</p>
+<p>所以，然后你比如说你要去跑SWE-bench呢，就是你说那个SWE-bench，那个呢，大家又都太牛逼了。</p>
+<p>所以现在的问题其实就特别像比如说当年我们考试老师给初卷子一样，对吧，就是你出一张巨简单，巨简单的卷子，班里他妈一半以上都是100，你也没有任何用。你出个太难的卷子呢，班里一半以上人不及格，其实也没有什么用。</p>
+<p>对吧，所以你让模型对它有一个比较好的梯度判断，其实现在来看最最靠谱的方式是直接给用户构建自己的benchmark。</p>
+<p>对吧，但是这个就是相当于前置成本就非常高了，所以我们可能会去看比如说有一些比较大的客户，就是我们讲的类似于什么JP Morgan，安永这种我们会去给他搞。但是小的公司其实基本上可能还是借鉴现有的benchmark为主吧。</p>
+<p>因为确实你比如说你，你，我们整个deal我跟你谈成了，你签我20万美金，我倒贴也犯不上花三五个人在那里给你搞一个多月对吧。</p>
+<p>嗯。</p>
+<p>嗯。</p>
+<p>OK。</p>
+<p>呃，嗯，OK，那，那这，就是在不管是参考别的benchmark还是说，就是，比方说我们去帮助客户去构建他自己的可能，有点类似像是定制的这个benchmark，那么，就是这，这个benchmark里面，呃，就是，它，它是速度是一个什么，就是对于这种，呃，可能回到我前面就是讲到的，就提到的就是tokens per second这种，它是怎么样考量的呢？就是，它，它会不会有一些类型的公司啊或者是use case，它就是特别重视这个，就是tokens per second之类的，就在您的，您看到的这些use case里面。</p>
+<p>呃，非常少，非常少。就是极少极少会有客户说我把tokens per second先放成第一位。</p>
+<p>因为你要这么搞，我全是给你上千问九必，我能让你那个token快到爆炸，但是没有用。对吧。</p>
+<p>就是你首先所有的token第一要务是用来解决你所有的业务问题，所以它的能力必须要先过你的benchmark。</p>
+<p>benchmark这些东西都过了之后，我们才能说基于你要的这个业务场景，我就算是挑这个地球上最牛逼的模型，就是这个，就是过了这个门槛之后，最小的那个模型，我往死里优化，我大概能给你搞到多快，那么你接不接受。</p>
+<p>它是这样的一个业务决策流程，从来不会有人上来先说，我不管你用什么模型，先给我干到500个token以上，然后我再选择哪个模型能打，绝对不是的。</p>
+<p>嗯。</p>
+<p>OK。</p>
+<p>啊，好。呃，那，那么，我还想请教一下，就是那，那像这个，呃，因为我，我，就是我这边，呃，因为我这边原本是可能研究就是这种ASIC这些会多一些哈，就是可能我之前有同，别的同事和你交流过，因为我可能研究的出发点，比方说我是想去，啊，就是比方说去评估像一些快速推理的ASIC，像这个Cerebras，像这个英伟达和Groq，英伟达和Groq他们有，有这种PD分离的这种方案，啊，包括是，美国的这个可能一级市场里面有 有一些这种创业公司阶段的公司，也是做快推推理对，对对对，就是那这个东西，这个这块，就是您觉得我可以怎么去，就是评估他们的这个潜在的这个市场空间呢？就因为从他们自己的角度去讲的话，那肯定大家都是想要有更快的这个，tokens per second是更好，就然后我这边...</p>
+<p>当然当然当然。</p>
+<p>它是这样哈，它是这样，这个东西，这个东西完全就是一个用户体验。所以你在这个模型本身能搞定我的业务的场景下，坦白说人类对于token能干得多快这个事是不会有上限的。就是如果你现在跟我说有一个芯片可能跟英伟达的GPU差不多，你能给我干到比方说1500个token一秒，其实就是Cerebras跟Groq干的事，对吧？那我愿意花多少钱去买，这个东西是你需要关心的。对吧？那换句话来讲，过两个月过半年又出来一个新的芯片，说我声称能干到4000个token每秒，那么用户愿意花多少钱来换这个用户体验，这个事情是你需要关心的。所以快这个事情永远几乎没有极限。你比方说像这个4月份的时候其实我我我，跟那个OpenCloud那个大哥，我们在那个OpenAI看了一下当时他们跑的是GPT-5.4在Cerebras上跑的。就坦白说你单从用户体验上来讲超级屌。就是屌到你你你生成那个token的时候是看不见那个代码的，就是你让他去改一个网页包含有一些内容什么的，他基本上就是一秒，就是那个模型直接用语音交互，然后你看不见生成代码的瞬间，然后那个网页就改完了。所以你说这种用户体验好不好？当然好，因为我们大部分情况下现在的码农软件工程师都是一个prompt甩出去，在那里盯那个模型跑半个多小时，一个多小时，甚至十几个小时。对吧？所以你干快这个事一定是，就是怎么讲，就是功德无量，对吧？但是它对应的问题就是现阶段一旦引入这样的服务，它的成本基本上不太可控。所以之前我跟一些对冲基金的也在聊，因为他们有的投资了Cerebras。他们就在想说，因为他们得到的消息是OpenAI今年要发一个什么ultra fast版本，他们才说我操，肯定Cerebras要上。对吧？实际上最后上了这个ultra fast版本用的还是英伟达的卡。然后只是说把这个batch size调到无限低，所以用户体验也还算不错，可能大概可能给你拉到个接近400多500个token每秒吧，原来可能也就100多个。对吧？所以如果他上Cerebras，他可能意味着OpenAI今天在Codex里面的用户体验可能接近是1000token每秒以上。但是它的成本可能是多少呢？2000美金一个月，对吧？而且2000美金一个月OpenAI还不一定能挣钱。所以这个是现在最大的问题。所以任何的定制芯片现在有没有办法把成本做下来，其实是一个比较大的问题。对吧？所以你只要解决成本和量产问题，我不觉得有任何用户会愿意会拒绝这种芯片，坦白说。</p>
+<p>嗯。OK，明白，明白。</p>
+<p>对的对的，就是说您说对，就GPT的这个应该是6.1的这个，他们ultra fast mode是最快我看有人说是300 tokens每秒，然后就是用那个英伟达的GPU做的。那这里我想请教一下，就是从，对就是从您的角度就是，啊，就是说，就是从您的角度就是，如果您去推断就他为啥没有去用这个Cerebras的这个芯片呀？就是，就我不知道从您您嗯。</p>
+<p>我觉得还是首先量能给多少。因为如果这个量它上不去，那就意味着... 你可能这个服务就算是发布了，大部分情况下也会被客户骂，因为你比如说你这个服务发布了之后，你能卖给谁？对吧，就首先大部分人可能压根就买不起，然后所有人都在炒作你这个东西，但是实际上大部分人都没用过。可能绕一圈最后就是谁，什么桥水，对吧，然后JPMorgan的一些顶级大佬、高管，最后能用你这个服务。比方说你要变态一点，还想盈利，收个1万美金一个月。实际上1万美金不够啊，坦白讲兄弟，我今天，我今天在这里写写代码，我可能差不多一天也是3000刀，而且用的是GPU。对吧，我觉得他可能量产了之后，我觉得变态一点，15000美金一天，差不多是这样的价格。对吧，那就，就他就决定了OpenAI可能在价值观上会被质疑。对吧，另外一个就是说，我这个服务量不够的话，我还得专门去找人伺候这个集群，其实长期来也不是非常scalable。对吧，所以我是觉得本身不是特别成熟，就是把它单打包成一个服务放出来，我觉得目前还不太成熟。</p>
+<p>而且之前我，我们其实跟Cerebras聊过，就是，呃，当时的，当时他们的问题是因为他们那个SRAM的寻址方式比较奇葩，然后，这是23年的事了，就当时他们的SRAM寻址比较奇葩，然后DeepSeek刚发布，那时候刚开始有MoE的那个模型，然后当时的Cerebras反正是，就是他的那个连续寻址会导致MoE的推理的变成奇慢无比。就相当于是他没法跳跃寻址，找到那个对应的那个expert的地址，他只有1234567这样去找。所以你比方说你256个专家，他比如说1、4、8，他就会1，1234，12345678，这样去找到所有专家的地址，然后推理效率反而高不到哪里去。所以那个时候我们聊了一下，就没继续往下谈了。</p>
+<p>呃，但是现在有说法是他们已经比较好的解决这个问题了，但是以我4月份在OpenAI看到的来说，他那个版本应该也是修剪过的GPT-4。所以如果跑那种超大模型的话，我觉得可能Cerebras也不一定能扛得住。就是或者他要在模型架构上本身要动动手脚，把这个模型给fit到Cerebras芯片上。所以它其实是一个软硬件co-design的这么一个，这么一个问题。</p>
+<p>就同样的逻辑其实Google也在搞，因为Google现在，呃，他长期下来Google可能并不想搞什么一堆乱七八糟的模型架构，他可能就定在Gemini这个路子上往死里搞。所以他现在也开了一个新的支线，就是直接硬件一个组，软件一个组，合并，然后重新设计新架构的Gemini，然后也是搞自己的芯片，就是这个芯片定死在这个模型架构上，模型架构也定死在这个芯片上。然后这样的话其实也是可以把推理的这个理论上的吞吐拉到极高的一个极值。当然也就不考虑任何兼容性了。对吧，所以Cerebras其实某种程度上就是这个方向上的妥协了。</p>
+<p>嗯。</p>
+<p>明白明白。</p>
+<p>嗯。呃，这里面就是，当然可能这个不一定在您的工作范围里面了，就是，呃，您了不了解像，就因为他们这些其实就是包括Groq，它也都是有用到这种，呃，一些SRAM的内存，然后所以就是可能做decode的这个环节会比较快。啊那那然后呢就是我们现在，比方说我们现在看到的市场上的情况，就是这个路线的现在能支持的这个，就是说很高速度推理的这个模型的参数量都不大，就是披露出来的像，啊当然Cerebras是最，Cerebras是最大的哈，就是它可能在GPT-3.5当当时OpenAI也也发过新闻，就是能够达到750 tokens每秒，在GPT-3.5的时候，然后，呃，然后您... 像，呃，就是，嗯，就是Groq它，呃，Nvidia和Groq它有发一个，张之前有个新闻是，跑那个Gemma，Gemma 4，31B的，一个模型可以跑到3000多的tokens每秒。呃，我就想问问看，就是这种，呃，就是它，就是它，它这种，这种路线它现在能够跑，比方说3万亿啊或者5万亿参数的模型，然后又跑到，比方说1000多啊或者什么两三千tokens每秒，就是这，这个您怎么看？</p>
+<p>这，就是我刚才回答你那个问题，就是它的SRAM其实导致，SRAM本身的寻址是有问题的，它不像HBM可以那么灵活。所以相当于你在，这个模型部署的时候，你就得先想好，呃，整个模型这么多层里面，甚至包含了MoE的架构，它是以怎么样一个拓扑形式展开的。那么它在访问的时候，就是每一个算子只能访问它周边的几个SRAM。所以一旦访问不到，它就需要全局寻址。就是速度会超级超级慢。所以如果你这个模型是dense的，然后这个参数量不大的，这个是最，最符合这个现在所有的这些ASIC的这个，这个，这个，这个喜好的了。所以你但凡是那种越稀疏的模型，在这种SRAM的芯片上推理就越灾难。</p>
+<p>嗯，OK，明白明白。呃，这里我想请教，找您问一下，当，不知道您了不了解，就是，呃，像现在的这些，呃，就是前沿模型大概，嗯，都是在什么样的这个参数量啊？多，多少万亿啊？</p>
+<p>现在我是觉得可能开始又反向操作了，因为上半年我们的判断是，首先是这样哈，就是说去年，去年几乎所有的frontier lab模型都在往这个，呃，后训练去挪。然后今年呢，就是Anthropic搞了一把大的，就是它那个4.5跟4.6，然后证明确实非常牛逼，所以所有的厂商今年又开始往预训练去挪，对吧？因为后训练确实我们自己帮用户跑大量的后训练，我们也发现后训练可能更多的还是用于能力校正，但是它并不太能让模型大范围的学习新东西。所以这个就，就比较蛋疼，那你在想大范围的提升模型能力，就又会回到预训练或者是这个mid-training这个阶段，对吧？那今年上半年反正大家你能看到的肉眼可见的模型就往大里搞，基本上，已经很少，很少能见到1万亿以下模型了。但是从下半年来看，我估计着这个，这个趋势又得反转，因为，呃，首先第一个版本的Fable，就是Opus的那个，sorry，那个Anthropic那个Fable，它是先搞了一个10万亿的模型，然后发现成本端压根扛不住。所以它就先蒸到了3万亿。所以现在你看到的那个Fable是3万亿的模型，然后那个Opus 5.5是1万亿的模型。然后Kimi当然就是3万亿，现在其实是，我觉得现在就是不管是开源还是闭源应该都是最大的了。然后，再往下一下tier可能比如说DeepSeek大概是1.6万亿，然后，呃，Kimi自己的K2.5 1.4万亿，然后，然后，呃，那个，那个，那个，呃，Astra应该也是1万亿出头多一点。所以基本上今，现在的好像这种frontier的模型基本上又回到了，呃，大概1万亿的这个量级。唯一比较例外的可能就是Fable自己，Fable现在，但是Fable其实也不像，不像所有用户开放嘛，对吧？就是你至少比如说大部分的To B的客户现在都不太会用Fable。所以用的比较多的基本上也都还在1万亿这个量级了。</p>
+<p>嗯，明白明白。呃，是，是可以，就是您，就像我，我不知道您了不了解，就比方说像Anthropic还有OpenAI，他们是不是，呃，就是说他们是不是会，就是内部是不是有一个，有点像一个，就是有一个teacher model，然后它再去把... 把它就可能是内部有个最大的一个一个模型，然后它再蒸馏出来这个不同的版本去对外开放给客户使用。然后就有不同的参数量，嗯。</p>
+<p>对对对对对，而且这个东西其实也是基于硬件考量的。就我不知道你有没有听说像那个呃Luna，OpenAI的那个那个Luna版本的模型。Luna那个版本的模型正好是700亿参数，70个billion。所以你要以BF16的精度放的话，其实正正好好可以放到H200里，然后占一半的HBM，然后你就可以还把KV cache给放进去。所以它那个模型的设计完全就是因为OpenAI手上有大量的H200，然后那个模型正好一卡放一个。所以所以这个其实是软硬件一起一起一起考量的一个结果了。但是大的那个模型现在基本上就是都不都不都不拿出来卖，然后它就不断的拿这个大的模型蒸小的，小的再蒸更小的。</p>
+<p>嗯，明白明白。嗯，所以，啊，OK，所以，诶，那么就是您像，嗯，就是像，您比方说那那我不知道像比方说像OpenAI他们提供服务的这种可能Astra或者是So，这些大概是在，就是就是说用户可以就是可以用的上的这种模型，这种是在多少多少万亿参数啊，这种。</p>
+<p>Astra应该是在1.1.3、1.4的样子，然后So应该大概在8000多亿吧。</p>
+<p>OK，OK。哦，那那那明白明白明白。哦，那就还是就是反正就是说可能从您的角度看的话就是，呃，那这这反正用户可以实际使用的都还是在可能就小一可能一两万亿啊或者差不多两三万亿这个这个大小是吧？</p>
+<p>对对对，因为之前上半年他们上上的其实上过了一段时间3万亿的那个模型，上完了之后他会发现成本端完全扛不住。就是用户一面抱怨你这妈的问一个问题扣我40美金，另外一面他们成本端也扛不住，所以又得开始搞降智，所以他们现在就不如直接把模型又缩回了1万亿了。</p>
+<p>OK，明白明白。呃，嗯，那那怎么就是您对聊到这想请教一下，就是那那怎么看后面，您比方说可能到明年的时候，就是这个大家实际使用的模型它这个参数会不会，是怎么一个怎么样的变化趋势呢？就就您比方说像Kimi可能它从K2到K K3它也，因为我们了解您刚才也提到了嘛，就是可能K3是个2.8万亿参数的模型。那比方说如果到K4的话，它是它是多少啊？就是我不知道，对，这就是到明年的话可能是多是多少啊？</p>
+<p>呃，我觉得开源模型也会往下做。呃，因为现在来看至少到明年第一季度结束可能市场上，或者我这么说吧，就是说你这个模型能搞到多大很很大取决于很大程度取决于Vera Rubin什么时候能大规模的铺开。因为如果Vera Rubin大规模的铺开这件事没有发生，那就意味着我们大部分去跑推理的算力可能都还是B300和GB300。那其实也就意味着你单节点，就是主流的配置都还是单节点八张卡嘛，对吧，你一张卡280个G，八张卡其实也就不到两个T。那也就意味着你的模型是很难超过两个T的。对吧，如果你比如说硬着头皮去搞这种比如说K3 2.8T，但是2.8T我们在部署的时候跑B300也是把中间的一些层做了量化，尤其是把MOE层做了量化，给压到FP4，这样的话才能塞到八张卡里面。要不然你就只有走GB B300，那GB300你不优化的话要16张卡，那就那他妈的就很贵了，那就完全不如跑Opus 5.5了，就如果我是用户，我都不会去，我都不会去买Kimi的模型。所以Kimi他现在的说法是三，他下一个版本叫3.1，那个版本就已经会开始把模型再往下做了，应该是大概又回到了大概1.4到1.6万亿。</p>
+<p>OK，这样子的，OK。哦明白，那这个地方您怎么看呢？就是因为您看像这个硬件这层这侧的话就是英伟达他也，为什么请教下您，就是为什么您说这个可能主流配置的单节点是八卡哈，就因为您就是因为可能我们我们从看硬件的角度就是因为英伟达他可能出了很多都是大部分的出的机柜都是以这个NVL72的形式出的，然后后面可能如果没要求还有NVL576，就是就看上去这一个节点是几十张几百张卡这种，就是当然可能现在是72张卡吧就是，就是就是从您的角度为什么是说是是八张卡？</p>
+<p>你现在基本上所有的Neo Cloud你去找他们买卡很紧很简单，你一问就知道，就是所有的都是按照node去买，一个node挂八张卡，即使他后面是physical机柜是72张卡，他好像也是在在做虚拟化的时候是按照八张卡来做的。那就是如果这个事如果比如说我单纯去直接买bare metal，我自己去从比如说Kubernetes这个调度的infra层重新写的话，应该也可以，只是说对，只是说目前规模不是很大。大部分情况下现在你去找Neo Cloud他们用的不是72卡的机柜，就还是用的原来的那种用的八张卡的一个组织节点，然后是挂B300的GPU，但是他用的并不是GB。</p>
+<p>OK，OK行。哦那这个有没有可能是，OK，就是这个会不会有可能是比如说可能是推理服务他就可能以八卡的作为一个节点去去卖，那如果是是不是如果是训练的话就可能是可能多少很多很多的卡这么去去去去卖了去出租了。</p>
+<p>没有没有，这个是这个是数据中心硬件的setup，就是你搞训练也好搞推理也好，就大家都一样，就是Nebius，Together，Crusoe，CoreWeave，就大家都是这么搞的。</p>
+<p>OK，OK。好的好的。嗯。好，那还想请教下就是，我我还对我们我想再回到需求侧一下哈，就是等一下，对，就是那那我们就是有没有可能就是比如说我们就请您就比如说大致的拍一下，就比如说这种可能比如说现在啊这种快速推理的服务它可能在这个整个市场上占比能有多少，然后可能比如说几年以后啊之类的啊，比如说可能到2030年，这种快速推理的服务的这种占比能有多少，就是这个这个好不好拍啊这个？</p>
+<p>我只能跟你讲比如说你看像我们整个服务的业务范围，因为我们可能在在To B的企业这块肯定还是有代表性的。那我们可能现在所有比如说走快速推理这个这条路的，我估计着可能还是有七成左右。那这七成里面可能有三分之二，也就是说我们整套业务里的一半吧，还是coding相关的，所以你如果去走coding就完全不意外它为什么要快了。 用户就一直在需要跟计算机或者跟你的手机去互动嘛，对吧？所以你那个 token 肯定生成得越快，我越早看到结果。所以这块你比如说像 Cognition 搞的那个什么 Devin AI 啊、Cursor 啊，其实基本上都是这样子的一个路子。然后剩下一波比较常见，比如说要追求 token 生成快的就是 CoWork。那 CoWork 比较常见的，比方说像微软自己，对吧？微软自己那个 Copilot，它反正都是付费用户，然后它相当于提供一点比较好的用户体验呗。然后再加上比如说像 JanSpark，对吧？JanSpark 做 PPT 生成的，那这个它是有这个 token 加速的需求的。然后剩下的我倒觉得没啥了。就你比方说像这个 Harvey，Harvey 它分两个，就是 Harvey 它比如说有一些大文档检索引的这些，比如说 background task，这种它其实就是你随便给我搞，对吧？怎么便宜怎么来。就经常是大家没人用的时候，半夜睡觉的时候，它起一堆 job，把这个很多推理的需求给跑了，那这个就是大吞吐其实就好了嘛，对吧？然后但是它面向用户的那些，比方说实时互动的这些文档处理的 agent 呀、分类、填表，然后生成案件关联信息这些东西，就它还是 real time 去跑，这块还是有快速推理的需求。所以我估计这可能现在我们整体快速推理的需求还是有，我觉得有个六七成吧。所以实际上就是说，你其实可以这么去想，就是说所有的推理需求里边，用户对于某一个场景它具体要不要快，其实只取决于一件事情，就是它要不要直接跟这个 AI 互动，对吧？如果它不跟这个 AI 直接互动，其实逻辑上快一点慢一点完全无所谓。那既然无所谓的情况下，我一定当然去走慢，因为越慢越便宜，对吧？所以你比方说像现界的各个厂都开始做的这个 C 端的推理，那比如说像 Meta 的这个 Muse，对吧？那 Muse 其实就有对外去做慢，因为它只有比如说这个当用户盯着我这个手机的时候，它问了一个问题，那我要尽快地响应。但是你比如说像这个叫什么，比如说 Muse 经常给你去执行这种长程任务。 比方说，你让他给你订个什么饭店啊，找个度假村啊什么这种东西，他可能经常在那里打开浏览器搜个三十多分钟，对吧？所以实际上他在后台用快模式跑、慢模式跑，对你来讲区别不大。那对他来讲，跑慢模式省钱，他就一定会跑慢的。OK，明白明白。嗯，这里我还想请教一下，就是我理解了，就是我们现在这个客户里面，可能六七成他都是，因为您有提到就是有一半可能都是 calling 相关的需求，然后可能六七成都是有这种快速推理的需求。那我们现在就是通常来说，就是给客户提供的这个推理服务的速度是多少呢？就是通常多少 tokens 每秒？看模型，就你比方说，Qwen 3 可能差不多大概是在一百八到两百，然后如果是智谱的 5.3、5.2，差不多可能极限能拉到四百六、四百八，但是我们常规其实提供服务，我感觉到四百也就差不多了。然后，如果是小的千问的话，其实最快是可以做到接近七百个 token 的，接近七百个 token 每秒。对，大概就是这样吧。而且是这样，就是说我们 kernel 优化归 kernel 优化，就是你用户本身的那个 use case 如果越垂直、越集中，你的推理是可以做得更快的，因为你本身你想…… 可能一句比如说我我都拿一个模型对吧如果我什么天文地理时事新闻乱七八糟东西我都问其实它会生成大量无效的cache对吧但是如果我就是写代码的话其实你想所有的代码主流的这些编程语言其实无非就是英文数字标点符号空格回车没了对吧所以它的整个distribution是非常非常集中的那对应的你KV cache生成的这个命中率就会更高同样你做speculative decoding就是我们说那个推测解码实际上你猜中的概率也越高所以你推理自然也就快</p>
+<p>嗯嗯明白明白</p>
+<p>呃哎那</p>
+<p>OK</p>
+<p>呃我想确认一下就是就您比方说就是比方说我们在就是提供这种K3的这种 呃就是大模型的推理服务的时候 就是就是说现在最快就差不多是200 tokens每秒是这么理解吗</p>
+<p>对对对</p>
+<p>OK那那像这种您比方说像Cerebras Cerebras这个公司它能够把比方说K3做到它也是应该也是它是支持K3它也说过的那它能做到打比方说1000 1000多tokens每秒就是那这个东西它的它的市场在哪里呢就是因为我们这么大的领先的这种推理服务的公司也好像也也就说我我不知道就是也也没有提供这么快的这种推理需求的这个就是这么快的速度的这个服务啊就是那像对像Cerebras它比方说它K3能够搞到1000多tokens每秒它这个它这个市场在哪啊</p>
+<p>呃坦白我就这么跟你直说我觉得没市场就是你你这种芯片一定得用来跑最好的模型</p>
+<p>因为你跑跑这个这么快其实某种程度上就定义了你的客户是最高端的客户就这么简单对吧就是你想我给你举个例子啊就是说我如果现在设计的是彩电你就好理解了我这个彩电设计的是90寸的超清8K彩电我有没有可能这个这个彩电有可能被安在一个40平米的出租屋里面</p>
+<p>对吧</p>
+<p>你去想这个道理我我买这个彩电我的目标一定就是250平米以上的豪宅就这么简单所以如果你追求的就是推理极快用户体验极佳那你最好跑的就是最好的模型嘛</p>
+<p>对吧但是坦白说就是我们自己支持开源模型我我都可以在这里跟你说开源模型明显现在跟闭源模型还是有能力上的差异的对吧所以只有一种极窄的情况是啥呢就是用户觉得这个比如说我他妈就是不想被这个Anthropic或者OpenAI给牵制住对吧因为他们是闭源模型我我对于自己的模型没有掌控我就一定要比如说拿一个开源模型作为基座然后我疯狂的后训练搞一个我自己的垂直模型完全就跑我自己的use case然后呢我他妈还贼有钱就是要追求用户这个体验巨好包括服务我的用户场景怎么快怎么来只有这种情况就是才有可能K3和Cerebras放到一起</p>
+<p>嗯</p>
+<p>OK</p>
+<p>呃OK从您的角度那那现在就是我们的就是客户里面就是哎对您像那个Cognition还有Cursor都都是我们的客户是吧</p>
+<p>对对对</p>
+<p>OK呃就是说我们的这些可能就是我们的这些嗯就是可能嗯就是相对来说对这个可能这个速度要求最高的客户里面他们现在比方说有有向Fireworks提出这种诉求吗就是能不能够啊</p>
+<p>没有没有因为他那个因为他那个因为他那个真的我觉得可能你得用户体验 高到一定程度，而且对于他们来讲，你本身下有落地的是产品，你这个产品至少，我们不说赚钱，你别把自己亏死最重要了，对吧？就是这个产品一旦上线了之后，它的可能token的单价会超级贵。所以你你你得先给自己找到需要这一类产品的用户。对吧？或者说你单纯的把Cerebras这个芯片的价格给做下来。就是我能让今天你还是一个月比如付个200美金，但然后我这个token速度能给你蹦1000个，那我一定毫无脑选1000个。对吧？但是你现在这个意味着我可能推理速度快了三倍，我价格得涨五倍，那我我会死的，对吧？就是我要是每天在这里撸个一万多美金，真的就是基本上没有你不要想有任何企业能扛得住这个成本了。</p>
+<p>嗯，明白明白。哎我找您确认一下，就是那么就是Fireworks现在提供推理服务都是</p>
+<p>嗯，就是咱都是都是英伟达的卡是不是？</p>
+<p>对对对，我们基本上九成是英伟达的卡，然后现在开始陆续上，现在可能不到10%的流量是在AMD上跑的吧。</p>
+<p>OK。这里面，那那像这个就是GB啊或者是这个就是H那个那个就是H200啊什么的，就是这个B卡H卡什么的，这个大概是什么比例啊？</p>
+<p>呃，现在可能一半是B300，然后四分之一是GB300。然后剩下的四分之一里面可能大部分是H200，还有极少极少一部分是什么H100或者是A100，就是我们可能日常跑一跑小东西用的。</p>
+<p>OK，明白明白。</p>
+<p>嗯，好的。哎，然后</p>
+<p>嗯，就是我我还想问一下就是对，就是说这个像像目前的话这个token，token的价格有，就是是什么趋势啊？是不是就是还是是一个下降的趋势？</p>
+<p>呃，我觉得现在可能是稳中又上升了吧。就整体整体的你的趋势啊，从你比如说你要是以季度来看，你的趋势一定是下降的。呃，因为你的这个主要现在来看哈，就是说推理能，推理优化，比如说Fireworks干的这些事情，推理优化起的这个功效，我觉得可能非常主观的，我我画个比例哈，可能也就是三分之一。三分之二可能还是要得益于你本身硬件在迭代。所以Fireworks现在优化这个事情，我个人觉得不是那么重要，反倒更重要的是怎么样通过大规模的这个这个infra，可靠的infra能够把用户的这个推理需求稳定的跑起来。这个事情可能是最重要的。对吧？你比如说举个例子，像H200到B200，差不多可能你去找大部分的neocloud去租，差不多是50%到60%的价差，对吧？也就是说你H200现在的价格乘个1.6，差不多是B200的价格。但是你吞吐是稳定可以涨三倍的。所以对于我们这种企业级服务来讲，就是你用户你的token量，token的输入输出量是在一定水平以内的话呢，我们肯定建议你是把这个H200全换成B200。对吧？因为你可以用更少的卡跑出更多的token，同时体验更好还更便宜。所以这个一定是这样的一个趋势。那你切到新的架构的卡上，当然自然速度就快三倍。对吧？所以其实这个就非常自然。那我们在中间可能更多的是比如说让我们自己各种各样的算子，我们自己的kernel去能适配这些新的卡。所以更多的是这些活了，我是觉得。那，嗯，对，所以其实主要是硬件功劳。 明白。嗯。明白了。那，那，那现在就是，呃，那那就是像前沿的模型的话，他们的token的价格是，就是也是，应该也是差，都是差不多的趋势是吗？就是像API的这种。</p>
+<p>对，对。我觉得过去一个月比较麻烦的其实是需求本身还在涨，但是呢，因为本身美国过去这一个月的数中心建设速度开始下来了。就一个是中期选举啦，又加上比如说美债现在比较高啦，对吧，就是这帮neocloud也不好融资，然后又经常被抗议，所以其实好多地方的这个数据中心建设的项目都被暂停了，或者是至少缩小规模吧。所以你相当于需求其实稳中变多，但是供给反正一是现在没供给，二是明年可能供给也比想象的要少，所以其实算力价格又开始往上涨。所以你比方说像，像5月底6月初的时候可能B300你还能大概一张卡一小时三块六三块八还能租得到。然后现在可能你再去租都是五块多，甚至我见到的有一些比较贪的这种neocloud会要你一小时六块多，六块四六块五，然后还让你签五年合同。就是这个跨度也很大就是了，但是整体一定是比5月份要涨了不少的，至少涨了我觉得可能有30%。所以你要是，对，所以你要比如说从5月份来看，硬件架构没有什变化，然后我们的吞吐量其实也不会产生多么革命性的变化，但是你算力本身的成本涨了30%，所以你说token价格降了吗？肯定没降，对吧？肯定可能还可能还会有略微上涨一点点。</p>
+<p>哎，这个地方我不好意思我打断一下，就是，呃，那，嗯，就是如果是，就是我们如果是看token的价格呢，就是比方说每百万token，每百万tokens多少钱，或者就是这种，这种叫就是pay as you go的这种模式的话，就是这个这个token的，啊，就是就就就可能不是GPU的价格，就是token的价格的话，最近有什么变化，有有没有下降啊之类的，因为，啊，因为就像您说的可能因为GPU每次这个一升级的话，比方说从从从A100到B200就就是有这么大的提升嘛。</p>
+<p>啊对，但是问，问题是你这个硬件的升级基本上可能是今年三到五月份发生的，至少从五月份之后没有任何硬件的升级，对不对？大部分neocloud可能都是B200加B300的这么一个配置。所以实际上token的价格没有什么产生大的变化。对吧，唯一下降的，有偶尔几家会出现下降的原因也是因为商业竞争，对吧，就大家提前把token的价格...但实际上，对，实际上基本上没怎么动。</p>
+<p>OK。呃，好的好的。啊，好好，我还还再问一下，稍等啊，我看一下，就...</p>
+<p>不急不急。</p>
+<p>嗯，就是，哎，还有我想问问看就是我们自己公司Fireworks的这个ARR现在是什么情况？就是在，就是三季度和预期的这个四季度。</p>
+<p>现在这个月底折算的run rate差不多是1.5个billion，15亿美金吧。然后到今年第四季度结束，我们可能target大概做到22到23亿美金。</p>
+<p>OK。OK。啊，明白明白。就相当于是10，呃，到10月底的run rate是指，就是整个10月还是说还是会更加具体啊，到比方说最后一周啊之类的。</p>
+<p>没有没有，就整个10月，嗯，综合来看。</p>
+<p>啊，好的。啊，明白明白。那Q4结束就是相当于是12月... 12月的ARR是22到23亿美金是，是这么理解吗？</p>
+<p>呃，不不，我们的Q4是到明年的3月，就是我们的fiscal year，财年。</p>
+<p>哦哦哦。</p>
+<p>哦哦，OK。</p>
+<p>哦，明白明白，哦。</p>
+<p>哦，好的好的，明白了明白了。</p>
+<p>对，我估计这样，11，10月，11月份因为我们开一个发布会，11月份应该能拉来一波客户，然后12月份能让这部分客户签单，然后今年就结束了。因为12月份一帮美国人都放假了，对吧，所以大家回来干活基本上可能就是1月中。所以实际上，实际上到3月底时间没有那么久。</p>
+<p>嗯，OK，明白明白。呃，还，还有一个问题关于就是可能模型的演进和这个速度相关的，就是，就是，就是，嗯，就是说我们怎么去看，您怎么看这个，一个就是说整体的这个，呃，我们就是整体提供这个推理服务的这个tokens per second，呃，就是随着时间的推移会逐步的去提高吗？就比方说可能我们现在跑的Kimi K3是现在可能最，呃，Kimi K3能不能叫做是现在开源模型里面最好的，或者是最最最前沿的？</p>
+<p>对，可以。</p>
+<p>OK。对，就比方，对，就比方说当前时点，比方说我们跑最前沿的开源模型是200 tokens每秒，那么，比方说到明年，呃，到比方说到明年这个时候，明年底的时候，跑到，跑到时候最，最，最先进的这个，最前沿的开源模型，比方说能，能跑多少，比方说是不是能跑到300啊之类的，就是我想理解一下，呃，就是总，总体的这个tokens per second，这个会不会，就是随着时间的推移会逐步的提高啊，这个您怎么看？</p>
+<p>哦，当然当然，当然当然。以，以我们现在测试的一小部分呢，就是B300折算到VR Rubin上，可能大概吞吐有一个四到六倍的提升吧。所以如果你，如果现在比如说我们对于performance极致优化的话，拉到200，那上VR Rubin其实只要适配了应该能拉到800完全不难。800到1000个token吧。</p>
+<p>OK。哦，这么快的。</p>
+<p>嗯嗯，是的是的，就是，就是VR Rubin还是很强，当然VR Rubin就很贵它也是吧。</p>
+<p>呃，明白明白。嗯。呃，那，那如果是您比方说像那可能比方说在去年的时候，嗯，就是，呃，这个应该怎么问呢，就是比方说，呃，在，在去年的时候大概，比方说当时，去年底的时候当时最前沿的模，开源模型我们，我们去，去，去提供推理服务能够做到多少，就是tokens per second？</p>
+<p>当时，当时Kimi K2，然后大概也是一万亿左右的参数吧。那时候放到H100上跑，还是量化之后，差不多可能也就100 token出头。但是那时候要用16张卡跑。而且是优化完之后的结果。嗯，对，然后你要去对比比如说不优化的情况下，就是比如说S，当时的SGLang，就刚出的时候，那时候的SGLang或者vLLM那种开源框架，可能差不多大家都在30到40个token每秒。</p>
+<p>OK。哦，好的好的。呃，那，那您比方说就是我们如果展望到明年，比方说年底就一年以后，因为您，对，我前面也问，就是也找您问了，就是您也提到了，就是比方说可能，是不是到明年的时候可能真正运行推理服务的这个，嗯，比方说最好的，呃，开源模型可能也，也还仍然是在，比方说一两万亿参数是不是，然后或者两万，就是不会，就是不会说比现在的这个Kimi的K3要显著的再大很多，是，是这么理解吗？</p>
+<p>哦，不会不会，我跟你说的就是要看明年VR Rubin的铺开的量有多大。因为这个量一旦铺开了，就大家又会有重新解锁把模型往上干的这个动力。所以如果VR Rubin能铺开，我其实觉得明年可能更普适的最大的模型可能都会拉到 拉到5万亿左右。</p>
+<p>OK，OK。明白了明白了。</p>
+<p>所以你会发现所有搞模型的人就在这两个极值之间不断地横跳，对吧？就先把模型干大，然后先看到能力上有有有突破，有突破之后发现卧槽，serve不起，然后就再把它模型往回搞，对吧？然后下一把硬件支持这个了，然后再把模型干大。其实有点就是跟跟我们小时候就是做游戏差不多，对吧？就是你会发现所有的游戏都在不断地试探你的硬件加速的边界，对吧？然后这个这个有的时候野心太大了，模型这个游戏搞得太牛逼了，然后大部分电脑带不起来，然后用户会喷他们，喷他们他们就会再把模型给做小，对吧？游戏给做小，一样的道理。</p>
+<p>明白明白。很形象啊，理解了理解了。OK。那这么看的话，那如果那那未来比方说到了28年了，因为明年可能明年下半年的时候又有Rubin Ultra了，然后到后年到28年可能又有那个Feynman又又又Feynman又出来了，那那那这样的话那那那按照这个逻辑去演绎的话，那那后面模型那还会更大咯？什么8万亿10万亿什么的。</p>
+<p>是是是，我觉得就首先一定会有企业尝试去搞10万亿，这个事是一定的。但是坦白说，我觉得现在市场上没有任何人能拍着胸脯跟你说，我搞这个超大的模型一定能搞成。因为现在的我觉得就首先模型本身的scaling law是在于你的数据和算力都管够的情况下，你这个模型是可以无限往大里做的。但是现在的问题就是如果企业在每一阶段预训练的时候，他搞不到新的数据了，那么他再把这个模型参数往大里做，他可能产生的增值意义是非常小的。对吧？就你比如说像现在很多公司已经就怎么讲，有点饥不择食了，对吧？就是你只要给我把数据管够，这个数据贵一点，花钱我都愿意。那其实我是觉得就是你地主家也有也有也有也有这个钱不够的时候嘛，对吧？就是你现在比如说像有一些卖数据的，就是专门做这种agentic tool case，就是做agent调用啊，然后比如说查一查文档啊，调几个工具啊，然后再做一些东西啊，然后再给你生成，最后把这个任务执行完。就现在整个这一条工具的执行链，差不多可能接近2000美金。那我就好奇了，就是以你别说Anthropic跟OpenAI了，我觉得就是Google跟Meta这种超有钱的地主应该也经不起一直这么玩，对吧？所以你有价值的数据现在是越来越枯竭的。那再往下，比如说更有价值的这些数据，我他妈也不给你，对不对？你比如说我是可能什么这个一些医院啊，或者是比如说我们举个例子，你在中国搞大模型，有没有可能搞找最高人民法院把他的所有的案件卷宗给你？死都别想，对吧？那有没有可能比方说这个叫什么，中国大部分的比如说电动汽车厂商，把他自己内部的很多专业数据给你？其实long term来讲，大量的这种超高价值的数据可能都还是私有的。对吧？那公有的数据爬完了，买，对吧？偷，抢，骗，争，这这种东西黑道的白道的和灰灰产其实都已经开始用上了。但是我是觉得后面肯定这个搞数据是越来越难的。对吧？所以数据搞不上去，你把模型再拉一拉，很可能做几次实验之后发现，哎，可能我比如说3万亿拉到5万亿还有点效果，然后从5万亿拉到10万亿发现，嗯？就好像也没有什么用了，对吧？那基本上大家也就停了，就歇了。</p>
+<p>嗯。OK。明白明白。好的好的，还想问一下就是 那那就是比方说如果就是比方说到明年就是有有这个就是5万亿的模型，那到时候这些老的硬件那是怎么弄呢？就是您像这种H200啊，B200啊，B300，GB的这些。</p>
+<p>一定一定有穷人，这个世界一定会有穷人。就是一定会有大量的这种基础use case，你比方说我们今天可能很多人用到的什么智能小助手啊，底下可能比如说给你回个邮件什么之类的这些东西。这种这种这种怎么讲，比较简单的场景其实用小模型一直都是可以搞的嘛。所以这部分其实我觉得不用担心，一定会用掉。对吧，就是你会发现现在整个世界非常割裂，像我们这种比如说商业公司，可能基本上三分之二的算力现在都是Blackwell。但是我们现在经常也去面一些比如说斯坦福或者是CMU的这种博士生，然后你去你去问他比如说你期末的作业，打的这个paper，thesis用在哪些机器上跑的，很多学生会跟你讲我只有两个A100，对吧。所以所以上游的人很有钱，下游的人很穷的。对吧，所以你给他几个H200他已经很happy了。</p>
+<p>OK。明白明白，好的好的，对，需求有有这个，理解了。我还想请教下就是这个RSI您怎么看？就是这个recursive self-improvement，然后就是后面如果说就是数据不够的话，没有好的数据，就是这个RSI的话它是不是它它能够就是它是不是也会进步进步不会很快？</p>
+<p>是这样，就是说RSI我个人觉得本质上它是一个市场营销话术。就是说我们现阶段追求的其实一直是RSI。因为如果最初比方说我们当刚开始发现大模型的时候其实是GPT-3.5对吧。GPT-3.5那时候蠢成什么样呢？蠢成我们训练这个reward model需要靠人去打分。对吧，那到后面你比方说从DeepSeek开始，我们大部分现在比如说为什么去搞强化学习，是因为我有很多别的方式可以打分，对吧，不一定需要用人，可能用一个很强的模型给一个弱的模型打分，也OK。或者说我比如说写个数学表达式，对吧，如果你这个任务是个数学物理的可验证的话题，我可以通过表达式去通过这个这个这个验证的方式去打分。所以实际上大家追求的都是在整个比如说模型训练的这个pipeline里，到底是有哪些步骤可以由模型自己来介入来自动化的，对吧。但是呢现阶段其实我是觉得开始有一些步骤是模型可以参与了，比方说数据打标，对吧。就是你完全可以让一些非常确定性的，就是一看这个case就很简单，然后你比如说调个Opus，调个Astra进来就是一顿给你打分，付钱不就完了嘛。对吧，但是有一些事情然后你你觉得可能我不太相信模型的输出，我还是需要人介入，那你就再让人去打分。对吧，所以现在可能所有的模型训练数据标注这些流程里面或多或少都是人和AI混着在干。但是你要追求比如说像Recursive AI它干的那个什么最终的什么RSI，那就是他妈端到端AI干自己，对吧，就是AI训AI，训AI，然后它形成自我闭环，我觉得这个东西真的就是有点有点太远了。对吧，相当于这个AI某种程度上实现了自我迭代。你只能说大家朝这个方向努力，但是我个人觉得这个有点玄幻。</p>
+<p>OK。OK。 好，所以就现在反正就现在是有有一些有一些可能其中的一些步骤其实也有用到某种程度上也有用到RSI，但是如果端到端全部都去用RSI的话，就是这个还还还比较遥远，是是可以这么理解。</p>
+<p>对对对。</p>
+<p>对对对对对。</p>
+<p>OK，OK。</p>
+<p>好的好的，我我我看看还有没有什么问题哈。</p>
+<p>嗯。</p>
+<p>对，因为我看前段时间智谱的唐杰不也说了嘛，他们训练新的版本的那个GLM那个模型，他用的措辞也很小心，他说我们在某些步骤上实现了RSI，我草，你要这么说我也可以，对吧？就是</p>
+<p>对对对，我也看到那个新闻了。</p>
+<p>对，我随便跑强化的时候，我让我数据给我打个标，对吧？我训练比如说千万的时候，我拿K3给我打个标，或者我拿Opus 5.5给我打个标，这玩意我就叫RSI，对不对？</p>
+<p>明白明白。哦，我我我最后再再问一下，当然可能这个您也不一定了解，就是，那您了不了解那个像Anthropic他们会用这种Cerebras的这种来做推理吗？</p>
+<p>Anthropic现在好像没有，Anthropic现在主要是用英伟达的GPU加上TPU，然后他们还在适配Trainium，应该主要就是这三个芯片吧。他现在应该没计划，就是如果上上上上Cerebras的话应该也就是OpenAI现在。</p>
+<p>嗯，明白明白。呃，您就是那OpenAI用这个Cerebras的情况您您有大概的了解不？</p>
+<p>嗯，现在没怎么听说了，现在应该他完全没有公开的服务器在用这个东西的，我猜他可能是内部跑一些小的模型会在用。</p>
+<p>嗯，OK，明白明白。</p>
+<p>好的好的。</p>
+<p>OK。好呀好呀。呃，那行，那专家那那那我们今天就先交流到这，那个非常有收获，那就感谢您的时间啊，后面有问题的话再再找您请教，啊，谢谢谢谢。</p>
+<p>好的，没问题。行，那先这么说。</p>
+<p>好，谢谢，哎好，好，谢谢，好好，拜拜，好。</p>
+<p>哎，好嘞。拜拜拜拜。</p>
+<p>哎，好嘞。</p>
+</div>
+</main>
+</body></html>

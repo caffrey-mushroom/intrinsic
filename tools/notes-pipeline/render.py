@@ -8,9 +8,9 @@ meta = {m['id']: m for m in json.load(open(meta_f))}
 E = lambda s: html.escape(s, quote=False)
 
 SRC_META = {'AC': 'AceCamp', 'TB': 'Third Bridge', 'GP': 'GuidePoint', '9K': 'Meritco 久谦',
-            'Substack': 'Substack', 'FUNDA': 'Funda', 'SA': 'SemiAnalysis'}
-SRC_SLUG = {'AC': 'ac', 'TB': 'tb', 'GP': 'gp', '9K': '9k', 'Substack': 'substack', 'FUNDA': 'funda', 'SA': 'sa'}
-SRC_ORDER = ['AC', 'TB', 'GP', '9K', 'Substack', 'FUNDA', 'SA', 'Weekly']
+            'Substack': 'Substack', 'FUNDA': 'Funda', 'SA': 'SemiAnalysis', 'Call': 'Expert Call'}
+SRC_SLUG = {'AC': 'ac', 'TB': 'tb', 'GP': 'gp', '9K': '9k', 'Substack': 'substack', 'FUNDA': 'funda', 'SA': 'sa', 'Call': 'call'}
+SRC_ORDER = ['AC', 'TB', 'GP', '9K', 'Call', 'Substack', 'FUNDA', 'SA', 'Weekly']
 ROMAN = re.compile(r'\b(i{1,3}|iv|v|vi{1,3}|ix|x)\b')
 
 def kebab(name):

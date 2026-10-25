@@ -1,0 +1,361 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.07.23 | Call | Memory | KV Cache Offload Capacity Planning Expert Call</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.07.23 | Call | Memory | KV Cache Offload Capacity Planning Expert Call</h1>
+<p class="orig">原标题：KV Cache Offload</p>
+<p class="tags">#memory #llm #datacenter</p>
+<p class="meta">Expert Call · 2026-07-23</p>
+<div class="body">
+<h2>纪要总结</h2>
+<h2>专家访谈会议纪要</h2>
+<h2>1. AI推理集群的容量规划与全球部署</h2>
+<h3>a) 大规模AI服务应如何规划Pod及KV Cache容量？</h3>
+<ul><li>AI服务请求通常具有高并发特征。以云服务及企业许可证客户为例，可能同时有1,000、10,000乃至100万名用户访问。</li><li>容量规划需要从用户规模反向推算：</li></ul>
+<ol><li>先确定每个Pod需要承载的并发用户数。</li><li>再根据并发规模、上下文长度及缓存保留时间测算KV Cache容量。</li><li>单个Pod可能需要配置10—100PB容量。</li><li>最终将相应配置复制到美国东海岸、西海岸、亚洲和欧洲等数据中心。</li></ol>
+<ul><li>请求应从初始阶段进行智能编排和就近路由。例如，中国或日本用户应由亚洲数据中心处理，而非发送至美国。</li><li>全球调度的核心优化目标包括：</li></ul>
+<ol><li>降低首个Token响应时间。</li><li>提升Token处理效率。</li><li>减少跨区域网络传输。</li><li>提高各Pod的缓存命中率和资源利用率。</li></ol>
+<h3>b) HBM供应受限时，闪存能够发挥什么作用？</h3>
+<ul><li>每个Pod需要同时配置HBM、DRAM和闪存，其中闪存通常是容量最大的资源池。</li><li>HBM供应受限，无法完全依靠增加HBM满足用户及Token增长，闪存是现阶段最现实的容量扩展方案。</li><li>在现有计算硬件不变的情况下，通过增加闪存承载KV Cache，可支持约10倍的用户规模。</li><li>如果不使用闪存卸载，现有基础设施可能只能支持原有方案约1/10的用户数量。</li><li>闪存的核心价值不是替代GPU计算，而是提升已部署GPU机架的服务能力、Token产出能力和收入能力。</li></ul>
+<h2>2. HBM、DRAM与闪存的分层架构</h2>
+<h3>a) AI存储体系应如何划分层级？</h3>
+<ul><li>AI推理存储体系可划分为热层、温层和冷层：</li></ul>
+<ol><li><b>热层</b>：以HBM3E、HBM4及部分DRAM为主，承载最活跃、对延迟最敏感的数据。</li><li><b>温层</b>：以本地或网络化NVMe SSD为主，承载KV Cache、长期上下文和高命中率数据。</li><li><b>冷层</b>：以全闪存对象存储为主，承载共享数据湖及对延迟要求较低的数据。</li></ol>
+<ul><li>第1层通常由HBM与DRAM共同组成。单个Pod的HBM容量通常只有1—2TB，而DRAM可以达到数十TB。</li><li>对Anthropic、OpenAI等大规模AI服务商而言，模型、权重、上下文及用户状态无法全部装入HBM和DRAM，因此必须从本地或网络化NVMe闪存中调取数据。</li></ul>
+<h3>b) 各存储层级的延迟边界如何划分？</h3>
+<ul><li>原始访谈给出的延迟划分为：</li></ul>
+<ol><li><b>低于1微秒</b>：主要由HBM承担。</li><li><b>10—200微秒</b>：适合采用第2层闪存。</li><li><b>200微秒—10毫秒</b>：可进入对象存储层。</li></ol>
+<ul><li>软件需要根据工作负载类型、缓存命中率、上下文大小及服务等级协议，动态决定数据在HBM、DRAM和闪存之间的放置与迁移。</li></ul>
+<h3>c) 推理不同阶段应分别使用什么介质？</h3>
+<ul><li>活跃Token生成，即解码阶段，以及当前活跃KV Cache，主要放在HBM中。</li><li>需要保留数分钟至数小时的多轮会话上下文，通常放入基于闪存的KV Cache。</li><li>对象存储主要采用全闪存架构，用于共享数据湖及延迟要求相对较低的场景。</li><li>HBM负责最高性能的即时计算，DRAM负责补充HBM容量和部分批处理，闪存负责大规模、持久化、可共享的上下文存储。</li></ul>
+<h2>3. DRAM与SSD的适用边界</h2>
+<h3>a) 为什么SSD在部分KV Cache场景中可能优于DRAM？</h3>
+<ul><li>从单颗芯片的访问延迟看，DRAM快于闪存；但从完整推理流程看，结果可能相反。</li><li>当上下文无法完整装入DRAM时，系统需要频繁驱逐数据，并在后续请求中重新执行Prefill或重建上下文。</li><li>频繁重建上下文会消耗大量GPU计算资源、时间和成本，其性能损失可能高于通过高速网络读取共享闪存KV Cache的开销。</li><li>因此，对长上下文、高并发和高缓存命中率场景而言，SSD能够避免重复计算，从系统层面获得比DRAM更好的响应效率。</li><li>如果对所有机架和Pod进行统一编排，共享闪存能够支撑百万级用户，并提高整体缓存命中率。</li></ul>
+<h3>b) 哪些工作负载更适合HBM和DRAM？</h3>
+<ul><li>图像、Logo、视频等内容生成通常具有以下特点：</li></ul>
+<ol><li>请求高度个性化。</li><li>重复内容较少。</li><li>单次生成后缓存复用价值有限。</li></ol>
+<ul><li>此类工作负载更适合路由至HBM和DRAM，完成生成后迅速逐出相关数据，再处理下一项任务。</li><li>Sora等图像或视频生成平台更依赖HBM，其大规模长期KV Cache需求相对有限。</li></ul>
+<h3>c) 哪些工作负载更适合闪存？</h3>
+<ul><li>大语言模型、聊天机器人、代码生成、自动化、文档分析、翻译和预测类工作负载，更适合将上下文及KV Cache卸载至闪存。</li><li>此类工作负载通常具有：</li></ul>
+<ol><li>上下文较长。</li><li>多用户共享相同基础数据。</li><li>对相同上下文反复调用。</li><li>缓存命中率较高。</li></ol>
+<ul><li>结论上，DRAM主要用于支持GPU批处理规模并补充HBM不足；经过软硬件优化后，大规模KV Cache最终将更多卸载至闪存。</li></ul>
+<h3>d) CXL扩展DRAM是否会替代闪存方案？</h3>
+<ul><li>CXL仍处于较早发展阶段，Amazon和Google目前尚未在相关生产环境中大规模使用。</li><li>CXL未来可能成为扩展DRAM容量的手段，但当前AI工作负载并不完全适合依赖DRAM承载全部上下文。</li><li>只有在HBM容量不足且工作负载适合时，系统才会使用DRAM补充。</li><li>长上下文、高复用率和跨节点共享场景仍更适合闪存KV Cache。</li></ul>
+<h2>4. KV Cache卸载的行业渗透与技术生态</h2>
+<h3>a) KV Cache卸载目前处于什么发展阶段？</h3>
+<ul><li>KV Cache卸载大约在过去1年内已变得较容易实施。</li><li>美国在该领域领先亚洲和欧洲：</li></ul>
+<ol><li>美国接入率已处于约80%区间。</li><li>欧洲和亚洲目前约为20%。</li><li>部分亚洲市场仍处于个位数渗透率。</li></ol>
+<ul><li>美国部分客户的KV Cache初始容量约为100TB，随着许可证及用户规模增长，一年内可能提升至500TB，部分订单预计最终增长至初始规模的约10倍。</li><li>市场需求既来自已部署系统扩容，也来自新建数据中心预配置大规模闪存。</li></ul>
+<h3>b) 亚洲市场的进展如何？</h3>
+<ul><li>亚洲本土企业对KV Cache卸载的认知仍相对不足，但市场已经开始起步。</li><li>进入亚洲市场的美国超大规模云服务商通常已经了解并采用相关方案。</li><li>亚洲本土Neo Cloud公司也开始建设KV Cache集群。</li><li>印度部分企业已在KV Cache卸载方面投入较多资金。</li><li>专家已开始获得亚洲地区KV Cache Pod建设订单，预计区域渗透率将继续提升。</li></ul>
+<h3>c) Nvidia目前如何推进KV Cache闪存架构？</h3>
+<ul><li>Grace Blackwell 200配置了本地NVMe，并通过BlueField 3连接多个NVMe和NIC。</li><li>现有本地NVMe主要用作暂存空间，适合存储临时文件或部分训练检查点，无法充分满足企业级KV Cache卸载需求。</li><li>Nvidia正转向BlueField 4和CMX机架，并计划配置高性能、高成本闪存，再将CMX与计算机架连接。</li><li>CMX预计成为Nvidia下一阶段KV Cache卸载或高速训练存储方案之一，计划于下一年度推出，当前设计仍在完善。</li><li>Weka等合作伙伴正参与相关软件定义存储方案，未来可能形成面向Nvidia CMX的专用版本。</li></ul>
+<h3>d) 不同芯片及云平台是否都会采用闪存KV Cache？</h3>
+<ul><li>KV Cache卸载并非只有一种实现方式：</li></ul>
+<ol><li>Amazon可使用自有硬件、Nitro及闪存。</li><li>Google和Azure可使用常规软件定义KV Cache架构。</li><li>AMD正围绕Helios机架探索配套存储机架。</li><li>Nvidia正在推进BlueField 4与CMX。</li></ol>
+<ul><li>无论底层采用Nvidia、AMD还是定制ASIC，最终都需要建设KV Cache卸载网络。</li><li>专家判断，其核心存储介质将持续是闪存，且容量会随用户、Token和上下文长度增长而不断增加。</li></ul>
+<h2>5. KV Cache的服务化与客户分层</h2>
+<h3>a) AI服务商如何根据客户类型分配KV Cache？</h3>
+<ul><li>Anthropic等AI服务商会按照客户价值和许可证类型划分不同服务层级。</li><li>Tier 1战略企业客户通常具有：</li></ul>
+<ol><li>企业许可证。</li><li>至少1,000名员工。</li><li>更高的月度付费金额。</li></ol>
+<ul><li>此类客户会被分配更大规模的KV Cache和配置更高的Pod，以保证更快的响应速度和更稳定的服务等级。</li><li>高校、学生、个人或小团队客户获得的KV Cache规模较小。</li><li>中型企业通常被路由至其他Pod，等待时间及首个Token响应可能略长。</li></ul>
+<h3>b) 为什么KV Cache已经成为一项战略性服务？</h3>
+<ul><li>原因主要包括：</li></ul>
+<ol><li>HBM供应短缺，需要更灵活地组合使用DRAM和闪存。</li><li>企业客户贡献更高收入，对服务速度和稳定性要求更高。</li><li>如果响应速度下降或首个Token等待时间持续增加，AI服务商可能失去高价值客户。</li><li>不同规模的KV Cache能够直接形成不同等级的服务体验。</li></ol>
+<ul><li>KV Cache已不再只是底层技术资源，而是服务等级、客户留存和商业定价的重要组成部分。</li><li>AI服务商可以通过不同缓存规模、缓存时长和Pod配置，为不同付费层级提供差异化服务。</li></ul>
+<h2>6. Agent工作负载对KV Cache的推动</h2>
+<h3>a) Agent AI为何会改变传统推理基础设施？</h3>
+<ul><li>传统推理调用持续时间较短：用户提出问题、模型回答后，会话进入休眠。</li><li>Agent AI具有自主、非线性和循环运行特征：</li></ul>
+<ol><li>一个用户提示可能触发一个管理Agent。</li><li>管理Agent可能协调另外多个子Agent。</li><li>子Agent会调用API、阅读论文和PDF、编写工具并分析其他Agent输出。</li><li>工作流可能持续数小时，甚至全天候运行。</li></ol>
+<ul><li>因此，推理基础设施从计算密集型读取操作，转变为持续、突发且内存密集的读写操作。</li><li>内存数据需要长时间往返传输，闪存因而成为Agent工作负载的关键基础设施。</li></ul>
+<h3>b) 为什么Agent工作负载会显著增加缓存命中需求？</h3>
+<ul><li>多个Agent处理同一项目时，通常会共享：</li></ul>
+<ol><li>核心指令。</li><li>工具模式。</li><li>企业数据集。</li><li>前序Agent生成的上下文。</li></ol>
+<ul><li>如果每个Agent在多步循环中不断重新加载或重新计算相同上下文，会迅速占满GPU内存并带来严重延迟。</li><li>相较于反复执行Prefill，将上下文保存在KV Cache中具有更高投资回报率：</li></ul>
+<ol><li>避免重复计算。</li><li>降低GPU成本。</li><li>缩短响应时间。</li><li>提升Token产出效率。</li></ol>
+<h3>c) 多节点调度为什么需要共享KV Cache？</h3>
+<ul><li>分布式推理通常通过负载均衡器执行：</li></ul>
+<ol><li>Agent工作流的步骤1可能在节点A执行。</li><li>步骤2可能被调度至节点B。</li><li>如果节点B没有节点A的历史KV Cache，就必须跨网络拉取数GB数据或重新计算全部历史记录。</li></ol>
+<ul><li>重新计算成本高、速度慢，跨节点传输也会形成突发性I/O压力。</li><li>解决方案是建立全局上下文数据结构和多节点共享KV Cache：</li></ul>
+<ol><li>节点A完成任务后，通过高速RDMA将KV Cache同步写入共享闪存层。</li><li>节点B启动后，以接近线路速率获取相同预计算缓存块。</li><li>该架构可实现约90%的缓存命中率。</li></ol>
+<h3>d) 全局KV Cache应如何进行生命周期管理？</h3>
+<ul><li>未来KV Cache不能只依赖基本的最近最少使用淘汰策略，而应具备生命周期感知能力。</li><li>编排器需要监听Agent工作流终止信号：</li></ul>
+<ol><li>私有任务完成后，将相关缓存标记为已完成和停用。</li><li>对不再使用的数据进行主动清除。</li><li>对共享工具、公共指令和高频企业数据进行长期固定。</li></ol>
+<ul><li>目标是形成既能主动清理低价值缓存、又能长期保留高价值公共上下文的全局缓存体系。</li></ul>
+<h3>e) 预测性预取如何提升Agent执行效率？</h3>
+<ul><li>Agent工作流通常基于执行图运行，系统可以根据历史概率预测后续会调用哪个Agent。</li><li>当GPU仍在处理Agent A时，存储系统可以异步提取Agent B所需的上下文。</li><li>在Agent A输出最终Token前，Agent B的数据已经从冷存储迁移至热层HBM。</li><li>预测性预取能够：</li></ul>
+<ol><li>缓解KV Cache反压。</li><li>减少Agent切换等待时间。</li><li>提升GPU利用率。</li><li>降低跨节点重复计算。</li></ol>
+<ul><li>该能力将成为现代Agent编排器和Agent路由器的重要组成部分。</li></ul>
+<h2>7. KV Cache的重点应用场景</h2>
+<h3>a) 代码服务为什么会产生大量KV Cache需求？</h3>
+<ul><li>企业软件可能包含100万行代码，不适合在每次请求时重新加载、分析和创建上下文。</li><li>将整个代码库保存在闪存中，可以支持不同用户围绕同一代码库提出不同问题。</li><li>例如：</li></ul>
+<ol><li>用户1询问如何创建日志程序。</li><li>用户2询问如何改进图形用户界面。</li><li>用户3分析数据库相关模块。</li></ol>
+<ul><li>所有用户使用同一代码库，但关注不同部分，因此具有很高的缓存复用率。</li><li>代码服务是KV Cache的重要场景，但并非唯一场景。</li></ul>
+<h3>b) 法律、保险和合同处理行业如何使用KV Cache？</h3>
+<ul><li>律师事务所处理案件时，多名律师会共同使用案件材料、证据和法律文件。</li><li>将相关资料保存在KV Cache中，可以避免不同律师或不同Agent反复重建相同上下文。</li><li>保险公司、产权公司、物业管理机构、翻译公司和合同处理机构同样属于文档驱动型企业，具有较高缓存命中率。</li><li>合同在处理、审核和签署期间可以持续保存在KV Cache中，提升流程效率。</li></ul>
+<h3>c) 金融服务和资本市场有哪些应用？</h3>
+<ul><li>彭博、路孚特等数据流每天产生大量市场和交易数据。</li><li>市场收盘后，数据仍需被对冲基金、投资银行和量化工程师反复调用，用于预测股票、数字货币和外汇市场走势。</li><li>将市场数据保存在缓存中，可避免每天重新构建数据上下文。</li><li>研究团队也可以将访谈笔记、研究文档和投资分析材料放入共享缓存，供多个成员和Agent重复使用。</li></ul>
+<h3>d) 生命科学和药物研发有哪些应用？</h3>
+<ul><li>药物研发涉及试验数据、患者数据、化合物资料及多名工程师或研究人员协作。</li><li>将相关信息放入KV Cache，可以提高实验分析和药物研发效率。</li><li>基因组学、生命科学和制药企业均属于潜在的高价值KV Cache应用行业。</li></ul>
+<h3>e) 哪些场景不需要大规模KV Cache？</h3>
+<ul><li>高度个性化且复用率低的图像、Logo和视频生成场景，通常不需要特别大的长期KV Cache池。</li><li>此类业务更依赖HBM进行即时生成，任务结束后即可逐出相关缓存。</li><li>判断KV Cache价值的核心，不是行业名称，而是上下文是否需要长期保留、跨用户共享和反复命中。</li></ul>
+<h2>8. 存储供需、增长曲线与行业趋势</h2>
+<h3>a) 当前哪些存储资源真正短缺？</h3>
+<ul><li>当前最严重的供应问题是HBM，专家预计HBM短缺可能持续约2年。</li><li>DRAM、CPU和闪存目前仍可获得，尚未观察到同等程度的供给问题。</li><li>部分供应商的交付周期较长，可能拖延销售和项目建设周期，因此需要扩大供应商范围，实现供应链多元化。</li></ul>
+<h3>b) 未来闪存需求将如何增长？</h3>
+<ul><li>数据中心NAND需求正在从线性增长转向指数级增长。</li><li>过去，NAND需求主要随文件和数据库数据量同步增长；AI推理、KV Cache和Agent工作负载正在显著抬升增长曲线。</li><li>主要推动因素包括：</li></ul>
+<ol><li>长上下文持续增长。</li><li>同时在线用户增加。</li><li>模型和权重规模扩大。</li><li>Agent工作流延长并循环运行。</li><li>跨节点共享缓存需求增长。</li><li>数据中心逐步从HDD转向高密度SSD。</li></ol>
+<ul><li>即使GPU算力增速趋于稳定，KV Cache保存时间和容量仍会继续增长，因此闪存需求有望保持高增。</li></ul>
+<h3>c) QLC企业级SSD的需求趋势如何？</h3>
+<ul><li>Tier 1服务商开始替代或逐步减少传统硬盘使用，转向高密度QLC SSD。</li><li>Google和Azure在QLC部署方面较为积极。</li><li>Amazon由于拥有Nitro卡，可以通过Nitro加速硬盘，架构路径有所不同，因此对QLC的依赖相对存在差异。</li><li>原始会议口径显示，企业级SSD收入已出现约86%的显著增长，反映数据中心存储需求快速提升。</li><li>市场资源和产业投入正从移动设备、PC等消费电子领域，转向高容量数据中心存储基础设施。</li></ul>
+<h2>9. 闪存价格、采购策略与产业链影响</h2>
+<h3>a) 闪存涨价是否会阻碍客户采购？</h3>
+<ul><li>对大型超大规模云服务商而言，价格不是主要障碍：</li></ul>
+<ol><li>通常会与Micron等供应商签订长期协议。</li><li>长期协议可限制价格波动。</li><li>大批量采购能够获得折扣。</li><li>大客户通常可优先获得库存。</li></ol>
+<ul><li>KV Cache能够减少重复Prefill和GPU计算，投资回报率较高，因此即使闪存价格上涨，大型客户仍有较强采购意愿。</li></ul>
+<h3>b) 闪存价格上涨对不同类型公司有何差异？</h3>
+<ul><li><b>软件定义存储企业</b>：</li></ul>
+<ol><li>客户自行采购闪存硬件。</li><li>软件企业不直接承担主要硬件成本。</li><li>高软件毛利率能够抵御闪存价格波动。</li><li>专家所在业务的软件毛利率仍在70%以上。</li></ol>
+<ul><li><b>硬件及一体机企业</b>：</li></ul>
+<ol><li>需要直接承担闪存和内存成本上涨。</li><li>如果没有长期采购协议，成本上升会明显压缩毛利率。</li><li>例如原制造成本约2万美元的一体机，成本可能上升至3万—3.5万美元。</li></ol>
+<ul><li>闪存涨价的影响取决于企业处于软件、硬件还是云服务环节，其中硬件厂商承受的压力最大。</li></ul>
+<h3>c) AI存储产业链的核心受益方向是什么？</h3>
+<ul><li>长上下文及Agent AI将推动企业级SSD、QLC、高性能NVMe、RDMA网络和软件定义存储需求。</li><li>超大规模云厂商、Neo Cloud、AI实验室及自建集群企业将持续扩大KV Cache容量。</li><li>能够提供跨节点共享、生命周期管理、预测性预取和高缓存命中率的软件平台，将具有较强战略价值。</li><li>长期来看，AI基础设施的竞争重点将从单纯增加GPU算力，扩展至计算、网络、内存和存储的系统级协同。</li></ul>
+<h2>结构化总结表格</h2>
+<div class="tbl"><table class="t wrap"><thead><tr><th>维度</th><th>核心指标/现状</th><th>发展趋势</th><th>关键结论</th></tr></thead><tbody><tr><td><b>Pod容量规划</b></td><td>单Pod可能需要10—100PB</td><td>随并发用户、上下文和Token增长持续扩容</td><td>需按区域部署并进行全球智能编排</td></tr><tr><td><b>基础设施扩展</b></td><td>闪存可使现有硬件支持约10倍用户</td><td>已部署GPU机架将持续追加闪存</td><td>闪存是提升现有算力商业效率的关键</td></tr><tr><td><b>HBM热层</b></td><td>延迟低于1微秒；单Pod约1—2TB</td><td>供应短缺预计持续约2年</td><td>主要承载解码和最活跃KV Cache</td></tr><tr><td><b>DRAM层</b></td><td>单Pod可达数十TB</td><td>用于补充HBM和支持批处理</td><td>不适合承载全部长上下文</td></tr><tr><td><b>闪存温层</b></td><td>适用延迟约10—200微秒</td><td>KV Cache核心承载介质</td><td>系统层面可能优于反复驱逐数据的DRAM</td></tr><tr><td><b>对象存储层</b></td><td>适用延迟约200微秒—10毫秒</td><td>向全闪存共享数据湖发展</td><td>承载冷数据及低时延敏感数据</td></tr><tr><td><b>美国渗透率</b></td><td>KV Cache卸载接入率约80%</td><td>已部署系统容量可增长5—10倍</td><td>美国处于领先阶段</td></tr><tr><td><b>欧洲及亚洲渗透率</b></td><td>整体约20%，部分市场个位数</td><td>新订单及本土Neo Cloud需求开始增长</td><td>处于快速导入期</td></tr><tr><td><b>Agent AI</b></td><td>多Agent、长时间、循环执行</td><td>推理转向持续、突发、内存密集型读写</td><td>将显著拉动共享KV Cache需求</td></tr><tr><td><b>共享缓存效果</b></td><td>跨节点架构可实现约90%缓存命中率</td><td>生命周期管理和预测性预取加速落地</td><td>全局上下文数据结构是未来方向</td></tr><tr><td><b>重点应用</b></td><td>代码、法律、保险、金融、翻译、合同、制药</td><td>文档型和高复用数据行业优先采用</td><td>KV Cache并非仅适用于代码服务</td></tr><tr><td><b>Nvidia路线</b></td><td>从BlueField 3向BlueField 4、CMX演进</td><td>CMX计划在下一年度推出</td><td>面向KV Cache卸载和高速训练存储</td></tr><tr><td><b>AMD及云平台</b></td><td>AMD、Amazon、Google、Azure均在推进</td><td>形成多硬件、多软件实现路径</td><td>无论采用何种计算平台，均需要闪存存储网络</td></tr><tr><td><b>QLC需求</b></td><td>Tier 1服务商逐步从HDD转向高密度SSD</td><td>数据中心NAND从线性转为指数级增长</td><td>QLC及企业级SSD需求将快速上升</td></tr><tr><td><b>供应情况</b></td><td>HBM紧缺；DRAM、CPU、闪存暂可获得</td><td>闪存交付周期和供应商差异扩大</td><td>需要供应链多元化及长期采购协议</td></tr><tr><td><b>价格影响</b></td><td>大型云厂商受长期协议保护</td><td>小型硬件企业毛利承压</td><td>软件定义企业受价格上涨影响较小</td></tr><tr><td><b>商业价值</b></td><td>KV Cache开始按客户等级差异化配置</td><td>成为SLA、客户留存和定价工具</td><td>KV Cache正从技术资源转变为战略性服务</td></tr></tbody></table></div>
+<h2>新版prompt提炼之后的转译</h2>
+<p>回　答　者：这些请求是同时发生的。以 Dropbox、云服务及其企业许可证为例，会有 1,000、10,000乃至1,000,000名用户同时访问，因此需要配置规模庞大的 Pod。每个 Pod 可能需要 10至100 PB 的容量，以应对一家 AI 公司产生的并发负载。</p>
+<p>因此，需要反向推算，根据 Pod 数量以及每个 Pod 的并发用户数来计算 KV Cache 容量，并在全球各数据中心复制这些配置，包括美国东海岸、美国西海岸、亚洲和欧洲。通过从初始请求开始进行智能编排，实现全球分发，并优化 Token 处理和首个 Token 交付时间。如果用户位于中国或日本，将请求发送到美国并不合理，而应由亚洲的数据中心处理。</p>
+<p>如果规划合理，亚洲数据中心会配置 X 个 Pod，每个 Pod 配备相应数量的 HBM、DRAM 和闪存，其中闪存始终是最大的资源池。由于 HBM 供应受限，现实中必须采用闪存，这是目前唯一的替代方案，因为不能等待 HBM。闪存可以让现有基础设施支持更多用户和更多 Token，这正是闪存的优势。如果没有闪存，只能支持原有用户数量的 1/10；采用闪存后，在硬件完全不变的情况下，可以支持 10 倍的用户数量。</p>
+<p><b>提　问　者：目前存在不同的技术路线。据我观察，Google 正尝试通过 CXL 与 DDR 扩展 DRAM 容量，而 Vera Rubin 则使用 BlueField 进一步扩展闪存容量。DDR 与 SSD 之间的边界在哪里？两者属于不同的内存层级，各有优缺点，这 2 个层级应如何划分？</b></p>
+<p>回　答　者：存储体系可分为热层、温层和冷层，这就是 3 个边界。第 1 层的主要介质是 HBM 3E 和 HBM 4。第 2 层使用本地 NVMe SSD，也可能采用 CMX，例如 NVIDIA 正在与我合作推进其 CMX 设计。之后还有冷容量层。</p>
+<p><b>分析师：对象存储以及推理在各层级中的作用是什么？HBM、DRAM和闪存应如何配合？</b></p>
+<p>回答者：对象存储采用全闪存架构，主要用于共享数据湖等场景。</p>
+<p>从推理在各层级中的作用来看，活跃令牌生成，也就是解码阶段，以及活跃KV缓存，都会位于第1层，即HBM。上下文缓存需要支持持续数分钟至数小时的多轮会话，因此始终位于采用闪存的KV缓存中，目前我们就是这样处理的。</p>
+<p>在延迟方面，HBM的延迟低于1微秒。如果服务等级协议要求的延迟为10至200微秒，就会采用第2层的闪存；如果延迟处于200微秒至10毫秒范围，则会进入对象存储层。</p>
+<p>从具体应用来看，Nvidia将用于大型企业，Trainium由Amazon使用，TPU由Google使用。它们都有自己的HBM池和DRAM池。第1层由HBM和DRAM共同组成。HBM只能提供1至2 TB容量，而从单个Pod来看，DRAM可以提供数10 TB容量。</p>
+<p>对于Anthropic或OpenAI这样的大型企业，不可能将所有内容都装入主要介质，因此必然需要通过NVMe驱动器，从网络上的本地闪存中调取数据。之后还需要通过软件确定何时使用HBM，具体方式会根据应用而变化。</p>
+<p>例如，当用户创建图像、Logo或某种图形文件时，这是一个独特场景，重复内容不会很多，并且只服务于1名用户。在这种情况下，我会将请求导向HPM并完成处理，创建并交付图形后，再将所有内容从HPM中逐出，随后继续处理下1个图形。</p>
+<p>目前，大量编排工作会将图形生成和视频生成导向HPM。几乎所有其他工作负载，例如GenTech工作负载、聊天机器人和自动化，通常都会直接进入第2层，因为闪存可以进行复制和存储，并实现较高的缓存命中率，因此速度可以快于DRAM。</p>
+<p>如果需要服务100万名用户并实现较高的缓存命中率，只要对所有机架和Pod进行统一编排以使用闪存存储，整体速度就可以快于DRAM。</p>
+<p>回答者：因为在DRAM中驱逐数据的成本过高。每次使用DRAM重新创建上下文，都会耗费大量资金和时间，速度反而比闪存更慢。很多人并不理解这一点。当我与分析师交流时，他们通常认为DRAM比闪存快。从芯片层面来看确实如此，但从推理层面来看并非如此。如果上下文无法完整装入DRAM，那么在DRAM中驱逐并重新创建上下文所带来的性能损失，甚至高于通过网络访问KV缓存再返回的开销。</p>
+<p>随着AI不断演进，上下文越来越长，同时使用的用户越来越多，模型和权重也越来越大。在很多情况下，我们发现直接使用闪存会更快。系统仍会使用DRAM，但除图形处理外，不一定默认使用DRAM。第2类是大语言模型、聊天机器人或生成式工作负载，这些工作负载会直接使用闪存，其速度比使用DRAM快得多。</p>
+<p>至于DRAM的适用场景，主要是图形处理。图形处理似乎更适合使用HBM和DRAM。因此，在处理Sora、Vale、Govele等图像生成平台的请求时，我们会将这些请求路由至HBM和DRAM；如果是大语言模型和生成式AI，则会将相关请求路由至闪存。可以从这个角度理解。</p>
+<p><b>提问者：也就是说，通过不同的网络设计和软件栈优化，SSD实际上更适合承载KV缓存，缓存命中速度和效果也优于DRAM，对吗？这很令人惊讶，因为DRAM的价格实际上是闪存的40倍。我认为这会带来大量闪存需求。</b></p>
+<p>回答者：闪存需求非常旺盛。每周我都会收到更多针对我们闪存软件和硬件的订单，也在持续为客户扩充相关配置。我与所有超大规模云服务商、所有Neos，以及许多汽车、媒体和娱乐公司合作，它们都需要更多闪存。</p>
+<p><b>提问者：听起来这无疑是一项新兴技术，同时也是一项非常复杂的技术，因为它涉及集群设计、新硬件和新软件的结合。目前的采用情况如何？渗透率是10%还是10%，还是所有企业都已经采用，并在集群中进行了大量部署？目前的渗透率究竟如何？</b></p>
+<p>回答者：目前，我已经在美国从事这项工作2年，现在欧洲和亚洲也开始邀请我开展同样的工作。美国一直在这样做。</p>
+<p>回　答　者：KV Cache卸载已经较容易实施约1年。美国在KV Cache卸载方面比亚洲和欧洲更领先，渗透率也在持续增长。在美国，KV Cache的初始容量可能为100 TB，之后客户申请新许可证时，容量需求可能已经提升至500 TB，仅1年就增长了5倍。目前美国已有订单预计容量将增长至约10倍。因此，我们不仅在持续扩展已部署系统的容量，新建数据中心也会配置大量闪存。</p>
+<p>在亚洲，英伟达已经进行了大量部署，我们也是英伟达云合作伙伴计划的成员。以Grace Blackwell 200为例，其配有本地NVMe。在18个计算托盘中配置了BlueField 3，BlueField 3连接了8个NVMe和4个NIC。</p>
+<p>需要特别注意的是，Grace Blackwell 200中的这些NVMe并非企业级产品，只能用作暂存空间，无法用于KV Cache卸载。它们仅适合存储临时文件，也可能用于训练期间的部分检查点任务，性能并不是最强的，英伟达也了解这一点。</p>
+<p>因此，英伟达目前正转向BlueField 4和CMX机架，并将在其中配置非常昂贵的闪存，再将CMX与英伟达机架连接。由于我与英伟达签署了保密协议，只能透露CMX将成为英伟达下一阶段用于KV Cache卸载或高速训练存储的方案。</p>
+<p>该设计尚未最终确定，仍在推进中，将于明年推出，而不是今年。英伟达正在与Weka等存储合作伙伴共同完善方案。Weka可以运行在任何环境中，包括云端、Dell、HPE、Supermicro和AMD平台。我们采用软件定义架构，可以使用任何类型的闪存来构建KV Cache卸载方案。</p>
+<p>英伟达希望我们将其CMX作为KV Cache卸载的一种选择。未来可能会出现面向英伟达的Weka CMX版本，同时继续保留目前已在Google和Azure使用的常规Weka KV Cache方案。</p>
+<p>回答者：以Amazon为例，我们使用其硬件和闪存，因此实现方式并非只有1种。包括AMD在内，每家公司都在推进相关工作。以AMD的Helos机架为例，他们目前正在与我们沟通合作，希望构建存储机架来增强Helos机架。</p>
+<p>无论部署哪种机架，是Nvidia、AMD还是定制ASIC，最终都需要构建用于存储的KV缓存卸载网络，而存储介质始终会是闪存。这一趋势不会消失，只会持续增长，存储容量也会随时间不断增加。</p>
+<p>目前在美国，接入率已经处于80%区间。我们也在拓展欧洲和亚洲市场，这些地区目前约为20%，明显更低，部分市场甚至仍为个位数。我们刚刚开始从亚洲获得建设KV缓存Pod的新订单。印度的Yodo等几家公司已经在KV缓存卸载方面投入大量资金，其中部分公司与我们开展了合作。</p>
+<p>Amazon在日本和中国设有业务，我们已经在与超大规模云厂商合作，支持其部署。如果是进入亚洲市场的美国超大规模云厂商，通常已经了解KV缓存卸载；如果是亚洲企业，往往还不了解，我们目前正在拓展这些企业。如果是亚洲的Neo Cloud公司，我们也正在与其合作，为计算业务建设KV缓存集群。</p>
+<p><b>提问者：我们在研究整个推理集群的卸载工作时注意到，随着Cloud Code推动编程负载和Agent负载增长，KV缓存命中似乎是推理中最重要的因素。Agent负载会发生多次缓存命中，如果始终重复执行Prefill，成本会很高，因此应当将其存储并实现缓存命中。相比重复执行Prefill，这是一种投资回报率很高且成本很低的方式。我们查看Anthropic的定价时发现，Anthropic直接将5分钟缓存命中和10个1小时缓存命中作为产品提供。此类推理服务提供商在建设集群时，是否会考虑KV缓存的存储时长，并据此测算需要配置多少闪存？</b></p>
+<p>回答者：Anthropic和其他公司面对不同类型的客户，即使是同一客户，也会划分不同层级。</p>
+<p>回　答　者：假设您是购买了 Anthropic 企业许可证的 Tier 1 战略客户，并且拥有至少1,000名员工，我们会为您分配大得多的 KV 缓存，因为您是企业许可证客户。相比之下，如果您是高校用户或学生，没有企业许可证，只为自己或团队购买了单个许可证，那么获得的 KV 缓存就会小得多。</p>
+<p><b>提　问　者：这很有意思。听起来，KV 缓存已经成为一项战略性服务。这是因为内存短缺，还是有其他原因？</b></p>
+<p>回　答　者：这个问题有几个方面的原因。第1，内存确实存在一定程度的短缺。我们已经知道 HBM 处于短缺状态，因此必须更灵活地使用 DRAM 和闪存。</p>
+<p>第2，企业客户的支出更高，因此必须确保不会失去这些客户。如果系统速度下降过多、等待时间过长，或者窗口和用户之间的首个 Token 响应时间持续增加，客户最终会对服务感到不满，服务也无法达到服务等级协议的要求。</p>
+<p>因此，Anthropic 内部决定优先保障高端企业客户，为他们分配大得多的 KV 缓存池。正如我在通话开始时提到的，不同 Pod 的规模不同，每个 Pod 配置的 KV 缓存规模也不同。Anthropic 会针对不同类型的客户设置不同的 Pod。配置最好、缓存容量最大的 Pod 会分配给企业客户。</p>
+<p>中型客户，例如中型企业，则会被路由至其他 Pod，因此等待时间会略长。他们无法获得与购买企业许可证、员工人数超过1,000名且每月支付更多费用的企业相同的服务。</p>
+<p>因此，KV 缓存性能确实已经成为一项服务。Anthropic 会向付费更高的客户提供最优的 KV 缓存服务，向付费较低的客户提供较低水平的 KV 缓存服务。目前的情况就是如此。</p>
+<p><b>提　问　者：明白了。随着智能体工作负载持续延长，目前许多智能体任务已经采用循环方式，每天24小时、每周7天持续运行。未来，上下文窗口可能会超过1 million个 Token。您是否观察到了这一趋势？即使目前看起来已经达到100，甚至涉及1个机架？</b></p>
+<p><b>提问者：GPU FLOPS 将趋于稳定，但我们还需要越来越多的闪存。这是否会带来机会？</b></p>
+<p>回　答　者：我认为会，因为 KV Cache 需要保存得越来越多、时间越来越长。一旦完成 Prefill 并成功实现缓存命中，就会形成一种高投资回报率、成本更低且速度更快的方案。</p>
+<p>您提到了2个问题。首先是智能体 AI 工作负载，它从根本上打破了传统推理基础设施的规则。对于普通语言模型而言，传统推理调用虽然具有状态，但持续时间很短。用户提出问题，模型作出回答，随后会话进入休眠状态，这就是传统的推理方式。</p>
+<p>智能体 AI 则完全自主，并采用非线性循环模式持续运行。单个用户提示可能会触发1个管理智能体，由其协调另外5个子智能体。这些智能体都会调用 API、阅读论文和 PDF、编写工具以记录相关内容，还需要分析其他所有智能体的输出。</p>
+<p>由此可见，生成式 AI 工作负载在状态执行方面大幅增加。内存数据会在数小时内持续往返传输，而且由于整个过程是循环运行的，因此不会停止。从基础设施角度来看，智能体 AI 使推理从计算密集型读取操作，转变为高度连续、突发且内存密集的读写操作，闪存因此变得非常关键。</p>
+<p>目前还面临大规模共享上下文问题。当多个智能体共同处理1个项目时，例如某个智能体与代码审查智能体协同工作，它们会使用相同的核心指令和工具模式，并共享大量企业数据集。如果每个智能体在1个20步循环中反复重新加载或重新计算完全相同的上下文，GPU 内存就会立即饱和，并造成严重延迟。这正是智能体 AI 面临的问题。</p>
+<p>智能体 AI 对我们这类公司有利，因为随着智能体 AI 的发展，我们能够销售更多用于 KV Cache 的产品。</p>
+<p>另1个问题是多节点跳转会带来性能损失。在推理集群中，分布式工作负载通过负载均衡器执行。这意味着智能体工作流的步骤1可能在节点 A 上执行，但步骤2可能被路由至节点 B。如果节点 B 没有步骤1的历史 KV Cache，就必须拉取数 GB 的数据。</p>
+<p>回答者：否则，就必须通过网络传输文件，或从头重新计算全部历史记录。正如前面提到的，这种方式成本过高、速度过慢。因此，现在需要处理突发性I/O负载，并评估三星等硬件制造商的数据，以说明智能体工作负载会对海量数据块产生高强度的突发读写。</p>
+<p>这正是目前所处的阶段。智能体AI正在增加，未来还会出现更多。应对这一问题的唯一方法，是构建所谓的全局上下文数据结构，并配备大规模LM缓存。Weka正在开展这方面的工作，我目前也将全部时间投入其中。</p>
+<p>我们不再将KV缓存局限于单个本地GPU节点，而是采用多节点共享存储连接器。仍以之前的例子说明：当智能体1在节点A上完成一个步骤后，其生成的KV缓存会通过高速RDMA同步写入运行Weka的共享高速闪存层；未来也可能采用运行在CMX上的Weka。当智能体2在节点B上启动时，可以按线路速率从共享层获取完全相同的预计算缓存块，速度非常快。通过这种架构，我们能够实现约90%的缓存命中率。</p>
+<p>这代表了未来的发展方向。我们需要在网络上部署共享的大规模KV缓存，并将其连接至所有节点。这样，相较于基本的最近最少使用淘汰策略，我们能够在整个淘汰过程中感知生命周期。我们正在构建的正是这种架构。</p>
+<p>因此，现在必须部署基于预测的KV缓存管理。编排器会监听智能体发出的特定工作流终止事件信号。当第2个多智能体任务完成后，其私有缓存会立即被标记为已完成和已停用，随后必须进行主动清除。通过这种方式，可以形成一个共享工具被无限期固定的全局缓存。这正是我目前正在构建的系统。每周，我都在为该领域的多家不同公司构建全局缓存。</p>
+<p>从智能体预测性预取的角度看，智能体工作流基本都运行在执行图上。如果条件X发生，就会调用数据库智能体，基础设施也能够预测未来的需求。因此，我们看到现代编排器正在开展大量工作，以便与所谓的智能体路由器集成。当GPU正在处理智能体A的任务时，存储数据结构会分析历史概率图，并开始异步提取另一个智能体的上下文内存。</p>
+<p>专家：在Agent A发出最终Token响应之前，Agent B实际上已经从冷存储转入热HBM内存。这就是解决方案。此类预测性预取正变得非常关键，也是缓解KB缓存反压的方法。您是否理解我刚才讲的内容？</p>
+<p><b>分析师：是的，我完全理解。这一观点非常深刻。我还需要投入更多时间，按照您的思路开展进一步研究。</b></p>
+<p>专家：这一点非常重要，因为我接触的许多分析师并不理解。如果您理解，就能在报告和财务评估中更准确地判断KB缓存的重要性，以及为什么需要闪存。您还有其他问题吗？</p>
+<p><b>分析师：听完这些内容后，我认为目前人们一直低估了内存需求和KV缓存需求。听起来，在AI和大语言模型推理中，内存正在变得比计算更为重要，因为上下文决定了模型的能力，而不仅仅是计算。上下文能够带来不同的特殊价值，对吗？</b></p>
+<p>专家：确实如此。您还需要理解，不同类型的公司有不同需求。例如，Sora只生成图像，因此需要HBM。这类应用的缓存命中率不高，因为为1名用户生成内容后，还要为下一名用户重新生成。因此，这些应用不需要非常大的KB缓存池。</p>
+<p>但对于其他使用大语言模型和合成式AI的公司，包括处理语言、文档、翻译服务、内容分析和预测的公司，KB缓存无疑可以发挥作用。例如，如果我有一个代码库，并希望它始终保留在内存中，以便在编写新代码时无须重新创建原有代码，这就是KB缓存能够产生巨大价值的典型场景。</p>
+<p>一套软件可能包含100万行代码。设想一下，如果每次都要重新创建100万行代码，随后进行分析并基于其编写新代码，耗时会非常长。Anthropic的客户都拥有自己的软件，并将软件加载到闪存中。这样，Anthropic就可以凭借较高的缓存命中率反复读取这些软件，并响应不同企业用户的需求。在这100万行代码中，一部分涉及图形用户界面，一部分涉及数据库，还有一部分涉及日志分析。</p>
+<p>回答者：例如创建日志。所有用户查看的是同一套代码，但关注的是不同部分，因此将全部代码保存在闪存中是合理的。当用户1询问“如何创建日志程序”时，系统可以直接给出答案；当用户2询问“如何改进图形用户界面”时，系统也可以直接回答，而无须在缓存中重新构建代码库。</p>
+<p>DRAM很难应对这种场景。即使采用CXL技术并尝试调用DRAM，亚马逊和谷歌目前也没有在生产环境中使用CXL。CXL仍属于新兴技术，未来或许会需要。但这些公司正在研究当前AI的实际使用方式，并意识到这类需求并不真正适合DRAM。只有在HBM确实不足时，才会使用DRAM。</p>
+<p><b>提问者：也就是说，DRAM实际上用于支持GPU的批处理规模，并补充HBM的不足。但经过软硬件优化后，KV缓存最终会卸载到闪存，对吗？</b></p>
+<p>回答者：是的，您的总结完全正确。</p>
+<p><b>提问者：因此，DRAM和闪存都会有很大的需求，但二者实际用于不同的场景，对吗？</b></p>
+<p>回答者：是的，二者用途不同。对于英伟达这样的公司而言，难点在于GPU必须配备HBM。由于HBM短缺，能够交付的GPU机架数量有限；如果没有HBM，就无法交付。</p>
+<p>与此同时，已经部署机架的客户仍在持续增长业务。问题在于，如何利用现有设备支持更多用户。答案是闪存。通过提供更多闪存，可以支持更多用户，并在合理时间内生成更多Token，这意味着能够通过模型获得更多收入。这同样适用于ChatGPT及其他参与者。</p>
+<p><b>提问者：我猜测，贵公司的第1大客户很可能是最先进的代码服务提供商，例如Anthropic这类企业。您无须确认，但这是我的推测，因为代码垂直领域增长非常迅速，并带动了KV缓存需求的大幅增长，对吗？</b></p>
+<p>回答者：是的，这是其中一个例子。另一个例子是保险公司和律师事务所，它们需要处理规模庞大的法庭案件。</p>
+<p>回　答　者：在文档处理领域，这2类业务同样会产生大量KV Cache需求。例如，一家律师事务所可能会有3名律师共同处理同一案件。案件信息、证据及其他相关资料无需反复重建，而应存入KV Cache。由于律师事务所会反复调用这些内容，其缓存命中率会很高。</p>
+<p>因此，每家律师事务所和保险公司都有KV Cache需求，因为它们都是文档驱动型企业，日常业务始终围绕文档展开。翻译公司、合同处理机构也是如此。合同在处理和签署期间会保存在KV Cache中。</p>
+<p>认为KV Cache只适用于代码是错误的。代码只是1个重要案例，因为各类企业通常都会涉及一定程度的编码工作。此外，律师事务所、保险公司、产权公司和物业管理服务机构也能从KV Cache中受益。</p>
+<p>以资本市场为例，假设贵公司正在开展研究，以预测是否应该增加对三星或SK的投资，因为它们正在建设大量闪存产能。电话结束后，您会将全部笔记整理到1份文档中，您的团队也能利用该文档。因此，即使在资本市场领域，KV Cache同样适用。</p>
+<p>我此前曾与彭博合作。股票市场每天都会产生大量交易数据。资本市场从业者通常会使用路孚特或彭博的数据流，了解股票市场每天的动态。股票市场收盘后，这些数据还可以继续用于分析，因此也应存入KV Cache。</p>
+<p>对冲基金和投资银行的量化工程师需要使用这些数据，无需反复重建股票市场数据。他们同样希望预测股票市场、数字货币或外汇市场的走向。每天都会有金融服务行业的从业者希望将这些信息保存在缓存中，通过AI进行分析，并尝试预测第2天的市场变化。</p>
+<p>这也是KV Cache对保险、银行和对冲基金等多个垂直行业至关重要的另1个典型案例。基因组学和生命科学领域同样如此。例如，在研发1种新药时，会有许多工程师参与相关研究。</p>
+<p>回　答　者：在药物研发过程中，可以将所有试验、患者数据以及构成药物的化合物相关资料都放入 KB 缓存，从而加快实验和药物研发。律师事务所、保险公司、银行和制药企业等各个领域都会受到影响。</p>
+<p><b>提问者：最后想从您的角度了解一下渠道情况。您与新云厂商、超大规模云服务商甚至部分实验室都有深入合作，其中一些客户也拥有自建集群。您认为这些客户目前面临的闪存短缺程度如何？如果您有所了解，也请谈谈 DRAM 的情况。他们是真的非常缺货，还是仍能获得部分产能？此外，您如何看待未来 1年、2年 DRAM 和闪存的需求曲线？需求会增长至 2倍、3倍、5倍，还是保持常态化增长？</b></p>
+<p>回　答　者：目前我仍然能够获得闪存，真正存在问题的是 HPM。根据我与业内人士的联系和沟通，HPM 短缺将持续 2年。但 DRAM、CPU 和闪存目前仍然可以获得，我尚未看到这些领域出现问题。</p>
+<p>我需要与更多合作伙伴合作，实现供应链多元化，因为部分合作伙伴的交付周期比其他合作伙伴更长，这会延长销售周期。因此，我必须与更多供应商合作，以获得部分组件，从而更快完成交易。</p>
+<p>从消耗曲线来看，市场正在从线性增长转向指数级增长。过去，数据中心的 NAND 闪存消耗一直呈线性增长，与标准文件和数据库的数据增长基本同步。如今，AI 已经使这条曲线转变为陡峭的指数增长轨迹，甚至 QLC 的需求也在快速上升。</p>
+<p>我在亚马逊工作时，我们使用了大量硬盘驱动器，也拥有大量存储资源。现在，随着 Tier 1 服务商开始替代甚至逐步放弃传统硬盘，转向高密度的 4层单元 SSD，QLC 的需求正在快速增长。谷歌和 Azure 在这方面显然比亚马逊推进得更多，因为亚马逊至少拥有 Nitro 卡，也有自己的 BlueField，称为 Nitro，并通过 Nitro 加速硬盘驱动器。因此，亚马逊的情况有所不同。Azure 没有 Nitro 卡，所以使用了更多 QLC。</p>
+<p>目前，存储和内存已经成为超大规模云服务商的关键因素，因为 DRAM 和 HPM 是……</p>
+<p>回答者：目前市场面临严重的产能限制。未来将出现收入爆发式增长。202026年全年，企业级SSD收入已经环比增长86%。这正在推动市场大规模从移动设备和PC等消费电子产品转向高容量数据中心存储基础设施。我每周都在深度参与高容量数据中心存储项目，目前每周都能收到采购订单。</p>
+<p><b>提问者：您是否担心闪存价格过高？还是说在您看来，投资回报率足够高，因此从客户角度看，价格不会构成重大问题？</b></p>
+<p>回答者：由于我们采用软件定义模式，利润率仍在70%以上。无论如何，我都不会改变价格。我们的软件需要闪存，但客户会自行采购，因此闪存价格对我们没有影响。</p>
+<p><b>提问者：从客户角度看，您如何判断？客户会直接采购闪存硬件。他们是会抱怨价格过高、无法负担，需要定制存储；还是虽然价格较高且令人不满，但由于投资回报率高、利润率良好，仍会直接采购？</b></p>
+<p>回答者：对于超大规模云服务商，需要注意的是，我在Amazon任职时，我们与Micron签订了长期协议。第1，长期协议能够限制价格变动幅度。第2，长期协议还能带来大批量采购折扣，并使其优先获得库存。因此，超大规模云服务商始终处于有利地位，不需要过度担心。</p>
+<p>但对于未签订长期协议的小型公司，现在必须更加谨慎。如果这些公司生产某种一体机，却没有长期协议，假设其制造成本为$20,000，售价为$40,000或50，那么现在同一台一体机的成本可能上升至30至$35,000，其利润率就会收窄。</p>
+<p>因此，如果企业处于硬件行业，这种情况会非常痛苦；如果处于软件行业，则影响不大。我们的利润空间非常充足，内存和闪存涨价并不会产生实质影响。但如果企业的收入模式依赖硬件销售而非软件，经营就会受到冲击。目前确实有一些公司正因需求和价格上涨而承受压力。因此，这个问题的答案取决于企业所处的行业和市场环节。</p>
+<h2>原文转译</h2>
+<p>simultaneously. So if you're looking at Dropbox and cloud and their enterprise license, they have thousands, tens of thousands of users, millions of users now that are hitting this simultaneously. So they have massive pods. They have, you know, pods, each pod may have 100, you know, um, may have 10 to 100 petabytes just to deal with the concurrency load that's going into that one AI company. So, you have to work backwards. You kind of have to calculate your KB cache size based on the number of pods you have and the number of concurrent users each pod has. And then you replicate that around the world, around all your data centers. East Coast, West Coast, Asia, Europe, because you do global distribution and you you maximize your your token and delivery time to first token and all that by intelligent orchestration that begins from the initial request, but your, you know, if you're in China or Japan, it doesn't make sense for me to send that request to the United States, right? You're going to go to some Asia data center. Yeah. Now that Asia data center is going to have, if they're smart, X number of pods. Each of those pods is going to have, you know, so much HBM, so much DRAM, and so much flash. Flash is always going to be the biggest pool. And because we're limited on HPM. You already know there's a huge constraint on HPM. Yeah. So the reality is, uh we have to go with flash. That's the only alternative today because we we we can't wait for HPM and flash can allow you to support more users and more tokens with the existing infrastructure. That's the beauty of flash. Gotcha. how much you already have without flash, you're looking at, you know, 1/10th the number of users that you could support. With flash, same hardware, no change, I can give you 10 times more users. Gotcha. Gotcha. Gotcha. Thank you. So, so, uh so, um, so here's a very interesting debating is that um, we we see some different uh technology path. I I mean, as I noticed, maybe maybe I got some bias or I'm I'm not fully understanding for each path, but I see like, like Google, they are trying to use more CXL with DDR to expanding their um DRAM size. DRAM, DRAM size. And um from, you know, Vera Rubin, they use BlueField and to more expansion their flash size. So, so I'm just wondering where is the boundary between the DDR and SSD? Uh because we know they are different, uh, different memory size and they have um different advantages and disadvantages. So I'm just wondering where's the boundary for this two tires? So there's um, so there's something called a hot tier, a warm tier, and a cold tier. Those are three boundaries. Yeah. And the primary media for boundary number one is HBM 3E, HBM 4. As the, you know, you're using the local NVMe SSDs and potentially CMX, like Nvidia is working with me on their CMX design. But that's going to be tier two. And then you're going to have a cold capacity tier, which technically is on... object storage, you know, it's all flash, object storage, and that's for shared data lakes, um, things like that. Now, so so what's the role? Like if you look at the role of inferencing in each of these boundaries, you're going to have the active token generation or what we call the decode phase, and the active KV cache, that's going to be in tier one. It's going to be in HBM. I Yep. The context cache, that that multi-turn session persistent, that last minutes to hours. That's always going to be on a KV cache that has flash. That's how we're doing it now. And, you know, for the latency, with HBM, you're under one microsecond. For this boundary, if your service level agreements are, you know, geared to 10 to 200 microseconds, then you're using boundary 2, the flash. If you're in the 200 to 10 millisecond range, now you're in that object storage tier. So then if you look at how this pans out, you know, um, Nvidia is going to be used for large enterprises. Trainium is used by Amazon, TPU is used by Google, and they have their own HBM pools, and their DRAM pools, but it seems like you're interested in the DRAM. And it's a combination, that tier one is a combination of HBM and DRAM. I see. HBM only gives you one to two terabytes. The DRAM is when when you look at a pod, can give you tens of uh, terabytes. But that's I'm so and that's it. So what happens is when you're large like Anthropic or Open AI, there's no way you can fit everything into that primary media. There's no way. You're automatically going to have to pull from local, you know, flash that's on the network, uh, using NVMe drives. And then you have to determine through software where when do you use the HBM? And the answer to that is it it it it changes based on the application. So if you have like I said, someone's creating an image, a logo, some sort of graphic file. That's a unique case. It's not going to have a lot of repetition. It's going to be for one user. In that case, I want to direct that request to HPM and fulfill it, create the graphic, deliver it, I'm done. I evict everything out of HPM, and now I do the next graphic, and then I do the next graphic. So right now, a lot of the orchestration is routing graphic generation, video generation to HPM. Almost everything else, so like the gen tech workloads, chatbots, automation, it's almost always going directly to number two, because you can replicate, you can store, you can get a high cache hit rate. So you you it's faster than DRAM. So you have to understand, if I'm going to be serving a million users and I need a high cache hit rate, I'm faster than DRAM if I orchestrate everything across all these racks and pods to use flash storage. because the eviction in DRAM is too costly. It costs too much money and too much time using DRAM to try to recreate the context each time. It's slower than flash. And this is what people don't understand. When I talk to analysts like you, they think, well, well, DRAM is flash is faster than flash. Yes, from a chip perspective, not from inferencing because if you can't fit the context into DRAM, then the penalty of having to evict and recreate the context in DRAM is slower than having to go over the network to KV cache and back. And what we're seeing is because of the way AI is evolving, the large context when there's more simultaneous users, bigger models, bigger weights, in many cases, we're finding that if you go straight to flash instead of uh, you still use DRAM, but you don't default necessarily DRAM outside of graphics. The second is large language model, chat uh, chatbots or genetic workloads, you're just going to go straight to flash and you'll find out it's much faster than using DRAM. So then when is DRAM used? Graphics. Graphics seems to be, um, a good use for HBM and DRAM. So when you're looking at Sora, Vale, Govele, any kind of image generation platforms, we're going to route those requests to HBM and DRAM. If we're talking about large language models and a genetic AI, we're going to route, you know, the stuff to flash. And that's the way you should think of it. Gotcha. Gotcha. That that's that's very helpful. So so so it sounds like from uh your, you know, the your your your your different networking, your different, uh, software stacks optimization, SSD is actually a better, better, better product to to to to to uploading the KV cache and a better, uh faster and better cache hit than the DRAM, right? Well, that that's that's amazing because DRAM is actually like 40 times expensive than Flash. That's drive a bunch of flash demands, I think. There is so much flash demand. Every week, I keep getting orders for more of our flash software and hardware. And every week, I am augmenting um, people, you know, I again, I work with all the hyperscalers, I work with all the Neos, I work with uh, a lot of automotive companies, media entertainment companies, they all need more flash. Gotcha. Gotcha. So, so, uh, I mean, I mean, I heard sounds like it's a it's a definite emergent technology. And and it's it's a very, a very, uh, very, a very difficult technology because it's it's a definitely a a combination between the the cluster design, the combination between the hard new hardware and new software. So, so, so so where's the adoption you see? Like, is it 10 10% penetration or it's already been uh, everybody already take it and already, uh, strongly put in in their clusters. So where's the penetration? Right now, I mean, I've been doing this for two years in the United States. I'm now being brought into Europe and Asia to do the same thing. So the United States has been doing doing KB cache offload easy, easily for a year and like easy. I I've been the United States is more ahead in KB cash offload than Asia or Europe. Yeah. That's a thing. So, the penetration rate in the United States is is growing, but what's what's happening in the United States is that the KB cash may start at 100 terabytes. uh 100 terabytes. And then I get a request for a new license. Well, now we need 500 terabytes. It's already grown five X in just one year, right? Yeah. already orders in the United States where they're anticipating it's going to grow to like 10X. So we're we're constantly growing what we've already deployed and then if it's a new data center, they now build a lot of flash in the new data centers. If you're in Asia, uh they've done a lot of uh Nvidia deployment in Asia, so we're part of the Nvidia cloud partner program. And what's happening there is that initially, if you look at a Grace Black World 200, it does come with some local NVMe, right? So if you look at the 18 compute trades, they have a Bluefield 3 there. Yeah. And from the Bluefield 3, they have eight NVMe and they have four knits. What we found out, now this is very important for you to understand. Yeah. Those NVMEs, they're not enterprise grade on the Grace Black World 200. So, the you can only use them for scratch space. You're not going to use them for KB cache offload. So by that I mean that's only going to be used for temporary files, maybe some checkpointing during training. That's it. It's they're not the fastest systems. And Nvidia knows this. So what they're doing now is moving to Bluefield 4, Gotcha. CMX racks and they're going to put very expensive flash there. and they're going to now tie the CMX to an video rack. But they want to use it on well, I have to be careful here. So I I signed an NDA with Nvidia. So I need I'm going to say this I see, I see. Just just just as you can say, yeah, yeah, yeah. just as you can say, yeah. Yeah, so what what this is all I can tell you is the CMX is going to be the next wave, next level Gotcha. that Nvidia wants to propose to offer KB cash offload. or high-speed training, you know, storage. And it's they haven't finalized the design. It's like a work in progress, but that will come out next year. It won't come out this year. They're working with storage partners like Weka to kind of figure out because Weka runs on anything. Weka runs in the cloud, it runs on Dell, HPE, Super Micro, it runs on AMD, it doesn't matter. We're software defined. We can use any kind of flash and we'll we'll build the KB cache offload, right? So Nvidia wants us to use their CMX as an option for KB cash offload. So what you may see in the future is like a Weka CMX version for Nvidia. And then you still have the normal Weka KB cash that's being used today at Google, Azure. their Amazon, because we just use their hardware. We use their flash, you know what I mean? So there's not one way to do it. But every company, including AMD, if you look at their Helos rack, they're now talking to us and kind of working with us on building a storage rack to augment their Helos rack. So it seems like as no matter what kind of rack you deploy, whether it's Nvidia, AMD or custom ASICs, you're always going to want to build a KV cash offload network for storage and that storage is going to be flash always. That that trend is not going away. It's just going to grow. And those storage capacities are going to grow over time. So in the United States, I would say the attach rate is easy, easy in the 80 percentile range now. And we're working through Europe and Asia to, you know, they're in the 20%. They're much lower. Some are even single digits. So we're just getting brand new orders from Asia to build out KV cash pods now. And it's, you know, there's been a couple like Yodo in India, there's a couple of companies that spent a lot of money on KV cash upload and they worked with us in some cases, you know, Amazon has locations in Japan and China and we're working with the hyperscalers, you know, for their deployments already. So, if you're a US hyperscaler and you're in Asia, then you already know about KV cash upload. If you're an enterprise company in Asia, you don't really know. And we're penetrating those companies now or if you're a neo cloud in Asia, we're working with those companies now to build out KV cash farms for computer. Yeah. Gotcha. That's that's that's very helpful. Yeah, you got you got a very, very strong thesis. Yeah. Uh, yeah, so so uh, yeah, when we do doing some work for the uploading uh when we when we're doing some work for the the whole inference cluster and we noticed that I mean since the cloud code to drive the coding workload and agent workload, we figure out that seems like a KV cash hits is the most important things. The only one most important things in the inference because uh the the agent workload is have, you know, multi times of cash hits. So if you always repeat prefill, it's a very high cost things and you definitely should should store storage it and to cash hits. It's a very high ROI, very cheap cheap way to to replace the re re prefill. So this is as my as I understanding of that. So and and when we're going to check Anthropic's pricing, we figure out that Anthropic directly provide like five minutes cash hits and 10 one hours cash hits directly as a a product. So so I'm just wondering when when this kind of um inference provider, they are trying to building their cluster, they will considering how long will they store their uh uh KV cash and use this kind of formula to sizing how how many flash they should store, right? I I think they should considering this matrix. Yeah, so what what anthropic and other companies are doing is they have different kind of customers. Even the customers have different tiers. So if you're you're a tier one strategic customer that is has has bought an Anthropic enterprise license. And you're let's say at least 1,000 employees or more. We're going to allocate a much larger KB cash for you because you're an enterprise license customer. Whereas, if you're a university or a student and you're you you you you don't have an enterprise license, but maybe you bought a single license for yourself or your team, then the KB cash for for them is much smaller. Wow, interesting. So so sounds like KV cache is a strategic services. Because this is due to memory is shortage or some other reasons? It's it's it's it's because, well, it's it's a couple there's a couple of answers to your question there. There is some memory shortage, obviously. We already know HBM is a shortage. So we have to get more creative with DRAM and Flash, right? So you already know that. So that's number one. Yeah. Number two is the enterprise customers are spending more money. So you need to make sure you don't lose them. The way you lose customers is by when your system slows down too much, when you have to wait too long. When the time to first token, you know, between windows and users keep getting bigger and bigger, there's a point where you're not happy with the service anymore, and you're not meeting service level agreement. So whatropic internally decided to do is we need on the premier enterprise customers first. So they're going to allocate to them the much larger KB cash pools. You know how at the beginning of the call, I told you there's different size pods and each pods have different size KB cash. So what they do is they have um different um pods for different type of customers. The best pods with the most cash, most KB cash goes to the enterprise customers. They use that. Then the mid-size customer with less, let's call that uh medium enterprises. They go and get routed to a different pod. So you'll notice that they spend a little bit more time having to wait. They're not as as companies who pay an enterprise license, have more than 1,000 employees, and they're spending more than extra dollars a month. So that that is the the hearing exist the KV cash performance is a service to your point. They look at it as an a service. So, they're going to give the best KB cash services to the higher paying customers and lower KB cash services to lower paying customers. That's what's going on now. Got, got, got. I see, I see. Um so I I I think with the, I mean, with the aggentic workload gonna be longer and longer. and even now, I think a lot of agent work is loop. They are continuing to run for 24 hours, seven days per week. And uh and I think that in the future, maybe the context window are going to be larger than 1 million tokens. So, I think uh will you see the trends is like even we got the seems like 100 what even one rack. The the the GPU GPU flops are gonna be stable. But we need also need more and more flash. Is that be a chance? I think so, because I think KV cache should be stored more and more and longer and longer. Because once they got a prefill and they can successfully do the cash hits, it's a high ROI, cheaper and faster plan, right? The so, you have a couple of questions. So, the first thing you brought up was agentic AI workloads. And they fundamentally break the traditional rules for inferencing infrastructure. Because if you look at the traditional rules and a normal art language model, you know, the call is stateful but it's brief, okay? A user asks a question, the model responds, and the session goes dormant. That's what we call the traditional way of doing inferency. With agentic AI, to your point, it is completely autonomous. It's non-linear loop. It just keeps looping. So a single user prompt may trigger like a a manager agent that orchestrates five other sub agents, and those agents all call APIs, and they read like, you know, papers and PDFs, and they write tools to log things, and they have to analyze all the other agents' output. And the the you can see how the workload for a gen AI is so much more in terms of the execution of state. Like, the memory is going back and forth over several hours, and, you know, since you said it's a loop, it never stops. So, from an infrastructure perspective now, when you look at a gentic AI, the shift in inferencing goes from a completely compute heavy read operation to a highly continuous, bursty memory intensive read-write operation where flash becomes very critical. So now we're dealing with massive shared context problems. What is that problem? That's the problem when agents are working on a project together. For example, you may have an agent working with a code review agent. They use the same core instructions, the tool schemas, and there's a lot of massive enterprise data sets that are being shared. But if each each agent has to reload or recompute that exact same context over and over for let's say a 20-step loop, at that point GPU memory saturates instantly, and that causes heavy late. That's the problem with a Jetc AI. So now, a Jetc AI is is great for companies like us because we're selling so much more KB cash now because of that event eventual, um, a Jetc AI. The other thing is, multi-node hopping is a penalty. So, if you're familiar with inference clusters, which it sounds like you are, you do understand there distributed workloads are done via a load balancer, meaning step one of an agentic workflow might execute on node A. But then step two might be routed to node B. So if node B doesn't have the historical KV cache of step one, it must have to pull multiple gigabytes. file over the network, or it has to recompute the entire history from scratch. And you said it earlier, that's too expensive. It's too slow. So now you're dealing with these bursty IO profiles where you have to evaluate the data from hardware manufacturers like Samsung and show that the agentic workloads produce intense bursty reads and writes from massive data chunks. And this is where we are today. We're seeing this problem grow. There's more agentic AI, and there's more coming. So how do you deal with it? You the only way is, you you build what's called a global context fabric with a massive, you know, LM cache. And this is where Weka is, this is where I'm spending all my time, to be honest with you. Instead of keeping the KV cache down to a single local GPU node, we're using multi-node shared storage connectors. So when Agent 1, going back to my example, finishes a step on Node A, it's generated KV cache is simultaneously flushed via high-speed RDMA to a shared high-speed flash layer, running Weka. or in the future it could be Weka on CMX, right? So when Agent 2 spends up on Node B, it pulls the exact pre-computed cache block from the shared layer at line rate. It's super fast. So we achieve like a 90% cash hit rate when we build this architecture this way. This is the future. We need this shared large KB cache uh on the network, and it ties to all the nodes. That way we become lifecycle aware across the eviction over basic, you know, least recently used policy, right? And that's what we're building. So you now have to deploy prediction-based KB cash management, where the orchestrator is listening for specific workflow terminated event signals from the agent, agentic agents that you were referring to. And then the second multi-agent task when it completes, its private cache is instantly flagged as, hey, I'm done. It's retired. I have to aggressively purge now. Then this way you have what's called a global cache that is shared tool that is pinned indefinitely. And that's what I'm building now. Every week, I am building for many different companies in this business, a global cash. So you when you look ahead at predictive pre-fetching from an agentic perspective, the agentic workflows run on basically execution graphs. So if condition X occurs, then we call the database agent. and the infrastructure can actually anticipate what the future demand will look like. So you we're seeing a lot of work as a result for modern orchestrators to integrate with what we call agent routers. So when the GPU is processing a task, let's say for an agentic agent A, the storage fabric looks at the historical probability graph and it begins to asynchronously pull the context memory for a different agent. agent B from cold storage, and it's actually placed it into hot HBM memory before agent A even issues its final token response. This is the fix. This kind of predictive pre-fetching is becoming very critical. And it it's how you alleviate the back pressure on KB cache. So, do you understand everything I just told you? 对。 Yeah, yeah, yeah. I'm totally, totally follow your your your your your speech. Yeah. Okay. That's very important because many analysts I speak to, they don't understand that. And if you understand it, then you can in your report to your financial assessment, you'll have a better view of how important KB cache becomes and why flash, you know. That's too sharp. I mean, that's too sharp. It's a it's a nice it's a nice It's it's it's a very good view. Yeah, it's so sharp. Yeah, I I I definitely need spending more time to to uh to to follow your instruction and do more research. Yeah. So what other questions do you have? Uh yeah, uh yeah, I I I I yeah, um, yeah, so so after this hurting, I think for now that people are always underestimate the the the memory demands and KV cache demands. So it it sound it sounds like the memory becoming the most most important part, uh, of the inference of the of the of the AI, of the large language model, rather than computing. Cuz cuz cuz cuz context depends the the ability, right? Not just computing. Context bring different value. Special value. It does. It it it absolutely does. So then now you have to understand there's different kind of companies, right? Like if you're Sora and Sora is just making images. Yeah. And then then they need HBM, right? They're going to need uh, because a lot of that, you're not going to there's no high cache hit rates, right? You're creating one user and then you do it again for the next user. So in those applications, you don't need a very large KB cache pool. Yeah. But for companies like everything else with large language models and synthetic AI, looking at languages and documents and translation services and analyzing things and trying to predict, that's that can be used for KB cache for sure because if I have a code base and I want my code base to stay in memory, so I don't have to recreate the code as I make new code, that's a perfect example where KB cache makes a huge difference because I may have a piece of software that has a million lines of code. Can you imagine trying to recreate a million of lines of code, then analyze it and then try to make new codes from that? It takes too long. So, here's the perfect case where an Anthropic customers, they all have software. They're all loading their software into flash. And that way, Anthropic can look at that over and over and over again with a high cash hit rate and respond to each of those enterprise users because they all are doing different things. Within that million lines of code, some of it deals with the graphic user interface. Some of it deals with a a database. Another one deals with how you analyze logs. create logs. So, they're all looking at the same code, but they're looking at different parts of it. So it makes sense to keep all of the code into flash. And then when the user wants, says, hey, how do I create this log program? It tells you. When user two says, how do I improve the graphic user interface? It tells you without having to rebuild the code base in cash. And this is where easily Dram can't deal with this. It doesn't matter if you're using CXL technology and you try pulling Dram. If you go to Amazon or Google or as you no one's using CXL. Not at all. It's not in production. It's kind of like, hey, it's an emerging technology. Maybe, you know, we we need it, but they're looking at how AI is being used today and they're seeing, wait a second. This doesn't really fit into Dram. I'm only going to use Dram if I really have a lack of HBM. And Gotch. Gotch. Okay. Ah, I see. So actually, DRAM is actually to services for the GPU batch size. They actually is to to to to to to to um to add on the HBM shortage. but actually, all in all with the hardware and software optimized, the KV cache uploading is finally for the flash, right? Yes. Got it. You you you summarize that perfectly, my friend. Got. Thank you, thank you. So, I see. So so sounds so so so finally we would say DRAM and flash all have a great demands, but they actually for different things. Yes, they're different things. So what's painful like for companies like Nvidia is that a GPU requires HBM. That's the problem. So with the shortage of HBM, you can only ship so many GPU racks because if you don't have the HPM, you can't ship. Yeah. Yeah. So that's the problem. So you now have to, what do you do with all the customers that already have racks and their business continues to grow? Like in product business is growing. Yeah. How do I support more users with what I have and in in place right now. And the answer is flash. If we can provide more flash, I can support more users and I can deliver more tokens Yeah. within a reasonable amount of time and that means I can make more money with my models. That's what to chat GP and everybody else. So so I I have some suspicion is that uh the customer have the most hugest so I mean, I mean, I have my suspicion is that your your first largest customer definitely for the the most advanced coding provider. So it's astropic this kind of players, right? Because coding vertical drive most huge KV cache demands. I'm not requiring to answer that, but this is my suspicions. Because it's it's coding become uh very huge growth and that that drives a huge growth of KV cache demands. Right? Yeah, that that's one example. Imagine now another example like insurance and law firms. They deal with massive court cases. in documentation. Ah. So, those two businesses also have huge KV cash outflow because you go to a law firm, Yeah. you may have three lawyers working on the same case. So now all the case information and the evidence and everything, you don't want to have to reconstruct that either. So you want to put that in the KV cash, and it's going to easily be highly hit. It's going to be reused over and over by the law firm. So, every law firm, every insurance company has this need for KV cash because they're a document driven company and their business deals with documents all the time. Same with translators or anyone doing contracts. Contracts, you know, while you're working on them, will be in KV cash because now you have to sign them, right? Like, so, it's not just code. You it would be a mistake for you to think it's just code. Code is just one big example because everyone, you know, has some sort of coding going on. But, you know, there's a lot of businesses that are law firms, insurance companies, and title companies or property management services. Any of those will also benefit from um, you know, a KV cash because they're looking Here, I'll give you an example because you're in capital markets. Imagine your firm is working on research to predict, hey, do I need to invest in Samsung more or SK or whatever because they're they're building a lot of the flash. So you have, you know, when we finish this call, you're going to put all your notes into a document. Yeah. Yeah. Yeah. your team would benefit by having that document. Definitely. Yeah. Yeah. So even in your world, it's applicable. Yeah, that's that's very makes sense. Yes. Cool. Another thing I would share with you because I did work with Bloomberg. Um, going back to capital markets. Whoa. There's you know, every day the stock market generates a lot of stock data, right? Yeah. If you're if you're in capital markets, you probably work with Refinitiv or Bloomberg and you get a feed, it shows you every day what's going on in the stock market. And then at the end of the day, when the stock market closes, what do you do with that data? You can analyze it, right? Yeah. So that data also should be in KV cash. Why do I want to recreate stock data for all my quants, my quantitative engineers that work at hedge funds and investment banks. They too are trying to predict where the stock market is going or where, you know, digital currencies are going or where foreign exchange is going. So every single day there's going to be financial service people who want this information in cash so they can analyze it through AI and try to predict what's going to happen the following day. So that's another very good example why KV cash is so critical to multiple vertical industries, insurance, banking, hedge funds. Uh, what about genomics? Think about life sciences. You're working on a drug, a new drug, and you have a bunch of engineers who are looking at the formation of this drug. why not have all the trials, all the patient data, all the stuff that the chemical compounds that make up the drug in KB cash. Yeah. So when they run their experiments, you can make the drug faster. So, law firms, insurance companies, banking, drug makers, it affects everything. Yeah. Well, that's that's helpful. Yeah. That's uh, that's that's that's a great great thesis. Any other questions you have? Yeah, last questions. I'm just wondering, uh yeah, from I just want from your side to do some channel check. Yeah, so, so I mean, you you definitely got a great collaborations with customer like New cloud, Hyperscalar, and even some labs. I I think they also own their some of their self clusters. So, so in your view, how shortage actually they got from the flash? And and and if you know if you got sense, you you can also comments on the DRAM. So what's exactly the shortage? They actually very shortage or or actually they can't get some capacities. And second is, uh it just imagine what what you think of the the curve of like next one year, two years, DRAM and Flash gross gross rate is like uh two times, three times, five times demand or or it's just a normalized growth. It's just whatever you can comments, any idea, yeah. Yeah, so let's go into flash right now, I could still get. Yeah. We're having problem is HPM. So, HPM is a problem. It's going to be a problem for two years based on my contacts and communications. But DRAM and CPUs and Flash, I can still get. I'm not seeing problems there. What I'm having to do is diversify my supply chain with some more partners because some partners have more longer lead times than other and that delays the sale cycle. So I am seeing I have to work with more people to get some of these components so I can close deals faster. So that's happening, but in terms of the consumption curves, um, it's moving from linear growth to exponential growth. Historically, if you look at Nan Flash consumption in data centers, it just grew linear, right? alongside with standard file and database growth. And now that AI has converted the curve into a steep exponential trajectory. So even like the QLC is now surging. So when I was at Amazon, we had a bunch of hard disk drives. Yeah. And a lot of storage. Now, they're looking at QLC surging as the tier one providers are now starting to address or even move away from traditional hard drives to high density quad level cell SSDs. Definitely, you know, Google and and Azure are doing this, you know, more than Amazon because Amazon at least, they have a nitro card. They have their own bloom field. It's called Nitro. And they accelerate the hard disk drives with Nitro. So they're, you know, they're a little different because Azure doesn't have a Nitro car, so they're using QLC a lot more, right? Gosh. We're in this Yeah, so we're in this time now where storage is memory is the critical factor for hyper scalars. Why? Because DRAM and HPM are are deeply capacity constrained. Gosh. we already talked about it. So what happens in the future? There's going to be a revenue explosion, right? Enterprise SSD's revenues have already exploded you know, 86% quarter over quarter for all of 202026. We're it's forcing a massive market uh, pivot away from, you know, um consumer electronics like mobile and PCs towards high capacity data center storage infrastructure. And this is where I live and breathe every week. I am being pulled into high capacity data center storage art projects every single week. and I'm getting POs every week now. It's like Gosh. Yeah, so so were you afraid that the flash price are so high? Or in your way in your way, the ROI is so high, so from the customer side, the price won't be a huge problems. Yeah, because look, our because we're still software defined, our margins are in 70 plus percent. Yeah. I don't no matter what, I'm not going to change my price. And what's going to happen is because our software requires flash, Yeah, gosh. customer buy their own flash, we don't care. I see. So, so from the customer side, what's your view? I mean, they directly buy the flash hardware. So I'm just wondering they are always complying for too high. We can't afford it. We need custom storage or okay, it's high, but because the ROI is high and our margin is good. So we even it's high, I'm not happy, but I directly I I also buy it. So the hyper scalar, you have to remember, when I was at Amazon, we had long-term agreement. Yeah. with and and Micron. So those long-term agreements protect how much the price can change. That's number one. Number two, it also gives them huge volume discounts and they get access, they get first access to inventory. Gosh. So the hyperscalers are always in a good position. They don't have to worry too much. The companies that are small that don't have long-term agreements. Now, all of a sudden you have to be careful, right? Because if they make some sort of appliance, Gosh. and they don't have long-term agreements, all of a sudden that appliance may have cost them in terms of manufacturing, let's just say, you know, for the sake of this call, let's say it cost $20,000. All of a sudden, and they were selling it for, you know, let's say $40,000, or 50. Now, that same appliance may cost them 30 to $35,000. So their profit margins have have shrunk. So if you're in the hardware industry, this is very painful. If you're in the software industry, it doesn't matter. We have so much margin to play with that the price hikes on memory and flash, it doesn't really matter. But if you're a hardware where your revenue model is based on hardware sales and not software, they're hurting. There are companies that are hurting because of time demand, price hikes. So that's how I'm going to answer your question. It depends on what industry and what side. Gosh. Gosh. Gosh. That's that's very helpful. Yeah, this is all my questions and your your your your your your answer is definitely helpful for me. Fantastic. Well, it was very nice speaking with you. Thank you so much. Thank you so much. I think we definitely will follow a call like after several weeks and or one month, we'll keep tracking for this whole industry growth. So very very thank you for your time and we definitely will arrange a call next time. All right. Sounds good. Have a great day. Have a great day, sir. Thank you for your sharing. Okay, bye bye. Bye-bye.</p>
+</div>
+</main>
+</body></html>

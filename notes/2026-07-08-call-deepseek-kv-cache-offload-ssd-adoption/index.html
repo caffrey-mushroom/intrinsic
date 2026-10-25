@@ -1,0 +1,325 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.07.08 | Call | Memory | DeepSeek KV Cache Offload &amp; SSD Adoption</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.07.08 | Call | Memory | DeepSeek KV Cache Offload &amp; SSD Adoption</h1>
+<p class="orig">原标题：DeepSeek 架构运营专家</p>
+<p class="tags">#memory #llm #china</p>
+<p class="meta">Expert Call · 2026-07-08</p>
+<div class="body">
+<h2>纪要总结</h2>
+<h3>1. KV Cache分层Offload技术与现状</h3>
+<ol><li><b>Deep在推理（inference）场景下，目前KV cache的分层offload是如何实现的？特别是DDR和SSD的offload？</b></li></ol>
+<ul><li><b>SSD Offload采用率与决策边界</b></li><li>目前SSD offload的采用率在20%到30%之间。</li><li>Offload存在决策边界，由HBM占用率、访问间隔、命中率等条件决定。V4上线后，决策曲线整体右移，使SSD更早进入ROI优化区间。</li><li><b>三层存储间的数据流动策略</b></li><li><b>HBM -&gt; DDR/SSD</b>：当HBM占用率达到90%，访问间隔超过N个token，且命中率阈值为70%时触发。</li><li><b>DDR -&gt; SSD</b>：当DDR占用率达到70%，复用命中率超过50%时触发。</li><li><b>HBM -&gt; SSD (直接)</b>：当命中率阈值高达95%时，会不经过DDR直接offload到SSD。</li><li><b>SSD的角色定位</b></li><li>SSD不用作working memory，而是用作cold storage（冷存储）。</li><li><b>V4架构下的压缩技术</b></li><li>CSA加HCA架构能将1M上下文的KV cache大幅压缩，VSS Pro压缩至4.6GB，VSS Flash压缩至3.2GB。</li><li>作为对比，V3.2版本时压缩后为68.6GB，单张H100卡无法承载。V4的压缩从根本上改变了HBM的容量压力格局。</li></ul>
+<ol><li><b>三层存储架构在延迟与带宽方面的具体对比是怎样的？</b></li></ol>
+<ul><li><b>热层 (HBM3e)</b>：作为working memory，延迟在1微秒以内，带宽为3.35TB/s。</li><li><b>暖层 (DDR5)</b>：作为KV温层，延迟在100纳秒级别，带宽为460GB/s（约HBM的1/4）。</li><li><b>冷层 (NVMe SSD)</b>：作为cold storage，延迟为100微秒，带宽为7GB/s，速率相比HBM有100到1000倍的差距。</li></ul>
+<ol><li><b>基于V4架构，这种存储层级的改变在实际性能和系统负载方面带来了哪些具体影响？</b></li></ol>
+<ul><li><b>回读性能对比</b></li><li>从SSD回读4.6GB的KV cache总时间约1.3秒。</li><li>从DDR回读仅需10毫秒（包含DMA传输）。</li><li>HBM本地访问在1微秒以内。</li><li><b>HBM压力显著降低</b></li><li>V4的压缩技术使单个H100可承载55个VSS Pro或80个VSS Flash的并发请求。</li><li>HBM自身就能容纳大量并发请求的完整KV cache，大幅降低了HBM压力，也使得将SSD用作working memory的紧迫性下降。</li></ul>
+<h3>2. SSD技术演进与需求驱动</h3>
+<ol><li><b>从行业演进的角度看，SSD offload技术的采用率和其在系统中的角色定位发生了怎样的变化？</b></li></ol>
+<ul><li><b>采用率变化</b></li><li>V3.2时代：约40%-50%的集群节点配置SSD offload。</li><li>V4时代：采用率降至20%-30%，且主要用于checkpoint归档和RAG冷数据，而非KV cache。</li><li><b>驱动因素转变</b></li><li>驱动力已从解决“KV cache容量不足”转变为满足“aging（老化数据）的常态化持久化需求”。</li><li>预计年底采用率将回升至50%-60%，主要因新部署的aging集群将其作为标准配置。</li><li><b>角色定位转变</b></li><li>即便采用率回升，在V4节点中SSD用于KV cold层的容量分配仅占12.5%。</li><li>主要容量用于RAG语料(47.5%)、checkpoint(22.5%)和aging trace日志(17.5%)。</li><li>SSD在KV cache体系中的角色已转变为冷数据归档和跨会话前缀共享，不再是活跃的working memory。</li></ul>
+<ol><li><b>V4的KV cache压缩优化是否意味着不再需要SSD？Agent等新需求的出现是否是驱动SSD配置率回升的主要原因？</b></li></ol>
+<ul><li><b>KV Cache需求</b>：是的，V4的压缩技术优化使得HBM+DDR基本能满足GPU的batch处理需求，因此不再需要SSD来承载活跃的KV cache。</li><li><b>Agent新需求驱动</b>：是的，Agent场景的出现带来了新的增量需求，如满足Agent长对话和RAG知识库等，这些是驱动SSD配置率从20%-30%回升至40%-50%的主要原因。</li></ul>
+<ol><li><b>除了KV cache，在Agent等场景下SSD还有哪些新增需求？其驱动因素和重要性如何？</b></li></ol>
+<ul><li><b>RAG知识库</b>：为使Agent具备更多上下文理解能力而配置的、针对不同垂直场景的独立知识库。Agent任务复杂，需要更多RAG知识库，驱动SSD需求。</li><li><b>Checkpoint</b>：为满足企业或政府的合规性要求，在Agent运行的关键节点将状态写入SSD进行永久保存，以备后续审核。</li><li><b>总结</b>：在Agent场景下，对SSD需求增长的最大驱动力是RAG和checkpoint。</li></ul>
+<ol><li><b>主流存储方案选型（TLC/QLC/SLC）的主要考量是什么？</b></li></ol>
+<ul><li><b>核心权衡</b>：在延迟、耐久性（DWPD）和成本之间进行权衡。</li><li><b>TLC (主力方案)</b></li><li><b>定位</b>：KV冷存、AIGC和checkpoint的主力。</li><li><b>优势</b>：在延迟（60-80μs）、带宽（~10GB/s）、耐久性（1-3 DWPD）和成本之间取得最佳平衡。配合pSLC缓存能优化热点数据访问，完美匹配prefix cache的访问模式。</li><li><b>QLC (大容量低成本方案)</b></li><li><b>定位</b>：AIGC冷存和checkpoint归档。</li><li><b>优势</b>：容量大、成本低（TLC的0.5-0.7倍）。适用于大容量、低频次、顺序读取为主的场景（如RAG语料）。</li><li><b>劣势</b>：延迟高（100-150μs），耐久性极低（0.1-0.3 DWPD），不适合高频读取的KV场景。</li><li><b>SLC (极致低延迟方案)</b></li><li><b>定位</b>：极少量对延迟敏感的KV温层试点。</li><li><b>优势</b>：延迟最低（15-25μs），最接近DDR。</li><li><b>劣势</b>：成本极高（TLC的3-5倍），容量小，无法在万卡集群中规模化部署。</li></ul>
+<h3>3. 未来架构路线与战略选择</h3>
+<ol><li><b>未来是否会考虑采用类似NVIDIA Ruben的架构路线，即通过Bluefield SOC直接在GPU下挂载SSD？</b></li></ol>
+<ul><li><b>基本态度</b>：会考虑该路线，但不会完全照搬，而是采用混合并行路线。</li><li><b>核心原因</b>：业务负载分层需求多样，无法统一用集群SMS（Storage Management Service）替代本地SSD。</li><li><b>头部云客户</b>：追求极致低延迟（&lt;50ms TTFT），可适配Ruben路线，最大化利用HBM/DDR/CXL，削减本地SSD。</li><li><b>中长尾客户</b>：延迟容忍度较高（100-200ms），必须保留本地TLC SSD以保证延迟稳定性和TCO优势。</li><li><b>政企专属云客户</b>：有合规、离线和归档需求，强制要求大容量本地SSD进行物理隔离存储，集群共享SMS方案难以满足合规审计。</li></ul>
+<ol><li><b>与NVIDIA基于BlueField的私有SSD架构相比，我们选择的CXL DDR路线有哪些核心优势？</b></li></ol>
+<ul><li><b>延迟优势</b>：CXL访问延迟在150纳秒级别，比SCM SSD低约100倍，能更好地服务高频复用的KV场景。</li><li><b>ROI极高</b>：CXL投入能将GPU利用率从40%提升至75%，硬件回收周期仅5.8个月，三年ROI高达500%，远超SSD升级方案（ROI 140%）。</li><li><b>原生压缩协同</b>：V4原生KV压缩技术大幅缩小温KV体积，使其可置于CXL内存中，极大降低对SSD的IO压力。</li><li><b>硬件生态开放</b>：CXL是行业通用标准，不绑定Nvidia专用硬件，支持国产供应链替代（如长鑫DDR模组），供应链更灵活。</li><li><b>调度逻辑简单</b>：沿用HBM-&gt;DDR-&gt;CXL的三层内存调度，无需处理复杂的跨节点闪存转发协议栈。</li><li><b>解决带宽瓶颈</b>：CXL新增独立内存带宽通道，能有效分流KV cache读写，缓解本地DDR带宽不足的核心瓶颈。</li><li><b>资源全局池化</b>：将单机DDR孤岛资源池化，大幅提升利用率。</li></ul>
+<h3>4. Agent场景下的存储需求与配比</h3>
+<ol><li><b>在Agent场景下，SSD和DDR的主要存储需求构成是怎样的？</b></li></ol>
+<ul><li><b>DDR用途占比 (V4 for-agent集群)</b></li><li>KV Cache暖存：32.5% (最大单一用途)</li><li>RAG向量索引：27.5% (必须常驻DDR以保证毫秒级响应)</li><li>CPU working memory：22.5%</li><li>Framework worker及预留：17.5%</li><li><b>SSD用途占比 (V4 for-agent集群)</b></li><li>KV Cache冷存：12.5%</li><li>RAG知识库与向量：47.5% (主要构成)</li><li>Checkpoint：22.5% (主要构成)</li><li>Aging的trace和日志：17.5%</li><li><b>核心变化</b>：Agent会话使KV停留时间从秒级延长到分钟级，DDR从被动内存升级为HBM和SSD之间的主动缓存层。</li></ul>
+<ol><li><b>从量化角度看，V4集群中HBM、DDR、SSD的容量配比是多少？未来演进趋势如何？</b></li></ol>
+<ul><li><b>当前配比 (HBM:DDR:SSD)</b>：约为 <b>1 : 2 : 60</b> (不含CXL)。</li><li><b>2028年预期配比 (Agent成熟阶段)</b>：将达到 <b>1 : 4.3 : 80</b> (DDR部分包含CXL)。</li><li><b>演进速度分析</b></li><li><b>DDR增速最快</b>：容量配比翻倍（从1:2到1:4.3），主要由Agent场景下KV缓存（预计增长5-8倍）和RAG索引等需求爆发式增长驱动。</li><li><b>SSD绝对值增长显著</b>：总容量增长1.1倍多，主要因RAG语料库规模膨胀。</li><li><b>HBM增长相对温和</b>：受限于单卡物理封装和高昂成本。</li></ul>
+<ol><li><b>Agent场景下DRAM增长最快，其在整体配比中变化最大，这个理解是否正确？</b></li></ol>
+<ul><li>是的，这个理解完全正确。DRAM（主要指DDR及未来的CXL）是增长最迅速的部分，主要用于满足Agent场景下强劲的KV Cache和RAG索引需求。</li></ul>
+<h3>5. 市场趋势与采购策略</h3>
+<ol><li><b>如何看待当前存储产品的涨价幅度？公司的采购策略和支付意愿是怎样的？</b></li></ol>
+<ul><li><b>涨价幅度</b>：今年上半年是过去40年最剧烈的涨价周期之一，DDR5累计增长超150%，企业级SSD增长110%。</li><li><b>采购决策核心</b>：投资回报率（ROI），即存储投入对GPU利用率的贡献度。存储被视为“算力杠杆”而非“成本中心”。</li><li><b>支付意愿与弹性 (弹性越小，需求越刚性)</b></li><li><b>HBM</b>：刚性必需品，支付弹性极小（5%-15%）。</li><li><b>DDR/CXL</b>：强烈建议/战略性投入，能显著提升GPU利用率，支付弹性较小（DDR: 5%-15%, CXL: 15%-25%）。</li><li><b>TLC SSD</b>：有条件接受涨价，支付意愿低于DDR/CXL，存在QLC替代方案，支付弹性较大（25%-40%）。</li><li><b>QLC SSD</b>：成本优先，支付意愿最低，存在HDD替代方案，支付弹性最大（40%以上）。</li></ul>
+<ol><li><b>您认为存储产品的价格未来走势如何？</b></li></ol>
+<ul><li><b>HBM</b>：明年上半年仍有15%-20%上涨空间，下半年走势取决于三星HBM4认证进度。</li><li><b>DDR5</b>：明年将处于高位震荡区间，上半年高位持平，下半年可能小幅上涨5%-10%，供需缺口依然显著。</li><li><b>CXL</b>：明年市场趋于成熟，价格将呈快速下降趋势，全年累计降幅预计30%-40%。</li><li><b>TLC/QLC SSD</b>：明年预计进入价格回落通道，下半年由于产能集中释放，TLC预计下降5%-10%，QLC下降10%-15%。</li></ul>
+<h3>6. 软件栈与自研技术</h3>
+<ol><li><b>在软件栈层面，我们是完全自研还是采用了外部方案（如Vast Data）来实现分层存储与offload？</b></li></ol>
+<ul><li><b>混合软件栈模式</b>：采购海外现成方案作为技术底座（如硬件驱动、通用推理框架），但核心技术均为自研。</li><li><b>自研核心技术</b>：</li><li>四层分层存储的自动化引擎和核心调度逻辑。</li><li>分层驻留规则。</li><li>SSD资源分配、KV区组管理、IO调度等。</li></ul>
+<ol><li><b>在政企合规场景下，公司如何通过存储分层和软件优化来扩容SSD并控制成本？</b></li></ol>
+<ul><li><b>存储分层</b></li><li><b>TLC (75%容量)</b>：用于KV冷缓存、高频更新数据和频繁快照。</li><li><b>pSLC缓存</b>：承接热点前缀读取，降低延迟。</li><li><b>QLC</b>：分配给历史支持库等低频访问的冷数据。</li><li><b>SLC/PLC</b>：独立高速分区，服务于全局高频共享数据。</li><li><b>软件优化</b></li><li><b>KV压缩前置</b>：V4原生压缩技术，从源头减少写入量。</li><li><b>Prefix缓存全局共享</b>：减少重复数据写入。</li><li><b>Dual Pass双IO流量隔离</b>：缓解带宽瓶颈。</li><li><b>生命周期分级TTL管控</b>：减少无效SSD占用。</li></ul>
+<h2>结构化总结表格</h2>
+<div class="tbl"><table class="t wrap"><thead><tr><th>维度</th><th>关键指标</th><th>当前状态/V4架构</th><th>未来趋势/规划 (至2028年)</th><th>关键举措/原因</th></tr></thead><tbody><tr><td><b>KV Cache存储</b></td><td>核心承载介质</td><td>HBM + DDR</td><td>HBM + DDR + <b>CXL内存池</b></td><td>V4原生压缩技术使HBM+DDR能满足多数需求，CXL以其低延迟和高ROI成为KV温层的最佳方案。</td></tr><tr><td></td><td>SSD中KV占比</td><td>12.5%</td><td>持续降低</td><td>SSD已从活跃working memory转变为冷数据归档和跨会话前缀共享。</td></tr><tr><td><b>SSD角色与需求</b></td><td>主要驱动力</td><td>RAG知识库(47.5%)、Checkpoint(22.5%)</td><td>RAG和Checkpoint需求持续增长</td><td>Agent场景的复杂任务和合规性要求成为SSD需求增长的核心引擎。</td></tr><tr><td></td><td>主力存储方案</td><td>PCIe 5.0 TLC SSD</td><td>TLC SSD保持主力，QLC用于归档</td><td>TLC在延迟、耐久性和成本间取得最佳平衡；QLC满足大容量、低成本的归档需求。</td></tr><tr><td><b>未来架构</b></td><td>技术路线选择</td><td>CXL DDR内存池</td><td>强化CXL路线，混合采用类Ruben架构</td><td>CXL在ROI、延迟、生态开放性上优势显著；混合架构满足不同客户（云/政企）的差异化需求。</td></tr><tr><td><b>存储配比</b></td><td>HBM:DDR:SSD</td><td><b>1 : 2 : 60</b></td><td><b>1 : 4.3 : 80</b></td><td>Agent场景驱动DRAM（DDR+CXL）需求爆发式增长，成为增速最快的存储部分。</td></tr><tr><td><b>市场与采购</b></td><td>采购决策核心</td><td><b>ROI</b> (对GPU利用率的贡献)</td><td>维持以ROI为核心</td><td>存储被视为“算力杠杆”，根据对GPU的贡献度决定支付意愿，而非单纯的成本考量。</td></tr><tr><td></td><td>价格预期 (2025)</td><td>HBM/DDR高位，SSD平稳</td><td>HBM/DDR高位震荡，<b>CXL/SSD价格回落</b></td><td>HBM/DDR供需缺口仍在；CXL/SSD产能释放，市场成熟度提高。</td></tr></tbody></table></div>
+<h2>新版prompt提炼之后的转译</h2>
+<p><b>请介绍一下 Deep 在推理（inference）场景下，目前 KV cache 的分层 offload 是如何实现的？特别是 DDR 和 SSD 的 offload，目前能做到什么程度？</b></p>
+<p>SSD offload 的采用率目前在 20%到30% 之间。offload 存在决策边界，通常由 HBM 占用率、访问间隔、命中率等条件决定。在 V 上线后，决策曲线整体右移，使得 CLB SSD 更早进入 ROI 的优化区间。</p>
+<p>在 inference 集群中，KV cache 在三层存储之间的数据流动，是由动态策略引擎根据实时负载特征驱动的。具体的决策边界如下：从 HBM offload 的触发条件是 HBM 占用率达到 90%，访问间隔超过 N 个 token，且命中率阈值为 70%。从 DDR offload 到 SSD 的条件是 DDR 占用率达到 70%，复用命中率超过 50%。此外，也存在直接从 HBM offload 到 SSD 的情况，即不经过 DDR 缓存，其命中率阈值为 95%。</p>
+<p>需要说明的是，SSD 不用作 working memory，而是用作 code storage。</p>
+<p>我们目前的 CSA 加 HCA 架构，能将 1 兆上下文的 KV cache 压缩。其中，VPROs 压缩至 4.6 GB，Vflash 压缩至 3.2 GB。作为对比，在 V3.2 版本时，压缩后的大小为 68.6 GB。这种压缩从根本上改变了 HBM 的容量压力格局。在 V3.2 版本时，单张 H100 卡甚至无法承载一个 1 兆上下文的请求。</p>
+<p><b>能否请您介绍一下三层存储架构在延迟与带宽方面的具体对比？</b></p>
+<p>我们对三层存储的延迟和带宽进行了对比。热层采用HBM3e，延迟在1微秒以内，带宽为3.35TB/s，其角色是working memory。暖层采用DDR5，延迟在100纳秒级别，带宽为460GB/s，相当于HBM的1/4，作为KV温层。冷层采用NVMe SSD，延迟为100微秒，带宽为7GB/s，其速率相较于HBM有100到1000倍的差距，因此作为cold storage。</p>
+<p><b>基于V4架构，这种存储层级的改变在实际性能和系统负载方面带来了哪些具体影响？</b></p>
+<p>以V4的实测数据为例，从SSD回读4.6GB的KV cache总时间约为1.3秒，而从DDR回读仅需10毫秒，此时间已包含DMA传输，HBM的本地访问则在1微秒以内。V4的压缩技术对存储层级带来了显著改变，对于1M上下文的请求，VSS Pro的KV cache大小为4.6GB，VSS Flash为3.2GB。因此，单个H100可承载55个VSS Pro或80个VSS Flash的并发请求。这意味着在V4时代，HBM自身就能容纳55个并发请求的完整KV cache，从而大幅降低HBM的压力，使SSD作为working memory的紧迫性也随之下降。</p>
+<p><b>从行业演进的角度看，SSD offload技术的采用率和其在系统中的角色定位发生了怎样的变化？</b></p>
+<p>在实际部署中，V4集群的SSD offload采用率显著低于3.2时代。在3.2时代，约有40%到50%的集群节点配置了SSD offload路径；而在V4集群中，只有20%到30%的节点启用此功能，且主要用于checkpoint归档和RAG冷数据，而非KV cache或working memory。</p>
+<p>从行业演进来看，SSD offload的采用率正处于上升通道，但其驱动因素已从解决KV cache容量不足转变为满足aging的常态化持久化需求。我们预计到今年年底，SSD offload的采用率将达到50%到60%，这主要是因为新部署的aging集群将其作为标准配置，且长TTL的策略得到普及。</p>
+<p>即便在50%到60%的采用率预期下，根据万卡集群的实测数据，SSD在V4节点中用于KV cold层的容量分配仅占12.5%。其余容量中，47.5%用于RAG语料和向量索引，22.5%用于checkpoint，17.5%用于aging的trace和日志。因此，SSD在KV cache体系中的角色已转变为冷数据归档和跨会话前缀共享，而不再是活跃的working memory。</p>
+<p><b>V4相比V3，在KV cache压缩方面有显著优化，这意味着我们可以用HBM加DDR来满足GPU的batch需求，而无需使用SSD。但随着Agent需求的出现，产生了新的增量需求，例如有rack以及满足Agent长对话的需求。这些新的数据需求是否是驱动SSD配置率从20%到30%回升至40%到50%的主要原因？</b></p>
+<p>是的。</p>
+<p><b>您刚才提到KV cache，我的理解是，由于压缩技术的优化，目前GPU的HBM加DDR已经基本能满足其batch处理需求，因此不再需要SSD，是这样吗？</b></p>
+<p>是的。</p>
+<p><b>我理解这里的决策边界是，当存储在SSD中的数据重新加载的成本高于重新计算的成本时，我们就不选择存储，是这样吗？</b></p>
+<p>是的。</p>
+<p><b>这个成本是如何计算的？虽然存储本身的成本很低，但将数据存入SSD再加载回来，是否会产生隐性成本，例如通信开销或导致GPU等待的开销？</b></p>
+<p>在成本计算上，我们主要考虑传输成本和延迟惩罚成本。我们还考虑了HPM的节生成本。具体的计算公式是：单条offload的净收益等于HPM节生成本加上避免重计算的收益，减去传输成本，再减去延迟惩罚成本。</p>
+<p><b>从未来趋势看，现在我们使用H100，未来会有B100、B300、如本等更新的GPU。随着GPU算力的提升，虽然HBM和DDR的容量也会相应增加，但长期来看，对SSD的需求会继续上升吗？我们是否仍然需要更多的SSD来满足batch处理，还是说由于优化做得很好，需求会减弱？</b></p>
+<p>关于未来的变化，很难给出确切的判断。但整体来看，我认为SSD的需求应该会增长。</p>
+<p><b>您指的是用于KV cache的SSD需求，还是指整体的数据存储需求？</b></p>
+<p><b>除了KV cache，我们观察到在Agent等场景下SSD也存在大量的新增需求。能否详细拆解一下这部分需求的来源、驱动因素及其重要性？</b></p>
+<p>SSD需求的驱动因素，核心在于其介质选择需要在延迟、耐久性和成本之间进行权衡。目前，PCIe 5.0 TLC SSD是KV冷存、AIGC和checkpoint的主力方案；QLC仅用于AIGC冷存和checkpoint的归档；而SLC则仅在极少量对延迟敏感的场景中使用，不进行规模化部署。</p>
+<p>从主流NAND闪存的技术参数对比来看，SLC的每单元比特数是1，4K随机读延迟为15到25微秒，顺序读带宽为12GB每秒，DWPD为3到100，相对成本是TLC的3到5倍，单盘典型容量为0.2到0.4TB。TLC的每单元比特数是3，4K随机读延迟为60到80微秒，顺序读带宽约10GB每秒，DWPD为1到3，相对成本以其为基准，为1，典型容量为1.6到3.2TB。QLC的每单元比特数是4，4K随机读延迟是100到150微秒，顺序读带宽约7GB每秒，DWPD为0.1到0.3，相对成本为其0.5到0.7倍，典型容量在3.2到7.7TB。</p>
+<p>基于这些参数，SLC的4K随机读延迟最接近DDR的范畴，但其3到5倍的成本和有限的容量，使其无法在万卡集群中规模化部署。QLC虽然容量大、成本低，但其100到150微秒的随机读延迟和极低的DWPD，不适合高频读取的KV等场景。例如，在推理中的prefix cache场景，冷存的读取频率虽低于热存，但仍可能在短时间内触发多次批量读取，QLC的延迟和耐久性难以承受。</p>
+<p>我们在万卡集群中的实际选型决策，以Deepseek SD项目为例，其主力方案就是采用带pSLC缓存的PCIe 5.0 TLC SSD。TLC的60到80微秒随机读延迟在可接受范围内，而pSLC缓存通常占TLC容量的5%到10%，可以在热点数据访问时提供性能优化。</p>
+<p>这能够完美匹配prefix cache中少量热前缀和大量冷前缀的访问模式。单盘容量为1.6到3.2TB，与V4节点的SSD需求正好匹配。QLC方案我们只用于IG冷层和checkpoint的归档。IG语料占到47.5%，checkpoint占到22.5%，其特征是大容量、低频次、以顺序读取为主。QLC的高容量（每盘3.2到7.7TB）和低单位成本在此场景下具备优势。但是，我们很注意QLC的耐久性限制，checkpoint的频繁写入可能会快速消耗其TBWP配额，因此我们配合了写入缓冲层。SLC SCM方案我们仅少量使用，未规模化部署，只在一些延时非常敏感的KV温层进行试点，主要用于需要在小于35秒内访问的共享system property热前缀。容量限制在单节点0.2到0.4TB，这部分占我们SSD总量的2.5%以下。以上就是我们在存储选型方面的考量。</p>
+<p>相对而言，26年企业级SSD价格上涨了2倍，这使得QLC的成本优势更加突出。但前提是应用场景必须匹配，对于KV Cache冷层，TLC仍然是不可替代的。prefix cache的读取模式以随机4K为主，在这种模式下，QLC的延时比TLC高60%到90%，累积效应会显著拖累TTFT。PCIe 5.0接口的普及是另一个关键变量。今年上半年新部署的IG推理节点中，已有70%升级到PCIe 5.0接口。NVMe SSD的顺序读取带宽从PCIe 4.0时期的5GB/s提升到了10GB/s。这大幅提升了TLC SSD在顺序读取场景（例如批量加载checkpoint）中的效率，从而巩固了其主力地位。</p>
+<p><b>所以根据您的介绍，是否可以总结为：主力存储方案是NVMe TLC SSD，因为它在延时和容量上是最佳折中；大规模、低成本的存储场景使用QLC；而SLC由于成本过高，仅用于极少数对延时特别敏感的场景？</b></p>
+<p>是的。</p>
+<p><b>我们关注到NVIDIA最新的Ruben机架方案，它不再通过PCIe连接SSD，而是采用Bluefield SOC直接在GPU下挂载独立的SSD存储。请问我们未来是否会考虑采用类似的架构路线？</b></p>
+<p>是的，我们会考虑这条路线。因为在PCIe架构下，SSD数据要传输到GPU，需要经过主板的PCIe总线。</p>
+<p><b>NVIDIA的架构旨在让SSD能更快地加载数据到GPU和HBM中。请问我们未来是否会在此方向上进行探索，还是会继续沿用PCIe、DDR、HBM的现有架构？</b></p>
+<p>Rubin的核心优化逻辑，是通过提升单卡HBM4容量和NVLink带宽，并搭配Dnamo与SMS的统一KV调度，来降低单机对SSD的依赖，但它并未完全抛弃SSD介质。知识库、checkpoint以及大容量冷数据等，依然使用SSD进行持久化存储。</p>
+<p>我们不会完全照搬Rubin的方案，而是会采用混合并行的路线。主要原因是，我们的业务负载分层需求无法统一用集群SMS来替代本地SSD。</p>
+<p>我们服务的客户主要分三类，其负载差异较大。首先，头部云服务客户（CSP）需要低延迟，TTFT要求在50毫秒以下。这类客户可以适配Rubin路线，最大化利用HBM、DDR和CXL，而SMS集群中的SSD只用作低品质的次级缓存，从而大幅削减本地SSD的使用。</p>
+<p>其次，中长尾生命周期的CSP，其TTFT容忍度在100到200毫秒。这类场景必须保留节点本地的TLC SSD。本地SSD读取无需跨机或DPU转发，延迟更稳定，且硬件采购成本远低于整套BlueField-4 SMS方案，TCO更优。</p>
+<p>最后是政企专属云客户，他们有合规、离线和大量归档的需求，强制要求单机配备大容量本地SSD。审计日志、快照、知识库等都需要单机物理隔离存储。集群共享的SMS方案在多租户隔离方面难度较高，不利于合规审计。Rubin目前主要面向北美公有云的统一负载，并未覆盖政企离线的隔离场景。</p>
+<p>此外，CXL内存是我们的核心战略，其优先级与Rubin的SMS路线不同。我们计划明年大规模试点CXL内存池，将其定位为KV温数据层的主要下层介质，其投资回报率（ROI）远高于SSD。我们的策略侧重于通过DPU解决KV问题，优先采用本地DDR加CXL内存池来承接绝大多数温KV，SSD仅用于兜底极冷数据。在这条路线上，我们的趋势可能与他们相反。</p>
+<p><b>我们观察到Google也采用了与我们类似的路线，即使用CXL DDR作为温数据的主要介质。请问与NVIDIA基于BlueField的私有SSD架构相比，CXL DDR路线的主要技术取舍是什么？为什么我们会选择CXL DDR，而NVIDIA会选择另一条路？</b></p>
+<p><b>能否请您介绍一下CXL方案的核心优势？</b></p>
+<p>CXL的核心优势首先在于延迟，可以显著优于闪存方案。CXL的访问延迟在150纳秒级别，比本地DDR高出50%，但相较于SCM SSD百微秒级别的闪存，延迟低了约100倍。因此，对于高频复用的One-KV场景，不需要牺牲用户体验来换取容量。</p>
+<p>其次，KV缓存的投资回报率（ROI）非常高，硬件回报周期短。根据实测，CXL的投入为每机架8.5万亿，可将GPU利用率从40%提升至75%，整机吞吐量实现翻倍。回收周期为5.8个月，三年的ROI可达到500%，远高于SSD升级方案。SSD升级的回收周期为10.6个月，ROI仅为140%。</p>
+<p>第三，V4方案采用原生的KV压缩架构。通过SA和HCA，可依据上下文将KV压缩93%，从而大幅缩小温KV的体积。绝大多数高频复用的KV可以置于CXL内存中，无需下沉至SSD，只有极低复用率的历史KV才会被存入SSD。这极大地降低了闪存IO压力并减少了延迟惩罚。相比之下，Nvidia没有原生的模型压缩，只能依靠大容量的SCM闪存承接海量的压缩KV，硬件投入非常高。</p>
+<p>第四是硬件生态方面，我们支持国产供应链替代。CXL是行业通用标准，不绑定Nvidia专用的GPU和DPU。DDR内存可以选择长鑫等国产模组，我们预计明年国产替代率将达到20%。考虑到海外存储产品持续涨价且供应链存在风险，国产替代方案使整机硬件选型更灵活，无需强制采购Nvidia BlueField-4 DPU或Robin的全套专用芯片，从而优化供应链采购。</p>
+<p>第五，分层调度逻辑更简单。我们沿用从HBM到本地DDR，再到CXL的三层内存调度，并复用自研的命中率预测策略。超过70%的DDR访问被下沉。此方案不需要DPU进行卸载，也无需处理RDMA跨节点闪存转发和复杂的NVMe-oF协议栈，尤其适合我们的几类客户。</p>
+<p>我们的CXL DDR解决了当前最核心的瓶颈，即DDR带宽不足。ICT最大的短板是本地DDR带宽只有HBM的1/58。CXL新增的独立内存带宽通道，能够分流大量KV cache的读写，缓解带宽饱和。SCM只能解决容量问题，无法补足内存带宽的缺口。</p>
+<p>第七个原因是，内存资源进行全局池化后，利用率能够大幅提升，因为单机本地的DDR资源是一个孤岛。</p>
+<p><b>在一个为chatbot场景配置的集群和另一个为agent场景配置的集群中，SSD的配比有何不同？您提到从V3到V4，存放在SSD中的KV cache会减少，那么在V4的agent场景下，SSD的存储需求是否主要由RAG和checkpoint读写构成？</b></p>
+<p>是的，主要由RAG和checkpoint读写构成。</p>
+<p><b>您提到的RAG，是指在为企业部署agent时，为了使其具备更多上下文理解能力而专门配置的知识库吗？</b></p>
+<p>是的，RAG是针对不同垂直场景的独立知识库。</p>
+<p><b>所以与chatbot相比，agent的任务更复杂，需要理解的知识更多，因此需要配置更多的RAG知识库，这个理解正确吗？</b></p>
+<p>正确。</p>
+<p><b>那么checkpoint的作用，是否是为了满足企业或政府的合规性要求，需要在agent运行的关键节点将状态写入SSD进行永久保存，以备后续审核？</b></p>
+<p>是的。</p>
+<p><b>所以总结来看，当前agent场景对SSD需求增长的最大驱动力是RAG和checkpoint，而KV cache未来的最佳解决方案是CXL DRAM？</b></p>
+<p>是的，我们认为CXL DRAM是目前最好的方案。</p>
+<p><b>接下来我们讨论DDR。在agent场景下，DDR的主要需求有哪些？我理解有两个大的方面，一个是KV cache，另一个是CPU侧的工具调用。除此之外，是否还有其他需求，比如用于主调度、通信数据调度或缓存冗余？</b></p>
+<p><b>在 V4 for-agent 集群中，这几种内存用途的占比是怎样的？</b></p>
+<p>在 V4 集群中，对于 SSD，KV cache 冷存占比为 12.5%，每个节点的容量为 7.5TB；RAG 知识库与向量的占比为 4%。</p>
+<p>对于 DDR，KV Cache 暖存占 32.5%，每个节点容量为 640GB；CPU working memory 占 22.5%，每个节点容量为 450GB；RAG 向量索引占 27.5%，每个节点容量为 560GB；framework worker 及 NUMA 预留占 17.5%，每个节点容量为 350GB。</p>
+<p>在纯 chatbot 场景中，DDR 的主要角色是为 CPU 提供公共内存和为推理框架提供运行空间。此时 KV Cache 几乎全部驻留在 SSD 上，因此其在 DDR 中的占比较低。但在 agent 场景中，KV Cache 的暖存成为 DDR 最大的单一用途。</p>
+<p>这一变化的主要原因是 Agent 会话的 KV 停留时间从秒级延长到分钟级。单次 Agent 任务流可能涉及多轮模型调用、工具执行和上下文拼接，导致 KV 张量在完成一轮注意力计算后不能立即释放，而需在 DDR 中保持温热状态以等待下一轮调用。这种工作模式的转变，使得 DDR 从被动的 CPU 附属内存升级为 HBM 和 SSD 之间的一个主动缓存层。</p>
+<p>对于 RAG 索引，在 Agent 系统中几乎每个任务都会触发 RAG 检索，因此向量数据库的索引必须常驻 DDR 才能保持毫秒级的检索响应。如果将向量索引置于 SSD，即使采用最先进的 PCIe 5.0 设备，检索延迟也会从毫秒级劣化到几十毫秒级，这将严重影响 Agent 的端到端响应时间。</p>
+<p>CPU working memory 主要用于 Agent 编排器运行、工具调用和上下文代码执行等计算密集型任务。framework worker 则为 vLLM 和 SGLang 等推理引擎的内部开销进行预留，为缓存对齐等操作提供必要空间。</p>
+<p>这四种用途在物理上共用同一组 DDR 通道，因此带宽竞争不可避免。DDR5 的理论带宽为 460GB/s，而这四种用途的峰值带宽需求叠加后会远超此上限。具体而言，KV cache 暖存在换入换出时需要高吞吐的顺序带宽；RAG 向量索引需要低延迟的随机访问带宽；CPU working memory 需要持续稳定的低延迟带宽；而 framework worker 预留则需要大块连续的内存映射。这四种截然不同的访问方式在同一个物理介质上相互交织，形成了 DDR 侧的结构性带宽增强问题。</p>
+<p><b>我们是否会为V4或V3这类Agent集群专门配置独立的CPU服务器机柜，以处理大量的工具调用需求？</b></p>
+<p>是的。标准的生产集群通常是CPU和GPU同机一体化配置。但在某些特定场景下，确实需要配置独立的CPU机柜。例如，离线预处理和数据清洗这类不参与在线推理的离线任务，会使用专用的CPU机柜。此外，用于集群管控和调度中心的轻量级CPU机柜，主要负责运维管理工作。</p>
+<p><b>从量化角度来看，在最新的V4集群中，HBM、DDR和SSD的容量配比大概是多少？</b></p>
+<p>目前的配比是1比2比60。</p>
+<p><b>这个比例中的“2”是否不包括CXL？</b></p>
+<p>对，不包括。</p>
+<p><b>考虑到目前行业内HBM与DDR的配比趋势（例如NVIDIA最新产品约为1比3到1比4），以及有观点认为未来可能达到1比6甚至1比8，结合CXL或下一代技术，我们预计未来的配比会达到多少？</b></p>
+<p>我们预计到2028年Agent技术成熟阶段，配比将达到1比4.3比80。</p>
+<p>从演进速度来看，DDR的增速最快。相较于HBM，DDR的容量配比从现在的1比2增长到未来的1比4.3，增长超过一倍。主要原因是Agent场景下KV缓存的需求会爆发式增长，DDR承载的KV缓存增速预计为5到8倍，远高于HBM的3到5倍。同时，在DDR的用途中，RAG向量索引和CPU working memory各占25%，这部分需求也会随着Agent复杂度的提升而扩张。</p>
+<p>SSD的总容量预计增长1.1倍多，其绝对值增长显著，主要是因为RAG的语料规模在膨胀。在SSD的用途中，RAG语料存储占比达到47.5%。</p>
+<p>在需求增长中，某一几率的提高可能占到23.5%，日志流程需求增长可能占到17.5%。HBM的容量增长相对温和，主要受限于单卡物理封装和成本约束，其成本增长也很快，因此增长斜率低于DDR。HBM的核心价值在于支撑单卡KV Cache和模型权重加载，不会进行大规模容量扩展。</p>
+<p><b>回到DDR，您提到的1比4.3的配比中是否包括了CXL？</b></p>
+<p>是的，1比4.3的配比中包括了CXL。</p>
+<p><b>在1比80的配比中，SSD部分是否仍以NVMe TLC为主，而QLC占比较小？</b></p>
+<p>是的，TLC是主力。</p>
+<p><b>从今年初Agent技术取得实质性进展并驱动需求以来，是否可以认为DRAM是增长最迅速的部分，主要用于满足KV Cache的强劲需求，其次是HBM和SSD？DRAM在整体配比中的变化是否也是最大的？</b></p>
+<p>是的。</p>
+<p><b>考虑到存储产品价格已大幅上涨，您如何看待当前的涨价幅度？公司的支付意愿和采购策略是怎样的？是倾向于尽可能节省成本，还是认为尽管价格昂贵，但相较于计算成本仍然可接受，因此继续积极采购？</b></p>
+<p>当前价格上涨确实非常迅速，今年上半年是存储市场过去40年来最剧烈的涨价周期之一。</p>
+<p>常规DRAM在Q1增长了90%至95%，Q2增长了58%至30%，上半年累计增长近两倍，同比增长约190%。服务器DDR5在Q1和Q2均增长了60%，上半年累计增长超过150%，同比增长超过200%，约为230%。</p>
+<p>Flash在Q1增长了55%至60%，Q2增长了70%至75%，上半年整体增长了160%至170%，同比增长约270%。企业级SSD在Q1增长40%，Q2增长50%，上半年累计增长110%，同比去年增长200%。</p>
+<p>此轮涨价的主要因素是AI算力投资爆发导致需求端呈指数级增长，而存储产能在2024年开始。</p>
+<p><b>关于存储产品的提价，我想了解我们在采购决策上的立场。我们是认为这些产品价格虽高但不可或缺，因此接受当前价格；还是说价格已经高到影响我们的决策，需要我们考虑节约成本？我们目前处于哪个阶段？</b></p>
+<p>对我们来说，决策的核心是投资回报率（ROI），量化的最终指标是GPU的利用率，即存储产品对GPU有效算力产出的贡献度。存储的本质并非成本中心，而是算力杠杆。一美元的存储投入能撬动多少GPU算力产出，这决定了我们对该品类涨价的承受上限。</p>
+<p><b>从采购意愿来看，HBM是否属于必须采购的刚性需求？</b></p>
+<p>是的，HBM是刚性必需品，不采购的话GPU就无法运行。DDR则属于强烈建议采购的类别，级别略低于HBM，但它能为GPU利用率带来30%到50%的间接提升。CXL可作为部分替代方案。对于这类产品，我们的支付弹性空间不大，大约在5%到15%。</p>
+<p><b>请解释一下“支付弹性”的含义。这个数值越小，是否意味着需求越刚性？</b></p>
+<p>是的，您的理解是正确的。</p>
+<p><b>那么CXL以及其他存储类型（如SSD）的情况是怎样的？</b></p>
+<p>CXL内存属于战略性投入，其付费意愿与DDR相当。它能为GPU利用率带来25%到45%的直接提升，并与DDR形成互补。我们评估其支付弹性在15%到25%之间。</p>
+<p>对于TLC SSD，我们对涨价的接受是有条件的，其支付意愿低于DDR5和CXL。它对GPU利用率的间接辅助作用在5%到15%之间，并且可被QLC替代。因此，其支付弹性较大，我们评估在25%到40%。</p>
+<p>QLC SSD则主要满足成本优先的需求，支付意愿是最低的。它与GPU利用率的关联度低于5%，并且可被HDD替代。相应的，其支付弹性在40%以上。</p>
+<p>总体而言，TLC和QLC SSD的支付意愿处于最低水平，因为它们对GPU利用率的间接辅助作用有限，同时存在清晰的介质替代路线：TLC可被QLC替代，QLC又可被HDD替代。如果价格上涨过高，我们会选择采用替代方案。</p>
+<p><b>您认为存储产品的价格是否会继续显著上涨，还是说当前的价格水平已接近峰值？</b></p>
+<p>基于目前的扩张进度和下游需求增速，我预计明年价格还会上涨。</p>
+<p><b>但价格波动的幅度是否会小于今年上半年？</b></p>
+<p>是的，波动幅度会减小。HBM方面，预计到明年上半年仍有15%至20%的上涨空间。这主要源于三星HBM通过英伟达认证的进度存在高度不确定性。如果三星的HBM4能在明年Q2完成认证并实现量产，SK海力士和三星形成的双供应商格局将使下半年价格趋于平稳，甚至可能小幅回落5%。若认证延迟到Q3之后，下半年HBM价格可能继续持平，全年呈现前高后低的走势。</p>
+<p>DDR5在明年将处于高位震荡区间。受今年涨价惯性的延续，上半年价格将高位持平，浮动范围在30%上下。下半年，随着新产能释放和需求增速的边际放缓，价格可能小幅上涨5%至10%。同时，DDR5价格的下行空间有限，因为AI服务器需求年增长超过60%，远高于约18%的供给年增长速度，供需缺口依然显著。</p>
+<p>CXL方面，明年市场将趋于成熟，主要得益于CXL 2.0和3.0控制器芯片的量产规模扩大，例如Microchip、Astera、Renesas等厂商的产能爬坡，以及更多内存模组加入CXL生态。因此，CXL模块的价格预计在明年会呈现快速下降趋势。上半年预计下降15%至25%，下半年将再下降20%至30%，全年累计降幅预计为30%至40%。</p>
+<p>TLC SSD和QLC SSD明年预计也将进入价格回落通道。上半年价格将保持平稳。下半年，由于NAND Flash产能集中释放，包括三星平泽工厂、美光新加坡工厂以及长江存储武汉二厂，价格预计会出现下降。TLC SSD可能下降5%至10%，而QLC SSD预计下降10%至15%，因为QLC的技术成熟度和产能扩张速度更快，降幅将大于TLC。供需缺口也将随之收窄，明年TLC SSD的缺口预计将缩小至20%以上。</p>
+<p>今年的HBM供需缺口为50%。</p>
+<p><b>在软件栈层面，我们是否采用了例如 Vast Data 等海外公司的方案，来合理调配 SSD 和 DRAM 资源，并实现 KV cache 的分层存储与 offload？</b></p>
+<p>我们采用的分层技术，基本上是在使用海外的一些方案。我们采购现成方案后，会自己进行调试，将其整合并运行在我们的集群中，整体是一个混合软件栈的模式。</p>
+<p>我们有一个四层分层存储的自动化引擎，其核心调度为自研，复用了 Dynamo 的基础能力，并制定了分层驻留规则。</p>
+<p>L1 HBM 热层负责承载高频访问的 KV 和 MoE 激活专家权重。其驱逐策略为：当 HBM 占用达到 90%，且 KV 超过 256 到 1024 token 未被访问时，会将其标记为温数据并下放到 DDR。我们不会主动将热 KV 直接写入 SSD，以规避百微秒级的延迟惩罚。</p>
+<p>L2 DDR 温层，包括未来的 CXL 内存池，主要承载短期复用的多轮 KV 以及 RAG 热点向量引擎索引。只有当 DDR 命中率超过 70% 时才允许数据留存，低于该阈值则直接丢弃，不进行下沉存储。</p>
+<p>对于冷存，我们只存储高价值的前缀 KV，其准入门槛是 KV 复用命中率超过 90%。该层仅共享 System Prompt 和公用的 RAG 文档。在容量分区方面，SSD 会固定将 12.5% 的空间留给 KV 冷存，剩余的 87.5% 分配给 RAG 库、Checkpoint 和 Agent 日志，以杜绝 KV 挤占存储空间。</p>
+<p>最后一层是持久归档层，使用独立容量的 SSD 和 HDD。它用于存储历史日志、过期的模型快照等，这些数据完全脱离推理链路，不占用在线 SSD 的 IO 带宽。</p>
+<p>此外，我们还根据负载类型差异化分配 SSD 资源。对于要求低延迟的头部 CSP 场景，策略是严格控制 SSD 的 KV 写入量，主要使用 HBM+DDR+CXL。而对于能容忍 100 到 200 毫秒延迟的中长尾成本型 CSP，策略会启用 SSD 前缀缓存，以平衡成本和复用率。</p>
+<p><b>请您介绍一下在正企合规技术方面，贵司是如何进行SSD总容量扩容与成本控制的，尤其是在存储分层和软件优化层面有哪些具体手段？</b></p>
+<p>正企合规技术会大量扩容SSD总容量，并提升checkpoint和trace日志分区的占比。在存储分层调度方面，我们以此控制SSD成本。</p>
+<p>TLC颗粒分配了 75% 的SSD容量，用于KV冷缓存、高频更新数据、IG以及频繁快照。</p>
+<p>pSLC缓存则用于承接热点前置读取，以降低随机读取的延迟抖动。</p>
+<p>QLC颗粒主要分配给低频访问的冷数据，例如历史支持库和老旧模型版本，并禁止存放KV缓存。</p>
+<p>SLC和PLC则被划分为独立的高速分区，专门服务于全局高频共享数据，不占用通用SSD容量。</p>
+<p>在软件层面，我们有四项主要的SSD资源优化手段。</p>
+<p>第一是V4原生的KV压缩前置技术，通过CSA和HCA算法，可将 1 兆的上下文KV压缩 93.3%。</p>
+<p>第二是Prefect缓存全局共享，以减少重复数据写入SSD。</p>
+<p>第三是Dual Pass双IO流量隔离，用于缓解SSD的带宽瓶颈。</p>
+<p>第四是生命周期分级TTL管控，旨在减少无效的SSD占用。</p>
+<p>尽管海外软件栈为我们提供了底层硬件驱动、通用推理及分布式编排等技术底座，但核心的三层存储分层、SSD资源分配、KV区组管理以及IO调度等技术均为我们全部自研，因此拥有完整的自主调控权。</p>
+<h2>原文转译</h2>
+<p>您请教一下说,因为因为之前其实让V已经给您发了问题清单了嘛,然后想向您请教就是说,呃,特别是在现在这个inference,现在那么,呃,需求那么高,然后特别是大家在转agent这个架构的情况下,我们在这个整个的这个,我们说inference的架构,特别是在agent的场景下,怎么去配置说不同的这个rack,然后这个,特别是对存储的这个需求大概是什么样的一个,一个一个一个一个架构的设计和变化。 对,然后大概就是这些问题,然后我可能就按照这个问题呢一个一个向您请教了,您您看可以吗? 可以的,可以的。 好,您能不能简单可能一两句话给我们说一下说你大概的这个背景是什么样的一个情况吗? 呃,我,我是那个在,呃,我们DC基础设施系统运营,运营部的。 明白。 呃,对,就是做做那个系统运营这块的。 明白。 然后 所以您在那个系统运营侧,其实您是能够接触到很多这个,就是其实就硬件架构和硬件运营这个方面您都会要接触对吧? 对对对。 明白,明白,了解了解。 好的呀,好的呀。 呃,好,那那我想向您就是先请教就是,啊,您您能现在简简简简单帮我们介绍一下说Deep在现在的这个,我不知道是就是在这个比如说training或者说inference,特别是inference这个场景下吧,我们现在这个KV cash的这个分层的这个offload大概会怎么去做offload? 就我理解说可能就HBM大家都塞满了嘛,但是我不知道说像DDR的offload,还有像SSD的这个offload,大概我们现在能做到什么样的情况? 呃,offload的这块的话,那个就是那个,嗯,SSD的offload的话,我们现在采用率现装的话,我们是在那个20%到30%。 嗯,那个就是我们其实是有决策边界的嘛,这个offload。 嗯,像整体来说,一般我们是决策边界是有这个HPM的占用率啊,访问间隔啊,命中率这几个条件来去决定的,而且我们V上的之后,这个决策曲线是整体向右移了。 呃,CLB SSD更早去进入这个ROI的甜区。 那在那个inference集群里面KVcatch的这个三层存储之间的这个数据流动,它是由动态策略来引擎来去根据实时负载的那个特征去驱动的。 这个下面呢就是我们决策的边界呢,呃,像那个HBM,呃,upload到到那个 嗯,它触发条件就是HBM占用达到90%,访问间隔的话,访问间隔超过这个N个token,然后命中预值的话,命命中率预值是在70%。 那另外就是DDR到SSD的话,DDR占用达到70%,命中复用命中率超过50%。 呃,如果还有一种情况就是直接从HBM到SSD,这个就是不经过DDR缓存。 嗯,这个一般来说那个命中率预值的话是95%。 呃,这相应来说就是,呃,回顾到刚才的这个,这个是是那个offload的这个场景的话,呃,一般来说我们呃SSD它是不做这个working memory的,是做coding,呃,code storage。 明白。 呃,我们目前的那个CSA加HCA的架构是把这个一兆上下文的KVcatch压缩到呃,只有4.6GB,嗯,这个VPROs压到4.6GB,Vflash的话是压到3.2GB,呃,这相对在V3.2的时候,我们是压缩到那个就是呃,那个时候是是68.6GB。 这个压缩从根本上就改变了HPM,HPM容量压力的一个分布格局,我们单张H100的这个那个卡的话是在V3.2的时候是一个这个一兆上下文请求都无法存在的。 它直接ORM， 到VSS Pro的话，我们可以承载大概55个一兆上下文请求。 HBM的压力这个就降得很低了嘛。 SSD作为working memory的这个紧迫性就下大幅下降了。 这个就是 了解。 是我们在那个就是是三层这个存储上面，我们也有一些延迟的一个就是就是那个对比嘛，这样就可以看看清楚它是为什么要这样去分。 首先第一个热层， HBM3e，它的延迟是在嗯一微秒之类的，然后带宽是3点呃三三呃一微秒之类的，带宽的话是3.35TB每秒嘛。 嗯。 这相对相对于HBM倍数基本上是作为一个基准值。 呃，它的角色就是working memory。 那暖层呢，我们用的DDR5的话， 这个延迟自然是100纳秒之类， 呃带宽是460GB每秒。 呃它相对于HBM的话就只做到1/4，它作为KV的KV的温层。 呃然后冷层的话，用了那个NVMe SSD， 呃它是自然是在100，100微秒，延迟100微秒，它的带宽是7GB，7GB每秒。 这个相对于就是HBM的呃那个100，100到1000这样的一个一个呃速率，所以它只能做这个cold storage。 这个延迟，嗯就是以我们V4，V4的话，实测当中从SSD回读4.6GB KV的总时间大概是1.3秒，而从DDR回读的话只需要10毫秒， 还包含那个DMA的传输。 所以从HBM本地访问就只在一微秒一微秒内。 所以我们V4压缩对这个存储层级的改变呢，可以非这样对比更更更更直接。 嗯。 呃那个一兆上下文的话，我们VSS Pro是4.6G，4.6GB，VSS Flash是3.2GB。 呃单个H100的话能够承载的VSS Pro是55个，VSS Flash的话能够承载80个。 所以HBM的压力就就很低了。 明白。 呃因为嗯这个是是就是嗯 所以我们相当于在V4时代的话，这个4.6GB的KV就意味着HBM本身就能容纳这么多，55个这个并发的请求的完整的KV。 理解。 SSD就就是就降级为这种锦上添花的选择。 明白。 所以实际嗯，实际部署当中V4集群的SSD offload，它采用率显著是比3.2时代要低的。 呃3.2时代的，我们基本上是集群当中有大概有40%到50%的这个节点配置了SSD offload路径。 而在V4集群中只有20%到30%节点启动这个功能。 呃而且主要用于checkpoint的归档和RAG冷数据，呃而不是这个KV cache和哦KV cache和working memory。 从行业演进来看，SSD的offload的这个采用率正在，也正也是处于一个上升通道，但是驱动因素也已经从这个KV cache容量不足，转变成这个aging的常态化持久化需求。 呃现在来说的话，我们预计今年年底的这个SSD offload的采用率会达到50%到60%， 这主要是新部署的aging的集群标配， 呃是是是是将成为标配，然后长TTL的策略也得到普及。 呃即便是是在50%到60%的采用率预期下面，SSD承载这个KV cache的这个比例， 呃依然只能到50%、60%， 这因为我们根据这个万卡集群的一个实测数据， SSD在V4节点中的KV cold层只占了12.5%的一个容量分配。 其余47.5%的都是用于RAG语料和向量向量索引。 22.5%是用checkpoint， 呃17.5%是用于aging的trace和日志。 所以SSD在KV cache体系的角色，呃现在我们可以理解为就是冷数据归档和跨会话前缀共享， 而不是活跃的working memory这样的一个角色了。 明白。 嗯。 嗯。 明白,明白。 了解,您您說的,您說的非常清楚啊,就就其實我理解就是,首先就是V4對比V3,我們的壓縮,我們的KV開的壓縮有一個非常好的一個這個這個優化,所以說意味著說我們可以不需要用SSD,而是用這個HBM加DDR可以非常好的滿足我們GPU的這個batch,對吧? 然後所以說我們SSD就空出來,因為它本身又是一個更慢的一個東西,我們肯定想用更快的延遲的這個這個這個這個這個memory的這個帶嘛,然後那但是但是但是伴隨著這個agent的這個需求呢,就是我們又有了一些增量的需求,就比如說有rack,還有什麼,您剛剛說到的是有什麼要要滿足什麼agent的長繪畫的需求,我不知道這個對應的是什麼樣的數據的這個需求量提升啊,但聽起來這些數據是驅動SSD未來這個,我們說又從這個可能20%到30%的這個配置率又拉回到40%到50%的這個一個需求,是吧? 對,是的,嗯。 明白,哎,所以所以就是,呃我想請教就是,就是您剛說那個KVcash那個我我聽得很,就,就是兩個問題,第一個問題就是說,您的意思就是說,以現在GPU的這個能力來說的話,就是HBM加DDR其實基本上可以,就是因為我們壓縮了很多,所以基本上可以餵飽它,所以我們就不需要SSD做batch了,是吧? 是的。 明白。 明白,呃然後我理解這個邊界其實就相當於是說,呃這個邊界應該就是說,我存到SSD裡面,不如我重新算一遍划算。 是是這個,是這樣的一個邊界嗎? 對對。 明白,明白。 明白,這個,這個該怎麼去算這個事情啊,就是因為我一直在想就是存儲的這個成本其實是非常非常低的,但但我不知道這個裡面會有隱性的成本嘛,就比如說,呃我存到SSD裡面其實我覺得光存這個東西肯定是比GPU算我理解是要便宜的,但我理解這裡面會有比如說呃loadback的時候會有這個通信的開銷,然後可能會有讓GPU等待的開銷,就我不知道說這裡面的隱性成本是哪些? 嗯,他我們的成本上算的話,他其實是是這樣的,就是,呃,它算那個就是,嗯,傳要傳輸成本,然後延遲懲罰的成本。 明白。 啊,然後那個就是我們還算了那個HPM的這個結生成本,相信這個計算公式的話,我們RI的這個計算公式單條ofload的這個進收益的話,我們是HPM節省成本加上重計算的避免收益減去傳輸成本,減去延遲懲罰成本。 明白,明白,明白,理解,理解,理解。 了解了。 OK,所以說所以說那那聽起來從,呃,我們說錯,哎,那想請教就是說,比如說從未來的趨勢啊,就現在我們用的是H100對吧,然後後面的話我們會有有有有B100,有就假設說B100,呃B300,如本,就是我們假設我們的卡越來越多,然後那對應的話,我們對SSD的需求會繼續上升嘛,因為因為因為這個,因為我知道就是說卡的算力能力提升,其實也對應的是HBM和這個DDR也會配得更多啊,但我不要說這個長期來看的話,SSD您覺得是還需要更多的SSD來餵飽這個batch,還是說就是也不太需要了。 因為我們的優化做得很好。 嗯。 未來的一個變化是吧? 對。 未來一個變化的話,嗯。 這個我我要很難說,我只能說就是未來整體因為,嗯,這個需求的,因為SSD的話,它現在我們一般就是像像那個,可能會有一些,我覺得會有會有會有會有會有增長吧,應該會應該整體來說應該會增長。 明白,咱們說的是KVcash是嗎?還是說您說的是總總的這個數據的存儲需求? 嗯,KV cache和总的需求,都会增长是吧? 对,因为这个场景它的 就没,我现在还没办法去单独归因, 明白。 可能要慢慢思考这个到底它归因在哪一个层面。 明白,明白,了解了解。 OK,好,那第二个问题想请教,其实就是这个,呃,刚刚我们说到说除了KV cache之外,然后还有很多的其实数据是在drive这个SSD的需求, 那这个您能再展开给我说说吗?就是我可能在这方面研究就不是很很不是很懂啊。 就是,呃,我理解就是说,比如说agent之后,是SSD为什么有很多看起来有其他大量的增加的这个需求,这个需求为什么重要?为什么来自于哪?就这个您能简单帮我拆一下吗? 呃,SSD的需求是吧? 对。 嗯, 呃,驱动驱动因素,我想想啊。 除了KV cache的话,我们整个来说就是,嗯, 整个来看呢,SSD的需求, 因为很核心来看,现在一个是那个,就是SSD戒指的话,选择需要在这个延时啊、耐久性和成本之间做一个权衡嘛。 嗯,我们核心来看呢,就是像PCIE的那个5.0 TLC SSD它是,它是那个KV冷存和AIGC还有checkpoint的一个主力方案嘛。 嗯。 QLC的话,它是仅用于AIGC冷存和checkpoint的归档。 对。 SLC的话它是仅在这个极少量的这种延时敏感场景使用,不规模化部署。 那首先我们要看这个主流的NADA的闪存的技术参数对比,戒指选型的选型对比来看呢,呃,SLC每层每单元比特数是1,然后4K随机呃随机随机读延时呢是呃15到25微秒,然后顺带读带宽呢,这个是12GB每秒,呃DWPD呢是3到100,然后相对成本呢是是3到5倍的,然后典型容量单盘的话是0.2到0.4TB。 呃TLC每单元比特数是3,然后4K随机读延时呢是60到80微秒,呃顺带读带宽呢,嗯差不多是在10GB每秒,DWPD呢是1到3,相对成本的话每GB是呃以它为基准,1GB的这个相对成本,典型容量的话它是一个1.6到3.2TB,QLC每单元比特数是4,呃,4K读的随机读延时是100到150微秒, 呃,顺序读,顺序读带宽差不多是7GB每秒,然后DWPD呢是0.1到0.3,呃相对成本的话它可能就是0.5到0.7倍,然后典型容量是在3.2到7.7TB。 呃,这里面呢就是SLC的这个呃,4K的随机读延时呢是最接近DDR的范畴,但是它3到5倍的这个成本呢是和这个有限的容量是没有办法在万卡集群中规模化部署的。 QLC虽然容量大成本低,但是100到150微秒的一个随机读延时和极低的DWPD呢,它是不适合高频读取得KV等场景。 呃,这里面就是像这个AV那个H推理中的prefix cache,能存虽然读取的那个,呃,读取频率低于热存,但仍然有可能在短时间内触发多次批量读取。 QLC的延时和耐久性呢,呃,就难以承受。 明白。 我们在继续万卡集群当中这个实际选型决策是这样的,就是我们呃,Deepseek SD一个主力方案就是嗯PCIe 5.0 TLC SSD,它是带PSLC的缓存的。 TLC的这个60到80微秒的这个随机读延时是在可接受范围之内,呃PSLC的缓存呢通常是TLC容量的5%到10%,可在,就是可以在这个热点数据访问 的时候提供接近SLC的延时。 呃，这个能够完美匹配prefix cache中的一个那个少量热前缀和大量冷前缀的一个访问模式。 单盘的话1.6到3.2TB的这个容量，呃跟V4节点的SSD需求匹配是刚刚好的。 那QLC方案我们只用于这个IG冷层和checkpoint的归档。 IG语料的话，基本上我们能占到47.5%嘛。 和那个checkpoint占到22.5，22.5的这个特征，他们他们的特征就是大容量，低频次，顺，呃，顺序读取为主。 QLC的高容量呢，3.2到7.7TB每盘，和那个低单位成本在这个场景下是具备优势的。 但是，呃，我们一直很注意像QLC的一个耐久性限制。 呃，checkpoint的这个频繁写入可能 他写会写坏嘛,对吧? 啊对对对，它可能会快速消耗它的TBWP配额。 呃，所以我们配合的是写入这个缓冲层。 然后在SLC SCM方案呢，我们是很少量不规模化用的，只在一些延时非常敏感的KV温层做试点。 呃，就 需要在在小于35秒访问的这种共享system property热前缀，这块去使用。 容量节点限制的，容量限制的话我们是在单节点0.2到0.4TB。 明白。 这个占我们SSD总量的2.5%以下。 这就是我们在选型上面来看。 了解。 嗯，对。 相对来说我们因为是26年的话，嗯企业级SSD价格上涨了差不多两倍嘛。 嗯。 这就是QLC的这个成本价格优势、成本优势更突出。 但前提是这个应用场景要匹配，呃对于KVCache冷层的TLC还是不可替代的。 明白。 嗯，但这个prefix cache呢，它的读取、读取模式以随机4K为主。 呃，这个嗯QLC在在在这种模式下的这个延时呢，就会比TLC高60%到90%。 累积效效应就会显著的拖累TTFT。 那PC，PCI PCIE5.0接口的普及也是另外一个关键的变量。 今年上半年新部署的IG的推理节点中大概有70%的已经升级到这个PCIE 5.0的接口。 那MVME SSD的这个顺序读带宽呢，是从PCIE4.0的那个时候是5GB，现在到10GB每秒嘛。 嗯。 这就这个是我们提升TLC SSD在顺序读场景呢，呃，比如说这种批量加载的checkpoint的，这个这种场景中的这个效率能够大幅提升，这也就是能够更稳固的它的那个一个主力地位。 这是这样一个情况。 了解，了解，您说的很清楚，其实听起来就是说，是这样，就是绝大部分其实是NVMe的TLC SSD来来做的，因为它那个延时也足够，然后容量也不错，是个是个是个是个这个最优的一个折中选择。 然后呢还有一部分就是大规模的这个数据的存，就是便宜存储可能就用用一部分QLC。 然后SLC就因为太贵了，所以说这可能除了一些特别敏感的一些场景，其他都都不用它。 对吧？ 对，是的。 明白，诶，然后想向您请教就是，呃， 呃，我想一下，就是比如说，我不知道您您肯定关注了NV的这个最新的那个Ruben的那个rack，然后它其实是已经不用PCIE了，它它单独接了一个那个就Bluefield那个SOC，然后直接在那个GPU下面挂了一层这个独立的这个SSD的这个这个柜子。 然后我不知道说这个咱们是怎么，咱们会以后也会走这个路线吗？ 还是说 嗯，我们走这个路线是吧？ 对，就就因为因为我觉得就是就是我我理解就是PCIE它本身就是，呃，你看就是SSD要到喂到这个GPU，它需要再走PCIE的主主板，然后PCIE 就很慢,然後他還要過那個CPU,他又割了一層,就是我理解NV這個做法其實本質上也是讓這個SSD能夠更快的去load到那個GPU裡面去,HBM裡面去。 對,我不知道說我們也未來我們,就是至少我們會在這個方向上會有一些探索嗎,還是說我們可能現在 呃,不太會動這個整個架構,就接著還是走PCIe,然後上面是DDR,再上面是HBM這個這個這個架構啊? 嗯,Rubin它的一個核心的優化邏輯呢,它是那個像這個單卡HBM4的容量,NVLink帶寬暴漲,它搭配Dnamo加上SMS的統一KV調度,它能夠降低單機的SSD依賴,但是它沒有完全拋棄SSD戒指, 像那個知識庫啊,point啊,還有這些大容量的冷數據,它依然是用的SSD做的持久化存儲。 我們不會完全照搬Rubin的這個這種方案,我們會採用這種混合並行的路線。 因為這裡面有幾個,有幾個原因,一個就是我們業務負載分層需求是沒有辦法統一,統一用集群來SMS替代本地SSD的。 因為我們服務的三類客戶,這個那個雲服務客戶,CSP客戶們,它的負載差異是比較大的,那頭部它需要這個低延遲的CSP,TT的話是要在50毫秒以下的。 嗯,這可以適配Rubin路線,最大能夠最大化的,最大化HBM和DDR還有CXL。 SMS集群的SSD,它只做非常低品質的這種次淺對緩存,能夠大幅削減本地的SSD。 那像一些中長尾生命型的這種CSP呢,TTFT的話容忍是在100到200毫秒, 嗯,必須這個就必須保留節點本地的TLCSSD,本地SSD讀取的話,不需要跨機換機,DPU轉發, 然後延遲也更穩定,硬件採購成本也是遠低於整套的BlueField-4的SMS這套的TCO更優。 那還有就是政企專屬雲這一塊,因為它是需要做到合規啊,離線和大量歸檔, 它是要強制單機本地大容量SSD的, 像這種審計日誌啊,快照啊,知識庫啊,都需要單機物理隔離存儲, 集群共享的SMS的這種多租戶隔離難度比較高,合規審計不友好。 像那個Rubin現在是那個面向北美公有雲統一負載,沒有政企離線的隔離場景。 就明白了。 我們的客戶。 明白。 這是最核心的原因。 OK。 另外一個,嗯,CXL內存是我們的一個核心戰略,這個跟Robin的SMS的路線優先級它是不一樣的。 我們今年是在明年會大規模試點CXL內存池, 將定位這個KV溫層主用下層戒指, 這個因ROI它的那個收入收益會遠高於SSD。 是側重DPU加分不是SSD,解決這個KV的issue。 那我們這個是優先本地DR加CXL內存池去承接絕大多數的溫KV, SSD只是兜底極冷數據, 在路線上面我們趨勢可能也是跟他們相反的。 了解,了解。誒,我我其實觀察到其實Google他們其實也是跟咱們類似,就是用CXL的這個DDR來去做這個我們說溫數據的這個主要的這個戒指, 就我想了解一下就是說這兩個路線的取捨是什麼? 嗯,谷歌和我們的路線嗎? 對不,抱歉,就是比如說CXLDDR對比說NV的這種異架構的這個私有架構的這個這個這個SSD,就這兩個的取捨是什麼? 就為什麼說比如說我們會選擇說CXLDDR,然後NV對吧,它會選擇這個用這個Blue... 掉的，然后去连这个外挂的这个SSD，直接挂给这个GPU。 嗯。 想学一下这个各各自的优势是吧？ 对。 嗯。 相对来说的话，我们，就是... 嗯，整个来说，我们现在，我们对他们其实也是有一些，有一些吸收的，它的长处呢， 呃，Robin这个，这个它的一些，一些那个优势呢，就是，嗯... 嗯，是，能，能是我们，对我们自己的东西可能更... 对，你你你，你没事，就是如果说我的问题可能您就觉得，呃，您觉得可能不是特别了解，你可以不回答，你就把您自己了解的给说好就行，就我们不用，不用太纠结这个东西，对对对。 好的。 我们是CXL的核心优势呢，一个是延时能够，能够只小能够碾压这个闪存方案。 明白。 幅度非常小，那CXL的它访问延时，它在150纳秒级别，这个比这个本地DDR的话，高出高出50%，但是那个SCMS SSD它的闪存是百微秒级别的，差这个差就差了100倍左右。 呃，那那个这块呢就是像是多，那个H的多能高频复用的OneKV，它不需要牺牲用户的体验来去换取容量。 那这是第一个，第二个呢就是KV缓，我们，我们的技术上面KV缓存的ROI非常高，硬件回报周期比较短。 那实测下来CXL的这个磁化投入是8.5万亿一个机架嘛，GPU能够从40%提升到75%，整机吞吐量能够翻倍。 回收周期的话，嗯，差不多是，嗯，5.8个月，三年的ROI能够达到500%，这个是远高于SSD升级的。 SSD升级的话，它只能，它是差不多要到10.6个月才能回，完成那个回收期，ROI算下来的话是140%。 呃，所以相对来说成本这块就成本回报率这块就很有优势。 那另外就是我们V4它是原生的KV压缩架构，我们是SA和HCA把是把这个依照上下文KV压缩了93%嘛。 呃，这个就是温KV的这个体量能够大幅缩小。 因为绝大多数用，绝大多数那种高频复用KV完全可以放在CXL内存，不需要下沉SSD。 呃，只有极低复用画片历史PV才才会丢到SSD。 这个极大降低这个闪存IO的压力，减少延时的惩罚。 那Nvidia他们没有原生的模型压缩，它只能依靠大容量的SM闪存，承接海量的压缩KV，硬件投入非常高。 第四个呢就是硬件生态这块，呃，我们是支持国产的供应链替代的嘛。 CXL是行业通用的标准，它不绑Nvidia专用的GPU和DPU。 嗯，DDR内存呢，可以，我们可以选这个长新国产模组，而且我们预计明年的这个国产替代率会达到20%，这个是我们完成的。 那对，对这个海外的这些存储一直在涨价，供应链也有风险。 所以相对来说，我们未来就是国产替代的话，整机硬件选型更灵活，不用去强制采购把thefield的4的这个DPU，呃，Robin的全套专用新品芯片。 嗯，这块的话就是采购这块我们能更更更，更优优化自己的供应链。 那第五个呢是分层调度逻辑更简单，因为成本低。 我们沿用现在的这个，呃，呃，HPM到本地DDR，到那个CXL三层的内存调度的话，呃，复用自言命中，命中率的预知策略。 呃，这个DDR，DDR是超过70%下沉了。 这个我们不需要DP的卸载，那个RDMA跨节点的闪存转发和复杂的NVMe的OF的这个协议栈。 特别是我们适配我们这些几类客户，针对... 我们这种头部的客户,还有中常委的客户,还有这种真起客户都是可以兼容的。 那同时呢,我们的这个CXL的DDR呢,它它也有解决一些那个当前的最核心的瓶颈,就DDR带宽的不足。 像我们ICT的最大的短板就是本地DDR带宽只有HPM的58分之一。 那CXL新增的独立内存带宽通道呢,分流能够分流大量KV的读写,还有能够缓解这种带宽的饱和。 啊那个SCMS只能解决容量,去是无法补足这个内存带宽的缺口的。 明白,明白。 第七个原因呢,我觉得就是我们内存资源在做这个全局的一个磁化,利用率能够大幅提升。 因为单机本地的DDR资源它是个古董。 哦,我明白,明白,就是就所有的rack谁不谁,因为是共享的嘛,所以谁不够就补谁嘛,对吧? 明白。 是的。 了解。 了解,了解。 OK,好,哎,然后下一个问题就是想请教就是, 比如,比如说,就就,其实这个问题就是比如说啊,呃我们说一个呃一个cluster, 呃是 配这个,给那个chatbot场景的, 还有个cluster是配给这个,就是agent的场景的。 那这个里面的SSD的这个 呃这个这个这个这个配比肯定是不一样的嘛,就是我想理解一下就是说, 这个SSD的这个边际上多配的这个,应该是肯定是要多配的嘛,那个这个配比配多配的是, 因为您提到就是说从V3到V4,其实KV cache放在SSD里面是相对会更少了,然后然后就是我想理解就是说, 啊那这个现在就比如说我们V4的 agent 100%的这个这个这个这个SD,是不是主要的就是 RAG, 加上那个,您说的那个叫什么checkpoint的读写,这些是最主要的这个这个这个存储的这个占比,对吧? 对对。 明白,哎,然后,呃 我想我理解就是这个RA,这个RAG就是说的就是, 是比如说一个企业的这个, 它是,这个RAG指的就是一个企业的,给一个企业部署agent的时候,为了让这个agent它具有更多的上下文的context,所以给它专门配了这个知识库,让它更理解这个企业需求, 是是这个意思吗? 是的。 OK,所以说。 哎,您说,您说。 呃RAG的话它这个是因为针对于不同的这些垂直场景,它有单独的这个知识库。 明白,明白,明白,呃所以所以说我的业就是,呃对比chatbot,那么agent的这个任务更复杂,它需要学的知识和懂的理解的知识就越多,所以对应呢要给它配更多的RG的这个知识库,我这样理解是对的吗? 对对对。 明白,明白,然然后checkpoint指的就是, 我理解就是为了企业或者这政府的这个合规性,所以说你你的agent在run的时候,你的这个 每一步骤或者部分的关建步骤的节点是需要把这个呃checkpoint给写下来的,永久的存在这个SD里面,作为可能说后序的这个审核啊,作为这个合规的一个保存啊,然后你要对应去配SSD,是这个意思对吧? 对对。 明白,明白,所以所以这两个是我们说看到的agent对于这个SSSD需求现在现在最大的这个拉动,然后我们觉得说KV cache的未来的解决方案呢,是CL的DRAM是 我们现在觉得最好的方案。 对吧? 明白,明白,了解,了解,OK,好,了解,那那SD其实我我我理解我这个这边聊得差不多了,对,那下一步就想想请这个 CPU,呃,DDR了。 DDR这边的话就是我想请教就是我们agent的这个场景下,我们DDR, 因为它有两,我里有有两个大的需求啊,一个就是 KV cash,一个就是CPU那边的工具调用,然后剩下的可能还有一些就是比如说像什么,呃用做主的这个调度啊,什么通信数据调度啊,什么什么就是,呃这个这个缓存的这个保冗余啊这个,就我想了解 这几个用途大概是在我们现在这个V4的这个for agent的这个cluster里面大概是什么样的一个占比? 嗯,在我们V4里面是吧? 家的那个占比。 DDR的话,那个, 嗯,现在来看的话就是, 嗯,V4的话,我们KV cache冷存占比是12.5%。 每个节点的容量的话是差不多是在7.5TB嘛。 然后,呃,RAG知识库,在家向量的话是占比是在百分之,四,呃,这个是SSD的,SSD。 DDR的话是,DDR是这样的,DDR是,KV Cache的话是占到,暖存是占到32.5%。 呃,每个节点的容量是640GB,然后那个CPU working memory呢是占到22.5%,这个每个节点的容量是450GB。 RAG向量索引是占到27.5%,这个每个节点容量是560GB。 呃,framework worker将那个,呃,呃,嗯,NUMA的预留呢是占到17.5%,这个每个节点容量是350GB。 呃,因为就是那个,呃,在那个纯,像chatbot,box这些那个场景里面,chatbot这个场景里面DDR的主要角色是为这个CPU提供公共内存和为推理框架提供运行空间嘛。 喂?喂?怎么了? 有什么? K Cache几乎全部驻留在SSD上面。 但,但我现在在开会, 在这个场景下,KV Cache的内存占比是很低的,但是在那个,呃,agent Direct当中呢,KV Cache它的暖存是,嗯,是DDR最大的一个单一用途。 嗯,这个,这个变化直接,直接原因就是Agent会话这个KV停留时间从秒级延长到分钟级,单次Agent的任务流可能涉及到多轮模型的调用啊,工具执行啊,上下文拼接啊。 KV张量在这个完成一轮注意力计算后不能够立即释放,而需要在整个DDR中保持温热状态,等到下一轮调用的到来。 这种工作模式它就转变了,就使得这个DDR从被动的CPU附属内存升级到HBM和SSD之间的一个主动缓存层。 明白。 像RAG索引,它是,呃,这个,呃,在Agent的系统里面几乎每,每个任务它都会触发RAG的这个检索嘛,向量数据库的索引必须是常驻DDR才能够保持这个毫秒级的检索响应的。 如果将这个向量索引放在SSD上的话,即使采用最先进的PCIe5.0的设备,嗯,这个检索延迟也会从这个毫秒级劣化到十毫,呃,十,几十几,几十毫秒级,这种就是直接拖垮了Agent的端到端的响应时间。 嗯,CPU working memory,基本上是它是用于这个Agent的编排器运行,工具调用和测试,上项代码执行这些计算密度型任务。 framework worker那个它是为那个vLLM和SGLang的这个,呃,这些推理引擎的内部开销来预留的。 呃,所以它是需要就是,呃,对齐缓存,所以为这些提供一个必要的空间的。 这四个,四种用途在物理上都是共,共用一组的DDR通道,带宽竞争不可避免。 呃,DDR5的理论带宽是在460GB每秒嘛,这四个用途的这个峰值带宽需求叠加之后,会远超这个上限。 那KV cache暖存在换入换出的时候需要高吞吐的顺序,顺序带宽。 RAG向量索引呢,它需要这种低延时,随机访问带宽。 CPU working memory,它需要这种持续稳定的低延时带宽,framework worker预留,预留就需要这个大块连续的内存映射。 四种这种截然不同的访问方式呢,是在同一个物理介质上面交,相互交织的,这个就形成了这个DDR侧的一个结构性的带宽增强的问题。 明白,明白,明白。 了解,了解,理解。 啊,好的。 哎,那像我们有专门给我们的V4的这个Agent的这个这个这个集群去配这个这个单独的CPU的这个服务服务器的机柜吗? 因为我理解说现在这个这个这个这个这个这个的需求应该也很强吧,因为就大量的这个工具调用的这个这个这个东西啊。 机柜是吧? 对。 V4模型是吧? 对,或者说就我理解就是,我可能也不一定V4嘛,V3应该也是,就是反正我觉得我理解就是Agent,就你您如果要是服务Agent的话,它有那么多工具调用,应该就要单独的给它配 CPU服务器,挂在那个GPU服务器旁边,我不知道。 对。 是的。 因为现在其实我们标准的一些生产集群的话,它就是CPU和GPU同机一体化的。 您您说配在一个服务器里是吧? 对对对,它有一些场景,它是需要配独立的CPU机柜的。 OK。 就像这种离线预处理啊,还有数据清洗,有有这个专用的CPU机柜,它是离线任务,不需要再,不参与在线的那个推理。 那另外一个就是这种集群管控和调度中心的这种轻量CPU机柜,它是在做这个运维管理这块。 明白,明白,明白,明白,了解,了解。 哎,那那如果从量化的角度上来说啊,就是我们说现在这个最新的这个,呃,我们说V4,我们是最新的这个集群,我们这个HBM比上DDR比上SSD的这个容量配比大概能做到1比几比几啊? 嗯,现在的配比是吧? 对。 现在的配比,我想想,我们在配比上的话是,呃,我看看,我们现在的配比, 现在配比的话,我们是1比,嗯,简单来说,如果说, 1比几,1比1比1.1比21比60。 HPM 1比2比,1比2比60是吧? 对对。 这个2指的是不是那个有那个,就不包括CXL是吧? 对。 明白。 哎,那如因为因为现在其实HBM现在我感觉大家就是,就NV的最新的那个是大概是1比3、1比4嘛,对吧,然后我不知道说有有些人说特别乐观能看到说未来能配到1比6、1比7、1比8,就我我不知道说我们这边,我们觉得说, 说,我不知道说算上CXL或者说下一代的技术,我们觉得大概能够配到多少啊? 就因为我觉得大家在配DDR上可能会配得比较激进。 我们的配比会是,呃,未来的话,我们预计28年这个Agent的成熟阶段的话,我们会是1比4.3比80。 1比4.3比80。 OK,明白,明白。 对。 然后然后这个80,您您说,您说。 因为从从这个配比的眼睛速度来看的话,DDR的增速是最快的成绩,因为H呃,就是我们现在是未来是1比4,4.3嘛,现在是1比2嘛。 明白。 这个DDR相对HBM的容量就增长了将近一倍多。 明白。 这个原因是在那个Agent的场景下,这个KV缓存的缓存它需求会爆发。 DDR的KV增速呢,是基本上5到8倍,这个远高于HBM的这个3到5倍。 同时呢,RAG向量索引占DDR用途的25%, CPU walking memory的话占25%,这个也会随着Agent的复杂度的提升而扩张。 那SSD的总容量的话,我们预计就是差不多,呃,增长的可能是1.1.几倍,1.1.1.几倍。 那真的就绝对值会大一些,因为首先它的那个基础值就大嘛。 明白。 这个主要是RAG的语料规模在膨胀。 嗯,这个因为SSDIG的用途基本上就它它这块用途可能占到47.5%。 checkpoint, checkpoint的这个呃 几率会提高可能占到23.5，呃，去的话，它的还有这个日志流程需求增长可能占到17.5。 那HBM的容量增长相对于温和一点，嗯，这个也是就是因为HBM一个受限于它的单卡物理封装和成本的约束，成本增长也很快。 那这这个增长的斜率就低于DRSD。 因为HBM的核心价值就是在于这个支撑单卡KV热程缓存和模型权在加载的，权重加载的。 不会这种大规模容量去扩展。 了解，了解，了解，您说的很清楚。 然后SSD的话，我理解这个需求应该，抱歉这个，我先回到这个DDR，就是您说那个1比4.3这里没有 这个这个里面是包括了CXL对吧？ 嗯。 1比4.3，DDR这块是吧？ 对。 嗯。 是的，1比4.3是的。 OK。 OK，然后，然后那个1比80里面，就是SSD那个80的话，是不是也是依然是TLC，就NVME的TLC为主，QLC还是一个小基数。 呃，我们从我们技术来说的话，是TLC是主力。 了解。 了解，了解。 OK，明白，明白。 好的，呃， 好呀，然后，那那那所以听起来就是说从这个过去的，就是从至少我我觉得从今年年初吧，因为今年年初其实 Agent的真正的开始有这个，有意义上的这个进步，有意义上的形成这个在需求侧有真正的用用力。 然后，我理解说，到现在为止，我们判断说增长最迅速的就是DRAM。 这个是 for KV Cash最最最最最这个强的需求，其次是这个HBM和SSD，对吧？ 这个就是DRAM其实在配比里面变化最大的。 对对。 明白，明白，了解。 了解。 好，然后，哎，然后想请教就是您怎么看现在这个，呃我我不知道您负责负不负责采购或者会不会考虑这个方向，就是存储的涨价其实是涨得非常多的，就是呃也翻了好几倍了，但但然后我想请教就是您是或者说咱们团队是怎么看，就是怎么看现在这个涨价的这个幅度啊，就或者或者说 怎么就就我们的支付意愿现在是什么样的情况，就比如说，是觉得太贵了，我们尽可能的想省，然后以及也有机会能省，我们就拼命要去省它，还是说，这东西确实很贵，但是说可能就是说，反正这个我们也很赚钱，这个利润率也很高，然后存储呢本身对比计算它又便宜，所以我们还是觉得说，也，就是想省，但是还是愿意去买它，很积极的去进货，就我不知道说我们现在对于这个涨价是个什么态度，以及对于在采购上面会有什么样的个动作。 确实现在涨价涨得很快，就是今年上半年的话，这个存储市场就是这40年以来最剧烈的一个涨价周期。 呃，常规的DRAM的话，Q1是增长了差不多90%到95%，Q2增长了58%到30%，整个上半年累积下来基本上增长了两倍。 嗯，同比的话也是增长增长了190%左右。 服务器的DDR5呢是Q1增长了60%，Q2增长了60%，呃，累积下来也是增长了150%多。 嗯，相对于同比的话是增长了200多，230左右。 拉的flash是Q1增长了55%到60%，Q2是增长了70%到75%。 嗯，这上半年整个增长了100，160，160到170。 呃，同比的话是增长了270%左右，企业级SSD是增长了，Q1增长了40%，Q2增长了50%。 上半年累计也增长了110%。 相对于去年也是增长了200%。 整个整个涨价因素就是我们现在这个AI算力投资爆发导致这个需求端指数级的增长，纯出的产能从24年。 嗯，的提价行情，现在恢复的话，他估计全部要。 不是我理解恢复还是有很长的时间嘛。 但但我就想理解就是我们在采购上我们自己怎么想啊， 就是 就觉得说这玩意贵，但是也绕不开，那就就就这个价格也无所谓，就坚决买，还是说这个价格已经影响到说我们要做决策，我们要多省一省。 就我不理解我们现在在什么样的个位置。 对我们来说，我们其实就是看这个支付的一个那个就是ROI，核心ROI。 当然最我们还是愿意去买的，因为它嗯，这个就是我们最终 量化的指标是这个GPU的利用率。 嗯。 就是这个对类存储产品对GPU有效算力，有效算力的一个产出的一个贡献度。 存储的本质它不是成本中心，而是这个算力杠杆。 明白。 一美元存储投入能够撬动撬动多少GPU的算力产出，这个就是决定了我们这个嗯，对这个品类涨价的一个承受上限。 理解。 那我们，我们从整个意愿来去评判的话，HBM,HBM是刚性必须的，所以它是 就无论如何都得买，对吧？ 就是这个东西，这个东西决定了GPU能不能跑嘛，对吧？ 你不买的话，GPU就是废物。 对。 DDR的话就是那个强烈要买的。 这个这个可能比HBM要弱一点，但是也是级别比较高的。 明白。 然后因为它那个就是板子跟跟GPU的GPU的利用率有30%到50%的一个间接提升嘛。 理解。 嗯，在在可替代性上面那个CXL是可 部分替代。 支付弹，支付弹性我们觉得是差不多能够是，就是没有多少弹性空间，5%到15%的一个弹性空间。 那CXL呢 欸你你你说的支付弹性什么意思？ 就你的意思是说还还美法再涨了是这个意思吗？ 还是说 呃，支付弹性是指呃，就是 就是我们在在在这个在这上面花钱，你你你的那个就是呃，可容忍的时间或者可容忍的这个调度的情况。 哦，我明白，也就所以说其实这个东西是越小，说明越刚需嘛，对吧？ 对对对对。 明白明白，理解理解理解，您继续。 然后那个就是呃，那个CXL内存呢是我们在战略性的投入，所以它相对来说跟DDR的这个需求，呃，付费意愿居然是一样的，因为它对这个GPU的那个利用率呢，它有25%到45%的一个直接提升，呃，它在这个是DDR的一个互补嘛。 呃，支付台，我们觉得这它这块的一个支付弹性呢可能在15%到25%。 呃，TLC SSD呢，这个是是就是条件上可接受，只能条件上接受它涨价。 呃，相对来说这个支付意愿肯定比这个DDR5啊和CXL要低一些的。 然后它对于GPU的利用率的这个呃，关联度上面呢可能有5%到15%的一个间接辅助，而且它是QLC可替代的。 嗯，就是支付弹性上面我们觉得可容忍的话能够在25%到40%，那QLC SSD呢它是这个成本优先的一个一个那个需求。 所以我们就是在这这块的支付意愿是最低的。 嗯，QLC。 那它因为它跟GPU的那GPU利用率的关联度是在5%左右。 呃，低于5%，相对是HDD，HDD是可替代的。 呃，那相对来说我们支付弹性在40%以上，就基本上是这样的一种情况，因为呃，整体来说呢那个嗯，TLC SSD和QLC SSD它是最支付意愿的最低端。 SSD对GPU，GPU利用率的这个间接辅助也是有限的，而且介质替代路线也很清晰，TLC可以被QLC替代，那QLC又可以被HDD替代， 所以我们对涨涨价就是它涨得过高的话，我们就会用其他的存储来去替代。 理解。 这个就是。 有科技的空间。 明白。 明白。 明白，理解您，您说得很清楚。 OK。 欸，所以所以就是，我们idea里说啊，就是 您觉得存儲还能涨，还能涨不少嘛，就是对于比我们的ROI来看。 还是说您觉得到现在也差不多了？ 就是你不太能够接受说继续再涨价了。 嗯，因为其实现在，基于现在这个整个扩张的一个，一个进度，还有这个下游这个需求的一个增速的话， 嗯，我估计明年还会涨。 明白。 但是可能就没有今年上半年这么 浮动那么大了，对吧？ 对对，我们觉得，也是个，一个是HBM，HBM的话，我估计在明年，到明年上半年还会有，还会有上涨一个15%到20%。 这个主要是那个三星它HBM通过这个，英伟达认证进度不确定性有有很高。 他三星的HBM4在明年的话Q2完成这个认证量产的话， 那SK海力士和三星的这个双供应商格局会使就，会会使明天下半年的价格就比较平稳，甚至可能小幅回落5%。 如果认证延迟到Q3以后，HBM的价格可能价格很继续持平。 那就是明天下半年的价格还可能继续持平，全年还会出现这个前高后低的一个走势。 嗯，那DDR，DDR5的话在明年还会处于一个高位震荡区间。 上半年，因为这个今年一个涨价涨价的一个惯性延续嘛， 这个价价格高位持平在30%上下浮动。 下半年的话，有一些新产能的释放和需求增速边际的一个放缓， 可能会使小幅的一个上涨5%到10%，那DDR5价格 而且另外一个就是DDR5的这个价格下行空间它是有限的，因为AI服务器需求，呃，基本上在按年度来看就是60%多的增长，这个依然是高于这个供给速度的，因为供给现在只能在生产的话只是差不多18%的一个年增长速度。 缺口很大。 明白。 估计到明年年底这个DDR的这个都 明白。 那CXL呢，CXL可能就是明年确定了，就是确定准备，主要是这个CXL2.0、3.0控制器芯片的那个量产规模扩大。 呃，像Microchip啊，Astera啊，Renesas这些厂商他产能爬坡嘛。 以及还有一些那个内存模组也加入了CXL生态。 CXL模块可能嗯，可能会在明年会呈现一个快速下降的趋势。 上半年估计就会就会下降15%到25%，下半年还会再降价20%到30%，全年累计的话估计会降30%40%。 TLC SSD和QLC SSD，明年估计也会进入到这个回落通道，但是具体的话，呃，预期上半年还会保持，保持一个持平的状态。 下半年就是因为NAND Flash的那个产产能，产能集中释放，像三星在平泽，平泽，那个美光新加坡还有长江存储武汉二厂这些产能集中释放的话，价格可能会会下降5%到10%。 TLC可能下降5%到10%，QLC的话估计会下降10%到15%。 因为QLC那个技术成熟提升和产能扩张更快一些， 这个下降幅度可能会大于这个TLC。 嗯，再加上这个，那个供需的缺口它也会收窄嘛。 相对来说那个TLC SSD明年的这个缺口可能就是今年的缺口的话，可能会会会降缩的缩小到20%多。 这个就相对温和一点。 HBM的那个供需缺口今年比较严峻，可能在50%，即使按2027年整个新产能出 我们示范的话，缺口也至少要等到要到27年的Q3才能得到缓解。 那DDR5的这个缺口，今年是在44%， 具体年底，这个同样也是很偏高的， 预计要到明年Q4才会有做才会有一定的缓解。 这个这个是供需上的一个情况。 明白。 继续。 明白。 对，就会影响到它的价格。 了解，了解，您说的已经非常清晰了。 对，OK，好，还有个问题我想请您，就是 啊，我不知道我们是不是有，就因为我我理解说硬件的这个架构这些东西，你刚刚我们聊了很多，然后在软件栈上的这个东西，我不知道我们是不是也采用了一些海外的方案， 就比如说像什么 Vast Data这些公司来去帮助我们去做这个这个这个这个把这个就是在整个架构上怎么样去合理的去调配SSD和DRAM的这些资源， 然后去把这个KV cache这些东西做分层存储，offload下去。 就您这方面您了不了解？ 嗯。 嗯。 啊，您说调用，就是内存上的使用海外这些方案来去，其实我们整体来说就是 呃，我们用的用的这个技术呢，就是分那个分层技术，基本上也是在使用海外的一些方案。 明白。 就是对。 所以所以所以其实我理解就是我理解这个东西的就是，其实我们就是采购了一个现成的方案，然后可能加入我们自己做一些调试，把它给就是给就是给它给跑通在我们的这个整个的集群里面，是这个意思，是吧？ 对对对，因为我们，就是我们是，我们是其实也是一些混合软件栈。 OK。 我们是在这个就是，首先我们有四层冷分层去这种自动现在引擎嘛。 这个我们是自研的核心调度，复用的是那个Dynamo的一个基础能力。 我们做了那个分层驻留规则，啊，像L1HBM热层的话是承载高回的KV和MOE激活专家权重嘛。 嗯。 L，这个驱逐策略的话是HBM占用达到90%， KV超过256到1024 token未访问，标记为温数据下放到DDR。 这个也会就是觉，不会主动向SSD去直写KV热KV， 就规避百秒，百微秒级的这种延时惩罚嘛。 然后在L2 DDR温存的话，我们包括未来的这个CXL内存池，我们承载是短时复用多轮的KV还有IAG热点向量引擎索引。 呃，像DDR命中率超过70%才允许留存，低于预值的话直接丢弃，不下存。 明白。 明白。 那像这个冷存的话，我们是只有这种高价值的前缀KV， 就准入门槛，它是KV复用率，复用命中率超过90%， 然后它只仅共享这个System Prompt， 公用的IAG文档， 容量分区也会做一些进行切分，SSD固定12.5%留给KV冷存， 呃，剩余87.5%会分配给IAG库、Checkpoint的Agent日志啊， 杜绝这个KV的挤占存储。 嗯，我们最后这个是那个持久归档层， 这个是独立容量的SSD和HDD，这个像一些跨越历史日志啊、过期的模型快照啊， 这些完全脱离推推理链路，不占用在线的SSD的IO带宽都会存到这个一层。 那这个是就是我们，就是第一个分层那个就是按那个，呃，我们自动现在引擎嘛。 第二个就是那个按负载类型差异化分配SSD资源这块的。 像头部低延迟的这种CSP剧情啊，我们是策略是严控SSD KV写入量， 明白。 HBM+DDR+CXL， 中长尾成本成本型CSP呢，它容忍在100到200延迟的话，这个策略会启用SSD前缀缓存， 平衡成本和复用。 那个呃那个收益,正企合规技术呢,当然会大量扩容SSD总容量,提升checkpoint和trace的这个日志分区占比。 然后在戒指分层调度的话,这块也是用来控制这个SSD的成本嘛。 TLC的话,75%SSD的容量,分配这种KV冷缓存、高频更新、IG啊、频繁快照啊, 啊,PLSLC的缓存是承接热点前最读取, 嗯,降低随机读取的这个延迟抖动。 KLC这种,基本上就分配一些冷,低频的这种冷数据,过去的支持库,老旧模型版本,禁止存放KV的缓存。 SLC和PLC呢,它是单独划出这种高速分区,专门供全局的这种高频共享。 不占用通用的SSD容量。 那软件层面的话,我们有那个四个SSD资源优化优化的手段。 一个就是V4,我们原生的KV压缩前置。 嗯,这个CSA和HCA的一个吸收注意是把这个一兆的厂上下文KV压缩93.3嘛。 这个就是,嗯,第一个,第二个呢是perfect是缓存全局共享,这个减少重复落地的SSD。 第三个呢是Dual Pass的双IO流量隔离。 这个,这个就是,这个是那个缓解SSD带宽瓶颈的。 嗯,第四个是生命周期分级TTL管控,这个会减少无用的这个无效的SSD占用。 嗯,这是我们整体来说,因为海外软件站它现在是给我们做一些那个底层硬件驱动啊,通用推理啊,还有分布式的编排技术底座,像核心的这种三层存储分成,SSD资源分配啊,KV区组啊,IO调度全部,这在我们来说,在我们来说,我们基本上是可以理解为我们是全部自研的,拥有完整的一个调控权。 嗯,是。 明白,明白,您介绍的也非常清楚,非常清楚。 好的呀,呃,那今天的问题,</p>
+</div>
+</main>
+</body></html>
