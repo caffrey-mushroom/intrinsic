@@ -1,0 +1,187 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.25 | AC | LLM | Kimi Zhipu MiniMax DeepSeek Compute Tightness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.25 | AC | LLM | Kimi Zhipu MiniMax DeepSeek Compute Tightness</h1>
+<p class="orig">原标题：Kimi、智谱及Minimax、DeepSeek等算力紧缺度对比，国产AI芯片在推理领域应用表现，地方政府补贴影响</p>
+<p class="tags">#llm #cloud #china #asic</p>
+<p class="meta">AceCamp · 2026-10-25 07:10 · article 70568319</p>
+<div class="body">
+<h2>摘要</h2>
+<p>本文核心要点包括：1，	Kimi、智谱及Minimax、DeepSeek等算力紧缺度对比2，	国产AI芯片在推理领域应用表现3，	地方政府补贴影响</p>
+<h2>正文</h2>
+<p>以下为专家观点：</p>
+<p><b>1，从2026年年中至今，大模型企业如智谱AI、月之暗面、MiniMax和DeepSeek的算力需求，包括模型训练与推理方面，呈现出哪些显著变化？其中，哪些公司的算力需求增长更为迅速，其主要的算力满足方式是怎样的？</b></p>
+<p>根据观察，各家大模型公司的算力需求和获取策略存在差异。</p>
+<p>月之暗面（Kimi）的算力需求增长远超预期。Kimi的特殊之处在于其专注于大规模参数模型（如K3），导致其推理任务也需要B系列或更高级别的算力支持，这使其在主流模型公司中面临最显著的算力短缺问题。由于其模型无法使用许多国产芯片，Kimi主要通过三种策略解决算力瓶颈：首先，与阿里云、金山云等云厂商进行深度绑定，采用以租代买、签订长期合同（例如三到五年后资产归属Kimi）的方式获取算力；其次，通过海外渠道，如利用Neocloud或其他第三方租赁服务来满足需求；最后，探索与AWS等厂商的创新合作模式，即在对方的基础设施上部署模型并进行收益分成。</p>
+<p>MiniMax的算力需求总体在增长，但呈现出分层和更新换代的特点。其最新发布的M3.1模型参数量为400B，未达到TB级别，同时公司还拥有视频、文本等小参数量模型。因此，其使用的算力类型多样，涵盖了从GB系列、B系列、H系列到4090乃至国产芯片。当前，MiniMax正处于算力更新的节点，一方面在出售旧的H系列芯片，另一方面则迫切需要B系列或更高级别的芯片。然而，由于国内获取高端芯片的限制，其缺口巨大。在商务策略上，MiniMax倾向于寻求更低的成本，这导致其在上游供应链中的优先级低于其他厂商。为应对这一局面，MiniMax采取了多种策略：除了从云厂商租赁和自购自建外，公司还通过开源模型（如视频、音乐及M系列文本模型，但对商用有限制）与Token工厂及海外的Neocloud等进行合作，探讨由合作方进行模型部署或在特定垂直领域进行后续训练，并共享收益。此外，如果合作伙伴能够提供稳定、高效且低成本的算力资源，MiniMax会考虑通过返购或承诺保底销量的方式，将合作伙伴的资源整合到自身平台进行转售，以实现轻资产运营。</p>
+<p>智谱AI的算力获取方式与其他公司有所不同，其特点是能获得更多的政府补贴。例如，其GLM5.3 flash系列模型之所以能实现低成本，部分原因在于使用了获得补贴的国产芯片，这些芯片能够支持其小参数量模型的运行，从而显著降低成本。智谱AI获取补贴的模式较为独特，不同于其他公司“先投入、后返还”的方式，智谱AI在采购算力时补贴就已经打包完成，这为其带来了显著的成本优势。同时，智谱AI在国产芯片的适配方面也做得更为深入。</p>
+<p>DeepSeek则表现出对商业化关注度较低的特点。公司利用其原有的存量芯片，并且在算力构成上，国产芯片的比例高于其他几家公司。DeepSeek投入了大量时间与国产芯片厂商进行适配，并且近期还开源了其推理优化相关的技术。</p>
+<p><b>2，国内模型厂商在海外使用英伟达芯片的方式有哪些？</b></p>
+<p>海外市场的算力卡使用主要有几种模式：第一种是与大型云厂商合作，例如AWS，模型公司将产品部署在云平台上，由云厂商代为销售并进行分成。在这种模式下，K3和GLM系列相对表现较好，而Minimax则收入不多。DeepSeek由于其更彻底的开源协议，用户可以自行部署，因此平台难以获得分成。第二种是与一些新兴云服务商Neocloud合作，目前最受欢迎的也是GLM和Kimi。Kimi因其模型能力更强而受青睐，GLM则在纯代码场景下认可度更高。DeepSeek在此类合作中规模较小，主要原因是其官方定价过低，导致渠道商若要加价销售，需要向客户解释价格差异，沟通成本较高。Minimax的业务重心主要在视频模型，其文本模型能力相对较弱，需求量较少，主要客户是少数头部大公司，在腰部客户或个人开发者中需求不大。</p>
+<p><b>3，国内厂商在海外市场进行模型训练的情况如何？</b></p>
+<p>在海外进行模型训练受到严格管控，大型云厂商如AWS等不会在训练场景下向国内厂商出租GB系列等高端算力。因此，获取这类算力更多是通过水货或其他非官方渠道，这些行为通常不会被官方承认。目前来看，通过这种方式在海外进行训练的规模占比并不大。主要顾虑在于数据安全问题，厂商更倾向于通过水货渠道将算力卡运回国内使用，尽管这样成本会高出很多。此外，与运营商合作也是一种途径。</p>
+<p><b>4，除了与运营商合作，国内厂商是否会通过与算力租赁公司合作来间接使用GB系列等高端算力卡？</b></p>
+<p>B系列在一段时间前还相对容易获取，但近期管控变得非常严格。同时，价格也出现了大幅上涨，例如在海外售价几十万美金的卡，在2026年八九月份之前国内价格可能在1,500万人民币以下，但国庆节后就已涨至超过1,700万人民币。因此，当前节点在国内大规模获取B系列（如B300系列）已十分困难，GB系列则更为艰难。</p>
+<p><b>5，Kimi的K3模型推理是否必须使用英伟达的先进算力卡？国产算力卡能否支持？</b></p>
+<p>是的，K3这类达到2T以上参数量级的模型，目前国产算力卡无论在推理还是训练方面都无法支持。这也是近期模型迭代普遍采用Flash系列这类模型的原因之一。Flash系列虽然能力不是最强，但其参数量较小，成本更低。这背后有两个原因：一方面，海外对高端训练算力的限制使得获取相应资源变得困难；另一方面，评估下来只有这种规模的模型才能比较大规模地获得推理算力。无论是英伟达的系列产品还是国产卡，目前的适配能力也主要停留在Flash这种级别。</p>
+<p><b>6，国产算力卡在进行模型推理时，能够支持的最大参数量级是多少？主要应用在哪些场景？</b></p>
+<p>国产算力卡目前能够支持的推理模型参数量大约在几百B级别（非集群或超节点），这已经算是不错的水平。这个参数量级与M3以及DeepSeek V4.1 Flash系列模型最为匹配。因此，在一些有数据本地化强制要求的垂直领域，例如金融或某些重工业，客户反而更倾向于采用国产算力卡和适配这些参数量级的模型。</p>
+<p><b>7，如果未来各模型厂商都开始推出更大参数量的模型，是否会加剧市场对英伟达高端算力卡的需求？这种趋势如何影响算力采购和租赁策略？</b></p>
+<p>是的，大参数模型的趋势确实会加剧对高端算力卡的需求。这种预期已经体现在当前的算力采购和租赁策略中，具体表现为根据算力卡的代际签署不同年限的合约。例如，对于GB系列的卡，厂商愿意签署五年的长期合约；对于B系列，合约期限最多为三年；而对于H系列，则最多只签一年。这种策略差异导致H系列基本以租赁为主。如果是采购GB系列，买方可以承诺五年的使用合约，五年合约期满后资产归还，算力提供方也愿意为了这种长期需求去专门采购新卡。</p>
+<p><b>8，对于国产AI芯片，例如即将推出的950DT或960，以及寒武纪当前的690，它们的实际能力表现和市场采纳情况如何？</b></p>
+<p>根据测试，950系列芯片可以用于运行类似Flash系列的模型，但仅处于“可用”阶段，性价比并不高。其他国产芯片中，寒武纪的产品优先级相对靠后。目前市场在选择国产芯片时，优先级较高的主要是950系列和百度的昆仑芯。其次，海光的产品可以被一小部分应用场景所接纳。此外，部分模型公司，如阶跃星辰和MiniMax，会采用一些上海本地的芯片，包括杭州的平头哥；而智谱AI则会使用一些北京本地的芯片厂商产品。除上述提及的芯片外，其他国产芯片目前还难以投入实际使用。</p>
+<p><b>9，以Kimi这类公司为例，他们当前如何权衡算力资源？在训练和推理两方面，哪一侧的算力缺口更为突出？</b></p>
+<p>从算力缺口来看，训练侧的缺口远大于推理侧。训练对算力规模和单卡性能的要求都更高，获取难度和成本也相应更高。因此，无论在训练还是推理层面，Kimi都需要解决大参数量模型带来的挑战。</p>
+<p>对于Kimi和DeepSeek这类公司而言，现阶段的战略优先级是训练出能力更强的模型，对商业化的要求相对较低，因此训练算力的优先级更高。相比之下，像智谱AI和MiniMax这类已经上市的公司，会采取兼顾策略，一方面投入资源训练更大参数量的模型，另一方面也开发像Flash这样的小参数量模型以实现规模化商业应用。</p>
+<p>从行业趋势来看，在模型参数量达到1T到3T区间后，行业内的普遍共识是继续向5T左右的参数量级进行训练投入。整体而言，各家公司处于一种兼顾状态。例如，用于训练的算力集群在空闲时也可以执行推理任务。由于当前市场算力普遍稀缺，无论是训练卡还是推理卡，只要能获取到，企业都会尽量争取，但总体上训练算力的优先级更高。</p>
+<p><b>10，由于Kimi面临的IPO考核，是否会将其算力资源向推理侧倾斜以获取更多商业化成果？</b></p>
+<p>在当前阶段，Kimi即使将资源向商业化倾斜，其收入也很难与智谱AI等公司竞争。因此，其核心策略仍然是强调自身能够训练出性能顶尖的强大模型。从市场定位来看，Kimi更倾向于塑造自己“中国Anthropic”的形象。这意味着Kimi的策略并非通过推理服务覆盖大规模用户群体，而是专注于开发一个参数量巨大、能力极强的模型，通过高定价服务于最顶尖、付费意愿最强的客户。要成功讲述这个故事，前提是其模型能力必须处于行业第一梯队。</p>
+<p><b>11，关于针对国产AI芯片的补贴，其具体方式和力度是怎样的？</b></p>
+<p>补贴主要有几种形式。一种是直接针对国产芯片的采购和使用。另一种是针对Token（模型调用量）的补贴。针对Token的补贴又可细分为两种：一种是面向C端应用（如Token Plan），例如杭州的一些补贴项目；另一种是面向B端，针对API调用的补贴。</p>
+<p>目前较普遍的补贴模式是地方政府的招商引资。政府会要求企业在当地注册公司并纳税，然后在下一年度根据税收贡献返还一定比例的资金，通常设有补贴上限.</p>
+<p>另一种模式是政府引导国资（如城投公司）以建设运营AI计算中心等名义进行补贴。企业入驻园区后，其使用的Token可以获得一定补贴。这类补贴的规模通常小于前述的招商引资模式，但兑现的确定性相对更高。目前，国内一二线城市普遍都在推行此类补贴政策。</p>
+<p><b>12，DeepSeek近期开源了其V4.1 Flash推理框架，这对行业，特别是对推理算力需求会产生什么影响？</b></p>
+<p>DeepSeek开源推理框架是一项重要举措。在此之前，行业内普遍只开源模型本身，而推理优化框架因为直接影响商业化，各家厂商通常不会开放。开放推理框架会使更多用户从调用厂商的API转向自部署模型，或通过拥有算力的第三方（如通用算力工厂）部署并转售服务，从而对模型厂商的商业化造成冲击。</p>
+<p>这一举措的重要性在于，它将模型能力进一步转化为可以低成本交付的服务。对于模型厂商而言，这偏向利空；但对于云厂商，则更容易提供类似DeepSeek的高效服务。然而，这也意味着云厂商单纯转售模型所能获得的溢价会下降，行业竞争将更多地转向规模化部署的资源利用率、服务可靠性以及企业级交付能力的比拼，从而改变了云厂商原有的商业模式。</p>
+</div>
+</main>
+</body></html>
