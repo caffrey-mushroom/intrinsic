@@ -28,8 +28,9 @@ def main():
     title = re.search(r'<h1[^>]*>(.*?)</h1>', page, re.S).group(1)
     meta = re.search(r'<p class="meta">(.*?)</p>', page, re.S)
     start = page.find('<h2>今天的主线')
-    end = page.find('<h2>分层速览')
-    body = page[start:end if end > 0 else len(page)]
+    ends = [i for i in (page.find('<h2>分层速览'), page.find('<h2>数字速查'), page.find('</main>')) if i > 0]
+    body = page[start:min(ends)]
+    body = re.sub(r'<section class="sec" id="s\d">\s*$', '', body)
     body = body.replace('</span><span class="chip">', ' / ')
     body = re.sub(r'<(?!/?(a|h2|h3|li|ul|ol|p)\b)[^>]*>', '', body)
     body = re.sub(r'<(h2|h3|li|ul|p)\b[^>]*>', lambda m: f'<{m[1]} style="{STY[m[1]]}">', body)
