@@ -1,0 +1,828 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>2026.10.26 | Mapping | 软件质量与增长</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Noto+Serif+SC:wght@500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet"><style>:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; color-scheme:dark; }
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+body{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.layout{display:grid;grid-template-columns:200px minmax(0,912px);gap:56px;justify-content:center;max-width:1240px;margin:0 auto}
+.layout .page{margin:0;max-width:none;min-width:0;padding-left:0;padding-right:0}
+.side-in{position:sticky;top:calc(env(safe-area-inset-top,0px) + 32px);padding:var(--s6) 0 24px}
+.side-t{font-size:12px;letter-spacing:1.5px;color:var(--muted);margin:0 0 14px 12px}
+nav.toc ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--rule)}
+nav.toc a{display:block;color:var(--muted);font-size:13.5px;line-height:1.5;padding:6px 12px;margin-left:-1px;border-left:1px solid transparent}
+nav.toc a:hover{color:var(--text);text-decoration:none} nav.toc a.cur{color:var(--text);border-left-color:var(--slate-500)}
+@media (max-width:1100px){.layout{grid-template-columns:minmax(0,1fr)}.side{display:none}}
+.tags{font-family:var(--sans);font-size:13.5px;color:var(--slate-500);margin:6px 0 2px;letter-spacing:.01em;word-spacing:.35em}
+h1{font-size:34px}
+.svgwrap{overflow-x:auto}
+.svgwrap svg{min-width:560px}
+svg text{font-family:var(--sans)}
+svg .grid{stroke:var(--rule);stroke-width:1}
+svg .axis{stroke:var(--faint);stroke-width:1}
+svg .zero{stroke:var(--faint);stroke-width:1;stroke-dasharray:3 3}
+svg .diag{fill:none;stroke:var(--slate-300);stroke-width:1.5;stroke-dasharray:5 4}
+svg .fit{fill:none;stroke:var(--slate-500);stroke-width:1.5;stroke-dasharray:2 3}
+svg .fitlab{font-size:12px;font-weight:600;fill:var(--text)}
+svg .tick{font-size:12px;fill:var(--muted)}
+svg .axlab{font-size:12.5px;fill:var(--muted)}
+svg .zonelab{font-size:12px;fill:var(--faint);font-style:italic}
+svg .pt{fill:var(--slate-500)}
+svg .ptbg{fill:var(--slate-200)}
+svg .lab{font-size:12.5px;font-weight:600;fill:var(--text)}
+svg .labbg{font-size:11px;fill:var(--muted)}
+svg .rowlab{font-size:13px;font-weight:600;fill:var(--text)}
+svg .val{font-size:12px;fill:var(--muted)}
+svg .db{stroke:var(--slate-300);stroke-width:2}
+svg .d22{fill:var(--bg);stroke:var(--slate-400);stroke-width:1.5}
+svg .d25{fill:var(--slate-500)}
+svg .d27{fill:var(--slate-800)}
+.legend{display:flex;gap:20px;flex-wrap:wrap;font-size:var(--fs-note);color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+td.l{text-align:left!important;color:var(--muted)}
+.na{color:var(--faint)}
+.callout{margin:var(--s3) 0 0;padding:var(--s2) var(--s3);background:var(--soft);border-radius:var(--radius)}
+.callout p{margin:0 0 .6em}.callout p:last-child{margin:0}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --slate-200:#3E4857; --slate-800:#C8D0DA; } }
+:root[data-theme="dark"]{ --slate-200:#3E4857; --slate-800:#C8D0DA; }
+</style></head><body><div class="layout">
+<aside class="side" aria-label="目录"><div class="side-in"><div class="side-t">目录</div>
+<nav class="toc"><ul>
+<li><a href="#sum">结论</a></li>
+<li><a href="#data">数据口径</a></li>
+<li><a href="#growth">1  增长</a></li>
+<li><a href="#fcf">2  FCF 增长</a></li>
+<li><a href="#quality">3  质量</a></li>
+<li><a href="#val">4  估值</a></li>
+<li><a href="#next">5  待调整</a></li>
+<li><a href="#table">附表</a></li>
+</ul></nav></div></aside>
+<main class="page">
+<h1>2026.10.26 | Mapping | 软件质量与增长</h1>
+<p class="tags">#software #mapping #quality #growth #sbc #ddog #snow #now #team #dt #mndy #gtlb #crm #sap</p>
+<p class="meta">v0.1 · 内部 · 边做边调 · 9 家用券商模型，估值部分用 91 家一致预期（价格截至 2026.10.16）</p>
+
+<section id="sum">
+<p class="summary">按你的思路做了一版，有两处改动：质量那一轴把 ROE 换成了扣 SBC 后的 FCF margin，估值那一轴把"增长对估值倍数"拆成两把尺子。跑完以后最重要的发现是：<b>市场给软件股定价，看的是增长加上不扣 SBC 的 FCF margin，SBC 基本不被扣分。</b>把 SBC 扣掉以后，在两把尺子上都显得便宜的名字只有 CRM、INTU、ADBE、ADYEN 几家；DDOG、SNOW、GTLB 用市场的尺子量，比回归线贵 37% 到 115%。用我们的尺子量，GTLB 最贵；DDOG 和 SNOW 落在线上，因为这把尺子本身就接受高增长公司扣 SBC 后的现金流为负。</p>
+</section>
+
+<section id="data" class="sec">
+<h2>数据口径</h2>
+<div class="prose">
+<ul>
+<li><b>9 家的历史和预测</b>来自你 Software Mapping 文件夹里的券商模型：8 家是大摩模型，ServiceNow 是 UBS 模型。预测都是单家券商的数字，不是一致预期。</li>
+<li><b>统一成日历年。</b>财年 1 月结束的公司（SNOW、CRM、GTLB）和 3 月结束的 DT，FY+1 对应日历年（例如 SNOW FY26 = 2025 年）。TEAM 财年 6 月结束，用的是模型里自带的日历年列。</li>
+<li><b>利润表全部用 non-GAAP</b>（毛利率、OPM 都不扣 SBC）。SBC 单独作为一列。凡是写"扣 SBC"的指标，就是 FCF 减去当年 SBC。SAP 有一部分 SBC 用现金结算，这部分已经从 FCF 里扣掉了，所以只再扣股票结算的部分。</li>
+<li><b>估值部分用之前 91 家的一致预期数据</b>（MarketScreener 等，价格截至 2026.10.16），这样 9 家可以放进整个行业里比较，回归线也不至于只靠 9 个点。</li>
+</ul>
+</div>
+</section>
+
+<section id="growth" class="sec">
+<h2>1  增长：过去 3 年对未来 2 年</h2>
+<div class="prose">
+<p>你原来设计的是两张图，一张看过去 3 年 Rev CAGR 对 FCF CAGR，一张看未来 2 年。我把收入这一项合成了一张：横轴是过去 3 年，纵轴是未来 2 年，再画一条对角线。<b>点在对角线上方，说明增速在加快</b>，这和我们之前在 winners pattern 里总结的赢家共同点是同一个信号。</p>
+</div>
+<figure class="chart"><div class="title">收入增速：过去 3 年 vs 未来 2 年</div><div class="svgwrap"><svg viewBox="0 0 880 470" role="img">
+<line class="grid" x1="64" x2="856" y1="418.0" y2="418.0"/><text class="tick" x="56" y="422.0" text-anchor="end">0%</text>
+<line class="grid" x1="64" x2="856" y1="318.0" y2="318.0"/><text class="tick" x="56" y="322.0" text-anchor="end">10%</text>
+<line class="grid" x1="64" x2="856" y1="218.0" y2="218.0"/><text class="tick" x="56" y="222.0" text-anchor="end">20%</text>
+<line class="grid" x1="64" x2="856" y1="118.0" y2="118.0"/><text class="tick" x="56" y="122.0" text-anchor="end">30%</text>
+<line class="grid" x1="64" x2="856" y1="18.0" y2="18.0"/><text class="tick" x="56" y="22.0" text-anchor="end">40%</text>
+<text class="tick" x="64.0" y="438" text-anchor="middle">0%</text>
+<text class="tick" x="262.0" y="438" text-anchor="middle">10%</text>
+<text class="tick" x="460.0" y="438" text-anchor="middle">20%</text>
+<text class="tick" x="658.0" y="438" text-anchor="middle">30%</text>
+<text class="tick" x="856.0" y="438" text-anchor="middle">40%</text>
+<line class="axis" x1="64" x2="856" y1="418" y2="418"/>
+<polyline class="diag" points="64.0,418.0 83.8,408.0 103.6,398.0 123.4,388.0 143.2,378.0 163.0,368.0 182.8,358.0 202.6,348.0 222.4,338.0 242.2,328.0 262.0,318.0 281.8,308.0 301.6,298.0 321.4,288.0 341.2,278.0 361.0,268.0 380.8,258.0 400.6,248.0 420.4,238.0 440.2,228.0 460.0,218.0 479.8,208.0 499.6,198.0 519.4,188.0 539.2,178.0 559.0,168.0 578.8,158.0 598.6,148.0 618.4,138.0 638.2,128.0 658.0,118.0 677.8,108.0 697.6,98.0 717.4,88.0 737.2,78.0 757.0,68.0 776.8,58.0 796.6,48.0 816.4,38.0 836.2,28.0 856.0,18.0"/>
+<circle class="pt" cx="597.6" cy="141.3" r="5"><title>DDOG: 过去3年 26.9% → 未来2年 27.7%</title></circle>
+<text class="lab" x="605.6" y="145.3" text-anchor="start">DDOG</text>
+<circle class="pt" cx="685.3" cy="104.1" r="5"><title>SNOW: 过去3年 31.4% → 未来2年 31.4%</title></circle>
+<text class="lab" x="693.3" y="98.1" text-anchor="start">SNOW</text>
+<circle class="pt" cx="507.1" cy="220.1" r="5"><title>NOW: 过去3年 22.4% → 未来2年 19.8%</title></circle>
+<text class="lab" x="515.1" y="216.1" text-anchor="start">NOW</text>
+<circle class="pt" cx="497.5" cy="240.2" r="5"><title>TEAM: 过去3年 21.9% → 未来2年 17.8%</title></circle>
+<text class="lab" x="505.5" y="244.2" text-anchor="start">TEAM</text>
+<circle class="pt" cx="466.5" cy="233.8" r="5"><title>DT: 过去3年 20.3% → 未来2年 18.4%</title></circle>
+<text class="lab" x="458.5" y="237.8" text-anchor="end">DT</text>
+<circle class="pt" cx="725.2" cy="245.4" r="5"><title>MNDY: 过去3年 33.4% → 未来2年 17.3%</title></circle>
+<text class="lab" x="733.2" y="249.4" text-anchor="start">MNDY</text>
+<circle class="pt" cx="679.0" cy="248.2" r="5"><title>GTLB: 过去3年 31.1% → 未来2年 17.0%</title></circle>
+<text class="lab" x="671.0" y="252.2" text-anchor="end">GTLB</text>
+<circle class="pt" cx="258.4" cy="312.6" r="5"><title>CRM: 过去3年 9.8% → 未来2年 10.5%</title></circle>
+<text class="lab" x="266.4" y="316.6" text-anchor="start">CRM</text>
+<circle class="pt" cx="215.0" cy="302.0" r="5"><title>SAP: 过去3年 7.6% → 未来2年 11.6%</title></circle>
+<text class="lab" x="223.0" y="306.0" text-anchor="start">SAP</text>
+<text class="zonelab" x="103.6" y="48.0" text-anchor="start">对角线上方 = 加速</text>
+<text class="zonelab" x="816.4" y="388.0" text-anchor="end">对角线下方 = 减速</text>
+<text class="axlab" x="460.0" y="462" text-anchor="middle">过去 3 年收入 CAGR（2022→2025）</text>
+<text class="axlab" transform="translate(14,218.0) rotate(-90)" text-anchor="middle">未来 2 年收入 CAGR（2025→2027E）</text>
+</svg></div></figure>
+<figcaption class="note">Source: 券商模型（大摩，NOW 为 UBS），日历年换算。</figcaption>
+<div class="prose">
+<p>9 家里没有一家的增速明显在加快：</p>
+<ul>
+<li><b>DDOG 和 SNOW 落在对角线上</b>（DDOG 26.9% → 27.7%，SNOW 31.4% → 31.4%）。也就是说，大摩预测这两家能把过去 3 年的高增速再维持 2 年。SNOW 这里要注意，大摩给的 31% 比一致预期的约 30% 还高一些。</li>
+<li><b>MNDY 和 GTLB 减速最厉害</b>（MNDY 33% → 17%，GTLB 31% → 17%），都是减了 14 到 16 个百分点。</li>
+<li><b>SAP 是唯一一家明显在加速的</b>（7.6% → 11.6%），原因是本地部署的客户在迁到云上。<b>CRM 的小幅加速（9.8% → 10.5%）是并购带来的</b>：大摩模型里 FY27 有 14 亿美元来自收购 Informatica。<b>NOW 的 19.8%</b> 也包含了 Moveworks 和 Armis 两笔收购。这三家的增速应该看有机增长，下一版我会把并购部分拆出来。</li>
+</ul>
+</div>
+</section>
+
+<section id="fcf" class="sec">
+<h2>2  FCF 增长：不看 CAGR，看利润率怎么走</h2>
+<div class="prose">
+<p>先看原始的 FCF CAGR 能不能用。附表最后两列给出了答案：MNDY 2022 到 2025 年的 FCF CAGR 是 241%，因为 2022 年的 FCF 只有 800 万美元，基数太小；GTLB 2022 年的 FCF 是负的，CAGR 根本算不出来。如果先扣掉 SBC 再算 2025 到 2027 年，SNOW、TEAM、GTLB 三家的起点都是负数，同样算不出来。也就是说，FCF CAGR 在最需要看的那几家上都失效了。</p>
+<p>所以我换了一种画法：每家公司一行，画出扣 SBC 后 FCF margin 在 2022、2025、2027E 三个时点的位置。这张图同时回答两个问题：现在能赚多少现金，以及趋势是往上还是往下。</p>
+</div>
+<figure class="chart"><div class="title">扣 SBC 后 FCF margin：2022 → 2025 → 2027E</div><div class="svgwrap"><svg viewBox="0 0 880 436" role="img">
+<line class="grid" x1="120.0" x2="120.0" y1="10" y2="406"/><text class="tick" x="120.0" y="424" text−anchor="middle">−50%</text>
+<line class="grid" x1="199.3" x2="199.3" y1="10" y2="406"/><text class="tick" x="199.3" y="424" text−anchor="middle">−40%</text>
+<line class="grid" x1="278.7" x2="278.7" y1="10" y2="406"/><text class="tick" x="278.7" y="424" text−anchor="middle">−30%</text>
+<line class="grid" x1="358.0" x2="358.0" y1="10" y2="406"/><text class="tick" x="358.0" y="424" text−anchor="middle">−20%</text>
+<line class="grid" x1="437.4" x2="437.4" y1="10" y2="406"/><text class="tick" x="437.4" y="424" text−anchor="middle">−10%</text>
+<line class="zero" x1="516.7" x2="516.7" y1="10" y2="406"/><text class="tick" x="516.7" y="424" text−anchor="middle">0%</text>
+<line class="grid" x1="596.1" x2="596.1" y1="10" y2="406"/><text class="tick" x="596.1" y="424" text−anchor="middle">10%</text>
+<line class="grid" x1="675.4" x2="675.4" y1="10" y2="406"/><text class="tick" x="675.4" y="424" text−anchor="middle">20%</text>
+<line class="grid" x1="754.8" x2="754.8" y1="10" y2="406"/><text class="tick" x="754.8" y="424" text−anchor="middle">30%</text>
+<line class="grid" x1="834.1" x2="834.1" y1="10" y2="406"/><text class="tick" x="834.1" y="424" text−anchor="middle">40%</text>
+<text class="rowlab" x="106" y="35" text-anchor="end">CRM</text>
+<line class="db" x1="593.5" x2="724.9" y1="30" y2="30"/>
+<circle class="d22" cx="593.5" cy="30" r="5"><title>CRM 2022: 9.7%</title></circle>
+<circle class="d27" cx="692.1" cy="30" r="5"><title>CRM 2027E: 22.1%</title></circle>
+<circle class="d25" cx="724.9" cy="30" r="6"><title>CRM 2025: 26.2%</title></circle>
+<text class="val" x="736.9" y="34">26% → 22%</text>
+<text class="rowlab" x="106" y="79" text-anchor="end">SAP</text>
+<line class="db" x1="638.2" x2="693.4" y1="74" y2="74"/>
+<circle class="d22" cx="638.2" cy="74" r="5"><title>SAP 2022: 15.3%</title></circle>
+<circle class="d27" cx="693.4" cy="74" r="5"><title>SAP 2027E: 22.3%</title></circle>
+<circle class="d25" cx="676.0" cy="74" r="6"><title>SAP 2025: 20.1%</title></circle>
+<text class="val" x="705.4" y="78">20% → 22%</text>
+<text class="rowlab" x="106" y="123" text-anchor="end">NOW</text>
+<line class="db" x1="601.3" x2="692.4" y1="118" y2="118"/>
+<circle class="d22" cx="601.3" cy="118" r="5"><title>NOW 2022: 10.7%</title></circle>
+<circle class="d27" cx="692.4" cy="118" r="5"><title>NOW 2027E: 22.1%</title></circle>
+<circle class="d25" cx="673.4" cy="118" r="6"><title>NOW 2025: 19.7%</title></circle>
+<text class="val" x="704.4" y="122">20% → 22%</text>
+<text class="rowlab" x="106" y="167" text-anchor="end">MNDY</text>
+<line class="db" x1="368.8" x2="626.5" y1="162" y2="162"/>
+<circle class="d22" cx="368.8" cy="162" r="5"><title>MNDY 2022: -18.6%</title></circle>
+<circle class="d27" cx="626.5" cy="162" r="5"><title>MNDY 2027E: 13.8%</title></circle>
+<circle class="d25" cx="610.5" cy="162" r="6"><title>MNDY 2025: 11.8%</title></circle>
+<text class="val" x="638.5" y="166">12% → 14%</text>
+<text class="rowlab" x="106" y="211" text-anchor="end">DT</text>
+<line class="db" x1="607.1" x2="644.5" y1="206" y2="206"/>
+<circle class="d22" cx="644.5" cy="206" r="5"><title>DT 2022: 16.1%</title></circle>
+<circle class="d27" cx="616.6" cy="206" r="5"><title>DT 2027E: 12.6%</title></circle>
+<circle class="d25" cx="607.1" cy="206" r="6"><title>DT 2025: 11.4%</title></circle>
+<text class="val" x="656.5" y="210">11% → 13%</text>
+<text class="rowlab" x="106" y="255" text-anchor="end">DDOG</text>
+<line class="db" x1="512.2" x2="584.6" y1="250" y2="250"/>
+<circle class="d22" cx="512.2" cy="250" r="5"><title>DDOG 2022: -0.6%</title></circle>
+<circle class="d27" cx="584.6" cy="250" r="5"><title>DDOG 2027E: 8.5%</title></circle>
+<circle class="d25" cx="554.7" cy="250" r="6"><title>DDOG 2025: 4.8%</title></circle>
+<text class="val" x="596.6" y="254">5% → 9%</text>
+<text class="rowlab" x="106" y="299" text-anchor="end">GTLB</text>
+<line class="db" x1="131.4" x2="520.6" y1="294" y2="294"/>
+<circle class="d22" cx="131.4" cy="294" r="5"><title>GTLB 2022: -48.6%</title></circle>
+<circle class="d27" cx="484.4" cy="294" r="5"><title>GTLB 2027E: -4.1%</title></circle>
+<circle class="d25" cx="520.6" cy="294" r="6"><title>GTLB 2025: 0.5%</title></circle>
+<text class="val" x="532.6" y="298">0% → −4%</text>
+<text class="rowlab" x="106" y="343" text-anchor="end">TEAM</text>
+<line class="db" x1="486.7" x2="560.7" y1="338" y2="338"/>
+<circle class="d22" cx="517.6" cy="338" r="5"><title>TEAM 2022: 0.1%</title></circle>
+<circle class="d27" cx="560.7" cy="338" r="5"><title>TEAM 2027E: 5.5%</title></circle>
+<circle class="d25" cx="486.7" cy="338" r="6"><title>TEAM 2025: -3.8%</title></circle>
+<text class="val" x="572.7" y="342">−4% → 6%</text>
+<text class="rowlab" x="106" y="387" text-anchor="end">SNOW</text>
+<line class="db" x1="366.0" x2="525.5" y1="382" y2="382"/>
+<circle class="d22" cx="366.0" cy="382" r="5"><title>SNOW 2022: -19.0%</title></circle>
+<circle class="d27" cx="525.5" cy="382" r="5"><title>SNOW 2027E: 1.1%</title></circle>
+<circle class="d25" cx="416.7" cy="382" r="6"><title>SNOW 2025: -12.6%</title></circle>
+<text class="val" x="537.5" y="386">−13% → 1%</text>
+</svg></div>
+<div class="legend"><span><i style="background:var(--bg);border:1.5px solid var(--slate-400)"></i>2022</span><span><i style="background:var(--slate-500)"></i>2025</span><span><i style="background:var(--slate-800)"></i>2027E</span></div>
+<figcaption>按 2025 年数值排序。右侧标注的是 2025 → 2027E。<br>Source: 券商模型，日历年换算；FCF − 当年 SBC，除以收入。</figcaption></figure>
+<div class="prose">
+<ul>
+<li><b>真正能留下现金的只有 4 家</b>：CRM 26%、SAP 20%、NOW 20%、MNDY 12%。DT 11% 排第五。</li>
+<li><b>SNOW 从 −19% 修到接近 0</b>（2025 年 −13%，2027E +1%），靠的是 SBC 占收入的比例从 2025 年的 37% 降到 2027E 的 22%。<b>TEAM 2027E 回正</b>，一部分原因是 FY27 起把一部分股票薪酬改成了现金发，SBC 下降、FCF 也跟着下降，所以这个改善不全是真的经济改善。</li>
+<li><b>GTLB 是唯一一家往下走的</b>（+0.5% → −4%）：大摩预计毛利率从 89% 降到 85%（可能和 AI 功能的推理成本有关，模型里没写原因），同时 SBC 增长快于收入。</li>
+<li><b>DDOG 只有 5% 到 9%</b>，2025 年 FCF 9.15 亿美元，其中 7.5 亿美元被 SBC 抵掉。</li>
+</ul>
+</div>
+</section>
+
+<section id="quality" class="sec">
+<h2>3  质量：把 ROE 换掉</h2>
+<div class="prose">
+<p>ROE 在软件公司身上会失真，上一条消息讲过原因：GAAP 净利润被 SBC 压低，股东权益又被回购和并购商誉扭曲。所以纵轴换成<b>扣 SBC 后的 FCF margin</b>：每 1 块钱收入，扣掉发给员工的股票以后，最后能留下多少现金。横轴保留毛利率。</p>
+</div>
+<figure class="chart"><div class="title">毛利率 vs 扣 SBC 后 FCF margin</div><div class="svgwrap"><svg viewBox="0 0 880 470" role="img">
+<line class="grid" x1="64" x2="856" y1="373.6" y2="373.6"/><text class="tick" x="56" y="377.6" text-anchor="end">−10%</text>
+<line class="grid" x1="64" x2="856" y1="284.7" y2="284.7"/><text class="tick" x="56" y="288.7" text-anchor="end">0%</text>
+<line class="grid" x1="64" x2="856" y1="195.8" y2="195.8"/><text class="tick" x="56" y="199.8" text-anchor="end">10%</text>
+<line class="grid" x1="64" x2="856" y1="106.9" y2="106.9"/><text class="tick" x="56" y="110.9" text-anchor="end">20%</text>
+<line class="grid" x1="64" x2="856" y1="18.0" y2="18.0"/><text class="tick" x="56" y="22.0" text-anchor="end">30%</text>
+<text class="tick" x="64.0" y="438" text-anchor="middle">70%</text>
+<text class="tick" x="244.0" y="438" text-anchor="middle">75%</text>
+<text class="tick" x="424.0" y="438" text-anchor="middle">80%</text>
+<text class="tick" x="604.0" y="438" text-anchor="middle">85%</text>
+<text class="tick" x="784.0" y="438" text-anchor="middle">90%</text>
+<line class="zero" x1="64" x2="856" y1="284.7" y2="284.7"/>
+<line class="axis" x1="64" x2="856" y1="418" y2="418"/>
+<circle class="pt" cx="460.1" cy="242.1" r="5"><title>DDOG: 毛利率 81.0%，扣 SBC 后 FCF margin 4.8%</title></circle>
+<text class="lab" x="452.1" y="236.1" text-anchor="end">DDOG</text>
+<circle class="pt" cx="148.3" cy="396.7" r="5"><title>SNOW: 毛利率 72.3%，扣 SBC 后 FCF margin -12.6%</title></circle>
+<text class="lab" x="156.3" y="400.7" text-anchor="start">SNOW</text>
+<circle class="pt" cx="462.1" cy="109.2" r="5"><title>NOW: 毛利率 81.1%，扣 SBC 后 FCF margin 19.7%</title></circle>
+<text class="lab" x="454.1" y="123.2" text-anchor="end">NOW</text>
+<circle class="pt" cx="651.6" cy="318.3" r="5"><title>TEAM: 毛利率 86.3%，扣 SBC 后 FCF margin -3.8%</title></circle>
+<text class="lab" x="659.6" y="322.3" text-anchor="start">TEAM</text>
+<circle class="pt" cx="565.2" cy="183.4" r="5"><title>DT: 毛利率 83.9%，扣 SBC 后 FCF margin 11.4%</title></circle>
+<text class="lab" x="573.2" y="179.4" text-anchor="start">DT</text>
+<circle class="pt" cx="780.1" cy="179.6" r="5"><title>MNDY: 毛利率 89.9%，扣 SBC 后 FCF margin 11.8%</title></circle>
+<text class="lab" x="788.1" y="173.6" text-anchor="start">MNDY</text>
+<circle class="pt" cx="758.8" cy="280.4" r="5"><title>GTLB: 毛利率 89.3%，扣 SBC 后 FCF margin 0.5%</title></circle>
+<text class="lab" x="766.8" y="292.4" text-anchor="start">GTLB</text>
+<circle class="pt" cx="448.4" cy="51.5" r="5"><title>CRM: 毛利率 80.7%，扣 SBC 后 FCF margin 26.2%</title></circle>
+<text class="lab" x="456.4" y="45.5" text-anchor="start">CRM</text>
+<circle class="pt" cx="199.6" cy="106.3" r="5"><title>SAP: 毛利率 73.8%，扣 SBC 后 FCF margin 20.1%</title></circle>
+<text class="lab" x="207.6" y="110.3" text-anchor="start">SAP</text>
+<text class="axlab" x="460.0" y="462" text-anchor="middle">毛利率（non-GAAP，2025）</text>
+<text class="axlab" transform="translate(14,218.0) rotate(-90)" text-anchor="middle">扣 SBC 后 FCF margin（2025）</text>
+</svg></div></figure>
+<figcaption class="note">Source: 券商模型，2025 日历年，non-GAAP 毛利率。</figcaption>
+<div class="prose">
+<p><b>毛利率高，不代表最后留下的现金多。</b>毛利率最高的三家 MNDY（90%）、GTLB（89%）、TEAM（86%），扣 SBC 后的 FCF margin 只有 −4% 到 12%。毛利率最低的 SAP（74%）反而有 20%。原因是软件公司的大头成本不在毛利这一层，在销售费用、研发和 SBC。所以我建议<b>毛利率只当一道门槛</b>（高于 75% 左右说明是软件的生意模式），不要拿它来给公司排序。</p>
+<p>你原来的 OPM 对 ROE 那张图，我换成了 OPM 对 SBC。这张图直接回答一个问题：<b>non-GAAP 利润里，有多少其实是用股票付的工资？</b></p>
+</div>
+<figure class="chart"><div class="title">non-GAAP OPM vs SBC 占收入</div><div class="svgwrap"><svg viewBox="0 0 880 470" role="img">
+<line class="grid" x1="64" x2="856" y1="418.0" y2="418.0"/><text class="tick" x="56" y="422.0" text-anchor="end">0%</text>
+<line class="grid" x1="64" x2="856" y1="318.0" y2="318.0"/><text class="tick" x="56" y="322.0" text-anchor="end">10%</text>
+<line class="grid" x1="64" x2="856" y1="218.0" y2="218.0"/><text class="tick" x="56" y="222.0" text-anchor="end">20%</text>
+<line class="grid" x1="64" x2="856" y1="118.0" y2="118.0"/><text class="tick" x="56" y="122.0" text-anchor="end">30%</text>
+<line class="grid" x1="64" x2="856" y1="18.0" y2="18.0"/><text class="tick" x="56" y="22.0" text-anchor="end">40%</text>
+<text class="tick" x="64.0" y="438" text-anchor="middle">0%</text>
+<text class="tick" x="262.0" y="438" text-anchor="middle">10%</text>
+<text class="tick" x="460.0" y="438" text-anchor="middle">20%</text>
+<text class="tick" x="658.0" y="438" text-anchor="middle">30%</text>
+<text class="tick" x="856.0" y="438" text-anchor="middle">40%</text>
+<line class="axis" x1="64" x2="856" y1="418" y2="418"/>
+<polyline class="diag" points="64.0,418.0 83.8,408.0 103.6,398.0 123.4,388.0 143.2,378.0 163.0,368.0 182.8,358.0 202.6,348.0 222.4,338.0 242.2,328.0 262.0,318.0 281.8,308.0 301.6,298.0 321.4,288.0 341.2,278.0 361.0,268.0 380.8,258.0 400.6,248.0 420.4,238.0 440.2,228.0 460.0,218.0 479.8,208.0 499.6,198.0 519.4,188.0 539.2,178.0 559.0,168.0 578.8,158.0 598.6,148.0 618.4,138.0 638.2,128.0 658.0,118.0 677.8,108.0 697.6,98.0 717.4,88.0 737.2,78.0 757.0,68.0 776.8,58.0 796.6,48.0 816.4,38.0 836.2,28.0 856.0,18.0"/>
+<circle class="pt" cx="507.7" cy="199.0" r="5"><title>DDOG: non-GAAP OPM 22.4%，SBC/收入 21.9%</title></circle>
+<text class="lab" x="515.7" y="203.0" text-anchor="start">DDOG</text>
+<circle class="pt" cx="271.0" cy="52.8" r="5"><title>SNOW: non-GAAP OPM 10.5%，SBC/收入 36.5%</title></circle>
+<text class="lab" x="279.0" y="56.8" text-anchor="start">SNOW</text>
+<circle class="pt" cx="682.7" cy="270.8" r="5"><title>NOW: non-GAAP OPM 31.2%，SBC/收入 14.7%</title></circle>
+<text class="lab" x="674.7" y="284.8" text-anchor="end">NOW</text>
+<circle class="pt" cx="558.0" cy="157.6" r="5"><title>TEAM: non-GAAP OPM 24.9%，SBC/收入 26.0%</title></circle>
+<text class="lab" x="566.0" y="161.6" text-anchor="start">TEAM</text>
+<circle class="pt" cx="644.7" cy="269.6" r="5"><title>DT: non-GAAP OPM 29.3%，SBC/收入 14.8%</title></circle>
+<text class="lab" x="652.7" y="263.6" text-anchor="start">DT</text>
+<circle class="pt" cx="345.7" cy="274.3" r="5"><title>MNDY: non-GAAP OPM 14.2%，SBC/收入 14.4%</title></circle>
+<text class="lab" x="353.7" y="286.3" text-anchor="start">MNDY</text>
+<circle class="pt" cx="401.4" cy="193.0" r="5"><title>GTLB: non-GAAP OPM 17.0%，SBC/收入 22.5%</title></circle>
+<text class="lab" x="409.4" y="197.0" text-anchor="start">GTLB</text>
+<circle class="pt" cx="739.0" cy="333.5" r="5"><title>CRM: non-GAAP OPM 34.1%，SBC/收入 8.5%</title></circle>
+<text class="lab" x="747.0" y="337.5" text-anchor="start">CRM</text>
+<circle class="pt" cx="715.8" cy="371.9" r="5"><title>SAP: non-GAAP OPM 32.9%，SBC/收入 4.6%</title></circle>
+<text class="lab" x="723.8" y="375.9" text-anchor="start">SAP</text>
+<text class="zonelab" x="103.6" y="48.0" text-anchor="start">对角线上方：SBC 吃掉全部利润</text>
+<text class="zonelab" x="816.4" y="398.0" text-anchor="end">对角线下方：扣完 SBC 还赚钱</text>
+<text class="axlab" x="460.0" y="462" text-anchor="middle">non-GAAP 经营利润率（2025，不含 SBC）</text>
+<text class="axlab" transform="translate(14,218.0) rotate(-90)" text-anchor="middle">SBC / 收入（2025）</text>
+</svg></div></figure>
+<figcaption class="note">Source: 券商模型，2025 日历年。SAP 的 SBC 含现金结算部分。</figcaption>
+<div class="prose">
+<ul>
+<li><b>对角线上方的三家，SBC 比 non-GAAP 利润还多</b>：SNOW 的 SBC 占收入 36.5%，OPM 只有 10.5%；GTLB 是 22.5% 对 17%；TEAM 是 26% 对 25%。换句话说，这三家的 non-GAAP 利润，扣掉 SBC 以后就是亏损。</li>
+<li><b>DDOG 和 MNDY 正好落在对角线上</b>（DDOG 22% 对 22%，MNDY 14% 对 14%），扣完 SBC 基本不赚钱。</li>
+<li><b>NOW、DT、CRM、SAP 离对角线最远</b>，SBC 只占利润的一小部分。CRM 的 OPM 是 34%，SBC 只有 8.5%。</li>
+</ul>
+</div>
+</section>
+
+<section id="val" class="sec">
+<h2>4  估值：两把尺子</h2>
+<div class="prose">
+<p>你原来的设计是两张图：未来增长对 P/S，以及未来 FCF CAGR 对 P/FCF。我做了三处改动：P/S 换成 EV/S（公司之间净现金差别很大）；纵轴改用对数刻度（倍数分布右偏很严重）；FCF CAGR 对 P/FCF 那张换成 FCF 收益率（FCF 为负时 P/FCF 没有意义，收益率可以是负数，照样能画）。</p>
+<p>上次我说过，"增长 + 扣 SBC 后 FCF margin"应该比只看增长更能解释估值。<b>用 91 家的数据跑了一遍，这个说法不成立</b>，必须更正。三种解释方式的 R²（可以理解为能解释估值差异的百分比）如下：</p>
+<ul>
+<li>只看增长：0.23</li>
+<li>增长 + 扣 SBC 后 FCF margin：0.06，几乎解释不了</li>
+<li><b>增长 + 不扣 SBC 的 FCF margin：0.40</b>；如果两个变量分开回归，是 0.49</li>
+</ul>
+<p>这说明市场看的是不扣 SBC 的现金流。所以我做了两把尺子：第一把是市场自己用的，第二把是我们自己的。</p>
+</div>
+<figure class="chart"><div class="title">市场的尺子：EV/S vs（增长 + FCF margin）</div><div class="svgwrap"><svg viewBox="0 0 880 470" role="img">
+<line class="grid" x1="64" x2="856" y1="418.0" y2="418.0"/><text class="tick" x="56" y="422.0" text-anchor="end">1x</text>
+<line class="grid" x1="64" x2="856" y1="350.3" y2="350.3"/><text class="tick" x="56" y="354.3" text-anchor="end">2x</text>
+<line class="grid" x1="64" x2="856" y1="260.8" y2="260.8"/><text class="tick" x="56" y="264.8" text-anchor="end">5x</text>
+<line class="grid" x1="64" x2="856" y1="193.0" y2="193.0"/><text class="tick" x="56" y="197.0" text-anchor="end">10x</text>
+<line class="grid" x1="64" x2="856" y1="125.3" y2="125.3"/><text class="tick" x="56" y="129.3" text-anchor="end">20x</text>
+<line class="grid" x1="64" x2="856" y1="35.8" y2="35.8"/><text class="tick" x="56" y="39.8" text-anchor="end">50x</text>
+<text class="tick" x="64.0" y="438" text-anchor="middle">0%</text>
+<text class="tick" x="262.0" y="438" text-anchor="middle">20%</text>
+<text class="tick" x="460.0" y="438" text-anchor="middle">40%</text>
+<text class="tick" x="658.0" y="438" text-anchor="middle">60%</text>
+<text class="tick" x="856.0" y="438" text-anchor="middle">80%</text>
+<line class="axis" x1="64" x2="856" y1="418" y2="418"/>
+<polyline class="fit" points="83.8,392.0 102.6,384.7 121.4,377.4 140.2,370.1 159.0,362.9 177.8,355.6 196.7,348.3 215.5,341.0 234.3,333.8 253.1,326.5 271.9,319.2 290.7,311.9 309.5,304.7 328.3,297.4 347.1,290.1 366.0,282.8 384.8,275.6 403.6,268.3 422.4,261.0 441.2,253.7 460.0,246.5 478.8,239.2 497.6,231.9 516.4,224.6 535.2,217.4 554.0,210.1 572.9,202.8 591.7,195.5 610.5,188.3 629.3,181.0 648.1,173.7 666.9,166.4 685.7,159.2 704.5,151.9 723.3,144.6 742.2,137.3 761.0,130.1 779.8,122.8 798.6,115.5 817.4,108.2 836.2,101.0"/>
+<text class="fitlab" x="832.2" y="93.0" text-anchor="end">回归线 R² = 0.40</text>
+<circle class="ptbg" cx="392.2" cy="198.6" r="3.5"><title>MSFT: 增长 24% + FCF margin 9% = 33；EV/S 9.4x；按线应为 4.4x</title></circle>
+<circle class="ptbg" cx="102.9" cy="263.6" r="3.5"><title>ORCL: 增长 46% + FCF margin -42% = 4；EV/S 4.9x；按线应为 1.4x</title></circle>
+<text class="labbg" x="110.9" y="267.6" text-anchor="start">ORCL</text>
+<circle class="ptbg" cx="325.7" cy="285.8" r="3.5"><title>IBM: 增长 4% + FCF margin 22% = 26；EV/S 3.9x；按线应为 3.4x</title></circle>
+<circle class="pt" cx="582.4" cy="149.4" r="5"><title>SNOW: 增长 30% + FCF margin 23% = 52；EV/S 15.6x；按线应为 9.4x</title></circle>
+<text class="lab" x="590.4" y="159.4" text-anchor="start">SNOW</text>
+<circle class="pt" cx="560.2" cy="133.1" r="5"><title>DDOG: 增长 24% + FCF margin 26% = 50；EV/S 18.5x；按线应为 8.6x</title></circle>
+<text class="lab" x="568.2" y="129.1" text-anchor="start">DDOG</text>
+<circle class="ptbg" cx="448.7" cy="215.9" r="3.5"><title>MDB: 增长 19% + FCF margin 20% = 39；EV/S 7.9x；按线应为 5.5x</title></circle>
+<circle class="pt" cx="509.4" cy="231.6" r="5"><title>DT: 增长 20% + FCF margin 25% = 45；EV/S 6.7x；按线应为 7.0x</title></circle>
+<text class="lab" x="517.4" y="243.6" text-anchor="start">DT</text>
+<circle class="ptbg" cx="505.7" cy="258.8" r="3.5"><title>NTNX: 增长 17% + FCF margin 28% = 45；EV/S 5.1x；按线应为 6.9x</title></circle>
+<circle class="ptbg" cx="487.2" cy="143.4" r="3.5"><title>FROG: 增长 18% + FCF margin 25% = 43；EV/S 16.6x；按线应为 6.4x</title></circle>
+<circle class="ptbg" cx="434.8" cy="280.5" r="3.5"><title>ESTC: 增长 17% + FCF margin 21% = 37；EV/S 4.1x；按线应为 5.2x</title></circle>
+<circle class="pt" cx="410.3" cy="235.3" r="5"><title>GTLB: 增长 16% + FCF margin 19% = 35；EV/S 6.5x；按线应为 4.8x</title></circle>
+<text class="lab" x="402.3" y="229.3" text-anchor="end">GTLB</text>
+<circle class="ptbg" cx="588.0" cy="65.5" r="3.5"><title>CRWD: 增长 23% + FCF margin 30% = 53；EV/S 36.9x；按线应为 9.6x</title></circle>
+<text class="labbg" x="596.0" y="69.5" text-anchor="start">CRWD</text>
+<circle class="ptbg" cx="646.5" cy="125.9" r="3.5"><title>PANW: 增长 21% + FCF margin 38% = 59；EV/S 19.9x；按线应为 12.1x</title></circle>
+<text class="labbg" x="654.5" y="129.9" text-anchor="start">PANW</text>
+<circle class="ptbg" cx="470.0" cy="73.2" r="3.5"><title>NET: 增长 29% + FCF margin 12% = 41；EV/S 34.1x；按线应为 6.0x</title></circle>
+<text class="labbg" x="478.0" y="77.2" text-anchor="start">NET</text>
+<circle class="ptbg" cx="563.7" cy="152.5" r="3.5"><title>FTNT: 增长 12% + FCF margin 38% = 50；EV/S 15.1x；按线应为 8.7x</title></circle>
+<circle class="ptbg" cx="446.1" cy="192.0" r="3.5"><title>OKTA: 增长 10% + FCF margin 28% = 39；EV/S 10.1x；按线应为 5.5x</title></circle>
+<circle class="ptbg" cx="495.1" cy="214.0" r="3.5"><title>ZS: 增长 20% + FCF margin 23% = 44；EV/S 8.1x；按线应为 6.7x</title></circle>
+<circle class="ptbg" cx="465.4" cy="171.3" r="3.5"><title>RBRK: 增长 21% + FCF margin 20% = 41；EV/S 12.5x；按线应为 5.9x</title></circle>
+<circle class="ptbg" cx="533.8" cy="280.1" r="3.5"><title>CHKP: 增长 5% + FCF margin 42% = 47；EV/S 4.1x；按线应为 7.8x</title></circle>
+<circle class="ptbg" cx="404.9" cy="218.8" r="3.5"><title>SAIL: 增长 19% + FCF margin 16% = 34；EV/S 7.7x；按线应为 4.7x</title></circle>
+<circle class="ptbg" cx="298.4" cy="214.0" r="3.5"><title>NTSK: 增长 21% + FCF margin 3% = 24；EV/S 8.1x；按线应为 3.1x</title></circle>
+<circle class="ptbg" cx="315.1" cy="248.0" r="3.5"><title>S: 增长 18% + FCF margin 7% = 25；EV/S 5.7x；按线应为 3.3x</title></circle>
+<circle class="ptbg" cx="555.4" cy="218.2" r="3.5"><title>QLYS: 增长 8% + FCF margin 41% = 50；EV/S 7.7x；按线应为 8.4x</title></circle>
+<circle class="ptbg" cx="379.6" cy="240.1" r="3.5"><title>VRNS: 增长 17% + FCF margin 15% = 32；EV/S 6.2x；按线应为 4.2x</title></circle>
+<circle class="ptbg" cx="437.8" cy="197.4" r="3.5"><title>SNPS: 增长 12% + FCF margin 26% = 38；EV/S 9.6x；按线应为 5.3x</title></circle>
+<circle class="ptbg" cx="487.6" cy="162.9" r="3.5"><title>CDNS: 增长 14% + FCF margin 29% = 43；EV/S 13.6x；按线应为 6.5x</title></circle>
+<circle class="ptbg" cx="505.2" cy="252.7" r="3.5"><title>ADSK: 增长 12% + FCF margin 33% = 45；EV/S 5.4x；按线应为 6.9x</title></circle>
+<circle class="ptbg" cx="362.2" cy="281.5" r="3.5"><title>DSY: 增长 6% + FCF margin 24% = 30；EV/S 4.0x；按线应为 3.9x</title></circle>
+<circle class="ptbg" cx="396.9" cy="215.7" r="3.5"><title>PTC: 增长 2% + FCF margin 31% = 34；EV/S 7.9x；按线应为 4.5x</title></circle>
+<circle class="ptbg" cx="349.3" cy="288.4" r="3.5"><title>TRMB: 增长 8% + FCF margin 21% = 29；EV/S 3.8x；按线应为 3.7x</title></circle>
+<circle class="ptbg" cx="487.0" cy="231.8" r="3.5"><title>BSY: 增长 11% + FCF margin 32% = 43；EV/S 6.7x；按线应为 6.4x</title></circle>
+<circle class="ptbg" cx="508.2" cy="252.4" r="3.5"><title>NEM: 增长 19% + FCF margin 26% = 45；EV/S 5.4x；按线应为 7.0x</title></circle>
+<circle class="pt" cx="433.5" cy="257.1" r="5"><title>SAP: 增长 12% + FCF margin 25% = 37；EV/S 5.2x；按线应为 5.2x</title></circle>
+<text class="lab" x="423.5" y="275.1" text-anchor="end">SAP</text>
+<circle class="pt" cx="483.5" cy="264.3" r="5"><title>CRM: 增长 10% + FCF margin 32% = 42；EV/S 4.8x；按线应为 6.4x</title></circle>
+<text class="lab" x="491.5" y="276.3" text-anchor="start">CRM</text>
+<circle class="pt" cx="599.6" cy="206.0" r="5"><title>NOW: 增长 19% + FCF margin 35% = 54；EV/S 8.8x；按线应为 10.1x</title></circle>
+<text class="lab" x="607.6" y="200.0" text-anchor="start">NOW</text>
+<circle class="ptbg" cx="458.5" cy="276.5" r="3.5"><title>WDAY: 增长 10% + FCF margin 29% = 40；EV/S 4.3x；按线应为 5.8x</title></circle>
+<circle class="ptbg" cx="338.6" cy="265.0" r="3.5"><title>ADP: 增长 7% + FCF margin 21% = 28；EV/S 4.8x；按线应为 3.6x</title></circle>
+<circle class="ptbg" cx="452.5" cy="241.1" r="3.5"><title>PAYX: 增长 6% + FCF margin 33% = 39；EV/S 6.1x；按线应为 5.6x</title></circle>
+<circle class="ptbg" cx="340.5" cy="289.8" r="3.5"><title>SGE: 增长 9% + FCF margin 19% = 28；EV/S 3.7x；按线应为 3.6x</title></circle>
+<circle class="ptbg" cx="410.7" cy="261.4" r="3.5"><title>PAYC: 增长 7% + FCF margin 28% = 35；EV/S 5.0x；按线应为 4.8x</title></circle>
+<circle class="ptbg" cx="385.5" cy="277.7" r="3.5"><title>PCTY: 增长 9% + FCF margin 24% = 32；EV/S 4.2x；按线应为 4.3x</title></circle>
+<circle class="ptbg" cx="443.3" cy="315.3" r="3.5"><title>PEGA: 增长 10% + FCF margin 28% = 38；EV/S 2.9x；按线应为 5.4x</title></circle>
+<circle class="ptbg" cx="531.9" cy="293.9" r="3.5"><title>ADBE: 增长 8% + FCF margin 39% = 47；EV/S 3.6x；按线应为 7.7x</title></circle>
+<text class="labbg" x="523.9" y="305.9" text-anchor="end">ADBE</text>
+<circle class="pt" cx="501.4" cy="231.3" r="5"><title>TEAM: 增长 18% + FCF margin 26% = 44；EV/S 6.8x；按线应为 6.8x</title></circle>
+<text class="lab" x="493.4" y="223.3" text-anchor="end">TEAM</text>
+<circle class="ptbg" cx="455.6" cy="279.1" r="3.5"><title>ZM: 增长 4% + FCF margin 35% = 40；EV/S 4.1x；按线应为 5.7x</title></circle>
+<circle class="ptbg" cx="478.7" cy="288.7" r="3.5"><title>DOCU: 增长 8% + FCF margin 34% = 42；EV/S 3.8x；按线应为 6.2x</title></circle>
+<circle class="ptbg" cx="403.2" cy="320.3" r="3.5"><title>HUBS: 增长 14% + FCF margin 20% = 34；EV/S 2.7x；按线应为 4.6x</title></circle>
+<circle class="ptbg" cx="435.2" cy="277.4" r="3.5"><title>DBX: 增长 -0% + FCF margin 38% = 37；EV/S 4.2x；按线应为 5.2x</title></circle>
+<circle class="ptbg" cx="419.7" cy="283.9" r="3.5"><title>BOX: 增长 8% + FCF margin 28% = 36；EV/S 3.9x；按线应为 4.9x</title></circle>
+<circle class="pt" cx="403.6" cy="350.4" r="5"><title>MNDY: 增长 15% + FCF margin 19% = 34；EV/S 2.0x；按线应为 4.6x</title></circle>
+<text class="lab" x="411.6" y="354.4" text-anchor="start">MNDY</text>
+<circle class="ptbg" cx="347.5" cy="356.4" r="3.5"><title>WIX: 增长 12% + FCF margin 17% = 29；EV/S 1.9x；按线应为 3.7x</title></circle>
+<circle class="ptbg" cx="383.0" cy="254.7" r="3.5"><title>RELX: 增长 7% + FCF margin 25% = 32；EV/S 5.3x；按线应为 4.3x</title></circle>
+<circle class="ptbg" cx="426.1" cy="293.0" r="3.5"><title>CSU: 增长 15% + FCF margin 21% = 37；EV/S 3.6x；按线应为 5.1x</title></circle>
+<circle class="ptbg" cx="623.6" cy="188.3" r="3.5"><title>VEEV: 增长 13% + FCF margin 44% = 57；EV/S 10.5x；按线应为 11.1x</title></circle>
+<circle class="ptbg" cx="396.2" cy="248.3" r="3.5"><title>TRI: 增长 8% + FCF margin 26% = 34；EV/S 5.7x；按线应为 4.5x</title></circle>
+<circle class="ptbg" cx="435.7" cy="252.9" r="3.5"><title>ROP: 增长 6% + FCF margin 31% = 38；EV/S 5.4x；按线应为 5.3x</title></circle>
+<circle class="ptbg" cx="474.8" cy="214.0" r="3.5"><title>AXON: 增长 30% + FCF margin 11% = 41；EV/S 8.1x；按线应为 6.1x</title></circle>
+<circle class="ptbg" cx="464.2" cy="208.2" r="3.5"><title>VRSK: 增长 6% + FCF margin 34% = 40；EV/S 8.6x；按线应为 5.9x</title></circle>
+<circle class="ptbg" cx="341.9" cy="303.0" r="3.5"><title>WKL: 增长 6% + FCF margin 23% = 28；EV/S 3.2x；按线应为 3.6x</title></circle>
+<circle class="ptbg" cx="556.9" cy="214.3" r="3.5"><title>FICO: 增长 10% + FCF margin 40% = 50；EV/S 8.0x；按线应为 8.5x</title></circle>
+<text class="labbg" x="564.9" y="218.3" text-anchor="start">FICO</text>
+<circle class="ptbg" cx="423.2" cy="247.2" r="3.5"><title>TYL: 增长 10% + FCF margin 27% = 36；EV/S 5.7x；按线应为 5.0x</title></circle>
+<circle class="ptbg" cx="495.7" cy="222.6" r="3.5"><title>GWRE: 增长 19% + FCF margin 25% = 44；EV/S 7.4x；按线应为 6.7x</title></circle>
+<circle class="ptbg" cx="473.2" cy="189.5" r="3.5"><title>MANH: 增长 8% + FCF margin 33% = 41；EV/S 10.4x；按线应为 6.1x</title></circle>
+<circle class="ptbg" cx="322.9" cy="311.6" r="3.5"><title>CSGP: 增长 11% + FCF margin 15% = 26；EV/S 3.0x；按线应为 3.4x</title></circle>
+<circle class="ptbg" cx="319.4" cy="283.9" r="3.5"><title>JKHY: 增长 8% + FCF margin 18% = 26；EV/S 3.9x；按线应为 3.3x</title></circle>
+<circle class="ptbg" cx="392.0" cy="265.4" r="3.5"><title>PCOR: 增长 14% + FCF margin 19% = 33；EV/S 4.8x；按线应为 4.4x</title></circle>
+<circle class="ptbg" cx="491.9" cy="247.5" r="3.5"><title>APPF: 增长 17% + FCF margin 26% = 43；EV/S 5.7x；按线应为 6.6x</title></circle>
+<circle class="ptbg" cx="333.9" cy="253.5" r="3.5"><title>TTAN: 增长 15% + FCF margin 12% = 27；EV/S 5.4x；按线应为 3.5x</title></circle>
+<circle class="ptbg" cx="409.0" cy="319.9" r="3.5"><title>TOI: 增长 13% + FCF margin 22% = 35；EV/S 2.7x；按线应为 4.7x</title></circle>
+<circle class="ptbg" cx="531.1" cy="231.7" r="3.5"><title>DOCS: 增长 7% + FCF margin 40% = 47；EV/S 6.7x；按线应为 7.7x</title></circle>
+<circle class="ptbg" cx="405.2" cy="266.3" r="3.5"><title>WAY: 增长 12% + FCF margin 23% = 34；EV/S 4.7x；按线应为 4.7x</title></circle>
+<circle class="ptbg" cx="517.9" cy="172.3" r="3.5"><title>SHOP: 增长 27% + FCF margin 19% = 46；EV/S 12.4x；按线应为 7.3x</title></circle>
+<circle class="ptbg" cx="544.7" cy="291.4" r="3.5"><title>INTU: 增长 11% + FCF margin 38% = 49；EV/S 3.7x；按线应为 8.1x</title></circle>
+<text class="labbg" x="552.7" y="285.4" text-anchor="start">INTU</text>
+<circle class="ptbg" cx="278.0" cy="382.5" r="3.5"><title>PYPL: 增长 4% + FCF margin 17% = 22；EV/S 1.4x；按线应为 2.8x</title></circle>
+<circle class="ptbg" cx="281.9" cy="367.3" r="3.5"><title>XYZ: 增长 11% + FCF margin 11% = 22；EV/S 1.7x；按线应为 2.9x</title></circle>
+<circle class="ptbg" cx="727.2" cy="227.1" r="3.5"><title>ADYEN: 增长 22% + FCF margin 45% = 67；EV/S 7.1x；按线应为 16.7x</title></circle>
+<text class="labbg" x="735.2" y="231.1" text-anchor="start">ADYEN</text>
+<circle class="ptbg" cx="474.8" cy="241.7" r="3.5"><title>CPAY: 增长 9% + FCF margin 32% = 41；EV/S 6.1x；按线应为 6.1x</title></circle>
+<circle class="ptbg" cx="244.2" cy="323.4" r="3.5"><title>FISV: 增长 0% + FCF margin 18% = 18；EV/S 2.6x；按线应为 2.5x</title></circle>
+<circle class="ptbg" cx="704.9" cy="256.7" r="3.5"><title>AFRM: 增长 31% + FCF margin 33% = 65；EV/S 5.2x；按线应为 15.3x</title></circle>
+<text class="labbg" x="712.9" y="260.7" text-anchor="start">AFRM</text>
+<circle class="ptbg" cx="455.3" cy="306.0" r="3.5"><title>GPN: 增长 12% + FCF margin 27% = 40；EV/S 3.1x；按线应为 5.7x</title></circle>
+<circle class="ptbg" cx="340.4" cy="355.3" r="3.5"><title>TOST: 增长 18% + FCF margin 10% = 28；EV/S 1.9x；按线应为 3.6x</title></circle>
+<circle class="ptbg" cx="610.1" cy="285.9" r="3.5"><title>GLBE: 增长 31% + FCF margin 24% = 55；EV/S 3.9x；按线应为 10.5x</title></circle>
+<circle class="ptbg" cx="267.2" cy="365.4" r="3.5"><title>ACN: 增长 6% + FCF margin 15% = 21；EV/S 1.7x；按线应为 2.7x</title></circle>
+<circle class="ptbg" cx="305.3" cy="331.8" r="3.5"><title>TCS: 增长 7% + FCF margin 17% = 24；EV/S 2.4x；按线应为 3.1x</title></circle>
+<circle class="ptbg" cx="284.7" cy="351.8" r="3.5"><title>INFY: 增长 7% + FCF margin 16% = 22；EV/S 2.0x；按线应为 2.9x</title></circle>
+<circle class="ptbg" cx="228.4" cy="393.5" r="3.5"><title>CTSH: 增长 5% + FCF margin 11% = 17；EV/S 1.3x；按线应为 2.3x</title></circle>
+<circle class="ptbg" cx="182.3" cy="418.0" r="3.5"><title>CAP: 增长 4% + FCF margin 8% = 12；EV/S 1.0x；按线应为 1.9x</title></circle>
+<circle class="ptbg" cx="268.0" cy="383.0" r="3.5"><title>WIT: 增长 7% + FCF margin 14% = 21；EV/S 1.4x；按线应为 2.7x</title></circle>
+<circle class="ptbg" cx="185.8" cy="418.0" r="3.5"><title>EPAM: 增长 4% + FCF margin 9% = 12；EV/S 0.9x；按线应为 2.0x</title></circle>
+<text class="axlab" x="460.0" y="462" text-anchor="middle">未来增长 + FCF margin（一致预期，均不扣 SBC）</text>
+<text class="axlab" transform="translate(14,218.0) rotate(-90)" text-anchor="middle">EV / 未来12个月收入（对数刻度）</text>
+</svg></div></figure>
+<figcaption class="note">灰点是 91 家里的其他公司，蓝点是 9 家。鼠标悬停可以看每家的数字。Source: 一致预期，价格截至 2026.10.16；FCF margin 用未来 12 个月口径。</figcaption>
+<div class="prose">
+<p><b>第一把尺子（市场的尺子）</b>：横轴是增长加上不扣 SBC 的 FCF margin，纵轴是 EV/S，回归线代表市场的平均定价。DDOG 比回归线贵 115%（实际 18.5 倍，按线应该是 8.6 倍），SNOW 贵 66%，GTLB 贵 37%。CRM 比线便宜 24%，MNDY 便宜 57%。TEAM、DT、SAP 正好在线上。</p>
+<p>接着看下一张：每家公司比回归线贵或便宜多少，和它的 SBC 高低有没有关系？</p>
+</div>
+<figure class="chart"><div class="title">比回归线贵多少 vs SBC 占收入</div><div class="svgwrap"><svg viewBox="0 0 880 470" role="img">
+<line class="grid" x1="64" x2="856" y1="375.1" y2="375.1"/><text class="tick" x="56" y="379.1" text-anchor="end">−50%</text>
+<line class="grid" x1="64" x2="856" y1="303.7" y2="303.7"/><text class="tick" x="56" y="307.7" text-anchor="end">0%</text>
+<line class="grid" x1="64" x2="856" y1="232.3" y2="232.3"/><text class="tick" x="56" y="236.3" text-anchor="end">50%</text>
+<line class="grid" x1="64" x2="856" y1="160.9" y2="160.9"/><text class="tick" x="56" y="164.9" text-anchor="end">100%</text>
+<line class="grid" x1="64" x2="856" y1="89.4" y2="89.4"/><text class="tick" x="56" y="93.4" text-anchor="end">150%</text>
+<line class="grid" x1="64" x2="856" y1="18.0" y2="18.0"/><text class="tick" x="56" y="22.0" text-anchor="end">200%</text>
+<text class="tick" x="64.0" y="438" text-anchor="middle">0%</text>
+<text class="tick" x="240.0" y="438" text-anchor="middle">10%</text>
+<text class="tick" x="416.0" y="438" text-anchor="middle">20%</text>
+<text class="tick" x="592.0" y="438" text-anchor="middle">30%</text>
+<text class="tick" x="768.0" y="438" text-anchor="middle">40%</text>
+<line class="zero" x1="64" x2="856" y1="303.7" y2="303.7"/>
+<line class="axis" x1="64" x2="856" y1="418" y2="418"/>
+<polyline class="fit" points="64.0,336.5 83.4,330.2 102.7,323.8 122.1,317.4 141.4,311.1 160.8,304.7 180.2,298.4 199.5,292.0 218.9,285.6 238.2,279.3 257.6,272.9 277.0,266.5 296.3,260.2 315.7,253.8 335.0,247.5 354.4,241.1 373.8,234.7 393.1,228.4 412.5,222.0 431.8,215.6 451.2,209.3 470.6,202.9 489.9,196.6 509.3,190.2 528.6,183.8 548.0,177.5 567.4,171.1 586.7,164.8 606.1,158.4 625.4,152.0 644.8,145.7 664.2,139.3 683.5,132.9 702.9,126.6 722.2,120.2 741.6,113.9 761.0,107.5 780.3,101.1 799.7,94.8 819.0,88.4 838.4,82.0"/>
+<text class="fitlab" x="834.4" y="74.0" text-anchor="end">SBC 越高，溢价越大</text>
+<circle class="ptbg" cx="133.1" cy="141.7" r="3.5"><title>MSFT: SBC/收入 4%，比回归线贵 +113%</title></circle>
+<circle class="ptbg" cx="206.0" cy="18.0" r="3.5"><title>ORCL: SBC/收入 8%，比回归线贵 +245%</title></circle>
+<text class="labbg" x="214.0" y="22.0" text-anchor="start">ORCL</text>
+<circle class="ptbg" cx="113.3" cy="284.0" r="3.5"><title>IBM: SBC/收入 3%，比回归线贵 +14%</title></circle>
+<circle class="pt" cx="621.9" cy="208.9" r="5"><title>SNOW: SBC/收入 32%，比回归线贵 +66%</title></circle>
+<text class="lab" x="629.9" y="212.9" text-anchor="start">SNOW</text>
+<circle class="pt" cx="427.5" cy="140.0" r="5"><title>DDOG: SBC/收入 21%，比回归线贵 +115%</title></circle>
+<text class="lab" x="435.5" y="144.0" text-anchor="start">DDOG</text>
+<circle class="ptbg" cx="414.5" cy="242.4" r="3.5"><title>MDB: SBC/收入 20%，比回归线贵 +43%</title></circle>
+<circle class="pt" cx="315.8" cy="309.8" r="5"><title>DT: SBC/收入 14%，比回归线贵 -4%</title></circle>
+<text class="lab" x="307.8" y="321.8" text-anchor="end">DT</text>
+<circle class="ptbg" cx="277.2" cy="341.5" r="3.5"><title>NTNX: SBC/收入 12%，比回归线贵 -26%</title></circle>
+<circle class="ptbg" cx="542.4" cy="78.2" r="3.5"><title>FROG: SBC/收入 27%，比回归线贵 +158%</title></circle>
+<circle class="ptbg" cx="335.4" cy="335.2" r="3.5"><title>ESTC: SBC/收入 15%，比回归线贵 -22%</title></circle>
+<circle class="pt" cx="443.0" cy="251.5" r="5"><title>GTLB: SBC/收入 22%，比回归线贵 +37%</title></circle>
+<text class="lab" x="451.0" y="263.5" text-anchor="start">GTLB</text>
+<circle class="ptbg" cx="478.9" cy="18.0" r="3.5"><title>CRWD: SBC/收入 24%，比回归线贵 +284%</title></circle>
+<text class="labbg" x="486.9" y="22.0" text-anchor="start">CRWD</text>
+<circle class="ptbg" cx="303.7" cy="212.0" r="3.5"><title>PANW: SBC/收入 14%，比回归线贵 +64%</title></circle>
+<circle class="ptbg" cx="433.1" cy="18.0" r="3.5"><title>NET: SBC/收入 21%，比回归线贵 +466%</title></circle>
+<text class="labbg" x="441.1" y="22.0" text-anchor="start">NET</text>
+<circle class="ptbg" cx="129.1" cy="198.5" r="3.5"><title>FTNT: SBC/收入 4%，比回归线贵 +74%</title></circle>
+<circle class="ptbg" cx="359.9" cy="183.1" r="3.5"><title>OKTA: SBC/收入 17%，比回归线贵 +84%</title></circle>
+<circle class="ptbg" cx="467.1" cy="273.2" r="3.5"><title>ZS: SBC/收入 23%，比回归线贵 +21%</title></circle>
+<circle class="ptbg" cx="626.7" cy="144.7" r="3.5"><title>RBRK: SBC/收入 32%，比回归线贵 +111%</title></circle>
+<circle class="ptbg" cx="161.8" cy="371.0" r="3.5"><title>CHKP: SBC/收入 6%，比回归线贵 -47%</title></circle>
+<circle class="ptbg" cx="434.2" cy="210.7" r="3.5"><title>SAIL: SBC/收入 21%，比回归线贵 +65%</title></circle>
+<circle class="ptbg" cx="504.8" cy="68.8" r="3.5"><title>NTSK: SBC/收入 25%，比回归线贵 +164%</title></circle>
+<circle class="ptbg" cx="659.9" cy="196.9" r="3.5"><title>S: SBC/收入 34%，比回归线贵 +75%</title></circle>
+<text class="labbg" x="667.9" y="200.9" text-anchor="start">S</text>
+<circle class="ptbg" cx="242.0" cy="315.8" r="3.5"><title>QLYS: SBC/收入 10%，比回归线贵 -8%</title></circle>
+<circle class="ptbg" cx="415.4" cy="237.0" r="3.5"><title>VRNS: SBC/收入 20%，比回归线贵 +47%</title></circle>
+<circle class="ptbg" cx="238.6" cy="188.9" r="3.5"><title>SNPS: SBC/收入 10%，比回归线贵 +80%</title></circle>
+<circle class="ptbg" cx="208.7" cy="145.2" r="3.5"><title>CDNS: SBC/收入 8%，比回归线贵 +111%</title></circle>
+<circle class="ptbg" cx="214.7" cy="334.5" r="3.5"><title>ADSK: SBC/收入 9%，比回归线贵 -22%</title></circle>
+<circle class="ptbg" cx="101.7" cy="299.6" r="3.5"><title>DSY: SBC/收入 2%，比回归线贵 +3%</title></circle>
+<circle class="ptbg" cx="208.1" cy="195.2" r="3.5"><title>PTC: SBC/收入 8%，比回归线贵 +76%</title></circle>
+<circle class="ptbg" cx="135.9" cy="302.4" r="3.5"><title>TRMB: SBC/收入 4%，比回归线贵 +1%</title></circle>
+<circle class="ptbg" cx="163.0" cy="297.4" r="3.5"><title>BSY: SBC/收入 6%，比回归线贵 +4%</title></circle>
+<circle class="ptbg" cx="89.3" cy="335.5" r="3.5"><title>NEM: SBC/收入 1%，比回归线贵 -22%</title></circle>
+<circle class="pt" cx="135.9" cy="304.3" r="5"><title>SAP: SBC/收入 4%，比回归线贵 -0%</title></circle>
+<text class="lab" x="127.9" y="298.3" text-anchor="end">SAP</text>
+<circle class="pt" cx="209.9" cy="338.1" r="5"><title>CRM: SBC/收入 8%，比回归线贵 -24%</title></circle>
+<text class="lab" x="201.9" y="342.1" text-anchor="end">CRM</text>
+<circle class="pt" cx="329.7" cy="322.2" r="5"><title>NOW: SBC/收入 15%，比回归线贵 -13%</title></circle>
+<text class="lab" x="337.7" y="334.2" text-anchor="start">NOW</text>
+<circle class="ptbg" cx="341.8" cy="340.9" r="3.5"><title>WDAY: SBC/收入 16%，比回归线贵 -26%</title></circle>
+<circle class="ptbg" cx="83.5" cy="255.5" r="3.5"><title>ADP: SBC/收入 1%，比回归线贵 +34%</title></circle>
+<circle class="ptbg" cx="87.7" cy="291.1" r="3.5"><title>PAYX: SBC/收入 1%，比回归线贵 +9%</title></circle>
+<circle class="ptbg" cx="100.5" cy="299.4" r="3.5"><title>SGE: SBC/收入 2%，比回归线贵 +3%</title></circle>
+<circle class="ptbg" cx="138.9" cy="297.6" r="3.5"><title>PAYC: SBC/收入 4%，比回归线贵 +4%</title></circle>
+<circle class="ptbg" cx="197.7" cy="307.2" r="3.5"><title>PCTY: SBC/收入 8%，比回归线贵 -2%</title></circle>
+<circle class="ptbg" cx="222.6" cy="371.2" r="3.5"><title>PEGA: SBC/收入 9%，比回归线贵 -47%</title></circle>
+<circle class="ptbg" cx="207.5" cy="380.5" r="3.5"><title>ADBE: SBC/收入 8%，比回归线贵 -54%</title></circle>
+<circle class="pt" cx="456.3" cy="305.0" r="5"><title>TEAM: SBC/收入 22%，比回归线贵 -1%</title></circle>
+<text class="lab" x="464.3" y="317.0" text-anchor="start">TEAM</text>
+<circle class="ptbg" cx="308.3" cy="342.5" r="3.5"><title>ZM: SBC/收入 14%，比回归线贵 -27%</title></circle>
+<circle class="ptbg" cx="369.0" cy="360.5" r="3.5"><title>DOCU: SBC/收入 17%，比回归线贵 -40%</title></circle>
+<circle class="ptbg" cx="326.9" cy="362.6" r="3.5"><title>HUBS: SBC/收入 15%，比回归线贵 -41%</title></circle>
+<circle class="ptbg" cx="269.9" cy="331.7" r="3.5"><title>DBX: SBC/收入 12%，比回归线贵 -20%</title></circle>
+<circle class="ptbg" cx="389.7" cy="332.3" r="3.5"><title>BOX: SBC/收入 19%，比回归线贵 -20%</title></circle>
+<circle class="pt" cx="277.0" cy="385.0" r="5"><title>MNDY: SBC/收入 12%，比回归线贵 -57%</title></circle>
+<text class="lab" x="285.0" y="389.0" text-anchor="start">MNDY</text>
+<circle class="ptbg" cx="251.6" cy="374.2" r="3.5"><title>WIX: SBC/收入 11%，比回归线贵 -49%</title></circle>
+<circle class="ptbg" cx="76.6" cy="268.5" r="3.5"><title>RELX: SBC/收入 1%，比回归线贵 +25%</title></circle>
+<circle class="ptbg" cx="64.0" cy="345.0" r="3.5"><title>CSU: SBC/收入 0%，比回归线贵 -29%</title></circle>
+<circle class="ptbg" cx="308.8" cy="311.0" r="3.5"><title>VEEV: SBC/收入 14%，比回归线贵 -5%</title></circle>
+<circle class="ptbg" cx="91.5" cy="266.1" r="3.5"><title>TRI: SBC/收入 2%，比回归线贵 +26%</title></circle>
+<circle class="ptbg" cx="105.2" cy="299.3" r="3.5"><title>ROP: SBC/收入 2%，比回归线贵 +3%</title></circle>
+<circle class="ptbg" cx="410.8" cy="258.6" r="3.5"><title>AXON: SBC/收入 20%，比回归线贵 +32%</title></circle>
+<circle class="ptbg" cx="97.9" cy="238.7" r="3.5"><title>VRSK: SBC/收入 2%，比回归线贵 +46%</title></circle>
+<circle class="ptbg" cx="71.7" cy="318.7" r="3.5"><title>WKL: SBC/收入 0%，比回归线贵 -11%</title></circle>
+<circle class="ptbg" cx="193.7" cy="311.2" r="3.5"><title>FICO: SBC/收入 7%，比回归线贵 -5%</title></circle>
+<circle class="ptbg" cx="178.8" cy="282.6" r="3.5"><title>TYL: SBC/收入 7%，比回归线贵 +15%</title></circle>
+<circle class="ptbg" cx="268.9" cy="288.1" r="3.5"><title>GWRE: SBC/收入 12%，比回归线贵 +11%</title></circle>
+<circle class="ptbg" cx="240.3" cy="203.6" r="3.5"><title>MANH: SBC/收入 10%，比回归线贵 +70%</title></circle>
+<circle class="ptbg" cx="161.6" cy="320.4" r="3.5"><title>CSGP: SBC/收入 6%，比回归线贵 -12%</title></circle>
+<circle class="ptbg" cx="85.8" cy="276.7" r="3.5"><title>JKHY: SBC/收入 1%，比回归线贵 +19%</title></circle>
+<circle class="ptbg" cx="362.4" cy="292.5" r="3.5"><title>PCOR: SBC/收入 17%，比回归线贵 +8%</title></circle>
+<circle class="ptbg" cx="189.3" cy="322.0" r="3.5"><title>APPF: SBC/收入 7%，比回归线贵 -13%</title></circle>
+<circle class="ptbg" cx="413.3" cy="227.5" r="3.5"><title>TTAN: SBC/收入 20%，比回归线贵 +53%</title></circle>
+<circle class="ptbg" cx="64.0" cy="364.1" r="3.5"><title>TOI: SBC/收入 0%，比回归线贵 -42%</title></circle>
+<circle class="ptbg" cx="428.5" cy="321.1" r="3.5"><title>DOCS: SBC/收入 21%，比回归线贵 -12%</title></circle>
+<circle class="ptbg" cx="138.8" cy="301.8" r="3.5"><title>WAY: SBC/收入 4%，比回归线贵 +1%</title></circle>
+<circle class="ptbg" cx="138.5" cy="203.9" r="3.5"><title>SHOP: SBC/收入 4%，比回归线贵 +70%</title></circle>
+<circle class="ptbg" cx="228.4" cy="382.1" r="3.5"><title>INTU: SBC/收入 9%，比回归线贵 -55%</title></circle>
+<text class="labbg" x="236.4" y="386.1" text-anchor="start">INTU</text>
+<circle class="ptbg" cx="125.6" cy="373.6" r="3.5"><title>PYPL: SBC/收入 4%，比回归线贵 -49%</title></circle>
+<circle class="ptbg" cx="134.5" cy="362.6" r="3.5"><title>XYZ: SBC/收入 4%，比回归线贵 -41%</title></circle>
+<circle class="ptbg" cx="148.5" cy="386.1" r="3.5"><title>ADYEN: SBC/收入 5%，比回归线贵 -58%</title></circle>
+<text class="labbg" x="156.5" y="390.1" text-anchor="start">ADYEN</text>
+<circle class="ptbg" cx="110.7" cy="305.2" r="3.5"><title>CPAY: SBC/收入 3%，比回归线贵 -1%</title></circle>
+<circle class="ptbg" cx="91.4" cy="293.9" r="3.5"><title>FISV: SBC/收入 2%，比回归线贵 +7%</title></circle>
+<circle class="ptbg" cx="237.5" cy="397.8" r="3.5"><title>AFRM: SBC/收入 10%，比回归线贵 -66%</title></circle>
+<circle class="ptbg" cx="94.0" cy="367.4" r="3.5"><title>GPN: SBC/收入 2%，比回归线贵 -45%</title></circle>
+<circle class="ptbg" cx="124.6" cy="371.3" r="3.5"><title>TOST: SBC/收入 3%，比回归线贵 -47%</title></circle>
+<circle class="ptbg" cx="191.3" cy="393.9" r="3.5"><title>GLBE: SBC/收入 7%，比回归线贵 -63%</title></circle>
+<circle class="ptbg" cx="113.9" cy="355.9" r="3.5"><title>ACN: SBC/收入 3%，比回归线贵 -37%</title></circle>
+<circle class="ptbg" cx="64.0" cy="336.6" r="3.5"><title>TCS: SBC/收入 0%，比回归线贵 -23%</title></circle>
+<circle class="ptbg" cx="72.5" cy="349.2" r="3.5"><title>INFY: SBC/收入 0%，比回归线贵 -32%</title></circle>
+<circle class="ptbg" cx="88.9" cy="367.2" r="3.5"><title>CTSH: SBC/收入 1%，比回归线贵 -44%</title></circle>
+<circle class="ptbg" cx="78.7" cy="374.5" r="3.5"><title>CAP: SBC/收入 1%，比回归线贵 -50%</title></circle>
+<circle class="ptbg" cx="74.0" cy="371.1" r="3.5"><title>WIT: SBC/收入 1%，比回归线贵 -47%</title></circle>
+<circle class="ptbg" cx="121.5" cy="379.3" r="3.5"><title>EPAM: SBC/收入 3%，比回归线贵 -53%</title></circle>
+<text class="axlab" x="460.0" y="462" text-anchor="middle">SBC / 收入（未来12个月）</text>
+<text class="axlab" transform="translate(14,218.0) rotate(-90)" text-anchor="middle">相对回归线的溢价（+ = 比线贵）</text>
+</svg></div></figure>
+<figcaption class="note">纵轴 = 实际 EV/S ÷ 回归线给的 EV/S − 1；超过 200% 的（ORCL、NET、CRWD）画在 200% 的位置。Source: 同上。</figcaption>
+<div class="prose">
+<p><b>SBC 越高的公司，溢价反而越大</b>（相关系数 +0.44）。把 SBC 作为第三个变量加进回归，它的系数也是正的。这里有两层原因。第一，市场确实不扣 SBC。第二，有一部分是机械效应：SBC 是用股票发的，股价越贵，同样数量的股票折算出来的 SBC 金额就越大，所以估值高本身就会推高 SBC，因果是双向的。</p>
+<p>这对我们的框架是一个重要结论：<b>扣 SBC 的视角，正好是我们和市场看法不同的地方。</b>对高 SBC 的公司来说，这里是风险：哪天市场开始扣 SBC，或者股价下跌、SBC 换算成的稀释变大，估值会被双重压缩。对低 SBC 的公司来说，这里是机会：它们的现金流质量没有被市场单独定价。</p>
+</div>
+<figure class="chart"><div class="title">我们的尺子：扣 SBC 后 FCF 收益率 vs 增长</div><div class="svgwrap"><svg viewBox="0 0 880 470" role="img">
+<line class="grid" x1="64" x2="856" y1="399.8" y2="399.8"/><text class="tick" x="56" y="403.8" text-anchor="end">−5%</text>
+<line class="grid" x1="64" x2="856" y1="308.9" y2="308.9"/><text class="tick" x="56" y="312.9" text-anchor="end">0%</text>
+<line class="grid" x1="64" x2="856" y1="218.0" y2="218.0"/><text class="tick" x="56" y="222.0" text-anchor="end">5%</text>
+<line class="grid" x1="64" x2="856" y1="127.1" y2="127.1"/><text class="tick" x="56" y="131.1" text-anchor="end">10%</text>
+<line class="grid" x1="64" x2="856" y1="36.2" y2="36.2"/><text class="tick" x="56" y="40.2" text-anchor="end">15%</text>
+<text class="tick" x="64.0" y="438" text-anchor="middle">0%</text>
+<text class="tick" x="222.4" y="438" text-anchor="middle">10%</text>
+<text class="tick" x="380.8" y="438" text-anchor="middle">20%</text>
+<text class="tick" x="539.2" y="438" text-anchor="middle">30%</text>
+<text class="tick" x="697.6" y="438" text-anchor="middle">40%</text>
+<text class="tick" x="856.0" y="438" text-anchor="middle">50%</text>
+<line class="zero" x1="64" x2="856" y1="308.9" y2="308.9"/>
+<line class="axis" x1="64" x2="856" y1="418" y2="418"/>
+<polyline class="fit" points="64.0,170.2 79.8,175.9 95.7,181.6 111.5,187.2 127.4,192.9 143.2,198.6 159.0,204.3 174.9,209.9 190.7,215.6 206.6,221.3 222.4,227.0 238.2,232.6 254.1,238.3 269.9,244.0 285.8,249.7 301.6,255.4 317.4,261.0 333.3,266.7 349.1,272.4 365.0,278.1 380.8,283.7 396.6,289.4 412.5,295.1 428.3,300.8 444.2,306.4 460.0,312.1 475.8,317.8 491.7,323.5 507.5,329.2 523.4,334.8 539.2,340.5 555.0,346.2 570.9,351.9 586.7,357.5 602.6,363.2 618.4,368.9 634.2,374.6 650.1,380.3 665.9,385.9 681.8,391.6 697.6,397.3"/>
+<text class="fitlab" x="693.6" y="389.3" text-anchor="end">回归线 R² = 0.48</text>
+<circle class="ptbg" cx="446.9" cy="299.9" r="3.5"><title>MSFT: 增长 24%，扣 SBC 后 FCF 收益率 0.5%（相对线 +0.4pt）</title></circle>
+<circle class="ptbg" cx="786.5" cy="418.0" r="3.5"><title>ORCL: 增长 46%，扣 SBC 后 FCF 收益率 -11.0%（相对线 -4.4pt）</title></circle>
+<text class="labbg" x="794.5" y="422.0" text-anchor="start">ORCL</text>
+<circle class="ptbg" cx="133.8" cy="197.3" r="3.5"><title>IBM: 增长 4%，扣 SBC 后 FCF 收益率 6.1%（相对线 -0.1pt）</title></circle>
+<circle class="pt" cx="535.0" cy="318.0" r="5"><title>SNOW: 增长 30%，扣 SBC 后 FCF 收益率 -0.5%（相对线 +1.2pt）</title></circle>
+<text class="lab" x="543.0" y="322.0" text-anchor="start">SNOW</text>
+<circle class="pt" cx="439.8" cy="304.0" r="5"><title>DDOG: 增长 24%，扣 SBC 后 FCF 收益率 0.3%（相对线 +0.0pt）</title></circle>
+<text class="lab" x="447.8" y="308.0" text-anchor="start">DDOG</text>
+<circle class="ptbg" cx="365.9" cy="309.1" r="3.5"><title>MDB: 增长 19%，扣 SBC 后 FCF 收益率 -0.0%（相对线 -1.7pt）</title></circle>
+<circle class="pt" cx="375.6" cy="283.1" r="5"><title>DT: 增长 20%，扣 SBC 后 FCF 收益率 1.4%（相对线 -0.1pt）</title></circle>
+<text class="lab" x="383.6" y="295.1" text-anchor="start">DT</text>
+<circle class="ptbg" cx="328.0" cy="258.4" r="3.5"><title>NTNX: 增长 17%，扣 SBC 后 FCF 收益率 2.8%（相对线 +0.4pt）</title></circle>
+<circle class="ptbg" cx="351.2" cy="311.3" r="3.5"><title>FROG: 增长 18%，扣 SBC 后 FCF 收益率 -0.1%（相对线 -2.1pt）</title></circle>
+<circle class="ptbg" cx="326.2" cy="288.2" r="3.5"><title>ESTC: 增长 17%，扣 SBC 后 FCF 收益率 1.1%（相对线 -1.3pt）</title></circle>
+<circle class="pt" cx="309.7" cy="313.5" r="5"><title>GTLB: 增长 16%，扣 SBC 后 FCF 收益率 -0.3%（相对线 -3.0pt）</title></circle>
+<text class="lab" x="301.7" y="325.5" text-anchor="end">GTLB</text>
+<circle class="ptbg" cx="421.5" cy="306.0" r="3.5"><title>CRWD: 增长 23%，扣 SBC 后 FCF 收益率 0.2%（相对线 -0.4pt）</title></circle>
+<circle class="ptbg" cx="398.5" cy="288.4" r="3.5"><title>PANW: 增长 21%，扣 SBC 后 FCF 收益率 1.1%（相对线 +0.1pt）</title></circle>
+<circle class="ptbg" cx="521.1" cy="313.0" r="3.5"><title>NET: 增长 29%，扣 SBC 后 FCF 收益率 -0.2%（相对线 +1.2pt）</title></circle>
+<circle class="ptbg" cx="259.4" cy="270.8" r="3.5"><title>FTNT: 增长 12%，扣 SBC 后 FCF 收益率 2.1%（相对线 -1.7pt）</title></circle>
+<circle class="ptbg" cx="226.3" cy="290.4" r="3.5"><title>OKTA: 增长 10%，扣 SBC 后 FCF 收益率 1.0%（相对线 -3.4pt）</title></circle>
+<circle class="ptbg" cx="384.3" cy="308.1" r="3.5"><title>ZS: 增长 20%，扣 SBC 后 FCF 收益率 0.0%（相对线 -1.3pt）</title></circle>
+<circle class="ptbg" cx="397.2" cy="324.9" r="3.5"><title>RBRK: 增长 21%，扣 SBC 后 FCF 收益率 -0.9%（相对线 -1.9pt）</title></circle>
+<circle class="ptbg" cx="144.7" cy="175.5" r="3.5"><title>CHKP: 增长 5%，扣 SBC 后 FCF 收益率 7.3%（相对线 +1.3pt）</title></circle>
+<circle class="ptbg" cx="357.7" cy="319.7" r="3.5"><title>SAIL: 增长 19%，扣 SBC 后 FCF 收益率 -0.6%（相对线 -2.4pt）</title></circle>
+<circle class="ptbg" cx="392.3" cy="352.0" r="3.5"><title>NTSK: 增长 21%，扣 SBC 后 FCF 收益率 -2.4%（相对线 -3.5pt）</title></circle>
+<circle class="ptbg" cx="347.4" cy="380.0" r="3.5"><title>S: 增长 18%，扣 SBC 后 FCF 收益率 -3.9%（相对线 -6.0pt）</title></circle>
+<text class="labbg" x="355.4" y="384.0" text-anchor="start">S</text>
+<circle class="ptbg" cx="193.0" cy="245.0" r="3.5"><title>QLYS: 增长 8%，扣 SBC 后 FCF 收益率 3.5%（相对线 -1.6pt）</title></circle>
+<circle class="ptbg" cx="337.1" cy="322.2" r="3.5"><title>VRNS: 增长 17%，扣 SBC 后 FCF 收益率 -0.7%（相对线 -3.0pt）</title></circle>
+<circle class="ptbg" cx="249.3" cy="277.9" r="3.5"><title>SNPS: 增长 12%，扣 SBC 后 FCF 收益率 1.7%（相对线 -2.3pt）</title></circle>
+<circle class="ptbg" cx="287.1" cy="283.0" r="3.5"><title>CDNS: 增长 14%，扣 SBC 后 FCF 收益率 1.4%（相对线 -1.8pt）</title></circle>
+<circle class="ptbg" cx="247.2" cy="232.3" r="3.5"><title>ADSK: 增长 12%，扣 SBC 后 FCF 收益率 4.2%（相对线 +0.2pt）</title></circle>
+<circle class="ptbg" cx="160.2" cy="220.9" r="3.5"><title>DSY: 增长 6%，扣 SBC 后 FCF 收益率 4.8%（相对线 -0.9pt）</title></circle>
+<circle class="ptbg" cx="101.8" cy="254.5" r="3.5"><title>PTC: 增长 2%，扣 SBC 后 FCF 收益率 3.0%（相对线 -3.9pt）</title></circle>
+<text class="labbg" x="109.8" y="258.5" text-anchor="start">PTC</text>
+<circle class="ptbg" cx="192.1" cy="224.5" r="3.5"><title>TRMB: 增长 8%，扣 SBC 后 FCF 收益率 4.6%（相对线 -0.5pt）</title></circle>
+<circle class="ptbg" cx="236.2" cy="234.7" r="3.5"><title>BSY: 增长 11%，扣 SBC 后 FCF 收益率 4.1%（相对线 -0.2pt）</title></circle>
+<circle class="ptbg" cx="367.2" cy="233.9" r="3.5"><title>NEM: 增长 19%，扣 SBC 后 FCF 收益率 4.1%（相对线 +2.5pt）</title></circle>
+<circle class="pt" cx="260.6" cy="240.4" r="5"><title>SAP: 增长 12%，扣 SBC 后 FCF 收益率 3.8%（相对线 +0.0pt）</title></circle>
+<text class="lab" x="268.6" y="234.4" text-anchor="start">SAP</text>
+<circle class="pt" cx="222.1" cy="209.0" r="5"><title>CRM: 增长 10%，扣 SBC 后 FCF 收益率 5.5%（相对线 +1.0pt）</title></circle>
+<text class="lab" x="230.1" y="213.0" text-anchor="start">CRM</text>
+<circle class="pt" cx="369.0" cy="271.0" r="5"><title>NOW: 增长 19%，扣 SBC 后 FCF 收益率 2.1%（相对线 +0.5pt）</title></circle>
+<text class="lab" x="377.0" y="263.0" text-anchor="start">NOW</text>
+<circle class="ptbg" cx="229.7" cy="253.3" r="3.5"><title>WDAY: 增长 10%，扣 SBC 后 FCF 收益率 3.1%（相对线 -1.3pt）</title></circle>
+<circle class="ptbg" cx="172.9" cy="235.2" r="3.5"><title>ADP: 增长 7%，扣 SBC 后 FCF 收益率 4.1%（相对线 -1.4pt）</title></circle>
+<circle class="ptbg" cx="156.8" cy="207.5" r="3.5"><title>PAYX: 增长 6%，扣 SBC 后 FCF 收益率 5.6%（相对线 -0.2pt）</title></circle>
+<circle class="ptbg" cx="211.9" cy="219.1" r="3.5"><title>SGE: 增长 9%，扣 SBC 后 FCF 收益率 4.9%（相对线 +0.2pt）</title></circle>
+<circle class="ptbg" cx="182.0" cy="220.4" r="3.5"><title>PAYC: 增长 7%，扣 SBC 后 FCF 收益率 4.9%（相对线 -0.4pt）</title></circle>
+<circle class="ptbg" cx="204.8" cy="243.4" r="3.5"><title>PCTY: 增长 9%，扣 SBC 后 FCF 收益率 3.6%（相对线 -1.2pt）</title></circle>
+<circle class="ptbg" cx="227.4" cy="199.6" r="3.5"><title>PEGA: 增长 10%，扣 SBC 后 FCF 收益率 6.0%（相对线 +1.6pt）</title></circle>
+<circle class="ptbg" cx="191.9" cy="155.6" r="3.5"><title>ADBE: 增长 8%，扣 SBC 后 FCF 收益率 8.4%（相对线 +3.3pt）</title></circle>
+<text class="labbg" x="199.9" y="159.6" text-anchor="start">ADBE</text>
+<circle class="pt" cx="348.0" cy="299.0" r="5"><title>TEAM: 增长 18%，扣 SBC 后 FCF 收益率 0.5%（相对线 -1.5pt）</title></circle>
+<text class="lab" x="356.0" y="313.0" text-anchor="start">TEAM</text>
+<circle class="ptbg" cx="130.1" cy="239.6" r="3.5"><title>ZM: 增长 4%，扣 SBC 后 FCF 收益率 3.8%（相对线 -2.5pt）</title></circle>
+<circle class="ptbg" cx="189.2" cy="234.6" r="3.5"><title>DOCU: 增长 8%，扣 SBC 后 FCF 收益率 4.1%（相对线 -1.1pt）</title></circle>
+<circle class="ptbg" cx="284.2" cy="278.2" r="3.5"><title>HUBS: 增长 14%，扣 SBC 后 FCF 收益率 1.7%（相对线 -1.6pt）</title></circle>
+<circle class="ptbg" cx="64.0" cy="154.5" r="3.5"><title>DBX: 增长 -0%，扣 SBC 后 FCF 收益率 8.5%（相对线 +0.8pt）</title></circle>
+<circle class="ptbg" cx="189.8" cy="266.1" r="3.5"><title>BOX: 增长 8%，扣 SBC 后 FCF 收益率 2.4%（相对线 -2.8pt）</title></circle>
+<circle class="pt" cx="301.6" cy="260.6" r="5"><title>MNDY: 增长 15%，扣 SBC 后 FCF 收益率 2.7%（相对线 -0.3pt）</title></circle>
+<text class="lab" x="293.6" y="252.6" text-anchor="end">MNDY</text>
+<circle class="ptbg" cx="246.9" cy="231.2" r="3.5"><title>WIX: 增长 12%，扣 SBC 后 FCF 收益率 4.3%（相对线 +0.3pt）</title></circle>
+<circle class="ptbg" cx="182.5" cy="214.8" r="3.5"><title>RELX: 增长 7%，扣 SBC 后 FCF 收益率 5.2%（相对线 -0.1pt）</title></circle>
+<circle class="ptbg" cx="303.0" cy="201.1" r="3.5"><title>CSU: 增长 15%，扣 SBC 后 FCF 收益率 5.9%（相对线 +3.0pt）</title></circle>
+<text class="labbg" x="311.0" y="205.1" text-anchor="start">CSU</text>
+<circle class="ptbg" cx="262.7" cy="267.0" r="3.5"><title>VEEV: 增长 13%，扣 SBC 后 FCF 收益率 2.3%（相对线 -1.4pt）</title></circle>
+<circle class="ptbg" cx="191.5" cy="231.0" r="3.5"><title>TRI: 增长 8%，扣 SBC 后 FCF 收益率 4.3%（相对线 -0.8pt）</title></circle>
+<circle class="ptbg" cx="165.7" cy="187.6" r="3.5"><title>ROP: 增长 6%，扣 SBC 后 FCF 收益率 6.7%（相对线 +1.0pt）</title></circle>
+<circle class="ptbg" cx="539.5" cy="325.6" r="3.5"><title>AXON: 增长 30%，扣 SBC 后 FCF 收益率 -0.9%（相对线 +0.8pt）</title></circle>
+<circle class="ptbg" cx="165.6" cy="231.9" r="3.5"><title>VRSK: 增长 6%，扣 SBC 后 FCF 收益率 4.2%（相对线 -1.4pt）</title></circle>
+<circle class="ptbg" cx="151.8" cy="159.6" r="3.5"><title>WKL: 增长 6%，扣 SBC 后 FCF 收益率 8.2%（相对线 +2.3pt）</title></circle>
+<circle class="ptbg" cx="223.8" cy="215.8" r="3.5"><title>FICO: 增长 10%，扣 SBC 后 FCF 收益率 5.1%（相对线 +0.6pt）</title></circle>
+<circle class="ptbg" cx="216.6" cy="246.1" r="3.5"><title>TYL: 增长 10%，扣 SBC 后 FCF 收益率 3.5%（相对线 -1.2pt）</title></circle>
+<circle class="ptbg" cx="358.3" cy="278.4" r="3.5"><title>GWRE: 增长 19%，扣 SBC 后 FCF 收益率 1.7%（相对线 -0.1pt）</title></circle>
+<circle class="ptbg" cx="193.8" cy="270.7" r="3.5"><title>MANH: 增长 8%，扣 SBC 后 FCF 收益率 2.1%（相对线 -3.0pt）</title></circle>
+<circle class="ptbg" cx="245.8" cy="256.5" r="3.5"><title>CSGP: 增长 11%，扣 SBC 后 FCF 收益率 2.9%（相对线 -1.2pt）</title></circle>
+<circle class="ptbg" cx="193.4" cy="235.2" r="3.5"><title>JKHY: 增长 8%，扣 SBC 后 FCF 收益率 4.1%（相对线 -1.0pt）</title></circle>
+<circle class="ptbg" cx="281.2" cy="300.7" r="3.5"><title>PCOR: 增长 14%，扣 SBC 后 FCF 收益率 0.4%（相对线 -2.9pt）</title></circle>
+<circle class="ptbg" cx="337.2" cy="255.4" r="3.5"><title>APPF: 增长 17%，扣 SBC 后 FCF 收益率 2.9%（相对线 +0.7pt）</title></circle>
+<circle class="ptbg" cx="305.8" cy="332.2" r="3.5"><title>TTAN: 增长 15%，扣 SBC 后 FCF 收益率 -1.3%（相对线 -4.1pt）</title></circle>
+<circle class="ptbg" cx="272.2" cy="156.7" r="3.5"><title>TOI: 增长 13%，扣 SBC 后 FCF 收益率 8.4%（相对线 +4.8pt）</title></circle>
+<text class="labbg" x="280.2" y="160.7" text-anchor="start">TOI</text>
+<circle class="ptbg" cx="178.7" cy="264.3" r="3.5"><title>DOCS: 增长 7%，扣 SBC 后 FCF 收益率 2.5%（相对线 -2.9pt）</title></circle>
+<circle class="ptbg" cx="249.1" cy="225.6" r="3.5"><title>WAY: 增长 12%，扣 SBC 后 FCF 收益率 4.6%（相对线 +0.6pt）</title></circle>
+<circle class="ptbg" cx="492.8" cy="290.8" r="3.5"><title>SHOP: 增长 27%，扣 SBC 后 FCF 收益率 1.0%（相对线 +1.8pt）</title></circle>
+<circle class="ptbg" cx="235.3" cy="171.8" r="3.5"><title>INTU: 增长 11%，扣 SBC 后 FCF 收益率 7.5%（相对线 +3.3pt）</title></circle>
+<text class="labbg" x="243.3" y="175.8" text-anchor="start">INTU</text>
+<circle class="ptbg" cx="131.6" cy="126.7" r="3.5"><title>PYPL: 增长 4%，扣 SBC 后 FCF 收益率 10.0%（相对线 +3.7pt）</title></circle>
+<circle class="ptbg" cx="236.1" cy="235.2" r="3.5"><title>XYZ: 增长 11%，扣 SBC 后 FCF 收益率 4.1%（相对线 -0.2pt）</title></circle>
+<circle class="ptbg" cx="406.6" cy="231.0" r="3.5"><title>ADYEN: 增长 22%，扣 SBC 后 FCF 收益率 4.3%（相对线 +3.4pt）</title></circle>
+<text class="labbg" x="414.6" y="235.0" text-anchor="start">ADYEN</text>
+<circle class="ptbg" cx="214.2" cy="200.2" r="3.5"><title>CPAY: 增长 9%，扣 SBC 后 FCF 收益率 6.0%（相对线 +1.3pt）</title></circle>
+<circle class="ptbg" cx="64.6" cy="72.9" r="3.5"><title>FISV: 增长 0%，扣 SBC 后 FCF 收益率 13.0%（相对线 +5.4pt）</title></circle>
+<text class="labbg" x="72.6" y="76.9" text-anchor="start">FISV</text>
+<circle class="ptbg" cx="559.0" cy="210.0" r="3.5"><title>AFRM: 增长 31%，扣 SBC 后 FCF 收益率 5.4%（相对线 +7.6pt）</title></circle>
+<text class="labbg" x="567.0" y="214.0" text-anchor="start">AFRM</text>
+<circle class="ptbg" cx="259.1" cy="45.0" r="3.5"><title>GPN: 增长 12%，扣 SBC 后 FCF 收益率 14.5%（相对线 +10.7pt）</title></circle>
+<text class="labbg" x="267.1" y="49.0" text-anchor="start">GPN</text>
+<circle class="ptbg" cx="355.6" cy="263.2" r="3.5"><title>TOST: 增长 18%，扣 SBC 后 FCF 收益率 2.5%（相对线 +0.6pt）</title></circle>
+<circle class="ptbg" cx="556.4" cy="244.9" r="3.5"><title>GLBE: 增长 31%，扣 SBC 后 FCF 收益率 3.5%（相对线 +5.6pt）</title></circle>
+<circle class="ptbg" cx="154.2" cy="184.1" r="3.5"><title>ACN: 增长 6%，扣 SBC 后 FCF 收益率 6.9%（相对线 +1.0pt）</title></circle>
+<circle class="ptbg" cx="180.3" cy="191.9" r="3.5"><title>TCS: 增长 7%，扣 SBC 后 FCF 收益率 6.4%（相对线 +1.1pt）</title></circle>
+<circle class="ptbg" cx="171.2" cy="178.9" r="3.5"><title>INFY: 增长 7%，扣 SBC 后 FCF 收益率 7.1%（相对线 +1.6pt）</title></circle>
+<circle class="ptbg" cx="144.9" cy="164.2" r="3.5"><title>CTSH: 增长 5%，扣 SBC 后 FCF 收益率 8.0%（相对线 +1.9pt）</title></circle>
+<circle class="ptbg" cx="123.1" cy="137.0" r="3.5"><title>CAP: 增长 4%，扣 SBC 后 FCF 收益率 9.5%（相对线 +3.0pt）</title></circle>
+<circle class="ptbg" cx="172.6" cy="161.2" r="3.5"><title>WIT: 增长 7%，扣 SBC 后 FCF 收益率 8.1%（相对线 +2.6pt）</title></circle>
+<circle class="ptbg" cx="122.8" cy="216.0" r="3.5"><title>EPAM: 增长 4%，扣 SBC 后 FCF 收益率 5.1%（相对线 -1.4pt）</title></circle>
+<text class="axlab" x="460.0" y="462" text-anchor="middle">未来收入 CAGR（一致预期）</text>
+<text class="axlab" transform="translate(14,218.0) rotate(-90)" text-anchor="middle">扣 SBC 后 FCF 收益率（未来12个月 FCF − SBC）/ 市值</text>
+</svg></div></figure>
+<figcaption class="note">纵轴 = （未来 12 个月 FCF − SBC）÷ 市值。点在回归线上方 = 同样的增长，用我们的口径更便宜。Source: 一致预期，价格截至 2026.10.16。</figcaption>
+<div class="prose">
+<p><b>第二把尺子（我们的尺子）</b>：横轴是增长，纵轴是扣 SBC 后的 FCF 收益率，R² 是 0.48。按回归线看，增长每高 10 个百分点，市场愿意接受的收益率大约低 3.1 个百分点。增长 30% 的公司，按线算出来的收益率是负数，也就是说市场接受它们扣 SBC 后的现金流为负。这也是 SNOW 看起来在线上方的原因。</p>
+<ul>
+<li><b>在我们的尺子上偏便宜的</b>：GPN、AFRM、GLBE、FISV（这四家支付公司各有特殊情况）、TOI、PYPL、ADYEN、ADBE、INTU、CSU；9 家里只有 CRM（5.5%，比线高 1.0 个百分点）。</li>
+<li><b>偏贵的</b>：S、ORCL、TTAN、PTC、NTSK、OKTA、GTLB（比线低 3.0 个百分点）。</li>
+</ul>
+<div class="callout"><p><b>两把尺子都显示便宜的公司：CRM、INTU、ADBE、ADYEN。</b>它们在市场的尺子上比回归线便宜 24% 到 58%，在我们的尺子上也都在线上方。INTU 和 ADYEN 之前的 tier-1 复查里已经出现过，这次是用另一种方法得到了同样的结果。CRM 和 ADBE 是新冒出来的，值得往下看：市场给它们低估值，是因为认为 AI 会冲击它们的按座位收费模式。</p></div>
+</div>
+<div class="tbl"><table class="t"><thead><tr><th>公司</th><th>EV/S</th><th>回归线给的 EV/S</th><th>相对线</th><th>一致预期增长</th><th>大摩/UBS 增长</th><th>FCF margin</th><th>SBC/收入</th><th>扣SBC FCF 收益率</th></tr></thead><tbody><tr><td><b>MNDY</b></td><td>2.0x</td><td>4.6x</td><td>−57%</td><td>15.0%</td><td>17.3%</td><td>19.3%</td><td>12.1%</td><td><b>2.7%</b></td></tr><tr><td><b>CRM</b></td><td>4.8x</td><td>6.4x</td><td>−24%</td><td>10.0%</td><td>10.5%</td><td>32.4%</td><td>8.3%</td><td><b>5.5%</b></td></tr><tr><td><b>NOW</b></td><td>8.8x</td><td>10.1x</td><td>−13%</td><td>19.3%</td><td>19.8%</td><td>34.8%</td><td>15.1%</td><td><b>2.1%</b></td></tr><tr><td><b>DT</b></td><td>6.7x</td><td>7.0x</td><td>−4%</td><td>19.7%</td><td>18.4%</td><td>25.3%</td><td>14.3%</td><td><b>1.4%</b></td></tr><tr><td><b>TEAM</b></td><td>6.8x</td><td>6.8x</td><td>−1%</td><td>17.9%</td><td>17.8%</td><td>26.3%</td><td>22.3%</td><td><b>0.5%</b></td></tr><tr><td><b>SAP</b></td><td>5.2x</td><td>5.2x</td><td>−0%</td><td>12.4%</td><td>11.6%</td><td>24.9%</td><td>4.1%</td><td><b>3.8%</b></td></tr><tr><td><b>GTLB</b></td><td>6.5x</td><td>4.8x</td><td>+37%</td><td>15.5%</td><td>17.0%</td><td>19.5%</td><td>21.5%</td><td><b>−0.3%</b></td></tr><tr><td><b>SNOW</b></td><td>15.6x</td><td>9.4x</td><td>+66%</td><td>29.7%</td><td>31.4%</td><td>22.6%</td><td>31.7%</td><td><b>−0.5%</b></td></tr><tr><td><b>DDOG</b></td><td>18.5x</td><td>8.6x</td><td>+115%</td><td>23.7%</td><td>27.7%</td><td>26.4%</td><td>20.7%</td><td><b>0.3%</b></td></tr></tbody></table></div>
+<figcaption class="note">Source: 一致预期（价格截至 2026.10.16）；"大摩/UBS 增长"是第 1 节用的券商未来 2 年预测，放在这里对照。</figcaption>
+</section>
+
+<section id="next" class="sec">
+<h2>5  需要你拍板 / 下一版要调的</h2>
+<div class="prose">
+<ol>
+<li><b>扩大样本。</b>历史数据目前只有这 9 家的券商模型。如果你把更多模型放进同一个文件夹（尤其是 CRM、INTU、ADBE、ADYEN 和其他 tier-1 名单上的公司），第 1 到 3 节可以直接扩上去。</li>
+<li><b>刷新价格。</b>估值用的是 10 月 16 日的价格，之后有几家出过财报。下一版我会把 91 家的价格一起更新。</li>
+<li><b>拆出有机增长。</b>NOW、CRM、SAP 的增长里有并购的贡献，我会单独做一列有机增长。</li>
+<li><b>NRR（净收入留存率）还没放进质量轴。</b>模型里只有 DDOG（120%）、SNOW（126%）、MNDY（110%）、DT（约 110%）四家有这个数，CRM、SAP、NOW 不披露。要不要补成一张图，等你决定。</li>
+<li>你想保留 ROE 的话，我可以把它放进附表作为参考，但不建议用来画图。</li>
+</ol>
+</div>
+</section>
+
+<section id="table" class="sec">
+<h2>附表：9 家全部指标</h2>
+<div class="tbl"><table class="t"><thead><tr><th>公司</th><th>来源</th><th>财年截止</th><th>过去3年收入CAGR</th><th>未来2年收入CAGR</th><th>加速/减速</th><th>毛利率</th><th>non-GAAP OPM</th><th>SBC/收入</th><th>FCF margin</th><th>扣SBC FCF margin 2025</th><th>扣SBC FCF margin 2027E</th><th>原始 FCF CAGR 22→25</th><th>扣SBC FCF CAGR 25→27E</th></tr></thead><tbody><tr><td><b>CRM</b></td><td>MS</td><td class="l">1月（FY+1 → 日历年）</td><td>9.8%</td><td>10.5%</td><td>+0.7%</td><td>80.7%</td><td>34.1%</td><td>8.5%</td><td>34.7%</td><td><b>26.2%</b></td><td>22.1%</td><td>32%</td><td>1%</td></tr><tr><td><b>SAP</b></td><td>MS</td><td class="l">12月</td><td>7.6%</td><td>11.6%</td><td>+4.0%</td><td>73.8%</td><td>32.9%</td><td>2.4%</td><td>22.5%</td><td><b>20.1%</b></td><td>22.3%</td><td>20%</td><td>18%</td></tr><tr><td><b>NOW</b></td><td>UBS</td><td class="l">12月</td><td>22.4%</td><td>19.8%</td><td>−2.6%</td><td>81.1%</td><td>31.2%</td><td>14.7%</td><td>34.5%</td><td><b>19.7%</b></td><td>22.1%</td><td>28%</td><td>27%</td></tr><tr><td><b>MNDY</b></td><td>MS</td><td class="l">12月</td><td>33.4%</td><td>17.3%</td><td>−16.1%</td><td>89.9%</td><td>14.2%</td><td>14.4%</td><td>26.2%</td><td><b>11.8%</b></td><td>13.8%</td><td>241%</td><td>27%</td></tr><tr><td><b>DT</b></td><td>MS</td><td class="l">3月（FY+1 → 日历年）</td><td>20.3%</td><td>18.4%</td><td>−1.9%</td><td>83.9%</td><td>29.3%</td><td>14.8%</td><td>26.2%</td><td><b>11.4%</b></td><td>12.6%</td><td>17%</td><td>24%</td></tr><tr><td><b>DDOG</b></td><td>MS</td><td class="l">12月</td><td>26.9%</td><td>27.7%</td><td>+0.7%</td><td>81.0%</td><td>22.4%</td><td>21.9%</td><td>26.7%</td><td><b>4.8%</b></td><td>8.5%</td><td>37%</td><td>71%</td></tr><tr><td><b>GTLB</b></td><td>MS</td><td class="l">1月（FY+1 → 日历年）</td><td>31.1%</td><td>17.0%</td><td>−14.1%</td><td>89.3%</td><td>17.0%</td><td>22.5%</td><td>23.0%</td><td><b>0.5%</b></td><td>−4.1%</td><td><span class="na">n.m.</span></td><td><span class="na">n.m.</span></td></tr><tr><td><b>TEAM</b></td><td>MS</td><td class="l">6月（用模型自带的日历年列）</td><td>21.9%</td><td>17.8%</td><td>−4.1%</td><td>86.3%</td><td>24.9%</td><td>26.0%</td><td>22.3%</td><td><b>−3.8%</b></td><td>5.5%</td><td>21%</td><td><span class="na">n.m.</span></td></tr><tr><td><b>SNOW</b></td><td>MS</td><td class="l">1月（FY+1 → 日历年）</td><td>31.4%</td><td>31.4%</td><td>+0.0%</td><td>72.3%</td><td>10.5%</td><td>36.5%</td><td>23.9%</td><td><b>−12.6%</b></td><td>1.1%</td><td>31%</td><td><span class="na">n.m.</span></td></tr></tbody></table></div>
+<p class="note">按 2025 年扣 SBC 后 FCF margin 从高到低排序。n.m. = 起点为负或接近 0，CAGR 没有意义。Source: 券商模型（大摩，NOW 为 UBS），日历年换算，non-GAAP。原始数据和代码在项目文件 software-mapping/quality-growth/ 下。</p>
+</section>
+</main></div>
+<script>(function(){
+var links=[].slice.call(document.querySelectorAll('nav.toc a'));
+var secs=links.map(function(a){return document.getElementById(a.getAttribute('href').slice(1))}).filter(Boolean);
+function update(){
+  var y=window.innerHeight*0.25,cur=null;
+  secs.forEach(function(s){if(s.getBoundingClientRect().top<y)cur=s});
+  links.forEach(function(a){a.classList.toggle('cur',cur&&a.getAttribute('href')==='#'+cur.id)});
+  document.querySelectorAll('nav.toc li[data-sec]').forEach(function(li){
+    var on=cur&&(li.dataset.sec===cur.id||!!li.querySelector('a[href="#'+cur.id+'"]'));
+    li.classList.toggle('open',!!on);
+  });
+}
+window.addEventListener('scroll',update,{passive:true});update();
+})();
+</script></body></html>
