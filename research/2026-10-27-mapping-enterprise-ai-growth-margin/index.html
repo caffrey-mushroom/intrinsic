@@ -127,11 +127,11 @@ td.dim{color:var(--faint)}
 </section>
 
 <section class="sec" id="s2">
-<h2>3  轨迹：每季度的增速和利润率</h2>
-<div class="prose"><p>横轴是季度同比增速，纵轴是毛利率（云厂商用分部利润率）。每条线从 1Q25 走到 4Q28E，实线是已披露，虚线是券商预测，末端的点是 4Q28E。选中一层时，其他层会变成浅色背景。</p></div>
+<h2>3  轨迹：每季度的收入增速</h2>
+<div class="prose"><p>每条线是一家公司的季度同比收入增速，1Q25 到 4Q28E。实线是已披露，虚线是券商预测，竖线是最近一个已披露季度。选中的层用深色，其他公司是浅色背景线。</p></div>
 <div class="ctrl" id="c2-layer"><span class="lab">层</span></div>
-<figure><svg id="ch2" viewBox="0 0 900 560" role="img" aria-label="季度增速与毛利率轨迹"></svg>
-<figcaption>线往右走是加速，往上走是毛利率提升。Google Cloud 用的是大摩模型，CY27 季度增速超过 100%，所以横轴上限截在 120%。</figcaption></figure>
+<figure><svg id="ch2" viewBox="0 0 900 520" role="img" aria-label="各公司季度同比收入增速折线图"></svg>
+<figcaption>纵轴上限截在 60%；切到“全部”范围时，Google Cloud 和 PLTR 超出的部分被截断。</figcaption></figure>
 <p class="src">Source: 券商模型季度数据；Caffrey 整理</p>
 </section>
 
@@ -266,32 +266,27 @@ function draw1(){
 let L2='数据';
 function draw2(){
   const svg=document.getElementById('ch2'); svg.innerHTML='';
-  const W=900,H=560,m={l:56,r:90,t:20,b:44};
-  const series=ENT.map(k=>({k,e:D[k],pts:QS.map(q=>({q,v:D[k].q[q]})).filter(p=>p.v&&p.v[0]!=null&&p.v[1]!=null)}));
+  const W=900,H=520,m={l:52,r:120,t:20,b:40}, CAP=0.6;
+  const X=lin(0,QS.length-1,m.l,W-m.r);
+  const series=ENT.map(k=>({k,e:D[k],pts:QS.map((q,i)=>({i,q,v:D[k].q[q]&&D[k].q[q][0]})).filter(o=>o.v!=null)})).filter(s=>s.pts.length>1);
   const act=series.filter(s=>L2==='全部'||s.e.layer===L2);
-  const all=(L2==='全部'?series:act).flatMap(s=>s.pts);
-  const gx=all.map(p=>Math.min(1.2,p.v[0])), gy=all.map(p=>p.v[1]);
-  let x0=Math.min(0,...gx), x1=Math.max(...gx); x0=Math.floor(x0*20)/20; x1=Math.ceil(x1*20)/20;
-  let y0=Math.min(...gy), y1=Math.max(...gy); const pad=(y1-y0)*0.08+0.01; y0-=pad; y1+=pad;
-  const X=lin(x0,x1,m.l,W-m.r), Y=lin(y0,y1,H-m.b,m.t);
-  niceTicks(x0,x1,8).forEach(v=>{el('line',{x1:X(v),x2:X(v),y1:m.t,y2:H-m.b,class:v===0?'axis0':'grid'},svg); txt(svg,X(v),H-m.b+18,pct(v,0),{'text-anchor':'middle'})});
-  niceTicks(y0,y1,7).forEach(v=>{el('line',{x1:m.l,x2:W-m.r,y1:Y(v),y2:Y(v),class:'grid'},svg); txt(svg,m.l-8,Y(v)+4,pct(v,0),{'text-anchor':'end'})});
-  txt(svg,W-m.r,H-6,'季度同比增速 →',{'text-anchor':'end'}); txt(svg,m.l,m.t-6,'↑ 毛利率 / 分部利润率');
-  const clip=v=>Math.max(x0,Math.min(x1,v));
-  if(L2!=='全部') series.filter(s=>s.e.layer!==L2).forEach(s=>{ if(!s.pts.length) return;
-    const xs=s.pts.map(p=>X(clip(p.v[0]))); if(xs.some(x=>x<m.l-1||x>W-m.r+1)) return;
-    const ys=s.pts.map(p=>Y(p.v[1])); if(ys.some(y=>y<m.t||y>H-m.b)) return;
-    el('polyline',{points:s.pts.map((p,i)=>xs[i]+','+ys[i]).join(' '),fill:'none',stroke:css('--ctx'),'stroke-width':1.5},svg)});
+  const vals=series.flatMap(s=>s.pts.map(o=>o.v));
+  const y0=Math.min(0,Math.floor(Math.min(...vals)*20)/20), y1=Math.min(CAP,Math.ceil(Math.max(...vals)*20)/20);
+  const Y=lin(y0,y1,H-m.b,m.t), cl=v=>Y(Math.max(y0,Math.min(y1,v)));
+  niceTicks(y0,y1,7).forEach(v=>{el('line',{x1:m.l,x2:W-m.r,y1:Y(v),y2:Y(v),class:v===0?'axis0':'grid'},svg); txt(svg,m.l-8,Y(v)+4,pct(v,0),{'text-anchor':'end'})});
+  QS.forEach((q,i)=>{ if(q.endsWith('Q1')||i===QS.length-1) txt(svg,X(i),H-m.b+18,(+q.slice(-1))+'Q'+q.slice(2,4)+(q>'2026Q2'?'E':''),{'text-anchor':'middle'})});
+  const ia=QS.indexOf('2026Q2'); el('line',{x1:X(ia),x2:X(ia),y1:m.t,y2:H-m.b,class:'tierline'},svg); txt(svg,X(ia)+4,m.t+10,'已披露 | 预测',{class:'qlab'});
+  txt(svg,m.l,m.t-6,'↑ 收入同比增速');
+  const line=(pts,att)=>pts.length>1&&el('polyline',Object.assign({points:pts.map(o=>X(o.i)+','+cl(o.v)).join(' '),fill:'none'},att),svg);
+  if(L2!=='全部') series.filter(s=>!act.includes(s)).forEach(s=>line(s.pts,{stroke:css('--ctx'),'stroke-width':1.5}));
+  const shades=['--slate-800','--slate-500','--slate-300','--muted','--gray-350'];
   const labels=[];
-  act.forEach(s=>{ if(s.pts.length<2) return;
-    const P=s.pts.map(p=>[X(clip(p.v[0])),Y(p.v[1]),p.q<=s.e.act]);
-    const solid=P.filter(p=>p[2]), dash=P.filter((p,i)=>!p[2]||(P[i+1]&&!P[i+1][2]));
-    const col=css('--slate-500');
-    if(solid.length>1) el('polyline',{points:solid.map(p=>p[0]+','+p[1]).join(' '),fill:'none',stroke:col,'stroke-width':2},svg);
-    if(dash.length>1) el('polyline',{points:dash.map(p=>p[0]+','+p[1]).join(' '),fill:'none',stroke:col,'stroke-width':2,'stroke-dasharray':'4 4'},svg);
-    el('circle',{cx:P[0][0],cy:P[0][1],r:2.5,fill:col},svg);
-    const L=P[P.length-1]; el('circle',{cx:L[0],cy:L[1],r:4.5,fill:css('--navy')},svg);
-    labels.push({x:L[0]+8,y:L[1]+4,w:(s.e.name.length)*7,k:s.e.name});
+  act.forEach((s,j)=>{
+    const col=L2==='全部'?css('--slate-500'):css(shades[j%shades.length]);
+    const sol=s.pts.filter(o=>o.q<=s.e.act), est=s.pts.filter(o=>o.q>=s.e.act);
+    line(sol,{stroke:col,'stroke-width':2}); line(est,{stroke:col,'stroke-width':2,'stroke-dasharray':'4 4'});
+    const L=s.pts[s.pts.length-1];
+    labels.push({x:X(L.i)+8,y:cl(L.v)+4,w:60,k:s.e.name+' '+pct(L.v,0)});
   });
   placeLabels(labels).forEach(l=>txt(svg,l.x,l.y,l.k,{class:'lbl hi'}));
 }
