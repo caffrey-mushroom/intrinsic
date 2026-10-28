@@ -18,6 +18,7 @@ Usage (run after the issue page is written into the repo, before commit):
 
 - Idempotent: re-running replaces the block between `<!-- weekly-sources:start/end -->`.
 - Placement: before the page's last `<p class="foot">`, else at the end of the content column.
+- Bundled issues (GPU · CPU · Foundry, CSP + Neocloud): pass several all_out.json comma-separated; duplicates are merged.
 - `--report` prints match counts and unlinked items without touching a page.
 - `--html out.html` writes only the section, for builds that place it themselves.
 

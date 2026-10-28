@@ -106,8 +106,10 @@ def build(repo, all_out, page_rel=None):
     by_key = {}
     for r in notes:
         by_key.setdefault((r['date'], r['n']), r)
-    recs = json.load(open(all_out, encoding='utf-8'))
-    recs = recs if isinstance(recs, list) else list(recs.values())
+    recs = []
+    for f in all_out.split(','):   # bundled issues: several all_out.json, comma-separated
+        d = json.load(open(f, encoding='utf-8'))
+        recs += d if isinstance(d, list) else list(d.values())
     out, seen = [], set()
     for rec in recs:
         if not isinstance(rec, dict):
