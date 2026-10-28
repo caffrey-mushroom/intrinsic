@@ -61,7 +61,7 @@ for i, r in sorted(recs.items(), key=lambda kv: (kv[1]['date'], kv[1].get('time'
         f'<p class="orig">原标题：{E(r["orig"])}</p>',
         f'<p class="tags">{E(tags)}</p>',
         f'<p class="meta">{E(mt)}</p>',
-        *body, '</main>', '</body></html>', ''])
+        *body, '</main>', '<script src="../back.js" defer></script>', '</body></html>', ''])
     os.makedirs(f'{repo}/notes/{slug}')
     if is_pdf:
         shutil.copyfile(r['path'], f'{repo}/notes/{slug}/doc.pdf')
