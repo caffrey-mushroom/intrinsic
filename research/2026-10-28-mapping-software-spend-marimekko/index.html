@@ -135,7 +135,7 @@ body{padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(1
 .pick button[aria-pressed="true"]{color:var(--text); border-bottom-color:var(--slate-500)}
 .legend{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:var(--fs-note); color:var(--muted); margin-top:12px}
 .legend i{display:inline-block; width:12px; height:12px; border-radius:2px; vertical-align:-2px; margin-right:5px}
-.main{margin-top:var(--s2)}
+.main{margin-top:var(--s2); width:calc(100vw - 2 * max(24px, env(safe-area-inset-left,0px))); position:relative; left:50%; transform:translateX(-50%); max-width:2400px}
 #tm{position:relative; min-width:0; overflow-x:auto; -webkit-overflow-scrolling:touch}
 #tm svg{display:block; width:100%; height:auto}
 .tile{cursor:pointer}
@@ -179,8 +179,8 @@ table.t td.l{text-align:left; white-space:normal; color:var(--muted); font-size:
 <div class="head">
 <h1>2026.10.28 | Mapping | 软件预算 Marimekko</h1>
 <p class="tags">#software #mapping #spend #marimekko #framework</p>
-<p class="meta">v3.0 · 内部 · 复查 2026.12.31 · 其他画法：<a href="https://caffrey-mushroom.github.io/intrinsic/research/2026-10-28-mapping-software-spend/" target="_blank" rel="noopener">v1 格子</a> · <a href="https://caffrey-mushroom.github.io/intrinsic/research/2026-10-28-mapping-software-spend-treemap/" target="_blank" rel="noopener">v2 面积</a></p>
-<p class="summary">每一列是一个品类，列越宽钱越多，整张图约 $1.23 万亿美元。列里从下往上按份额叠公司，最上面的浅色是其他厂商。几家大平台用固定的深浅：微软最深，然后是 AWS、谷歌、Oracle、SAP，所以同一家横跨多少列一眼可见。点任意一家，它在每一列的份额会同时高亮。</p>
+<p class="meta">v3.1 · 内部 · 复查 2026.12.31 · 其他画法：<a href="https://caffrey-mushroom.github.io/intrinsic/research/2026-10-28-mapping-software-spend/" target="_blank" rel="noopener">v1 格子</a> · <a href="https://caffrey-mushroom.github.io/intrinsic/research/2026-10-28-mapping-software-spend-treemap/" target="_blank" rel="noopener">v2 面积</a></p>
+<p class="summary">每一列是一个品类，列越宽钱越多，列里从下往上按份额叠公司，顶上按企业需求分组。默认只看独立厂商：把微软、AWS、谷歌、Oracle、SAP 这些平台拿掉，ServiceNow、Snowflake、Datadog、Rubrik 才看得清。切到"全市场"能看到平台占多少。点任意一家，它在每一列的块都会亮起来。</p>
 </div>
 
 <div class="ctrl">
@@ -189,11 +189,23 @@ table.t td.l{text-align:left; white-space:normal; color:var(--muted); font-size:
     <button id="c-breadth" aria-pressed="true">按公司</button>
     <button id="c-fw" aria-pressed="false">AI 框架</button>
   </div>
+  <div class="tabs" role="group" aria-label="范围">
+    <span class="lab">范围：</span>
+    <button id="s-named" aria-pressed="true">只看独立厂商</button>
+    <button id="s-ex" aria-pressed="false">去掉平台巨头</button>
+    <button id="s-all" aria-pressed="false">全市场</button>
+  </div>
+  <div class="tabs" role="group" aria-label="列宽">
+    <span class="lab">列宽：</span>
+    <button id="w-sqrt" aria-pressed="true">放大小品类</button>
+    <button id="w-lin" aria-pressed="false">严格按钱</button>
+  </div>
   <div class="pick" id="pick" role="group" aria-label="快速选择">
     <span class="lab">横向：</span>
   </div>
 </div>
 <div class="legend" id="legend"></div>
+<p class="note" id="scopenote"></p>
 <p class="note">点任意一块看这家公司在每列的份额；点列底下的品类名看规模、计费单位和集中度。列顶细条 = AI 框架判断，* = 估算。</p>
 
 <div class="main">
@@ -226,10 +238,14 @@ const D={"groups": [{"id": "build", "name": "造软件、跑系统", "sub": "工
 const G=Object.fromEntries(D.groups.map(g=>[g.id,g]));
 const CAT=Object.fromEntries(D.cats.map(c=>[c.id,c]));
 const VL={2:'受益',1:'偏受益',0:'中性','-1':'受压','-2':'最受压'};
-const PICKS=['MSFT','AMZN','GOOGL','ORCL','SAP','CRM','NOW','PANW','DDOG','TEAM','ADBE','OKTA','MDB','GWRE','Cursor'];
+const PICKS=['MSFT','AMZN','GOOGL','ORCL','SAP','CRM','NOW','PANW','DDOG','SNOW','CRWD','TEAM','OKTA','MDB','GWRE','Cursor'];
 const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-let colorMode='breadth', sel=null;
+let colorMode='breadth', sel=null, scope='named', wmode='sqrt';
+const BIG=['MSFT','AMZN','GOOGL','ORCL','SAP','IBM','Alibaba','Anthropic','OpenAI'];
+const SHORT={Anthropic:'ANT',OpenAI:'OAI',Alibaba:'BABA',Cisco:'CSCO',Teradata:'TDC',DBX:'Dropbox',LabCode:'Claude Code/Codex'};
+const lab=t=>SHORT[t]||(D.cos[t].kind==='L'&&/^[A-Z]+$/.test(t)?t:D.cos[t].name);
+function segsOf(c){let r=[...c.rows].sort((a,b)=>b.v-a.v).map(x=>({t:x.t,v:x.v,what:x.what}));if(scope!=='all')r=r.filter(x=>!BIG.includes(x.t));if(scope!=='named'&&c.other>0.05)r.push({other:true,v:c.other});return r}
 const fmt=v=>v>=10?'$'+Math.round(v)+'B':(v>=1?'$'+v.toFixed(1)+'B':'$'+Math.round(v*1000)+'M');
 
 const GIANT={MSFT:'--slate-800',AMZN:'--slate-600',GOOGL:'--slate-500',ORCL:'--slate-400',SAP:'--slate-300'};
@@ -247,7 +263,7 @@ function vink(c,t,other){
 function legend(){
   const L=document.getElementById('legend');const sw=(v,b)=>`<i style="background:var(${v})${b?';box-shadow:inset 0 0 0 1px var(--rule)':''}"></i>`;
   L.innerHTML=colorMode==='breadth'
-   ?`<span>${sw('--slate-800')}微软</span><span>${sw('--slate-600')}AWS</span><span>${sw('--slate-500')}谷歌</span><span>${sw('--slate-400')}Oracle</span><span>${sw('--slate-300')}SAP</span><span>${sw('--slate-200',1)}横跨 2+ 列的独立厂商</span><span>${sw('--slate-100',1)}只在 1 列 (纵深)</span><span>${sw('--tile-other',1)}其他厂商</span>`
+   ?`<span>${sw('--slate-800')}MSFT</span><span>${sw('--slate-600')}AMZN</span><span>${sw('--slate-500')}GOOGL</span><span>${sw('--slate-400')}ORCL</span><span>${sw('--slate-300')}SAP</span><span>${sw('--slate-200',1)}横跨 2+ 列的独立厂商</span><span>${sw('--slate-100',1)}只在 1 列 (纵深)</span><span>${sw('--tile-other',1)}其他厂商</span>`
    :`<span>${sw('--slate-500')}AI 受益</span><span>${sw('--slate-300')}偏受益</span><span>${sw('--slate-100',1)}中性</span><span>${sw('--gray-250')}受压</span>`;
 }
 const mcan=document.createElement('canvas').getContext('2d');
@@ -255,12 +271,14 @@ function fit(txt,w,font){mcan.font=font;if(mcan.measureText(txt).width<=w)return
 
 function render(){
   const box=document.getElementById('tm');const W=Math.max(960,box.clientWidth);
-  const GAP=2,GGAP=10,TOP=78,PH=560,BOT=118,H=TOP+PH+BOT;
-  const cols=[];D.groups.forEach(g=>{D.cats.filter(c=>c.g===g.id).sort((a,b)=>b.tot-a.tot).forEach(c=>cols.push(c))});
-  const ng=D.groups.length;const avail=W-GAP*(cols.length-ng)-GGAP*(ng-1);const tot=cols.reduce((a,c)=>a+c.tot,0);
-  const MIN=22;let ws=cols.map(c=>c.tot/tot*avail);const small=ws.map(w=>w<MIN);const fixed=small.reduce((a,s)=>a+(s?MIN:0),0);
-  const bigTot=cols.reduce((a,c,i)=>a+(small[i]?0:c.tot),0);ws=ws.map((w,i)=>small[i]?MIN:cols[i].tot/bigTot*(avail-fixed));
-  const font='11.5px Inter, "PingFang SC", "Noto Sans SC", sans-serif';
+  const GAP=2,GGAP=10,TOP=78,PH=Math.max(560,Math.min(1100,innerHeight-150)),BOT=118,H=TOP+PH+BOT;
+  const cols=[];D.groups.forEach(g=>{D.cats.filter(c=>c.g===g.id).map(c=>Object.assign(c,{segs:segsOf(c)},{eff:segsOf(c).reduce((a,x)=>a+x.v,0)})).filter(c=>c.eff>0).sort((a,b)=>b.eff-a.eff).forEach(c=>cols.push(c))});
+  const gids=[...new Set(cols.map(c=>c.g))];
+  const ng=gids.length;const avail=W-GAP*(cols.length-ng)-GGAP*(ng-1);const tot=cols.reduce((a,c)=>a+c.eff,0);
+  const wv=c=>wmode==='sqrt'?Math.sqrt(c.eff):c.eff;const tot2=cols.reduce((a,c)=>a+wv(c),0);
+  const MIN=26;let ws=cols.map(c=>wv(c)/tot2*avail);const small=ws.map(w=>w<MIN);const fixed=small.reduce((a,s)=>a+(s?MIN:0),0);
+  const bigTot=cols.reduce((a,c,i)=>a+(small[i]?0:wv(c)),0);ws=ws.map((w,i)=>small[i]?MIN:wv(cols[i])/bigTot*(avail-fixed));
+  const font=(W>1700?'12.5px':'11.5px')+' Inter, "PingFang SC", "Noto Sans SC", sans-serif';
   let s=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="${sel?'dimmed':''}" role="img" style="width:${W}px;max-width:none">`;
   let x=0,gx0=0,prevG=null;const gspan={};
   cols.forEach((c,i)=>{
@@ -268,18 +286,17 @@ function render(){
     const w=ws[i];gspan[c.g][1]=x+w;
     // column header: size + verdict bar
     const cx=x+w/2;
-    if(w>=44)s+=`<text class="ct" x="${cx}" y="${TOP-18}" text-anchor="middle">${fmt(c.tot)}${c.est?'*':''}</text>`;
-    else s+=`<text class="ct" transform="translate(${cx+4},${TOP-12}) rotate(-90)">${fmt(c.tot)}${c.est?'*':''}</text>`;
+    if(w>=44)s+=`<text class="ct" x="${cx}" y="${TOP-18}" text-anchor="middle">${fmt(c.eff)}${c.est?'*':''}</text>`;
+    else s+=`<text class="ct" transform="translate(${cx+4},${TOP-12}) rotate(-90)">${fmt(c.eff)}${c.est?'*':''}</text>`;
     const vb=c.verdict>=2?'var(--slate-500)':c.verdict===1?'var(--slate-300)':c.verdict===0?'var(--slate-100)':'var(--gray-250)';
     s+=`<rect x="${x}" y="${TOP-8}" width="${w}" height="4" fill="${vb}"><title>AI 框架：${VL[c.verdict]}</title></rect>`;
     // segments: biggest at the bottom, others on top
-    const rows=[...c.rows].sort((a,b)=>b.v-a.v);let y=TOP+PH;
-    const segs=rows.map(r=>({t:r.t,v:r.v,what:r.what}));if(c.other>0.05)segs.push({other:true,v:c.other});
-    segs.forEach(sg=>{const h=sg.v/c.tot*PH;y-=h;const nm=sg.other?'其他':D.cos[sg.t].name;const on=sel&&!sg.other&&sg.t===sel;
+    let y=TOP+PH;const segs=c.segs;
+    segs.forEach(sg=>{const h=sg.v/c.eff*PH;y-=h;const nm=sg.other?'其他':lab(sg.t);const on=sel&&!sg.other&&sg.t===sel;
       const pct=Math.round(sg.v/c.tot*100);
       s+=`<g class="tile${on?' on':''}" data-t="${sg.other?'':sg.t}" data-cat="${c.id}"><title>${esc(nm)} · ${fmt(sg.v)} · ${esc(c.name)} 的 ${pct||'<1'}%</title>`+
         `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${vfill(c,sg.t,sg.other)}"/>`;
-      if(w>=40&&h>=15){const lab=fit(nm,w-8,font);const ink=vink(c,sg.t,sg.other);
+      if(w>=30&&h>=15){const lab=fit(nm,w-8,font);const ink=vink(c,sg.t,sg.other);
         if(h>=30&&lab)s+=`<text x="${cx}" y="${y+h/2-2}" text-anchor="middle" fill="${ink}">${esc(lab)}</text><text class="v" x="${cx}" y="${y+h/2+12}" text-anchor="middle" fill="${ink}">${pct}%</text>`;
         else if(lab){const l2=fit(nm+' '+pct+'%',w-8,font)||lab;s+=`<text x="${cx}" y="${y+h/2+4}" text-anchor="middle" fill="${ink}">${esc(l2)}</text>`}}
       s+=`</g>`});
@@ -290,7 +307,7 @@ function render(){
     else s+=`<text class="cb chd" data-cat="${c.id}" transform="translate(${cx+4},${ly-4}) rotate(90)" style="cursor:pointer">${esc(c.name)}</text>`;
     prevG=c.g;x+=w+GAP;});
   // need brackets on top
-  D.groups.forEach(g=>{const [a,b]=gspan[g.id];const lab=fit(g.name,Math.max(0,b-a-8),'500 14px Newsreader, "Noto Serif SC", serif');
+  D.groups.filter(g=>gspan[g.id]).forEach(g=>{const [a,b]=gspan[g.id];const lab=fit(g.name,Math.max(0,b-a-8),'500 14px Newsreader, "Noto Serif SC", serif');
     s+=`<g class="gl"><line x1="${a+1}" x2="${b-1}" y1="22" y2="22"/><line x1="${a+1}" x2="${a+1}" y1="22" y2="27"/><line x1="${b-1}" x2="${b-1}" y1="22" y2="27"/>`+
       (lab?`<text x="${(a+b)/2}" y="15" text-anchor="middle">${esc(lab)}</text>`:'')+`</g>`});
   box.innerHTML=s+'</svg>';
@@ -300,7 +317,7 @@ const panel=document.getElementById('panel');
 function closeBtn(){return `<button class="close" id="pclose">关闭</button>`}
 function showCo(t){sel=t;const o=D.cos[t];const rows=D.cats.flatMap(c=>c.rows.filter(r=>r.t===t).map(r=>({c,r})));
   const tot=rows.reduce((a,x)=>a+x.r.v,0);const kind={L:'上市',P:'私有',S:'被收购 / 子公司'}[o.kind];
-  panel.innerHTML=closeBtn()+`<div class="k">${kind}${o.kind==='L'&&!/[a-z]/.test(t)?' · '+t:''}</div><h2>${esc(o.name)}</h2>
+  panel.innerHTML=closeBtn()+`<div class="k">${kind}${o.kind==='L'&&!/[a-z]/.test(t)?' · '+t:''}</div><h2>${esc(lab(t))}${lab(t)!==o.name?' <span style="font-size:15px;color:var(--muted)">'+esc(o.name)+'</span>':''}</h2>
    <div class="big">${fmt(tot)}</div><p class="note" style="margin-top:2px">图上合计 (估算)</p>
    <div><span class="badge">${o.n>=2?'横向：出现在 '+o.n+' 个品类':'纵深：只在 1 个品类'}</span>${o.score!=null?`<span class="badge">三论点得分 ${o.score>0?'+':''}${o.score}</span>`:''}${o.evs?`<span class="badge">EV/S ${o.evs}x</span>`:''}</div>
    <p>${esc(o.note)}</p>
@@ -313,19 +330,24 @@ function showCat(id){sel=null;const c=CAT[id];const top=[...c.rows].sort((a,b)=>
    <div class="k">计费单位</div><p>${esc(c.unit)}</p>
    <div class="k">框架判断</div><p><b>${VL[c.verdict]}</b>：${esc(c.vnote)}</p>
    <div class="k">集中度</div><p>前三家约占 ${Math.round(top3/c.tot*100)}%，"其他"占 ${Math.round(c.other/c.tot*100)}%</p>
-   <div class="k">主要玩家</div><table>${top.map(r=>`<tr><td>${esc(D.cos[r.t].name)}${r.what&&r.what!=='本业'?`<small>${esc(r.what)}</small>`:''}</td><td class="r">${fmt(r.v)}</td></tr>`).join('')}</table>`;
+   <div class="k">主要玩家</div><table>${top.map(r=>`<tr><td>${esc(lab(r.t)===D.cos[r.t].name?lab(r.t):lab(r.t)+' '+D.cos[r.t].name)}${r.what&&r.what!=='本业'?`<small>${esc(r.what)}</small>`:''}</td><td class="r">${fmt(r.v)}</td></tr>`).join('')}</table>`;
   done();}
 function hint(){panel.innerHTML=`<p class="note">点任意一块，看这家公司在哪些列里、各占多少。点列底下的品类名，看规模、计费单位和集中度。列顶的细条是 AI 框架判断，*号是估算。</p>`}
 function done(){panel.hidden=false;render();syncPick();const b=document.getElementById('pclose');if(b)b.onclick=()=>{sel=null;render();syncPick();panel.hidden=true}}
 function syncPick(){document.querySelectorAll('#pick button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===sel))}
-document.getElementById('pick').insertAdjacentHTML('beforeend',PICKS.map((t,i)=>(i===11?'<span class="lab">纵深：</span>':'')+`<button data-t="${t}" aria-pressed="false">${esc(D.cos[t].name)}</button>`).join(''));
+document.getElementById('pick').insertAdjacentHTML('beforeend',PICKS.map((t,i)=>(i===12?'<span class="lab">纵深：</span>':'')+`<button data-t="${t}" aria-pressed="false">${esc(lab(t))}</button>`).join(''));
 document.addEventListener('click',e=>{const p=e.target.closest('#pick button');if(p){showCo(p.dataset.t);return}
   const c=e.target.closest('.chd');if(c){showCat(c.dataset.cat);return}
   const t=e.target.closest('.tile');if(t){if(t.dataset.t)showCo(t.dataset.t);else showCat(t.dataset.cat);return}});
 function mode(m){colorMode=m;document.getElementById('c-fw').setAttribute('aria-pressed',m==='fw');document.getElementById('c-breadth').setAttribute('aria-pressed',m==='breadth');legend();render()}
 document.getElementById('c-fw').onclick=()=>mode('fw');document.getElementById('c-breadth').onclick=()=>mode('breadth');
+function setScope(v){scope=v;['named','ex','all'].forEach(k=>document.getElementById('s-'+k).setAttribute('aria-pressed',({named:'named',ex:'exgiant',all:'all'})[k]===v));render();note()}
+document.getElementById('s-named').onclick=()=>setScope('named');document.getElementById('s-ex').onclick=()=>setScope('exgiant');document.getElementById('s-all').onclick=()=>setScope('all');
+function note(){const n=document.getElementById('scopenote');n.textContent=(wmode==='sqrt'?'列宽按钱的平方根画，小品类被放大，方便看清公司；要看真实比例切到"严格按钱"。':'列宽严格按钱。')+' '+(scope==='named'?'只看独立厂商：拿掉微软、AWS、谷歌、Oracle、SAP、IBM、阿里、两家模型公司和"其他"，列宽 = 图上这些公司在该品类的收入合计。块里的 % 仍是占整个品类的份额。':scope==='exgiant'?'去掉平台巨头：拿掉七家平台和两家模型公司，保留"其他"，列宽 = 剩下的钱。块里的 % 是占整个品类的份额。':'全市场：列宽 = 整个品类的钱。')}
+function setW(v){wmode=v;document.getElementById('w-sqrt').setAttribute('aria-pressed',v==='sqrt');document.getElementById('w-lin').setAttribute('aria-pressed',v==='lin');render();note()}
+document.getElementById('w-sqrt').onclick=()=>setW('sqrt');document.getElementById('w-lin').onclick=()=>setW('lin');
 let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(render,120)});
-legend();
+legend();note();
 panel.hidden=true;render();
 if(document.fonts)document.fonts.ready.then(render);
 </script>
