@@ -1,0 +1,189 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.27 | AC | LLM | Anthropic Margin vs Next Compute Bill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.27 | AC | LLM | Anthropic Margin vs Next Compute Bill</h1>
+<p class="orig">原标题：19.3%经营利润率之后，Anthropic如何消化下一轮算力账单？ ——ARR增长、模型差异化、入口黏性与Direct降本</p>
+<p class="tags">#llm #ai-demand #china</p>
+<p class="meta">AceCamp · 2026-10-27 · article 70568534</p>
+<div class="body">
+<h2>摘要</h2>
+<p>1．高毛利已经证明前沿模型的盈利潜力，下一轮利润首先看ARR。笔者的GW测算与FUNDA的合同测算，都指向2030年每年2000多亿美元算力费用。收入增长快，既有容量释放经营杠杆；增长跟不上，刚性成本放大压力。2．差异化要从模型能力延伸到客户入口。持续研发与反蒸馏保护能力优势，Code、Cowork增强工作流黏性。更深的客户关系与长期消费承诺，有助于提高收入稳定性、减少对云渠道的依赖。3．Direct争取把更多算力利润留在自身。直接租赁设备、配置专属机房，有望替换昂贵短期算力；但采购价、融资条件和利用率决定最终成本。增长、差异化与降本，需要在同一轮扩张中兑现。</p>
+<p>Anthropic的招股书，给前沿模型这门生意提供了很有分量的盈利证据。2026年上半年，公司收入162.86亿美元，按附注中的收入成本计算，毛利率约85.4%；第二季度Non-GAAP经营利润约22.4亿美元，经营利润率约19.3%。</p>
+<p><b>Q2的Non-GAAP盈利已计入当期训练研发和其他经营费用，该口径剔除了股权激励费用。笔者认为，这说明领先模型具有很好的商业潜力。但要判断后面的利润，还需要看收入能否跟上下一轮算力扩张。</b></p>
+<p>85%的口径仍需说明：免费用户算力和云渠道分成列在销售费用中，因此它高于扣除这些费用之后的贡献率。约八成收入来自按量收费，其余主要来自订阅；按量收费包括API及产品用量，订阅也包括企业和团队。</p>
+<h2>一、收入能否跑赢算力账单</h2>
+<p>笔者倾向于把Q2看作一个阶段性较有利的盈利窗口。原有容量正在变现，过去的售价和采购条件相对有利；后续模型价格下调、边际采购变贵，以及大批新容量投产，都将重新考验利润。</p>
+<p>下图中的Anthropic token价格指数，近期明显下行。它不是单一模型的实际成交价，但足以提醒我们，未来收入需要依靠更多付费任务、更强能力和更深使用，而不能只靠价格。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568534_92fefa44e2d67d68.webp" alt="" loading="lazy"></p>
+<p>图1 Anthropic与OpenAI token价格指数。来源：Ornn Token Price Index，据图例。指数编制口径未展示，末值不代表美元／百万token报价。</p>
+<p>算力采购端则出现了相反的变化。Silicon Data的B200租赁指数，从年初约4.40美元/GPU小时，升至6月底5.36美元，10月26日达到6.63美元，较6月底上涨约24%。这反映的是市场租价，提示短期GPU采购可能更贵，也增加了新增容量的成本压力。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568534_2bb691a84ad428b5.webp" alt="" loading="lazy"></p>
+<p>图2 B200租赁价格的选定日期读数，单位为美元/GPU小时。来源：Silicon Data SDB200RT及月度更新，笔者整理。该指数不等于Anthropic存量合同采购价。</p>
+<p>更大的变化，是已经签下的容量陆续转成费用。笔者此前按可用GW与各供应商单位采购成本估算，FUNDA则按合同、交付时间及摊销逐项推算，两种方法得到的2030年年度算力费用均为2000多亿美元，量级接近。新增容量交付后，相关费用具有较强刚性，需要持续增长的收入来消化。</p>
+<p>FUNDA模型预计，算力及基础设施费用从2026年的338亿美元，升至2027年的986亿美元、2028年的1523亿美元。这些是模型预测，具体节奏取决于交付与采购假设；<b>它们说明的方向很清楚：下一轮费用增长会很快且刚性。</b></p>
+<p><b>这让ARR成为未来利润最重要的变量。</b>约八成按量计费，意味着收入随客户消费变化；上游部分采购和租赁安排，则已提前锁定多年。收入增长快，既有容量可以更充分变现；增长放缓，费用也很难同步收缩。</p>
+<p><b>这种结构的经营杠杆很大。</b>仅作简化情景，若现有算力、研发和人员安排能够承接新增业务，并假设全部新增变动成本占新增收入的20%—30%，每增加100亿美元收入，就可能增加约70亿—80亿美元经营利润。这是固定容量尚有余量时的简化情景，说明收入增长可以有很强的利润弹性。</p>
+<p>因此，笔者最关注的是整个季度平均run-rate的增长，以及新容量上线后的收入爬坡速度。</p>
+<h2>二、能力和入口决定收入能持续多久</h2>
+<p><b>Anthropic未来收入的可见性仍然有限。</b>6月底RPO约108亿美元，其中约75%预计在未来12个月确认，对应cRPO约81亿美元，不足Q2一个季度的收入。RPO不包含尚未承诺的未来按量消费，因此不能据此判断需求不足；但相较于已提前签下的多年算力安排，收入端的合同保障仍偏弱。未来更多企业项目进入生产，并形成长期最低消费承诺，有助于让收入与多年算力安排更匹配。</p>
+<p>要让收入持续增长，Anthropic首先必须维持客户愿意付费的能力优势。招股书披露，截至9月30日的六个月内发布的模型版本，贡献了超过80%的第三季度收入。收入正在迅速迁移到最新模型，也意味着下一轮研发不能停。</p>
+<p>H1研发费用97.41亿美元，占收入约60%。相当一部分投入，是维持前沿竞争力的必要支出。客户会比较模型完成任务的效果、价格和可靠性，能力差距缩小，定价空间就会受到挑战。</p>
+<p>这也解释了反蒸馏的商业逻辑。Anthropic承担前沿探索成本，如果竞争对手能够低成本吸收成果，就可能更快追赶，并用低价压缩其未来收益。公司估计，违反使用政策或商业条款的客户占前九个月收入约5%—7%，并在8—9月加强治理。笔者的理解是，公司愿意放弃部分当期收入，保护未来的能力溢价。</p>
+<p><b>能力优势还需要转成产品黏性。</b>Code、Cowork越深入用户的任务、工具和工作流程，Anthropic就越有机会掌握客户入口。上下文积累、流程习惯和系统连接，都有助于把一次模型调用变成持续使用。</p>
+<p>目前，云渠道仍在帮助公司快速扩大规模。Marketplace收入占比从2023年的11%、2024年的32%，升至2025年的47%，H1达到48%。云平台的客户基础、采购预算和合规体系，明显降低了企业接入门槛。</p>
+<p>但在多模型平台上，Claude也更容易成为可比较、可路由和可替换的选项。笔者认为，Anthropic有动力通过Code、Cowork强化自有入口，减少对云分销的依赖，并争取留下更多利润。若仅作情景测算，48%的渠道收入按20%抽成，对应总收入的9.6%；渠道关系会明显影响最终利润。</p>
+<p>因此，值得观察的是自有产品使用、客户持续付费和收入承诺能否增强。</p>
+<h2>三、Direct争取更低的交付成本</h2>
+<p>Anthropic Direct，是公司争取算力端成本优势的重要路径。直接租赁设备，配合专用机房和第三方运营，公司可以减少对完整云服务的依赖，也有机会用较便宜的长期容量替换昂贵短期采购。</p>
+<p>这种模式还可以优化投入顺序：先锁定建设周期更长的机房和电力，较晚决定金额更大的加速器投入，为观察需求和选择硬件留出时间。</p>
+<p>笔者此前估算，Direct每GW硬件投入350亿美元，按六年、6%融资计算，年度硬件付款约71亿美元，加上机房、电力运维后，综合约105亿美元/GW年。按FUNDA模型中较新的设备和融资参数统一换算，Direct综合成本约137亿美元/GW年。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/acecamp/images/acecamp_article_70568534_274e77419f089b2d.webp" alt="" loading="lazy"></p>
+<p>表1 Direct与SpaceX短期租赁的每GW年度成本参照。Direct此前参数来自笔者测算；更新参数按FUNDA模型隐含系统资产约459亿美元/IT GW、五年、7.1%融资及每GW年机房电力25亿美元换算。硬件代际、功率口径与实际任务产出仍需匹配。</p>
+<p>以SpaceX短期租赁约300亿美元/GW年的成本作量级参照，Direct更新测算约137亿美元/GW年，单位年度成本明显更低。这也说明Direct的重要价值：用较便宜的长期容量替换高价短期采购，减少扩张期对昂贵边际算力的依赖。</p>
+<p>直接租设备也会承担更直接的融资、部署和利用率风险。模型与推理引擎协同、缓存和吞吐优化，能够增加同一套硬件完成的工作量；客户需求足够强，才能把这些效率转成更好的利润。</p>
+<p>上半年的高毛利和Q2的Non-GAAP经营盈利，反映了收入快速增长阶段的利润释放。随着新增算力陆续交付，后续利润取决于收入爬坡与费用增长的匹配程度。模型能力和产品入口影响客户持续付费，Direct与推理效率则影响单位交付成本。贵算力用于付费推理，会压低服务毛利率；用于训练研究，则主要增加研发费用，因此毛利率与经营利润率的变化也需要分别观察。</p>
+<p>后续的观察重点，是季度平均run-rate能否持续增长、新容量上线后多快形成收入，以及扣除设备采购和融资租赁本金后能留下多少现金。同时，企业客户能否形成更多长期最低消费承诺，也关系到收入与多年算力安排的匹配程度。收入增长快于费用扩张，经营杠杆才会向利润端释放；收入爬坡放缓，已锁定的成本则会增加利润和现金流压力。</p>
+<p>非投资建议。本文仅供研究交流，不构成任何投资建议或证券买卖依据。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
