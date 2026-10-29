@@ -1,0 +1,215 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.28 | AC | Semis | TorchTPU &amp; TorchNeuron Challenge CUDA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.28 | AC | Semis | TorchTPU &amp; TorchNeuron Challenge CUDA</h1>
+<p class="orig">原标题：谷歌联手Meta开源TorchTPU、亚马逊推出TorchNeuron：两路夹击CUDA迁移壁垒</p>
+<p class="tags">#asic #software #china</p>
+<p class="meta">AceCamp · 2026-10-28 21:34 · article 70568592</p>
+<div class="body">
+<h2>摘要</h2>
+<p>2026年10月20日，谷歌（Alphabet，NASDAQ: GOOGL）与Meta（NASDAQ: META）开源TorchTPU，亚马逊（NASDAQ: AMZN）将TorchNeuron推至公开测试版。两套软件都让PyTorch直接调用自家芯片，使开发者能沿用熟悉的模型代码和开发工具，再处理新芯片的算子、编译与性能问题。这两路进展指向英伟达（NASDAQ: NVDA）CUDA的一项关键优势：客户多年积累的代码、调优经验和团队工作方式。软件迁移的起点降低后，更重要的问题是常见模型能否正确运行、在相同精度和服务要求下是否划算，以及TPU和Trainium已有多少实际客户用量。</p>
+<h2>正文</h2>
+<p>2026年10月20日，谷歌（Alphabet，NASDAQ: GOOGL）与Meta（NASDAQ: META）开源TorchTPU，亚马逊（NASDAQ: AMZN）将TorchNeuron推至公开测试版。两套软件都让PyTorch直接调用自家芯片，使开发者能沿用熟悉的模型代码和开发工具，再处理新芯片的算子、编译与性能问题。</p>
+<p>这两路进展指向英伟达（NASDAQ: NVDA）CUDA的一项关键优势：客户多年积累的代码、调优经验和团队工作方式。软件迁移的起点降低后，更重要的问题是常见模型能否正确运行、在相同精度和服务要求下是否划算，以及TPU和Trainium已有多少实际客户用量。</p>
+<h2>01 事件本质：两家云厂商同时降低自研芯片的PyTorch迁移成本</h2>
+<p>客户买英伟达的GPU，买的是一套能持续工作的软件与团队经验。模型算子、分布式训练、推理服务和调试流程，大多按CUDA环境打磨。换芯片意味着改代码、核对数值、重调性能、培训团队，采购价格再低也要连同这些投入一起计算。</p>
+<p>早先的桥接工具已能让PyTorch调用其他芯片，但开发体验有明显代价。谷歌早期的PyTorch/XLA要求修改源码、划定编译区域，编译等待长，也缺少PyTorch原生的即时执行。Trainium用户则多借助Optimum Neuron处理模型和配置，并适应静态形状、编译等限制。迁移前，团队往往要先改变工作方式。</p>
+<p>TorchTPU与TorchNeuron都把新芯片注册为PyTorch可直接调用的设备，支持即时执行和torch.compile，再接入分布式训练与推理工具。设备名分别写作.to("tpu")和.to("neuron")。这一步缩短了模型首次跑通所需的改造工作，后续性能仍取决于编译、算子和通信调度。</p>
+<p>PyTorch模型接入TPU与Trainium的两条软件路径</p>
+<p>数据来源：PyTorch团队《Introducing TorchTPU》《Introducing TorchNeuron》，2026年；谷歌云《TorchTPU is now open source》，2026年10月20日。</p>
+<p>两条路线都复用PyTorch已有接口，但底层通往不同的编译器和硬件。统一设备入口减少了迁移工作，模型能否高效运行则取决于进入新编译器后的调优结果。</p>
+<p>#</p>
+<h2>02两条路线：一家补齐整条工作流，一家让模型接得上原接口</h2>
+<h3>谷歌：将模型、分布式训练和推理服务接入TPU</h3>
+<p>谷歌打通了模型运行、训练框架和推理服务，Meta参与开发并提供生产场景反馈。TorchTPU用PyTorch即时执行调试模型，需要提速时由torch.compile捕获计算图，经StableHLO交给XLA生成TPU程序。谷歌同时开源了TorchTPU、vLLM-TorchTPU、SGLang-TorchTPU和TorchTitan，使模型训练、上线与规模化运行有了相互衔接的工具。</p>
+<p>Meta的PyTorch团队参与编写TorchTPU，并表示这套软件已支持其大模型、广告和推荐系统的关键生产任务。开发者还可用FSDP2、DTensor等熟悉的分布式接口，在TPU上组织多芯片训练；推理端接入vLLM和SGLang，并可通过llm-d调度GPU与TPU上的服务实例。</p>
+<p>代码兼容性已有较大范围的内部验证。TorchTPU测试了4917个Hugging Face模型，其中4821个通过无崩溃测试；在657个架构代表模型中，638个与GPU基线达到设定的数值一致标准。测试覆盖语言、图像和音频模型。</p>
+<p>同一模型在TPU上的性能，主要靠编译与算子优化逐步取得。PyTorch团队的FLUX训练示例从即时执行起步，每步耗时11.49秒；依次采用DeferAndFuse、SimpleFSDP、Pallas注意力内核、完整编译及模型改写后，降至2.78秒。最终每步耗时减少约76%，吞吐约为初始的4.1倍。</p>
+<p>FLUX训练在TorchTPU上的连续优化与每步耗时</p>
+<p>数据来源：PyTorch团队《Introducing TorchTPU》，2026年10月20日，“Case Study 5: LLM Fine-Tuning with TorchTitan”；每步节省时间按相邻阶段原始数据计算。</p>
+<p>这个案例把“能跑起来”与“跑得高效”之间的工程差距量化了出来。更大规模的测试更进一步：TorchTitan用8192颗Ironwood TPU运行Qwen3 235B MoE训练，模型算力利用率为27.1%。这是指定模型、精度和并行配置下的结果，客户自有模型仍需按形状和分片方式重新调优。</p>
+<p>推理服务的调度也会改变芯片产出。谷歌披露，Zenteiq（非上市）使用GKE Inference Gateway和llm-d，按负载与前缀缓存状态分配推理任务后，每1000颗TPU v6e的日生成量由14.7亿提高至59.7亿token。这项增量对应服务路由和缓存利用的改善，衡量的是整套推理服务的产出。</p>
+<h3>亚马逊：让Trainium直接接入主流模型库</h3>
+<p>亚马逊把Trainium接成PyTorch原生设备，并让Hugging Face模型库直接识别它。TorchNeuron支持即时执行、torch.compile、FSDP2和张量并行。即时执行便于逐步排查问题，实验性的自适应即时执行把算子合成较小编译单元，减少反复启动的开销；成熟模型则可交给Neuron编译器优化。</p>
+<p>Hugging Face（非上市）建议Trainium用户直接使用Transformers、Diffusers、Accelerate、PEFT和TRL，不必再经Optimum Neuron编写专门模型流程。在下载与使用量最高的100种文本生成架构中，新路径开箱支持89种，Optimum Neuron v0.4.5支持46种，覆盖数增加43种。模型库能直接识别设备，工程团队迁移常见模型时就少了一层专用代码。</p>
+<p>TorchNeuron模型覆盖与PyTorch测试结果</p>
+<p>数据来源：Hugging Face《Running HF models on AWS Trainium is easier than ever》，2026年10月；PyTorch团队《Introducing TorchNeuron》，2026年，“Testing methodology and results”。图中测试结果为约数。</p>
+<p>覆盖率之外仍有软件缺口。TorchNeuron公布约15.4万项PyTorch上游测试结果，其中约6.9万项被跳过；约3万项由PyTorch自身适用性检查跳过，Neuron主动跳过的约3.9万项中，约2.2万项缺少原生算子映射。客户可据此先检查模型是否依赖这些算子和动态形状，再估算定制工作量。</p>
+<h3>性能成本：默认通信示例损耗30%—40%，高精度矩阵乘需三至六倍运算量</h3>
+<p>相同PyTorch接口下，默认设置仍会明显改变训练速度和推理成本。多芯片训练中，TorchTPU默认把每次集合通信单独编译为小模块，以保持各训练进程一致，也使XLA难以把通信隐藏在计算过程中。PyTorch团队给出的示例端到端损耗为30%—40%。确认代码符合单程序多数据执行条件后，开发者可用@spmd_safe减少图断点，让编译器安排通信与计算重叠。该百分比来自特定比较示例，关键变量是模型的通信频率与分片方式。</p>
+<p>精度设置影响另一笔算力开支。CUDA环境下PyTorch默认采用highest纯FP32矩阵乘，TorchTPU默认medium，以BF16相乘、FP32累加。若任务必须提高矩阵乘精度，TPU的high采用三轮计算，highest采用六轮计算，MXU运算量约为默认档的三倍和六倍。同一MXU运算预算下，理论上可完成的量约降至三分之一和六分之一；整项训练或推理还包含其他步骤，需实测总耗时。</p>
+<p>TorchTPU矩阵乘精度档位与相对MXU运算量</p>
+<p>数据来源：PyTorch团队《Introducing TorchTPU》，2026年10月20日，“Numerical Precision”；理论完成量以固定MXU运算预算除以相对运算量计算。</p>
+<p>推理测试给出了成本对比。SemiAnalysis（非上市）在Qwen3.5 397B、FP8精度、约8000输入和1000输出token的推理任务上，结合推理性能与外部部署总拥有成本模型，比较TPU v7、B200和B300。要求每位用户每秒生成100个token时，其测算的每百万总token成本分别约为0.181、0.222和0.276美元；按20秒中位响应时间比较，则分别约为0.098、0.106和0.132美元。</p>
+<p>TPU v7与B200、B300推理成本：两种服务约束</p>
+<p>数据来源：SemiAnalysis InferenceX《TPU Inference Externalization Full Steam Ahead》，2026年9月；Qwen3.5 397B FP8、8K输入/1K输出、聚合推理、外部部署总拥有成本模型。</p>
+<p>在每秒100 token条件下，TPU测算成本比B200低约19%；20秒响应条件下，优势缩至约8%。性能价格比必须连同响应时间一起报价。这组结果针对指定模型、量化精度与外部部署成本，云客户还需代入自己的租价、利用率和迁移工程投入。</p>
+<p>###</p>
+<h2>03 商业进展：百万颗Trainium已运行，头部客户签下吉瓦级算力</h2>
+<h3>Trainium2百万颗部署已用于Claude和Bedrock</h3>
+<p>Trainium已有百万颗级运行规模，Anthropic与Bedrock给出了具体用途。亚马逊2025年第四季度披露，140万颗Trainium2已就位并被订满，其中Project Rainier超过50万颗，为Claude训练提供算力。亚马逊同时表示，Bedrock大部分推理由Trainium2处理，当时该服务已有超过10万家企业使用。2026年4月，Anthropic（非上市）披露其使用超过100万颗Trainium2训练和运行Claude。</p>
+<p>Trainium2公开部署数量与用途</p>
+<p>数据来源：亚马逊《2025年第四季度业绩公告》，2026年2月5日；Anthropic《Anthropic and Amazon expand collaboration for up to 5 gigawatts of new compute》，2026年4月20日。数量按不同披露时点展示，Project Rainier包含在AWS总量中。</p>
+<p>Trainium2已承担实际模型训练与推理业务。AWS增加自研芯片使用，首先改变自身加速器采购组合与云服务成本；云客户获得的则是可购买的Trainium算力服务。</p>
+<p>Deepgram（非上市）与AWS历时数月，将语音识别模型Nova-3迁至Trainium2，并优化内核与服务程序。一台trn2.3xlarge运行八份模型副本，在离线批量转写任务中，每美元处理的音频量比Deepgram原有计算方案多11%—70%。Deepgram技术负责人给出的所测GPU基线比较约为多60%，Rust服务程序相对Python多进程方案又提高7.5%的吞吐。</p>
+<p>Deepgram Nova-3在Trainium2上的音频处理效率与运行时吞吐</p>
+<p>数据来源：AWS与Deepgram《How Deepgram optimized voice AI at scale with AWS Trainium》，2026年10月19日；PyTorch团队《Introducing TorchNeuron》，2026年，“Customer Voices”。各行以各自对照方案为100。</p>
+<p>Deepgram的结果表明，算力费用的节省来自模型内核、批处理配置和服务程序的共同优化。迁移耗费数月工程时间，因此11%—70%是该离线批量任务在测试价格下的结果，可作为同类客户项目投入产出的参考。</p>
+<h3>Anthropic签下谷歌与AWS的吉瓦级容量，OpenAI约定两吉瓦Trainium</h3>
+<p>头部模型公司已把TPU和Trainium纳入采购安排。Anthropic同时使用谷歌TPU、亚马逊Trainium和英伟达GPU。2025年10月，其宣布计划增加至多100万颗谷歌TPU，并预计2026年上线超过1 GW容量；2026年4月，又与谷歌、博通（NASDAQ: AVGO）达成5 GW下一代TPU协议，预计自2027年起上线。</p>
+<p>Anthropic同期与AWS签下最高5 GW新增算力协议，范围包括Trainium2至Trainium4及Graviton CPU，其中近1 GW Trainium2/3预计在2026年底前上线。OpenAI（非上市）另与AWS约定使用约2 GW Trainium容量，亚马逊披露自2027年开始逐步提供。三笔协议分属不同客户或硬件组合，图中按拟上线时间与跨代际约定区分。</p>
+<p>Anthropic与OpenAI的TPU及AWS算力容量安排</p>
+<p>数据来源：Anthropic 2025年10月23日、2026年4月20日及5月6日公告；OpenAI 2026年2月27日与亚马逊2026年第一季度公告。GW为协议或计划的算力容量，AWS与Anthropic的最高5 GW包含Graviton。</p>
+<p>这张图的关键在区分时间：Trainium2百万颗使用量已是既成事实，2026年与2027年的GW数字描述的是后续供给与客户约定。Anthropic同时签约两家云厂商并继续使用英伟达GPU，说明其已按模型任务配置多种算力。对谷歌和AWS而言，长期协议提高了建设专用芯片和数据中心的确定性，实际收益则要等容量上线、客户使用量和服务价格逐步形成。</p>
+<h2>结论</h2>
+<p>TorchTPU与TorchNeuron削减的是迁移PyTorch模型、接通工具的工程成本。谷歌连起模型、训练与推理服务，亚马逊把Trainium接入主流模型库，客户可以更快启动项目，英伟达CUDA长期积累的软件优势因此受到直接挑战。</p>
+<p>成本比较仍取决于运行配置。TorchTPU的通信方式与精度档位足以改变训练耗时和矩阵乘预算；FLUX训练、独立推理测算与Deepgram项目则表明，优化软件后，自研芯片可以在具体任务上给出有竞争力的结果。</p>
+<p>商业规模已有清晰层次：Trainium2百万颗使用量是已发生事实，吉瓦级协议是未来采购计划。Anthropic在三类芯片上运行Claude，并与谷歌及AWS约定后续容量，OpenAI约定使用AWS的Trainium容量。客户已开始按模型任务与长期算力需求分配采购，软件后端让这种选择更容易落地。</p>
+<h2>资料与说明</h2>
+<ul><li>软件测试：TorchTPU的4821/4917为模型无崩溃测试，638/657为代表架构模型与GPU基线的数值一致测试，两项测试任务与分母不同。8192颗TPU与27.1%模型算力利用率针对Qwen3 235B MoE、BF16及文中并行配置。FLUX每步耗时为同一优化序列的阶段结果。</li><li>通信与精度：30%—40%是PyTorch团队对默认Skinny Collectives相对可重叠通信方案给出的端到端示例。三倍与六倍描述矩阵乘在TPU MXU上的运算量，图中理论完成量是固定该部分运算预算的倒数，未计入整个模型的其他运算。</li><li>推理成本：SemiAnalysis InferenceX采用Qwen3.5 397B FP8、8K/1K输入输出及聚合推理，比较外部部署总拥有成本。两组价格对应每用户100 token/秒及20秒中位响应时间，属各自服务约束下的测算值。</li><li>商业数量：AWS的140万颗Trainium2为2025年末就位且被订满的数量，Rainier超过50万颗属于其披露范围。Anthropic超过100万颗为2026年4月的使用表述。最高5 GW AWS协议含Trainium与Graviton，Google/Broadcom的5 GW为下一代TPU协议。GW表示算力容量，芯片颗数表示部署数量，分属不同统计口径。</li><li>Deepgram比较：11%—70%针对离线批量语音转写及当时实例价格，约60%针对公司所测GPU基线，7.5%针对服务运行时。三组数据的对照方案不同。</li></ul>
+<h2>图表及数据来源清单</h2>
+<ul><li>软件路径、FLUX训练、精度档位：PyTorch团队，《Introducing TorchTPU》，2026年10月20日，“Introducing TorchTPU”“Numerical Precision”“Case Study 1”“Case Study 3”“Case Study 5”；谷歌云，Mark Lohmeyer与Bill Jia，《TorchTPU is now open source》，2026年10月20日，“Run PyTorch code natively on TPUs”“Optimizing inference”。</li><li>模型覆盖与测试：PyTorch团队，《Introducing TorchNeuron》，2026年9月发布、10月20日公开测试，“Capabilities”“Testing methodology and results”；Hugging Face，《Running HF models on AWS Trainium is easier than ever》，2026年10月，“Transformers”。</li><li>TPU/GPU推理成本：SemiAnalysis InferenceX，《TPU Inference Externalization Full Steam Ahead》，2026年9月，“TPU is King on Performance per Dollar”及端到端响应时间比较。图中原始数值按两种约束重绘。</li><li>Trainium部署：亚马逊，《Amazon.com Announces Fourth Quarter Results》，2026年2月5日，“AWS custom chips”；Anthropic，《Anthropic and Amazon expand collaboration for up to 5 gigawatts of new compute》，2026年4月20日，“Infrastructure at scale”。</li><li>Deepgram项目：Pierre Lienhart等及Victor Wang，《How Deepgram optimized voice AI at scale with AWS Trainium》，AWS，2026年10月19日，“Optimizing Nova-3”“Data-parallel runtime in Rust”“Cost saving impact”；PyTorch团队，《Introducing TorchNeuron》，2026年，“Customer Voices”。</li><li>客户容量：Anthropic，《Expanding our use of Google Cloud TPUs and Services》，2025年10月23日；《Anthropic and Amazon expand collaboration》，2026年4月20日；《Higher usage limits for Claude and a compute deal with SpaceX》，2026年5月6日；OpenAI，《OpenAI and Amazon announce strategic partnership》，2026年2月27日；亚马逊，《Amazon.com Announces First Quarter Results》，2026年。</li></ul>
+<h3>风险提示：上述内容均为笔者个人观点，投资者需风险自担。</h3>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
