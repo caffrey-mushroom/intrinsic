@@ -48,6 +48,21 @@ a{color:inherit; text-decoration:none}
 .stage{position:relative; overflow:hidden; height:calc(100vh - 150px); min-height:520px; background:var(--bg)}
 .stage svg{width:100%; height:100%; display:block; cursor:grab}
 .stage svg:active{cursor:grabbing}
+.ctl{display:flex; gap:var(--s1); align-items:center}
+.seg{display:flex; border:var(--hair); border-radius:var(--radius); overflow:hidden}
+.seg button{font:inherit; font-size:13.5px; color:var(--muted); background:var(--bg); border:0; padding:6px 14px; cursor:pointer}
+.seg button+button{border-left:var(--hair)}
+.seg button.on{background:var(--soft); color:var(--text)}
+.blob{fill-opacity:0; stroke-opacity:0; transition:fill-opacity .4s, stroke-opacity .4s; cursor:pointer}
+.secmode .blob{fill-opacity:.38; stroke-opacity:.9}
+.secmode .blob:hover{fill-opacity:.55}
+.seclk{stroke:var(--slate-300); stroke-linecap:round; opacity:0; transition:opacity .4s; pointer-events:none}
+.secmode .seclk{opacity:.55}
+.secmode .lk{opacity:0}
+.secmode .nd circle{r:3px; opacity:.5}
+.secmode .nd text{opacity:0}
+.secmode .sect{fill:var(--text); font-size:30px}
+.secmode .sect.sm{font-size:22px}
 .tools{position:absolute; right:12px; bottom:12px; display:flex; gap:6px}
 .tools button{font:inherit; font-size:12.5px; color:var(--muted); background:var(--bg); border:var(--hair); border-radius:var(--radius); padding:4px 10px; cursor:pointer}
 .tools button:hover{background:var(--hover); color:var(--text)}
@@ -99,7 +114,7 @@ a{color:inherit; text-decoration:none}
 <main class="page">
   <div class="bar">
     <h1 class="ptitle">The Map</h1>
-    <input id="q" type="search" placeholder="搜索" aria-label="搜公司"/>
+    <span class="ctl"><span class="seg" id="seg"><button data-m="co" class="on">公司</button><button data-m="sec">行业</button></span><input id="q" type="search" placeholder="搜索" aria-label="搜公司"/></span>
   </div>
   <div class="wrap">
     <div class="stage" id="stage">
@@ -138,10 +153,11 @@ links.forEach(l=>{adj[l.source].add(l.target); adj[l.target].add(l.source);});
 
 const stage=document.getElementById('stage'), svg=d3.select('#svg');
 let SW=stage.clientWidth, SH=stage.clientHeight;
-const root=svg.append('g'), secG=root.append('g'), linkG=root.append('g'), nodeG=root.append('g');
+const root=svg.append('g'), blobG=root.append('g'), secLG=root.append('g'), linkG=root.append('g'), nodeG=root.append('g'), secG=root.append('g');
+let spread=1, mode='co';
 const SP=175; // vertical spacing between chain steps (soft)
-const ty=n=>(ROW[n.layer]-2.5)*SP;
-const tx=n=>SX[n.sec]*1800;
+const ty=n=>(ROW[n.layer]-2.5)*SP*spread;
+const tx=n=>SX[n.sec]*1800*spread;
 const link=linkG.selectAll('line').data(links).join('line').attr('class',d=>'lk'+(d.type==='hub'?' hub':''));
 nodes.sort((a,b)=>(b.r||0)-(a.r||0));
 const node=nodeG.selectAll('g').data(nodes).join('g').attr('class',d=>'nd'+(d.type==='hub'?' hubn':'')+(d.deg>=6?' big':''));
@@ -164,9 +180,22 @@ nodes.forEach(n=>{n.x=tx(n)+(Math.random()-.5)*60; n.y=ty(n)+(Math.random()-.5)*
 for(let i=0;i<400;i++) sim.tick();
 const secs=[...new Set(nodes.filter(n=>n.type==='co').map(n=>n.sec))];
 const secT=secG.selectAll('text').data(secs).join('text').attr('class','sect').attr('text-anchor','middle').text(d=>d);
+const secOf=Object.fromEntries(nodes.map(n=>[n.id,n.sec]));
+const pc={}; DATA.links.forEach(l=>{ const a=secOf[l.s], b=secOf[l.t]; if(a===b) return; const k=[a,b].sort().join('|'); pc[k]=(pc[k]||0)+1; });
+const secLinks=Object.entries(pc).map(([k,c])=>{ const [a,b]=k.split('|'); return {a,b,c}; });
+const secL=secLG.selectAll('line').data(secLinks).join('line').attr('class','seclk').attr('stroke-width',d=>1+Math.sqrt(d.c)*1.6);
+const secLayer=Object.fromEntries(secs.map(sc=>[sc,nodes.find(n=>n.sec===sc&&n.type==='co').layer]));
+const blob=blobG.selectAll('circle').data(secs).join('circle').attr('class','blob').on('click',(e,sc)=>{e.stopPropagation(); select('#'+sc);});
+function paintBlobs(){ blob.attr('fill',sc=>css(COL[secLayer[sc]])).attr('stroke',sc=>css(COL[secLayer[sc]])); }
+paintBlobs(); matchMedia('(prefers-color-scheme: dark)').addEventListener('change',paintBlobs);
+const SP_={}; const secMc={}; nodes.forEach(n=>{ if(n.type==='co') secMc[n.sec]=(secMc[n.sec]||0)+n.mc; });
+const secR=sc=>22+.6*Math.sqrt(secMc[sc]);
 function draw(){
-  secT.each(function(sc){ const m=nodes.filter(n=>n.type==='co'&&n.sec===sc); const x=d3.mean(m,n=>n.x), y=d3.min(m,n=>n.y);
-    d3.select(this).attr('x',x).attr('y',y-22); });
+  secs.forEach(sc=>{ const m=nodes.filter(n=>n.type==='co'&&n.sec===sc); const x=d3.mean(m,n=>n.x), y=d3.mean(m,n=>n.y);
+    const r=mode==='sec'?secR(sc):d3.max(m,n=>Math.hypot(n.x-x,n.y-y))+18; SP_[sc]={x,y,r,top:d3.min(m,n=>n.y)}; });
+  secT.attr('x',sc=>SP_[sc].x).attr('y',sc=>mode==='sec'?SP_[sc].y+6:SP_[sc].top-22).classed('sm',sc=>SP_[sc].r<70);
+  blob.attr('cx',sc=>SP_[sc].x).attr('cy',sc=>SP_[sc].y).attr('r',sc=>SP_[sc].r);
+  secL.attr('x1',d=>SP_[d.a].x).attr('y1',d=>SP_[d.a].y).attr('x2',d=>SP_[d.b].x).attr('y2',d=>SP_[d.b].y);
   link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
   node.attr('transform',d=>`translate(${d.x},${d.y})`);
 }
@@ -180,6 +209,26 @@ function home(){ const xs=nodes.map(n=>n.x), ys=nodes.map(n=>n.y);
 function fit(){ svg.transition().duration(400).call(zoom.transform,home()); }
 svg.call(zoom.transform,home());
 document.getElementById('fit').onclick=()=>{fit(); select(null);};
+function setMode(m){ if(m===mode) return; mode=m; spread=m==='sec'?1.15:1;
+  document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  svg.classed('secmode',m==='sec'); select(null);
+  sim.force('x').x(tx); sim.force('y').y(ty);
+  sim.force('link').strength(d=>d.type==='hub'?(m==='sec'?1:.7):(m==='sec'?.003:.06)).distance(d=>d.type==='hub'?(m==='sec'?secR(d.source.sec)*.45:34):95);
+  sim.force('collide').radius(d=>m==='sec'?(d.type==='hub'?secR(d.sec)+18:4):(d.type==='hub'?0:d.r+14));
+  sim.force('charge').strength(d=>m==='sec'?(d.type==='hub'?-900:-4):(d.type==='hub'?-30:-170));
+  sim.force('x').strength(d=>d.type==='hub'?.5:(m==='sec'?.01:.05)); sim.force('y').strength(d=>d.type==='hub'?.5:(m==='sec'?.01:.09));
+  sim.stop(); const old=nodes.map(n=>[n.x,n.y]);
+  sim.alpha(1); for(let i=0;i<350;i++) sim.tick();
+  if(m==='sec'){ const hub=Object.fromEntries(nodes.filter(n=>n.type==='hub').map(n=>[n.sec,n])); const cnt={};
+    nodes.filter(n=>n.type==='co').forEach(n=>{ const h=hub[n.sec], tot=nodes.filter(o=>o.type==='co'&&o.sec===n.sec).length, j=cnt[n.sec]=(cnt[n.sec]||0)+1;
+      const a=j*2.39996, rr=secR(n.sec)*.78*Math.sqrt((j-.5)/tot); n.x=h.x+rr*Math.cos(a); n.y=h.y+rr*Math.sin(a); }); }
+  const nw=nodes.map(n=>[n.x,n.y]); const target=home();
+  nodes.forEach((n,i)=>{n.x=old[i][0]; n.y=old[i][1];});
+  svg.transition().duration(900).call(zoom.transform,target);
+  d3.timer(function(el){ const t=d3.easeCubicInOut(Math.min(el/900,1));
+    nodes.forEach((n,i)=>{ n.x=old[i][0]+(nw[i][0]-old[i][0])*t; n.y=old[i][1]+(nw[i][1]-old[i][1])*t; }); draw();
+    if(t>=1){ this.stop(); } }); }
+document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
 
 
 node.call(d3.drag()
