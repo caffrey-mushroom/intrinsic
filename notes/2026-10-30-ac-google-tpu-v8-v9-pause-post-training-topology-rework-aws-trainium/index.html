@@ -1,0 +1,266 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.30 | AC | Semis | Google TPU V8 V9 Pause Post-Training Topology Rework AWS Trainium</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.30 | AC | Semis | Google TPU V8 V9 Pause Post-Training Topology Rework AWS Trainium</h1>
+<p class="orig">原标题：Google_AWS 自研芯片架构剧变：后训练需求倒逼拓扑重构与量产延期</p>
+<p class="tags">#semis #tpu #cloud</p>
+<p class="meta">AceCamp · 2026-10-30 11:00 · article 70568651</p>
+<div class="body">
+<h2>摘要</h2>
+<p>· Google TPU V8/V9 生产因架构调整暂停，封测测试量降至万片级，量产推迟至 2027 年。· AWS Trainium 优先级提升，采用 3nm 工艺及 Intel EMIB-T 封装，目标性能对标 TPU V8。· 算力缺口导致 Google 转向租用 GPU 维持运营，Gemini 市场份额受中国开源模型挤压。· NVIDIA Spectrum 交换机因支持 IB 网络及低交换开销，在后训练粘合多代 GPU 组网中价值凸显，销量回升。</p>
+<h2>正文</h2>
+<p>以下内容来自资深行业专家：</p>
+<p>Q&amp;A</p>
+<p>自上次沟通至今，谷歌TPU的重大调整进展如何？</p>
+<p>谷歌TPU V8和V9的生产已经暂停，整体销量规模巨大，接近100万至200万颗。自2026年8月下旬起，谷歌开始调整TPU的架构，计划将互联方式从Torus结构转变为类似于NVIDIA方案的、基于超节点（SuperPOD）的fully connected结构。这一调整是应Anthropic的要求，旨在使其V8和V9集群能够支持后训练（post-training）任务，因为后训练对超节点结构有刚性需求。目前，Anthropic超过60%的计算任务量均为后训练，而TPU V7在执行Gemini 4的后训练任务时遇到了收敛性问题，导致这部分工作负载已转向NVIDIA GPU。尽管TPU V8在推理层面没有问题，但为了满足后训练的高需求，架构调整势在必行。目前，相关方案仍在探讨中并已取得部分进展。</p>
+<p>谷歌TPU V8和V9的生产暂停及架构调整的具体情况是怎样的？</p>
+<p>经多方验证，TPU V8和V9的生产确实已经暂停。台积电也已给予谷歌一个特别许可窗口（special window），允许其以respin的方式延迟订单。</p>
+<p>架构调整任务分为两条线进行：</p>
+<p>TPU V8：需要对Zebra package进行改动，并重做I/O die以支持专有的scale-up协议。其交换机方案很可能由Marvell提供，具体可能采用编号为115的switch芯片。该芯片为双模设计，可通过编程在传输层支持UALink协议，性能优于AMD的Topaz-6版本。V8预计将采用72卡的集群方案，实现UALink over Ethernet的配置，但这种基于以太网的方案性能并非最高，因为速率受限且存在性能损耗。</p>
+<p>TPU V9：问题更为复杂。此前在英特尔进行的后道封装工艺良率不佳，尽管近期英特尔后道良率已提升，但谷歌自身的前道设计问题导致综合良率偏低，因此V9本就需要修改。此次调整正好将I/O die部分交由联发科进行redesign。在交换机方面，V9计划用于预训练，需要支持256到512卡的大规模超节点，因此很可能与Astera Labs的UALink交换机方案搭档。</p>
+<p>此外，谷歌在OCP峰会上宣布其Falcon协议将获得NVIDIA DPU和网卡的支持，这表明其已决定转向类NVIDIA的拓扑结构。同时，谷歌与Marvell的合作模式类似于AWS与Astera Labs的生态系统合作，将外围的互联、AEC等组件交由Marvell负责。</p>
+<p>当前的Scale-up方案，例如采用铜或光互连，在实现类似NVLink免拷贝内存访问等能力时，实际性能表现是否存在风险？以AMD Helios平台在Meta的应用为例，该方案据称在使用博通的以太网方案后遇到了信号问题，可否介绍一下当时的情况、AMD的进展以及该问题修复到何种程度？</p>
+<p>AMD Helios平台遇到的问题可以作为一个经验教训。UALink协议的物理层和数据链路层实现偏向于非以太网路线，若要通过以太网传输，则需运行UALink的传输层（UALT-T）。博通当年提出了该方案，但其Tomahawk Ultra版本的可编程交换机在底层对以太网的支持并未充分考虑到Scale-up的特定需求。AMD使用的版本并非博通后来推出的基于E-die底座的方案。</p>
+<p>根据与AMD在硅谷的交流，其交换效能在约40至42张卡时达到峰值，超过此数量后，交换效能随卡数增加而缓慢下降。当卡数超过约64至70张时，性能损失已较明显，达到百分之十几。AMD最初计划构建64卡集群，性能损失可控制在10%以内（约8%）。但为了对标NVIDIA，最终硬着头皮扩展至72路，导致性能损失扩大至12%到15%之间。好在AMD单卡性能本身高于竞品，尚能容忍一定的性能裕量损失，项目因此得以继续。</p>
+<p>然而，在实际使用中，交换效能问题依然凸显。UALink的交换本质上是分布式的，而非集中式的。每个I/O Die可以代表GPU直接发起集合通信（Collective Communication），类似于GPU间的ICI（Inter-Chip Interconnect）方式。这意味着在许多场景下（至少占一半左右），GPU之间的数据交互可通过点对点的快速规约操作直接完成，无需经过交换机中转。当采用以太网交换时，这一分布式优势便不复存在，因为以太网是一种集中式包交换，当时的版本不支持GPU到GPU的直接规约操作。</p>
+<p>相比之下，Google的TPU v8/v8t中增加了一个由联发科设计的名为CAE（Collective Acceleration Engine）的特殊补丁Die，正是为了解决集合通信单元的问题。TPU的Torus结构是一种传统的、类似CPU超算时代的架构，缺乏集中式交换，规约操作需要通过链式转发，效能很差。CAE作为Dragonfly内部的规约操作引擎，能够在Dragonfly网络内部维持相对有效的操作。</p>
+<p>第一代Helios平台在这方面实现不佳，导致实际计算效能出现问题，尤其是在后训练（post-training）和微调场景中表现明显，而在推理场景下问题则不突出。Meta在2026年主要进行后训练工作，其Muse基座模型的预训练已于2026年第二季度收敛。在此阶段使用AMD机型遇到了效率问题。AMD后续通过软件补丁和算子通信库更新等方式进行了弥补，但这些措施无法从根本上解决问题。</p>
+<p>因此，下一代Helios平台将特别专注于解决此问题，并已与博通进行沟通。博通下一代交换机的可编程结构将考虑到非集中式的规约操作。同时，AMD新一代产品也会在I/O Die层面增强类似CAE引擎的设计。</p>
+<p>谷歌和Marvell是否吸取了AMD的教训？在其新一代产品架构中是如何体现的，与NVIDIA的NVLink体系以及Google自身的Trillium相比有何异同？</p>
+<p>谷歌和Marvell确实吸取了AMD的教训。谷歌新架构改动的重点在于I/O Die本身，旨在将其打造成一个能够承载部分交换机功能的前置Die。这种设计与NVIDIA NVLink体系中的前置芯片功能类似。NVLink交换体系由集中的Switch和前置的接口芯片两部分组成，后者负责在端侧实现规约操作。理论上，这种架构能实现非常好的交换效果，综合性能有望大幅领先于Trillium。</p>
+<p>Trillium之所以能实现后训练，是因为它采用了新的交换体系。该体系虽然带宽较低，但延迟非常固定且传输层效率高。如果谷歌能够成功实现基于集中式UALink和以太网交换，并结合分布式交换加速的新架构，其性能将优于当前的Trillium。</p>
+<p>目前，Trillium也已在进行改版以解决相关问题，这使得双方的竞争回到了新的起点。在第一波竞争中，Trillium实际上是胜出的。Anthropic此前已确定采用TPU并开始执行2.5吉瓦的订单，但对当前产品的表现并不满意。为此，Google正在加紧进行重新流片，主要方案是由联发科一次性解决问题，推出一个将CAE与I/O Die二合一的设计。</p>
+<p>请介绍一下目前行业内主要厂商在交换机层面的最新进展，特别是针对可编程协议和专用交换结构方面？</p>
+<p>某款支持可编程传输层协议（例如不仅限于UALink）的芯片正在开发中，预计最快在今年（2026年）年底会推出一颗样片。该项目并非完全重新设计，而是在现有基础上进行功能聚合的加法性改动。</p>
+<p>相较之下，Marvell在交换机层面进展顺利，由于较早预见到相关问题，已能公开阐述其多代产品的清晰路线图，这可能得益于谷歌等客户已承诺的初步订单量。同时，Marvell也在开发一款专用的UALink交换机，其模式与阿里巴巴的全栈实现方案相似，该项目由其收购的XConn团队负责，但预计需要较长时间。</p>
+<p>AMD内部亦有类似项目，但进展不佳，存在不确定性。由于其Helios项目（500系列）与博通签订了覆盖两代产品的协议，因此在该系列上更换交换结构的可能性不大。市场传闻AMD计划在600系列产品上转向新的交换结构。</p>
+<p>谷歌在其TPU集群架构，特别是超节点（Super Node）的互联方案上有哪些新的规划和技术评估？</p>
+<p>谷歌转向超节点方案后，其柜间互联目前仍计划沿用ICI，但可能会保留OCS。针对OCS，谷歌正在评估一种新的混合方案，该方案结合了MEMS与硅光波导技术。在具体架构上，超节点内部将维持72卡的规模。下一代TPU V9可能会追求构建128卡或144卡的更大节点。上层互联将采用ICI与硅光OCS组成的类Dragonfly拓扑结构，通过这种方式，一个72卡的节点可以与32或64个其他节点互联，从而构建起数千卡规模的集群，这种新结构能够有效支撑预训练、训练后等各类任务。此外，在柜间互联中，谷歌也将采用NPO方案。</p>
+<p>关于谷歌TPU V8和V9的最新开发进度，特别是respin和量产时间表是怎样的？</p>
+<p>谷歌TPU V8和V9的IO Die将采用同一套架构，由联发科负责开发，并回归至相对传统的原生224G接口技术体系，而非之前功耗问题较为严重的112G体系（336 symbol rate）。</p>
+<p>关于具体时间线，TPU V8的respin主要涉及IO Die和package，其compute die部分没有变化。受此影响，其量产时间预计将推迟。</p>
+<p>TPU V9的延期更为严重，预计要到2027年6月才能开始生产，大规模上量则可能要到2027年下半年。V9的multi-die设计与Intel Foveros的适配存在一些问题，这些问题源于其自身设计不够稳健，而非Intel的技术问题。V9项目包含谷歌自研和联发科开发的两个die，其中一个die听说需要重做，相当于项目过半内容需要返工。综合来看，TPU V9的进度相当于延迟了将近一年。</p>
+<p>谷歌内部对于持续投入自研TPU与转向使用GPU之间是否存在分歧？这对公司的算力规划和业务合作造成了什么影响？</p>
+<p>谷歌内部在资金分配和技术路线上存在显著分歧。以模型团队为代表的一部分人，强烈要求全面转向GPU。然而，谷歌云（Google Cloud）和基础设施团队则反对这一提议，导致内部决策较为混乱。</p>
+<p>这种算力短缺和路线不定的状况已对外部合作产生影响。例如，在AI EDA领域，谷歌内部对使用基于GPT的模型存在抵触情绪，倾向于使用自家的Gemini模型。当外部合作伙伴提议共同开发基于Gemini的自动化操作模型时，谷歌方面反馈其内部算力不足。同时，谷歌要求合作伙伴像亚马逊一样，将EDA和模型完全绑定到其Trillium（TPU V6e）平台上，并希望未来能移植到TPU V8和V9。但由于V8和V9的软件和算子仍在修改中，这项合作目前难以推进。相关交易最快也要等到V8芯片问世后才能启动，可能要推迟到2027年下半年前期。这一系列情况都印证了谷歌当前在算力上面临的困境。</p>
+<p>从TPU V7至今，谷歌在应对工作负载变化方面似乎持续面临挑战，导致产品不断延期。当前TPU V7是否能满足新的AI需求？</p>
+<p>从TPU V7开始，谷歌就持续面临因workload变化而需要修改早期设计方案，并因此导致产品延期的问题，现在这一情况仍在重演。今年（2026年）能够主要部署的仍然是TPU V7，但该型号对于当前新的AI需求已经不是那么适合。</p>
+<p>考虑到Google在TPU v8量产前存在空档期，且TPU v7在性能上可能无法满足新模型的需求，当前Google如何应对这一算力缺口？其面临的风险和挑战有哪些？</p>
+<p>Google目前正在调整TPU v7的计算栈，以期尽可能适配新模型的需求。尽管此举可以为v8和v9的软件更新提供复用价值，但整体性能限制依然存在。因此，Google Cloud在AI业务承载方面暂时受限。Gemini模型即使推出，也面临算力不足的窘境。将Gemini部署在TPU v7上效能不佳，而适配的TPU v8（采用2nm工艺，具有高算力密度和大内存容量）若按当前设计投产，可能仅适用于推理而无法用于后训练，造成资源浪费。</p>
+<p>预计11月推出的Gemini Pro，其模型部署基础仍将是TPU v7以及小部分已生产的v8，导致产能受限。为应对此局面，Google正通过多元化渠道租用GPU，计划将一部分算力部署在GPU上，以维持运营至2027年第二季度，等待v8改版完成。v8的第一版改版工作优先级极高，涉及联发科正在更新的IO Die以及重做Zebra package，预计完成时间仅有约6个月。</p>
+<p>当前，Google面临的主要压力来自Anthropic的竞争以及自身Google Cloud和Gemini服务的算力需求。Gemini在企业办公自动化和编程这两个场景的第一波市场竞争中已经失利，其市场份额被中国的开源模型所占据。这些开源模型经过后训练和私有化部署后，已能满足许多企业的日常工作需求，形成了固化的业务模式。</p>
+<p>目前已部署的TPU v7主要分配给了哪些业务？Gemini的使用情况如何？</p>
+<p>现有的TPU v7产能大部分已分配给Anthropic。相比之下，Gemini的用量非常有限。在美国的To B市场场景中，Gemini目前并非主流选择，其优先级排在其他方案之后。</p>
+<p>关于IO Die技术方案，Trainium 4和Google各自选择了哪种互联方案？考虑到NVLink是目前较为成熟的方案，UALink方案是否存在变数或风险？</p>
+<p>Trainium 4采用了与Astera Labs合作的UALink方案，而Google则与Marvell合作。AWS的Trainium项目选择UALink方案存在一定风险。该方案的switch芯片由chiplet拼接而成，虽然设计灵活，但其chiplet在2026年3-4月间因cross-die等问题出现过一次延迟。预计在2026年10月底芯片返回后进行初步测试，但后续还需进行复杂的封装测试，包括对两颗、四颗、六颗、八颗die等多种配置进行并行测试，以确定其性能的上限与下限。整个验证过程预计要到2027年第二季度才能有明确结果。由于UALink方案的进展冗长且不确定，近一年多来AWS方面已较少对外提及Trainium项目。</p>
+<p>与此同时，AWS内部开始加速推进NVLink Fusion方案的采用。最初，AWS将采用NVLink Fusion视为与NVIDIA的一种利益交换，旨在换取NVIDIA支持其Trainium的部署与扩展。</p>
+<p>请问亚马逊在AI芯片方面的最新产品规划和技术路线是怎样的，特别是在互联技术和不同版本芯片的优先级方面有哪些考量？</p>
+<p>亚马逊计算站目前兼容NVLink，并且正在推进与Marvell在NVLink Fusion方面的验证。最初亚马逊并未计划大规模生产此版本，但出于对UALink可能出现问题的担忧，NVLink Fusion现在被视为备选组网方案，其优先级已有所提升，甚至可能高于UALink版本，据说其速度也可能稍快。如果该方案成功，将为英伟达的NVLink Fusion业务带来实际应用案例，鉴于D-Matrix等公司也已转向此技术，先行者的成功将具有重要意义。若完全等待UALink方案成熟，组网可能要到2027年下半年，甚至2028年才能推出大机型，这将带来严重问题。</p>
+<p>目前亚马逊的优先级排序如下：最高优先级是采用NVLink Fusion的Trainium 4版本。与之并行且优先级同样较高的是Trainium 3的改版，该版本在Intel进行后道封装（EMIB-T）。这个改版方案采用四颗计算Die，配备风冷散热，虽然仍基于3纳米工艺，但在计算效能、存储容量和通讯组网能力上均有提升，本质上是一个成本导向的优化设计。该版本的样片预计在2027年初送样。</p>
+<p>这个Trainium 3的改版，公司可称之为Trainium 3.5，其封装尺寸比TPU v9略小约10%以上。它将原有的两颗计算Die升级为四颗，并搭配四个I/O Die，整体封装结构与TPU v9相似，但功能上更偏向推理和后训练，同时算力、存储容量及片上缓存（on-chip cache）都得到了显著优化。在互联技术上，该版本理论上保留了两种方案：一种是沿用基于PCIe（PCIe 5.0-era）switch的NeuronLink结构；另一种是采用下一代PCIe（PCIe Gen7）发展NeuronLink，这条路线近期重新获得了关注，因为PCIe的带宽实现翻倍，使其更具应用价值。公司最近与亚马逊签订的10亿美元意向框架订单中，就包括为其提供深度的IP定制，涵盖数据中心级的PCIe Gen7 PHY，这使公司成为其首个“工厂2.0”模式的客户。UALink版本依然保留，相关合作仍在继续，理论上亚马逊可以通过更换I/O Die来灵活调整互联链路。</p>
+<p>关于亚马逊Trainium 3.5版本所采用的Intel EMIB-T后道封装技术，其良率和产能现状如何，这是否会对芯片的最终出货量构成限制？</p>
+<p>Trainium 3.5版本采用的是Intel的EMIB-T技术。目前Ibiden在该技术上的良率确实面临挑战，他们自身的目标是到2027年底将良率提升至50%。届时其规划的300万片产能，在考虑良率折损后，实际有效产出可能仅为150万片。这个数据与公司掌握的情况基本一致。</p>
+<p>不过，需要考虑到日本公司在预估时通常非常保守，他们能做到80分时往往只会对外宣称65分。同时，公司从Intel方面了解到，他们有办法化解这一问题。Intel目前与Ibiden采用的是按KGD（Known Good Die）方式结算，即Intel只为最终合格的产品付费，良率损失的成本主要由Ibiden承担。因此，这并未直接影响到英伟达等客户的业务推进，只是总预期量有所降低。Ibiden方面也清楚问题所在并正在改进。</p>
+<p>尽管EMIB-T的大规模生产有所滞后，但客户需求并未减少，目前美国所有Tier 1客户，包括AMD在内，都已与Intel后道签署了框架协议并开展合作，因此这更多是时间问题。亚马逊方面似乎并未对此表现出特别大的担忧，其当前重点是希望尽快完成并拿到样品。</p>
+<p>考虑到Ibiden的EMIB-T产能在300万片后面临扩产瓶颈，且相关生产设备供应紧张，这是否意味着采用该技术的Trainium 3.5和TPU v9等ASIC芯片的总量将受到严重限制，与市场预期的千万级出货量存在较大差距？</p>
+<p>Ibiden的工厂满产产能确实是300万片，若要进一步扩张则需要新建厂房（绿地投资），但该公司目前尚未做出相关投资决策。除了Ibiden，Intel也在积极寻求其他供应商，包括其在台湾和韩国的合作伙伴。然而，一个关键制约因素在于，生产所需的核心设备仅由两家日本厂商提供，且这两家设备商的产能也十分紧张。</p>
+<p>综合来看，无论是采用EMIB-T的Trainium 3.5还是TPU，其总出货量确实不太可能非常大。这与市场普遍预期明年（2027年）TPU加上Trainium等其他ASIC芯片总出货量可能超过1,000万片的观点似乎难以对应。根据公司从Intel获得的信息，他们正在与新光进行合作。</p>
+<p>Intel在EMIB封装技术方面，除了与现有供应商合作外，是否正在寻求多元化的供应商体系？预计明年（2027年）EMIB的产能规划以及量产进度如何？</p>
+<p>Intel正在积极推动EMIB供应商的多元化。目前，三星电机（Samsung Electro-Mechanics）在此方面进展较快，而诸如UNIMICRON、新光、LG Innotek等公司也在努力，但进度相对较慢。根据Intel的规划，预计到2027年，其EMIB总产能将达到200万至300万颗。这一产能目标是综合了多个客户的需求，并且也与Intel对美国政府的某些承诺相关。从量产时间点来看，预计大规模量产将从2027年年中开始，因此现有产能规划能够满足初期约半年的市场需求。</p>
+<p>市场预期明年（2027年）TPU出货量将达到880万片，这与Intel EMIB的产能规划（200-300万）存在巨大差异，这是否意味着EMIB的产能将成为AI芯片供应的瓶颈？另外，TPU V9是否是唯一采用EMIB技术的产品？</p>
+<p>市场预期的TPU出货量与Intel的EMIB产能规划并不直接可比，因为并非所有TPU版本都采用EMIB技术。具体而言，目前出货量较大的TPU V8版本采用的是台积电的CoWoS封装技术，而只有TPU V9版本才计划采用EMIB。因此，EMIB的产能主要影响的是V9的供应，而V8的产量不受此限制。同时，台积电在推进更大尺寸（超过5.5倍光罩，即9.5倍以上）的CoWoS技术（如CoWoS-L）时，也面临着来自大面积面板等上游供应链的限制，这在一定程度上也制约了其先进封装产能的扩张。尽管Intel的EMIB良率仍在提升过程中，但由于竞争对手也面临各自的供应链瓶颈，这并未形成显著的竞争差异。目前，Intel获得的后段封装意向订单情况良好，但公司近期正专注于内部整合与良率提升，尤其是在相关市场的良率仍有待突破。</p>
+<p>据悉台积电为GPU释放了一部分产能窗口，请问这部分产能的分配情况如何，英伟达是否借此机会获得了更多产能？</p>
+<p>这部分释放出来的产能并未全部流向英伟达。根据了解，亚马逊获得了一部分，英伟达和AMD也各自获得了一部分。此外，ARM也取得了一部分产能，主要用于满足其CPU订单的增长。ARM的CPU业务近期在中国市场取得了显著进展，获得了不少来自中国互联网公司的AGI相关订单，预计出货量将有较大提升。目前市场对高性能ARM CPU的需求旺盛，尤其是在当前Veyron和Graviton等主流高性能ARM CPU不单独对外销售的情况下，ARM的产品成为了市场上为数不多的选择，其预估订单量已达到百万颗级别。</p>
+<p>谷歌TPU V8下修后释放的3纳米产能具体流向了哪些客户？高通在此次产能再分配中扮演了什么角色？</p>
+<p>谷歌TPU V8下修后释放的3纳米产能，其流向与ARM和AMD等公司的需求正好匹配。ARM的新CPU和NVIDIA的Rubin架构产品均采用3纳米制程，因此能够利用这部分空出的产能。当前，3纳米的前道制程产能非常抢手。在此背景下，高通也进行了一部分3纳米产能的转让。由于其今年的手机业务需求下修，导致前道制程产能出现溢出。高通并未直接削减其在台积电的订单，而是选择将这部分产能折算为高性能计算产能，并以类似Turnkey服务的形式转售给了亚马逊。</p>
+<p>亚马逊近期获得了来自高通转让和谷歌下修后释放的部分产能，其目前的AI芯片产能规划和需求情况是怎样的？</p>
+<p>亚马逊今年的AI芯片原定产能规划为120万颗。由于其扩产步伐从今年第二季度末才真正开始加速，因此在Q4又额外获得了30万颗的产能。展望明年（2027年），亚马逊计划执行至少250万颗的产能。在这250万颗中，预计约有130万至140万颗将用于满足Anthropic的需求，其余部分则用于支持亚马逊自身的云托管业务以及OpenAI的托管业务。目前，亚马逊的AI基础设施在成本控制和运行效果方面表现优异，其Trainium芯片的用量正在持续上升。例如，EDA软件首次实现了从传统的CPU/GPU平台向亚马逊Trainium这类ASIC平台的迁移，并且整个过程相当顺利，相关的模型部署也已基本完成。Trainium芯片的软件和硬件表现均获得了客户的高度认可，尤其是Anthropic对其非常满意，这也是Anthropic近期有底气发起价格战的原因之一，因为其在Trainium上的规模化部署带来了成本优化。</p>
+<p>谷歌TPU为支持更大规模的集群而进行的拓扑结构调整，是否会对其软件栈和编程模型产生重大影响？</p>
+<p>是的，这种调整将带来显著的软件层面的变化。为了支持大规模的规约操作，谷歌需要对其现有的ICI（Inter-Chip Interconnect）通信库和部分算子库进行修改。原有的通信库架构将无法完全复用，实际上，谷歌需要为新的柜内通信结构开发一套全新的通信库。这项工作涉及大量的软件开发工作量，并且谷歌已经持续投入了一段时间。这可以被视为一次彻底的、影响深远的技术变革。</p>
+<p>在算子优化方面，AI技术的应用进展如何，其主要瓶颈在何处？此外，谷歌与联发科的合作项目（如V8改版）存在哪些不确定性与风险？</p>
+<p>算子优化领域的内部工作进展顺利，AI技术的应用发展迅速，尤其在硅谷，已能有效优化包括华为MindSpore在内的算子，因此这方面并非瓶颈。真正的瓶颈在于大规模组网时遇到的实际问题，这些问题只有在实际组网后才会暴露。例如，尽管已知使用UALink，但由于缺乏大规模应用先例，实际使用中仍会发现许多问题。</p>
+<p>目前正在积极与谷歌洽谈，希望达成类似亚马逊的战略绑定合作。在此过程中，谷歌提出了一些问题，从而也让公司看到了他们面临的挑战。同时，公司也在与联发科沟通，推动相关项目。联发科在IP能力上相对较弱，其行事风格往往是不到最后关头不愿做出改变，甚至宁可交付有功能缺陷的版本再进行迭代。例如，其与英伟达合作的DGX Spark项目中，就存在一些设计缺陷和功能问题，但产品依然按计划发布和量产，这带来了潜在风险。</p>
+<p>因此，公司同时在与谷歌和联发科接洽，试图将这条业务线串联起来。这个过程中存在风险，例如V8的改版计划虽然已经制定，但执行过程不一定顺利。联发科过去曾多次出现产品开发失误，其部分能力存在问题，公司正在密切关注此事，并考虑利用其可能出现的失误来引入公司的service。</p>
+<p>在Agent推理场景下，TPU v7、v8等非英伟达方案与英伟达的超级计算集群相比，性能差异如何？当前模型训练的主要瓶颈是在预训练还是后训练阶段？</p>
+<p>在推理层面，包括MoE在内的模型对卡间通讯能力提出了一定要求，但这并非无解。只要能将Agent的任务部署或计算图切分到环面域（torus domain）内，利用其较好的通讯效能，推理性能就可以得到保证。因此，无论是TPU v7还是现有的v8i，在承载Agent推理方面都不会是太大的问题，主要差异在于规模、成本和效率，真正的关键瓶颈在于后训练（post-training）阶段。</p>
+<p>预训练的特点是无时效性要求，可以用时间换空间，慢慢等待模型收敛。然而，模型的泛化能力和对特定场景的精确支持，则依赖于后训练在有限时间内完成收敛，这对硬件的要求更高。目前模型训练的重心已发生转变：上一代MoE模型中，预训练场景约占70%；而现在，后训练场景的占比反转至70%左右。缺乏合适的硬件会在此阶段产生很大问题。</p>
+<p>这一转变也催生了市场的有趣变化。国内的字节、阿里、腾讯等公司正在大量采购RTX系列游戏GPU。这些GPU一方面用于推理，另一方面则被用于后训练。实践发现，将RTX GPU组成八卡服务器，再通过自有协议进行组网，其后训练效能非常出色，甚至不亚于专用的AI GPU。由于RTX GPU不受限制，其需求近两个月迅猛增长，可能超出了英伟达的预期。国内市场对H200等产品的关注度已下降，转而追逐RTX，因为后训练已成为模型能力差异化的根本依赖。</p>
+<p>总而言之，硬件的发展速度未能跟上模型发展的步伐，导致当前硬件开发的风险很大。谷歌的经验教训使得微软、Meta等公司在自研芯片方面非常谨慎。例如，微软的Maia 300芯片并未大规模量产。这些公司的新一代芯片项目（如微软下一代Maia和Meta的新芯片）均已启动，目标是一次性设计出能够长期使用、不落后于模型发展的芯片。</p>
+<p>Meta在OCP上宣布将英伟达的交换机产品纳入其体系，这反映了市场在网络基础设施选择上出现了哪些新变化？</p>
+<p>近期一个显著的变化是Spectrum交换机的销量再度回升。在之前以预训练为主的时期，Spectrum的重要性并不突出，用户可以选择自行组网。然而，随着后训练在模型能力构建中变得愈发重要，市场发现使用Spectrum将不同时代的GPU（如组成八卡机）粘合在一起进行组网，能够实现更可靠的效能线性提升。尽管这种方式需要在通讯能力上进行一些适配和优化，但其价值已经凸显。因此，许多公司正像Falcon项目那样，将其训练基础设施向Spectrum平台迁移。这一趋势表明，在当前的技术环境下，性能优异的以太网交换机依然具有很高的价值。</p>
+<p>NVIDIA Spectrum交换机与博通的以太网交换芯片相比，其本质区别是什么？为何Spectrum的需求量近期飞速上升？</p>
+<p>Spectrum之所以需求量快速上升，核心在于其对InfiniBand网络的支持。IB网络并非传统的以太网，它采用静态路由表，属于静态约束管理，类似于通过软件实现的硬件交换概念，其交换开销较低。相比之下，传统的以太网交换机采用纯动态路由表，涉及大量动态流量管理、服务质量控制及纠错等功能，这些都需要在软件和硬件层面共同执行，导致交换开销很高。</p>
+<p>由于交换开销低，IB网络能够支持更大规模的组网，例如万卡甚至十万卡级别的集群。而传统以太网若要达到类似规模，则需要发展到超以太网的阶段。近期，随着业界寻求进一步扩大网络规模的解决方案，超以太网的热度有所回升。即使是像Google那样采用72卡SuperPOD的架构，POD之间的互联也近似于一种Scale-out，其效能直接关系到整体训练能力。因此，支持IB网络的Spectrum方案重新受到市场的重视。</p>
+<p>鉴于NVIDIA Spectrum方案的崛起，这对博通会构成不利影响吗？</p>
+<p>是的，这对博通构成了多重不利因素。首先，AI EDA（人工智能驱动的电子设计自动化）的兴起，使得AI Agent能够替代人类工程师完成芯片设计，这直接冲击了博通和Marvell等公司的传统ASIC设计服务业务。其次，博通僵化的商业模式，例如其项目合作方式，使得许多客户不愿与其合作。</p>
+<p>尽管博通的交换机芯片，尤其是在中国市场，近期因炒作而一度非常热销，甚至比GPU芯片更难获取，但这可能引发反垄断调查。从长期来看，博通必须找到一条自洽的发展路线，专注于交换、互联以及数据中心级的软件生态。然而，其业务前景可能面临收缩，不如前几年乐观。相比之下，Marvell由于与谷歌签订了合作协议，短期内处境相对稳定。许多云服务提供商因博通产品昂贵且产能把控过严，已将其视为优先替代的对象。</p>
+<p>博通与谷歌TPU的合作模式具体是怎样的？</p>
+<p>该合作模式的初衷是，如果TPU未来能够成为标准化产品，博通将帮助谷歌向其他数据中心客户独立销售TPU，即把TPU当作GPU来销售。博通希望在此过程中扮演系统解决方案提供商的角色，类似于超微之于NVIDIA，从而开拓新的业务增长点。这个思路本身是正确的，因为市场上确实存在对这类产品的需求，例如亚马逊的Trainium芯片如果对外销售，也一定会有客户。然而，由于TPU项目的发展未达预期，该合作模式目前已很少被提及。预计到2028年以后，才有可能出现独立销售TPU或Trainium芯片的情况。</p>
+<p>谷歌为何会考虑采用NPO（近封装光学）方案？相较于已经进入产能爬坡阶段的CPO（共封装光学）方案，NPO目前似乎尚未有成熟的验证方案，其优势何在？</p>
+<p>谷歌及微软等公司评估NPO方案，主要是出于对功耗和链路预算的考量。与传统的LPO（线性驱动可插拔光学）方案相比，NPO在链路预算（link budget）方面有更多余量，并且整体功耗表现更优。当前，数据中心普遍转向800V架构以提升电源效率，但机柜的功率供给上限问题依然突出。在进行跨域光互联时，NPO方案的功耗效率（power efficiency）优于LPO，能减少对系统预留功率（reserved margin）的占用。</p>
+<p>NVIDIA之所以坚持采用CPO路线，一个核心原因也是看重其在功耗效率上的优势，希望将更多的功率预算留给计算单元，而非被互联部分消耗。因此，尽管CPO方案已相对成熟，但业界仍在积极尝试NPO等其他能进一步优化功耗的方案，以解决数据中心日益严峻的功耗挑战。</p>
+<p>NVIDIA的CPO量产交付面临哪些挑战，以及NPO方案在其中的定位是什么？</p>
+<p>CPO的量产交付主要面临来自台积电方面的挑战，目前尚未有明确的改善迹象，仍在努力推进中，预计不会很快解决。在此背景下，NPO（近封装光学）被视为一个相对中庸的方案，它能够在各方面提供一定的进展与改进，同时又没有根本性的技术或产能限制。</p>
+<p>关于In-Fabric技术的最新进展及其应用方向是怎样的？</p>
+<p>In-Fabric技术目前正与NVIDIA积极推进的硅光方案进行融合。该硅光方案预计将在LPO，可能是LP40这一代被引入，其典型应用是GPU直接输出硅光接口，并融合远程链路。这套方案的技术基础正是源于In-Fabric。与此同时，原有的NVLink方案可能暂时被搁置。NVIDIA正在评估几种可能性：若现有CPO方案因台积电的良率问题无法实现，可能会转向NPO方案，或是采用NVLink over Ethernet方案，后者同样会利用到In-Fabric的技术储备，但其应用场景将是在柜间而非柜内。这些技术路线的明确化至少还需要大半年以上的观察期。此外，NVIDIA也在积极推进新的的CPU方案作为备选，为2028至2029年的“费曼”那一代产品做准备。</p>
+<p>关于多层SRAM结构的技术研发目前有哪些新进展？</p>
+<p>三星在2纳米工艺和台积电在1.6纳米工艺上都在尝试SRAM-only的设计。目前第一批样片已经产出，但在容量提升上并不显著，且部分尝试路径因可靠性问题被认为不可行。当前正在优化SRAM的结构。该项目计划于2027年底或2028年交付，因此仍有时间进行研发。从2026年的实验结果来看，单纯依靠工艺升级，尽量少改动SRAM六管（6T）结构的方案是行不通的。背面供电技术被证实有效，但无法从根本上提高容量。因此，未来的方向可能需要从六管结构转向其他结构，例如四管（4T）结构，相关工作正在进行中。预计到2027年上半年可能会有新的突破。</p>
+<p>谷歌在OCS方案上的变化是否会影响到Lumentum等公司的订单，以及当前市场对光互联技术的整体看法是怎样的？</p>
+<p>谷歌OCS方案的变化可能会对相关订单产生一些影响。市场上对于光互联技术的应用是渐进式的，预计从2027年开始会有一些NPO的尝试性实现，但初期量不会很大。当前算力更迭处于低谷期，业界仍在探索新的技术路径，因此近期的产能需求也处于低谷。预计未来至少三个季度内不会有大的变化，真正的放量可能要到2027年下半年。各家公司对OCS方案的考量不尽相同：NVIDIA倾向于纯硅光波导的OCS，其核心关注点是交换延迟，主要用于柜间密集交换的光学配线器方案；谷歌由于其ICI的历史技术积累，更倾向于渐进式的混合改良方案；亚马逊的评估方向也更偏向于与NVIDIA类似的硅光方案，可能出于低价共用和技术共享的考量。综合来看，MEMS方案未来可能不会有很大的需求。国内市场目前也未确认大规模采用OCS，仍以挖掘电互联的潜力为主。</p>
+<p>NVIDIA近期的业务发展有哪些新变化，尤其是在CPU和GPU产品线上？</p>
+<p>NVIDIA的CPU订购量表现不错，但GPU，特别是Rubin系列的爬坡速度未及预期。市场原先认为下一代AI训练对算力密度有更高要求，从而需要Rubin。但近期发现，后训练（post-training）的需求更为强劲，并且是实现模型差异化的关键。通过对一个较好的开源模型进行后训练，可以获得显著的模型收益，甚至可以将其转化为私有闭源模型。这类后训练任务对互联重要性的要求远高于单卡算力密度，使用现有的Blackwell系列产品甚至RTX 5090，只要做好互联结构优化，就能很好地完成。因此，Rubin的订单爬坡速度较慢。另一方面，CPU市场整体处于供不应求的状态，尤其是在Agent驱动的应用场景（如工业软件自动化使用）中，对CPU用量的需求可能是传统云端综合企业负载的十倍以上。这使得AMD、Arm、Intel的CPU业务均保持高毛利和顺畅状态，NVIDIA的Vera CPU也因此销售良好。</p>
+<p>Agent驱动的应用场景具体是如何拉动CPU需求的？</p>
+<p>Agent驱动的应用，包括其运行所需的Sandbox环境，极大地推高了CPU需求。以EDA行业为例，过去使用EDA license的人数峰值可能在两三百人。而现在，一个GPT模型可以驱动六七千个license和Agent同时工作，这种并发压力完全落在CPU上，需要更多的多核处理能力。</p>
+<p>AI在EDA等工业软件领域的应用模式是怎样的，它对CPU的需求有何影响？</p>
+<p>AI正被用于驱动EDA的自动化流程，改变了以往由人工按部就班操作EDA设计芯片的模式。现在，AI能够直接融合并压缩这些流程，在高维隐空间内进行长链式的推理计算，从而将设计时间缩短一半以上，并提升多项性能指标。这一过程需要消耗大量的CPU和license，同时也需要GPU。例如，将相关应用部署也是可行的。这种模式开启了一种新的业务形态，即通过AI驱动的agent去使用工业软件。目前与OPA的合作正始于EDA领域，并计划逐步迁移到其他工业领域。EDA被认为是使用难度最高的长程软件，若该领域的应用模式得以验证，推广至其他的商业或工业软件将更为容易，因为后者的复杂程度不在同一量级。这种以AI驱动的新场景，将coding变为一种底层能力，通过自动化编程实现对工具的长程自主使用。这构成了AI应用的一个新增长点，并对CPU产生了很高的需求。</p>
+<p>在AI驱动工业软件的场景下，CPU架构（如ARM与x86）的差异是否重要？这些CPU主要承载何种负载？</p>
+<p>在AI驱动工业软件的场景下，CPU架构的差异（如ARM与x86）本质上不大。因为该场景更偏向于多线程计算，所以两种架构的区别不显著。需要明确的是，这些新增的CPU需求并非用于运行传统的工业软件负载，而是用于运行AI agent。这些agent是通过coding结构产生的，通过自动化编程（即时编程或运行harness资产）来实现对工业软件的驱动，而这些编程和运行任务都是由CPU执行的。因此，这是一个快速增长的需求点，其核心在于agent对CPU的计算需求，而应用场景则拓展到了工业领域。</p>
+<p>根据近期观察，头部AI实验室（如OpenAI、Anthropic）在英伟达GPU需求中的占比据称已降至约30%，那么其余70%的需求来自哪些领域？这种需求扩散的趋势是否显著？</p>
+<p>目前GPU的主要消耗方是云厂商，包括一些第三方数据中心。例如，在东南亚存在大规模的类裸金属数据中心，由某个CSP整体承包；在美国，像一些New Cloud公司也对GPU有大量需求。因此，两大模型厂商所消耗的GPU占比能达到三分之一已属不易，剩余部分正逐渐被各类企业、新兴云服务商以及EDA等特定工业行业消化。这种需求的多元化意味着GPU的市场表现不再完全依赖于模型公司的ARR。当前，后训练（post-training）已成为主战场，而这部分工作并不局限于使用GPU。</p>
+<p>业界是否正在普遍转向采用“后训练”模式？这种模式对算力市场，特别是GPU的使用场景和需求结构产生了哪些影响？</p>
+<p>是的，AI已经具备了初始生产力，而这些生产力主要通过后训练而非基座模型预训练来实现。因此，当前真正用于基座模型预训练的算力相对有限，更多的算力被用于后训练或训练微调。在这种趋势下，算力需求变得非常多元化，有时甚至只要是超节点（super-node）即可满足需求。GPU的使用场景正在多元化，在没有更优的ASIC方案出现之前，GPU仍然是后训练的唯一生产力工具。不过，其交付方式会变得更加复杂，不一定局限于NVL72这样的形态，发卡机也是很好的选择。</p>
+<p>随着企业级后训练需求的广泛扩散，客户对英伟达生态的粘性是否会因此增强？这对ASIC芯片的发展路径有何启示？</p>
+<p>随着后训练需求的扩散，客户对英伟达生态的粘性确实在提高，因为大多数企业倾向于选择生态成熟、能快速部署并产生效益的方案，而不是自行研发底层技术。与此同时，算力的用途也变得更加多元化。这种市场变化为ASIC芯片指明了新的发展方向。例如，D-Matrix近期也转向了英伟达的NVLink Fusion方案，其逻辑在于一旦产品构成超节点，便可用于后训练，从而盘活资产。过去像TPU这样难以用于后训练的芯片，只要走向超节点架构，同样可以胜任。因此，ASIC的出路不再是推理，而是后训练。推理任务的要求相对更低，目前在端侧设备上已能实现较好的效果。未来一年，后训练将是市场的主战场，也为ASIC提供了新的发展机遇。尽管短期内客户对英伟达的粘性会越来越高，但长期来看，ASIC在后训练领域找到了新的突破口。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
