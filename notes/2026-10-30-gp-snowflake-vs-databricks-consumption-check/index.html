@@ -1,0 +1,275 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.30 | GP | Software | Snowflake vs Databricks Consumption Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.30 | GP | Software | Snowflake vs Databricks Consumption Check</h1>
+<p class="orig">原标题：Snowflake vs. Databricks 3Q26: October 2026 Channel Check on Consumption Reacceleration, AI Workload Economics, and Competitive Displacement</p>
+<p class="tags">#software #cloud</p>
+<p class="meta">GuidePoint · 2026-10-30</p>
+<div class="body">
+<p>Primary:</p>
+<p>SNOW</p>
+<p>Databricks, Inc.</p>
+<p>Associated:</p>
+<p>IBM</p>
+<p>MSFT</p>
+<p>ORCL</p>
+<p>GOOGL</p>
+<p>AMZN</p>
+<p>Viewpoint:</p>
+<p>Reseller/Franchisee</p>
+<p>Moderator: David Guo (DG)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Oct 29, 2026</td><td>23 Min Read</td></tr></tbody></table></div>
+<p>Paul Dudley (PD), Co-Founder and CEO - Streamkap</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The expert, who works in data integration, discussed customer demand and spending across Snowflake, Databricks, and ClickHouse. The conversation covered data growth, AI adoption, real-time pipelines, platform costs, and competition. The expert’s view is based on customer interactions and their own company’s experience, rather than comprehensive market data.</p>
+<p>Key Insights</p>
+<p>Demand for data and AI platforms remains strong, though cheaper tokens are changing how customers think about AI budgets. Many are using cost reductions to run more AI workloads rather than reduce spending. Customers appear to be exceeding expected platform consumption more often and are scrutinizing usage to control costs. Most customers expect moderate, organic data growth. New AI-related workloads can drive sharp increases for individual customers, but these examples are not representative of the broader base. The expert sees no material platform switching among their customers. ClickHouse is typically added for low-latency applications, while Snowflake or Databricks remains the main analytics platform. Iceberg interest is growing, partly as a way to reduce dependence on a single provider. So far, the expert has not observed it meaningfully reducing Snowflake compute use. Snowflake’s replication and streaming initiatives signal attention to real-time use cases, but the expert believes they have not closed the gap in low-latency processing. They also raised uncertainty about the technical and business incentives for Snowflake to compete more directly in that area. AI agents are expected to generate more frequent, smaller queries when appropriately controlled. Poorly constrained workloads can instead produce costly, large queries. The expert has limited visibility into production adoption of Snowflake’s AI products and broader customer use of model- routing features.</p>
+<p>Competitive Landscape</p>
+<p>Platform</p>
+<p>Positioning and observations</p>
+<p>Snowflake</p>
+<p>Core analytics platform for many customers. Similar to Databricks in warehouse-style pipeline costs, but the expert considers it less suited to very low- latency compute. Iceberg and native replication may improve flexibility and ingestion options.</p>
+<p>Databricks</p>
+<p>A core analytics alternative to Snowflake. The expert hears of cost overruns, including in connection with accessible AI tools, but cautions that this is anecdotal. New streaming and compute offerings may broaden its competition.</p>
+<p>ClickHouse</p>
+<p>Strong option for low-latency, customer-facing analytics and AI query workloads. The expert reports rising traction, but not wholesale replacement of core Snowflake or Databricks platforms.</p>
+<p>BigQuery</p>
+<p>Considered more expensive for low-latency pipelines than Snowflake or Databricks, based on the expert’s rough estimate.</p>
+<p>10/30/2026 at 08:39 AM UTC</p>
+<p>Quantitative Insights</p>
+<p>Metric</p>
+<p>Expert’s observation</p>
+<p>Platform budget outlook</p>
+<p>At the high end of the rating scale, with AI interest still strong.</p>
+<p>Typical planned data-volume growth</p>
+<p>About 10%–20% for the next budget cycle.</p>
+<p>Example AI workload growth</p>
+<p>One small customer expects roughly 2× workload growth; another cited case could reach 3× volume.</p>
+<p>Pipeline latency</p>
+<p>Snowflake and Databricks can support roughly 30-second end-to-end pipelines, but are costly and less effective below that range.</p>
+<p>BigQuery pipeline cost</p>
+<p>Roughly 50% higher than Snowflake or Databricks, as an informal estimate.</p>
+<p>Token-spending pattern</p>
+<p>Customers often keep spend roughly flat while increasing token use.</p>
+<p>DG: Hello, everyone. This is David from Guidepoint. I will be your moderator today. So on the phone with us today is Paul, and our discussion today will be around Snowflake versus Databricks in third quarter 26, including the consumption rate acceleration, the data pipeline volumes, and then the freshness of trends heading into the 27 budget. Of course, we're going to touch on the Copilot and coding assistants adoption, the model rot and gaps. So thanks Paul for joining us. Why don't you give us a brief introduction to your background to start with.</p>
+<p>PD: Yeah, sounds good. So I am the founder of a company called StreamCap. We do change data capture, which is to say, we help our customers get data from their operational databases like Postgres, Oracle, SQL Server into their analytical databases like Snowflake, Databricks, and ClickHouse. And so, I guess I have my own perspective on how we use ClickHouse in-house for customer-facing analytics, but most of our customers use either Snowflake or Databricks and so we have a perspective into how they're using those platforms.</p>
+<p>DG: Awesome. Just a quick disclaimer. Please submit the discussions to your own observation in the industry. Don't share any material non-public information about any public companies, including our released product roadmaps and our own speaking or confidential customer contract terms, okay?</p>
+<p>PD: Yeah.</p>
+<p>DG: Great. And then for the audience, if you have anything you want to add to the conversation, please send them to ask@guidepoint.com and we will get your question in. So, thanks for joining, Paul, again. And then I think last quarter you rated your Snowflake data and platform budget at +3 out of the -3 to +3 scale. So where would you put that now and then also for the next 12 months? So and then if there's...</p>
+<p>PD: Oh, sorry, I kind of lost you there. Could you repeat the question? Your connection went out a little bit there.</p>
+<p>DG: So I think the last question, can you hear me fine now?</p>
+<p>PD: It seems okay. Yeah, you were going in and out again a little bit.</p>
+<p>10/30/2026 at 08:39 AM UTC</p>
+<p>DG: Okay. I'm going to continue now and let me know if you have any issues. So last quarter, you have rated the data and AI platform budget at the highest of our scale, which means it's the strongest. So, where would you put the scale now for the next 12 months, and if there's any change to your view?</p>
+<p>PD: Yeah. I mean, it does seem to be at the high end of the scale still. I think what we're seeing is that people's appetite for AI continues to be very high and, I guess increasing. I should say in terms of maybe tokens, I think what that means for budgets maybe has changed a little bit because token prices are generally getting cheaper. And then, the importance of the context that lives in data platforms, I think has become pretty central in a lot of folks' consideration of it.</p>
+<p>DG: Got it. And I think last quarter you expected it to continue to roughly 100% of committed capacity. What share do you expect that now? Are you seeing that customers are running through a consumption rate heading into the 27th?</p>
+<p>PD: I hear mixed things there. Some are on budget. But what I have seen is a number of my customers seem more concerned about... I think they've had overruns... and so we see them getting more into the details of what their usage is than we've seen in the past, which to me suggests that they're pushing over what they expected. I just had dinner with somebody yesterday who was telling me that they're on Databricks and their biggest challenge is controlling costs because, once you get it going, it's just very easy to overspend. So I'd say I'm seeing a bit more of a trend of overspend. But in response to that, customers are having to be more conscious of where consumption is happening and trying to keep within their budgets.</p>
+<p>DG: Understood. I guess, you know, since July, how have the data volumes for your customer changed? And then how much is coming from the new workloads versus more of the existing data?</p>
+<p>PD: So I think you're asking how much has data volume changed since last quarter. I wouldn't say that we necessarily have seen a dramatic increase overall across our customer bases. I think it's mostly been... they are growing, but not an outsized growth for the most part. Having said that, we are starting to see some new use cases come online. I just had a conversation this morning with a Snowflake customer, and they're looking to... they've implemented AI in their application and they need to now provide metering for that. And so their workload with us is going up probably 2x; they're a relatively small customer, but their workload is going up 2x and they are looking at how do they meter their end customers' usage of AI that they're providing as a net new use case.</p>
+<p>DG: Understood. Okay. So were there any one-time items in the August to October period, such as, you know, the backfills and migrations or the task runs that made the consumption look stronger than the underlying run rate?</p>
+<p>PD: I guess not in our view. I mean, we definitely saw backfills, but we see backfills frequently. You know, it's sort of something that happens in the course of business. So I wouldn't say that there was like an overall unusual trend in the amount of backfilling that was happening that we saw of folks who were using either Snowflake or Databricks. It would be surprising to me, I guess, if that was something that was meaningful, like on a quarterly basis for either of them.</p>
+<p>DG: Okay. Got it. Okay. And how does the cost of running a sub-minute pipeline into Snowflake compared with Databricks or BigQuery today? And then how often does that difference change when a customer is landing the data?</p>
+<p>PD: Yeah, so I would say broadly, Databricks and Snowflake I would put in a kind of a similar bucket in terms of the cost. And BigQuery I would say is a bit more expensive. I don't know right off the top of my head, but kind of finger in the air, you know, 50% more expensive or something like that. It's just a little bit less optimized for that lower latency. I would say none of them are particularly well optimized if you compare it to ClickHouse in particular. But yeah, I would generally say that, you know, if you're talking around a minute latency, I would say Databricks and Snowflake are both capable of pushing down to, let's say, the 30-second range for a kind of an end-to-end pipeline, and not super great</p>
+<p>10/30/2026 at 08:39 AM UTC</p>
+<p>below that. And both are pretty expensive, you're running compute all the time, you know, in order to do that. And I guess I'd say Snowflake in particular is not super well optimized for that. One thing I haven't explored, which is an interesting development on the Databricks side, is the Ray Compute Engine, I think it's called, which they announced at their summit earlier this year, which does seem more oriented towards competing with ClickHouse. They also released earlier this year true streaming with Delta Live Tables, which I think is designed to compete with the combination of things kind of competing with ClickHouse and Flink as a more streaming compute. So that I don't have as good of a sense of in terms of what the relative costs are, but in terms of warehouse type compute, I would say that Snowflake and Databricks are pretty similar.</p>
+<p>DG: Understood. Okay. It sounds like I have an audio issue ongoing, so I'm going to pause here and then rejoin. Just bear with me for a second, okay?</p>
+<p>PD: Okay.</p>
+<p>DG: Yep. Hello?</p>
+<p>PD: Yeah, hello? It seems like your audio quality is still pretty bad, but I can't hear you. Actually, it's worse now.</p>
+<p>DG: Hello?</p>
+<p>PD: Hello?</p>
+<p>DG: Hello? Can you hear me now?</p>
+<p>PD: Yeah.</p>
+<p>DG: Oh, okay. Let's try that. I'm just using my phone data. Let me know if you still have issues on my audio, okay?</p>
+<p>PD: Okay.</p>
+<p>DG: I'll just continue here. So, going back to the pipeline volumes question, what are the 27 budget conversations telling you about the real-time data spend? And then, you know, which teams such as the data engineering, the AI teams or the product engineering are now owning that budget?</p>
+<p>PD: We generally see data teams owning it, but it varies. I would say it would be data teams first as the most common owner, followed by product or platform. We haven't seen AI teams that own it wholly, although their workloads can contribute, as I was describing a minute ago. In terms of volume, we're seeing typical growth, 10% to 20% as a baseline for our customers and their planning for next year. There are some for whom there are net new. That varies by customer, but that's in line with... there are new pipelines being built, roughly, and most of the growth is going to come from organic growth of their core platform volume. But we are seeing some that have net new workloads, which can have a dramatic increase on their volume, like the folks I was describing earlier, where their AI workload tracking that I mentioned will triple their volume in their particular case, but they're a pretty small customer. So I wouldn't take too much away from that. The more common pattern is 10% to 20% growth in their volume increase.</p>
+<p>DG: Got it. Okay. And I guess one of the biggest changes that we've seen for Snowflake is they were burned at Cortex and then they reported more than 9,000 Cortex accounts and then also the Copilots, almost hitting 6,000 accounts as well since last quarter. So that's your joint customers. How many of those are in real production so far versus just an initial pilot period of time, Cortex?</p>
+<p>PD: You mean with Cortex, how many are in production?</p>
+<p>10/30/2026 at 08:39 AM UTC</p>
+<p>DG: Cortex and Copilots.</p>
+<p>PD: I don't have enough visibility into that. That's kind of the other side downstream of us that we don't necessarily get anything beyond like anecdotal insights on.</p>
+<p>DG: Oh, got it. Okay. And then I guess, you know, Databricks is offering Genie. Do you have any insight on those?</p>
+<p>PD: Not particularly other than what I mentioned earlier about the comment that I made about somebody telling me that their Databricks costs got out of control really quickly. It was partially because of the ease of access to it with Genie. But again, that's 1 data point. So I would be cautious about extrapolating too much from that.</p>
+<p>DG: Right, right. Okay. And then I think that model routing is kind of a big topic for the agent workload and that Snowflake is now routing the AI requests across approved models, you know, all of those, and then automatically. And they claim up to... they're saying that they're saving up like 3 times of the token efficiency. I guess like what are you seeing in the real world? Is that a legit claim? And then how are customers... our customers are turning on, you know, this auto-routing, and then what happened to their total AI budget?</p>
+<p>PD: Yeah, I don't have a lot of perspective on the general trends there, but I can speak to our experience internally with that. We don't use the Snowflake routing, but I think there... and we actually don't use the router at all right now. But one of the things that we have changed in our behavior is we were pretty active in exploring open source models, let's say. Up until a month or so ago and, with all the cybersecurity stuff that's happening, we've really concentrated our focus on Claude and GrokBot for our agent automation, partly just because we were nervous in the using routers and things like that as an attack surface. And there might be a bit higher price in dedicating ourselves to one model, but that's been a worthwhile tradeoff for us in kind of the trust and security side of that. Now, I don't think that what's interesting about Snowflake as a router is I think in principle they are a secure way to route to multiple models. So maybe it's something we should consider as well. But. So anyway, that's just sort of our take. We've been willing to take the somewhat higher cost of just sticking to a particular provider and with the tradeoff of security. So maybe Snowflake is actually giving folks the best of both worlds, but I don't have a lot of insight from the market on that.</p>
+<p>DG: Understood. I guess when a customer is running AI agents on the fresh data nowadays, where does the inference is actually running today? Is it on Snowflake, the Databricks, a hyperscaler or the model vendors directly? And then, what's the how is the decision process has been changing over the past quarter?</p>
+<p>PD: I think we see a mixture there. I wouldn't say that there's 1. I guess I see more inference with the leading labs. That's the most common that I've heard from folks like OpenAI or Anthropic. But it's not super clear to me how much that has changed in the past quarter. It's interesting. 1 of the things I observed from product conversations with Snowflake was that they clearly are pushing their hosting of... I mean, they want startups and their end customers to be leveraging them as an infrastructure provider for the leading models. And this is no huge surprise, but they're very much in the partnership program. It felt to me like that was sort of their number 1 priority, but I can't really speak to the degree to which that has led to a lot of adoption, you know, from either end customers or partners.</p>
+<p>DG: Understood. So as an agent, you know, the agent queries live data more often. How are the query patterns changing? For example, more small or frequent queries, or how does that and how does that affect the warehouse sizing and then the cost on each platform?</p>
+<p>PD: Yeah, I think generally a well-structured agent stuff should be doing... more frequent, you would expect more frequent and smaller queries. I say well-structured because, you know, certainly there are cases where folks have had, I guess, let's say not customer-facing agents, but internal users using agents running very large queries. And so it can be just a generally expensive. But I think once you have the right guardrails in place, you can control for that. The</p>
+<p>10/30/2026 at 08:39 AM UTC</p>
+<p>general expected behavior would be that you'd see a big increase in query volume and that they would generally be smaller queries. But the bigger stuff, maybe you would route to something that's cached or something like that. And so I suppose that would be the pattern that we would expect to see is smaller queries more often. Yeah.</p>
+<p>DG: Got it. And another impact is because of this increasing of the AI mix, Snowflake has guided the product gross margin down a little bit. So from your seat, are the AI workloads pulling in more core warehouse and the ingestion usage or is it mostly adding the token spending?</p>
+<p>PD: I don't think that there's, across the board, I wouldn't say there's been a dramatic increase in ingestion spending. I mean, we've continued to grow, but I guess we do have customers who've grown a fair amount. So I suppose there's been growth in ingestion. And then I think it's a bit of both, but I would think query volumes would be increasing. So the traditional warehouse spend, I would expect to increase. But probably for a given customer, the biggest change would be, if they're actively using the inference in Snowflake, that would probably be the biggest increase in terms of share. But I don't have the specific numbers on what that typically looks like.</p>
+<p>DG: Got it.</p>
+<p>PD: I guess, what I would infer from the fact that their margins going down is because inference is becoming a bigger share of a given customer spend, whereas I would not expect increases in query volume or ingestion volume to have a negative impact on margins because those are classic workloads.</p>
+<p>DG: Right. So I guess when the inference gets cheaper because of the token price and smaller models are taking the routine task, do your customers reinvest those savings in the new AI use cases or do they keep them as savings?</p>
+<p>PD: I think for now people are mostly increasing usage, as in their token... maybe their volume, their spend stays the same and their token usage increases. For the most part, that seems to be the pattern. There's plenty of stuff to be done. And I think there are 2 things happening, right? So you have the cost, the token cost ultimately going down over time for various reasons. And then I think people are just learning increasingly how they can apply it, right? And as models get better, it can do new things, right? So there continues to be a lot of opportunity to deploy tokens. And you know, that's for the most part leading to folks keeping spend flat and increasing token consumption, as they can bring more, as more problems become solvable, and as their workforce becomes more adept at using those tokens.</p>
+<p>DG: Understood. Okay. So where have you seen Databricks take the workload from Snowflake over the past 6 months, if there's any? And then, you know, what triggers, if that's the case, then what triggers the customers' data renewals, such as the cost, the AI tooling comparison, or the open model formats?</p>
+<p>PD: Yeah, I mean, we haven't seen any movement in a material way in our immediate customer base. Our Snowflake customers have remained Snowflake customers and our Databricks customers have remained Databricks customers. I guess the only thing I would caveat that is we have seen ClickHouse being adopted by Snowflake customers and Databricks customers, but generally that's just in a real-time context. So I would say that's the pattern of workload migration that we see most frequently. Yeah, I can speak a little bit to what I hear from folks more broadly in the industry, that folks who have view into a lot of customers, you know. What I hear is they don't see movement from Databricks to Snowflake. They only see it going the other way. And obviously for large organizations, many of them have both. And it sounds to me like for more sophisticated organizations in particular, they're adopting more Databricks over time, more and more stuff is moving to Databricks. I'm not too close to that, so I would be reluctant to try and give more detail on that.</p>
+<p>DG: Got it. Okay. Because last quarter you said that the iceberg adoption was just starting. And then how has it progressed since? And then, are the iceberg tables pulling purest compute away from Snowflake or adding to it?</p>
+<p>10/30/2026 at 08:39 AM UTC</p>
+<p>PD: Yeah, we are starting to see more of that coming up. I don't think we've seen it take compute workloads away from Snowflake yet. But I was just having a conversation with a customer earlier this week who actually, in their case, they're in Europe and there was an outage, so they had an outage in the UK and it introduced for this particular customer a realization that they were overly dependent on Snowflake and if Snowflake had an outage they were in a bad shape. So that has in their case triggered an effort to say, well, actually, we should have a backup. I mean, Snowflake has their own internal backups that they're pitching, but this particular customer's take on it was, you know, they didn't want to be as reliant on Snowflake for their failover. And they're going to start writing out tests to read directly in Iceberg. So that's 1 data point, but I think we are seeing more interest in it. It hasn't been that everybody's doing it, but we are seeing more customers adopting it, more of our inbounds, like new customer conversations have been centered around Iceberg. And like I said, I haven't necessarily seen that manifest as a reduction in compute yet, but it is certainly companies setting themselves up so that they're not stuck with 1 provider and they can shop their compute around.</p>
+<p>DG: Mm-hmm. Okay. I think last time you flagged it as a ClickHouse pressure on the low latency workloads. So how has that gap widened or narrowed or changed? Basically, how has that changed? And then, you know, which specific workloads are moving to ClickHouse versus staying on Snowflake?</p>
+<p>PD: Yeah, so I think it hasn't, in terms of like technical capabilities, I haven't seen it really widen. But I would say that ClickHouse seems to be getting a lot of traction in the market. So whether that's necessarily like their continued outpacing Snowflake or just that the status quo had them in a better position and they're doing a better job of getting out in front of the market is not super clear. But I do think that there is an interesting dimension of that is the AI workloads and if you have more compute or more queries and a greater need for low latency, that ClickHouse has a strong argument there. The thing I would caveat that with is that we really have not seen people move their platform wholesale, their analytical platform wholesale to ClickHouse. That ClickHouse continues to be a specialized, low latency, customer-facing often use case and that Snowflake or Databricks remains as the core internal like analytical source of truth for, I think. I'm trying to think if we have any customers who are using ClickHouse for that internal use case as their warehouse. And I can't think of any. So yeah, I think it's similar, but...</p>
+<p>DG: Understood.</p>
+<p>PD: Similar but...</p>
+<p>DG: Gotcha. So I think, if you're looking at the consumption outlook for both in the next 12 months, how would you think about that outlook? For both the streaming, the ETLs, or the SQL analytics on Snowflake, is going to change? Is there anything that for the outlook you changed for the past quarter?</p>
+<p>PD: No, I mean, I would expect them to continue growing. I guess one thing that Snowflake has announced more since the last quarter is their native Postgres replication. So that does lead into the lower latency side of things. But I think there's a lot of caveats to that, which the reason I bring it up is that it suggests that Snowflake recognizes the importance of the lower latency stuff. But the caveat I would add is that basically that's just doing the raw data ingestion, which is similar to what we do, but it doesn't necessarily change the efficacy of Snowflake's warehouses at low latency compute. And so that feels to me like there's still a gap there where they're not ready to really compete with ClickHouse. If somebody wants, let's say, you can get the raw data into Snowflake with StreamCap or with, if you happen to be on Snowflake, you know, native Postgres like they have a built-in thing, but I don't think they have that many Postgres customers. And actually, we have a customer that uses the Crunchy Data platform and is on Snowflake and is not using their native stuff. But, yeah, so I still think that it seems like they clearly are investing in that area, but it has not manifested in a sea change in the ability of Snowflake to handle that. So my sort of short-term view, let's say, over the next year is it seems to me that I don't see it changing dramatically. And part of my... I wonder there whether there's a kind of innovator's dilemma dimension of that for them where, is it going to be possible for them to... A,</p>
+<p>10/30/2026 at 08:39 AM UTC</p>
+<p>there could be technical difficulties, right? Like it is technically challenging to do that. And whether they can, how much they can drive improvement on their architecture to compete with ClickHouse is not entirely clear to me. And then the other dimension is, if they can, is there a risk of that eroding some other part of their revenue and therefore it's not as much of a priority? So those are things that are kind of in the back of my mind of, that might be reasons why they're either not willing or able to really compete in the low latency space. But because it seems to me that the stuff that they've released to date has been chipping around the edges, but that doesn't materially let them compete in the sub-second latency area.</p>
+<p>DG: Understood. Got it. I guess let's follow up on the outlook thing. It's just, you know, which workload would shift among Snowflake, Databricks, and ClickHouse? And then where would you expect the largest change to that across your kind of customer base?</p>
+<p>PD: You're saying, which of the 3 do we expect to change the most?</p>
+<p>DG: Yes, for the workload shift among Snowflake, Databricks, and ClickHouse.</p>
+<p>PD: It's difficult to say, I think, we have ClickHouse disproportionately represented in our customer base as compared to the market at large because of our focus on low latency. So I would expect to see that continue based on what I just described. So I guess in our world, I don't know that that necessarily represents, I would expect it to continue to be a disproportionate share of our customer base that is ClickHouse. And, but I guess it's difficult for me to say whether that means that ClickHouse is a disproportionate grower in the market. And I'm sure everybody listening here sees the top line numbers from Snowflake and Databricks. So, I don't have any special insight beyond that of what we're seeing. But so anyway, maybe a better way, maybe ultimately you're asking is, if we look at our customers, they're a ClickHouse customer, Snowflake customer, which of those are growing fastest in their uses? And I guess I would say that in our customer base, it probably is actually the Snowflake customers that are growing the fastest. But I'm not sure that I would attribute that to the fact that they're Snowflake per se, and it just happens, I don't know, it feels a little more incidental than it is a causal relationship there. So that's a long way of saying I'm not sure I have anything really meaningful to say on that based on what we've seen in our customer base.</p>
+<p>DG: Understood. Okay. I think those are all the questions that I have for you today. Yeah, thanks Paul so much for joining us. And then we'll have more follow-up calls around the Snowflake. And then so let's just stay in touch, okay?</p>
+<p>PD: All right. Thank you.</p>
+<p>DG: Awesome. Thanks. Bye.</p>
+<p>PD: Right.</p>
+<p>DG: Okay.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>10/30/2026 at 08:39 AM UTC</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

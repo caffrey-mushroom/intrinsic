@@ -1,0 +1,238 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.30 | GP | Software | Snowflake vs Databricks AI Unit Economics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.30 | GP | Software | Snowflake vs Databricks AI Unit Economics</h1>
+<p class="orig">原标题：Snowflake vs. Databricks 3Q26: October 2026 Industry Trends in AI Consumption, Unit Economics, and Platform Share Shifts</p>
+<p class="tags">#software #cloud</p>
+<p class="meta">GuidePoint · 2026-10-30</p>
+<div class="body">
+<p>Primary:</p>
+<p>SNOW</p>
+<p>Databricks, Inc.</p>
+<p>Associated:</p>
+<p>IBM</p>
+<p>MSFT</p>
+<p>ORCL</p>
+<p>GOOGL</p>
+<p>AMZN</p>
+<p>Viewpoint:</p>
+<p>Reseller/Franchisee</p>
+<p>Moderator: David Guo (DG)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Oct 29, 2026</td><td>17 Min Read</td></tr></tbody></table></div>
+<p>Jim Perry (JP), Principal - Axtria</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The discussion examined data-platform demand among pharma and biotech teams, AI adoption, operating costs, and competition between Snowflake and Databricks. The expert described rising consumption as teams process existing data more frequently and bring pilot workloads into production—not simply as a result of storing more data.</p>
+<p>Commercial analytics, patient-level analysis, data engineering, and AI-enabled workflows were key use cases. Adoption in life sciences also depends on trustworthy data, governance, privacy, validation, and human oversight.</p>
+<p>Key Insights</p>
+<p>The expert expects commercial analytics to provide the most reliable platform-consumption growth in 2027. Real-world data has greater upside, while clinical applications may advance less predictably because of longer validation and implementation cycles. AI’s influence on spending decisions is broader than its direct model-inference costs. However, the expert cautioned against assigning a share of consumption growth to AI without workload-level billing evidence. AI agents may increase recurring usage by monitoring performance and investigating exceptions. Narrow, high-volume tasks could be better suited to specialized decision workflows than to general-purpose language models. Platform choice is increasingly about existing data, skills, governance, operating costs, and production readiness. Companies may use both platforms rather than replace one with the other. The expert emphasized measuring AI economics by the cost of a completed, accepted workflow, including integration, quality assurance, retries, and ongoing support—not just token prices.</p>
+<p>Competitive Landscape</p>
+<p>Platform</p>
+<p>Relative strengths and positioning</p>
+<p>Considerations</p>
+<p>Snowflake</p>
+<p>Strong for SQL analytics, governed data sharing, and broad business-user access. Its developer assistant has a relatively familiar entry point for engineering teams.</p>
+<p>Business-facing AI adoption depends on trusted data, permissions, and reliable definitions.</p>
+<p>Databricks</p>
+<p>Well positioned for data-engineering-heavy teams with Python and Spark expertise, as well as research and patient- level analytics.</p>
+<p>Growth in a workload does not necessarily mean replacing Snowflake; platform decisions depend on the use case and existing environment.</p>
+<p>Both vendors are encouraging partners to move beyond pilots toward production workloads and ongoing customer use. The</p>
+<p>10/30/2026 at 08:39 AM UTC</p>
+<p>expert sees partner incentives as supporting delivery economics, not determining which platform is right for a client.</p>
+<p>Quantitative Insights</p>
+<p>Figure or timeframe</p>
+<p>Context</p>
+<p>Third quarter</p>
+<p>Consumption growth was linked mainly to expanding workloads, more frequent processing, and pilots reaching production; no growth rate was provided.</p>
+<p>Commercial analytics was identified as the most dependable expected driver of consumption growth.</p>
+<p>No financial figures or percentages provided</p>
+<p>The expert avoided estimating AI’s share of growth or giving platform-specific cost comparisons without supporting workload data.</p>
+<p>Clinical Data</p>
+<p>No clinical-trial results, patient outcomes, or quantified clinical data were discussed. Clinical workloads were described as potentially valuable but less predictable because of validation requirements. For patient-level data, the expert highlighted access controls, permitted uses, data residency, retention, traceability, and human approval.</p>
+<p>DG: Hello, everyone. This is David from Guidepoint. I will be your moderator today. So on the phone with us today is Jim, and our discussion today will be around Snowflake and Databricks, the demand trends among the pharma and biotech data teams, the AI adoption, including the Snowflake Cortex and Copilot, the AI unit economics, and then the platform competition. So yeah, thanks, Jim, for joining us. Why don't you give us a brief introduction to your background to start with?</p>
+<p>JP: Sure. Thank you, David, for setting up the call and for having me on. So I work as a principal at Axtria. We're a global provider of software and managed services. And part of my job is helping to shape how we bring data analytics and AI solutions to large pharma and biotech companies. So through our work both as a customer and a partner of Snowflake and Databricks, I can answer questions from a practical perspective on some of our workload adoption, AI consumption, platform economics, and many of the different shaping factors around investment decisions.</p>
+<p>DG: Awesome. Just a quick disclaimer, please limit the discussion to your own observation in the industry. Don't share any material non-public information about any public companies, including any released product roadmaps. I don't know if the earnings figures or confidential customer contract terms, okay?</p>
+<p>JP: Absolutely.</p>
+<p>DG: Great. And then for the audience, if you have anything you want to add to the conversation, please send them to ask@guidepoint.com and we will get your question in. So yeah, thanks, Jim, again. So I guess, you know, for your seat at Axtria, what specific workloads that drove the step up in Snowflake and Databricks consumption among biotech teams in the third quarter? Anything you want to highlight there?</p>
+<p>JP: Sure. So some of the specific workloads that best explain the third quarter step up are really more frequent commercial data processing, broader patient-level analytics, and many AI applications that are running against those data sets. Now, we work with use cases like specialty pharma aggregation, HCP and HCO mastering, launch tracking, field performance analytics, where consumption rises as refresh cycles become more frequent. So to give you an example on Snowflake, you know, I could point to governed SQL analytics, data sharing, and preparing trusted data</p>
+<p>10/30/2026 at 08:39 AM UTC</p>
+<p>sets for our business users and AI applications. Similarly, on Databricks, I might put more weight on some engineering intensive pipelines or patient-level processing and model development. So in all, I would describe the broader trend more as processing around each data set rather than simply more data being stored, if that resonates. So looking ahead, I would really expect agents that monitor performance and investigate exceptions to be generating a lot more recurring consumption than just interactions with chatbots.</p>
+<p>DG: Understood. Okay. And then how much of the third quarter trend that came from the new AI, the momentum, came from the new AI use cases versus simple migrations or data volume growth there?</p>
+<p>JP: Sure. If I'm understanding the question correctly, how much of the uptick we just talked about comes from new use cases versus data volume growth? I think it's a really important question. I would personally attribute the larger share of near-term consumption growth to existing workloads expanding, migrations reaching production from pilot, and more frequent data processing. For sure, AI is becoming more of an important incremental driver, but I would just be careful about assigning a percentage without, you know, workload level billing data to back that up. I think we would really need to establish direct AI consumption such as inference and embeddings from the additional ingestion, cleaning, and retrieval work that a lot of the AI projects that we work on create. Along with an answer to your question, my view really is that AI is influencing a larger share of new spending decisions than its direct inference costs alone would suggest. But I do think that the AI usage consumption will continue to grow as more of these projects are going from pilot into production.</p>
+<p>DG: Understood. Okay. I guess, did any pharma clients expand or pull forward capacity commitments this quarter? Like, what prompted those decisions? And then how did those costs differ from a couple, let's say, 6 months ago?</p>
+<p>JP: Can you clarify the question, what additional workloads have been pulled forward versus those that might have been planned in their original budgets?</p>
+<p>DG: Yes, correct. So any pull forward or expanded capacity commitments?</p>
+<p>JP: So a lot on specialty pharma releases have been pulled forward. A lot of this is dependent on FDA approvals and brand launch timelines. So we've had some examples of that. We do get some pull forward projects around incentive compensation for field teams and restructuring segmentation and targeting for where reps are selling into. As much as folks are being asked in our personal lives to leverage tools around AI, I think the remit is very clear from the executive teams that we work with is they really want to take many of these traditionally manual workflows and find ways to agentify them. And if it means territories that were typically mapped manually or using a managed workflow, right? How can we have agents making smarter recommendations on those alignments? If there are incentive compensation that did previously require large IC teams, what is a way that we can leverage agents to begin making some recommendations around those types of payments and keeping a human in the loop to be able to approve or reject those recommendations, but doing what we can to leverage this technology to boost both productivity and quality.</p>
+<p>DG: Got it. Okay. So... Then, looking into 2027, which of the commercial analytics, the real-world data or clinical, will add the most consumption of Snowflake and Databricks, and what would stall such growth if there's any driver behind that?</p>
+<p>JP: Sure. No, it's a great question. So for commercially-focused accounts, I would expect commercial analytics to deliver the most dependable consumption growth in 2027. People want more insights from their data and make more actionable decisions based upon it. We have recurring use cases across launch execution, field performance, patient services, marketing effectiveness, omni-channel that can expand without waiting for an entirely new operating model. So I do think, to touch on the earlier point that you had made around the broader industry, I would give real-world</p>
+<p>10/30/2026 at 08:39 AM UTC</p>
+<p>data the greatest upside because patient-level linkage, longitudinal analysis, and cohort exploration can be pretty intensive to do, and having these types of tools can be an acceleration driver for them. Clinical could produce some individual advantages, but I would expect implementation and validation cycles to make it a little less predictable now. This technology advances faster than anything we've ever seen, but I can only pontificate about where I'm seeing this now. I think clinical might lag behind slightly. And the main breaks to the last part of your question, the main breaks I would watch out for are data licensing restrictions. Poor data quality is always a concern when it comes to these types of analyses, unclear business ownership could be a headwind, regulatory controls could be another headwind. And longer term, the greatest opportunity really could come from connecting these different domains, such as using patient journey insights to inform our launch planning and evidence generation. And I think we'll need to get there faster where clients can establish a reusable governed data product. And so... instead of rebuilding the same data foundation for each and every use case because it's proving to be costly and it's proving to be time intensive.</p>
+<p>DG: Understood. Okay. So what adoptions of CoCo and CoWork have you seen among the pharma data teams since they rebranded in June, the summit, I think, the Snowflake Summit, when they rebranded?</p>
+<p>JP: Sure. So I believe that was right around mid-year. And I'll give you first my personal experience, and then I can give anecdotally what I've heard from others. So we've been using Cortex code since I think February. So for us, the view coming out of the June event was to move to CoCo, partly as a continuity rather than as an entirely new adoption. So I would distinguish between CoCo's developer use cases from CoWork's broader role in helping to interact with enterprise data, if that makes sense. So CoCo has more of a straightforward entry point because teams can evaluate it on coding, troubleshooting, and pipeline development within an established engineering workflow. With CoWork, I would expect a more selective rollout because our business-facing answers depend on trusted definitions, appropriate permissions, and as I mentioned earlier, really confidence in the underlying data and the data quality that's a necessary antecedent for a lot of these more advanced AI use cases. So looking forward, I would expect the more consequential shift to be business users moving from asking questions in a traditional way that you or I would use ChatGPT to initiating more controlled workflows such as investigating a performance issue or preparing a recommended response. So we can measure adoption through your repeat usage, how many outputs are accepted without having to make many human-based interventions and rejections. And completed work because having this type of an assistant can be hugely valuable and a good indication of strong business value.</p>
+<p>DG: Understood. Like which requirements such as the GxP evaluation, the audit trails, or privacy rules are slowing the CoWork rollout in life sciences if there's any?</p>
+<p>JP: Sure. So for a GxP use case, we really need evidence that the complete application performs reliably for its approved purpose, and that would include controls around changes to data models, prompts, etc. So I would look for traceability from an answer back to its sources, a record of relevant system activity and clear human approval points, so keeping a human in the loop for those types of decisions. For patient-level data, my questions would cover more access permissions, permitted uses, residency, retention, and whether retrieval could potentially expose information the user should not see. So my view is that the rollout challenge is demonstrating that the whole workflow is controlled rather than relying on a platform's compliance credentials alone. And I think you touched on this in the question, you know, looking ahead. I would expect most of our clients to favor bounded applications with defined actions and approval requirements because they're easy to evaluate and operate consistently within stricter guardrails. So we can accelerate deployment by making validation, evidence, monitoring, and change controls reusable across these applications while still accessing, you know, each intended use.</p>
+<p>DG: Understood. So I guess in a way you compare CoWork versus Databricks Genie on, let's say, the answering accuracy or traceability, like what tasks do you do to run before approving either one? And then how would you, what normally tips or solutions?</p>
+<p>10/30/2026 at 08:39 AM UTC</p>
+<p>JP: Sure. So the fundamental step is to go through and cleanse the data, assign appropriate business rules with the proper domain ontology and the language that one would need to make smarter decisions based on that data. And there wouldn't really be, aside from... whether it's sitting within Databricks or within Snowflake for each of those respective applications, it wouldn't be a fundamental shift in the way that we would structure the analysis. It's just the same foundational elements would need to go into it in terms of testing data quality, assigning proper business rules, producing analytics-ready datasets and report-ready datasets as data products to come out of these applications and then using those for more trusted, delivered analytics, things that don't need that human touchpoint but have the context and the domain knowledge built into those types of data models to be able to make an informed decision.</p>
+<p>DG: Understood. Okay. Another topic around Snowflake is the model routing and then the new impact around the job as well. So they launched the dynamic model routing in August. So how are your clients using the routing to control the token spend? And then you just quickly comment on that and then what has changed, which models they standardize on.</p>
+<p>JP: Sure. So if I'm understanding completely the question, how are clients using model routing to control the token spend, which is an important question. The approach that we've found most practical is to use the least expensive approved model that reliably meets the quality requirements for each particular task. There's nothing extremely novel about that, but is a pragmatic way of doing this type of analysis. By doing that, we can separate routine classification, extraction, and routing from more demanding synthesis or reasoning and then reserve premium models for the work that really benefits from them. It's no different than you going in and choosing an Opus versus a Haiku model in Claude, for instance. I would combine that with shorter context caching where appropriate, output limits, and controlling on retries and agent loops. That changes the standardization from choosing one model for everything to maintaining a small approved portfolio with consistent evaluation and governance. Ultimately with the goal of judging success by the cost per accepted business result, because cheaper tokens don't help if errors and rework increases. You don't want to rob from Peter to pay Paul, so to speak. Over time, I would expect routing to incorporate some of the business consequences of an error, with higher risks receiving stronger models and additional checks or, again, we talked about this earlier with having a human in the loop to be able to be that manual control to ensure that there is proper efficacy with the data. We'll need to manage the trade-off between model flexibility and testing burden that comes with frequently changing between those different models in production.</p>
+<p>DG: Understood. So how specifically are decision models like agent-based changing the vendors or partners' selections for pharma clients?</p>
+<p>JP: Sorry about that. I see the agent-based style decision models making narrow, high-volume tasks a more serious alternative to using a general-purpose LLM for each and every step. For us, the relevant applications would be in our industry within healthcare and life sciences, incoming records, routing, data exceptions, flagging items for review rather than generating long narrative answers. To your question, in vendor selection, I would ask partners to demonstrate accuracy, latency, and cost on representative life sciences data, and that could include how the system handles uncertain use cases. I might also examine where the model runs, what data leaves the environment, and how decisions and model changes are recorded. I see this as an emerging selection criteria rather than an established driver of broad platform switching, especially with Snowflake still in a very early stage preview. Looking ahead, I would think that lower decision costs could make it economical to inspect far more records and exceptions, which could increase total usage even as the cost of the decision falls. We should evaluate partners on their ability to design and maintain the complete decision process and include escalation and monitoring rather than access to just one particular model.</p>
+<p>DG: Understood. That makes sense. For a vendor that's building on these platforms, how do AI workflows compare versus the traditional analytics on the cost to serve the purpose?</p>
+<p>10/30/2026 at 08:39 AM UTC</p>
+<p>JP: Sure. Yes. No, this is something we come up against every day. So for a vendor like us, AI introduces more variability into cost to serve than a well-understood reporting or batch analytics workload. There's no getting around that. So a single user request can trigger retrieval, several model calls, tool execution, retries and evaluations. So the visible answer understands the work behind it. We would also need to account for maintaining evaluation data sets, monitoring quality, and supporting the application when source data or the model behavior changes. This is very different than traditional analytics, which can be expensive and narrowly designed. So I would avoid saying AI is just more costly always because there is additional time and additional rework that is associated with traditional analytics. So our commercial focus today, as most of our peers are, is measuring cost per completed workflow and aligning our pricing with actual usage and support requirements. Looking ahead, if I had a crystal ball, I would expect inference pricing to decline while integration, quality assurance, and operating support would remain meaningful parts of that cost base. So having that trusted data foundation in order to build these models for subsequent decision making. So we will need usage limits and clear service boundaries so that a small number of unusually complex workflows do not undermine the economics of an otherwise profitable product.</p>
+<p>DG: Understood. Okay. And I guess the next question is, when you compare Snowflake and Databricks, I wonder which type of life science account specifically is Databricks winning shares? And what tips the final platform decisions? Because they're ramping, it seems like they're growing faster from a smaller base. So I just want to see in your view, how to compare and where does Databricks is winning?</p>
+<p>JP: We're seeing growth with both, but let me give a perspective on why there might be some uneven growth there. I see the strongest case for Databricks gaining workload share in many of our accounts with substantial data engineering, Python and Spark expertise, and research or patient-level analytics requirements. Those teams and those personas tend to value an environment that connects large-scale data preparation, experimentation, and model deployment. Snowflake is continuing to grow, at least in our base. It still remains a strong option when the buying center prioritizes SQL analytics, governed data sharing, and it's a straightforward operation for broad business audiences. In the types of decisions that my firm works with, the tipping points are usually the existing data estate, available skills, the buyer persona, the governance requirements, and the total cost of running the actual workload. I would also distinguish, you know, from your question winning a new workload from replacing the other platform because a Life Sciences account can expand Databricks while continuing to use Snowflake at the same time, and that's what we're seeing in practice. As the platforms really converge in capability, I expect the operating simplicity and the ability to reuse existing data and controls to carry more weight than just an individual feature parity between the two. I'm also watching which platforms become the default location for production AI applications, because that can influence where subsequent engineering and analytics lands in the future. We are all watching that very closely.</p>
+<p>DG: Understood. Okay. My last question is how are Snowflake and Databricks structuring the partner incentives in the life science field? And how does that shape which platform partners are leading with and any changes that you expect going to the 27th?</p>
+<p>JP: Sure. I would say both partner ecosystems, both Snowflake and Databricks, are increasingly rewarding customer activation, production workloads, and ongoing consumption alongside technical capability. They want to work with partners who know how to implement and utilize the solutions, and they are tired of pilot-level use cases. We want to get everything into production. Snowflake, I believe, has publicly come out in terms of referral rebates, service credits, co-marketing support, and we've seen some of that early on. Databricks similarly ties to capabilities, customer success stories, reported KPIs, and third-party attestations, and both are taking those steps to recognize and incentivize partners. My interpretation of the second part of your question is that these incentives really encourage us as partners to lead with repeatable solutions that can reach production and expand rather than isolated pilot projects that haven't really gone very far in years past. For us, I think the client's architecture and business case really defines our recommendation between which platform to use or both, and incentives improve the delivery economics rather than</p>
+<p>10/30/2026 at 08:39 AM UTC</p>
+<p>really making the decision for us. Both are beneficial to us as partners, but our ultimate decision of what to recommend is really based on the need and the use case of the customer. I would expect more tension between incentives tied to consumption growth and clients' expectations that would help us control spending while still delivering a great customer experience.</p>
+<p>DG: Got it. Okay. I think those are all the questions that I have for you today, Jim. So, thank JP: Sure.</p>
+<p>DG: you so much for joining and then let's stay in touch. We'll have more follow-up calls around Snowflake and Databricks. Okay?</p>
+<p>JP: Sounds great, Brian. Thank you so much.</p>
+<p>DG: Awesome. Thank you. Bye.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>10/30/2026 at 08:39 AM UTC</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
