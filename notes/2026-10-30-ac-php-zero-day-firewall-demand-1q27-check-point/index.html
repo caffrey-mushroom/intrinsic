@@ -1,0 +1,199 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.30 | AC | Software | PHP Zero-Day Firewall Demand 1Q27 Check Point</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.30 | AC | Software | PHP Zero-Day Firewall Demand 1Q27 Check Point</h1>
+<p class="orig">原标题：PHP漏洞对订单刺激或1Q27体现，软件防火墙需求或提速增长。低价抢单对增长影响，国内安全厂商和模型厂的合作等。绿盟_智谱_OpenAI_Palo Alto Networks_Fortinet</p>
+<p class="tags">#software</p>
+<p class="meta">AceCamp · 2026-10-30 23:59 · article 70568680</p>
+<div class="body">
+<h2>摘要</h2>
+<p>/ 北美安全大厂业绩低于预期潜在因素判断。/ 安全事件对北美SaaS需求提振判断，软件防火墙展望等。</p>
+<h2>正文</h2>
+<p>【以下为专家观点汇总，具体细节仅供参考。】</p>
+<p>PHP漏洞短期是否会对客户在防火墙和SASE的支出产生实质推动？对客户预算影响？</p>
+<p>PHP这个漏洞本身短期内不会产生实质性的影响，因为它属于应用层和内存相关的漏洞，会在WAF、EDR、SIEM或SOC等安全产品上引发一系列策略加强。最主要的还是补丁修复，可能会带来一些安全服务类的技术支持，比如安全运维或安全服务的短期需求会有所增加。对于产品层面来说，现有产品未必能直接应对该漏洞，因此不会马上带来产品采购的增长，但会产生深远影响。这个漏洞是通过AI模型辅助发现的，属于历史遗留问题突然被揭示，未来客户的安全投入会因此增强。目前已经有客户在咨询解决方案，担心类似漏洞被非安全厂商或非正面力量发现，因此他们也在考虑长期应对方案。但短期内不会有明显推动。</p>
+<p>从PHP漏洞及最近几个月发现的零日漏洞来看，哪个细分领域会最直接受益于客户预算增加？</p>
+<p>这些漏洞对部分安全力量较弱的用户来说会带来措手不及的影响，他们需要安全专家到现场进行应用增强和系统加固，这是最快的需求。同时，客户已经意识到未来防护需要AI对AI，传统人工方式可能较慢，因此希望未来防护产品具备AI能力进行增强。</p>
+<p>PHP漏洞发生后，Check Point或其他友商是否出现订单增加或现有订单价值扩展？</p>
+<p>目前收到的销售端反馈显示，有些用户原本因成本投入和产品折旧期未计划更换产品，但此次事件后，他们开始考虑提前规划今年（2026年）进行替换。现有防火墙等产品已经增加了AI能力，平台层面也有AI模块的增采需求。不同客户采购流程不太一样，但销售反馈显示，预计明年（2027年）一季度左右会有体现。</p>
+<p>从Check Point角度来看，过去几个季度全球AI数据中心建设加速，对防火墙需求是否有显著刺激？未来两个季度环比增速预期？</p>
+<p>Check Point预期会有明显的环比增长。实际上，第三季度公司表现较差，内部也关注这个问题。销售反馈显示，数据中心建设，尤其是AI数据中心，因投资问题出现一些延期，市场对效果有所犹豫，但建设仍在推进。大型数据中心对高端硬件型防火墙需求依然很大。</p>
+<p>数据中心采购安全方案的时点？</p>
+<p>基建完成后，安全设备会与算力服务器同步采购和部署。</p>
+<p>如何对比软件和硬件防火墙在未来一年的需求趋势？</p>
+<p>Check Point目前正在大力推动软件防火墙。硬件防火墙属于固定性投入，周期相对较长。软件防火墙则采用订阅付费模式，按年收费，可以保证稳定的现金流。从用户端来看，除非对私有化有较高要求、拥有自有数据中心的客户，他们会持续在硬件上投入。随着云化进程的深入，软件防火墙的渗透率会更高，预计今年（2026年）相比去年会有明显增长。</p>
+<p>软件和硬件防火墙未来两年的同比增速分别会达到什么水平？</p>
+<p>软件防火墙的同比增速预计会在两位数以上。硬件防火墙增速难以预测，能保持持平就是比较理想的状态。公司策略上对硬件的推动力度没有软件那么大。毛利率方面，软件如果做得好，应该很高。硬件防火墙由于采购成本波动较大，目前不好评估。</p>
+<p>七月底公司GA了AI防火墙，是否看到显著的需求增长？今明两年有ARR目标吗？</p>
+<p>AI防火墙GA后，产品咨询和交流明显加速。Check Point认为在细分领域，明年（2027年）会有显著增长，预计能达到两位数的增长。</p>
+<p>SASE更看好混合方案还是如Zscaler的云原生方案更多受益于企业AI落地？</p>
+<p>从Check Point的角度来看，更看好混合SASE方案。云原生方案虽然有成本优势，但在性能和安全性方面可能略逊一筹。混合方案能兼顾私有化需求，性能和可控可靠性更高。</p>
+<p>最近一个季度，您是否看到更多客户向Fortinet和Palo Alto迁移？哪家更能受益于平台化趋势？</p>
+<p>市场上客户迁移属于常态。最近Fortinet抢了一些Check Point订单，Fortinet在价格上有优势，对性价比敏感的客户更具吸引力。平台化方面，深放具有统一全平台的优势，而Fortinet是多平台管理，不是一个平台能管所有。在某些产品上，比如IPS，Palo Alto可能表现更好。但Check Point目前主要关注Fortinet，双方竞争较多。</p>
+<p>Fortinet管理层提到Q3因新客户不愿意立刻为服务付费拖累收入和毛利，是否是合理的理由？</p>
+<p>他们可能通过低价策略抢单，很多订单都是以价格战方式获得。所谓客户不愿意付费，其实可能是他们主动降低价格。</p>
+<p>Check Point会在价格上做妥协吗？公司对因此失去客户的考虑？</p>
+<p>这与公司老板的理念有关，公司整体更注重防护效果。预计在今年（2026年）年底或明年（2027年）会有一些变化，公司在销售侧也做了加强。</p>
+<p>除了让价和硬件成本上涨，Check Point最近两个季度还有哪些因素对毛利率造成压力？</p>
+<p>人员扩张也是影响毛利率的因素。公司计划在年底前进行扩张。一方面是为了增强销售前端，另一方面AI业务需要更多专业人才。随着企业AI落地和云化进程加速，软件防火墙的需求和利润率预计将持续提升，而硬件防火墙受周期和成本波动影响，增长相对有限。平台化和混合SASE方案在当前市场环境下更具竞争力，企业对性能、可靠性和私有化需求的重视推动了相关产品的发展。</p>
+<p>从未来一年的维度来看，不太看好哪类安全细分？</p>
+<p>整体来看，随着AI的发展，整个安全市场会受到更多重视，因此总体是看好的。在细分领域，受影响最大的可能是主营漏洞管理的公司。因为漏洞爆发速度太快，做漏洞管理和响应很难给用户提供有效的安全保障。以前响应时间更充裕，现在投入成本更大，对这些公司来说不是好事。Check Point现在有威胁管理相关的方案，但Check Point不是主要做这一块。有些公司专注于漏洞管理。</p>
+<p>最近国内由开源模型驱动的网安事故是否明显上升？国内客户是否积极应对？</p>
+<p>国内的动静比国外更大。国内安全公司数量众多，几百家都有。AI赋能安全方面，不仅安全公司参与，大模型厂商如阿里、智谱等也在做相关工作。比如绿盟现在用AI挖洞的能力已经非常强，并且将这项能力输出。防护端也在积极提升。安全厂商已经演示了自己的挖洞能力，防护需求大幅增加。模型厂商借机向用户推销自己的模型，辅助决策、安全事件发现和运营，提升效率。整体来看，中国在这方面比国外更“卷”，发展速度很快。国家也已经意识到相关风险，最近刚发布要求，不允许输出安全能力，对模型安全提出了要求。</p>
+<p>国内安全厂商融合AI能力方面还有哪家比较看好？</p>
+<p>绿盟在漏洞发现和防护产品融合方面做得很好。如果是纯AI安全能力，智谱表现突出，动静很大，正在大范围与其他安全厂商合作。</p>
+<p>智谱与安全厂商合作后如何变现？是提供API还是专门训练的模型？</p>
+<p>智谱主要为安全厂商提供模型和能力，支持两种模式：一种是API调用，一种是专门训练的垂类模型，可以自由化部署。</p>
+<p>Check Point平台化客户的获客速度怎么样？</p>
+<p>平台化产品具有较强粘性，通常不会单独提及客户数字。客户购买多款产品后会自然选择平台化整体方案。新客户一旦选择Check Point的解决方案，通常会采用平台化方案；老客户也很稳定，不会轻易更换。平台化产品的增长速度低于单一产品，因为决策更慎重。一般客户使用两三款解决方案后，会倾向于用统一平台管理策略和AI运营，能明显提升效率、降低总应用成本。</p>
+<p>Check Point在产品研发和模型厂商合作方面进展如何？在OpenAI Daybreak项目的进展？</p>
+<p>内部研发方面，AI深度应用已达到百分之百，所有人都在用，具体用量根据需求不同。产品研发中也与英伟达合作，将安全能力集成到GPU硬件层面。与模型厂商的合作主要是OpenAI，公司层面只与OpenAI合作，个人可能会用其他模型。</p>
+<p>Check Point在运营和研发层面对TOKEN预算有没有限制或调整？</p>
+<p>目前没有限制，公司正在大力推广AI的内部使用和产品中AI含量的提升。公司不像纯软件厂商那样消耗量大，体量不是很大。</p>
+<p>Check Point、Fortinet、思科在国内主要卖什么方案？与国内玩家的差异化、优劣势、份额、前景怎么看？</p>
+<p>这三家在国内主要面向外资和民企客户。国有企业都要求国产化，所以外资和民企用得多，尤其是分支机构，主要是边缘设备，如分支防火墙、终端防护等产品。小型机房会用大一点的防火墙设备，中小企业则多用小型设备。主要销售防火墙、WAF、邮件网关等产品。Fortinet有EPM统一设备，适用于奥运等场景，还有无线网络设备。</p>
+<p>Check Point来自中国的收入占比是多少？未来一年或几年是否会持续下降？</p>
+<p>目前中国收入占比大约10%左右，有时略高或略低。未来趋势不好判断，如果外资客户持续减少，收入可能会下降。如果有转机，情况可能会改善，主要还是看大环境和客户数量。现在部分外资企业正在撤离。国内安全行业在AI赋能方面发展迅速，安全厂商和大模型厂商都在积极参与。国家已关注相关风险并出台政策限制安全能力输出。绿盟和智谱在AI安全能力方面表现突出。Check Point平台化产品具有粘性，客户稳定，增长速度低于单一产品。公司与OpenAI合作，AI应用已全面覆盖，TOKEN预算暂无限制。国内市场主要面向外资和民企，产品以防火墙、WAF、邮件网关为主。中国收入占比约10%，未来趋势取决于外资客户变化和整体环境。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

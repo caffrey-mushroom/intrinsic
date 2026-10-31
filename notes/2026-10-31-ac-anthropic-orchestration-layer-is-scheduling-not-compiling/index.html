@@ -1,0 +1,191 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.31 | AC | LLM | Anthropic Orchestration Layer Is Scheduling Not Compiling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.31 | AC | LLM | Anthropic Orchestration Layer Is Scheduling Not Compiling</h1>
+<p class="orig">原标题：Anthropic的“异构编译”其实是调度：国产算力受益的不是兼容派</p>
+<p class="tags">#llm #china #tpu</p>
+<p class="meta">AceCamp · 2026-10-31 08:39 · article 70568619</p>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>Anthropic异构编排层的技术本质与异构算力混用的实际边界；</li><li>调度能力在国内算力紧缺背景下的价值转变与影响；</li><li>国产算力产业链各环节及相关厂商的受惠顺序与验证节点。</li></ol>
+<h2>正文</h2>
+<p><b>Anthropic能在四种AI芯片之间调配负载，靠的是自研调度层和逐个平台的深度适配，而不是一个万能编译器。放到国产卡全面紧缺的中国，这套能力的价值从压价变成扩容，增量更多流向有大客户闭环和产能保障的厂商，而不是兼容路线。</b></p>
+<p>Anthropic在10月26日公开的S-1招股说明书里，用一句话交代了自己的算力底牌：一层自研的“编排层”（orchestration layer），让Claude同时跑在AWS、谷歌、英伟达和AMD四家的芯片上。市场很快把它解读为“四架构异构编译”，并顺势推出一个结论：离开CUDA也能做前沿模型，国产卡的机会来了。这个推论只对了一半，而错的那一半，恰好决定了国产算力链里谁能真正受益。</p>
+<p>本报告要回答的核心问题是：<b>Anthropic到底打通了什么、没有打通什么；同样的做法放到中国，价值会落到谁手里？</b></p>
+<h2>一、Anthropic打通的是调度，芯片之间的差异并没有消失</h2>
+<p><b>先区分两个容易混用的概念。</b>“编译”指的是同一份代码由工具自动翻译到不同芯片上运行，而且性能接近；“编排”指的是每种芯片先各自适配好，再由一层调度系统决定哪类任务放到哪种芯片上。前者意味着芯片可以互相替代，后者意味着芯片仍有高下之分，只是买方多了选择。S-1描述的是后者：这层自研系统在AWS Trainium、Google TPU、英伟达GPU和AMD GPU之间优化工作负载分配，目的是降低成本、减少对单一供应商的依赖，公司称它经过多年大量投入才建成。</p>
+<p><b>这层系统之所以重要，是因为算力是Anthropic最大的一笔开支。</b>按S-1披露，公司未来算力与基础设施承诺合计5420亿至5670亿美元；2026年二季度算力支出56亿美元、收入116亿美元，每1美元算力换回略高于2美元收入。在这样的体量下，采购成本每差1个百分点，按5420亿美元的承诺规模就是约54亿美元。笔者<b>10月27日报告</b>测算，1H26功能性推理毛利率约85%，而推理负载之所以能在不同芯片之间迁移，靠的正是这层调度能力。换句话说，编排层不是一项技术展示，而是支撑毛利结构的工程底座。</p>
+<p><b>从条款和用途看，它首先影响的是议价权，而不是英伟达的份额。</b>原因在于，能灵活迁移的主要是推理和成熟模型的负载；大规模预训练对通信、数值精度和软件栈的要求高得多，切换成本仍然很大。因此，Anthropic手里多了一张“可以不买你”的牌，英伟达的定价权会先受到约束，但训练端的地位短期内不会因此动摇。</p>
+<p><b>这种“可迁移”是靠重工程换来的，不是软件魔法。</b>Anthropic官方在2024年就说明，其工程师与AWS旗下的Annapurna Labs合作，编写直达Trainium芯片的低层内核，并参与Neuron软件栈的建设；2026年4月的公告称，公司已使用超过100万颗Trainium2训练和服务Claude，这是公司整体口径，并不是同一个同步训练作业的规模。据产业调研，大型模型厂要把一个新芯片平台做到可以量产使用，通常需要为每个平台配置20至30名底层工程师；而“写一次、到处都跑得快”的通用抽象层，从2017年谷歌提出MLIR至今仍未真正成熟。目前真正做到多平台量产的前沿模型公司只有Anthropic一家，这本身就说明了门槛之高。</p>
+<p>由此可以得出第一个判断：<b>Anthropic的做法是“上层尽量共享，下层保留差异”，由模型厂自己承担底层优化的责任。</b>它证明了非英伟达芯片可以成为核心业务的生产选项，但并没有证明芯片已经同质化。<b>既然差异还在，价值就不会平均分给所有芯片厂</b>，这是理解后文的关键前提。</p>
+<h2>二、跨芯片混用有三道边界，越往训练环节走越难</h2>
+<p>既然靠的是调度而不是编译，接下来的问题就是：调度能做到多细？本报告的判断是，<b>混用的粒度越细、越靠近训练环节，成本上升得越快；真正有商业价值的，集中在“整体资源池”和“请求级”这两层。</b>支撑这一判断的是三道边界。</p>
+<p><b>第一道边界：能跑起来，不等于跑得快。</b>以TileLang为例，它是由tile-ai社区维护的第三方开源项目，昇腾950后端已并入其主仓库，DeepSeek于9月30日发布昇腾支持，并与华为共同推动适配。即便有这样的投入，这个后端在复用共享前端之外，仍要为昇腾专门实现lowering、调度、同步和代码生成。第三方在Trainium2上的实测也说明了同样的问题：特定Qwen3-32B配置下，编译模式吞吐约为eager模式的1.28倍，但一个gpt-oss训练配方的首次编译耗时27分17秒。这意味着，模型结构稳定的生产负载可以摊薄编译成本，而频繁修改结构的研究团队，每做一次实验就要多等近半小时。由此可以推出，非英伟达芯片会先拿下推理和成熟模型，研究训练则排在后面。</p>
+<p><b>第二道边界：推理验证通过，不等于训练验证通过。</b>第三方10月下旬对Trainium的评测明确区分了两者：Anthropic在Trainium2和Trainium3上运行的是生产推理和强化学习的采样（RL rollout），而Trainium过去恰恰不擅长覆盖面广、改动频繁的研究训练。学术证据同样克制。一篇关于AMD与英伟达GPU混合训练的论文（作者来自Zettabyte AI，arXiv:2602.18007），用H200与MI325X各一个节点训练LLaMA-8B，吞吐达到英伟达单节点基线的98.2%；但稳定性测试只跑了500次迭代，而且刻意把异构限制在流水线并行，数据并行和张量并行仍保持同构，作者还记录了频繁的通信挂起，靠大量调试才稳定下来。换句话说，跨厂商混合训练目前只能放在对通信最不敏感的环节做，离生产级应用还有距离。</p>
+<p><b>第三道边界：技术上能切换，不等于合同上能切换。</b>最低支出义务和不可撤销租赁不会因为调度系统更聪明而消失。已经签下的算力，增量使用成本可能比挂牌价更低的替代方案还低，因此调度的目标不是“每次都挑最便宜的芯片”，而是“整个合同组合的总成本最低”。这也说明，调度能力降低的是技术依赖，却可能增加对少数云厂和融资安排的长期依赖。</p>
+<p>国内并非从零起步，部分项目甚至在尝试比Anthropic已披露内容更细的混用。上海人工智能实验室披露，DeepLink完成了上海—济南跨1500公里的混合训练，等效算力达到单芯片单集群的95%以上；在千卡规模的混合推理测试中，多模态高并发场景的首字延迟（TTFT）最多优化34.5%，长输入、短输出任务的吞吐比单芯片PD分离方案提升32%。这些是发布方报告的特定场景结果，不能当作任意国产卡组合的普遍损耗率。但它们说明，国内已经具备“适配、通信、路由、求解”的系统路线，<b>下一步要比的不是技术能否成立，而是规模化之后是否划算。</b></p>
+<p>#</p>
+<h2>三、放到中国，这套能力的价值从压价变成扩容</h2>
+<p>前两部分讲的是Anthropic做到了什么。真正需要回答的是：同样的能力搬到中国，作用会不会一样？本报告的判断是<b>不一样。Anthropic的调度价值建立在“买方有得选”的前提上，而中国是卖方市场，调度的价值因此从压价变成了扩容。</b></p>
+<p><b>先看供给有多紧。</b>据三季度的产业调研，2026年昇腾出货约80万至120万颗，其中约一半供给字节；寒武纪约50万张，平头哥约70万至80万张，昆仑芯约40万张。受先进工艺和HBM涨价推动，2027年国产芯片预计普遍涨价30%至50%，昇腾950的价格将从CSP最低约8万元、政企约13万元，普遍升至13万元以上。调研显示，昇腾全年产能在4月就已分配完毕。需求端同样旺盛：产业链信息显示，2026年国产算力需求约300万至500万颗，乐观情形下可达600万颗，2027年将突破1000万颗。供给增速明显跟不上需求。</p>
+<p><b>在这样的市场里，大客户的问题不是“哪张卡更便宜”，而是“能拿到的卡怎么都用起来”。</b>字节是典型例子：调研显示，字节自研芯片今年只占其算力需求的约10%，明年预计升至20%至30%；腾讯2027年国产卡需求约120万张。中国头部云厂手里同时管理着昇腾、寒武纪、昆仑芯、自研芯片和存量英伟达卡，<b>比Anthropic更“异构”</b>。因此，调度能力在中国的第一价值，是把分散的、不同代际、不同厂商的卡拼成可以交付的有效产能，而不是拿来压价。</p>
+<p><b>这也决定了瓶颈不在“能不能混用”，而在“有效产出”。</b>据产业调研，智谱的昇腾910B推理毛利率比A800低50%至60%，算力利用率只有40%至55%；测算显示，4颗昇腾950的吞吐才相当于1颗GB300，再叠加3年与5年折旧年限的差异，单位Token的综合成本约为英伟达方案的3倍。可以算一笔简单的账：替代卡的卡时成本是原方案的60%，有效吞吐为80%时，单位产出成本约为75%；有效吞吐掉到40%，单位产出成本就变成150%。<b>便宜的卡不会自动带来便宜的token。</b>由此推出，评价国产算力的单位应当从“单卡算力”和“买了多少卡”，换成“每个合格token的成本”。</p>
+<p><b>扩容逻辑还有第二层含义，容易被忽略：调度越成熟，国产卡之间就越容易被比较和替换。</b>供给紧张时，这一点被涨价掩盖了；一旦2027年之后产能缓解，靠“迁移困难”维持的溢价会最先被压缩。笔者<b>3月21日报告</b>曾判断，超额价值归于掌握架构与互联的“架构定义者”，而不是收租方。放到中国语境里，“架构定义者”就是手握核心模型和真实流量的大客户，以及与它们形成闭环的原生栈芯片厂。</p>
+<h2>四、谁会受益：有大客户闭环和产能保障的厂商在前，兼容路线在后</h2>
+<p>如果价值落在“有效产出”上，那么能拿到增量的，就是能稳定交付有效产出的厂商。本报告的判断是，<b>受益顺序依次是：原生软件栈加大客户闭环、产能和配额保障，最后才是以CUDA兼容率为卖点的路线。</b>理由有三点。</p>
+<p><b>第一，大厂的导入流程本身就是一道筛子。</b>从头部互联网公司的采购流程看，国产芯片要经过分场景、多轮次的测试，标准产品导入一般不少于半年，涉及万卡集群工作量更大；运营商体系的导入周期不少于一年。据三季度的产业调研，目前完成正式产品导入的只有华为、寒武纪和海光，其余厂商多为附带条件的项目型合作。导入周期越长，先进入的厂商积累的适配经验就越多，后来者追赶的成本也越高。</p>
+<p><b>第二，兼容CUDA的路线存在结构性劣势。</b>兼容方要跟随英伟达的CUDA版本更新，往往滞后一到两个季度甚至半年；直接用汇编级代码写的部分根本无法兼容，还存在法律风险。对外宣称的70%至90%兼容率，在行业推理场景中意义有限，因为这些场景实际用到的算子和框架本来就不多。调度能力普及以后，“好迁移”这个卖点会进一步被稀释。</p>
+<p><b>第三，CPU正在重新变得重要。</b>Agent应用和强化学习都需要大量CPU参与任务编排、代码编译和环境执行，CPU与加速器的配比会上升；真正的超节点也离不开CPU负责调度。这意味着同时具备CPU、加速器和互联能力的厂商，在超节点时代更有优势。</p>
+<p>沿着这三点，具体公司的位置大致清楚。<b>寒武纪</b>走原生指令集路线，其580主要供字节用于搜索、广告和推荐业务，是“原生栈加闭环大客户”最典型的样本，后续关键看存货与预付款能否顺利转化为现金。<b>阿里巴巴（平头哥）</b>同时具备全栈能力和自有云，据9月云栖大会后的产业跟踪，真武V900量产时点提前至2027年一季度，但HBM来源尚未披露，上架规模受配额约束。<b>海光信息</b>的看点不在兼容，而在CPU：它是少数同时具备CPU和加速器、并已完成大厂正式导入的厂商。</p>
+<p><b>中芯国际</b>是所有国产路线的共同约束。据调研，面积超过300平方毫米的AI芯片，产能每年最多增长约20%；中芯北方今年下半年的12寸interposer产能或达1万至2万片晶圆，主要的12寸interposer封装厂盛合晶微明年产能或达今年的150%。HBM同样紧张：路透10月28日报道称，长鑫目前向国内AI芯片设计公司送样，预计未来两个月内启动小批量生产，良率仅约20%至30%，售价可能高于海外竞品。两种口径存在分歧，但都指向量少价高。<b>HBM和封装配额，往往比软件适配更早决定谁能放量。</b></p>
+<p>产业链中段的情况相对复杂。<b>芯原股份</b>是字节自研芯片的关键中间商，但字节体量大、议价能力强，芯原的收入不会随出货量线性增长。<b>盛科通信</b>已将25.6T交换芯片导入阿里，它受益于超节点互联，而不是调度能力本身。承压的一侧是<b>摩尔线程、沐曦股份</b>等兼容路线厂商：据三季度的调研，它们尚未进入头部互联网公司的标准导入，要到2027年才见分晓；调度能力的普及，还会进一步削弱它们“好迁移”的卖点。</p>
+<p>还有一个与市场直觉相反的推论：<b>不必追逐“异构中间件”概念。</b>Anthropic的编排层是自研的，不对外出售；国内的DeepLink由国家实验室开源，vLLM的昇腾插件同样开源。调度能力的价值大概率留在大客户和原生栈芯片厂内部，很难沉淀为独立收费的软件利润。</p>
+<h2>五、接下来看什么：五个验证节点和证伪条件</h2>
+<p>“调度的价值在中国是扩容”这一判断，将在未来两到三个季度接受检验。按时间顺序，需要跟踪五个节点。<b>第一，2026年四季度昇腾950超节点的交付节奏</b>，以及950PR与950DT组合做PD分离的“完全体”能否量产；据三季度调研，几千卡级别的订单普遍推迟到2027年一、二季度交付。<b>第二，长鑫HBM3E能否如报道所说在两个月内启动小批量生产。第三，2027年一季度平头哥V900能否如期量产。第四，2027年字节自研占比能否升到20%至30%</b>，30%至50%的国产芯片涨价能否兑现，腾讯约120万张的国产卡需求能否落地，摩尔线程和沐曦能否完成大厂标准导入，这些将决定供给缓解之后的分化速度。</p>
+<p><b>第五，比出货量更值得盯的，是两个“质量指标”。</b>一是vLLM昇腾文档的支持矩阵：它按Supported、Experimental、Unmaintained等状态分级列示，Supported条目扩展的速度，比笼统的兼容率更能说明问题。二是国产推理集群的利用率能否稳定高于55%，以及DeepLink的混合推理能否从千卡测试进入付费生产流量。</p>
+<p><b>证伪条件：</b>国产推理集群利用率长期低于50%；头部云厂重新集中采购单一平台；或者模型架构快速迭代，迫使推理负载回到单一生态。出现其中任何一种，本报告“调度即扩容、增量流向闭环与产能”的判断都需要修正。</p>
+<p><b>风险提示：</b>先进工艺与HBM供给不及预期；信创政策节奏变化；海外高端卡的获取条件突然改变；文中产业调研数据为非公开信息，存在口径与时点偏差，有待交叉验证。</p>
+<p>以上内容不构成任何投资建议，请风险自担。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
