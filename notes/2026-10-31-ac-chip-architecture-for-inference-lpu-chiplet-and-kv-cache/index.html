@@ -1,0 +1,215 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.10.31 | AC | Semis | Chip Architecture for Inference LPU Chiplet and KV Cache</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.10.31 | AC | Semis | Chip Architecture for Inference LPU Chiplet and KV Cache</h1>
+<p class="orig">原标题：芯片架构方向——AI 芯片_LPU_ 芯片架构Chiplet及组网_CPU 技术及行业趋势</p>
+<p class="tags">#semis #hbm #ai-demand</p>
+<p class="meta">AceCamp · 2026-10-31 · article 70568690</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>推理已成为主要负载，KV cache是最大瓶颈，100万token上下文每用户需约80GB。</li>
+<li>LPU片上SRAM带宽约30TB/s，远高于HBM约2TB/s。</li>
+<li>LPU更适合作为GPU的协处理器，承担MoE专家层计算，而非替代GPU。</li>
+<li>MoE模型推理速度比稠密模型快20–50倍，推动架构向异构演进。</li>
+<li>Chiplet是兼顾良率和定制化的主要路径。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>1、AI芯片架构趋同：NPU与GPGPU在2026年视角下技术路线高度一致，均转向以TensorCore为核心的矩阵计算，单芯片创新已达瓶颈。2、算力重心由训练转向推理：大模型MoE架构及长上下文需求导致推理侧负载激增，显存带宽与容量成为核心瓶颈，而非单纯的计算算力。3、LPU作为GPU协处理器崛起：Groq等LPU利用SRAM实现30TB/s超高带宽，专门加速MoE模型中的专家层，与NVIDIA GPU形成互补绑定。</p>
+<p>专家观点</p>
+<p><b>请介绍一下当前AI芯片的主流架构、发展脉络以及不同技术路线的特点和演进趋势？</b></p>
+<p>AI芯片本质上是为神经网络计算设计的专用集成电路。早期的NPU架构相对简单，主要专注于执行大规模矩阵计算以及处理AI领域常见的算子，如CNN、RNN和激活函数等。</p>
+<p>目前最主流的技术路线是GPU路线。需要明确的是，发展至2026年，我们通常所说的GPU实际上是指GPGPU（通用图形处理器），其主要应用也转向了AI计算。从架构上看，GPGPU与NPU正在大幅趋同。如今的GPU，“Graphic”（图形）一词已更像是一个代名词，其核心卖点在于专为矩阵计算设计的Tensor Core，以服务于AI计算。真正的纯图形渲染功能在英伟达的产品线中，更多地体现在消费级芯片上，而企业级和云端芯片已全面转向GPGPU架构。</p>
+<p>在生态方面，目前主要存在两种路径。一种是拥有强大自有生态的厂商，如华为昇腾和苹果M系列芯片，它们无需兼容CUDA，依靠自身完善的生态系统和社区支持即可独立发展。许多AI模型直接使用这些平台进行训练，因此能够实现“零适配”部署。另一种路径是绝大多数国产厂商所选择的，即追求与CUDA实现API级别的兼容。这种兼容通常在工具链层面进行代码翻译，而非底层指令翻译，从而在表面上实现了与CUDA软件生态的对接。然而，这种方式的弊端在于，由于底层芯片架构的差异，兼容性是以牺牲执行效率为代价的，并且只能做到对大部分AI相关算子的兼容。这导致国产GPU在跟进CUDA的新特性时常常滞后，难以实现对最新开源大模型的“零适配”。</p>
+<p><b>当前国内的超节点是否主要用于模型训练，而华为昇腾910B等芯片是否主要应用于推理端？</b></p>
+<p>这个观点需要修正。目前超级计算节点更多地是应用于推理端，而非训练端。几年前在“百模大战”期间，各大公司训练模型时，更看重芯片自身的算力和万卡集群的节点间协同效率。然而，当前情况已发生变化，更多的任务负载集中在推理端。这是因为现有模型体量巨大，例如动辄达到1T或2T参数，推理时需要占用大量的kv cache，即显存。以GLM-4 5.3B为例，单个用户在1兆上下文长度下就需要超过80GB的显存；即使采用FP4等各种方式量化后，仍需40多GB。服务器机房，尤其是在Agent时代，需要同时服务数百甚至上万并发用户。以100个并发用户计算，所需的显存空间就将达到4TB。因此，现在所有芯片发布时，不再单纯强调其是用于训练还是推理，而是共同强调集群的系统带宽、内存容量以及节点间的传输速度。一个直接的证明是，华为昇腾910B内部设计了专门用于推理的PR和DT单元。其中，Profile单元的特征与训练非常相似，而Decode单元则极其消耗带宽。总体来看，当前集群的任务负载中，训练只占一个较小的场景，更多的负载集中在推理侧。</p>
+<p><b>关于单个用户推理需要80GB显存的具体情况，以及由此引发的对计算架构的影响是怎样的？</b></p>
+<p>当前的模型大多采用MoE架构，但在推理时，所有权重都需要被加载。以GLM-4 5.3B为例，其模型经过FP4量化后的大小约为300多GB。然而，当10个用户在1兆上下文长度下进行推理时，仅kv cache部分（即使经过FP4量化）就需要占用超过400GB的显存。为了应对这种挑战，推理基础设施通常会采用PD分离（Profile-Decode分离）和batch并行的方式。当用户输入一个很长的上下文时，如果缓存未命中，系统需要将所有上下文全部计算一遍，这个过程的计算量非常庞大，其算力要求与训练基本处于同一量级。PD分离就是将一部分服务器用于处理这个Profile阶段，另一部分服务器则用于Decode阶段，即预测下一个词。用户的历史上下文信息（kv cache）不能丢失，在高峰期动辄上万用户并发访问时，如果只使用一份权重进行广播，会极大地占用带宽。因此，架构上不仅需要做PD分离，还需要进行多实例备份，即保存多份权重以应对并发请求。综上，超算节点中的计算负载主要由两部分构成：一是运行中用户数据产生的kv cache，二是为支持多实例并发而保存的多份模型权重。这两部分数据需求共同推动了当前硬件架构的演进方向，即厂商们致力于提升片间带宽，例如发展NVLink、HLink、MLU-Link等高速互联技术，甚至开始探索使用光节点互联。</p>
+<p><b>以Groq的LPU为例，其核心设计理念、技术特点以及相较于传统架构的优势是什么？</b></p>
+<p>在GPU和NPU架构演进主要集中于扩大带宽、增加矩阵算子维度和堆叠算力等方向，已接近其技术上限的背景下，业界开始探索更适应文本生成等大模型负载的新型架构。Groq的LPU是其中一种探索形态。</p>
+<p>LPU的核心设计是一种利用片上SRAM来提升速度的方案。具体而言，其在单颗芯片上集成了数百兆字节的SRAM，例如第一代芯片就达到了300MB至400MB的量级，而作为对比，NVIDIA GPU的L2 Cache仅为100多MB。SRAM是芯片中速度最快但成本也最高的存储介质。LPU通过大规模使用片上SRAM，旨在实现更快的数据搬运速度，从而获得更高的吞吐率。</p>
+<p>需要明确的是，LPU通常以多颗芯片组成的集群方案来处理一个模型，它本身并不能减少模型的存储或计算量。其优势单纯体现在速度上，通过高昂的硬件成本换取极致的性能。这种架构并非为了节省成本，而是为了追求更快的“Tokens per Second”，用户愿意为此支付溢价。从带宽数据来看，一颗典型的GPU芯片目前能做到约2TB/s的HBM带宽，而第一代Groq LPU的片上存储带宽已接近30TB/s，实现了数量级上的提升。</p>
+<p><b>LPU在实际应用中是如何与NVIDIA GPU协同工作的？</b></p>
+<p>LPU在实际应用中并非作为计算大模型的主力芯片，而是作为NVIDIA GPU的补充或协处理器。其当前主流用法是专门处理混合专家模型（Mixture of Experts, MoE）中的“专家”部分。</p>
+<p>在AI模型中，“专家”部分通常指全连接层（fully connected layers）。这类计算的特点是数据量大，但数据复用率不高，因此不适合传统的矩阵运算，而更适合向量运算。LPU的架构采用了静态编译和纯流水线设计，计算单元与存储单元之间排列紧密，非常适合处理这类任务。</p>
+<p>具体的协同工作流程是：NVIDIA GPU负责计算KV Cache和激活函数等部分，处理完成后，将产生的少量中间数据通过片间互联技术传递给LPU。LPU则专门负责执行专家网络的计算。这种分工之所以高效，是因为在MoE模型中，虽然模型总参数量可能非常大（如700B），但单次推理实际被激活的参数量可能仅占很小一部分，例如只有约40B（约占总量的1/20）。LPU利用其高速SRAM的优势，能够高效处理这部分被激活的专家网络计算。</p>
+<p>通过这种GPU与LPU结合的方式，整个系统能够在速度上实现显著的效率提升。LPU通过专注于其擅长的特定计算环节，与GPU形成互补，从而优化了整个AI推理链路的性能。</p>
+<p><b>采用MoE架构并结合LPU进行计算，与传统的稠密模型相比，在推理速度上会产生多大的差异？是否所有大模型都会采用MoE技术？</b></p>
+<p>几乎所有现代大模型都会采用MoE技术，其本质目的是在计算过程中降低需要被激活的权重参数量，从而提升用户感知的响应速度。</p>
+<p>如果使用传统的稠密模型（Dense Model）进行推理，其速度会比采用MoE架构的模型慢20到50倍。这是一个非常显著的性能差距。因此，无论是模型厂商还是硬件厂商，都在积极推动和优化基于MoE的解决方案。</p>
+<p>LPU之所以能够大幅提升速度，其前提是它在与NVIDIA GPU的协同体系中，恰好能够高效地承载MoE模型中的“专家”部分的计算。对于模型中的其他部分，如KV Cache和Attention机制的计算，则仍然由GPU处理，LPU并不参与。正是这种各司其职的结合，使得整个系统在推理速度上获得了明显的提升。</p>
+<p><b>在国内众多芯片架构中，寒武纪的架构处于何种水平，是否为最优选择，以及其未来的迭代空间如何？</b></p>
+<p>评价一个架构是否“最优”是见仁见智的，尤其在国内芯片普遍受供应链限制（例如无法使用最新的HBM和制造工艺）的背景下，各家架构设计都会考量这些因素。国内芯片表现不佳主要源于两方面：一是供应链限制，二是软件生态与CUDA存在差距。从架构演进趋势来看，不仅是国内芯片，全球范围内的NPU或GPGPU芯片架构的演进形态已趋于明朗，未来路径选择有限。颠覆性的创新，如早期的Tensor Core或TPU的脉动阵列，出现的可能性已极小。当前的迭代主要是在原有基础上进行优化，例如增加带宽、扩展算子维度、提升算力密度以及优化存储层次（Memory Hierarchy）。寒武纪的NPU指令集可以被视为国内乃至国际上众多NPU指令集的参考源头，多数厂商都沿着相似的路线发展，最终会殊途同归。当然，也存在一些不同的技术路线，例如Groq的LPU、国外的Cerebras以及国内的清微智能，它们采用的类CGRA架构更接近FPGA的编译方式，硬件互联状态可在流片后通过编译进行连接，这与主流NPU路线不同。总体而言，AI芯片赛道的技术路线已较为明确，计算架构方案基本见顶。目前业界探索的新方向包括创新的数据流玩法，以及存内计算，特别是通过3D DRAM进行垂直堆叠。3D DRAM被视为HBM的另一种形态，业内普遍认为这两种技术路线将在2030年左右趋于融合。</p>
+<p><b>英伟达芯片的迭代策略是否主要体现为Die的堆叠，例如Blackwell芯片将两个Die或四个Die进行拼接？</b></p>
+<p>是的，目前英伟达的芯片迭代已经进入了这个阶段。以近几代产品为例，2022年左右发布的A100架构已非常成熟。H100相较于A100，主要增加了对FP8的支持和一个TMA（Tensor Memory Accelerator），而TMA在严格意义上更偏向于一种软件上的访存提效机制。到了B200，则在H100的基础上增加了对FP4的支持。由于模型在4比特以下精度损失严重，继续降低数据类型的意义不大，因此后续的迭代开始转向堆叠Die。例如，GB200将两颗GPU与一颗CPU封装在一起，形成独立的计算单元。再到B300，仍然是延续堆叠的思路。可以看出，在单颗芯片自身的架构上已无太多演进空间。当前的重心已转向Chiplet之间的高效互联，通过构建由多颗芯片组成的局域网络，再将这些芯片组进行Scale up，形成超级节点。无论是国内还是一线的国际厂商，目前普遍采用这种通过集群和超级节点提升性能的策略，单颗芯片的创新已经遇到瓶颈。</p>
+<p><b>芯片间互联技术以及芯片间组网技术是如何演进的？</b></p>
+<p>在近十年中，芯片间互联技术经历了显著的演进。早期，加速器（无论是GPGPU还是其他类型）与CPU之间主要通过PCIe进行互联，并利用PCIe Switch挂载多颗GPU。这种方式在处理早期的CNN等模型时是可行的，因为当时片间交互的带宽需求不大，核心瓶颈在于算力。然而，自2018至2019年Transformer架构开始流行，特别是2020年以后，业界意识到大模型对带宽提出了极高的要求。为满足这种需求，厂商开始研发片间高速互联技术，其中最知名的就是NVIDIA推出的NVLink。</p>
+<p><b>与PCIe相比，NVLink的技术底层逻辑有何异同？在多芯片互联场景下衍生出了哪些新的技术或芯片？</b></p>
+<p>NVLink与PCIe的底层技术逻辑相似，均基于高速SerDes。NVLink的特点在于其驱动能力强，通过拉高频率和大幅增加线路数量来实现高带宽，这是一种相对直接的堆叠方法。例如，PCIe通常有64条线路已属较高规格，而NVLink的线路数量则达到数百条的量级。从第一代到第六代，NVLink的演进路线基本遵循着压榨传输频率和增加连接线路数量的模式。</p>
+<p>随着协议的私有化，传统芯片间的直接互联效率变得非常低。为解决这一问题，衍生出了DPU（Data Process Unit）这类芯片。DPU专门用于加速数据传输，使每颗芯片的内存可以被直接访问，其本质上扮演着一个交换机的角色。</p>
+<p>然而，NVIDIA在数据传输方面存在短板，其NVLink的数据校验机制不完善，一旦数据传输错误，唯一的解决方案就是重传。相比之下，华为在通信领域具备深厚积累，能够构建如8,192个节点的超大集群，而NVIDIA目前最先进的水平仍停留在384个节点，这反映了两者在SerDes驱动和数据传输策略上的本质差异。</p>
+<p>目前，几乎每个厂商都在开发自己的互联技术，其底层逻辑大体相似：购买SerDes IP，然后通过增加线路、加粗连接等方式修改成私有化协议，以实现在自家芯片内部的组网和堆叠。这是当前同类型芯片间互联的一种主流演化方案。</p>
+<p>此外，Chiplet架构也是一种重要的互联方式，它作为一种被开源社区共同维护的公有协议，更多地被应用于异构芯片的集成，例如CPU与GPU之间的集成。由于Chiplet是相对标准的协议，不能进行大幅度的私有化修改，否则就会演变成类似NVLink的私有互联技术。随着AI Agent时代的到来，CPU的负载发生了变化，Chiplet技术在业内也受到了较多关注。</p>
+<p><b>在当前铜线互联技术面临瓶颈的背景下，光互联是否是下一代芯片互联技术的发展方向？</b></p>
+<p>下一代芯片互联技术路线基本已经确定将转向光互联。铜线传输存在物理上限，且功耗巨大，尤其是在各种“Link”互联技术中，传输功耗已远超计算功耗，这也是超级节点功耗远高于单芯片的原因。若能将芯片间的互联全部替换为光互联，将在功耗上实现显著节省。</p>
+<p>当前光互联技术上芯片的主要瓶颈在于小型化的光IP尚未完全成熟。芯片接口通常由PHY和Controller两部分组成。光互联的难点在于，现有光模块的制造工艺跟不上先进制程芯片的步伐。目前，主流AI芯片的工艺节点普遍在5纳米或更低，而光模块作为PHY层，其工艺路线未能与之匹配，造成了技术代差。</p>
+<p>尽管已有前沿厂商开始与IP厂商合作解决这一问题，但将光模块直接集成到芯片中仍面临挑战。PHY是一种与物理版图强相关的物理IP，不同于Controller可以通过RTL代码交付。目前光IP的集成方案尚不够稳定，若为追求光互联而强行集成，可能导致芯片良率大幅下降。考虑到当前芯片产能普遍紧张，任何影响良率的因素都会导致成本急剧升高，甚至可能出现整片晶圆切割后合格芯片寥寥无几的情况。这构成了当前光互联技术直接进入芯片并实现工业化量产的主要痛点。</p>
+<p><b>AI芯片的组网方式具体是怎样的，与Scale-up和Scale-out的概念有何关联？</b></p>
+<p>AI芯片的组网包含两个层面。第一层面是芯片间的直接互联，通过各种link实现，这类似于家庭路由器接口有限，芯片间的直接互联也存在上限。当一个由例如八颗芯片组成的小集群内部互联达到饱和后，就需要与其它集群进行连接，进入第二个层面。这一层面类似于将多个路由器连接到交换机，AI芯片集群通过DPU（Data Processing Unit）进行组网。DPU在此扮演交换机的角色，专门为AI芯片集群提供数据交换。由于芯片间直接互联的link为保证极高的传输带宽和效率，其物理长度非常短，无法满足大型机房的部署需求。因此，DPU通过集成光模块接口，利用光模块实现远距离的边缘交互，从而构建超大规模的计算节点网络。</p>
+<p>这两个层面分别对应Scale-out和Scale-up的概念。Scale-out可理解为将多颗芯片组合成一个大的整体或小系统，系统内各芯片间的数据可以直接访问和互通。而Scale-up则是将多个这样的小系统或集群进一步堆叠，以构建更大规模的算力集群。</p>
+<p><b>DPU在AI芯片组网中具体扮演什么角色，其技术特点和功能是怎样的？</b></p>
+<p>DPU在AI芯片组网中可以被简单理解为一个交换机，但其功能更为复杂。其核心目标是实现更直接、更快速的数据搬运，它能够将各个GPU的显存视为自身的显存进行数据操作，这其中会涉及到RDMA等协议。DPU通常会集成光模块接口，并且由于其对工艺制程的要求不像计算芯片那样先进，因此可以将多种传输媒介整合在一起，例如光模块接口以及用于连接私有协议的link接口。</p>
+<p><b>目前国内主要AI芯片厂商的技术实力和市场格局如何？</b></p>
+<p>从市场格局来看，上述几家公司均已是牌桌上的重要玩家，拥有明确的客户群体和相当规模的出货量，其产能在国内厂商中处于领先地位。头部出货主要集中在其中两家。在技术层面，各家厂商之间的实力差距有限。当前，所有芯片原厂的技术支持能力都高度集中于服务大客户。</p>
+<p>具体的客户供应关系方面：海光的DCU和百度的昆仑芯主要供给腾讯；阿里的平头哥主要供给阿里云内部消化；华为和寒武纪的大客户是字节跳动。此外，百度自身也大量采购平头哥和海光的产品。尽管如此，昆仑芯在腾讯获得了不错的口碑，部分原因在于市场上可供大批量工商出货的选择本身有限。</p>
+<p><b>寒武纪思源系列芯片不同型号（如570、590）之间的主要区别是什么？</b></p>
+<p>寒武纪思源系列不同型号之间的区别并不大，其迭代仍属于单颗芯片常规演进的范畴，本质上是硬件层面的升级。主要的升级方向在于堆砌显存带宽、增加显存容量以及提升link互联带宽，并未引入本质上的新技术。这种升级更多是基于供应链层面进行的专项适配。国内芯片发展当前最大的限制因素并非架构设计，而是卡在先进工艺和供应链上，例如无法使用最先进的HBM。因此，目前多数芯片的迭代可视为常规升级。</p>
+<p><b>国内目前HBM的应用水平和技术差距体现在哪些方面？</b></p>
+<p>HBM对AI芯片性能的影响至关重要，尤其是在大模型应用场景下，芯片的瓶颈已从计算转向带宽。HBM的代际差异直接导致了带宽和容量上的巨大差距。以HBM2E和HBM3E为例，两者带宽差距接近1.5倍。在容量方面，国外如AMD的芯片单颗容量可堆叠至近500GB，而国内主流芯片的显存容量多在144GB、92GB，部分能达到192GB，差距非常明显。这种在带宽和容量上的代际差距，使得芯片本身的算力设计优势难以充分体现。</p>
+<p>目前国内主流应用的仍是HBM2E，虽然近一两年内有望用上HBM3，但与国际先进水平相比差距显著。有公开消息称华为自研的HBM或能对标HBM4，但该信息的真实性有待验证。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
