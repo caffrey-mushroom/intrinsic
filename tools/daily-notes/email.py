@@ -2,8 +2,7 @@
 """Build the email version of a published Daily Notes issue.
 
 usage: email.py <repo> <YYYY-MM-DD-am|pm> <out.html>
-Prints the subject. The body keeps 速读 (issues from 2026-11-01 pm on), 主线 and
-先读这 N 篇 with absolute links,
+Prints the subject. The body keeps 主线 and 先读这 N 篇 with absolute links,
 plus a link to the full issue. Fonts: Times New Roman for Latin, STKaiti for Chinese.
 """
 import re, sys
@@ -31,16 +30,12 @@ def main():
     start = page.find('<h2>今天的主线')
     ends = [i for i in (page.find('<h2>分层速览'), page.find('<h2>数字速查'), page.find('</main>')) if i > 0]
     body = page[start:min(ends)]
-    sb = page.find('<section class="brief"')
-    if sb > 0:
-        body = page[sb:page.find('</section>', sb) + 10] + '\n' + body
     body = re.sub(r'<section class="sec" id="s\d">\s*$', '', body)
     body = body.replace('</span><span class="chip">', ' / ')
     body = re.sub(r'<(?!/?(a|h2|h3|li|ul|ol|p)\b)[^>]*>', '', body)
     body = re.sub(r'<(h2|h3|li|ul|p)\b[^>]*>', lambda m: f'<{m[1]} style="{STY[m[1]]}">', body)
-    body = re.sub(r'<h2 class="bt">', '<h2>', body)
-    body = re.sub(r'<ol\b[^>]*>', f'<ol style="{STY["ul"]}">', body)
-    if '<li' in body and '<ul' not in body and '<ol' not in body:
+    body = re.sub(r'<ol\b[^>]*>', f'<ul style="{STY["ul"]}">', body).replace('</ol>', '</ul>')
+    if '<li' in body and '<ul' not in body:
         body = re.sub(r'((?:\s*<li .*?</li>)+)', rf'<ul style="{STY["ul"]}">\1</ul>', body, flags=re.S)
     url = f'{SITE}track/daily-notes/{slug}/'
     def link(m):
