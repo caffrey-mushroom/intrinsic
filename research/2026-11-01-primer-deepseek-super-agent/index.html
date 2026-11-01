@@ -112,7 +112,7 @@ figure.chart .title{margin-bottom:8px}
 
 <h1>2026.11.01 | Primer | DeepSeek Super-agent</h1>
 <p class="tags">#agents #deepseek #primer #inference #nvda #skhy #mu #sndk #amd</p>
-<p class="meta">v1 · 内部 · 复查 2026.12.01</p>
+<p class="meta">v1.1 · 内部 · 复查 2026.12.01</p>
 <p class="lede">Super-agent 是 DeepSeek Harness 团队 10 月 31 日发的一篇设计文章，加一份开源原型代码 (dsh-superagent，MIT)。它不是新模型，是一种组织 agent 的方式：一个常驻的"领班"接所有消息、派活，一群"工人"各自在隔离的会话里并行干活，人只在需要拍板或验收时被叫到。DeepSeek 自己说原型是研究代码，不是正式产品，文章里的一部分设计没有写进开源代码。</p>
 
 <div class="summary">
@@ -230,6 +230,14 @@ figure.chart .title{margin-bottom:8px}
 <h2>3. 数字打折</h2>
 <div class="prose">
 <p>目前公开的数字只有 DeepSeek 一次实验 (经媒体转述) 和原型源码里的参数。</p>
+<h3>这个实验到底测了什么 (白话)</h3>
+<ul>
+<li><strong>测的是"一批活多久干完"，是速度，不是产量、也不是质量。</strong>给系统一批合成的编程任务，计时从任务进来到做完。Super-agent 一半任务 12.4 分钟内完成 (p50)，95% 在 15.7 分钟内完成 (p95)。对照组是"一个会话 + 可以开子 agent 的工具"，p95 是 29.5 分钟；把提示词改成"优先委派"也只到 29.0 分钟。对照组的 p50 没有披露</li>
+<li><strong>快的原因是并行。</strong>对照组 5 次运行里一次都没委派，等于一个厨师按顺序做完所有菜；Super-agent 是领班把菜分给几个厨师同时做。活的总量没变，人也没少干活，只是同一批活提前干完</li>
+<li><strong>没测的：</strong>活干得对不对 (成功率、合并率)、人省了多少注意力、真实仓库里的表现。这几项才是"效率"，目前都没有数</li>
+<li><strong>成本只给了一个数：读缓存的 token。</strong>Super-agent 2,323 万，对照组 605 万，3.8 倍。原因是多了一个领班、几个工人，每个会话每走一步都要把自己的记录重读一遍，领班还要反复读各工人的汇报。没给未命中输入、输出 token 和钱。去掉"事件直通"(后续消息直接送给工人、不经领班) 后，缓存读升到 3,177 万，说明领班读得越多越费</li>
+<li><strong>一句话：</strong>多花约 3.8 倍的缓存 token，把同一批活的完成时间从约 30 分钟压到约 16 分钟。按 DeepSeek 价格多花几毛钱，按 GPU 工作量约是 2.4 倍 (我们的估算，见下)</li>
+</ul>
 <div class="tbl"><table class="t">
 <thead><tr><th>数字</th><th>对手</th><th>谁测的</th><th>级别</th><th>打折后怎么读</th></tr></thead>
 <tbody>
@@ -453,6 +461,7 @@ figure.chart .title{margin-bottom:8px}
 </ul>
 <p class="note">推断说明：GPU 工作量倍数、任务数倍数、采用率、工程类 agent 份额、1/5 验收门槛都是我们的估计或假设，正文已标出。云端环境挡住了 DeepSeek 官网、新浪、ChainCatcher 等站点，设计文章原文未能直接读取。</p>
 <p class="note">v1 (2026.11.01)：首版。</p>
+<p class="note">v1.1 (2026.11.01)：第 3 节加"这个实验到底测了什么"，讲清测的是速度不是产量和质量、成本只给了缓存 token。</p>
 </div>
 </section>
 
