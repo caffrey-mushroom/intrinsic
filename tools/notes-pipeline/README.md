@@ -15,5 +15,8 @@ Not published: FactSet, Tegus, VIC, 医药周报, research-output.
    lists and dedupes (Nutstore conflict copies, mirror vs `Acecamp/`, top-level copies, already-published
    date + original title) and converts bodies to HTML. `ac_times.json` maps AceCamp articleId to
    "YYYY-MM-DD HH:MM" from the mirror (optional).
-3. Write `meta.json`: `[{id, name, sector, tags}]` per record (handover sec. 4; tags from the fixed vocabulary).
+3. Write `meta.json`: `[{id, name, sector, tags, summary}]` per record (handover sec. 4; tags from the fixed vocabulary).
+   `summary` (Caffrey, 2026-11-01): a list of 5-10 Chinese sentences, read from the full note (PDFs too), giving its core view,
+   key facts and the most useful numbers. render.py shows it as a 核心摘要 box above the body and warns when it is missing.
+   New notes only; existing pages were not backfilled.
 4. `python3 render.py <repo> records.json meta.json` writes pages, re-sorts `notes/index.html`, updates the home count.

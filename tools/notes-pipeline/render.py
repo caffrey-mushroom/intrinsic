@@ -1,5 +1,5 @@
 """Write note pages + update notes/index.html and the home Notes block (handover sec. 5/7).
-usage: render.py <repo_root> <records.json> <meta.json>   (meta: [{id,name,sector,tags}])
+usage: render.py <repo_root> <records.json> <meta.json>   (meta: [{id,name,sector,tags,summary}]; summary = 5-10 Chinese sentences, list or string)
 """
 import os, re, sys, json, html, shutil
 repo, rec_f, meta_f = sys.argv[1:4]
@@ -21,6 +21,25 @@ def kebab(name):
 
 tpl = open(f'{repo}/notes/2026-09-29-ac-supernode-bottlenecks-pt-2/index.html', encoding='utf-8').read()
 head = tpl[:tpl.index('<title>')] + '<title>{title}</title>' + tpl[tpl.index('</title>') + 8:tpl.index('<body>') + 6]
+
+# 核心摘要 box at the top of each new note (Caffrey 2026-11-01): meta 'summary' = list of 5-10 sentences
+SUM_CSS = '''<style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style>'''
+
+def summary_html(m):
+    s = m.get('summary') or []
+    if isinstance(s, str):
+        s = [x.strip() for x in re.split(r'(?<=[。！？])\s*|\n+', s) if x.strip()]
+    if not s:
+        print(f"WARN: no summary for meta id {m['id']}", file=sys.stderr)
+        return []
+    if not 5 <= len(s) <= 10:
+        print(f"WARN: summary for meta id {m['id']} has {len(s)} sentences (want 5-10)", file=sys.stderr)
+    return ['<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>',
+            *[f'<li>{E(x)}</li>' for x in s], '</ol></section>']
 
 # PDF-sourced notes (FUNDA/SA) embed the original PDF instead of extracted text
 PDF_CSS = '''<style>
@@ -53,6 +72,9 @@ for i, r in sorted(recs.items(), key=lambda kv: (kv[1]['date'], kv[1].get('time'
     title = f"{d} | {r['src']} | {sector} | {name}"
     is_pdf = r['path'].lower().endswith('.pdf')
     h0 = head.replace('</head>', PDF_CSS + '</head>') if is_pdf else head
+    tl = summary_html(m)
+    if tl:
+        h0 = h0.replace('</head>', SUM_CSS + '</head>')
     body = [PDF_BODY] if is_pdf else ['<div class="body">', r['body'], '</div>']
     page = h0.replace('{title}', E(title)) + '\n' + '\n'.join([
         '<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>',
@@ -61,7 +83,7 @@ for i, r in sorted(recs.items(), key=lambda kv: (kv[1]['date'], kv[1].get('time'
         f'<p class="orig">原标题：{E(r["orig"])}</p>',
         f'<p class="tags">{E(tags)}</p>',
         f'<p class="meta">{E(mt)}</p>',
-        *body, '</main>', '<script src="../back.js" defer></script>', '</body></html>', ''])
+        *tl, *body, '</main>', '<script src="../back.js" defer></script>', '</body></html>', ''])
     os.makedirs(f'{repo}/notes/{slug}')
     if is_pdf:
         shutil.copyfile(r['path'], f'{repo}/notes/{slug}/doc.pdf')
