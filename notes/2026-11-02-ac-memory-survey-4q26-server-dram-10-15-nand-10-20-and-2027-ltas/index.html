@@ -1,0 +1,202 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.02 | AC | Memory | Memory Survey 4Q26 Server DRAM +10-15% NAND +10-20% and 2027 LTAs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.02 | AC | Memory | Memory Survey 4Q26 Server DRAM +10-15% NAND +10-20% and 2027 LTAs</h1>
+<p class="orig">原标题：存储调研_ 4Q26服务器DRAM预计涨价10%–15%, NAND各应用端涨幅约10%–20%, 27年服务器DRAM_HBM供需缺口持续, 27年长协供应量预计增长15%–20%</p>
+<p class="tags">#memory #nand #hbm</p>
+<p class="meta">AceCamp · 2026-11-02 · article 70568786</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>专家称3Q26服务器DRAM约2.6–2.65美元/Gb，四季度预计再涨10–15%；PC DRAM约2美元/Gb，四季度预计2.2–2.3美元。</li>
+<li>手机DRAM三季度约1.5–1.6美元/Gb，四季度可能到1.7–1.8美元；PC和手机出货自二季度起环比下滑接近20%，但服务器需求支撑整体上涨。</li>
+<li>NAND四季度各应用涨约10–20%，服务器NAND接近或超过0.05美元/Gb，涨幅明显小于此前的40–70%。</li>
+<li>长存全球份额约15%，中国区份额有望30–40%，在手机和PC客户端的平均单价比海外厂商低15%以上。</li>
+<li>存储涨价让8000元PC的存储成本接近3300–3400元、占BOM四成以上；手机主流配置被迫从12GB降到8GB内存。</li>
+<li>2027年服务器DRAM和HBM供需缺口持续，长协供应量预计增长15–20%。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<ul><li>2H26 DRAM与NAND价格走势及消费电子市场变化；</li><li>2027年服务器DRAM/HBM供需格局及扩产展望；</li><li>CSP长期采购协议及存储供应策略；</li><li>NAND技术路线及市场竞争格局。</li></ul>
+<p><b>以下是专家观点：</b></p>
+<p><b>请分析一下2026年第三季度和第四季度DRAM市场分应用领域的平均销售单价及其变化趋势？</b></p>
+<p>2026年第三季度，服务器用DRAM的单价约为每Gb 2.6至2.65美元，预计第四季度将有10%至15%的涨幅。PC用DRAM在第三季度的单价约为每Gb 2美元，预测第四季度将上涨至2.2至2.3美元。手机用DRAM的情况较为特殊，由于国产手机厂商对价格优势的要求，其第三季度单价相对偏低，处于每Gb 1.5至1.6美元的区间。对于第四季度，市场存在两种不同预期：一种是延续个位数的温和涨幅，单价可能达到1.7美元左右；另一种则是为了与PC DRAM价格看齐而进行补涨，单价可能达到1.8美元。截至目前，手机用DRAM的第四季度报价尚未确定，但上涨是必然趋势。尽管PC和手机等消费类产品的出货量自第二季度起便面临压力，季度环比下滑接近20%，但由于服务器需求的持续旺盛，DRAM市场整体看涨。不过，第四季度的大部分价格尚未最终确认，仅有部分客户收到了报价。</p>
+<p><b>2026年第三季度和第四季度NAND市场在不同应用领域的单价情况和涨幅预期是怎样的？</b></p>
+<p>在服务器应用领域，NAND在2026年第三季度的价格约为每Gb 0.045美元，预计第四季度将有至少10%的涨幅，单价会接近甚至可能超过0.05美元。在PC应用领域，以不带DRAM的产品为例，第三季度的单价约为每Gb 0.037至0.038美元；第四季度的报价涨幅在10%至13%之间，但客户因压力较大希望，预计涨价后单价至少会达到0.041美元。在手机应用领域，其价格策略与手机DRAM相似，第三季度涨幅较为缓和，单价约为每Gb 0.028至0.029美元，比PC领域低20%至30%。对于第四季度，市场预期涨幅至少为10%，具体幅度可能在10%到20%之间。总体来看，NAND市场确认将继续上涨，但与此前动辄40%至70%的涨幅相比，本轮涨幅已明显收窄。</p>
+<p><b>长存目前在NAND市场的地位如何，其市场份额、定价策略以及对行业的影响是怎样的？</b></p>
+<p>长存对市场的影响很大。根据公开数据，其全球市场占有率已达到15%左右，严格意义上说已经进入了行业第一梯队，份额仅次于三星和海力士，与第三至第五名的厂商份额差距不大。受美国禁令影响，长存目前主要供应国内市场，但部分国外客户在中国区出货的产品（如HP）也可能采用其产品。其产品主要应用于中国区的手机，其次是PC。此外，长存的Wafer销售量也很大。在中国区市场，长存今年的整体市场份额有望达到40%左右，最低也能达到30%。相比之下，一些国际大厂在中国区的份额高点时约为40%，常规在35%至36%。长存当前的市场策略以扩大份额为主，同时也看重利润。其在手机和PC客户端的平均单价通常比国外厂商低15%或更多。这一策略与CX不同，后者在DRAM市场的定价策略基本跟随国外供应商。</p>
+<p><b>长存销售的Wafer主要流向哪些客户，这些Wafer最终被制成哪些产品形态？</b></p>
+<p>长存销售的Wafer主要供给模组厂。这些公司大量采购长存的Wafer，将其加工成各种形态的终端产品，包括存储卡、UFS、PC用SSD以及手机用NAND。此外，这些Wafer也被用于制造高端的服务器SSD。</p>
+<p><b>长存的产品主要应用于消费类市场还是服务器市场？</b></p>
+<p>长存的产品目前主要应用于消费类市场，服务器类占比相对来说较低。</p>
+<p><b>消费类电子产品中存储部件的价格上涨对整机BOM成本构成了怎样的影响？</b></p>
+<p>存储部件价格上涨对消费类电子产品的BOM成本影响显著。以PC为例，一台售价约8,000元的典型配置（16GB内存+512GB SSD）机型，其存储成本已接近3,300至3,400元，占整机BOM成本的比例略超40%。对于配置稍高的16GB+1TB机型，存储成本占比将超过50%，导致这类配置的低价促销机型在市场上非常少见，售价通常必须超过8,000元才能避免亏损，除非有国家补贴等特殊情况。</p>
+<p><b>存储成本的上涨如何具体影响当前智能手机的配置和最终售价？</b></p>
+<p>存储成本上涨迫使手机厂商调整产品配置和定价策略。此前主流的12GB+256GB配置因成本过高而被部分机型放弃，转向8GB内存。如果厂商采用质量稍次、价格便宜20%至40%的存储颗粒，或许能节省三四百元成本。若将配置提升至12GB+256GB，仅存储成本就将逼近2000元，假设存储占BOM成本的50%，则整机售价需超过4,000元。对于16GB+512GB的高端配置，其存储成本与PC相近，即使比PC便宜10%至20%，成本也在2,700元左右，这意味着整机起售价将在5,000至6,000元区间。</p>
+<p><b>苹果公司为2027年第二季度锁定的NAND价格，对国内手机厂商在2026年第四季度和2027年第一季度的价格谈判产生了什么影响？</b></p>
+<p>有新闻报道称苹果公司已锁定明年（2027年）第二季度2.1美元的DRAM价格，这对国内厂商构成了显著压力。作为对比，2026年第三季度供应商给到大陆厂商的价格约为1.5至1.6美元。若按15%的涨幅预测，第四季度价格将达到1.8至1.9美美元。如果第四季度到明年第一季度再上涨超过10%，价格便会接近苹果锁定的水平。苹果的定价行为相当于为市场设立了一个标杆。如果国内厂商在第四季度谈判中争取到较缓和的涨幅，例如10%（价格至1.7美美元左右），那么要达到明年第二季度2.1美美元的水平，将意味着未来需要面临25%至30%的急剧涨价。因此，一个可能的走势是：2026年第四季度的价格谈判最终以1.8至1.9美美元左右收尾，然后在2027年第一季度向苹果的锁定价格看齐，相当于每个季度价格上涨约15%。</p>
+<p><b>面对存储成本上涨带来的利润压力，消费电子厂商正在采取哪些应对策略？</b></p>
+<p>面对市场承压，尤其是在PC和手机领域，厂商正在通过推出高溢价产品来寻求出路，以保障利润，即便这意味着可能会牺牲部分出货量。近期发布的许多新机型，如vivo、OPPO的18系列、小米18的机型以及一加、华为的部分系列手机，定价普遍在四五千元。厂商宁愿减少出货数字，也要保住利润空间，通过高溢价产品来换取利润。</p>
+<p><b>在当前市场环境下，主流手机与PC厂商各自采取了哪些业务策略调整？</b></p>
+<p>各手机厂商正在寻求多元化的发展路径。例如，主要面向非洲市场的传音，其业务已拓展至电动三轮车、酒店经营等领域。小米则通过推出高溢价产品来调整其市场定位，同时也在布局AI服务器业务，该项目自2025年底立项，并于2026年开始获得上游供货。PC厂商方面，普遍的策略是向服务器领域拓展。联想的X86服务器业务表现突出，有报道称在上一季度其在OEM市场中已位列第一。HP和戴尔的服务器业务也位居市场前五。此外，苹果和华硕等厂商也拥有自己的服务器产品线。目前，HP、戴尔、联想这三大PC厂商正逐步将业务重心转向服务器，策略是在保证PC业务盈利的前提下，不过分追求出货量，同时加大对服务器业务的扶持力度。</p>
+<p><b>当前PC、手机和服务器等不同产品线的库存水位分别是多少？哪个领域的库存压力最大？</b></p>
+<p>目前库存压力最大的领域是PC，而非手机。PC的NAND库存基本已达到三个月左右，部分产品甚至超过三个月，DRAM库存也达到了两到三个月。相比之下，手机的库存水平要低得多，预计在两个月以内，但不可能仅有一个月。疫情（2020年）之前，行业健康的库存水平为四到六周，而疫情之后，六到八周已成为基础库存量。服务器领域的库存水平则处于中性位置，普遍在两到三个月之间，可能更接近两个月，但具体情况因产品而异。</p>
+<p><b>服务器存储中NAND的技术构成是怎样的？不同技术路线对供应商和客户有何影响？</b></p>
+<p>服务器的DRAM是通用的，但NAND存在技术差异。目前，服务器NAND的主流技术是TLC，占比约为70%至80%。TLC因其物理结构，在擦写性能方面表现更优。然而，存储供应商为了提高生产效率，倾向于将产能转向QLC。在同一条产线上，生产QL C的产能可以比TLC高出20%至30%，而其价格仅比TLC低10%至15%左右，因此对供应商而言利润更高。尽管如此，大多数服务器客户目前并不倾向于采用QLC，这导致市场担心SSD领域可能出现局部性的供应预估不足。不过，具体应用选择也取决于数据类型，例如，对于读取较少的冷数据存储场景，QLC也是一种可行的选择。</p>
+<p><b>对于服务器市场，2027年的长期协议（长协）在签约期限、供应量和价格方面与往年相比有何变化？</b></p>
+<p>与大客户签订长期协议是行业惯例，并非始于2026年。过去，这类协议通常以一年为期。今年的主要变化是将协议期限显著延长，对于主要的大客户，签约期普遍从三年起步，可达三到五年。从供应量来看，无论是DRAM还是SSD，预计2027年长协的供应量将比2026年增长15%至20%。实现30%的增长较为困难，因为服务器的增量需要部分挤占PC和手机的市场份额。在价格方面，长期协议并未规定一个固定的具体价格，而是设定了一个价格区间，例如2到5美美元。协议执行期间，只要价格在此区间内浮动即可。设置较宽价格区间的目的是为了应对未来需求可能出现的迅猛增长。</p>
+<p><b>服务器市场的长期供需缺口是如何形成的，以及供应商在产能投入方面有何策略考量？</b></p>
+<p>服务器市场的年需求增长率至少为30%，而当前的年供应增量仅为20%左右，这导致了每年存在10%至20%的天然供给缺口。面对这一缺口，供应商在考虑新增投入时非常谨慎。因为新的产能投入至少需要三年才能产生结果，供应商必须确保届时市场价格依然坚挺，以保证投资能够收回。因此，供应商的策略是在保障合理投资回报的底线价格之上进行供应。目前来看，所有为期超过三年的长期协议都集中在服务器领域的CSP厂商，并未覆盖PC、手机或汽车市场。</p>
+<p><b>2027年服务器DRAM市场的供需状况预计将如何演变？</b></p>
+<p>预计2027年服务器DRAM市场将持续存在显著的供需缺口。以具体数据来看，2025年DRAM总出货量约为300Billion Gb左右。预计2026年同比增长15%，达到约340Billion，其中分配给服务器的DRAM占比将达到50%至60%，即约200。然而，2026年服务器的实际需求可能超过250，已存在供需缺口。展望2027年，服务器DRAM的需求预计将在此基础上再增长20%至30%，总需求将超过300Billion以上，甚至可能达到350。在供应端，假设2027年DRAM总产能继续增长15%，达到约391Billion。如果完全满足服务器的需求，其在总产能中的占比将达到极端性的75%，这将严重挤压PC和手机市场。因此，一个更合理的预期是，2027年分配给服务器的DRAM产能占比将维持在60%左右，最多不超过65%，对应供应量约为240至250Billion，最大可能接近300Billion。即便如此，与超过350Billion的需求相比，仍存在约10%以上的天然供给差距。</p>
+<p><b>2027年HBM市场的价格和供需量将呈现怎样的趋势？</b></p>
+<p>2027年HBM市场将面临需求远大于供给的局面。从需求端看，HBM的年增长率预计将超过50%，远高于传统DRAM产品30%的增速。以2026年为例，DRAM总产能约为340Billion，HBM占比约10%，然而实际需求是50Billion。预计到2027年，HBM的需求将在此基础上增长50%，达到75Billion。在供给端，由于HBM的生产难度大、良率低于传统DDR，且扩产需要时间，供应增长将相对受限。预计2027年DRAM总产能将增长至约400Billion Gb，分配给HBM的产能占比可能提升至15%，对应供应量约为55-60Billion。综合来看，即便将新增产能以及从PC、手机领域调配的产能计算在内，HBM的供应年增长率最多也只有30%左右。因此，2027年HBM市场将出现约20%至30%的天然供需缺口。</p>
+<p><b>当前存储市场的价格上涨逻辑是什么，以及预计未来价格走势如何？</b></p>
+<p>本轮价格上涨的核心逻辑在于AI服务器需求的爆发性增长侵占了大部分存储产能，导致其他应用领域无法获得充足的供应量。具体而言，AI服务器对HBM及高容量DDR的需求激增，使得供应商将产能优先向其倾斜。这导致PC和手机等市场的供应被压缩，OEM厂商拿不到足够的货，采购成本随之上升。成本压力最终迫使终端产品制造商提高售价，这反过来又可能影响销量。尽管如此，各大存储供应商并未准备降价或维持价格稳定。基于对CPU、GPU及加速卡等其他组件供应正常的预期，预计这种由AI驱动的供需失衡将持续，导致2027年甚至更晚的时间里，存储市场价格仍将维持上涨态势。</p>
+<p><b>为何需要与服务器客户签订三至五年的长约，目前此类协议的签订进展如何？</b></p>
+<p>签订三至五年的长约是与各大服务器客户共同商议的结果。在选择合作伙伴时，尤其是针对三年以上的长期协议，会重点考量其未来的投资计划。目前，美国五大CSP客户的长期协议签订已基本结束。在中国区，除字节跳动外，其他主要的CSP厂商也基本完成了签订。需要明确的是，这些长期协议的签订方仅限于CSP厂商，不包括服务器OEM。OEM厂商均没有签订三至五年的长期协议，但他们拥有一年期的协议。云厂商客户，尤其是美国客户，未来两到三年的投资计划相对透明。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

@@ -1,0 +1,208 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.02 | AC | Power | How AI Datacenter Backup Power Works UPS BBU BESS and Diesel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.02 | AC | Power | How AI Datacenter Backup Power Works UPS BBU BESS and Diesel</h1>
+<p class="orig">原标题：AI数据中心的备电系统如何运作：UPS、BBU、储能和柴油机分别承担什么任务</p>
+<p class="tags">#power #datacenter #bbu</p>
+<p class="meta">AceCamp · 2026-11-02 · article 70568755</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>文章认为AI扩展了备电的任务，部分方案在停电保障之外增加了日常功率平滑，并把短时能量支撑移到负荷侧直流环节。</li>
+<li>在线双变换UPS给下游关键负荷供电和管理电能质量，BBU通过直流接口支撑机柜或列级负荷，站级储能负责园区功率调节，柴油机在启动稳定后提供持续备用。</li>
+<li>四类设备可以在同一项目同时采购，统计用电需求时不能把各层额定功率相加。</li>
+<li>BBU只有嵌入完整的直流供电方案，才可能减少集中式UPS，能否移除UPS要看负荷连续性和故障保护目标。</li>
+<li>GPU不断电不等于业务不中断，网络、存储、控制和液冷的CDU、泵、风机也需要相应保护。</li>
+<li>Vertiv 1.8MW PowerUPS 9000已把输入功率平滑和电池管理纳入产品功能，说明交流UPS也在适应AI负荷。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>1.AI扩展了备电的运行任务。部分方案在停电保障之外增加日常功率平滑，并将短时能量支撑向负荷侧直流环节迁移。2.典型在线双变换交流UPS为其下游关键负荷提供不间断供电和电能质量管理，配套电池在交流输入失效时提供能量；BBU通过直流接口支撑所连接的机柜或列级负荷。3.GPU持续供电只是业务连续运行的一项条件。分布式计算依赖必要的网络、存储和控制，液冷设备还依赖规定的冷却液循环；其中任一关键环节失效，都可能使计算受限或中断。</p>
+<p>Q1：AI究竟改变了备电系统的什么要求？哪些变化来自负荷增加，哪些来自功率波动？</p>
+<p>A：AI带来的变化，是在原有停电保障之外，部分供电方案增加正常运行中的功率平滑，并调整短时储能的接入位置。关键负荷增加，要求相应保护设备具备更大的供电能力；同步训练等负荷快速升降，则对转换器、电池及控制提出动态要求，两者不能用同一个装机增长率替代。Vertiv2026年8月发布的1.8MWPowerUPS9000，将输入功率平滑、电池保护和荷电状态管理纳入产品功能，证明交流UPS也在适应AI负荷。机柜侧直流备份则提供另一条配置路径，但这些产品和方案的出现，不等于所有机房采用同一种架构。投资判断应落在新增负荷需要多少保护能力、哪些功能需要升级、哪些环节可以迁移。这些产品体现的是职责和性能要求扩展；电池电量、UPS容量及柴油机容量分别取决于保护范围、持续时间和可靠性目标，不能统一外推。</p>
+<p>Q2：UPS、BBU、站级储能和柴油机分别保护什么负荷、承担什么任务？</p>
+<p>A：四类设备可以在同一项目中同时形成真实采购，但承担的任务不同。典型在线双变换交流UPS为其下游关键负荷提供不间断供电和电能质量管理，配套电池在交流输入失效时提供能量；BBU通过直流接口支撑所连接的机柜或列级负荷。独立配置的站级BESS承担园区功率调节、能量管理及按设计具备的备用任务；柴油机在启动、稳定并完成带载后提供持续备用发电。</p>
+<p>Vertiv2026年6月的架构说明将UPS的关键负荷保护与常规表后BESS的站级任务明确区分。分类依据是连接方式、负荷边界和系统责任，而非是否使用电池。同一负荷受到多层保护，不代表这些采购相互重复。统计用电需求时，不能把各层额定功率相加；统计终端采购时，应计入每项真实设备，并剔除同一采购项的重复记录。分析企业收入时，上游部件与下游整机则分别对应各自合同。</p>
+<p>Q3：市电中断后各设备怎样衔接？柴油机稳定供电后，UPS与电池分别进入什么状态？</p>
+<p>A：对要求不中断的关键负荷，短时储能先覆盖市电失效到备用电源可用之间的时间。在正常运行的在线双变换UPS方案中，交流输入失效后，电池经直流环节支撑逆变器，负荷继续由UPS供电；采用直流备份时，则由BBU按控制逻辑维持其所连接母线。柴油机启动并满足电压、频率和带载条件后，通常接替市电成为UPS上游交流输入，UPS继续承担转换和负荷保护，电池由失电保供转为按策略充电或参与功率调节。这不是柴油机上线后UPS退出运行。施耐德的操作资料也分别定义了双变换、电池与旁路状态。项目备电时间需要覆盖实际切换、分批带载及规定的异常处置场景，而非照搬单台机组的启动秒数。旁路或检修状态下的保护能力应另行核对；柴油机已启动，也不代表全部关键负荷已经获得稳定供电。采购及验收需要覆盖整条供电路径的衔接。</p>
+<p>Q4：BBU在什么架构下能够减少集中式UPS？哪些功能必须由其他设备承接？</p>
+<p>A：BBU只有嵌入完整的直流供电方案，才可能减少相应负荷对集中式交流UPS的需求。典型路径是交流电先经PSU转换为直流，BBU接在负荷侧直流母线，在正常电源异常时补充能量；这与交流UPS先恢复交流输出、再由PSU转换的路径不同。LITEON 2026年7月的技术说明强调了直流耦合及PSU与BBU之间的控制配合。能否移除原有UPS，取决于新方案是否满足相同的负荷连续性、电压质量、维护供电及故障保护目标，而不是BBU放电功率够大就可以。BBU本身主要承接规定范围内的能量支撑，其他职责仍须由PSU、配电保护、冗余电源及控制共同完成。未接入该支撑母线的交流网络、控制或冷却负荷，也需要独立安排。因此，减少UPS应对应到明确的负荷回路和设备清单；一个BBU参考设计只能证明接口方案，不能单独证明客户已经取消UPS。</p>
+<p>Q5：GPU不断电为何不等于业务不中断？网络、控制和必要冷却负荷怎样同步保电？</p>
+<p>A：GPU持续供电只是业务连续运行的一项条件。分布式计算依赖必要的网络、存储和控制，液冷设备还依赖规定的冷却液循环；其中任一关键环节失效，都可能使计算受限或中断。是否由BBU保护，应逐项查看设备是否接入其支撑回路，不能仅凭电池安装在机柜内还是机房外判断。Vertiv2026年2月的应用说明专门提出，为CDU、泵和风机配置相应UPS保护，并给出机械负荷与IT负荷分开配置的参考方案。这并不要求全部制冷设备都采用相同备电方式，具体配置取决于热缓冲、设备允许中断时间和恢复次序。冷却能力也不能直接换算为UPS电功率：冷却MW描述移除热量的能力，UPS应按被保护电机、驱动和控制的实际电气负荷选型。新增采购应来自需要连续运行的具体设备及其保护要求，不能既遗漏必要冷却负荷，也不能把整套制冷系统全部按IT备电标准重复配置。</p>
+<p>Q6：停电备份与日常功率平滑有什么区别？电池、电容及控制系统怎样分工？</p>
+<p>A：停电备份解决正常电源失效后的连续供电，功率平滑则在正常运行或机组供电时，限制快速负荷变化向上游传递。前者要求保留规定能量，后者需要反复充放电，两者会共同占用电池的功率、荷电状态及寿命预算。NVIDIA的技术方案提出，靠近计算负荷的电容及超级电容处理较快波动，设施级电池处理较慢、较大规模变化，这是分层设计思路，并非固定配置比例。UPS内部也有不同控制目标：Vertiv的BatteryShield通过直流环节调节减少不必要的电池动作，输入功率平滑则调度电池支撑输入侧稳定。减少电池动作，不等于已经完成上游功率平滑。实际应由负荷波形、上游允许变化速率和储能能力决定分工，不能只按“响应快”比较设备。新增价值既可能来自电池，也可能来自电容、转换器和控制；某项测试有效，不代表它可以承担所有时间尺度和运行工况。</p>
+<p>Q7：备电系统应怎样同时确定功率和电量？</p>
+<p>A：配置必须同时满足瞬时输出和持续供能，MW与MWh缺一不可。作为理想能量计算，1MW负荷维持30秒需要8.33kWh，维持5分钟需要83.33kWh；这些只是负荷侧能量需求，不是电池采购容量。实际还需满足最大放电电流、倍率、温升、转换损耗、允许放电区间、寿命末期能力及冗余，不能因时间短就无限压缩电池数量。台达2026年3月展示的800V电源柜额定功率为660kW，内置BBU合计480kW，两者都是功率参数，既不能据此算出电池kWh，也不能默认BBU支持整柜660kW满载备份。因此，机柜功率上升并不单独决定电池电量增长，备电时间及输出约束同样重要。采购测算应分别对应电源转换能力、电池可用能量和规定工况下的续航，再计算模块数量与成本。统一用园区MW乘某个每kWh单价，会同时混淆功率、能量和系统供货范围。</p>
+<p>Q8：UPS电池、BBU电池和站级储能电池的选型要求有什么不同？比较成本需要统一哪些条件？</p>
+<p>A：三类电池系统的差别主要来自工作任务，不能仅靠化学体系名称判断。短时备电强调在规定温度及寿命阶段输出足够功率；兼做功率平滑，还要考虑反复充放电、充电接受能力和热管理；较长时段的站级储能则同时关注可用电量、持续时间及日常循环。Vertiv的EnergyCoreLi5和Li7产品资料，将相应配置描述为寿命末期5分钟、7分钟运行时间优化，这不是任何负荷下都能达到的固定续航。其AI控制白皮书还指出，充电能力不足会限制持续平滑，放电功率充足并不代表充回能量同样快。比较成本，应统一被保护负荷、备用时间、充放电任务、寿命末期性能及维护范围，将电芯、BMS、转换、温控、保护和验证一并计入。电池柜可否直接用于另一系统，还需核对电压范围、通信和保护配合。站级储能每kWh报价，不能直接套用到BBU或UPS整套电池系统。</p>
+<p>Q9：储能可以减少柴油机运行，是否也能减少柴油机装机？完整替代需要满足什么条件？</p>
+<p>A：减少运行小时与减少装机容量是两种结果，前者不必然带来后者。电池在允许的控制策略下承担较短停电或部分供电切换，可以减少柴油机启动及运行；但项目如果仍要求在较长停电、低荷电状态或设备检修等规定场景下持续保障关键负荷，仍可能保留原有机组能力。只有替代方案在相同保护负荷、持续时间和故障条件下满足设计要求，才有依据减少机组台数或容量。电池依赖已储存能量及恢复充电，柴油机则依赖燃料储备、补给、维护及允许运行条件，两者的持续供能约束不同。Cummins于2026年8月宣布获选供应美国数据中心BESS，并明确其方案可与柴油及燃气机组集成，说明储能新增与机组保留可以并存。因此，BESS采购增长不能直接折算为柴油机市场等容量减少。对供应商，电池、机组和控制可以同时形成订单，具体增减应从项目备用方案及实际设备清单判断。</p>
+<p>Q10：备电电池参与削峰或电网服务后，还剩多少可用备用能力？</p>
+<p>A：剩余备用能力应按调节过程中及调用结束后的实际状态计算，而不是沿用电池满充时的标称续航。需要以最低允许荷电状态、寿命末期可用能量、关键负荷和转换损耗核算备用时间，同时校核可输出功率；用于日常调节的电量不能再完整计入备用储备。施耐德Gala xyVXL操作说明列有低续航时停止AI功率平滑的可选设置，说明保护要求必须落实到实际控制配置，不能默认具备功能就已启用。调用结束后的恢复充电，也应受输入电源余量、充电能力和规定恢复时间约束。对美国应急柴油机，参与电网服务还需符合具体许可及适用规则；EPA2026年对特定DOE紧急命令的运行解释，不能扩大为普遍允许日常商业削峰。因此，经济性必须基于保留备用能力之后的可调度空间，设备容量、可交易容量和收益不能重复计算。电池能够兼做调节，但须按备用目标预留能量、功率及恢复条件。</p>
+<p>Q11：N+1、2N与多层备电分别解决什么问题？为什么更多设备不一定形成独立保障？</p>
+<p>A：N+1主要增加规定范围内的冗余单元，2N则要求两套各能承担全部设计负荷、具有相应独立性的系统或路径；UPS与BBU前后配置，属于不同保护层级，并不自动形成两条独立路径。UptimeInstitute于2026年10月对冗余的解释，也将独立性列为2N的关键条件。因此，两台UPS若仍共用一个关键输出环节，不能仅因总容量达到两倍就认定整条供电路径具备2N保障。冗余设计应明确承受的是单个模块故障、整条路径故障，还是规定的检修状态，并核对控制、母线、燃料和冷却的共同故障点。计算订单时，实际增加的模块、电池、机组及配电设备都应纳入；计算业务用电时，则不能把备用额定容量重复相加。比较方案成本必须保持故障边界和维护条件一致，否则较低采购额可能只是减少了保护范围，并不代表在相同可靠性目标下更经济。</p>
+<p>Q12：已有UPS能否通过控制升级适应AI负荷？什么情况下需要更换主机或电池？</p>
+<p>A：能否升级取决于具体型号、硬件余量和厂商支持范围，不能把所有在运UPS都算作新增整机需求。若设备已有相应控制能力，且整流、逆变、充电功率、电池和散热满足目标负荷，可以通过厂商支持的参数配置、软件或模块升级改善运行；若关键额定能力不足，则需增加模块、更换电池或调整主机方案。Vertiv的PowerUPS9000资料将FullAI功率模块列为选项，涉及充电能力与功率平滑，说明部分功能要求需要落实到硬件配置。施耐德GalaxyVXL的AI平滑功能也限定适用接线方式，证明产品名称相同并不意味着任意现场配置都能启用。改造还应验证电池放电、恢复充电、机组供电、故障及维护状态的表现。供应商可能取得控制升级、功率模块、电池更换和调试服务收入，主机复用时，升级支出不应计为整机重购；整机需求应按实际新增或更换数量统计。</p>
+<p>数据与技术来源</p>
+<p><i>1. Vertiv：PowerUPS90001.8MW亚洲区域供货公告，2026-08-24公告正文；页面标注2026-08-27。</i></p>
+<p><i>2. Vertiv：BESSandUPSrolesinlargedatacenterpowerarchitectures，2026-06-26。</i></p>
+<p><i>3. SchneiderElectric：GalaxyVXL运行模式说明，在线手册截至2026-10-31核查。</i></p>
+<p><i>4. LITEON：FromCentralizedUPStoRack-LevelBBU:RethinkingPowerContinuityandProtectioninAIDataCenters，2026-07-14。</i></p>
+<p><i>5. Vertiv：Poweringthethermalchain，SL-80439应用说明，2026-02版本。</i></p>
+<p><i>6. NVIDIA：Buildingthe800VDCEcosystemforEfficient,ScalableAIFactories，2025-10-13。</i></p>
+<p><i>7. Vertiv：AdvancedUPScontrolsmitigaterisksofinfrastructurestressfromAIworkloads’powerswings，2025-12-16。</i></p>
+<p><i>8. Delta：NVIDIAGTC2026电源、冷却及微电网展示公告，2026-03-16。</i></p>
+<p><i>9. Vertiv：EnergyCoreLi5、Li7锂电池柜产品资料，产品页面截至2026-10-31核查。</i></p>
+<p><i>10. Vertiv：AdvancedUPScontrolsforAIworkloadsmanagement技术白皮书，2025-12版本，R1225。</i></p>
+<p><i>11. Cummins：获选为美国大型数据中心项目供应BESS，2026-08-18。</i></p>
+<p><i>12. SchneiderElectric：GalaxyVXLAI负荷功率平滑配置说明，在线手册截至2026-10-31核查。</i></p>
+<p><i>13. 美国EPA：CleanAirActResourcesforDataCenters，2026-10-01更新。</i></p>
+<p><i>14. UptimeInstitute：Surveyfindingslinkhigherredundancytoloweroutagerisk，2026-10-14。</i></p>
+<p><i>15. Infineon：24kWSiC高压BBU参考设计，2026-06-02。</i></p>
+<p><i>16. NVIDIA：WhyScalingAIComputePerformanceRequiresaNewPowerArchitecture，2026-08-11。</i></p>
+<p><i>17. Vertiv：PowerUPS9000FullAI功率模块产品说明，产品页面截至2026-10-31核查。</i></p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

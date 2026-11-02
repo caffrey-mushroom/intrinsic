@@ -1,0 +1,281 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.02 | AC | Optical | NVIDIA Custom OCS Ramp LCOS Wins on Reliability</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.02 | AC | Optical | NVIDIA Custom OCS Ramp LCOS Wins on Reliability</h1>
+<p class="orig">原标题：英伟达OCS定制化放量在即，液晶方案凭高可靠性确立主流地位</p>
+<p class="tags">#optical #datacenter #supply-chain</p>
+<p class="meta">AceCamp · 2026-11-02 · article 70568775</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>专家称英伟达于2026年7月提出定制OCS需求，用于2028年机架产品的scale-up架构，每台机架内部署两台超薄in-tray形态OCS，2028年需求规模明显大于谷歌。</li>
+<li>英伟达已支付开发费，委托专家所在公司基于MEMS和液晶两种技术开发，要求72端口、厚度压缩到1U以下，目标2028年上半年完成。</li>
+<li>英伟达承诺给液晶方案约35%–40%份额，主要看重其约10年寿命，而MEMS约3年，并计划用算法管理流量来弥补切换速度劣势。</li>
+<li>液晶方案切换速度从早期100毫秒优化到第二代约50毫秒，MEMS为20–25毫秒；谷歌采购的OCS中超过70%为MEMS。</li>
+<li>Lumentum主推MEMS，向谷歌出货的320端口OCS售价约13万美元，专家所在公司同规格售价约12万美元，预计两家各占约35%–40%份额。</li>
+<li>硅光波导方案光损约7–8dB且量产难度大，短期难以大规模交付。</li>
+<li>专家称英伟达2027年CPO预期下调至10–12万台，但2028年NPO需求看到3,000万只，可插拔FAU（约200美元）和MPO线缆是增量；FCC禁令预期12月发布。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>· 液晶方案（LCOS）成核心路径：英伟达承诺给予液晶方案35%-40%份额，主因其高可靠性（10年寿命 vs MEMS 3年）及长寿命，通过算法弥补切换速度劣势。· 竞争格局与份额分配：预计公司与Lumentum（主推MEMS）各占约35%-40%份额；硅光波导方案受限于高光损（7-8dB）及量产难度，短期难以大规模交付。· 行业催化与风险：12月底前关注2028年确定性需求及预付款落地；FCC禁令预期12月发布，核心影响在于2028年后新产品BOM中光芯片的国产化受限。· NPO/CPO趋势明确：英伟达2027年CPO预期下调至10-12万台，但2028年NPO需求看至3,000万只；关注高价值量可插拔FAU（200美元）及MPO线缆增量。</p>
+<p><b>以下内容来自资深行业专家：</b></p>
+<p><b>Q&amp;A</b></p>
+<p><b>请介绍一下目前OCS（光路交换系统）的市场需求情况，特别是来自英伟达的新增需求？</b></p>
+<p>英伟达于2026年7月提出了OCS的定制化需求，计划用于配套其2028年推出的机架产品。根据初步沟通，英伟达在2028年的需求量规模明显大于谷歌。其方案要求在单台机架内部署两台OCS，应用于scale-up架构。具体要求是开发一种高集成度、超薄的“in-tray”形态OCS，以托盘方式集成在机架内。</p>
+<p><b>对于英伟达提出的高集成度、超薄型OCS，主要有哪些技术路径可供选择？公司将如何布局？</b></p>
+<p>目前能够实现大规模供应的OCS技术路径主要是MEMS和液晶方案。英伟达已支付开发费用，委托公司基于这两种技术进行定制化开发，预计需要1.5至2年时间，目标在2028年上半年完成。理论上，硅光波导技术（如iPronics的方案）在尺寸、切换速度和性能上更具优势，但其量产难度大，且早期成本高昂，尤其其中使用的SOA光放大芯片价格不菲。因此，尽管液晶方案过去在谷歌的系统中仅为备份选项，但在英伟达的项目中获得了高度关注。英伟达主要看重其高可靠性和长寿命。虽然液晶方案的切换速度不及其他技术，但英伟达计划通过其算法对流量进行管理和预测，以降低对OCS切换速度的硬性要求，从而凸显液晶方案的性价比优势。</p>
+<p><b>英伟达对其定制的OCS在端口数量和物理尺寸方面有何具体要求？</b></p>
+<p>英伟达要求的端口规模为72端口。目前公司可商业化出货的产品是64端口，因此定制化开发需要增加端口数量。技术上，增加一套液晶单元即可实现8个端口的扩展，从64端口升级至72端口，若考虑冗余设计，可增加两套。在物理尺寸方面，现有产品的机箱高度约为2U（约8厘米），而定制化方案要求将厚度压缩至1U以下，以实现更薄的设计。</p>
+<p><b>面对英伟达的需求，市场竞争格局如何？公司的核心竞争力是什么？</b></p>
+<p>市场竞争主要围绕量产进度展开。英伟达在2026年初对Coherent和Lumentum分别投资了20亿美元，涵盖了CPO和OCS等领域，因此这两家公司也是主要的竞争对手。Lumentum主推MEMS方案，而公司主推液晶方案。公司的核心优势在于液晶方案的全固态技术原理已在供应给谷歌的320端口产品中得到充分验证，技术成熟度高，量产确定性强。</p>
+<p><b>公司为何选择聚焦于液晶技术路径，而不是MEMS方案？</b></p>
+<p>公司在电信时代曾涉足基于MEMS技术的WSS（波长选择开关），但后续技术路线收敛至液晶方案。主要原因是电信市场，特别是海底光缆等超长距离通信场景，对设备的可靠性要求极高，设备一旦部署便难以维修。液晶方案因其高可靠性更符合这类需求，因此公司已放弃MEMS方案的进一步开发。不过，在当前数据中心市场，MEMS技术仍是主流，例如谷歌采购的OCS中超过70%为MEMS方案。</p>
+<p><b>液晶方案在端口扩展能力上是否存在限制？与MEMS方案相比，其主要优劣势体现在哪些方面？</b></p>
+<p>液晶方案在端口扩展上没有问题，可以通过级联液晶单元的方式灵活实现。例如，公司的64端口方案使用了8个液晶单元，而32端口方案则使用了4个。与MEMS方案相比，液晶方案的主要劣势在于切换速度。MEMS方案的通道切换速度可达20至25毫秒，而公司早期的液晶方案为100毫秒。经过优化，为英伟达定制的第二代方案可将切换速度降至50毫秒，虽然差距缩小，但仍慢于MEMS。谷歌之所以倾向于MEMS，一方面是其网络算法对切换速度要求较高，另一方面是其早在8年前自研OCS时就采用了MEMS技术，对外采购时也倾向于选择熟悉的技术路线。然而，液晶方案的核心优势在于可靠性和寿命。公司的数据显示，液晶OCS的普遍使用寿命可达10年，而MEMS方案的寿命大约为3年。在同等端口规模售价相近的情况下，液晶方案的寿命是MEMS方案的三倍，因此具备显著的性价比优势。</p>
+<p><b>Lumentum公司基于MEMS技术的320端口OCS产品，在售价、体积等方面与公司的产品相比有何差异？该技术方案是否能满足NVIDIA对托盘式OCS的尺寸要求？</b></p>
+<p>Lumentum向谷歌出货的320端口MEMS OCS售价约为13万美元，与公司12万美元的售价相差不大。在体积方面，MEMS技术基于自由空间光路，反射镜会占据一定空间，因此其320端口产品的尺寸与公司类似，均为8U规格，高度约60多厘米。若采用MEMS技术开发72端口产品，其尺寸能够满足NVIDIA的要求。事实上，NVIDIA也确实在与Lumentum合作开发托盘式（tray-type）OCS。</p>
+<p><b>与MEMS方案相比，基于硅光波导技术的OCS方案在尺寸、端口扩展能力、光损耗及量产交付方面表现如何？</b></p>
+<p>基于硅光波导的方案，例如由Telescent和iPronics提供的产品，在尺寸上可以做到明显更薄。然而，该方案的主要问题是光损耗巨大，通常高达7-8dB，意味着超过80%的光能量在传输中损耗，导致接收端信号灵敏度不足，误码率升高。为解决此问题，方案中需集成半导体光放大器进行信号补偿。在端口扩展方面，由于其采用二维级联方式，端口规模越大，光信号经过的控制单元越多，累积插损也随之增大，因此难以实现大规模端口扩展。例如，该技术在2025年实现了32端口方案，2026年9月光博会上展出了64端口方案，但尚未量产。在量产交付方面，尽管该技术较新，进行小批量送样（如几台或几十台）问题不大，但大规模交付仍面临困难。</p>
+<p><b>硅光波导OCS方案在成本上与液晶方案相比如何？其成本构成与性能之间存在怎样的权衡关系？</b></p>
+<p>目前，集成了SOA的硅光波导方案成本较高。以64端口产品为例，公司的液晶方案售价约为3万美元，而Telescent的同类产品在样品阶段售价为10万美元，预计量产后仍需6万美元，成本高出一倍。如果为了降低成本而不集成SOA这类放大补偿芯片，虽然成本可以大幅下降至与现有方案相当的水平，但将无法解决其固有的高光路损耗问题，从而影响性能。因此，要在保证光功率和性能的前提下，成本就会显著上升，这是一个两难的局面。</p>
+<p><b>目前行业内对硅光波导OCS方案的投资情况如何？其在小端口应用场景下的前景是怎样的？</b></p>
+<p>硅光波导方案目前备受关注，吸引了多家行业巨头的投资。例如，北美的Nubis获得了英伟达、谷歌和微软的投资；iPronics获得了英伟达的投资；英国的Salience Labs则获得了AMD和英特尔的投资。总体来看，在不要求大规模端口的应用场景下，波导方案凭借其在功耗、尺寸和切换速度等方面的综合优势，被认为是前景最好的技术路线之一。</p>
+<p><b>压电陶瓷OCS方案的技术特点、性能优势、成本以及市场应用情况如何？</b></p>
+<p>压电陶瓷方案，其主要供应商是Polatis。该技术在电信时代便已存在，目前谷歌数据中心亦有采购。其核心优势在于性能卓越：在传统技术方案中，它的光损耗最低、切换速度最快，并且能够实现高达576端口的大规模扩展，是性能上的标杆。然而，其主要缺点是成本极其高昂且组装工艺非常复杂。该方案采用离散部件，每个通道都对应一个独立的压电陶瓷块，需要通过高精密的耦合设备进行单独调整校准，而非像MEMS或液晶方案那样基于集成芯片。其单端口成本高，比现有主流方案贵3到4倍。由于成本过高，该方案在谷歌的采购份额中仅占约10%，未能实现大规模应用。</p>
+<p><b>请介绍一下不同光路交换技术方案在时延方面的性能差异，以及谷歌在选择方案时的主要考量是什么？</b></p>
+<p>在不同的光路交换技术方案中，时延性能存在显著差异。MEMS方案的时延大约在20至25毫秒，而DLC液晶方案的时延为100毫秒。另一种由凌云光代理的HUBER+SUHNER设备所采用的压电陶瓷方案，其时延可以控制在10毫秒左右。相比之下，波导方案的性能最优，目前水平可达到0.1至0.3毫秒，未来有望进一步优化，在切换速度上具备数量级的优势。尽管波导方案速度最快，但其端口规模目前无法做大。谷歌在其Scale-out网络架构中需要大端口设备，因此现阶段无法采用波导方案，转而选择性能次优且成本相对最高的压电陶瓷方案。</p>
+<p><b>对于采用液晶方案的OCS设备，上游核心材料及组件的价值量分别是多少？</b></p>
+<p>在液晶方案OCS设备的成本构成中，以320端口的主力出货设备为例，向上游供应商八亿时空采购的液晶材料价值约为2000美金。对于应用于英伟达场景的72端口设备，其液晶材料价值约为500美金。在产业链的下一环节，由秋田微将液晶材料加工成液晶单元，其价值量显著提升。同样以320端口的设备为例，秋田微提供的液晶单元价值量约为10,000美金；而对于72端口的设备，其对应的液晶单元价值量约为2,500美金。</p>
+<p><b>目前除了公司，市场上还有哪些厂商在布局液晶方案的OCS产品？</b></p>
+<p>目前公司是独家提供液晶方案OCS的厂商，但已有不少其他厂商开始考虑或正在研发此类产品。华为和中际旭创内部都已确定在研发液晶方案的OCS。此外，在最近的OCP会议上，台湾厂商智邦也展出了基于液晶方案的OCS产品。随着更多厂商的加入，未来八亿时空作为上游液晶材料供应商，有望获得更多潜在客户。</p>
+<p><b>秋田微为OCS设备代工生产液晶单元的业务，其盈利能力和投资回报情况如何？</b></p>
+<p>秋田微的盈利能力表现强劲。其上游原材料，即八亿时空生产的液晶材料，毛利率可达80%以上，这得益于其产品相较于普通显示屏液晶高出十几倍的价格以及规模化生产优势。秋田微将采购的液晶材料（例如320端口设备对应的2000美金材料）加工成价值10, 000美金的液晶单元后，其毛利率可以达到60%左右，净利率预计能达到40%。该业务属于高度定制化的细分市场，竞争对手较少，因此价格体系良好。在投资方面，该业务的核心壁垒在于工艺和技术积累，而非大量的固定资产投入。秋田微已宣布投入5,000万元用于扩产，这笔投资预计将形成对应5,000台设备产能，可满足明年（2027年）的需求。按此产能计算，投资回收期预计不到一年。未来随着英伟达等客户的需求明确，公司还会进一步扩大产能。</p>
+<p><b>在液晶材料和液晶单元这两个环节，供应链的合作模式和壁垒是怎样的？</b></p>
+<p>在液晶材料环节，公司与八亿时空是独家供应合作关系。公司提供配方，由八亿时空按配方生产并经过公司验证。这一验证壁垒非常高，重新验证一家新供应商通常需要两到三年时间，而八亿时空已为公司稳定供货七八年。八亿时空自身储备了上百吨的产能，足以应对未来增长的需求，无需额外投资扩产。在液晶单元环节，公司目前主要依靠秋田微进行代工。虽然公司自身具备生产能力，但现有产能不足以应对未来的大规模需求。秋田微提供的代工价格甚至优于公司自产的成本。考虑到今年（2026年）约1,500台、明年（2027年）5,000至6,000台，以及后续可能达到7至8万台的订单量，依靠代工是必然选择。秋田微在电信市场的WSS产品上已有成熟的液晶单元灌封工艺经验，并通过了华为认证。</p>
+<p><b>除了公司，英伟达是否还有其他OCS液晶方案的供应商？行业内其他主要厂商，如旭创，在OCS技术路线方面有何布局？</b></p>
+<p>目前，公司是英伟达唯一的液晶方案供应商。不过，由于液晶方案在可靠性和性价比方面的优势，行业内其他厂商也已明确布局。例如，旭创、华为以及台湾的智邦科技（Accton）都在进行相关研发，但他们能否进入英伟达的供应链尚不确定。旭创同时在布局三种技术方案：其波导方案是与NI及国内的至和科技合作，属于远期战略布局，短时间内无法实现出货；同时，旭创也在自研MEMS方案；其液晶方案虽未对外公布，但据悉是与苏州的贝莱特合作开发。相较之下，公司凭借过去在电信市场十多年的出货经验积累，能够在两年内为英伟达完成开发，而其他厂商可能需要更长的时间，因为液晶模组、液晶单元及材料配方等环节都需要大量的摸索和验证。</p>
+<p><b>在英伟达2028年20万台的OCS采购计划中，除了公司，其他供应商的份额预计将如何分配？另外，市场传闻德科立获得了英伟达的订单，具体情况如何？</b></p>
+<p>预计Lumentum和公司将获得相近的份额，两家合计约占70%。剩余的30%至40%份额将取决于其他技术路线的进展，例如NI、IPG Photonics等公司的波导方案，理论上波导方案更具前景。关于德科立，2026年9月曾有市场传闻称英伟达向其下达了2000多台的OCS订单，但该订单尚未交付，因此情况尚不确定。德科立目前正在泰国扩产，其宣称海外理论产能可达20亿元，国内10亿元，若产能完全释放，总产值可达30亿元。</p>
+<p><b>在硅光波导方案领域，德科立的技术水平和市场地位如何？</b></p>
+<p>德科立在硅光波导方案上目前处于行业领先地位。其32端口产品已经实现小批量出货，谷歌是其客户之一。同时，其64端口方案的研发进展也较为领先，目前已有样品。</p>
+<p><b>谷歌在2026年至2028年期间对OCS的需求量预计是多少？其中供应商的份额构成是怎样的？</b></p>
+<p>谷歌对OCS的应用将稳步增长。预计2026年需求量约为2万台，2027年将增至5万台，到2028年预计将达到15万台的规模。在2026年的2万台需求中，约1万台为其自研产品，向Lumentum采购约4,500台，公司交付约1,400台，此外还有1,000多台压电陶瓷方案的产品。</p>
+<p><b>针对谷歌2027年5万台和2028年15万台的OCS需求，公司的订单和产能规划是怎样的？</b></p>
+<p>针对2027年的需求，公司目前在手订单为5,500台，交付情况将取决于产能。公司2027年的扩产目标是达到6,000台的年产能。</p>
+<p><b>公司的产能扩张计划具体是如何布局的？为何在当前地缘政治背景下选择在国内建厂？</b></p>
+<p>公司原有的产能主要集中在马来西亚。目前正在中国无锡和福州两地新建产能，形成三地同步建设的布局。选择在国内扩产，主要是因为OCS的生产环节目前无法实现完全自动化，尤其在线路校准工序上，需要大量经验丰富的技术工人进行手动操作，而这一工序非常耗时。在海外难以招聘到足够数量的熟练操作工，因此不得不在福州和无锡进行扩产以满足紧迫的产能需求。</p>
+<p><b>对于谷歌未来的OCS采购，公司预计能获得多大的市场份额？</b></p>
+<p>随着液晶方案的可靠性在市场中得到进一步验证，预计谷歌将增加对公司产品的采购。公司预估，未来在谷歌的采购份额上限约为20%，相较于目前约10%的份额有提升空间，最终份额可能在10%至20%之间。</p>
+<p><b>公司自身的生产能力是否存在挑战，以及有何应对计划？</b></p>
+<p>公司目前的生产确实面临挑战。为应对增长的需求，公司正在积极推进自有产线的扩产计划，主要集中在福州和无锡的生产基地。同时，公司也在考虑引入外部第三方代工厂作为补充方案，以确保产能充足，具体会寻找具备整机组装能力的工厂进行合作。</p>
+<p><b>在选择外部代工厂方面，公司有哪些潜在的目标，以及选择的标准是什么？</b></p>
+<p>目前比较关注的潜在代工厂包括光库科技以及英唐智控旗下的光隆科技。此外，长盈通（长兴博创）也在考虑范围内，该公司已在展会上展示了其MEMS方案的OCS产品，并计划开发波导方案。选择代工厂的核心标准是其整机组装与耦合测试能力。由于核心环节是通用的耦合测试，代工厂的技术路线（如MEMS或波导方案）与公司自身的液晶方案不同并无大碍，因此并不要求代工厂必须具备液晶方案的生产经验。</p>
+<p><b>关于英唐智控收购光隆科技一事，目前的进展如何？</b></p>
+<p>该收购事项在证监会的审批流程确实耗时较长，但目前未听说有任何变数。此前市场有传闻称光隆获得了一些订单，但其产品目前尚未成熟。</p>
+<p><b>Lumen是否有明确的OCS代工需求，以及光隆科技是否有可能承接？</b></p>
+<p>Lumen已明确表示其2027年的OCS目标出货量为15,000台以上，而其现有产能仅为5,000台，因此寻求外部代工是确定的。光隆科技确实有渠道可以对接到Lumen，双方也进行过接触。如果双方的代工合作能够最终确定并公布，将构成实质性利好，但目前此事尚未最终敲定，仍处于预期阶段。</p>
+<p><b>除了谷歌和英伟达，还有哪些云服务厂商计划在明后年使用OCS交换机？国内市场的情况如何？</b></p>
+<p>海外市场方面，Meta、AWS和微软等云服务厂商均已小批量采购了数十台至一百台不等的OCS设备，用于实验室环境下的软件开发与测试。由于OCS的应用需要重写数据中心的流量控制与调度软件以适配其技术特点，这些厂商尚未进入规模化采购阶段。不过，基于谷歌应用OCS后在功耗、吞吐量和时延等方面的显著优势，其他CSP客户也确定会跟进。目前来看，Oracle可能会成为继谷歌和英伟达之后第三个规模化采购OCS的客户，并已在与公司进行对接。国内市场方面，华为已确定性地启动了OCS招标，其MEM S方案主要与光迅科技合作，同时也在自研液晶方案。此外，工信部已发文鼓励三大运营商使用OCS，而字节跳动、阿里巴巴和腾讯也均有专门团队在进行OCS的相关测试与对接工作。</p>
+<p><b>公司与八亿时空在OCS业务上的具体合作模式是怎样的？</b></p>
+<p>公司通过此前收购的位于苏州的科纳技术公司（该公司主营WSS和OCS业务）进行OCS的生产。生产过程中所需的核心液晶材料，均是与八亿时空合作定制开发的。公司只与其对接OCS业务相关的液晶材料，对于其显示屏材料或光刻胶树脂等其他业务则不了解。</p>
+<p><b>从行业整体来看，当前光通信板块表现不佳的原因是什么，以及未来的关键节点在何时？</b></p>
+<p>自今年7月份以来，光通信板块整体表现疲软，主要原因有两方面：一是市场对LPO（线性驱动可插拔光学）技术路线可能带来的潜在影响存在担忧；二是对于2028年的远期需求，各大客户尚未给出明确指引。行业的下一个关键节点预计在今年（2026年）12月底之前，届时公司目标是拿到客户关于2028年的确定性需求以及相应的预付款。</p>
+<p><b>市场对于光模块行业2028年的需求以及FCC禁令的预期是怎样的？该禁令预计何时发布，其对2027年的市场需求和相关公司业绩有何影响？</b></p>
+<p>市场目前普遍按照最差情况来预估FCC禁令的影响，导致中际旭创、新易盛等公司的估值有所承压。尽管2028年的情况存在不确定性，但2027年整个光模块市场的需求预计将非常强劲，相关公司的业绩增长具有高度确定性。中际旭创2027年的利润预期曾被下调，但这并非源于光模块业务，而是其内部下调了NPO的出货预期所致，其光模块核心业务基本面依然稳固。</p>
+<p>关于FCC禁令，预计官方第一版禁令可能在2026年12月左右发布。目前北美方面正在收集中国的产能等信息，以确保政策出台不会对谷歌等CSP客户的供应链造成剧烈波动。第一版禁令出台后，可能还会有一系列动态调整，例如豁免政策或补充方案。该禁令预计对2027年影响不大，因为它主要针对未来的新产品，如3.2T光模块、NPO、CPO以及相干光（coherent light）等新方案。对于当前已大规模稳定供货的800G和1.6T产品，禁令影响有限，因为海外厂商在这些成熟产品上大规模扩产的能力和意愿都不足。禁令的核心影响将体现在2028年及之后的新产品上。</p>
+<p><b>市场传闻FCC禁令可能以BOM成本中美国公司价值量占比65%为标准，这一标准的可行性如何？禁令将对光模块BOM中的哪些关键元器件产生实质性影响？</b></p>
+<p>关于65%的BOM成本占比这一具体数据，目前无法确认。但根据与北美FCC委员会的沟通，未来确实会针对BOM物料清单设定限制。限制将主要集中在具备关键逻辑功能的元器件上，例如DSP、EPROM存储芯片、MCU等，这些部件将被要求采用美国产品。此外，针对整个产品的BOM价值，大概率会划定一条红线。公司向北美方面反馈的数据显示，光模块中的核心芯片价值占比约为70%，因此预计最终的限制线也会设定在70%左右。</p>
+<p>这一限制对中际旭创、新易盛等公司的影响主要集中在光芯片层面。它们的电芯片，如DSP、TIA、Driver等，目前已主要从北美采购，因此影响不大。真正的挑战在于光芯片，目前国内的源杰科技、长光华芯、永鼎股份等公司的产品均可使用，尤其是在硅光模块中。一旦BOM限制生效，例如设定在65%或70%，最大的影响将是国内光芯片无法使用，必须转向采购北美供应商的产品。</p>
+<p><b>FCC禁令的出台将如何影响北美光模块厂商的扩产计划以及与主要客户的合作关系？</b></p>
+<p>北美厂商正在等待FCC禁令的最终落地，并已在积极推动此事。一旦禁令出台，预计将触发大规模的扩产。目前，包括谷歌、Meta在内的客户在FCC相关消息传出后，已经开始接洽北美厂商，询问其在美国或海外的产能情况，并表露出转移订单的意向。谷歌已明确要求中际旭创自研的硅光芯片未来也必须在北美生产；英伟达也提出了类似要求，希望其CPO的配套部件能在北美制造。这反映出无论是客户还是美国政府，都在推动核心价值链向北美转移。</p>
+<p>尽管客户已有转单意向，但目前尚未有实质性的订单转移发生。谷歌和Meta等客户内心仍倾向于反对该禁令，因此在政策正式出台前，它们并未将中际旭创和新易盛的订单转移过来。北美厂商的策略是，只有在客户支付预付款、明确锁定产能的情况下，才会进行实质性的大规模扩产。预计FCC禁令正式发布后，订单转移和产能扩张的进程将会显著加速。</p>
+<p><b>传闻中的FCC禁令对富创优业（Fuchuang Yonyou）这类PCBA代工厂商有何影响？</b></p>
+<p>预计没有影响。富创优业目前正在配合公司在马来西亚建厂，且仅为公司提供代工服务，其核心的物料清单均由公司指定。该公司生产的是零部件，而非终端整机产品。FCC的规定主要针对印有品牌标识的整机进行认证，类似于3C认证，因此零部件代工业务受影响的可能性不大，或可获得豁免。</p>
+<p><b>除了富创优业，公司在海外还有哪些SMT供应商？</b></p>
+<p>在海外市场并未积极寻找更多供应商。虽然北美有Sanmina和Fabrinet等公司具备SMT能力，但其价格偏高且响应速度较慢。目前，公司最大的订单，主要由华贸科技承接；剩余则分配给另一家名为广上科技的台湾企业。</p>
+<p><b>FCC禁令是否会对台湾的光模块产业链产生影响？</b></p>
+<p>影响不大。台湾的光模块产业规模有限，其业务重心主要在于配合大客户进行CPO（共封装光学）相关的生产，这部分业务受FCC禁令的影响较小。</p>
+<p><b>如果中际旭创和新易盛的订单因FCC禁令而转移，是否会利好华贸科技这类为公司和Lumentum等海外客户配套的供应商？</b></p>
+<p>理论上是这样。如果FCC禁令导致客户将原属于中际旭创、新易盛的订单转移给公司，公司势必会增加对代工厂的订单量。然而，目前FCC禁令仍处于传闻阶段，包括摩根士丹利的研报和路透社的新闻都只是市场传言，官方的禁令和具体版本尚未发布。因此，这仍属于一个潜在的推测，市场目前处于按兵不动的观望阶段。</p>
+<p><b>在当前光模块行业前景不明朗的背景下，哪些上游细分领域具备较高的投资确定性？</b></p>
+<p>在当前环境下，可以关注那些不受FCC禁令影响、作为行业“最大公约数”的上游领域。例如，上游的原材料，包括无源器件和磷化铟衬底等，无论最终由哪家厂商获得订单，都是必需品。此外，华贸科技所从事的PCBA业务，理论上也不受直接影响。</p>
+<p><b>用于CPO/NPO的可插拔FAU与传统光模块中的FAU在价值量上有何差异？</b></p>
+<p>价值量差异巨大。用于CPO/NPO的可插拔FAU，其单价约为200美金，而普通光模块中使用的FAU单价仅为15至30美金，前者价值量是后者的七到八倍。</p>
+<p><b>围绕CPO和NPO产业链，除了FAU之外还有哪些投资机会？</b></p>
+<p>CPO是一个长期发展方向，但短期内面临产能、良率和成本的挑战，因此当前NPO（近封装光学）的热度更高。光互联是确定的趋势，无论是NPO还是CPO，都需要用到大功率CW激光器、可插拔FAU以及MPO光纤跳线等无源器件。</p>
+<p><b>NPO产业链与传统光模块产业链的重合度如何？在MPO线缆领域，有哪些核心供应商？</b></p>
+<p>NPO产业链与光模块产业链存在部分重合，但核心厂商有所不同。例如，中际旭创和新易盛通常不直接生产MPO线缆。MPO线缆的主要供应商包括长飞光纤、太辰光、世佳光子等。近期增长最为迅猛的是杰普特，该公司进入MPO领域仅一年多。</p>
+<p><b>杰普特在MPO线缆业务上主要与哪些客户合作？</b></p>
+<p>杰普特与致尚科技都接到了SENKO的订单。此外，康宁也在与太辰光、世佳光子和杰普特进行合作。致尚科技近期也公布了一项大额订单，其业务主要服务于SENKO。</p>
+<p><b>NPO的市场竞争格局是否会与当前光模块市场格局有较大差异？</b></p>
+<p>NPO的市场格局预计与光模块市场不会有太大变化，竞争格局相对稳定，主要由几家头部厂商主导。</p>
+<p><b>关于明年（2027年）NPO的出货量预测是否有调整？具体的预测数据、调整原因以及后年的展望是怎样的？</b></p>
+<p>最初曾预测2027年NPO需求为2000万只，实际供货约1,000万只。但根据近期情况，此预测需要下调，预计实际供货量可能仅为700万只。下调的原因并非需求减弱，而是供应端的问题。目前各大客户的NPO方案均为定制化，设计尚未最终敲定，仍处于第二阶段的Beta送样阶段，方案调整频繁。因此，大规模量产的时间预计将推迟至2027年下半年，导致2027年内可供量产的时间非常有限。尽管2027年出货受限，但后年（2028年）的量产是确定性的。预计到2028年，NPO需求将达到3,000万只，届时出货量有望达到2000万只。</p>
+<p><b>NPO方案是否引入了新的零部件或供应商？其核心组件构成与CPO有何异同？</b></p>
+<p>NPO与CPO所使用的部件基本相似，主要区别在于封装位置。NPO并未采用太多新组件，其构成主要包括硅光芯片、MCP、PCB板和FAU。其中核心的TIA和Driver等芯片仍由海外厂商如Marvell和Semtech供应，与国内厂商关联不大。</p>
+<p><b>在1.6T光模块的关键芯片供应方面，Semtech的市场地位如何？</b></p>
+<p>Semtech在TIA芯片领域取得了重要突破。此前，1.6T光模块的TIA芯片由Marvell独家供应，导致供货非常紧张。目前Semtech的方案已通过行业验证，并从2026年第四季度开始获得大规模采购。其产品价格相比Marvell便宜20 %。Semtech的目标是在2027年获得超过Marvell的市场份额，占据整体市场的50%以上。</p>
+<p><b>TIA和Driver芯片是否通常需要打包销售？在1.6T及CPO/NPO等不同方案中，其采购模式有何变化？</b></p>
+<p>TIA和Driver通常是打包销售的。但在1.6T光模块中，由于博通和Marvell的DSP芯片常常集成了Driver功能，因此客户主要采购独立的TIA芯片。而在没有集成DSP的NPO和CPO方案中，则需要搭配购买TIA和Driver。</p>
+<p><b>在英伟达的CPO方案中，TIA和Driver是否会由第三方供应商提供？这对独立芯片供应商的市场有何影响？</b></p>
+<p>英伟达的CPO方案采用了不同的技术路径。其底部的PIC硅光芯片由英伟达自行设计，采用台积电65nm工艺流片；而上层的TIA和Driver则集成在另一颗芯片上，该芯片同样由英伟达设计，采用台积电6nm CMOS工艺代工。这与目前NPO/CPO方案中采用的锗硅工艺分立器件不同。因此，英伟达的CPO方案不需对外采购TIA和Driver。目前，NPO产品主要由旭创、新易盛等光模块厂商制造，它们不具备自研TIA和Driver的能力，必须向第三方采购。</p>
+<p><b>CPO方案的普及是否会减少对独立TIA和Driver芯片的需求？</b></p>
+<p>具备CPO研发能力的大厂，如博通、Marvell和英伟达，有能力自行设计TIA和Driver，因此在它们的方案中，确实不会给外部供应商带来订单。然而，如果未来CPO技术实现标准化，使得光模块厂商也能够生产CPO产品，那么它们仍然需要外购TI A和Driver芯片，届时市场需求还是会存在。</p>
+<p><b>NPO和CPO方案对PD芯片的需求有何影响？</b></p>
+<p>在NPO和CPO方案中，PD（光电探测器）被直接集成到了硅光芯片上。这使得硅光芯片的面积更大、价值量更高，但不再需要像传统光模块那样使用一颗单独的PD芯片。因此，独立的PD芯片在NPO和CPO方案中被替代了。</p>
+<p><b>除了CPO、保偏光纤、DFAU和NPO等已被市场充分讨论的技术方向外，未来在光引擎领域是否存在尚未被充分挖掘的细分市场机会？</b></p>
+<p>未来NPO的socket（插座）市场可能存在机会，该领域尚未被市场充分关注。这种socket用于可插拔地连接NPO光引擎，其本身则焊接在主板上。单个NPO接口配套的socket价值约为50美金。根据市场预测，如果明年（2027年）NPO光引擎出货量达到1,000万只，后年（2028年）达到2000万只，那么仅socket的市场规模在后年就将达到10亿美金。</p>
+<p><b>NPO socket市场的主要供应商有哪些，国内企业是否有所布局？</b></p>
+<p>海外市场的主要供应商包括台湾的嘉泽端子，以及北美的Samtec、安费诺和泰科电子（TE Connectivity）。国内企业方面，华丰科技和电连技术正在布局该领域，其中电连技术已进行过业务对接。</p>
+<p><b>当前市场环境下，有哪些值得关注的上游公司或投资方向？</b></p>
+<p>在上游领域，有几家公司值得关注。首先是磷化铟衬底供应商光智科技。考虑到FCC可能对相关领域进行限制，中国政府或将采取反制措施，推动供应链国产化。目前AXT公司本月已涨价10%，公司已开始采购并验证光智科技的6英寸磷化铟衬底。根据测试结果，公司认为其技术实力强于云南锗业。光智科技自身也生产高纯红磷和高纯铟，并在进行铟的提炼，材料供应有保障。</p>
+<p>其次，在无源器件领域，主要供应商是亨通光电，同时杰普特也是一个潜在的合作对象。公司刚开始与杰普特对接，主要原因是其合作意愿强且产能扩张魄力大。</p>
+<p>此外，八亿时空作为更上游的供应商，与公司有深度合作，其估值相对较低。但目前尚未有确定性订单，具体取决于公司的扩产节奏。如果后续液晶方案扩产顺利，该公司将确定性受益并获得订单。</p>
+<p><b>关于近期市场关注度较高的求是科技，其业务合作的具体情况和市场认知是怎样的？</b></p>
+<p>公司从今年（2026年）5月份开始与求是科技进行直接对接合作。市场上确实有机构在更早的时间点，如今年三、四月份就开始关注并布局。求是科技属于产业链上游，价值量相对较小，因此在上一轮市场关注中未被充分挖掘，但其处于核心卡位的环节，具有不可替代性。据了解，求是科技在与部分机构交流时，可能无法提供具体的订单数量和价值量，因为这些需求和数据主要来源于公司这样的下游客户，他们难以精确预测。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

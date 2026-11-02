@@ -1,0 +1,198 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.01 | AC | LLM | Chinese Models Push 3D Capabilities Fast Modes and DeepInfer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.01 | AC | LLM | Chinese Models Push 3D Capabilities Fast Modes and DeepInfer</h1>
+<p class="orig">原标题：国产模型发力3D能力，高速版模型或主导收入增长，开源DeepInfer框架对算力需求推动。GLM降本措施和成效，推理服务公司前景对比等。硅基流动_Kimi_DeepSeek</p>
+<p class="tags">#llm #china #inference</p>
+<p class="meta">AceCamp · 2026-11-01 · article 70568724</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>专家认为Kimi K3.1 Pro是开源模型第一，AA指数V5约46分，闭源模型50多分，其他开放权重模型都在40分以下。</li>
+<li>在生产环境中K3.1 Pro与GLM-5.3没有明显差距：Terminal Bench约17.4分对28分，长程软件工程约68分对67分。</li>
+<li>K3.1 Pro通过强化学习增强coding中的自我纠错，在CAD、3D渲染等computer use上提升，并有意削减了网络安全语料。</li>
+<li>3D和CAD会成为国内模型下一版本重点训练方向，因为可验证性好、商业价值大，也是走向具身智能的基础。</li>
+<li>国内C端用户不愿付费，豆包虽有几亿月活也难盈利，类似Meta Muse的个人助理不会大规模投入，变现仍在B端。</li>
+<li>Kimi首次按速度定价，高速模式和DeepSeek开源推理框架DeepInfer会推动推理算力需求。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>/ DeepSeek开源推理框架对国产模型和推理服务影响。/ Kimi K3.1 Pro能力提升，高速模型占收入比重趋势等。</p>
+<p>【以下为专家观点汇总，具体细节仅供参考。】</p>
+<p><b>怎么看Kimi K3.1 Pro在coding和像computer use等核心能力上的实际提升？在生产环境中实际表现？</b></p>
+<p>目前KIMI 3.1 Pro在开源模型中处于第一的位置。但在实际生产环境中，它与G110.3相比并没有明显的差距。KIMI 3.1 Pro主要在几个方面做了提升。在coding领域，主要通过强化学习增强了模型在过程中的错误自我纠正能力。在computer use方面，主要是对工具原有能力的增强，尤其在3D领域，比如3D渲染引擎、CAD等方面有所提升。不过，目前主流应用还未完全达到这一水平。这是K3.1 Pro主要的改进方向。</p>
+<p>还有第三个方面，与前面稍有不同，就是它在训练时有意削减了网络安全相关能力，减少了这方面的语料。目前整体来看，模型的评价主要依赖AA榜单及其对应的Harness榜单。A榜单最新一版是V5，闭源模型大约在50多分，不到60分，K3.1 Pro大概46分，其他已知开放权重的开源模型都在40分以下。</p>
+<p>虽然K3.1整体智能化水平很强，但这是通过综合能力评估得出的。综合能力包括复杂问题推理、coding、agent、统一多模态、安全等几个方面。目前K3.1 Pro在安全方面大约80多分，未开放权重的模型大约90多分，3D领域也是六大领域之一。综合评价来看，K3.1 Pro在开源模型中处于第一，介于顶尖闭源模型和已知开源模型之间。</p>
+<p>具体来看，并没有明显的差距。例如在terminal bench终端评测中，K3.1 Pro得分约17.4分，而GLM.3有28分，GLM.3在这方面有显著优势。在长程软件工程领域，GLM.3和K3.1 Pro差不多，GLM.3约67分，K3.1 Pro约68分。在公开的网络安全评测中，GLM.3能力更强，约85分，K3.1 Pro约88分。在一些真实办公场景中，GLM.3分值更高一些，但两者都属于同一档次。从这些实际使用维度评估，KIMI 3.1 Pro并没有与GLM.3拉开明显差距。这是第一个问题的总体分析。</p>
+<p><b>Kimi和智谱最近是否会推出类似Meta Muse或OpenAI dots这样的个人AI助理？</b></p>
+<p>至少目前在国内商业环境下还不确定。现在国内市场分为2C和2B领域，个人助理主要属于2C领域。中国市场与海外不同，2C领域用户普遍不愿意付费，更多是免费使用。而海外用户有付费和订阅习惯。因此，尽管像豆包这样的AI产品有几亿月活，但很难实现盈利。类似个人助理Muse这样的产品，在中国市场C端用户也不愿意付费。目前来看，其他厂商可能会小规模尝试跟进，但不会大规模投入。当前国内能够实现变现的还是QB领域。</p>
+<p><b>怎么看现在头部模型包括Kimi开始关注CAD能力？是否看到近期有潜力的需求场景？</b></p>
+<p>我认为3D领域，尤其是CAD等能力，会成为国内模型下一版本重点训练方向。原因有两个：首先，OpenAI和Claude等海外模型已经在新版本中增加了这一垂直领域的训练，说明国内to B类模型会跟进海外顶尖模型。海外新版本如GPT-6、Opus-4.5等，明显增强了3D领域的训练。GPT-6发布后，很多人用它做特斯拉汽车拆解、人体建模等3D任务，正是因为海外前沿模型专门训练了这方面能力。Kimi现在的动作也是顺其自然。</p>
+<p>其次，为什么GPT和Claude要增加3D垂直领域训练？一方面，这一领域对模型训练非常友好；另一方面，商业价值巨大。此前模型主要应用于写作、coding、computer use等白领办公场景，但还未真正进入工业生产领域。具备3D生成和感知能力后，模型可以进入工业设计、CAD图纸生成、建模、机械零件设计、建筑等领域，这些都是显著的商业化空间。此外，3D娱乐素材也是一个值得想象的方向。各家厂商做这一块还有一个最终目标，就是具身智能。要让AI进入物理世界，模型必须具备3D能力。只有具备3D能力，才能构建虚拟世界，并在虚拟世界中进行更强的后训练。通过这样的后训练，才能将具身智能的一些能力，比如机械臂、灵巧手等，从虚拟世界迁移到真实世界。</p>
+<p>如果没有真实世界的大量训练数据，虚拟世界的突破其实非常难实现。这也是各家在To B类模型、3D训练领域面临的核心原因。这些场景本身具备天然的闭环和可验证性。例如，在CAD环境中，可以通过代码指令生成3D模型，再利用外部求解器进行物理和几何合规性验证。目前强化学习后训练最难的部分在于如何评价和验证每一次训练的效果。如果无法验证，训练就会变得非常困难，比如coding领域，因为结果非常容易验证——代码编译和运行后对错一目了然，所以coding领域会率先爆发。</p>
+<p>同样，CAD领域也具备非常好的可验证性和完美的闭环，因此不仅易于训练，还有巨大的商业价值和长远前景。短期来看，商业价值体现在各类生产领域，尤其是柔性生产，比如服装和小商品制造等都会广泛应用。此外，半导体领域如K3发布时，已经实现了自动设计P CB电路板。原本设计电路板需要考虑大量物理规则，人工难以胜任，但AI在这方面更具优势。室内设计等领域的应用范围也大幅拓展。</p>
+<p><b>K3.1 Pro首次按速度定价，智谱从的高速模式主要面向哪些客户群体和特定需求？收入占比趋势？</b></p>
+<p>主要还是面向企业客户，尤其是前十的大型企业，这些企业天然需要高质量的推理能力，不仅要求单token质量高，更关注任务完成率，速度是影响任务完成率的重要因素。例如，多步骤任务如果用标准版，每一步可能需要十秒，几十步下来容易出现超时等问题，而高速版能显著提升任务完成的成功率。因此，企业愿意为此类服务买单，这是第一个客户群体。第二类客户群体需要模型具备较快的响应能力，比如金融领域，研究竞争激烈，速度慢几天甚至十天半个月，研究成果的价值就会大打折扣。还有实时交互领域，如数字人等，也非常依赖模型的响应速度。目前智谱已不再以各类私有化项目为主，而是以线上MaaS API为主要模式。API方式已与AWS、阿里云等合作，预计这种模式将大规模铺开。例如，在海外AWS平台，ChatGPT和Claude等模型响应速度非常快，如果标准版速度较慢，会对海外商业化造成较大影响，这是接下来非常重要的因素，也会影响整体收入。</p>
+<p>2026年之前，智谱属于2B2G类公司，私有化项目营收占比约70%-80%。但到2026年以后，线上API模式已成为主要营收来源，占比提升。也就是说，2026年以后，商业模式发生了颠覆性变化。未来两个季度的增长也是核心驱动因素，这是明确的结论。未来模型的发展将以高速版为主，标准版和旗舰版主要用于模型训练，不用于商业化，商业化基本以高速版为主。高速版之所以成为增长核心动力，首先是技术上高速版的智能化水平已与标准版、旗舰版持平，甚至在某些方面有所超越。例如，DeepSeek发布V4 Pro正式版后，紧接着推出了V4.1 Flash版本，并公开表示所有线上API将用V4.1 Flash替换Pro正式版。这说明高速版完全可行，未来Pro版、旗舰版将用于产出商业化高速版本的基础模型，高速版专门用于商业化，是可行路径。</p>
+<p>第二个核心驱动力是各家To B模型能力越来越接近，只有阶段性领先。比如年初GLM模型在国内领先，但现在DeepSeek、Kimi、GLM等模型已基本持平。在这种情况下，价格和调用量成为竞争焦点，而任务成功率则是决定定价权的核心因素。谁能提升任务成功率，谁就具备溢价能力。第三个驱动力是随着coding和agent的爆发，任务复杂度不断提升。如果模型响应速度慢，就难以满足高频长程任务场景的需求，必须提升速度以满足市场需求。第四个驱动力是与AWS、阿里云等合作模式逐步铺开，模型响应速度和整体推理速度必须提升。基于这四个维度，各家厂商都会重点投入。高速版与普通版性能相当，甚至在某些方面有所超越。</p>
+<p><b>高速版性能超越普通版是如何实现的？</b></p>
+<p>从模型本身来看，高速版的模型通常是在旗舰版或标准版之后推出的，在模型架构上会加入一些创新设计，从而带来能力提升。其次，高速版并不是通过对标准版或旗舰版进行量化或剪枝等方式获得的，而是重新训练的高速版模型，通过自我蒸馏的方式进行训练。因此，高速版训练出来的智能化水平理论上与旗舰版和标准版相当。此外，在训练过程中，高速版会比标准版和旗舰版有更多的后续强化学习，因此在某些方面能力会高于标准版和旗舰版。这是从技术角度的分析。</p>
+<p><b>GLM 5.3 Prime的客户的接受度？客户迁移的积极的？</b></p>
+<p>高速版目前来看，头部客户都比较积极地进行迁移，因为确实能够提升整体任务的成功率。从单任务的消耗来看，高速版实际上低于普通版。</p>
+<p><b>DeepSeek最近开源的DeepInfer对用户实际部署、生态扩大，昇腾的需求的实际推动有多大影响？国内和海外的开源友商会在多大程度上参考？</b></p>
+<p>DeepSeek开源的推理框架目前对国内来说非常有价值。当前国内整体处于算力和token都比较紧缺的状态，而主流基础模型厂商一般不会开源推理框架，第三方如硅基流动、无问星穹等公司也不会开源，因为这类推理框架对他们来说是核心资产。现在市场对私有化部署的需求非常强烈，尤其是大参数模型，已经不是没有技术团队就能轻松部署的时代了。DeepSeek开源后，将极大促进国产算力的商业化应用，特别是生成类任务。此前国产算力基本上只能勉强部署，实际可用性和易用性都不高。到2026年以后，场上国产算力卡型号众多，上层模型也很多，市场需要有厂商以开源方式建立中间层，既能兼容主流国产算力，也能支持主流模型，这是国内目前的短板。DeepInfer的推出正好弥补了这一空白，极大缓解了国内缺托管、缺算力的局面。</p>
+<p>对于国产和海外开源友商的参考意义，国内做同类中间层的企业，如百川、零一万物、硅基流动等，都会深度参考DeepSeek的实现。特别是在AI infra层和算子适配方面，有了DeepSeek后，很多重复性工作可以省去，也能提升国产算力的适配效率。随着中美竞争加剧，国内大型项目都要走信创路线，很多中小厂商原本不具备相关能力，现在有了这套框架，可以让他们具备完整的私有化部署能力。对于国内大厂如腾讯、阿里、字节、智谱等，他们本身有强大的AI infra工程团队，会参考DeepSeek中的核心算法和工程技术手段。海外开源社区短期内受DeepInfer影响较小，因为海外开源生态主要以NVIDIA为主，国产卡如华为的产品也无法大规模出口海外，因此影响有限。</p>
+<p>补充两点：目前国内能够真正盈利的还是2B、2G等企业，他们能拿到大单，但这类企业都要求私有化部署，有了DeepInfer这套框架，会增强他们做私有化项目的能力。第二，对于像硅基流动这类提供token销售的聚合站，也有很大帮助。以前他们用开源方案自部署，成本较高。现在用DeepSeek推理框架后，如果能把token卖出去，采购硬件的回本周期大约三个月，原来是达不到这个回本周期的。这是我对这个问题的补充分析。</p>
+<p><b>怎么看硅基流动和PPIO（派欧云）等聚合平台的推理服务能力和增长前景？未来半年对智谱的收入是否有实质带动？？</b></p>
+<p>像硅基流动本质上只是AI时代的一个短暂的中间产物。从理论上讲，未来它们不会有太大的市场空间。像硅基流动这一类公司，目前的核心其实就是能产出token，在国内整体缺乏token算力、推理算力不足的情况下，只要谁能提供，就会有市场。但一旦推理硬件能够批量供应，预计在2028年、2029年会出现拐点，届时国内推理硬件已经能够大规模供应，像硅基流动这一类公司将无法与DeepSeek、Kimi、智谱，甚至阿里千问、腾讯、百度等大厂，以及多种模型厂商竞争。到那时，大家在选择消耗token时，不会优先选择硅基流动，因为它的token质量和成本并没有明显优势，所以它不具备持续生存的空间。</p>
+<p><b>智谱现在主要通过哪些方式实现降本？在毛利上的效果多久能体现？</b></p>
+<p>目前主要有几种方式。首先，模型研发成本和推理环境、基础设施的建设是主要成本。目前主要采用RSI的方式，比如智谱在infra层使用GLM 5.3驱动infra agent，可以快速利用国产万卡算力集群，构建出能比肩英伟达系列卡的推理环境和基础设施。原本这些基建需要大量资源和成本投入，现在通过模型自身的RSI方式，基本能将这部分成本降低约80%。这是推理基础建设方面的降本。其次，在模型研发和中间环节，也会通过RSI的方式训练新一代模型，这也是一个重要的降本维度。另外，通过后训练，不是用新版本或大版本去训练，而是在同一版本上不断后训练，进一步压榨模型架构的水平，从而降低研发成本。还有一点，原来推理专利大部分是租赁的，租赁价格不断变化，目前也通过国产卡建立国产集群，进一步降低推理方面的成本。主要措施就是这些。</p>
+<p><b>Infra相关的agent是指用类似SRE agent？</b></p>
+<p>不是。这里指的是编写底层推理系统，比如算子的开发、管控KV Cache缓存，以及AI infra中的通讯优化和升级改造，更多是编码方面的优化，不是监控方面。整个AI infra这套基础设施的优化升级，主要是构建方面的提升。比如，如果没有这些优化，GLM 3 Flash的端到端吞吐量会比现在低3到4倍，通过这些优化可以显著提升整体吞吐量。</p>
+<p><b>这项工作是从什么时候开始的？</b></p>
+<p>大概是从8月下旬开始的。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

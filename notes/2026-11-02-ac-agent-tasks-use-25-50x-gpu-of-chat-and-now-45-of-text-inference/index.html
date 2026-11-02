@@ -1,0 +1,203 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.02 | AC | LLM | Agent Tasks Use 25-50x GPU of Chat and Now 45% of Text Inference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.02 | AC | LLM | Agent Tasks Use 25-50x GPU of Chat and Now 45% of Text Inference</h1>
+<p class="orig">原标题：头部AI大厂：单Agent任务GPU资源消耗为普通对话的25-50倍，目前已占据文本推理总负载的45%以上，推理成本优化方法及昇腾、寒武纪等产品与H200 Decode TPM对比 – 英伟达_寒武纪_天数_海力士_闪迪</p>
+<p class="tags">#inference #llm #memory #gpu</p>
+<p class="meta">AceCamp · 2026-11-02 · article 70568602</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>专家称Agent类任务单次GPU资源消耗是普通对话的25–50倍，已占文本推理总负载的45%以上。</li>
+<li>在线文本对话瓶颈在Decode阶段的HBM带宽，字节测定MoE模型用3.1个H200卡时可输出100万token。</li>
+<li>单个token的KV Cache（FP8）约96KB，128K会话约占12GB，256K长对话约占H200显存的17%。</li>
+<li>因此Agent推理以DDR容量为主导，采用分层存储，把KV Cache放在DDR，HBM只装热数据。</li>
+<li>文本和Agent推理架构的演进方向是Prefill/Decode分离加KV Cache中心化，共享池可把显存利用率从约96%提到接近100%，一套KV Cache可供五六台机器复用。</li>
+<li>视频生成等任务属于算力密集型，单位算力消耗比文本高一到两个数量级，服务器正向训练型推理服务器演化，国产推理卡难以胜任。</li>
+<li>Agent成本优化更偏软件层面，例如前缀复用、历史摘要剪裁、会话压缩和用RAG维护长上下文。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>本文核心要点包括：1，Agent类任务放量显著，单任务GPU资源消耗为普通对话的25-50倍，目前已占据文本推理总负载的45%以上。2，推理架构演进：文本/Agent任务转向Prefill/Decode分离及KV Cache中心化，显存利用率显著提升。3，国产芯片替代：昇腾、寒武纪等产品测试效果与H200对比。</p>
+<p>以下为专家观点：</p>
+<p><b>1，字节跳动内部目前如何对AI推理任务进行分类？不同类型的推理任务在硬件资源（如HBM、DDR、SSD、GPU、CPU等）占用上的测算方式是怎样的？</b></p>
+<p>AI推理任务可大致分为几类：首先是文本模型，其应用场景包括SeeDance对话、Agent多轮工作、代码补全、搜索、RAG等。其次是扩展应用，涵盖AIGC、TTS、语音流式识别、图像生成、视频生成、端侧推理等，包括近期新增的领域包括3D模型输出，未来还将探索世界模型，例如用于机器人控制的GR系列（该类项目制模型不会部署在火山引擎上）以及AI互动剧等实验性视频模型。</p>
+<p>不同推理任务的硬件资源测算方式和瓶颈各不相同：</p>
+<p>在线文本对话：这类任务的瓶颈在于Decode阶段，其性能主要受限于HBM带宽而非算力。目前所有推理均采用Prefill与Decode分离的架构。基于MOE架构的模型，字节测定的标准是：使用3.1个H200卡时（GPU hours）能够输出100万个token。</p>
+<p>Agent类任务：这类任务的关键在于KV Cache的存储。单个token的KV Cache（FP8口径）大小约为96KB。以一个128K的会话为例，其KV Cache会占用约12GB的存储空间。对于一条256K的超长对话（程序员常用的对话长度起点，可达1M），其KV Cache将占用H200显卡（141GB显存）约17%的显存容量。因此，Agent的设计以DDR容量为主导，采用存储分层策略，将KV Cache承载于DDR，仅让HBM装载热加载部分。</p>
+<p>视频与3D模型生成：以SeeDance为代表的视频生成任务采用扩散模型加DiT的架构，属于算力密集型而非存储密集型。生成一分钟视频的工作量相当于数百万token的文本处理，其单位算力消耗比文本Decode高出一到两个数量级。这类任务以及3D模型生成，主要消耗的是GPU算力和散热资源，HBM或DDR起辅助作用。</p>
+<p>搜索、广告与推荐：传统的搜广推业务使用决策树、随机森林等机器学习模型，依赖CPU和SSD，因为其特征表非常大，有时可达100多GB甚至1TB。目前，这类业务也正逐步向AI大模型演进，采用分层设计：先由大模型进行理解，再进行动作推演，最后由小模型完成决策。</p>
+<p>关于AI推理服务器的架构演进方向：对于文本和Agent类任务，演进方向非常明确，即Prefill/Decode分离加上KV Cache中心化。对于视频生成等算力密集型任务，其服务器架构正向训练型推理服务器演化，这意味着国产芯片在此类任务中难以发挥显著作用，需要达到国产训练卡的性能水平才能提供所需算力。</p>
+<p><b>2，KV Cache中心化的概念及其运作原理？</b></p>
+<p>KV Cache中心化可以理解为一个云边协同的架构。如果不采用中心化设计，每个机柜都拥有独立的KV Cache，会导致利用率低下。举例来说，假设一块拥有100GB显存的GPU，每次对话需要占用12GB的KV Cache。当处理到第八个对话时，占用了96GB，剩余的4GB显存便无法容纳一个新的对话，使得显存利用率最高只能达到96%。</p>
+<p>而中心化方案则是将KV Cache从各个独立的GPU中抽取出来，汇集到一个统一的、分布式的KV Cache存储池中。所有GPU都从这个共享池中读取数据。这样做主要有两个优势：第一，提高了利用率，避免了每个服务器都存在小块未被使用的显存空间，理论上能将利用率从96%提升至接近100%。第二，提高了复用率，在并发限制允许的范围内，一个用户的KV Cache可以被另一个用户使用，使得同一套KV Cache可以供给五到六台机器使用。</p>
+<p><b>3，针对在线文本对话和Agent应用这两种场景，目前有哪些主要的推理成本优化方式？</b></p>
+<p>推理成本的优化方式因场景而异。在线文本对话的核心瓶颈在于HBM带宽和低延迟，而Agent应用的瓶颈则在于KV Cache的存储和长上下文处理。因此，两种场景的优化策略有所不同。对于追求低延迟的在线文本对话，优化重点是充分利用GPU带宽和吞吐量，采用“来一个算一个”的处理方式，而不是等待请求累积后再批量计算。这涉及到例如PagedAttention、远程设计和服务架构等技术。相比之下，Agent应用的成本主要源于多轮对话中上下文的反复重读（re-profiling）以及“思考链”导致decode阶段token数量的急剧增加。因此，其优化更偏向于软件层面，例如增强工具复用能力，避免重复读取完整的上下文记忆，仅在需要时进行前缀复用。此外，还包括跨会话使用、历史摘要剪裁、全量压缩以及会话压缩等技术。</p>
+<p><b>4，针对在线对话场景中HBM带宽的限制，有哪些具体的软件解决方案？</b></p>
+<p>一个典型的例子是利用RAG来处理长上下文。当前模型的上下文窗口可以达到1MB。如果一个Agent任务需要反复读取这1MB的上下文，处理速度会非常慢，并且会大量占用显存和带宽。通过将上下文内容动态维护在一个RAG检索库中，每次对话时，系统只需检索并匹配到相关的文本片段。这样，就可以将原本需要处理的1MB长上下文，缩减为每次只关注其中最重要的部分，例如5,000个字，从而有效解决长上下文带来的性能瓶颈。</p>
+<p><b>5，关于Agent应用中KV Cache的分层存储，目前业界探索出了哪些可行的优化路径？</b></p>
+<p>尽管关于KV Cache分层存储的学术论文很多，但在工业界真正落地应用的方案相对较少。一个经典且易于理解的思路是根据数据冷热进行分层：将最热、最频繁访问的数据存放在HBM，温数据存放在DDR，冷数据则存放在SSD。然而，该方案的落地一直面临挑战，其根本原因在于注意力机制需要对整个序列进行随机访问，任何位置的KV Cache都可能随时被读取。将KV Cache存入SSD虽然容易，但一旦被读出，其极高的延迟（可能从毫秒级飙升至几十秒）对业务是致命的。为了解决这个问题，业界演化出了一些具体路径。其中一个关键方案是采用细粒度的分块迁移和预取策略。该方法不再将整个KV Cache作为一个整体进行移动，而是按页或块为单位进行管理。只有被访问到的块才被视为热数据。同时，通过预取技术，系统会根据热度预测模型，在请求实际到达前，提前将可能需要用到的数据从SSD拉取到HBM中，从而“隐藏”冷数据访问带来的延迟。因此，预取窗口和预测模型的准确性，直接决定了分层存储方案在生产环境中是否真正可用。</p>
+<p><b>6，综合来看，对于文本模型而言，KV Cache的调度效率和存储命中率是决定推理成本优化效果的关键因素？</b></p>
+<p>是的，对于文本模型，KV Cache的调度效率和存储命中率确实是决定推理成本优化效果的关键。</p>
+<p><b>7，在当前硬件（如HBM、DDR）受限的情况下，是否意味着中短期内推理成本优化只能依赖软件手段？</b></p>
+<p>是的，中短期内软件优化是主要发力点。不过，在硬件层面也在同步推进多项工作。具体措施包括增强现有算力资源的供给量，并从多个渠道进行洽谈。例如，通过非传统渠道获取GPU资源，或者通过与CoreWeave等云服务商合作，租赁NVIDIA B300、B200等最新型号的GPU。此外，将国产计算卡作为替代方案也正在同步进行中。</p>
+<p><b>8，目前文本模型的推理主要是在NVIDIA的H系列GPU上进行？是否有在其他系列或国产GPU（如昇腾、寒武纪）上进行过测试，它们在推理效果上存在哪些差异？</b></p>
+<p>国产训练卡实际上无法用于模型训练，因为存在许多张量并行方面的错误。所谓的国产训练卡，其主要供给方向是用于视频处理和3D模型的推理。</p>
+<p>基于当前拿到的国产卡测试结果，在DeepSeek V4 Pro大模型的FP8精度测试中，通过对比不同芯片的Decode TPM指标，可以评估其性能差异。以H200为例，其Decode TPM为2.3兆。相比之下，华为昇腾910C的Decode TPM为1.2兆。基于这一数据，可以大致认为一张昇腾910C的性能约等于半张H200。此外，测试结果中还包含了并发用户数、吞吐量等其他可供参考的性能指标。</p>
+<p><b>9，昇腾950 PR和寒武纪690这两款国产芯片的性能水平如何？</b></p>
+<p>这两款国产芯片的性能定位介于NVIDIA H800与H200之间。这一性能判断主要基于对芯片带宽和算力等关键参数的分析，这些参数决定了它们在通信结构和计算能力上的表现。</p>
+<p><b>10，在进行硬件性能评测时，为何选择开源的DeepSeek模型而非自有的豆包模型？</b></p>
+<p>选择DeepSeek模型进行公开的硬件性能对比测试，主要是为了确保评测的公平性和可比性。豆包模型属于闭源模型，如果用其进行测试，其他竞争对手或合作伙伴将无法获取该模型进行复现和公平比较。因此，采用业界通用的开源模型如DeepSeek，能够为不同硬件提供一个中立、统一的评测基准。</p>
+<p>在推理集群的部署中，Encoder和Decoder通常是两个独立的集群，并且会采用异构形式进行构建。这意味着每个集群内部都会包含不同型号的AI芯片。具体而言，Encoder环节倾向于使用计算能力更强的芯片，而Decoder环节则倾向于使用带宽更高的芯片。不过，这并非绝对的划分，最终的资源配置是通过调整两个异构集群中不同类型芯片的比例来实现的。</p>
+<p><b>11，从当前趋势看，Agent类任务在文本模型推理中的占比将如何变化，其对算力消耗有何影响？</b></p>
+<p>Agent类任务的占比预计将显著提升，并且已经呈现出放量的趋势。在线文本对话类应用正逐步向更复杂的工作形态迁移。从算力消耗角度看，单个Agent任务所需的GPU资源是普通对话任务的25至50倍，这主要是因为它涉及多轮工具调用、上下文反复读取以及更长的思考链。目前，在豆包模型的文本推理总负载中，Agent和Work类型任务的算力消耗占比已远高于其约20%的任务数量占比，显示出其对计算资源极高的消耗强度。随着这类任务的持续增长，对算力的需求也将随之大幅增加。</p>
+<p><b>12，随着Agent类任务在文本推理中占比的提升，对DRAM和SSD的需求将产生何种影响？</b></p>
+<p>Agent任务量的增长确实会显著提升对DRAM的需求。然而，对于SSD而言，其在纯文本推理场景中扮演的是配角。数据中心对SSD的需求呈现稳步增长的态势，其主要应用场景是表格存储、对象存储服务以及其他资源存储。值得注意的是，非AI业务对存储需求的增长率同样可观。因此，不能期望Agent业务的增长会成为拉动SSD整体需求的核心驱动力。</p>
+<p>从模型训练的角度看，SSD需求的高峰期出现在前两年以训练为主导的“百模大战”时期。当时，训练大模型需要频繁保存模型权重文件，这些大文件需要被保留下来以供分析和比较不同权重的优劣，从而产生了对SSD的巨大需求。然而，目前训练的进度已经放缓，尽管有训练5到10期的计划，但整体节奏已不如以往激进，因此由训练侧带来的存储需求正逐步下降。</p>
+<p><b>13，大参数模型训练放缓的具体原因是什么？</b></p>
+<p>模型训练放缓主要有两方面原因。首先，从商业化角度看，继续增大模型参数的边际收益正在降低。新模型带来的API调用量或用户增长已不如初期显著。许多下游客户的数据管线（如文案生成管线）已与特定模型深度绑定，他们担心切换到新模型可能会导致原有基于提示词、RAG和知识库建立的系统失效，因此更换意愿不强。在没有类似GPT-4发布时那样的革命性增量效果出现之前，投入巨资训练更大模型的动力不足。其次，从技术层面看，高质量的文本数据基本已被挖掘殆尽，可以说人类的知识大部分已被用于训练。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

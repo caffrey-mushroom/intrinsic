@@ -1,0 +1,215 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.02 | AC | Optical | Silicon Photonics PIC Design Module Architecture and Microring Modulators</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.02 | AC | Optical | Silicon Photonics PIC Design Module Architecture and Microring Modulators</h1>
+<p class="orig">原标题：PIC芯片方向—光模块架构设计_关键器件选择_微环调制器_PIC及EIC设计封装</p>
+<p class="tags">#optical #1.6t #cpo #npo</p>
+<p class="meta">AceCamp · 2026-11-02 · article 70568764</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>专家称1.6T光模块路径已明确为8x200G，3.2T仍在研发早期，可插拔XPO、NPO和CPO多条路线竞争，预计2027年OFC展出实物。</li>
+<li>光模块成本中DSP约占40%，PIC（含光源和隔离器）约占30%–40%，Driver趋向集成进DSP，TIA占比不足10%。</li>
+<li>主流方案分为VCSEL、硅光外置光源加PIC调制、以及EML三类，EML单波200G没有问题。</li>
+<li>国内近半年涌现十几家硅光设计公司，但真正壁垒在制造工艺，核心工艺掌握在海外厂商手中。</li>
+<li>全球量产规模最大的硅光代工厂是以色列Tower，其次是GlobalFoundries，当前市面上硅光芯片的流片基本都在海外完成。</li>
+<li>MZM是当前量产主流，微环调制器体积小，是OIO等内存到GPU光互连的核心方向，三星等也在推进。</li>
+<li>微环对温度高度敏感、需要温控，产业化难度远高于MZM，温度不敏感微环能否突破决定其前景。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>1、1.6T光模块技术路径明确为8x200G方案；3.2T处于研发早期，存在可插拔（XPO）、NPO及CPO多种路线竞争，预计2027年OFC展出实物。2、光模块成本结构中，DSP与PIC（含光源/隔离器）各占约40%与30%-40%，Driver已趋向集成于DSP，TIA成本占比不足10%。3、调制技术演进：MZM为当前量产主流，微环调制器因体积优势成为OIO协议及板间互连核心方向，但面临极高温控挑战与产业化难度。</p>
+<p>专家观点：</p>
+<p><b>能否介绍一下当前主流AI数据中心应用光模块的内部架构、关键组件以及信号处理流程？</b></p>
+<p>当前应用于AI数据中心的主流光模块，从设计方向上主要可分为三类。第一类是VCSEL，其未来市场前景值得关注。第二类是硅光方案，其特点是采用外置光源，并利用PIC（光子集成电路）作为调制器，将信号调制成高速光信号。第三类是EML（电吸收调制激光器）方案，这是一种较为传统的外调制方式，技术成熟且已沿用多年，目前单波速率升级至200G没有问题，未来速率仍有提升空间。</p>
+<p>从整体架构来看，光模块的核心功能是实现电信号与光信号之间的相互转换。在发射端（电转光），信号首先进入DSP进行处理，随后通过Driver芯片将DSP输出的差分信号转换为后端光电芯片（如EML、硅光或VCSEL）可以接收的信号格式，最后由光电芯片完成电到光的转换并发出。在接收端（光转电），光信号首先由PD（光电探测器）接收并转换成微弱的电流信号，接着通过TIA（跨阻放大器）将该电流信号放大为相对较大的差分电压信号，然后信号再次进入DSP进行处理和整形，最终输出为GPU可以识别的信号格式。所有光模块的设计都围绕这一基本逻辑展开。</p>
+<p><b>目前国内硅光芯片设计公司的格局是怎样的，其核心技术壁垒和产业链分工情况如何？</b></p>
+<p>国内专门提供硅光子集成电路设计的公司在近半年内涌现了十几家。其中，西禾、赛勒科技（近期通过认证）是进展较快的几家公司。此外，像光本位等公司在2026年的一级资本市场也备受关注。</p>
+<p>从技术角度看，硅光芯片的设计本身难度并不高，其真正的技术壁垒在于制造工艺。目前，核心的工艺能力主要掌握在海外厂商手中。国内包括旭创在内的公司主要承担设计环节，即完成难度相对较低的部分，而真正关键的流片和工艺控制则依赖海外渠道。</p>
+<p>硅光工艺是在硅衬底上制作二氧化硅、硅以及氮化硅等材料构成的光波导，这个过程对掺杂浓度、刻蚀等参数要求极高。工艺中的温度、时间等环境条件稍有变动，就会导致最终产品性能产生巨大差异，因此硅光是一个与工艺强相关的领域。在实际操作中，设计公司通常只提出基础的框架要求，而芯片代工厂会提供核心的子元件。设计公司的工作类似于“搭积木”，将这些由代工厂控制的、与工艺紧密绑定的模块组合起来。这种模式与磷化铟工艺有相似之处，但具体采用的是二氧化硅、氮化硅和硅的工艺体系。</p>
+<p><b>在硅光芯片的产业链中，设计、工艺和生产环节分别由哪些厂商主导？</b></p>
+<p>在产业链分工中，国内公司如西禾或模块厂主要扮演设计角色。完成设计后，它们会寻找海外的代工厂进行流片。目前，全球量产规模最大的硅光芯片代工厂是以色列的Tower，其次是GlobalFoundries。这两家公司的产能较大，能够满足大规模的硅光芯片需求。</p>
+<p>此外，新加坡也有一些由大学实验室孵化出的代工厂，但其产能和工艺控制能力相对较弱，更适合前期研发、打样或小批量生产。当进入大规模量产阶段时，这些新加坡公司的竞争力就相对不足。</p>
+<p>国内也有多家流片厂，如上海微系统所和重庆某家与国家级研究所合作的实验室，正在尝试进入该领域，但目前基本都未达到量产阶段。因此，当前市面上所有的硅光芯片，其最终的流片环节都是在海外完成的。流片厂以晶圆的形式交付给国内公司（如旭创），国内公司再进行切割，将晶圆加工成一颗颗裸die，然后进行测试、封装，并最终集成到光模块产品中。</p>
+<p><b>硅光子集成电路主要有哪些调制技术？它们的工作原理和应用场景有何不同？</b></p>
+<p>PIC主流的调制技术主要有两种。第一种是马赫-曾德尔调制器，其原理类似于水波的干涉。它将一束光分为两路，在远端进行叠加。由于两束光同频同向，叠加后会产生干涉条纹，光强度得到加强。通过施加电压改变其中一路的载流子浓度，可以使其相位反转，变为同频反向，从而与另一路光相互抵消。通过在“加强”和“抵消”状态间切换，就能将一束恒定的光调制成携带信号的光波。</p>
+<p>另一种是微环调制器。目前阶段，微环调制器的应用相对较少，但其最大的优势是体积可以做得非常小，因此适合集成度要求极高的应用场景。例如，在当前讨论的内存到GPU、内存之间的高速光互连接口（如OIO协议）中，业界普遍在探讨使用微环方案。包括三星在内的公司未来几年都在朝这个方向发展。</p>
+<p><b>微环调制器相较于马赫-曾德尔调制器在产业化方面存在哪些挑战？</b></p>
+<p>微环调制器的产业化难度远高于MZM。微环是一种对温度高度敏感的器件，温度的微小变化会导致其调制效率急剧下降。因此，微环调制器通常需要配备温控系统。然而，增加温控会带来额外的能耗，也未必能实现体积优势。目前产业界正在探索对温度不敏感的微环调制器技术，如果该技术能够成功，将极大地推动其应用；反之，若无法解决温控问题，微环的应用前景将大打折扣。</p>
+<p><b>目前OIO的技术方案是否已经确定，以及当前可量产的PIC主要采用何种技术？</b></p>
+<p>OIO的协议组已经建立，行业共识是向微环方案发展，一旦信号传输需要在板间进行，预计将采用微环方式。不过，该方案技术难度较高，短期内实现尚有挑战。当前市场上能够实现量产的PIC产品，均采用MCM（Multi-Chip Module）技术。</p>
+<p><b>在光模块的自研或设计环节中，除了PIC之外，PD、TIA、Driver和DSP等芯片的国产化及采购情况如何？</b></p>
+<p>PIC，即光子集成电路或光芯片，是当前讨论的焦点，其中主要指MZM（Mach-Zehnder Modulator）调制器。在PIC之外，PD作为光电探测器，其国产技术已不逊于海外，基本可以实现国产替代。外置光源部分，国内已有源杰科技等公司布局。然而，Driver和TIA等电芯片基本仍依赖海外产品，尽管国内有公司在研发，但尚未大规模进入市场。Driver的市场机会已逐渐减少，因为Marvell和博通等厂商已将其集成到DSP中。因此，国产电芯片厂商目前主要聚焦于TIA领域。总体来看，在PIC环节，各公司倾向于使用自研产品，而PD、Driver、TIA及DSP等组件，国内虽有部分可实现自产，但仍较多采用海外产品，尤其是DSP。</p>
+<p><b>在一个硅光模块中，PIC、DSP、Driver和TIA等主要组件的成本构成是怎样的？</b></p>
+<p>如果将激光器、PD、隔离器和PIC调制器等所有光学相关部分统一计为PIC的成本，其占比大约在30%至40%之间。DSP是成本大头，占比同样约为40%。Driver由于已被主流厂商集成至DSP中，其独立成本已基本消失。TIA的成本占比较小。</p>
+<p><b>如果不包含光源和隔离器等其他光学组件，纯粹的PIC芯片成本大概是多少？</b></p>
+<p>单纯计算PIC芯片的成本，目前每通道大约为3到4美元。以主流的四通道配置为例，一个用于100G模块的PIC成本约在15至20美元，而用于单通道200G的PIC成本会稍高，可能达到30美元左右。当前市场出货的主力是800G光模块，其主流方案是四通道（4x200G）或八通道（8x100G），后者有时会通过两颗四通道（4x100G）芯片拼接实现。虽然业界已开始研发八通道产品以应对1.6T的需求（主要方案为8x200G），但鉴于1.6T尚未成为市场主流，四通道配置仍是当前的主力。</p>
+<p><b>对于未来的3.2T光模块，其技术路线和产品形态有哪些潜在方向？</b></p>
+<p>3.2T光模块因其极高的带宽，技术方向尚不明朗，行业仍在探索。相较之下，1.6T的技术路径较为清晰，普遍倾向于采用8x200G的方案。对于3.2T及更高速率的演进，业界正在NPO（Near-Packaged Optics）和CPO（Co-Packaged Optics）与传统可插拔光模块之间进行权衡。NPO和CPO在功耗和集成度方面具有优势，其应用机会将随着速率的提升而增加。尽管已有部分3.2T光模块方案提出，但预计未来两年内主要还停留在提供样品的阶段。当前行业面临的主要挑战是在传统光模块、NPO和CPO这几条技术路线之间做出选择。</p>
+<p><b>对于3.2T硅光技术，其实现方式是否不再涉及PAM4、PAM6等复杂的调制技术，而主要取决于PIC本身的支持能力？</b></p>
+<p>3.2T硅光技术同样涉及NRZ、PAM4、PAM6、PAM8等调制方式。这些调制技术的核心在于将电平信号调制成不同强度的光信号，以代表不同的数据。硅光技术，包括EML，理论上都可以实现这些高阶调制。然而，真正的技术难点不在于能否实现调制，而在于调制后，接收端能否清晰地区分出不同光强等级（即眼图的眼宽是否足够）。因此，关键挑战在于整个链路预算（link budget）是否达标，以及DSP的纠错能力是否能补偿信号的损伤。单纯实现高阶调制本身难度并不高。</p>
+<p><b>对于插拔式3.2T硅光模块，其实现路径是怎样的？是否只能通过提升单通道速率来实现？</b></p>
+<p>插拔式3.2T硅光模块并非只能通过提升单通道速率实现。目前存在多种方案，其中一种可见的方案是采用XPO标准，通过增加通道数量来提升总带宽。例如，将原有的8个通道增加到16个，甚至可以实现6.4T的带宽。这种方式本质上是挖掘PAM4技术的潜力。相较于直接转向PAM8等更高阶调制，业界倾向于先沿着XPO方案演进一段时间。</p>
+<p><b>采用XPO标准的插拔式光模块，其体积增大会对交换机端口设计产生什么影响？</b></p>
+<p>采用XPO标准的光模块体积确实会显著增大，其宽度约为传统光模块的3到4倍。这必然要求对交换机进行相应的改动。不过，由于其接口速率仍基于单波200G，相对于彻底改变通道速率的方案，交换机接口层面的改动会小一些。此外，这类方案中DSP可能会承担一些低速信号聚合成高速信号的功能，技术上会更复杂。</p>
+<p><b>当前光模块市场的出货主力是何种速率？3.2T和6.4T的市场前景如何？</b></p>
+<p>目前光模块市场的主要出货产品是800G，1.6T产品已开始量产并发货，但市场尚处于早期爬坡阶段。3.2T和6.4T产品的应用为时尚早。由于高密度集成的需求，部分公司倾向于通过CPO的形态来实现这些超高带宽。CPO方案相对直接，主要是将单通道200G的技术进行大规模堆叠。</p>
+<p><b>请分析一下国内光通信芯片厂商在接入网和数据通信市场各自的竞争格局与发展现状？</b></p>
+<p>在接入网市场，明夷和优迅占据了绝对主导地位，尤其是优迅，其主要市场来源完全集中于接入领域，核心产品是光猫。优迅上市后曾尝试拓展数据通信产品，但进度相对缓慢，目前仅停留在部分公司的打样认证阶段，尚未实现真正的稳定量产出货。相比之下，中盛威、英思嘉等公司没有过重的历史包袱，从研发初期就专注于硅光或数据通信产品。其中，中盛威的产品已经进入部分客户的小批量供货阶段。</p>
+<p><b>国内TIA和Driver芯片与海外厂商如Marvell、Semtech等相比，在技术指标和市场导入方面存在多大差距？</b></p>
+<p>从单纯的技术指标来看，国内产品与Marvell、Semtech等海外厂商的差距并不大，没有达到无法使用的程度，基本可以满足产品应用需求。然而，真正的差距体现在市场导入和应用层面。由于数据通信产品的主要市场在北美，模块厂商在选型时会天然倾向于美国本土芯片供应商，以规避潜在的政治风险。因此，尽管国内芯片在技术上可用，但客户在导入后，推进到小批量生产并最终将产品销售到北美市场的过程非常缓慢。</p>
+<p><b>TIA和Driver芯片的底层研发难度如何，是否需要类似DSP那样的底层IP或SerDes技术？</b></p>
+<p>TIA和Driver芯片的研发难度因速率而异。在10G、2.5G等低速阶段，技术难度不大，实现相对简单。但在高速领域，其核心难点不在于单颗芯片的指标，而在于系统级应用表现。一颗优秀的芯片需要放在整个系统中进行评估，例如芯片某个指标的不足可能需要通过DSP进行补偿。因此，真正的挑战在于将芯片置于系统中进行测试并获得良好性能。国内厂商在这方面能力较为欠缺，因为它们难以获得DSP或GPU厂商的系统级支持，导致在验证芯片系统性能时，很大程度上只能依靠猜测。</p>
+<p><b>光调制领域的MZM、NRZ和PAM4这几个概念之间是什么关系？</b></p>
+<p>MZM（马赫-曾德尔调制器）与NRZ/PAM4是从两个不同维度描述光调制的方式。MZM描述的是产生调制信号的物理机理或方法，而NRZ和PAM4描述的是调制后输出的信号结果或格式。这两种维度可以交叉组合，例如，MZM既可以调制出NRZ信号，也可以调制出PAM4信号。同样，其他调制机理（如DFB、微环调制器）也能实现这两种信号格式。简而言之，NRZ是两电平信号，用强光和弱光分别代表1和0；而PAM4是四电平信号，通过将光强分为四个档位（例如强光、较强光、较弱光、极弱光）来表示00、01、10、11，从而在相同波特率下传输双倍数据。</p>
+<p><b>在PIC芯片设计中，MZM这样的调制机理是如何通过光波导实现的？</b></p>
+<p>在PIC（光子集成电路）中，核心元件是光波导，即光在芯片内传输的腔体或路径。MZM的实现原理可以通俗地理解为将一个光波导分成两个，经过处理后再将两个波导合并成一个。在PIC设计中，这通常被称为设计光波导，而非设计电路。</p>
+<p><b>光波导是如何在硅片上引导光路，其物理原理是什么？</b></p>
+<p>光波导引导光路的原理与光纤类似，主要利用全反射现象。通过在硅片上进行掺杂等工艺，使得波导内部区域与外部区域的折射率产生差异。当光以特定角度进入波导时，由于外部折射率较高而内部较低，光会在波导的两个“壁”之间发生连续的全反射，从而被约束在波导内向前传播。可以将其想象成光束在两堵墙之间来回反弹并前进。在80倍左右的普通显微镜下，就可以观察到PIC芯片上的光波导结构。</p>
+<p><b>国内在光波导技术方面的发展水平如何，特别是在PLC和PIC领域？</b></p>
+<p>光波导是一个通用术语，其技术难度因应用场景而异。在PLC（平面光波导）领域，国内技术已经非常成熟，从设计、流片到最终量产，已有多家公司能够完全自主实现，国外公司在该市场已无太多空间。然而，在应用于调制器等PIC芯片的光波导技术方面，由于需要处理光与电的相互作用，技术更为复杂。国内虽然有公司在进行相关研发，但目前尚未达到量产阶段。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

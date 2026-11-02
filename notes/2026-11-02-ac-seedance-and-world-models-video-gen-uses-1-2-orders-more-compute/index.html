@@ -1,0 +1,199 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.02 | AC | LLM | Seedance and World Models Video Gen Uses 1-2 Orders More Compute</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.02 | AC | LLM | Seedance and World Models Video Gen Uses 1-2 Orders More Compute</h1>
+<p class="orig">原标题：SeeDance及世界模型调研：SeeDance类视频生成模型算力消耗比文本高1-2个数量级，中短期目标实现2分钟长视频生成；世界模型所需算力密集度为SeeDance的1.5倍，但受限于产业链配套商业化仍属远期 – 谷歌_OpenAI_Anthropic_Meta</p>
+<p class="tags">#llm #inference #china #ai-demand</p>
+<p class="meta">AceCamp · 2026-11-02 · article 70568603</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>专家称SeeDance类视频生成模型的单位算力消耗比文本Decode高一到两个数量级，世界模型的算力密集度约为SeeDance的1.5倍。</li>
+<li>SeeDance推理目前主要用国产卡如950 PR，以及H800和部分A100。</li>
+<li>SeeDance在2026年7–8月高峰期月现金流达十几亿元，5–7月月均增长约30%，目前增长放缓，海外月收入约1亿元。</li>
+<li>大客户收入占比约60%–70%，个体用户和小B客户占30%–40%。</li>
+<li>当前单次生成最长15秒、部分开放30秒，公司目标在2026或2027年实现2分钟长视频，需要算力线性甚至非线性放大。</li>
+<li>公司已与天数智芯签订5万张卡合同，预计2027年交付，未来推理将主要用昇腾、寒武纪和天数等国产芯片。</li>
+<li>互动剧的算力需求约为普通剧集的3.2倍，世界模型在SeeDance基础上加一个几百兆参数的物理推理层，商业化仍属远期。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>本文核心要点包括：1，SeeDance类视频生成模型算力消耗比文本高1-2个数量级，中短期目标实现2分钟长视频生成。2，世界模型所需算力密集度为SeeDance的1.5倍，但受限于产业链配套，商业化仍属远期。</p>
+<p>以下为专家观点：</p>
+<p><b>1，对于字节而言，中短期模型重点投入方向包括哪些？</b></p>
+<p>未来的增量主要在于机器人领域。以Astra为例，它展示了作为文本模型在理解顶层架构设计、任务分拆以及控制底层（如卡尔曼滤波、自由度解算、运动坐标系解算）方面的潜力，但它本身并非一个控制模型。字节未来的一个秘密研究方向是希望通过对接不同的硬件管线（如扭矩、减速器、传感器等），构建能够感知物理世界的世界模型。不过，该项目何时能够投产尚不确定，目前仍处于投入阶段，而特斯拉的Optimus已经接近商业化。</p>
+<p>对于文本模型本身，虽然会继续稳步更新，但不会是发展的绝对主力。未来的重点将是如何更好地将文本模型应用于Coding Agent，因为目前在编程能力上仍有不足，导致专业程序员更倾向于使用Claude、GPT及竞品。因此，赢得专业程序员这一大销量人群是下一步的重点。另一条发展路径是扩展多模态能力，例如应用于AI互动剧和AI NPC，这也是拉动增长的关键点。</p>
+<p><b>2，SeeDance业务目前主要使用哪些类型的算力卡进行推理？</b></p>
+<p>SeeDance业务的推理目前主要使用国产计算卡，例如950 PR，同时也使用了H800以及部分A100。</p>
+<p><b>3，SeeDance业务的迭代以及后续推理方面的预期是怎样的？其近期的现金流和增长率表现如何？</b></p>
+<p>SeeDance业务在增长巅峰时期（大约在2026年7月、8月）的月现金流曾达十几亿人民币。在2026年5月至7月期间，月平均增长率一度达到30%。然而，目前增长有所放缓。</p>
+<p>增长放缓的原因在于，随着数据管线的成熟以及电商素材领域的优胜劣汰，月增长空间受到压缩，这也反向制约了持续提价的能力。</p>
+<p><b>4，从SeeDance市场来看，海外业务的核心竞争压力来自何处？主要竞争对手有哪些？</b></p>
+<p>海外市场的竞争对手包括GPT的Sora（现已内部化）、Muse的视频生成模型，以及一些初创公司。业务的竞争优势与TikTok的生态紧密相关，在TikTok普及率高的地区，如美国（特别是西雅图）和爱尔兰，优势显著，能够与美国本土的Muse视频生成模型竞争。相比之下，在TikTok渗透率不高的欧洲国家，例如西班牙和塞尔维亚，则不具备优势。此外，AI短剧在海外市场也展现了较大的辐射范围，红果短剧的海外版以及豆包的海外版都是成功的案例。</p>
+<p>同时在SeeDance业务的收入结构中，大客户占比约为60%至70%，因为他们拥有强大且成熟的数据管线，能够持续进行内容生成。个体用户和小B客户的收入贡献占比已达到30%至40%，但其内容生成频率相对不稳定。从地域分布来看，海外收入占比较小，月度收入贡献估计为1亿元。</p>
+<p><b>5，SeeDance产品后续有怎样的迭代规划？下一代产品对算力密度的要求是否会更高？</b></p>
+<p>是的，对算力的要求会更高。当前产品生成的视频时长最高仅为15秒，部分开放至30秒。为了避免通过简单堆叠15秒或30秒的片段来生成长视频，未来的关键目标是延长单次生成的视频时长。公司已将此目标纳入经营性指标、OKR及管理层计划中，希望在今年（2026年）或明年（2027年）实现生成长达2分钟的视频。实现这一目标预计需要算力进行线性甚至非线性的放大。因此，延长视频时长是一个非常消耗算力的关键点。</p>
+<p><b>6，关于SeeDance的下一个版本，目前是否有明确的迭代方向？</b></p>
+<p>短期内的下一个版本预计是小版本迭代，主要的改进将集中在画质提升以及全面开放30秒时长的视频生成能力，预计不会有颠覆性的成果。</p>
+<p><b>7，随着SeeDance的持续迭代，未来将主要采用哪些芯片来支撑其推理需求？</b></p>
+<p>未来将主要采用国产芯片，包括昇腾、寒武纪以及天数智芯（智铠）。公司已与天数智芯签订了5万张卡的合同，目前正在进行适配工作，尚未完成。这5万张卡预计将于明年（2027年）交付，今年（2026年）年底前无法完成交付。</p>
+<p><b>8，公司对于世界模型的定位和商业化前景有何展望？</b></p>
+<p>世界模型的意义主要体现在两条业务线上：第一条是物理世界模型，主要应用于机器人领域。目前该方向投入巨大，持续投入的目的可能是为了避免在潜在的技术爆发期掉队。第二条线是应用于电商和互动剧。在电商领域，世界模型可以模拟商品与家居环境的互动，从而提升用户的购买率或复购率。在AI漫剧领域，公司已将互动剧的开发纳入一期指标。然而，互动剧的算力需求预计是普通剧集的3.2倍，这会增加下游客户的制作成本，如果最终的放量效果未能达到3.2倍的预期，客户将面临亏损风险。</p>
+<p><b>9，在电商或互动剧等应用场景中，世界模型与SeeDance模型之间存在怎样的技术差异？</b></p>
+<p>世界模型基本上是在SeeDance模型的基础上进行修改。具体而言，它会额外增加一个物理推理层，该层用于处理摩擦系数、铰链角度、力的反弹系数等物理规律。这个新增层的权重规模不大，约在几百兆以内，通过与原模型级联，可以使生成的视频内容更加符合物理现实。</p>
+<p>世界模型会消耗更多算力，但具体程度取决于技术架构。如果技术架构发生改变，可能会更消耗算力。单纯从增加一个物理层的角度来看，算力消耗不会显著增加。然而，若要利用世界模型进行世界模拟或连续多时间序列建模，算力需求则会大幅上升。例如，生成一个15秒的视频可能算力消耗不大，但若将1,000个此类视频堆叠生成一部2小时的AI电影，算力需求将变得非常巨大。与SeeDance相比，世界模型的算力密集度要求大约高出1.5倍，而算力用量则可能翻3到4倍。</p>
+<p><b>10，在世界模型领域，哪些公司的商业化进程更为领先？</b></p>
+<p>在商业化方面，小马智行和特斯拉的FSD是已经成功的案例，其中特斯拉的表现尤为突出。字节跳动无法在智能驾驶领域取得类似成果，主要原因是技术架构的根本不同。FSD的架构是原生的智能驾驶架构，依赖激光雷达等大量传感器数据进行训练，其物理叙述是原生的。而字节跳动的技术路线是通过Diffusion Model拼接不同镜头，这种方式具有想象的成分，需要额外增加一个物理层来约束这种想象。由于已经选择了这条技术路径，重新转向FSD的路线既不现实，也与公司的商业基础不符。</p>
+<p>因此，未来的战略方向将更多地着眼于其他领域。首要尝试的是机器人领域；如果该尝试再次失败，则会考虑转型为数据管线和行业标准的提供商，利用SeeDance等模拟场景，为机器人或智能驾驶厂商提供源源不断的训练素材和数据增强服务。</p>
+<p><b>11，世界模型的商业化落地是短期内可以实现，还是一个更偏远期的目标？即使模型研发成功，还面临哪些产业链挑战？</b></p>
+<p>世界模型的商业化是一个偏远期的目标。即便模型本身研发成功，其大规模商业化应用也面临诸多产业链挑战。这包括减速器、轴承、丝杠、传感器、仿真平台、线控、电控以及芯片等多个环节。在这些配套产业链问题得到解决之前，仅仅拥有一个成熟的模型，并不会带来任何实质性的商业化进展。</p>
+<p><b>12，当前搜广推业务对AI算力的需求变化趋势如何？大模型在其中扮演了怎样的角色？</b></p>
+<p>目前搜广推业务的AI算力需求相对稳定。业务上正在尝试将大模型与小模型结合使用，主要的算力增长已迁移至大模型侧，而传统小模型本身并未贡献太多新增算力。具体应用上，大模型被用于替代过去依赖文本聚类和小型机器学习模型进行热点发现和内容推荐的流程。例如，在判断爆款内容时，现在会先让大模型分析当前趋势，并直接对投稿文章进行理解、打分和生成指标。之后，再由小模型去观测Z-score等实时数据。大模型的核心作用是优化和细化了小模型的部分观测指标，使得整个推荐流程更加智能，但小模型本身的算力增长并未像大模型那样迅速。未来，大模型在搜广推领域的应用会越来越多，包括内容审核等，甚至可能替代人工审核员。</p>
+<p><b>13，Anthropic在其招股书中披露了约85%的推理毛利率，应如何看待这一数据？字节跳动在文本和视频推理业务上的毛利率表现如何？</b></p>
+<p>Anthropic高达85%的推理毛利率确实令人意外，但这仅是产品毛利，未考虑折旧和摊销，并不完全代表公司的最终盈利能力。字节跳动的情况有所不同，由于产品定价远低于Anthropic且难以提价，整体的推理毛利率比Anthropic低。</p>
+<p>具体到各项业务，文本推理的毛利率约为55%，这一数字已考虑了电力、冷却等算力相关成本，但未计入折旧和摊销。之所以未能达到更高水平，可能与在KV Cache等技术优化方面做得不够极致有关。SeeDance业务的毛利率在巅峰时期曾达到70%以上，但目前已有所下滑。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
