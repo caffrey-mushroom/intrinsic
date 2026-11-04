@@ -1,0 +1,266 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.03 | TB | Software | PE Sector Update Proposal and Document Generation Software</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.03 | TB | Software | PE Sector Update Proposal and Document Generation Software</h1>
+<p class="orig">原标题：PE Sector Update: Proposal &amp; Document Generation Software – Trends, Key Players &amp; Outlook</p>
+<p class="tags">#software</p>
+<p class="meta">Third Bridge · 2026-11-03</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>受访者是前PandaDoc SMB销售总监，讨论提案和文档生成软件行业。</li>
+<li>专家认为每周约50份文档加上团队规模是需要专用提案软件的门槛，低于这一水平AI生成可能就够用。</li>
+<li>ChatGPT等AI工具可能让小客户的基础文档生成商品化，缩小低量级厂商的可服务市场。</li>
+<li>专家不认为AI正在推动这类工具的采用，客户并不按是否有AI功能来选择。</li>
+<li>PandaDoc收入结构从约80% SMB转向接近SMB与中端市场各半，向上移动成功，瞄准不需要Salesforce全套功能的企业客户。</li>
+<li>HubSpot、Pipedrive、Salesforce等CRM厂商是最可能的收购方，目标是ARR 2,000–5,000万美元、增速至少30%的厂商，预计3–5年内整合进更大的收入平台。</li>
+</ol></section>
+<div class="body">
+<p>Analyst-led • 23 Sep 2026</p>
+<p>Companies: DOCU US</p>
+<p><b>Dima Ivanouski (DI)</b> Co-founder &amp; CRO (Chief Revenue Officer) at Naoma AI Inc</p>
+<p><b>Poorvi Banka (PB)</b> — Third Bridge Sector Analyst</p>
+<h3>Agenda</h3>
+<ul><li>Key industry trends</li><li>Growth outlook</li><li>Competitive dynamics</li></ul>
+<h3>Key Insights</h3>
+<ul><li>Volume threshold where dedicated proposal software becomes necessary is c50 documents per week, combined with team size. Below that, AI generation may suffice. AI tools – eg, ChatGPT – could commoditise basic document generation for smaller customers, effectively shrinking addressable market for lower-volume proposal software vendors</li><li>Expert doesn't think "AI is currently driving the adoption of such tools and the customers are choosing based on whether this tool has AI-enabled or not"</li><li>"Some enterprise-level customers" don't "require the full toolset that is offered by Salesforce and […] do not want to pay extra for that […] that's where PandaDoc is going", whose revenue mix has shifted dramatically from c80% SMB previously to potentially 50/50 SMB vs mid-market, reflecting successful upmarket movement</li><li>CRM players such as HubSpot, Pipedrive and Salesforce are most logical acquirers, targeting vendors with USD 20m-50m ARR and at least 30% growth. Consolidation into broader revenue platforms expected within 3-5 years, primarily through CRM acquisitions rather than organic standalone growth</li></ul>
+<h3>Introduction</h3>
+<p><b>PB</b> [00:00:06]: Welcome to Third Bridge's Interview entitled PE Sector Update: Proposal &amp; Document Generation Software – Trends, Key Players &amp; Outlook. I'm Poorvi Banka, and I'll be hosting today's Interview with Dima Ivanouski, former Director of Sales SMB at PandaDoc.</p>
+<p>Dima, before we start today's Interview, could you please state I agree or I disagree to the following statement: You understand the definition of material non-public information and agree not to disclose any such information, or any other information which is confidential, during the Interview today?</p>
+<p><b>DI</b> [00:00:32]: I agree.</p>
+<p><b>PB</b> [00:00:34]: Could you please provide a brief introduction to your background in this industry?</p>
+<p><b>DI</b> [00:00:38]: I've been with a company called PandaDoc for six years in the past. I specifically worked with them leading the SMB revenue department, meaning the SDR teams, sales teams, account management teams and also, at some point, self-service revenue from this segment. With PandaDoc, we got to the unicorn status not so long ago and the company keep growing and keep being a leader on the proposal marketplace.</p>
+<h3>Questions</h3>
+<h3>00:01:29] How would you define the boundaries of today's proposal and document generation software market? Where are players drawing more market share from traditional tools such as static PDFs or broad signature suites?</h3>
+<p><b>DI</b> [00:01:49]: Basically, if we talk about proposal market, I think the main distinction that it's a sales use case, so meaning that it's a sales document workflow. The key differentiator for the proposal market that the companies, the software that positioned itself as a proposal software, it has to maintain the create portion of the workflow. Basically, if we describe the workflow for the proposal tools, it's going to be create, then configure or change something, then send, engage and sign, so the whole flow of the document. If we are talking about this document generation, then it's going to be any type of document and it's usually Word or PDF plus e-signature, so there is no this create component. Usually, it's just upload, maybe fill some information in this uploaded document, send it out and sign it. That's basically the whole flow. For the sales use case, for the proposal use case, there are more of the capacity. They have some more advanced CRM integrations. I think that's the main differentiation and main advantage. If the tool doesn't fall in the create use case for the document, it is not going to be competing in the proposal space and vice versa.</p>
+<h3>00:03:46] Gartner and Forrester often highlight a convergence between document generation, e-signatures and CPQ [configure, price, quote] functionality. To what extent do you think this market is becoming an extension of revenue operations rather than a point solution?</h3>
+<p><b>DI</b> [00:04:00]: I think it's at some point becoming the continuation of revenue operations market and revenue operations and it's driven by buyers. Basically, revenue operations, they want one source of truth for the document, so price to signature source of truth. That's the main distinction. Some vendors, they have this CPQ functionality that is integrated, so PandaDoc CPQ functionality that integrates with Salesforce, HubSpot and Pipedrive. At some point, there is a separate CPQ and CLM tool that is more enterprise-wise. For SMBs, it's just an integration. For enterprise clients, there needs to be some sort of separate tool for that.</p>
+<h3>00:05:15] Where do you think we are in terms of software adoption for the proposal side and document generation? What are the key underlying drivers of adoption across mid-market and SMB segments?</h3>
+<p><b>DI</b> [00:05:35]: I think drivers for adoption might be some sort of CRM adoption because you cannot automate document generation or proposal without some pulling data into CRM. If you have source of truth CRM and all the data stored there, then it starts being a driver for adopting the proposal or document generation tool to actually being a logical continuation of this data in CRM and this data to be used in this document. Also, it might be a productivity pressure, meaning that making the same thing with more leaner team and, in some cases, also buyer expectations, so meaning that buyers expect to have some digital experience in terms of document work. That's why maybe the highest adopting industries is some agencies, professional services where it really very high volume of proposals and documents needs to be being generated, maybe some SaaS, also I think some home services, some professional services where there are a lot of work also needs to be generated.</p>
+<p><b>PB</b> [00:07:22]: Across the addressable market, especially segments or verticals where it makes sense, where is adoption in terms of a percentage estimate? How much room is there for greenfield growth?</p>
+<p><b>DI</b> [00:07:44]: I think there's always a room for some other new solutions. I think there might be need to be specialised for some specific industry and for some needs of this specific industry, not to be like a solution for everyone but rather the solution for this specific segment, knowing how to solve their specific problem.</p>
+<h3>00:08:19] How has the value proposition changed for document generation software? It was initially more about making proposals faster and easier to create, but to what extent has the focus shifted to helping sales teams win more business? What are the biggest pain points that customers are trying to address when buying these products?</h3>
+<p><b>DI</b> [00:08:44]: I think it was previously speed and productivity that was the main value proposition. Right now, it's shifting to more automating the whole flow and also some boundaries that the admin can set up, some approval workflows and win rates of the whole sales cycle, meaning that we are not only talking about speed to generate the proposal but also how we help that to close the deal faster and how we can improve the points of communication or have additional point of communication with our customers with the document.</p>
+<p><b>PB</b> [00:10:07]: Thinking about the pain points that customers are trying to address and the product's value proposition, is there any quantifiable ROI?</p>
+<p><b>DI</b> [00:10:19]: Yes, for sure. The ROI can be quantified by, first of all, the speed and productivity, so how much admin work we are eliminating including this implementation, something like this. Obviously, we can measure the speed to close, meaning how fast these deals are being closed comparing to their status quo or previous processing player.</p>
+<p><b>PB</b> [00:10:54]: How much faster are deals getting closed? What productivity gains have companies been able to make? Is there a benchmark there?</p>
+<p><b>DI</b> [00:11:06]: What we claimed, at least for PandaDoc back then, it was 3x faster proposal to close. Also, the same with productivity, we even had a calculator where you can put a number of documents with you, number of proposals you need to send on a monthly basis, the number of reps you have. You can see basically the ROI in the saved time with the help in the proposal to PandaDoc. I think we claim around five hours per week that we can outsell. That is possibly a good benchmark.</p>
+<h3>00:11:59] What are the most important purchasing criteria for customers when choosing dedicated vendors for document generation software?</h3>
+<p><b>DI</b> [00:12:11]: I think for SMB, it's just ease of use because they do not have the capacity to implement some difficult tools that they need to be onboarding for a long time or they need to have education. I think the diversity of templates this tool can provide for use cases, they need to be covered. It's a price for sure and also some additional benefits that they usually expect e-signature. Basically, whether the proposal tool covers a significant amount and that's a fast decision. For mid-market, I think there is also, on top of that, they will need to have the CRM integration, ideally, two-way thing, meaning that the CRM can write into document and vice versa. Once the document is executed, it also needs to write some data from the executed document to the CRM and update it accordingly, maybe some approval workflows, content approval. That's basically, I think, the purchasing criteria. If we talk about AI, I don't think that it's the decision criteria or purchasing criteria as of right now because the majority of the workflow for such tools is still deterministic rather than when we need AI to actually reasoning about what to do with this document.</p>
+<h3>00:14:14] How sticky are the products once they’re embedded into operational processes? What typically drives a customer to switch?</h3>
+<p><b>DI</b> [00:14:26]: I think in terms of stickiness, they are specific document templates. Once they are generated, once they are created inside of this tool and started being used, it is harder for them to switch because in that case, they need to regenerate these documents natively in other systems. It's integrations because it's also something that is already in place and working in the CRM integration, first of all. If they also have some reused content items, content pieces that they can store in the library, that is something also that we have to move to another vendor. This is the main answers, I would say. As for the reasons to move to another vendor, I think it might be for when the customer outgrow the current tool.</p>
+<p>If it was designed for SMB and then, for example, the company grew to some CPQ or CLM use case, they might just simply switch to us. Then another reason they might switch the CRM, which is also not that easy to do, but if they switch the CRM and previous integration doesn't make any sense. Also, we could switch the vendor in terms of the proposal. What else? Budget, I think we also had a very big volume of clients to whom were initially quoted for some discounted price. Then on the renewal, the price jumped quite a bit and they started looking what else is on the market. I think these are the main reasons for moving.</p>
+<h3>00:16:42] What do you think the current industry average churn rate is, as a rough estimate?</h3>
+<p><b>DI</b> [00:16:54]: I remember the number around 10%, but I cannot speak confidently that this 10% is still the case.</p>
+<p><b>PB</b> [00:17:09]: There would be no major differentiation between the proposal side and the document generation side for vendor switching.</p>
+<p><b>DI</b> [00:17:15]: Yes. In many cases, the switching reasons are the same. For example, they have document generation tool, but they, at some point, decided that they need actually this create functionality and then have the full execution, full workflow of the signature and updating the CRM, that might be also the reason they start to look at the market and to start specifically looking for proposal software rather than being stick with their document generation system. They need some custom documents to be promoted and more personalisation within these documents towards the recipient of this document. Then they might need to switch to the proposal instead of being stick with this doc gen.</p>
+<h3>00:18:31] A recent Fortune Business Insights report estimates the global proposal and document generation software market at around USD 3.7bn in 2026 and a CAGR of around 12.2% over 2026-34. Does that estimate resonate with you? If not, how would you estimate the market?</h3>
+<p><b>DI</b> [00:18:56]: I think that might be correct with one caveat that a lot of docs are trying to play on the proposal market and vice versa, and that's why this number might be correct. If you are strictly talking about the proposal use case and proposal case that are not playing on the document or e-signature market, then I think the number is going to be less. I'm not able to say the exact number.</p>
+<h3>00:19:47] What might be key structural growth drivers over the next three years? What factors could limit market growth over the same timeframe?</h3>
+<p><b>DI</b> [00:20:02]: I think specifically for drivers, AI at some point, making these documents even more personalised without additional cost, that might be the drivers. Then some additional CRM integration, CRM native integration and some compliance as well, specifically in some regions where the compliance right now is limiting the progression. The change in compliance can be a driver. As for the limiters, I think it might be commoditisation of some functionalities and adding this functionality at some other tools like, for example, I don't know, Google Docs right now support e-signature as well. You don't need a separate tool to actually sign your documents or CRMs right now adding some functionality of doc generation and quoting. This is the limiters and as well AI. It can be a driver. It can be a limiter because currently, a lot of companies are just using AI-generated documentation and AI generated proposals even. It's technically free or at least with the cost of ChatGPT or Claude subscription.</p>
+<h3>00:22:00] What impact is AI having as a growth driver for document generation software? Where could AI create the most value over the medium term?</h3>
+<p><b>DI</b> [00:22:16]: I think it's helping to, as I said, make the documents even more personalised and transfer even more context from the CRM, so meaning that the first draft is already ready to be sent out. It also can help just better down some guardrails in terms of what is allowed to be in this document, what is not allowed. Also, it can help with post-send engagement, meaning that almost all the proposal tools in the market, they have this possibility to chat with the recipient of the document and this chat can be fully automated. It's an AI agent that can check and answer some document question as a recipient. These are the main ones. I'm not sure about a fully AI doc generation to be as a prominent use case.</p>
+<p><b>PB</b> [00:23:35]: Even if a full doc generation using AI will not be possible over the medium term?</p>
+<p><b>DI</b> [00:23:43]: It's possible, but I don't think that is something why customers choose one tool or another.</p>
+<h3>00:23:54] With higher personalisation and other aspects that AI can help with, what could be the impact for vendors? Do you think AI enablement can be monetised and more customers will adopt these solutions because they are AI-enabled?</h3>
+<p><b>DI</b> [00:24:22]: As I said, I don't think that AI is currently driving the adoption of such tools and the customers are choosing based on whether this tool has AI-enabled or not. I think some of these proposals tools and document tools, they are adding AI for the sake of AI, meaning that this AI does not add value for the end user, for the customer, in that case.</p>
+<p><b>PB</b> [00:24:59]: They are just adding AI to highlight it as a differentiator, although it's not a key conversation with customers as of now.</p>
+<p><b>DI</b> [00:25:07]: Yes, exactly. That's what I think.</p>
+<h3>00:25:09] Popular LLMs [large language models] can now easily create proposals or documents. Do you see that as a material risk over the medium term? Could AI commoditise core document generation functionality to a greater level?</h3>
+<p><b>DI</b> [00:25:34]: Yes, I think so. I think that specifically for the smaller customers, it's going to be the go-to solution specifically when you don't have a huge volume of documents that needs to be sent. Probably, you don't need to pay for the proposal tool to do this when you have the AI doc generation. Definitely, it's shrinking the market, but there is still the use cases. There are still companies that will require and that require something more sophisticated rather than just a simple AI generation.</p>
+<h3>00:26:31] As you mentioned, proposal volume is a factor but compliance norms and industry regulations will also determine whether a company uses dedicated software vs standalone AI. Which customer segments currently using proposal software are most likely to switch to AI? At what volume threshold do customers strictly need dedicated proposal software rather than free AI tools?</h3>
+<p><b>DI</b> [00:27:12]: I think the volume we expected, it was around 50 documents per week, at least generated. That was suggested to us that this potential customer experience a greater pain and they might need to somehow automate it. AI, I think these thresholds might be even go higher. Specifically, if the company needs some guardrails and documents needs to have some approval, then I think the AI generation, AI doc generation is not going to be just sufficient enough for these companies. I can't say confidently what would be the threshold. I think 50 documents per week is the low that I would look at. It was also related to the size of the team of the sales team, specifically if we talk about the proposal market. I think the more documents they send per week and the bigger the sales team is, the greater pain they experience and the more sophisticated tool they need to actually solve this.</p>
+<h3>00:28:50] On the buyer side, how much importance is being placed on the post-proposal experience – things such as analytics, buyer engagement, content interaction reminders and DSRs [digital sales rooms]? Can AI help on this side?</h3>
+<p><b>DI</b> [00:29:08]: Obviously, it can help, as I said, with, for example, this chatting functionality as the document is sent to the recipient and the recipient has some questions about it or something like why they need it. There is a chat functionality that can be fully automated by AI. I think that's the main one. Digital sales rooms, that's another use case where potentially they can simply have some sort of, I would say, the data layer access through the AI agent that can actually help to navigate within the digital software for these potential use cases for the buyer.</p>
+<h3>00:30:07] What other product trends are worth highlighting? What product evolution do you see as inevitable or sensible over the medium term?</h3>
+<p><b>DI</b> [00:30:20]: I think deal room is one of those and also payments as a continuation of the signature and some MCP agents that can let AI that you use complete agreement workflow, then maybe having a proposal as a web page instead of the static document. That's in terms of some trends, at least what I heard and what I saw in the market.</p>
+<h3>00:31:05] How would you segment the major players in today's competitive landscape? What are the key categories of vendors and how would you segment the market from that angle?</h3>
+<p><b>DI</b> [00:31:18]: There is the market leaders and platforms, the bigger companies such as PandaDoc, I think, GetAccept, Docusign and some other players. Then maybe some design-led proposal software like Qwilr, Proposify and also some, I would say, smaller tools like Better Proposals, Prospero. As I said, some CRMs, they are adding their native functionality, for example, HubSpot. Then there is also enterprise solutions like CPQ CLM, Salesforce or DealHub. That's, I think, how we can segment the sales use case specifically.</p>
+<p><b>PB</b> [00:32:13]: Can you also segment the competitive landscape based on SMB or mid-market focus, looking at companies that are dedicated point solutions and those that are broader platforms serving the SMB and mid-market space?</p>
+<p><b>DI</b> [00:32:32]: I think the broader platforms that are solving for both SMB and mid-market in enterprise, in some cases, these are definitely Docusign, PandaDoc. Then the more SMB side, Qwilr, Proposify, Better Proposals, Prospero, GetAccept, but GetAccept also from the European market. HubSpot Quotes, I think they are still for SMB. As I said before, the purely enterprise-level solution is Salesforce CPQ and DealHub.</p>
+<h3>00:33:21] How would you characterise PandaDoc's market positioning today? What has been the primary driver behind its success relative to competitors?</h3>
+<p><b>DI</b> [00:33:32]: It started as a proposal tool. It started as specifically designed for the smaller customers solution. Their value proposition was that the tool can help you to stand out in your competition, being small and competing with some mid-market enterprise customers with documents that you can generate with them. As of right now, the position changed a bit. Currently, they position themselves as all-in-one document workflow solution for growing businesses, not only for SMB but just for growing businesses. It's mainly related to the ability of PandaDoc to integrate natively with the majority of CRM players on the market and seamlessly push the data from the CRM into the document and vice versa. I think that's the development right now. It's rather the document workflow automation platform, not only the proposal platform as it was before.</p>
+<h3>00:34:53] How successful has PandaDoc been in shifting the market perception about being a broader document workflow platform rather than proposal software? The company reported USD 100m in ARR in August 2024 and launched dedicated buyer rooms as well – it has been trying to move upmarket. How successful has the move upmarket been? You mentioned that churn occurs when customers outgrow their vendor. Do you think PandaDoc has been successful in retaining customers that have grown at a certain pace? Has it attracted new enterprise or upper-mid-market customers despite competing with the likes of Salesforce?</h3>
+<p><b>DI</b> [00:35:39]: I think they are still working and still going into an upmarket direction and product-wise, positioning-wise, marketing-wise, sales-wise. The direction they've chosen, they are still going in this direction. They are competing definitely with some enterprise-level functionality, but I think the greater success they have that they are providing this enterprise-level functionality to the mid-market teams or to SMBs who are about to enter mid-market. They still serve a bit smaller customers rather than Salesforce, for sure, but they are able to retain them when they are growing. Some enterprise-level customers, they do not require the full toolset that is offered by Salesforce and they do not want to pay extra for that. I think that's where PandaDoc is going. Definitely, they are growing revenue and the shift in the revenue distribution is towards right now mid-market and I say mid-market enterprise, but I think the SMB is still the majority of PandaDoc's customer base, maybe not the majority of revenue but definitely the majority of users.</p>
+<p><b>PB</b> [00:37:34]: Past revenue was dominated by SMB because it started as a dedicated SMB vendor. With the move upmarket, you mentioned the revenue mix is shifting toward mid-market and enterprise. As of now, how do you think that revenue mix looks? How much can be generated out of mid-market and enterprise?</p>
+<p><b>DI</b> [00:37:56]: I think previously, it was around 80/20. I think right now, it's closer to 60/40, maybe even 50/50.</p>
+<h3>00:38:09] Another key shift is around product perception. PandaDoc started purely in proposals, but now covers the entire document automation workflow from CPQ to e-signatures and DSRs. How is the product mix changing and how is this shift in product strategy helping the company?</h3>
+<p><b>DI</b> [00:38:29]: It helps them to get into the territory of other players, for sure, with doc gen and e-signature use cases and then also with adding some compliance and CPQ functionality with more complex integration. As I said, they have been able to stay to keep the customers that are outgrowing the simple just proposal use case and also attract people who are looking for a different use case but also selling them the proposal use case. There were cases that, for example, customers get with HR use case or some legal use case and then we help solve them with also the proposals.</p>
+<p><b>PB</b> [00:39:36]: Based on customer feedback and adoption so far, would you say it has been successful in transitioning into a full-fledged platform rather than just a proposal tool?</p>
+<p><b>DI</b> [00:39:47]: I think all the changes in product at PandaDoc specifically, they are driven by customers and not by some internal decisions. What PandaDoc was doing really great always, is collecting the feedback what the users want and prioritising this feedback in terms of a product development. I think there rarely were the cases when some product functionality were released and not used by current customers or the new customers they are attracting because of all of the functionality were put into a roadmap based on the user feedback.</p>
+<p><b>PB</b> [00:40:42]: Feedback has also been positive. Customers are satisfied with the final product.</p>
+<p><b>DI</b> [00:40:48]: Yes. You can check the G2, the Capterra, Trustpilot. PandaDoc is usually very highly rated on this user feedback platforms.</p>
+<h3>00:41:05] What do you think about Qwilr and its market position? The company appears to be pushing particularly hard into AI-driven proposal creation, recently launching a smart proposal engine using CRM data, meeting notes or call transcripts to automatically configure proposals. You indicated that AI currently isn't a significant factor from a customer point of view, but do you think it has added to Qwilr's competitive positioning overall?</h3>
+<p><b>DI</b> [00:41:32]: I think they use it specifically for product side. I think the percentage of users who bought their solution and actually using this specific document generation functionality, AI document generation functionality is not that big. I mean that they still use the tool in the old way, in the old-fashioned way, maybe just a bit customising their documents but not generating them from scratch every single time, I think.</p>
+<p><b>PB</b> [00:42:16]: What is the value proposition and differentiaton against others today?</p>
+<p><b>DI</b> [00:42:23]: I think the value proposition that AI can do everything. Many customers, specifically customers in AI bubbles, they believe that it is and it works.</p>
+<h3>00:42:44] GetAccept is another key player. What is your view of its market position and competitive offering, given that the company seems to be pushing beyond standard proposals into broader document engagement and DSRs, using features such as video messaging, live chat and automated engagement workflows?</h3>
+<p><b>DI</b> [00:43:12]: I think they have moved towards this deal room specifically in case of the customers who sell to enterprise and mid-market, so basically helping them to be in touch with all the stakeholders and to optimise and speed up the sales cycle. I think they have their place on the market because of that, so because of the deal room functionality and, as you said, video chat and all the things related to the proposal generation. That's why they separate. They still have the proposal functionality, but customers buy them not because of the proposals right now but because of these deal rooms. That's what they position themselves and they position themselves as a deal room solution rather than a proposal solution.</p>
+<h3>00:44:27] Proposify is more of a dedicated point solution focused strictly on proposal management. How does it compete against broader platforms such as PandaDoc, or engagement-focused tools such as GetAccept? How do you expect Proposify's market position to evolve over the medium term?</h3>
+<p><b>DI</b> [00:44:49]: I think they either go PandaDoc direction and add more use cases such as contracts, CPQ, etc, or they can continue to be the solution for SMB players and, again, price-wise and just functionality-wise to those type of clients. They used to be very prominent competitor of PandaDoc, but, at some point, they shifted their position or vice versa. They kept their position and PandaDoc shifted their position in terms of more document automation.</p>
+<h3>00:45:46] Proposify's 2026 State of Proposals report – apparently based on more than 740,000 proposals – reports an average close rate of 34% for proposals sent through Proposify, which is allegedly higher than the industry benchmark. How useful are vendor-generated datasets to understand the market? Do customers consider these when considering a vendor?</h3>
+<p><b>DI</b> [00:46:20]: This vendor-generated data is always a bit questionable. I think they do have real also customer feedback. Adding to that data, this real customer feedback definitely helping specifically for such brand as Proposify, they are not new on the market. I think they don't need to actually establish some trust. This research, data, they might be used as a lead magnet for a potential customer. I'm not sure that they help this with sales specifically, but definitely, they can be used as a lead magnet.</p>
+<p><b>PB</b> [00:47:26]: Do you think Proposify’s proposal management software is actually superior to platforms such as PandaDoc, which has expanded into broader document workflows? Is there a specific product or reason that lets Proposify make such win-rate claims?</p>
+<p><b>DI</b> [00:47:54]: I don't think that they are better or worse. I think that they cover some functionality that is needed to some segment of customers and that's where they can be. If the customer doesn't need anything extra rather than just simple generic proposals, then I think Proposify might be the right way to go.</p>
+<h3>00:48:28] Do any players have a competitive moat within proposals? It seems to be a fairly simple offering compared to the entire document generation suite. Are any players differentiated?</h3>
+<p><b>DI</b> [00:48:52]: I think it's this workflow that you can automate with the proposals, not proposal itself but the whole workflow. I think better CRM integration, native integrations, integrations with payment tools and being able to automate the doc cycle, full proposal cycle from the creation to sending to tracking to talking to recipient to executing and then to collecting payment, that is something that might be the moat or advantage. I think better integrations, better data and the ease of use, these are the strongest advantages that players can also have.</p>
+<h3>00:49:48] Which of the players discussed so far stands out when it comes to data, integrations and ease of use?</h3>
+<p><b>DI</b> [00:50:03]: I may say PandaDoc, but I might be a bit biased because I used to work with them and I used the product a lot. I know how easy it is to use and how truly great the product is, to be honest. I tried two different vendors as well, Proposify and GetAccept. I think for the proposal use case, they are all good enough, but if you need something extra, as I said, that might be PandaDoc or if you need to sell to enterprise and we need to be able to actually have all the data in one place and be able to communicate quicker within this one place, then GetAccept, the deal rooms they go to.</p>
+<h3>00:51:08] Platforms such as Better Proposals cater heavily to boutique agencies and micro SMBs. Is serving the lower end of the market structurally sustainable for lower-capitalised players? Given the high CAC [customer acquisition cost] at that level, is it unsustainable for Better Proposals to rely strictly on micro SMBs over the medium term?</h3>
+<p><b>DI</b> [00:51:35]: I think the acquisition cost is relatively high, but it gets higher when you start adding on top of the just simple marketing, also the sales cost and onboarding cost and retention cost, etc. That's why the bet is on simplicity, so meaning that they don't need actually to sell it with humans and keeping the product relatively simple, reducing the acquisition cost. They don't need to have a big sales team, virtual selling and keeping their product relatively PLG, product-led growth motion and self-service. It might help them to control these micro SMBs and keeping their, I would say, reasonable acquisition goal.</p>
+<h3>00:52:52] From an M&amp;A perspective, which types of strategic acquirers – whether CRM giants with existing offerings, e-signature leaders or PE funds – are the most logical buyers for mid-scale vendors of proposal and document generation software? What specific growth or revenue thresholds are typically targeted?</h3>
+<p><b>DI</b> [00:53:19]: I think, yes, CRM vendors such as HubSpot, Pipedrive, maybe Zoho, maybe even Salesforce, these are probably the number one potential acquirers. Also, some bigger platforms on the market, such as Docusign, PandaDoc, I don't know, Dropbox Sign, this might be the bigger platform that might acquire such platforms as we discussed. Some private equity as well, but maybe the criteria will be a bit different. In terms of the criteria, they might be looking at obviously some ARR threshold and the growth. I think USD 20m-50m ARR plus at least 30% growth rate on I think this one and also some other metrics that are less important, the churn rate for the NPS itself.</p>
+<p><b>PB</b> [00:54:39]: Based on these criteria and metrics, which of the players discussed might be potential acquisition targets or targeted first by acquirers?</p>
+<p><b>DI</b> [00:54:56]: I think the three we discussed recently, Proposify, GetAccept, PandaDoc might be acquired with one of those players, but I think the smaller players with Better Proposals and Qwilr also might be acquired in this even lesser metrics.</p>
+<h3>00:55:27] Do you expect standalone proposal software players to remain recognisable over the long term, or will they ultimately be absorbed into broader revenue workflows combining CRM data, content generation, CPQ pricing and buyer engagement under one roof?</h3>
+<p><b>DI</b> [00:55:44]: I expect, to be honest, that this category might be shifting towards a workflow inside the revenue platforms because the proposal use case, again, might be also commoditised with some AI gen, etc. That's why you need to have something bigger to offer, something more to offer. That's why I think it might shift towards the workflow platform revenue side.</p>
+<p><b>PB</b> [00:56:22]: What timeline are you looking at for that shift, and what is the pace of change you're seeing? I'm assuming it will primarily happen through these dedicated players getting acquired by CRM players or e-signature players.</p>
+<p><b>DI</b> [00:56:40]: Yes, mostly CRM players, I'm thinking. I'm not sure, but I think right now, everything is changing so fast. The horizon is 3-5 years max.</p>
+<p><b>PB</b> [00:56:57]: Thank you so much. We are up the hour and this is a great place to wrap up the Interview today. Thank you so much for your time and all the insights that you've shared with us today.</p>
+<p><b>DI</b> [00:57:25]: Thank you, Poorvi. Have a good day. Take care.</p>
+<p>Transcription ends at 00:57:31 of the recorded material</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
