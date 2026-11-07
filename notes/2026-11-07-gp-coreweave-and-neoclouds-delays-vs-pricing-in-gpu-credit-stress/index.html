@@ -1,0 +1,313 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.07 | GP | Cloud | CoreWeave and Neoclouds: Delays vs Pricing in GPU Credit Stress</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.07 | GP | Cloud | CoreWeave and Neoclouds: Delays vs Pricing in GPU Credit Stress</h1>
+<p class="orig">原标题：CoreWeave and Neoclouds: Delays vs. Compute Pricing — Which Risk Drives GPU Credit Stress? Fab Economics CTO and Former AWS Capacity Forecaster Opines</p>
+<p class="tags">#neocloud #coreweave #credit</p>
+<p class="meta">GuidePoint · 2026-11-07</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>受访者是Fab Economics的CTO、前AWS容量预测人员，讨论选举后延期和算力定价哪个更威胁GPU信贷。</li>
+<li>专家认为市场对选举导致延期的担忧过度，已在建或已拿到许可的项目、尤其是2028年上半年前的项目相对安全。</li>
+<li>他估计约20%至30%的项目有延至2028年中以后的风险，延期主要发生在更远期规划的项目上。</li>
+<li>电力和地方许可是决定性约束，融资、人工和设备有时可以绕开，没有电或没有本地批准的项目可能无法推进。</li>
+<li>Neocloud比成熟运营商暴露更大，CoreWeave尤其脆弱：债务驱动扩张、租用设施、客户集中，而且在收入开始前要承担GPU和租约成本。</li>
+<li>大客户合同可能允许在宽限期后因延期取消，进一步放大Neocloud风险。</li>
+<li>专家预计GPU租金会保持坚挺，供应受限且需求强劲，明显下跌需要需求先转弱；他把当前信贷压力看作一次有益的出清。</li>
+</ol></section>
+<div class="body">
+<p>Primary:</p>
+<p>ORCL</p>
+<p>CRWV</p>
+<p>Associated:</p>
+<p>AMZN</p>
+<p>AMD</p>
+<p>NBIS</p>
+<p>NVDA</p>
+<p>VRT</p>
+<p>META</p>
+<p>MSFT</p>
+<p>Viewpoint:</p>
+<p>Former Executive</p>
+<p>Moderator: Brian Oh (BO)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Nov 06, 2026</td><td>36 Min Read</td></tr></tbody></table></div>
+<p>Anas Faruqui (AF), Chief Technology Officer - Fab Economics</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The expert, a data center infrastructure consultant and former cloud-capacity forecaster, described a bottom-up model tracking data center equipment, power, construction, permits, and supply-chain constraints. The discussion focused on U.S. AI data center expansion, policy-related delays, GPU pricing and collateral, and the credit exposure of CoreWeave and other NeoCloud providers.</p>
+<p>The expert expects near-term projects to remain largely on schedule, while later projects face greater uncertainty. Power and local permitting were identified as the most difficult constraints to overcome.</p>
+<p>Key Insights</p>
+<p>The expert characterized broad market concerns about election-related delays as excessive: projects under construction or with permits, particularly through the first half of 2028, are comparatively secure. Delays are more likely for projects planned beyond that period. Power and local permitting are the decisive constraints. Financing, labor, and equipment can sometimes be managed around, but projects without power access or local approval may not proceed. NeoCloud providers face greater exposure than established operators because their growth depends on continued investment and timely delivery. CoreWeave is especially vulnerable due to debt-funded expansion, rented facilities, concentrated customers, and the cost of carrying GPUs or leases before revenue begins. The expert expects GPU rental rates to remain firm, supported by constrained supply and robust demand. A meaningful decline would most likely require demand to weaken; substantial supply relief is considered unlikely in the near term. The expert described current credit stress as a useful correction that could discourage speculative projects and improve diligence, while creating short-term pressure for developers and lenders.</p>
+<p>Competitive Landscape</p>
+<p>11/07/2026 at 14:57 PM UTC</p>
+<p>Company or group</p>
+<p>Position and considerations</p>
+<p>CoreWeave and NeoCloud providers</p>
+<p>More exposed to delivery delays, financing constraints, and customer concentration. CoreWeave’s asset-light, debt-funded model increases the cost of delays.</p>
+<p>Hyperscalers and frontier AI labs</p>
+<p>Major customers for NeoCloud capacity. Their contracts may allow them to cancel after a delay grace period, increasing provider risk.</p>
+<p>SpaceX</p>
+<p>The expert viewed its public capacity ambitions as aggressive, estimating a lower achievable level based on current projects, permits, power, and GPU supply.</p>
+<p>NVIDIA and GPU suppliers</p>
+<p>GPU supply remains constrained. NVIDIA’s roles as investor, supplier, and financing backstop may create interconnected exposure if demand weakens.</p>
+<p>Data center developers and local communities</p>
+<p>Developers may absorb fixed-cost overruns on projects already under construction. Local zoning and permitting decisions are key sources of delay.</p>
+<p>Quantitative Insights</p>
+<p>Metric</p>
+<p>Expert’s estimate or assessment</p>
+<p>Projects at risk of delay beyond mid-2028</p>
+<p>Around 20%–30%</p>
+<p>Advanced packaging capacity growth</p>
+<p>About 10%–12% annually through 2027–2028</p>
+<p>U.S. capacity coming online in 2027</p>
+<p>Approximately 23–25 GW; downside floor near 20 GW</p>
+<p>U.S. capacity added in 2026</p>
+<p>Approximately 10–12 GW; around 90% expected on schedule</p>
+<p>Texas capacity affected by approval pause</p>
+<p>About 30 GW; roughly 10–15 GW at higher risk</p>
+<p>CoreWeave capital expenditure</p>
+<p>About $600 million in Q2 and $800 million in Q3</p>
+<p>CoreWeave amortization</p>
+<p>Roughly $4 billion in 2026 and $6 billion in 2027</p>
+<p>CoreWeave customer concentration</p>
+<p>Three largest customers represent about three-quarters of revenue</p>
+<p>Contract delay provisions</p>
+<p>Common grace periods of roughly 2–3 months; some penalties have risen to 2–3 times earlier levels</p>
+<p>GPU collateral life</p>
+<p>Typically 2–3 years; maximum around 4 years</p>
+<p>GPU rental-rate outlook</p>
+<p>Expected to remain at least near current levels; 20%–30% chance of demand softening in 2027</p>
+<p>Power and behind-the-meter solutions</p>
+<p>Power and transformers remain key constraints; behind-the-meter options may help in at most about 20% of cases</p>
+<p>11/07/2026 at 14:57 PM UTC</p>
+<p>BO: Hello everyone, this is Brian, and thanks for joining our call, CoreWeave, NeoCloud's Delay versus Computing Pricing, which risk drives GPU credit stress, Fab Economics CTO, and former AWS Capacity Forecaster, Anas. If you have any questions, please feel free to email me at ask@guidepoint.com. I will work your question into today's call. And as I just said, he is current chief technology officer at Fab Economics, and he worked at AWS as a former leading team engineer in Data Science predicting and managing AWS infra. With that, thanks for joining and just wanted to remind you that please do not speak about security prices, investment holdings, and or recommendations. With that, thank you for being with us today. All right.</p>
+<p>AF: Glad to be here. Thanks for having me.</p>
+<p>BO: Thank you. Yeah. So for today, we have you because you are the data center person at Fab Economics. So we just briefly talk about Fab Economics, what they do as a CTO, and then what exposure do you have to understand the data center scenes?</p>
+<p>AF: So Fab Economics is a boutique consultancy firm. We focus solely on the Fab, ATP, and data center AI build currently. I am leading the data center side of things at Fab Economics. So we have multiple clients who we manage all end-to-end builds across various projects that are happening in US soil, in Asia, and in Europe regions. And that is where our core expertise lies in.</p>
+<p>BO: Okay, so for data center purpose, I mean, you say you are building a model. Can you give us some sense, like how you do that and then what kind of thing you are reading right now?</p>
+<p>AF: Yep. So we basically, all of our models at Fab Economics are bottom-up built. So we build up, let's say for a 1 megawatt or 100 megawatt data center, what exactly the GPUs will be required, what cooling and what power. So we go through each of those states, compute, storage, memory, power, shell, and then granularly move down into the exact equipment and build our model that way from a bottom-up scenario. And then once we have that model up and ready, we can now play with various variables across if there is a... delay in memory or power and all of those things. And then... once we have a basic data center model we also model all of the current capacity that's there, what are the planned capacity and based on that, what are the capacities along the supply chain, right? So the people or the companies who are providing all of those equipment. So once we have that, we are able to completely map up the whole data center supply chain and very accurately and granularly find out what are the pain points or what would be the next bottlenecks. And we have been successfully predicting the next bottlenecks happening right from 2020 starting with actual wafer substrates and then moving on to compute and then GPUs and then now power. So we have been able to predict in advance of where we think the next bottleneck is going to happen.</p>
+<p>BO: Okay, so before getting into CoreWeave, midterm happened and then you saw the result. What's the impact of data center that everyone's now fear right now, every investor, excuse me.</p>
+<p>AF: So anything that's already under construction is kind of safe. There may be some financial penalties coming into play for them, like some of the subsidies may go away and things like that, but not a real delay that could affect them. Everything that's going to happen in 2026 and 2027, maybe mid-2028 is kind of safe. Anything beyond that is expected to have some kind of delay, whether that's like 6 months or more, is still up in the air. On the flip side of it, what I think and what we think at Fab Economics is that there will be a little bit of benefit or longer term benefit to it as well, in the sense that the pure speculative plays will kind of get sorted or filtered out earlier than if this wouldn't have been happening, right, the current scenario? So that's the flip side to it, so there's this benefit to it as well where the actual serious players who have the land and who have the power connections and all of that or the capability to get that from 2028, 2029, to 2030 timeframe, so those will have a slightly lesser backlog to look at once those pure speculative plays get filtered out early.</p>
+<p>11/07/2026 at 14:57 PM UTC</p>
+<p>BO: Okay, so... this NASDAQ reaction fell 5.5% yesterday with the fears on the midterm result, and then data center build-out will be delayed. Is that overreaction, in your opinion? And then can you give us a sense of what you see in your model or which may be side-by-side or anything granularly and tell us what's really happening?</p>
+<p>AF: Yep. It's a reaction, that's what we think, but not a reset of any kind. What we see in our modeling is that as I mentioned, everything up until mid-2028 is kind of safe from any kind of delays. Anything that's already under construction or anything that has the permits in place, there is a very, very minor... maybe a minor... cost penalty on some of the subsidies going away on, let's say, sales tax on electricity, which is already a minor part of it. So, not a lot of financial impact as well. Anything beyond mid-2028 or 2029-30 timeframe, there may be some delays, but roughly about 20% to 30% of it might face delays based on what we see as of now. And then there are obviously ways to mitigate that as well. So, if a project is getting delayed by, let's say, a power connection, then companies will be looking at other solutions on bringing that online. So, not every delay will actually result in the forecasted capacity or the actual GPU chips sitting idle. Those will be mitigated, right, because they are the biggest CapEx investment, and companies will look at ways to bring them up online one way or the other. That could potentially involve bringing up or sunsetting older generations before expected timeline, that could be one of the strategies, and we have seen that happen in the past. Other solutions, like behind-the-meter, even though all those are kind of running into behind-the- meter solutions are also running into permitting issues... like a different set of permitting issues... but they are still running into those. So we will see, there have been some good developments on the nuclear side of things. We have seen initial couple of permits going to a few companies. There is still required more permitting, and that's more of a 2031-2032 timeframe kind of scenario. But as those continue to come in, there will be some benefit on 5 to 7 years timeframe from now of data centers that are planned to come up then.</p>
+<p>BO: Okay, so your point is until 2028 that was planned or are going to be built, they have not much issues. But then beyond 2028, they will do. Then what about all the supplies like chips, GPUs and everything? You think on 2028, they're all still on the way, so there's no issues?</p>
+<p>AF: No issues in the sense that they are still limited. They will continue to be the bottlenecks that are currently there, right? So if we consider like 2026 to be the stable state of that, so that stable state will continue to be present across 2027 and 2028. We don't see much difference happening over there from the current scenario, right? Obviously, it's still bottlenecked, and all of those capacity constraints will continue to happen, even though there may be like a 10% to 12% per year increase in the advanced packaging architectures across 2027, 2028, but that's kind of the limit to it, right? So maybe 10% more output we can see, but not more than that.</p>
+<p>BO: So based on what I hear, it sounds like you think the market reaction is overreacting then, if that's what you're saying.</p>
+<p>AF: Yes. So it's a little bit nuanced in that it is definitely an overreaction, and why I say an overreaction is because it's across the sector. There are obviously firms within who are much more susceptible to liquidity crisis... CoreWeave and NeoCloud... and all those things. So those are much more affected by the delays, and that's where we think the effect of it should have been limited to. But we have seen it's happening across the sector, and that's why we think it's more of an overreaction for now.</p>
+<p>BO: Okay, just one more question before we cover CoreWeave and NeoCloud. So on Texas, which already froze grid approvals and state permits, how much contract capacity is stuck behind that pause then?</p>
+<p>AF: So, this had already happened mid of this year. So right now, the estimate is about 30 gigawatts, but that's mostly across 2028, 2029, and 2030, or beyond that time frame. I would say they already have the permits in place. Out of that 30, maybe about roughly 10 to 15 is at a much higher risk, and about, again, 10 to 15 is what we will expect to continue to be developed.</p>
+<p>11/07/2026 at 14:57 PM UTC</p>
+<p>BO: Okay, let's move to CoreWeave and NeoCloud credit then. CoreWeave, as you know, 5-year CDS reportedly hit about 1195 basis points. What risk is the market pricing, do you think?</p>
+<p>AF: There are a few different levels of risk. One is the obvious one, where the market cap for CoreWeave went below its equity, right? Sorry, the market cap went below its total debt, right? The debt is much higher than the total value of the company, which obviously is concerning and that is where the main risk is coming in from. Then there are other factors to it where CoreWeave is essentially all debt-fueled growth. They are taking loans on the GPUs and contracts and using that as essentially the capital expenses that they have to do, which are increasing quarter to quarter. As we have seen, from Q2 to Q3, it was roughly 600 million in Q2, roughly 800 million in Q3. So those are going up. There is an amortization cost that will happen, about 4 billion-ish in 2026, about 6 billion-ish in 2027. That is the second risk that the market is seeing. And then obviously, it also has a long backlog of commitments, more than 100 billion that it has committed across its planning, to providers of data centers, because it has a very asset-light model, right? It does not own its own data centers, and it is mostly renting. That is where I see the 3 risks that are there. Any delays on data centers coming up will have a very high impact on liquidity for CoreWeave because it is a pure debt-play-focused growth. Anything which would delay it will increase the interest cost that it continues to pay. And because of the asset- light model, it needs to continue to pay the rents on its data centers while not getting the revenue because of the delay. So it is very susceptible to those delay risks.</p>
+<p>BO: Okay, are lenders more worried about the end demand or GPU pricing or delivery delays?</p>
+<p>AF: So currently, it's more of delivery delays, right? GPU pricing is kind of stable. People know it will continue to increase a little bit. For now, demand is very robust right now. So no softening we see or we forecast happening over there. The only main risk that we see over here and we see currently is in delivery delays. So it's all of the market reaction that's happening is kind of focused on how much the deliveries will be delayed by and then what would be the impact on it.</p>
+<p>BO: So if permits stall, do NeoCloud contracts let customers walk away or demand penalties for late deliveries?</p>
+<p>AF: It's a mix of both, right? So there are very specific clauses that we are seeing increasingly where if there is a delay beyond a grace period, grace period is really roughly about 2 to 3 months of delays is a grace period beyond that the customer is kind of free to just walk away from the entire contract, right? And then there are demand, sorry, delay penalties as well and the value of those delay penalties we have also seen an increase in them. Previously, it was roughly about 1 million per megawatt per day kind of a scenario, but it has increased to 2x to 3x of that in some of the latest contracts that we have seen. On the flip side and basically as an after effect of what happened with Oracle's force majeure clause, right? So we are increasingly seeing where grid interconnection and power delays have been specifically called out as not... as not force majeure. So tenants cannot... causes delays caused by that cannot be attributed as force majeure. So it's a combination of all of those things. Some of it works in favor of NeoCloud, some of them don't, but they are increasingly susceptible to delays, delivery delays. And from a hyperscaler perspective or a customer perspective, they are, in most of the contracts, they are free to walk away beyond that grace period of 3 months or 60 days. This is what we have seen in most of the contracts.</p>
+<p>BO: And, you know, with your model, what's the projection gigawatts can be produced in the US for 2027?</p>
+<p>AF: For 2027, what we are seeing would be roughly coming in online is somewhere between 23 to 25 gigawatts of capacity, and the only caveat over there is that there may be a decrease, it might go lower up to 20 gigawatt, but 20 gigawatt is essentially the minimum value that we are seeing for 2027.</p>
+<p>BO: And isn't that too low, given that SpaceX, from the earning call, they can do 13 easily, and even they're shooting for 20, then that's already 80% of your projection?</p>
+<p>11/07/2026 at 14:57 PM UTC</p>
+<p>AF: No, I think SpaceX is an outlier, yes. But they are saying that the 20 target that they give is essentially what they're shooting for, but what they have said is that it's not going to happen, right? It's more of the kind of projection that we have seen from SpaceX and it's something that's more of a clickbait is what we call it, right? And what we expect SpaceX to come up with is somewhere between 8 to 10 gigawatts for 2027, not more than that. I mean, best case scenario is 10 gigawatts.</p>
+<p>BO: Yeah.</p>
+<p>AF: Yeah.</p>
+<p>BO: So you made a good claim. Would you mind giving us some more color on why you believe SpaceX can only do up to 10 gigawatts in your opinion?</p>
+<p>AF: Sure. One of the things is that we map all of the... in 2027, what's the current permitting and data centers which are already under construction, right? And based on the capacities that we are seeing. So anything new that you are going to plan, it's not going to happen in 2027. As we talk about power pauses and all of those things happening, even though you probably be very nimble—and like, so by you, I mean SpaceX may be very nimble to bring up the capacity. One is that the GPU supply, the second is the power supply and the local permitting. So all of those things have to be in place to bring up that capacity. Based on the current in-progress data centers that we are seeing from SpaceX, we do not think this will go beyond 8 to 10 gigawatts.</p>
+<p>BO: Okay, and then what's your projection for... I mean, there's only 2 months left, but by end of 2026, how much can be available incrementally for US?</p>
+<p>AF: For 2026 whole exit, we think it would be roughly 10 to 12 gigawatts added in the whole of 2026. There are not a lot of delays that we have seen happening currently and as we said, a bunch of it is coming in in Q4 so we expect about 90% of that to come online on time.</p>
+<p>BO: Okay, so for, you know, your 2026 projection and your 2027 projection hasn't changed at all after this midterm election at all.</p>
+<p>AF: Yes, yes, exactly.</p>
+<p>BO: Okay, so your claim is, yes, there's immediate fears around, but then actual stuff that you're seeing, there is not much delay going on, as far as you know.</p>
+<p>AF: Yes, exactly. So not much delay is going to happen in 2026, not much delays are going to happen in 2027, even 2028 second half... sorry, first half. Beyond that is where we are going to see delays. And yes.</p>
+<p>BO: Okay. All right. You still there? Yeah. So going back to CoreWeave, you know, one customer was reportedly 36% of CoreWeave Q2 revenue. How much does concentration raise credit risk for them?</p>
+<p>AF: Yes, so I think the 1 customer at 36% and the second and third are at 26% and 10%. Roughly, those top 3 customers represent about three quarters of their revenue, which severely increases the risk because any softening in demand from one is going to have a softening from others as well because, you know, it's all the main hyperscalers and other frontier labs as their main customers. So a severe risk is what we are seeing, and that is one of the main reasons for their swaps increasing to about 1,200 basis point increase roughly for them. There's also friction on the take-or-pay vulnerabilities. So basically, almost all these customers have the take-or-pay contracts where they are expected to pay even if they don't use those capacities, right? Which works in... in case of industry-wide softening in demand, we expect to see that companies will be more inventive about, or if they are going to pay or not is still yet to</p>
+<p>11/07/2026 at 14:57 PM UTC</p>
+<p>be seen, right? So there is some amount of risk, associated risk over there as well. And then obviously, you know, there are risks around the circular financing and all of that, because NVIDIA acts as both the investor in equity and provider of GPU chips and like a backstop provider as well. So that circular financing flow risk is also there because any softening in demand will affect every party involved in that. And so it's all of those things combined with concentrated customer base is increasing the credit risk, and that's why we have seen those 1,200 basis points increase or reaching 1,200 basis points of the swaps.</p>
+<p>BO: Okay. And just to note that every 5 minutes I see the pause and we're not hearing you. So would you mind go to where you have a better connection if you can?</p>
+<p>AF: Oh BO: I don't know your situation, but there's a question. So is NeoCloud credit stress healthy repricing or the start of a crunch? What's your opinion?</p>
+<p>AF: So, I think it's the start of, it's more of a healthy crisis is what I would call right now because this will increase the amount of diligence that's happening, that's going to happen for new contracts in the new cloud sector and this may have an effect on the rate of growth of their new sites that they bring in, specifically around the delays that are out of their control, policy delays, along with funding scarcity. But at the same time, this will be, as I said, more of a blessing in disguise kind of a scenario where a lot of fraud that we see, especially in the second half of 2026, is kind of going to settle, right? And much more focused approaches are going to come into play. Specifically for CoreWeave, we see that because of its asset-light model, it's the most susceptible to delays, and we expect them to have mitigations around those delays in place for the contracts that it's going to execute in the future.</p>
+<p>BO: Okay. And, going back to mid-term related, Senator Heinrich's bill would make data centers fund their own grid upgrades. Who absorbs that cost? NeoCloud, customers, or lenders?</p>
+<p>AF: It will be a combination of all of them, specifically around data centers which are already in construction. It would be the developers who are going to absorb that cost because most of the contracts of building the shell include a fixed cost and so whoever party, which essentially is the developer, is responsible for bringing the power online is going to absorb those costs for data centers which are already 13.6 million and the ones which are in a planning stage. For now, it would be a combination of lenders and the end customers who are going to be expected to absorb that cost. That cost is not going to be a lot, roughly about 5% to 10% of the total cost per megawatt panel construction, depending upon whether it's the latest gen where we are seeing about 40 million per megawatt or the regular, about 18 to 20 megawatts. That's where the percentage would change, but we expect that to have an effect on all three of them.</p>
+<p>BO: Okay, and then here's the debate I love your take on. Is federal action realistic or are states the real risk in the data center space now?</p>
+<p>AF: So I think it's more of the states, right? And more than states, it's more of the local permitting and local zoning, which is the most risk. So state action and there will be the only federal risk that we see is around cost and not delivery delays. And in the current super high demand structure, the cost is not a concern for now. 1% or 2% increase in cost, people are willing to pay that. So that's the only risk that we are seeing from a federal election, at least for the next 2 years. And no corresponding delivery delays. All of the delivery delays are going to come in, which is the most significant risk that we see, are going to come in from the state policy and local policy and more across local zoning plans. Obviously, there are going to be mitigations around that. It's one is things which are set as part of your election campaign and one, when the reality is. So there may be differences on those things, right? Certainly an audit or a study might add 3 to 6 months of time, but it won't necessarily affect the data center from coming up online.</p>
+<p>11/07/2026 at 14:57 PM UTC</p>
+<p>BO: Awesome. Then, what is the bottleneck in the data center space now?</p>
+<p>AF: So the bottleneck continues to be power, right? That's the main thing. And apart from that, the secondary is power equipment, so medium to high voltage transformers. So those 2 things will continue to be the bottleneck for everything up until 2030 is what we are going to see. Behind the meter solutions are going to be helping roughly at max 20% of the cases, not more than that. So power will continue to be the main bottleneck. We also foresee a few more bottlenecks around financing, that we continue to see across 2027 and then across essentially construction and labor around that. So those are the next 2 things, but it will continue to happen in conjunction with the bottlenecks at power.</p>
+<p>BO: Okay, so in 2027, do you think the bottleneck will still rely on power or do you think it will change?</p>
+<p>AF: It will still rely on power. There may be additional bottlenecks around financing and manual or human resources that will add to it, right? How we have seen bottlenecks in GPU and memory which are working in conjunction with power, right? So the financing and the human resource bottlenecks will add to that so it will only exacerbate the situation. Power will be the main bottleneck.</p>
+<p>BO: Okay. And, you know, with this midterm election, if you think about not just data center, but also ecosystem around it, as I said, chips, power, labor and everything. Who is the benefiter at this midterm election versus who will be suffering or have some sacrifice something because of the election result?</p>
+<p>AF: So I think the most risk from these election results will be to new cloud providers because of the fact that, 1, they are 100% AI-based. They have to continue to invest in building the next data center to continue to get that customer base, right? So if any delays are going to happen, they are the most susceptible to risk. There are some risks to finance, so people who are financing, especially around the short-term construction financing, 18 months to 24 months of financing that we see to construct the data center, like the initial phases of that. There are risks around that. Those 2 will be the most affected from these delays, from a 6 months delay if it happens at a data center. The beneficiaries over here will essentially be, you know, if you want to call it, the local communities. From a high-level overview, it's very, very hard to quantify what the effect would be on those specific communities because there are counter forces in play where, you know, what they like, let's say if your community doesn't want a data center to come into their zone or local region and if it just really doesn't come up, that's kind of a win for them but on the flip side, the expected growth or the production increase that was expected because of that is also going to go away so it's kind of a mixed bag for the local communities, right? But if you just look at it from their perspective it may be called a win. Overall this will be beneficial for the AI industry in the longer term where the froth that we continue to see, the speculative backlogs that we are seeing across power, across power equipment, across land, that will settle a lot, right? And kind of also will remove all of the pure speculative plays out of those backlogs. That will have a much more robust backlog pipelines, so it will be helpful in the longer term. It would be painful in the shorter term.</p>
+<p>BO: Understood. Let's move to GPU pricing and collateral. You know, GPU rental prices have reportedly kept rising. Could permitting delays push them even higher?</p>
+<p>AF: Yes, definitely. One of the main reasons that we have seen the GPU price increase has been delays. The second reason is essentially around the increase in cost in bringing up new GPUs. That is also helping increase those rental rates. As we continue to see especially, you know, newer data centers which come up online, either they are delayed or there is a cost increase, that will have an effect on the GPU and rental rates for older generations. They will continue to increase or they will be in service a lot longer. That is, as we have seen, with the A100s, which continue to provide inference or offline data processing. Still, they are 6 to 7 years older generation, still working through. A combination of all of those will continue to increase. The only effect would be or the only dampening effect that we see would be a softening in demand, which we also do not predict happening in 2027, up until 2027. Right. Our forecast is that the</p>
+<p>11/07/2026 at 14:57 PM UTC</p>
+<p>GPU rental rates will increase. There may be a reduction in the percentage increase that is going to happen in 2027, but we are at least going to see the levels that it is currently at.</p>
+<p>BO: Thank you. Then what would cause GPU rental price to reverse? Like how fast could that happen, do you think?</p>
+<p>AF: Sure. So I think there are 2 things. One is from the supply side and then one from the demand side. The highly unlikely scenario would be that there is a very high increase in the availability of the latest-gen architectures, like Rubin, and the bottlenecks that we are seeing on advanced packaging... on the course of packaging for TSMC and Intel... goes away. And the memory bottleneck goes away and then you have availability of newer gen GPUs in greater numbers. So that would be the main factor. However, it's going to be very, very unlikely that it's going to happen. From the demand side, there's a much more likelihood of demand softening based on how 2027 goes. In 2026, we continue to see an increase in the rate of growth continue to increase from Q1 to Q3. However, we saw some amount of softening in demand in the rate of growth. It's still growing. It's still growing in huge percentages. But from Q2 to Q3, we have seen the rate of growth slightly reduce across the industry. Especially, we saw that in Anthropic's latest amended S-1 filing. The most likelihood of that happening across 2027-2028 is a demand softening. Whether that's going to happen or not, we predict about a 20-30% chance of that happening in 2027, not a very likely scenario and even then, maybe a reduction of about 10% in the rate of growth. Not exact reduction in the demand itself. So highly unlikely that those GPU contract prices will go down as BO: Okay, then what is a realistic useful life for GPU used as a loan collateral?</p>
+<p>AF: As a loan collateral, what we have seen is maximum of 4 years, nothing beyond that. In most scenarios, it's 2 to 3 years, right? And one of the things is that the premium that a GPU or the premium pricing that the GPU can offer is roughly about 12 to 18 months before the next gen comes in and causes its GPU rental rates to reduce. Or it can be used for training the frontier models where it's getting utilized 100% for extended periods of time. As we will continue to see a more inference or agentic workload come up online, we will see that continued workload on inference side of things as well, but that's not where we are at currently, or at least like apps. So from a collateral perspective, the life is 3 years, of where about 12 to 18 months in frontier training workloads, and then the next high value inferencing, the next 18 months. From a realistic perspective, it's much more where we have seen the examples of A800. We continue to see that where you go from model training to high value inferencing to inferencing and then to offline data processing. So with each of those steps, roughly about 18 to 24 months in timelines, or roughly about an age of 6 to 7 years. Actually, now there are other factors like power which could essentially cause an earlier deprecation for them, right? If you don't have power for the newer gen GPUs, what you would want to do is deprecate the older ones much faster, even though they might have like useful life left. So that could be the only scenario in which it might get deprecated before that 5 to 6-year timeline. But from a real-life perspective, but from a collateral perspective, it's about 3 years.</p>
+<p>BO: Okay, and now it's time for you to brag about your model. So can you in detail tell us how you build up demand from a bottom-up perspective?</p>
+<p>AF: So there are 3 aspects to it. One is the frontier models. We expect the next version to come up roughly every 6 months from every frontier lab, and an increasing number of data points that it trains on. The first or the major demand that we model is around that. It's essentially... let's say in 2027, OpenAI's model, how much data it would be using... add an iterative increment that we have seen or we have continued to see from the previous gen, and how much time it will take or how many GPUs... that kind of gives you for each of the model training. Every new model has increased the corresponding inference load by 2x to 3x multiple. So, if you are using 100 GPU hours in training the model, you would be using about 200 to 300 GPU hours for inferencing across the next year. Use that as a baseline case, where you have the demand from the training the model and then the inference expected for those frontier models. Those 2 major things that we do across each company, across each hyperscaler, and get the base level of demands. And then there is a long tail of AI startups that we are seeing, which are using these models from these</p>
+<p>11/07/2026 at 14:57 PM UTC</p>
+<p>companies, whether they are closed source models from either Anthropic, OpenAI and hyperscalers or open source models. They have a much shorter duration of demand where you map it for the next 6 to 12 months, whereas for the frontier models, you can easily map with a high confidence for the next 2 to 3 years. With this long tail of smaller companies, the confidence for the next 2 to 3 years is at a lower level, but you can still map it out. Those 3, a combination of all those 3 things, gives us a very high confidence forecast of the demand that we are going to see for the next 2 years and 3 years timeline. That's how we can build it up from a bottom-up fashion. Obviously, there is an addition of the non-AI data center demand to it. The cloud, as we have continued to see from all of these hyperscalers, gets added on top of it. Obviously, we do employ similar bottom-up modeling for each of those scenarios and apply a corresponding increase in the effect of agentic AI coming into place. So as you see more and more agentic AI, you would also see a corresponding increase in the regular cloud usage as well because now a human is limited on how much capacity it can use, but a machine is talking with another machine 24/7 at a much higher bandwidth. A combination of all of those also increases the demand for the regular data center usage. It's again a combination of all of these different segments and then an interplay between them. So you combine all of them to get higher level demand values for 2027, 2028, 2029.</p>
+<p>BO: Okay, you mentioned a few, but I'm going to ask again. So when you build your model, what kind of compute efficiency are you assuming in your demand model, with respect to chips, model, usage styles, and others?</p>
+<p>AF: Yeah, so we have seen increasingly a very high amount of efficiency increase in the tokens, right? From 2025 to 2026, the per GPU token has kind of doubled, 1 data point that we saw from Microsoft, right? Where 2025 to 2026, there was a 90% increase in the per-GPU token that it was able to extract. And we will continue to see that. We have seen that with OpenAI as well, where the next-gen models are about 40% more efficient at the same task, right? And that's 1. And then the second aspect is about, we will continue to see that growth from the software side of about 100% increase in efficiency each year. And from the hardware side, we have seen that the next-gen GPUs are about 2.5x to 4x more performant per watt and per GPU. So that's roughly the parameters that we see. So about a 2x increase every year in software efficiency and then a 2x increase every year in the GPU or per-GPU efficiency for the latest gen. So it's a combination of them that we provide on the software side demand and the hardware side demand and combine them in our models.</p>
+<p>BO: Okay, thank you. And you know, how quickly could Vera Rubin erode the value of Hopper and Blackwell collaterals?</p>
+<p>AF: It is compressed across about 6 months to 18 months, where the value of Blackwell and older generations would go down as you see, as they are starting to come up, the Vera Rubin stacks start to come up, you will see a very little reduction in pricing for the first 3 months, then 3 to 6 months about 10% reduction is what we see and then once 6 months down the line they start to come up and in scale is when we start actually get that reduction in value which would be roughly about 6 months to the next 12 months time frame is roughly about 25% to 30% reduction in the value for those Blackwell and older generations and then from 12 months to 18 months time frame is when they kind of get moved from model training to inference is when you see the actual reduction in 30% to 50% reduction in those values, so it's spread across a 6-month to 18-month time frame with the first 6 months, roughly 10% and then the next 12 months once another 20% added on top of that. So that's the timeline that we have seen with previous generations that we don't expect that timeline to change at all with the Vera Rubin.</p>
+<p>BO: Okay, thank you. Maybe time for 2 or 3 more questions. So here, delays in cash flow timing, like which matters most for credit now? Is it permits? Is it power interconnection? Is it electric equipment or labor? What else?</p>
+<p>AF: I think it's obviously everything, right? The most important, as I've said before, is power and then very closely followed by permitting. So those 2 things, if you have in place, other things can be managed around, right? If you don't have a power connection, if you don't have local permitting, you're kind of dead on arrival scenario, right? It's a</p>
+<p>11/07/2026 at 14:57 PM UTC</p>
+<p>dark side; you can't mitigate around those factors. If you have those in place and if there are issues in getting the GPUs, the labor, or other, like, power equipment or so, there are levels that you can do to mitigate around it. It might add 3 months to 6 months of a delay to your timeline, but if you don't have permitting or power delay, you can't do anything at all. So those power and permitting delays would be the most important thing that we actually map at every plant site. So the first thing that we look for is whether they have a power connection right now and then whether the local permitting, what state it is at and what kind of delays can be expected on that.</p>
+<p>BO: Understood. And you know, if or when a project leaves 6 months, how do cash flows and interest coverage change?</p>
+<p>AF: There is a very high impact of cash flow, especially around the short-term loans or depending upon whether that's loan or equity based. But on the short-term construction loans, they start to go into negative territory very, very quickly because you are expected to continue to pay those rents. You are expected to continue to pay for, we are seeing increasing amount of take-or-pay contracts on electricity side of things as well. And then, when you are... if you have the GPUs already in place, they're sitting in dark and not generating any revenue. So those construction phase level financing can very quickly go into red for any delays beyond 3 months. For a longer, overall, if you look at it from an overall project perspective, yes, there will be an effect on the overall profit margin, but it would be much more limited if you look at it from the timeline of a 5-year timeline. So it's roughly commensurate with the loss of revenue that we are not going to get for those 6 months delayed. However, that just increases your time to get... you essentially get to that 6 months later, but you will eventually get there, right, from a higher level or overall timeline perspective for a data center. The place where it's bottlenecked at currently is at the construction phase, 18 months, 24 months are loans that we are seeing or increasingly we are seeing and that's where the most risk currently lies in.</p>
+<p>BO: Okay, the very last question. When deliveries slip, how do capacity plans get adjusted and who observe that cost?</p>
+<p>AF: It kind of depends on the delivery slip, whether it's happening across the next year or it's going to happen across the next 2 years or 3 years. If it's within the year, the customer is going to essentially be the one absorbing those costs. I mean, they can recover some of it from delivery delays, penalties, and all of that, but there is an opportunity lost cost over there as well. Right? So how you would mitigate is, let's say, you have a model training run planned for 2027 start and it gets delayed by 3 months, you would kind of try to then break it up into smaller chunks and divide it across the rest of the capacity. That would increase the amount of GPU you would need overall for that same run if it would have been co-located in a single data center. So about 10% to 20% increase in cost or more GPUs that you would need. However, the main cost over here would be on the opportunity lost or mitigating that from the customer perspective. If the delays are happening like 2 years out or 3 years out, that's where the data center, a new cloud, or a data center developer will be the one who would absorb the cost of those delays and if the delays are happening at the construction state, then it would be like the contractor who is responsible for developing that because most of them, the contractor... we are seeing that kind of fixed cost contracts over there, so they would be the ones that are absorbing the cost. But those are strictly around shortages on labor and construction equipment, and we don't see a lot of delays happening over there. Obviously, a month or 2 months delay is kind of expected across any construction project, right, and mitigation around that. So, we continue to see that, but those are minor delays.</p>
+<p>BO: All righty. Well, thank you very much for your time and love to have your updates probably next month and then, you know, hear anything changes from what you told us today. Thank you very much. Have a good one. Thanks. Bye.</p>
+<p>AF: Yes. Bye. Bye.</p>
+<p>11/07/2026 at 14:57 PM UTC</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>11/07/2026 at 14:57 PM UTC</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
