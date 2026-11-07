@@ -1,0 +1,382 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.06 | TB | Software | Digital.ai DevSecOps Platform Primer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.06 | TB | Software | Digital.ai DevSecOps Platform Primer</h1>
+<p class="orig">原标题：Digital.ai</p>
+<p class="tags">#software #security</p>
+<p class="meta">Third Bridge · 2026-11-06</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>Digital.ai由VersionOne、XebiaLabs、Arxan、Experitest和Numerify五家公司在六个月内并购整合而成，提供覆盖敏捷规划、发布部署、应用安全、测试和分析的端到端软件生命周期平台。</li>
+<li>客户主要是拥有100-1000名以上开发者的大型企业，专家估计金融服务约占收入31%-40%、政府约21%-30%、游戏约0-10%。</li>
+<li>收入地区分布上，北美约占41%-50%、EMEA约31%-40%、亚太约0-10%。</li>
+<li>业务结构中Release and Deploy约占31%-40%、Agility约21%-30%、应用安全和测试各约11%-20%、Intelligence约0-10%，均为年度计费的经常性收入。</li>
+<li>专家估计公司年收入约1亿-2亿美元、增速约0%，NRR约90%-100%，增长主要依靠向存量客户提价，流失率与行业11%-15%的水平相当。</li>
+<li>专家认为DevSecOps市场过去三年年增约11%-20%，未来三年有望超过20%，AI编码代理产生更多代码将拉动测试、安全和部署需求。</li>
+<li>其应用加固产品满足FIPS 140-3等新监管要求，Release and Deploy的审计与链路追溯能力在AI代理时代更具价值。</li>
+<li>主要风险在于产品投入不足，以及AI大幅降低大型机迁移难度后客户粘性下降，若Anthropic等成为一站式工具可能颠覆传统软件厂商。</li>
+<li>专家认为公司应寻求被收购，潜在买家包括Atlassian、微软、GitLab甚至IBM，核心吸引力在于其大型企业客户基础。</li>
+</ol></section>
+<div class="body">
+<p>Primer • 29 Oct 2026</p>
+<p>Companies: MSFT US, GTLB US</p>
+<p><b>Expert</b> Former Senior Executive in Sales &amp; Marketing</p>
+<p><b>Esha Patel (Analyst)</b> — Third Bridge Sector Analyst</p>
+<h3>Agenda</h3>
+<ul><li>Over 10 years' experience in the software space</li><li>Over five years' experience at Digital.ai (left within the last three years)</li></ul>
+<h3>Introduction</h3>
+<p><b>Analyst</b>: Please could you just state I agree or I disagree to the following statement: You understand the definition of material non-public information and agree not to disclose any such information, or any other information which is confidential, during the Primer Interview today.</p>
+<p><b>Expert</b>: Agree.</p>
+<h3>Questions</h3>
+<h3>Could you describe what Digital.ai does?</h3>
+<p><b>Expert</b>: It sells enterprise software that helps organisations plan, develop, coordinate releases, develop applications and test. It basically does the end-to-end software STLC life cycle. Everything from Enterprise Agile Planning to DevOps, to how do you test it, to how do you secure it and then how do you see the analytics over the top.</p>
+<p><b>Analyst</b>: Is the software proprietary to the company?</p>
+<p><b>Expert</b>: Yes.</p>
+<h3>What is the value proposition of Digital.ai's products and services?</h3>
+<p><b>Expert</b>: The way that the company came together, the value proposition, was a lot of small- to medium-sized businesses, when they, for example, are getting started and you are an SMB and you basically need something for finance, you would go to QuickBooks. When you become an enterprise, you would go buy a NetSuite-type solution. The same when you were a start-up, maybe you would buy a spreadsheet or you would use a spreadsheet for your CRM, then you buy Salesforce. The value proposition of Digital.ai was as these large enterprises were building, delivering, securing software, they were still using a lot of team-level tools. What Digital.ai was or is, is an enterprise end-to-end platform so that these enterprises can build, deliver, secure, test all of their software stack with one platform.</p>
+<h3>What is the full range of industries and business sizes that could use Digital.ai's platform?</h3>
+<p><b>Expert</b>: They really thrive in the most complicated enterprises. It's really meant for large enterprises, the most complicated. Think of banking, think of financial services, think of government, think of wherever there's a lot of regulation and really complicated software stacks. If you are a new company that's just basically on a modern cloud stack, Digital.ai doesn't have anything to offer for you. Really, they are looking for large banks that have everything from the mainframe all the way to the latest Kubernetes stack.</p>
+<p><b>Analyst</b>: Could the company work with small-, medium- and large-sized companies?</p>
+<p><b>Expert</b>: No. A small business or a medium business wouldn't use this technology.</p>
+<h3>Could you profile Digital.ai's typical target customers within the discussed range of industries and business sizes?</h3>
+<p><b>Expert</b>: A lot of the businesses, again, are going to be larger. They are going to be enterprises.They have one of the greatest customer bases you could ever imagine. They have got all of the big names, all of the big logos. I think that GE is on the website. I think they have got case studies with FedEx. They have got case studies with, like, the VA (ph), is a public case study. Those are the ones that come to top of mind.</p>
+<p><b>Analyst</b>: What might be the top three industries, as per your personal estimation, from which the company get most of its revenue?</p>
+<p><b>Expert</b>: It would be financial services. Think banks. Insurance is another one. Then, gaming is a growing space.</p>
+<p><b>Analyst</b>: What percentage of the company's revenue do you estimate to be coming from the financial services industry?</p>
+<p><b>Expert</b>: This is a guess, again, probably more than 30%, maybe 31-40%.</p>
+<p><b>Analyst</b>: What percentage of the company's revenue would you estimate is coming from gaming?</p>
+<p><b>Expert</b>: Probably 0-10%.</p>
+<p><b>Analyst</b>: How might the remaining 51-60% be split up across the industries the company caters to?</p>
+<p><b>Expert</b>: Like, GE, again, is a public case study that they had. It's large enterprises that are financial services, services companies or government. Government is probably 21-30% as well.</p>
+<p><b>Analyst</b>: What is the company's ideal customer size? How would you quantify a large company using any relevant parameters?</p>
+<p><b>Expert</b>: I think you need to have hundreds, if not thousands, of software developers. That leads to larger companies. Really, it's hard to think of Digital.ai as one company because, again, it's built up of these five acquisitions, which were VersionOne, Xebia, Arxan, Experitest, Numerify. You really have to think of them slightly different. Like, you have to think of Arxan, which is application security or code obfuscation. That can be sold to smaller companies. That can be sold to start-ups that are just creating a mobile application. They can't risk the app being reverse-engineered or hacked, so they can buy that solution, but no start-up would ever buy Agility or Release and Deploy. They would go buy a new modern cloud-based solution. It just depends. Agility or Release and Deploy, you need hundreds of software developers. Arxan Application Security, you need fewer. Testing, you need to, basically, have a testing lab. You need to think of the testing solution as a managed service of, like, if you could think about it as cell phones that are plugged into a server rack and hundreds of them plugged in with USB cords to test real devices, that's that business. You need a large dev shop.</p>
+<p><b>Analyst</b>: What might be the number of software developers that an ideal customer has?</p>
+<p><b>Expert</b>: More than 100.</p>
+<p><b>Analyst</b>: Might 100-1,000 be a fair range?</p>
+<p><b>Expert</b>: Yes. 100-1,000.</p>
+<h3>Are there any customer names that you can share that are on the company's website or in the public domain?</h3>
+<p><b>Expert</b>: Yes. I think I shared those, but I think GE.</p>
+<h3>What are the key regions that the company derives revenue from?</h3>
+<p><b>Expert</b>: They split the revenue up by three regions. It's EMEA, it's Americas and it's Asia-Pac. Because XebiaLabs, which was the DevOps acquisition, they were a Netherlands-based company, they have a big presence in Europe. The revenue split is probably close to 41-50%/41-50%, America and then LATAM… excuse me, Asia-Pac and EMEA. Sorry. I meant to say EMEA instead of LATAM. LATAM is still a big part. LATAM is done through the channel.</p>
+<h3>How much revenue do you estimate is coming from each region, starting with the US?</h3>
+<p><b>Expert</b>: It's probably 41-50%.</p>
+<p><b>Analyst</b>: What about Canada?</p>
+<p><b>Expert</b>: We grouped all of that into North America. We never split out. [So North America, 41-50%].</p>
+<p><b>Analyst</b>: What about Asia?</p>
+<p><b>Expert</b>: Probably 0-10%.</p>
+<p><b>Analyst</b>: What about Australia and New Zealand?</p>
+<p><b>Expert</b>: Not much. 0-10%.</p>
+<p><b>Analyst</b>: What about EMEA?</p>
+<p><b>Expert</b>: EMEA is probably, it's the rest of it, so 31-40%.</p>
+<p><b>Analyst</b>: What are the top three cities or states where Digital.ai has the most presence within North America, in your opinion?</p>
+<p><b>Expert</b>: It's really think of where the Fortune 500s are headquartered. It's going to be New York, Atlanta, San Francisco, Texas.</p>
+<h3>What are Digital.ai's core revenue-generating product or service segments?</h3>
+<p><b>Expert</b>: Agility is their Enterprise Agile Planning solution. Then, Release and Deploy is the DevOps. Then, Application Security is the Arxan. Then, they have Testing. Then, they have Intelligence.</p>
+<h3>What is the relative size of each segment as part of the company's total revenue, starting with Agility?</h3>
+<p><b>Expert</b>: 21-30%. Release and Deploy is 31-40%. Application Security, 11-20%. Testing is on the smaller side, so [11-20%]. [Intelligence], then, very little, [0-10%].</p>
+<h3>What is the typical revenue model of each segment? Is it transactional, reoccurring or recurring?</h3>
+<p><b>Expert</b>: Release and Deploy is reoccurring. [Agility], reoccurring. [Application Security], reoccurring. It's all reoccurring. It's all SaaS.</p>
+<p><b>Analyst</b>: Might there be a minimum contract duration?</p>
+<p><b>Expert</b>: Yes. Nothing is less than a year.</p>
+<p><b>Analyst</b>: How often might the customers be billed? Is it monthly, quarterly or annually?</p>
+<p><b>Expert</b>: It's all annual.</p>
+<p><b>Analyst</b>: What factors might the payments be based on?</p>
+<p><b>Expert</b>: Everything is net 30. They really didn't stray away from payment terms. It was all very standard payment terms.</p>
+<p><b>Analyst</b>: If a customer has a five-year contract, would they be paying the same amount every single year or would it be dependent on factors such as consumption, usage, etc?</p>
+<p><b>Expert</b>: If you are a five-year customer, usually, you don't have the same price every single year. You would do incremental every single year. You would do like USD 100 year one, USD 110 year two, USD 120 year three and it would go up like that. Then, based on the number of seats that you would purchase, the goal was always to go in and upsell and break open those long-term contracts and sell them more.</p>
+<p><b>Analyst</b>: Might the price be billed into the contract from the beginning?</p>
+<p><b>Expert</b>: Correct.</p>
+<p><b>Analyst</b>: Would you say the revenue model is recurring instead of reoccurring?</p>
+<p><b>Expert</b>: Yes.</p>
+<p><b>Analyst</b>: Might there be a minimum number of seats?</p>
+<p><b>Expert</b>: There are minimum number of seats. Release and Deploy, I don't remember the exact number, but it was maybe like 50 number of users. You had to have more than 50. Agility was probably very similar. You had to have at least 50. Application Security, no, because you would pay per application and then Testing was sold per device.</p>
+<h3>Could you provide a use case for each core segment? How are the products or services used by the customer? Could you describe the end-to-end customer journey, starting with Release and Deploy?</h3>
+<p><b>Expert</b>: Release and Deploy, the easiest way to think about it is just like workflow automation, but for very, very technical release processes for very complicated and we always called it software archaeology. It's basically a whole lot of old systems. How do you get them all to work together and to coordinate to release the software? The value is really less manual coordination, fewer deployment errors and then really the auditability of that whole entire process because, again, selling to a lot of these large enterprises, they needed to produce audit reports frequently and this was the tool that would give them that audit.</p>
+<p><b>Analyst</b>: Could you provide a use case for Agility?</p>
+<p><b>Expert</b>: Really, Agility is how you plan the software that you are going to build. How do you coordinate priorities, your capacity, the dependencies across different departments and teams. The real value there is better portfolio decisions, predictable execution. It's all about building and being able to predict what you are building.</p>
+<p><b>Analyst</b>: Could you outline one specific example of a customer using Agility for something?</p>
+<p><b>Expert</b>: If you are going to build a new banking application and you are Bank of America, you might have multiple different teams that are planning the different features that need to be built. You are breaking that vision down into epics, into sprints and you are breaking the work apart and divvying out all of the different work. The engineers are working on the different stories and then that will roll into the final product.</p>
+<p><b>Analyst</b>: Could you provide a use case for Application Security?</p>
+<p><b>Expert</b>: This is basically if you have a mobile application or a web application and you want to protect it from reverse engineering and transaction and basically, cloning your apps or taking your code and running it on a different device. Application, this would be the hardening of the device to make sure that the code was obfuscated so that people, even if they did break into the application, they couldn't understand actually what was happening and it would stop people from reverse engineering those apps or websites.</p>
+<p><b>Analyst</b>: Could you provide a use case for Testing?</p>
+<p><b>Expert</b>: This is all about quality engineering for mobile teams and it's running automated checks across real devices, was the real bread and butter. That's where we differentiated. Again, if you were Bank of America and you needed to release a new update to your app, you needed to make sure that that update works for all of the different mobile devices that potential customers could be using. You might buy 20-100 different devices and it might be devices that are 10 years old, it might be devices that are five years old or it could be the most modern devices and we would run automated testing on those devices.</p>
+<p><b>Analyst</b>: Could you provide a use case for Intelligence?</p>
+<p><b>Expert</b>: This was basically seeing across the whole entire software development life cycle. How do you measure what's happening from planning to release and deploy to security to testing? How do you get visibility across the tool stack?</p>
+<p><b>Analyst</b>: How often might customers be bundling all the segments together?</p>
+<p><b>Expert</b>: Very rarely.</p>
+<p><b>Analyst</b>: Could you describe the integrations offered with Release and Deploy and Agility? What tools do they integrate with?</p>
+<p><b>Expert</b>: The Release and Deploy, that is public. It's on their website.It integrates with everything. Agility also has a ton of integrations. It integrates with all of the major tools.</p>
+<p><b>Analyst</b>: Could you outline 1-2 most common integrations?</p>
+<p><b>Expert</b>: Release and Deploy would be GitHub, to be able to pull the code from GitHub. For example, SonarQube, you want to go test it. That would be another integration. Basically, anything that you want to do through that release process, anywhere that the code was or things that you needed to do to the code during that release process, it would integrate with.</p>
+<h3>Which of Digital.ai's five segments do you anticipate being the fastest growing and potentially driving the largest share of revenue in future?</h3>
+<p><b>Expert</b>: I think that there's the most opportunity in Application Security and Release and Deploy, but both need work done to them.</p>
+<p><b>Analyst</b>: What might be your rationale behind highlighting the two segments?</p>
+<p><b>Expert</b>: The CAGR of the market is growing relatively quickly. A lot of companies are experiencing this pain point of AI being able to reverse engineer applications much, much quicker. I think that there's a ton of opportunity there. Release and Deploy is, the way that you could think of that is the modern day, you would call it a harness. You would call it something that you would go in. It integrates with everything that you are working with and then it orchestrates that process. I think that this was a harness before the AI term of harness. I don't know how much AI they have put into it now. If you were able to add more AI to that orchestration process, there's a tonne of companies that aren't going to be moving off the mainframe anytime soon.</p>
+<h3>What do you estimate Digital.ai's NRR [net revenue retention] rate to be?</h3>
+<p><b>Expert</b>: 90-100%.</p>
+<h3>What do you think are the key drivers of the company's NRR rate?</h3>
+<p><b>Expert</b>: Price increase. If you are driving growth or driving NRR, net dollar retention, so you are thinking about that as how much did you start with and then how much did you lose and how much did you gain on top of that. While churn might be a problem, a lot of these large enterprises are stuck with these solutions. It would just take them years to be able to pull these out, so you can make up for the churn by large price increases with the current customers.</p>
+<h3>Could you specify the industry that best describes Digital.ai's core operations?</h3>
+<p><b>Expert</b>: Software development.</p>
+<p><b>Analyst</b>: Could you narrow it down to maybe application life cycle management or DevSecOps?</p>
+<p><b>Expert</b>: Yes. DevSecOps is probably the closest.</p>
+<h3>What has been the AAGR of the DevSecOps industry over the past three years?</h3>
+<p><b>Expert</b>: DevSecOps is probably 11-20%.</p>
+<h3>What do you think have been the 1-2 key drivers of market growth over the past three years?</h3>
+<p><b>Expert</b>: It's certainly AI. It's AI being able to write more code, being able to develop more code, creates a lot of DevSecOps problems because it's not about how much code you write. It's about how quickly that code can get into production, provide value to clients. If you think about where Digital.ai is, they are in the infrastructure part of how do you get code from one of these coding agents, all the way through to deploying it into production. That's going to increase the DevOps needs. It's going to increase the testing needs. It's going to increase the security needs. It's going to increase all of the things that they do. It's going to increase the need for that.</p>
+<h3>What do you think the market's AAGR will be over the next three years?</h3>
+<p><b>Expert</b>: I think it's probably greater than 20%.</p>
+<h3>What do you think will be the 1-2 key drivers of future market growth?</h3>
+<p><b>Expert</b>: Again, I think it's AI. There's more code that's being written, which is going to require all of that code to be tested, secured, deployed and that is the DevSecOps space.</p>
+<p><b>Analyst</b>: What do you think is the driver behind more code needing to be written or maybe a driver behind AI being more readily adopted over the next three years?</p>
+<p><b>Expert</b>: I think it's Anthropic and OpenAI and everything else, Grok. All of these coding agents are becoming so good at writing the code and that's fantastic. Still, if you can write 100,000 lines of code in a day, that doesn't mean that that's good code and it doesn't mean that it should be pushed into production. Somebody has still got to go through the process of making sure that it's providing the outcome that you want compliance.</p>
+<h3>What would you estimate the adoption rate to be for DevSecOps software solution across the addressable market?</h3>
+<p><b>Expert</b>: 90-100%. You have to have something today.</p>
+<h3>To what degree do you think the industry is correlated to economic cyclicality? Is it a counter-cyclical, very cyclical, somewhat cyclical, somewhat resilient or resilient market?</h3>
+<p><b>Expert</b>: It's not. You have to have this.</p>
+<p><b>Analyst</b>: Might it be a resilient market?</p>
+<p><b>Expert</b>: Resilient. Yes.</p>
+<p><b>Analyst</b>: What are the reasons for it being resilient?</p>
+<p><b>Expert</b>: Every company today, whether you are a car dealership or whether you are a bank or whether you are anything, you are a software company. Software is a part of your product that you are offering. While, yes, a lot of industries could be hit by a recession, their core offering is still software. They are going to need the tools to keep their core offering running whether they are in a recession or not.</p>
+<h3>Based on public information, what impactful technological evolutions or innovations should we anticipate in the industry over the next 3-5 years?</h3>
+<p><b>Expert</b>: This goes back to, again, AI and how disrupted this market gets, it's going to change. I don't think anybody knows or else they would be building the next company to deliver on this. If you think of what Anthropic has publicly said, they are obviously the best at coding agents, but they are clearly going to get into the testing space. They are clearly going to get into the DevOps space because those are the bottlenecks of when you create more code. Now, the question will be, are they just thinking about how they do this moving forward, meaning the more modern stack and they don't look into the past. I think that that's where Digital.ai is set up uniquely because it is a lot of legacy old tech that these large enterprises, should they move off, Digital.ai would be in trouble. If you can look at history, these companies have been on this stuff for 20-plus years and they haven't moved off of it today.</p>
+<h3>Are there any downside risks that might materially impact market growth over the next three years?</h3>
+<p><b>Expert</b>: Yes. I think that, again, if Anthropic becomes the one tool for everything, which I think is their stated mission, then that could certainly disrupt a lot of these traditional software vendors today.</p>
+<p><b>Analyst</b>: Might there be any type of regulation changes that could be a disruption for the industry?</p>
+<p><b>Expert</b>: Again, you have to break it down by solution. You can't, like, lump Digital.ai into one. There is an opportunity for application security. There are a bunch of new regulations. For example, FIPS 140-3 is a new regulation that requires folks in the federal government and medical device areas to have a certain level of protection. Their application hardening solution is the only FIPS 130-3 certified solution to do that. That puts them in a good position there. I think that chain of custody and auditability will become more of a trend in the future as more and more agents do more work and that's where their Release and Deploy solution has a lot of value because it already does that.</p>
+<h3>How fragmented do you consider the DevSecOps industry to be? Would you say it's a monopoly? Does it have 2-5 strong players? Is it fragmented or highly fragmented?</h3>
+<p><b>Expert</b>: You can't look at it as one. You have to look at it as all of the acquisitions. Enterprise Agile Planning, it's not fragmented. Atlassian, Jira, like in Planview, Atlassian owns Jira. There are two players there. Release and deploy, slightly, not really. There's Harness, GitLab and Microsoft are basically the big ones. Application hardening, there's probably three. Guardsquare and Appdome. Device testing and testing is an incredibly fragmented market. There are so many different testing companies.</p>
+<p><b>Analyst</b>: Would you say that the overall DevSecOps industry is fragmented?</p>
+<p><b>Expert</b>: I would say that it's not.</p>
+<p><b>Analyst</b>: Would you say there are 2-5 strong players?</p>
+<p><b>Expert</b>: Yes.</p>
+<h3>Who are Digital.ai's top three competitors that are similar to the company based on revenue? As the company operates in five segments, could you name one each for three of the main segments?</h3>
+<p><b>Expert</b>: The top three competitors to Digital.ai are Atlassian, Harness and Guardsquare.</p>
+<h3>What are the market shares for Digital.ai and its competitors? Alternatively, could you rank the players against each other?</h3>
+<p><b>Expert</b>: Atlassian is number one. [Second], Harness. [Third], Guardsquare.</p>
+<p><b>Analyst</b>: Might Digital.ai be number four?</p>
+<p><b>Expert</b>: It's so hard. Logically, this doesn't really make sense to me because Atlassian is enterprise agile planning. Harness is release and deploy. GuardSquare is application protection. There is no company that you would say, like, "Digital.ai as a whole, as a conglomerate, competes against this one company" because it's an aggregate of multiple companies.</p>
+<p><b>Analyst</b>: Would you just say Digital.ai is the least big of these four?</p>
+<p><b>Expert</b>: It's bigger than Guardsquare.</p>
+<p><b>Analyst</b>: Would you sway the ranks?</p>
+<p><b>Expert</b>: This doesn't make sense, but if this is the framework that you want to put it in, if you are thinking about a holistic, then the three competitors I would [say] are GitLab, Harness and Microsoft. I think that would be the way if I was thinking holistically, I would [say] GitLab, Harness and Microsoft. Obviously, Microsoft is number one. GitLab is probably two. Digital.ai is probably three and then Harness is four.</p>
+<h3>What were Digital.ai and Harness' revenue for the last year in USD 100m ranges? GitLab and Microsoft are publicly listed companies.</h3>
+<p><b>Expert</b>: Harness is, I think they just had a press release. I think they are USD 100m-200m now. [Digital.ai] is USD 100m-200m.</p>
+<h3>What were Digital.ai and Harness' revenue growth rates for the last year, in your opinion?</h3>
+<p><b>Expert</b>: I would say Digital.ai is 0% and Harness is probably greater than 20%, probably.</p>
+<h3>In your opinion, what have been Digital.ai, Harness, GitLab and Microsoft's growth drivers for the last year? Has Digital.ai's growth been organic, acquisition-based or mixed?</h3>
+<p><b>Expert</b>: Organic. I don't know. Microsoft is so big, probably mixed. GitLab, mixed. They bought some. Then, Harness is mixed as well.</p>
+<h3>In your opinion, what is the average EBITDA margin for the players you mentioned?</h3>
+<p><b>Expert</b>: They are so different. It's hard to loop them all into the same, but let's call it 31-40%.</p>
+<h3>Would you say the players are above, in line with or below the 31-40% industry average?</h3>
+<p><b>Expert</b>: [Digital.ai] are probably on average, like aligned with industry. [Microsoft], probably above industry. [GitLab], probably above. [Harness], probably, below.</p>
+<h3>How do you think the players differentiate themselves, starting with Digital.ai?</h3>
+<p><b>Expert</b>: Digital.ai is trying to do the end-to-end solution, so being the one-stop shop for their software development life cycle for these large enterprises. Microsoft does everything. GitLab is really the DevOps side of things and then Harness is the DevOps side of things. GitLab is getting into more security.</p>
+<p><b>Analyst</b>: Might the four companies have the same target customers?</p>
+<p><b>Expert</b>: Yes.</p>
+<p><b>Analyst</b>: Might the four companies be operating in the same geographies?</p>
+<p><b>Expert</b>: Yes.</p>
+<p><b>Analyst</b>: Might there be anything different about their approach or pricing model?</p>
+<p><b>Expert</b>: Digital.ai would be looking for the larger enterprises, like, just fishing for the larger legacy companies. Harness is really looking for the newer modern companies that are on, basically, the modern cloud stack. Microsoft does everything. GitLab, they go after everyone.</p>
+<p><b>Analyst</b>: Could you rank the four companies according to who has the best price value, in your opinion?</p>
+<p><b>Expert</b>: It's just so wildly different. Let's just go, Microsoft one because they just give everything away in a bundle. They have got the best. Probably GitLab two, Digital.ai three, Harness four.</p>
+<h3>What do you think are customers' top three KPC [key purchasing criteria]? How do you think the KPC rank by importance?</h3>
+<p><b>Expert</b>: I think it's will it work in our environment, is number one. Compatibility with their current process and environment. Can it solve the problem? Then, the total cost. Like, what's the total cost of ownership?</p>
+<h3>How important do you think price is to customers in the market?</h3>
+<p><b>Expert</b>: When purchasing a new solution, it's important. When renewing a solution, they are just comparing it to the work to migrate to another solution, it's less important. Price is important.</p>
+<p><b>Analyst</b>: Would you say it's somewhat commoditised?</p>
+<p><b>Expert</b>: Yes.</p>
+<h3>What is the industry average annual churn rate for DevSecOps software solutions?</h3>
+<p><b>Expert</b>: Probably 11-15%.</p>
+<h3>How do you think Digital.ai's churn rate compares to the 11-15% industry average?</h3>
+<p><b>Expert</b>: Probably in line.</p>
+<h3>What do you think has been the key driver of Digital.ai's historical growth?</h3>
+<p><b>Expert</b>: Price increase.</p>
+<p><b>Analyst</b>: Could you elaborate on price increase?</p>
+<p><b>Expert</b>: Yes. Going back to current customers and increasing their price.</p>
+<p><b>Analyst</b>: Have there been any type of strategies used by the company in order to acquire customers?</p>
+<p><b>Expert</b>: I think the concept of buying the five companies and sticking them together to get operational efficiency to run the business makes sense. When you are selling these five solutions, they are all different buyers. The premise of cross-sell and upsell is harder to execute against because a person who is running a testing team, while they might know the DevOps person, they are not influencing the DevOps tool stack that they are using. I think the growth driver here is, really, this is infrastructure software at large enterprises that's very, very sticky. You can charge them because they don't want to migrate to a different solution.</p>
+<h3>How fast do you think Digital.ai could grow over the next three years?</h3>
+<p><b>Expert</b>: It depends how much you are going to invest and what you are going to do. Is this like I think if you keep it the exact same and don't change anything.</p>
+<p><b>Analyst</b>: What's the realistic scenario going to look like?</p>
+<p><b>Expert</b>: Probably, if they don't change anything, then it would probably be less than 0%.</p>
+<p><b>Analyst</b>: What might be the reason for the less than 0% growth?</p>
+<p><b>Expert</b>: They need to make changes to stay competitive in the market.</p>
+<p><b>Analyst</b>: How quickly do you think the company could grow over the next three years if it makes those changes?</p>
+<p><b>Expert</b>: The market is growing well over 20%.</p>
+<p><b>Analyst</b>: Would you say greater than 20% for the company?</p>
+<p><b>Expert</b>: Yes.</p>
+<h3>What could be some of the most interesting ways to grow Digital.ai, in your opinion? How would you look at improving its organic growth if you were running the company?</h3>
+<p><b>Expert</b>: I think, one, the DevOps solution is super interesting because it integrates with so many solutions. It is the harness for this release and deploy. I think that that's a very interesting space. If you can add AI into that, every enterprise is going to be trying to figure out how they increase their deployment frequency. That's interesting. The security side of things, I think, is, again, very, very interesting. I think if you can partner with big companies that are helping companies create applications, so think like Lovable or Replit or like there's a lot of mobile application companies that are very similar. If you could partner with them to provide app hardening as upsells, I think that's a great opportunity to grow. Then, testing is going to become, testing is the bottleneck. I think if you see just the testing market right now, there's a lot of new vendors and a lot of new players. How do you stay modern in that?</p>
+<h3>What would you do to improve the company's margins?</h3>
+<p><b>Expert</b>: I think every penny has been squeezed.</p>
+<p><b>Analyst</b>: What would you do to improve the company's operational efficiency?</p>
+<p><b>Expert</b>: I don't think that there's more operational efficiency to be gained.</p>
+<p><b>Analyst</b>: Why do you think so?</p>
+<p><b>Expert</b>: We squeezed every cost savings and every dollar out of every department, every person, every team, every tool, every vendor, everything.</p>
+<h3>Based on publicly announced acquisitions, how would you describe Digital.ai's M&amp;A? Has it been strategic or opportunistic?</h3>
+<p><b>Expert</b>: There's been no acquisitions since the original acquisitions.</p>
+<p><b>Analyst</b>: How would you describe the original acquisitions?</p>
+<p><b>Expert</b>: All five of these acquisitions were done within six months. They all happened at the same.</p>
+<p><b>Analyst</b>: Would you call the acquisitions strategic or opportunistic?</p>
+<p><b>Expert</b>: They were all strategic because the premise of the company. The premise of the company was building this end-to-end solution for the STLC. They went out and picked on the Gartner Magic Quadrant, the company that was at the top right or leading that industry. They then bought those companies and put them all together.</p>
+<h3>In your opinion, could it make sense for Digital.ai to acquire, merge with or be acquired by other players within or outside the space?</h3>
+<p><b>Expert</b>: It has to.</p>
+<p><b>Analyst</b>: Which one of the three scenarios mentioned would you be consider if you were heading the company?</p>
+<p><b>Expert</b>: I would be acquired.</p>
+<p><b>Analyst</b>: Could you name a company that could benefit from acquiring Digital.ai?</p>
+<p><b>Expert</b>: Yes. If you were to break it apart, then, again, I would go Atlassian. I would go Microsoft. I would go GitLab. I think that those are the ones that could make the most bang with the current install base. Those would be the big ones. Maybe like an IBM even.</p>
+<p><b>Analyst</b>: What might be the rationale behind wanting to acquire Digital.ai specifically?</p>
+<p><b>Expert</b>: The install base, the customer base, the logos that they have.</p>
+<h3>What would you say are the 1-2 biggest risks faced by Digital.ai specifically?</h3>
+<p><b>Expert</b>: Investing in the products, investing in the solutions. Everything in this day and age is moving so fast that if you are not on the bleeding edge, then somebody is going to come disrupt you.</p>
+<p><b>Analyst</b>: Could you elaborate on the risk?</p>
+<p><b>Expert</b>: If folks are moving off of the mainframe, which used to take years and hundreds of consultants from all of the big consulting companies and now AI can do that in the matter of hours or days, then your need for a complicated DevOps platform to do that migration is going to be become less needed. One of their biggest drivers of retention is the complexity of migrating off of the solution. If AI can make that migration much easier, then I think every software company is at risk for increased churn.</p>
+<h3>In your opinion, is there anything that the market does not properly understand about Digital.ai?</h3>
+<p><b>Expert</b>: I think that it's just the story. It has been struggling to tell the story of what Digital.ai is. If you go ask 50 Digital.ai employees who they are and what they do, they would all give a different answer. What the opportunity is, is to tell a cohesive story that's aligned to customer pain points that they are looking, to solve. You have got great products, you have got a good team, you just need to figure out the go-to-market story.</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

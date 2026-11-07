@@ -1,0 +1,206 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.06 | AC | LLM | Anti-Distillation &amp; China LLM Data Costs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.06 | AC | LLM | Anti-Distillation &amp; China LLM Data Costs</h1>
+<p class="orig">原标题：Kimi掉出前四、智谱不如Claude入门款：评测换卷之后，国产模型的数据账单由谁来付</p>
+<p class="tags">#llm #china</p>
+<p class="meta">AceCamp · 2026-11-06 19:34 · article 70568886</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>10月下旬Anthropic宣布反蒸馏措施见效，Artificial Analysis于10月27日推出Intelligence Index v5.0，将60%权重改为私有测试集，Kimi K3.1 Pro从55分、全球第四跌至46分，GLM-5.3约32分低于Claude Haiku 5.5的36分。</li>
+<li>Anthropic报告显示，用Claude Opus 4.8完整推理过程训练可使SWE-bench Verified达到80.4%，仅用摘要版则降至71.8%，其反蒸馏措施使蒸馏者可获取的推理数据减少约90%至99%。</li>
+<li>新加入的Terminal-Bench-Science差距最大，GPT-6 Astra得63%，Kimi K3.1 Pro得34%，DeepSeek V4.1 Flash仅13%，多数开源权重模型不到10%。</li>
+<li>作者认为国产模型追赶成本将从算力扩展到专家推理数据、代码沙盒和行业数据三方面，例如DeepSeek的DSec单个生产单元约3万CPU核心、每天支撑约300万个沙盒，字节数据清洗团队从约1,500人扩至3,000多人。</li>
+<li>研发投入难以压缩，智谱2026年上半年研发开支21.31亿元、为收入的2.23倍，MiniMax同期研发开支2.969亿美元、约为收入的2.55倍。</li>
+<li>与市场看法不同，作者认为新增数据成本并未明显流向国内数据商，海天瑞声前三季度扣非净利润仅1,072万元，数据堂上半年收入仅1.80亿元，核心数据工作被模型厂自己消化或流向Mercor等海外平台。</li>
+<li>智谱上半年开放平台及API收入8.25亿元、占比升至86.5%，企业级智能体收入增长304.4%至约5,556万元，作者认为其政企交付的价值在于让客户分担失败案例这一最贵的试错成本。</li>
+<li>DeepSeek依靠沙盒工程和提价使前7个月API毛利率达到82.9%，而Kimi只能自担数据成本，MiniMax上半年综合毛利率仅17.9%、处境最被动。</li>
+<li>作者建议跟踪智谱云端API毛利率能否超过30%、企业级智能体收入增长、研发费用率、私有题分差能否缩至10分以内以及国内数据商单季利润能否超过千万元。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>反蒸馏和评测换卷如何抬高国产模型的追赶成本；</li><li>新增成本流向何处，国内外数据商谁真正受益；</li><li>智谱、DeepSeek、Kimi、MiniMax的数据成本分担能力有何差异；</li><li>如何跟踪验证。</li></ol>
+<h2>正文</h2>
+<p><b>反蒸馏加码和评测换卷之后，国产模型追赶海外的成本从算力扩展到专家数据和沙盒，研发投入更难压缩。但这笔钱没有明显流向国内数据商；能让客户分担试错成本的模型厂，压力更小。</b></p>
+<p>10月下旬，两件事在一周内先后发生：Anthropic宣布它的反蒸馏措施已经见效，全球主流评测机构Artificial Analysis把六成考题换成了不公开的私有题。消息出来后，Kimi K3.1 Pro的排名从全球第四掉了出去，智谱GLM-5.3的得分落到了Claude入门款之后。</p>
+<p>市场的第一反应是：国产模型接下来要花更多钱买数据，卖数据的公司要受益了。前半句大概率成立，后半句却未必。本文要回答的问题是：<b>这笔多出来的数据成本，最后由谁来付，利润又会落到谁手里？</b></p>
+<h2>一、反蒸馏和评测换卷之后，国产模型的追赶成本明显上升</h2>
+<p>按Anthropic、OpenAI的单方面披露，过去国产模型有一部分进步，是借用海外头部模型的推理过程得到的。但被点名公司均未承认，DeepSeek曾在论文中否认，官方回应将能力提升归因于后训练与强化学习。如果相关指控属实，这意味着国产模型要想继续缩小差距，就得自己花钱造训练数据。下面分两步说明。</p>
+<p><b>第一步，蒸馏到底值多少分</b>。Anthropic在10月12日的报告里给了一个很直接的对比：用Claude Opus 4.8的完整推理过程去训练模型，SWE-bench Verified能做到80.4%；如果只给摘要版推理，分数降到71.8%，少了8.6个百分点。也就是说，拿不到完整推理过程，训练效果会明显打折。而Anthropic现在做的，正是把完整推理过程藏起来：诱导模型输出推理的请求会被分类器拦截；自9月24日起，误报率低于0.1%的特定拦截类别恢复计费；已封禁数万个相关账户，往往在账户开始蒸馏后不到两小时就封掉。Anthropic称，初步证据显示，蒸馏者能拿到的推理数据减少了约90%到99%，但它也承认这种效果能维持多久还不确定。换句话说，这8.6分过去几乎是白拿的，以后要靠自己补。</p>
+<p><b>第二步，差距有没有真的暴露出来。</b>答案是有。Artificial Analysis在10月27日推出Intelligence Index v5.0，60%的权重改用私有测试集或不公开答案的评测。几天前还以55分排全球第四的Kimi K3.1 Pro，在新指数下只有46分，比榜首Claude Opus 5.5的58分低12分；GLM-5.3约32分，低于入门款Claude Haiku 5.5的36分。差距最大的是新加入的Terminal-Bench-Science，它要求模型在终端里从头到尾完成科研任务：GPT-6 Astra得63%，Kimi K3.1 Pro得34%，DeepSeek V4.1 Flash只有13%，多数开源权重模型不到10%。</p>
+<p>这组数字的含义是：公开题做得越好、私有题掉得越多，说明模型学到的更多是答案的样子，而不是找答案的方法。靠模仿可以跟上，但很难跑到前面。要补上这部分能力，就需要新的、真实的训练数据，这正是成本上升的起点。</p>
+<h2>二、多花的钱主要花在三处：专家推理数据、代码沙盒和行业数据</h2>
+<p>可能有人会问：既然公开数据不够，继续扩大数据量和参数量行不行？这条路也在变窄。智谱管理层在中报业绩会上表示，国内大模型训练数据普遍在30万亿到50万亿Token之间，继续堆参数的边际收益正在下降。所以，接下来真正能拉开差距的投入主要有三类，而且每一类都很贵，也很难省。</p>
+<p><b>第一类是专家推理数据。</b>互联网上的内容大多只有结论，很少记录“提出假设、验证、推翻、再修正”的完整思考过程，而模型恰恰最缺这一部分。这类数据只能请专家一条一条写出来。据蓝鲸新闻报道，一道复杂的金融推理题，专家要花将近4小时，平台最多按3小时结算；按专家时薪100到500元计算，单题人力成本在数百元到上千元。门槛也很高，一位受访者说，几十个应聘者里只有他一人通过了质检。海外更贵：OpenAI招募300名生物学博士，时薪100美元，一个学科一年的支出就接近6亿元人民币。相比之下，基础众包标注的日薪中位数只有185元（硅星人），两头相差30倍以上。可见，数据成本上涨的主要原因不是标注量变大，而是对标注者的要求变了。</p>
+<p><b>第二类是代码沙盒。</b>模型要学会真正“干活”，不能只看代码，还得在大量隔离的运行环境里反复改代码、跑测试、看报错、再修改。DeepSeek在arXiv上发布的DSec论文披露，它的一个生产单元约有160个CPU节点、3万个CPU核心、250TB内存，每天要支撑约300万个沙盒。这套系统能把CPU超卖到50倍以上，原因是大部分沙盒在等待模型回复时几乎不占CPU。这说明，<b>沙盒的成本不只是算力本身，还包括等待的时间</b>。模型推理越慢，沙盒等得越久，占用的资源越多。也就是说，训练数据的成本还会被推理速度放大，而国产模型恰恰在推理算力上更紧张。</p>
+<p><b>第三类是行业数据，也就是最费人力的“脏活累活”。</b>字节2026年把大模型数据审核与清洗团队从约1,500人扩到3,000多人，主要用于为编程模型清洗训练数据。为什么需要这么多人？字节披露的TRAE实验给了答案：AI生成代码的功能正确率已经超过80%，但到了可靠性、可维护性这些企业真正上线时看重的指标，只有40到60分。从“能跑”到“能用”，中间的差距只能靠大量真实场景的数据来补。智谱也是类似做法，它联合奇安信、腾讯玄武等安全团队做长期的攻防测试，自GLM-5.2发布以来累计发现2,436个真实漏洞。这类数据只能在真实环境里一点点积累，外面买不到。</p>
+<p>还有一点容易被忽略：<b>后训练变贵，不代表预训练就能省。</b>行业调研显示，Kimi下一代K4计划把预训练和后训练的资源调整为各占一半，目前预训练中合成数据占30%到40%，内部设定的上限是不超过60%。前后两头都要花钱，研发支出自然很难降下来。财报也印证了这一点：智谱2026年上半年研发开支21.31亿元，是收入的2.23倍；MiniMax同期研发开支2.969亿美元，约为收入的2.55倍。</p>
+<h2>三、国内数据商受益有限：钱被模型厂自己消化，或流向海外</h2>
+<p><b>按一般的思路，数据越贵，卖数据的公司应该越赚钱。海外确实是这样，但国内的情况不一样。</b>这是本文和市场一般看法存在分歧的地方。</p>
+<p><b>先看海外。</b>据The Information，Mercor 2026年上半年毛收入6.14亿美元，毛利率从2025年的27%提高到二季度的33%。需要注意的是，这个毛收入包含付给专家的报酬，约三分之二都给了专家。据Forbes报道，Surge AI向客户的报价比同行高50%到10倍。另外，Meta入股Scale AI以后，Scale AI不再被视为中立供应商，部分订单转向其他公司，独立数据商的议价能力因此进一步提高。</p>
+<p><b>再看国内。</b>海天瑞声前三季度扣非净利润同比增长993.82%，增速很高，但绝对值只有1,072万元；三季度单季归母净利润只有68.7万元。收入方面，前三季度累计增长23.87%，三季度单季增长26.73%，都明显低于2025年全年59%的增速（公司三季报及2025年业绩快报）。数据堂上半年毛利率从上年同期的44.77%升到54.12%，盈利能力确实在改善，但收入只有1.80亿元，规模还比较小。</p>
+<p>为什么会出现这种差异？主要原因是，<b>国内模型厂把最贵、最核心的数据工作留在了自己手里。</b>据36氪报道，智谱AI研究院70%以上的研究员是清华计算机系的本硕博，公司要求待训练的项目组全员上自研平台标注数据；另据DeepSeek闭门会纪要，团队一半研究员都在参与标注数据。剩下需要顶级外部专家的部分，又有相当一部分流向了Mercor这样的海外平台。</p>
+<p>因此，“精喂期”对国内产业链的影响，<b>首先体现在模型厂的人工成本和研发费用更难压缩，而不是国内数据商订单大幅增长</b>。对海天瑞声、数据堂这类公司来说，更现实的看点是高价值数据集重复销售带来的毛利率提升，而不是收入跳涨。如果按“数据商业绩爆发”的逻辑去看待这类公司，预期可能偏高。</p>
+<h2>四、谁的成本有人分担：智谱靠客户交付，Kimi和MiniMax压力更大</h2>
+<p>既然数据成本大部分由模型厂自己承担，那么下一个问题就是：<b>哪家模型厂能找到人帮它分担？这里绕不开对智谱的两种对立看法。</b>一种认为智谱过度依赖政企私有化项目，增长质量不高；另一种认为政企数据是国产模型最深的护城河。本文认为，这两种看法都不够准确。</p>
+<p><b>先看第一种。</b>根据智谱中期业绩公告，上半年本地化部署收入从去年同期约1.62亿元降到约1.29亿元，同比下降20.5%，毛利率从59.1%降到37.9%。进一步拆开看：企业级通用大模型（私有化授权）收入从约1.48亿元降到约6,704万元，降幅54.6%；企业级智能体收入则增长304.4%，达到约5,556万元。同期，开放平台及API收入8.25亿元，占比从15.2%升至86.5%，毛利率从负0.4%转正到24.6%，综合毛利率因此从50.0%降到26.4%。可见，智谱的收入主体已经是云端API，靠私有化项目吃饭的说法已经不符合现状。</p>
+<p><b>再看第二种。</b>政企客户普遍要求数据不出本地，原始业务数据很难被拿去训练公有云上的大模型。而且从国内To B项目的实际部署看，客户主要使用30B到250B参数的模型，超大参数模型的使用率只有5%左右（行业调研）。所以，把政企优势理解为“拿客户数据训练大模型”并不准确。</p>
+<p>那政企业务的价值到底在哪？本文认为在于“失败案例”。客户在使用过程中暴露的出错案例、验收标准和安全测试结果，会通过智谱的“研究院通用测评+交付团队真实场景测评”两道流程，转化成训练用的反馈信号。简单说，<b>客户付钱买的是交付服务，同时也替模型厂承担了一部分最贵的试错成本</b>。企业级智能体收入大幅增长，说明这种模式正在从卖授权转向卖智能体服务。</p>
+<p>这个思路，与笔者<b>11月2日报告</b>的结论是一致的：视频生成能不能赚钱，关键看废片的成本由谁承担。放到大模型训练上，关键就是失败推理的成本由谁承担。按这个标准看，几家公司的处境差别很明显：</p>
+<p><b>智谱有交付场景持续产生失败案例，云端调用量也在扩大。</b>GLM-5.3与GLM-5.2使用同一个基座模型，Terminal-Bench 3.0得分却从4.6提高到28.3。这个提升不能确定全部来自客户案例，也可能来自其他后训练数据或训练方法的改进，但至少说明，不换基座、只改进后训练，分数也能大幅提升。智谱的短板在利润端：云端毛利率只有24.6%，主要靠API均价较年初提高约101%（截至8月31日中报公告日）和单位推理成本下降80%来支撑。</p>
+<p><b>DeepSeek走的是另一条路：用工程手段替代人工。</b>它依靠DSec沙盒和8月的提价，据The Information报道，前7个月API毛利率达到82.9%。它的失败案例主要来自自动生成数据的管线和大量公开API调用。</p>
+<p><b>Kimi</b>不做私有化，模型能力在国产中最强，但数据成本只能自己承担。据钛媒体测算，它199元的套餐只能用到约1,200到2,800元的API额度；K3发布不到48小时，就暂停了C端新用户订阅。<b>MiniMax</b>的处境最被动，上半年综合毛利率只有17.9%，既缺政企场景，也缺定价能力。</p>
+<p>笔者<b>10月27日的Anthropic招股书</b>报告曾分析，反蒸馏堵住了低成本追赶的路，港股纯模型公司的估值会承压。本文进一步认为，这种压力不会平均分摊到每家公司。能把客户交付变成训练反馈的公司，数据成本有人分担；只能自己承担的公司，研发费用大概率会在较长时间里维持在收入的2倍以上。这也和<b>9月25日报告</b>的判断一脉相承：Agent的钱落在收Token账单的一方。到了“精喂期”，失败案例沉淀在谁的系统里，谁就多一份不用花钱买的训练数据。</p>
+<h2>五、跟踪五个指标，判断这套逻辑是否成立</h2>
+<p>第一个是智谱的云端API毛利率。如果在提价和国产芯片降本之后，全年能升到30%以上，说明“交付分担训练成本、规模摊薄推理成本”这条路走得通；如果一直停在25%左右，政企业务的价值就要打折扣。</p>
+<p>第二个是智谱企业级智能体收入。如果它继续高速增长，并且能弥补私有化授权收入的下滑，就说明“从卖模型转向卖服务”的判断成立。第三个是研发费用占收入的比例：缓慢下降是正常的，突然大幅下降反而值得警惕，因为这可能意味着公司在削减训练投入。</p>
+<p>第四个是Artificial Analysis私有题的分差。如果下一代国产旗舰模型能把差距缩小到10分以内，而且技术报告把提升归功于专家数据和训练环境，本文的判断就得到加强；如果主要靠合成数据就能大幅缩小差距，那说明专家数据的稀缺性被高估了，数据商相关的逻辑也需要下调。</p>
+<p>第五个是国内数据商的利润。海天瑞声、数据堂的单季利润能否超过千万元，大模型客户的收入占比能否提高，决定了国内数据商能不能从“毛利率改善”真正走向“有定价权”。</p>
+<p>最后还要关注两个可能推翻本文逻辑的情况：一是出现新的低成本蒸馏渠道，比如第三方中转站偷偷记录用户和海外模型的对话；二是Anthropic的防御效果像它自己担心的那样逐渐失效。只要其中一种情况出现，国产模型就可能重新找到低成本追赶的路，本文的逻辑也会被削弱。</p>
+<p>以上内容不构成任何投资建议，请风险自担。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

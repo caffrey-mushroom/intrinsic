@@ -1,0 +1,598 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.06 | Substack | Optical | Avicena uLED Deep-Dive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.06 | Substack | Optical | Avicena uLED Deep-Dive</h1>
+<p class="orig">原标题：Avicena Deep-Dive</p>
+<p class="tags">#optical #networking</p>
+<p class="meta">Substack · 2026-11-06</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>作者此前强烈看空uLED并批评Avicena在OFC 2026的演示，经过三天约6-7小时的交流后观点大幅转向看多。</li>
+<li>Avicena采用约2-4G的模拟SerDes和时钟转发架构，结构简单，电串扰问题容易缓解，演示系统中坏通道主要来自光学和组装问题。</li>
+<li>Avicena的光纤对准可容忍约正负5微米误差，而单模光纤需要正负0.5微米以内，显著降低组装成本，但其耦合损耗约4dB。</li>
+<li>uLED受色散严重影响但基本不受模式分配噪声影响，可使用更便宜的定制GRIN光纤甚至塑料光纤，而uVCSEL必须使用昂贵的OM3或更好光纤。</li>
+<li>借助跨通道码字条带化，Avicena的轻量FEC功耗约0.2pj/bit并获得约4.5dB编码增益，作者推算其预FEC BER需达到8e-10或更低。</li>
+<li>演示套件通道通过率从2026年2月的大部分失败提升至夏季约85%，10月新外延工艺单元达到95%至98%的1e-12通过率。</li>
+<li>单颗8Gbps uLED演示的Tx功耗约0.2pj/bit，较当前3Gbps套件的0.9pj/bit大幅改善，下一代将改用与台积电合作的硅光电二极管。</li>
+<li>首款产品为目标10米的1.6T gearbox慢而宽AOC，作者给予其达到10米的概率约70%，而同等1.6T下Avicena所需光纤数约为Credo的6倍，是结构性成本劣势。</li>
+<li>Avicena正与台积电合作直接在逻辑晶圆上制作LED的IO-squared方案，CEO称20平方毫米可实现400Tbps，作者认为若定制GRIN塑料光纤成功将带来巨大成本优势。</li>
+</ol></section>
+<div class="body">
+<p>Forwarded this email? Subscribe here for more</p>
+<p>Engineering-Driven Investment Analysis</p>
+<h2>Avicena Deep-Dive</h2>
+<h3>From #1 hater to ultra bull.</h3>
+<p>Irrational Analysis</p>
+<p>Nov 6</p>
+<p>READ IN APP<img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987545985-7.png" alt="" loading="lazy"></p>
+<ul><li>Irrational Analysis is heavily invested in the semiconductor industry.Positions will change over time and are regularly updated.</li></ul>
+<p><b>Opinions are authors own and do not represent past, present, and/or future employers.</b></p>
+<p>All content published on this newsletter is based on <b>public information and independent research</b> conducted since 2011.</p>
+<p>This newsletter is not financial advice and readers should <b>always do their own research before investing in any security.</b></p>
+<p>Feel free to contact me via email at: <i>irrational_analysis@proton.me</i></p>
+<p>Hello and welcome to an interesting project. In the past, I have been virulently anti-uLED and attacked Avicena directly several times.</p>
+<p>Their public demo at OFC 2026 was extremely bad.</p>
+<p>OFC 2026 Irrational Recap</p>
+<p>Irrational Analysis</p>
+<p>·</p>
+<p>Mar 27<img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987546825-8.png" alt="" loading="lazy">Irrational Analysis is heavily invested in the semiconductor industry. Read full story</p>
+<p>CBRS Update, WOLF/NVTS Lawsuit, HBF Spec Analysis, Aeva WTF, Taalas/AMD, AAOI, TSEM, uLED Jihad</p>
+<p>Irrational Analysis</p>
+<p>·</p>
+<p>Aug 9<img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987548714-10.jpg" alt="" loading="lazy">Irrational Analysis is heavily invested in the semiconductor industry. Read full story</p>
+<p>This post is going to seem like a bizarre reversal so I am trying to structure it in such a way that you can follow why my opinions have changed so sharply.</p>
+<p>If nothing else this is a good vector for discussing/teaching some more obscure topics within communication systems.</p>
+<p><b>Note 1: </b><i>I am under NDA with Avicena… twice.  Thus, I have no choice but to send private draft link to Avicena and request written approval before publishing. Opinions will not change but Avicena reserves the right to try and convince me, dispute things they don’t like, and request outright removal of information they wish to remain secret. Myself and my employer have no commercial or financial engagement with Avicena at the time of writing.</i></p>
+<p><b>Note 2:</b> <i>I would like to thank all the 15+ Avicena employees for taking the time to meet with me over three separate days totaling 6-7 hours, in addition to the non-trivial amount of time they spent setting up 5+ different demos and putting together slides on a wide range of topics. Especially want to thank them for their candor/honesty and total transparency. <b>Every time we discussed a problematic part of their system, they immediately admitted and did not try to bullshit me.</b></i></p>
+<h2>Contents:</h2>
+<ol><li>Background and BiasesWhat is a SerDes?2. Analog vs DSP/ADC SerDes3. Crosstalk, CDR, Clock-Forwarding, Synchronous Noise, and Current Loops4. Forward Error Correction and Striping5. Fiber Attach // Alignment6. Fiber Cost7. Chromatic and Modal Dispersion</li></ol>
+<p>Avicena Overview</p>
+<ol><li>uLED Fabrication and Structure2. Test Die Overview3. System Packaging Flow4. Electronics5. Medium Options (Fiber vs Plastic)6. Equalization and FEC7. Real Vertical Integration8. Next-Gen Improvements</li></ol>
+<p>Eye Diagrams Deep-Dive</p>
+<p>Product Roadmap</p>
+<ol><li>Gearboxed 1.6T Cables2. Direct-Drive (“IO-Squared”)3. Optical Waveguide Package</li></ol>
+<p>Competitive Positioning against uVCSEL</p>
+<ol><li>Market/Economics Stuff2. Deep-Dive on Mode Partition Enhancement</li></ol>
+<h2>1] Background and Biases</h2>
+<p>This section is designed to explain some key concepts to help you understand my sharp reversal in opinion. Avicena did a very good job of providing robust counterarguments to the vast majority of my concerns.</p>
+<p>These concerns primarily stemmed from my own past experience and the biases formed by said experiences.</p>
+<p>I have….</p>
+<ul><li>Never worked on a SerDes slower than 53G NRZ.- Never worked on an analog SerDes, only DSP/ADC based.- Never worked with multimode fiber, only single-mode.- Never worked on an optical system where chromatic or modal dispersion matters.- Never worked on a communication system reliant on a single lightweight FEC. Only systems with multiple layers of medium-light FEC or a single layer of heavy FEC.</li></ul>
+<p>Past experience and learnings shape engineering-driven investment analysis, but also can occasionally lead to biases that miss the bigger picture. Overfitting?</p>
+<p>Best example is electrical crosstalk. In the original meeting with Avicena, I had planned at least half an hour to torch them over this. Within 5 minutes one of their engineers dismantled my priors. Sections [1.a/b/c] are to explain to all of you what happened in that 5 minute debate where I lost and sort of immediately surrendered.</p>
+<h3>1.a] What is a SerDes?</h3>
+<p>Modern high-end chips tend to run in the 1-5 GHz range.</p>
+<p>GPUs, AI ASICS, and other math/throughput/SIMD/matmul heavy machines tend to run around 1-2 GHz.</p>
+<p>General-purpose CPUs tend to be in the 4-5 GHz range.</p>
+<p>Some designs choose fixed frequency while others dynamically adjust frequency. For the purposes of this section assume we have a chip that always runs at a fixed 2 GHz.</p>
+<p>If the I/O of our 2 GHz chip runs at 2 Gbps NRZ, the I/O is by definition a parallel port. Anything faster (4 Gbps PAM4, 4 Gbps NRZ, 32 Gbps NRZ, 224G PAM4, …) makes the I/O by definition a SerDes.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987552783-15.jpg" alt="" loading="lazy"></p>
+<p>Almost all modern SerDes use differential signaling. So two wires. Modern-day AI systems are blurring the lines between serial and parallel from a practical perspective. The point of SerDes is to reduce the number of wires and mitigate crosstalk and footprint issues. AI systems are so I/O starved that people are effectively building parallel ports using SerDes.</p>
+<p>As a rule of thumb, if you put more than 18-24 high-speed (112G PAM4 or faster) SerDes lanes next to each other, you are gona run into fun and interesting problems. Dangerous problems.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987553716-16.jpg" alt="" loading="lazy"></p>
+<p>Notice the trapezoids in above diagram? Those are muxes.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987554626-17.png" alt="" loading="lazy"></p>
+<p>In order to Serialize and Deserialize, we need a mux tree. Looks something like this.</p>
+<p>As an example, suppose our 2 GHz chip has a 16 Gbps NRZ SerDes. Before the transmitter drive (analog) electronics, a 3-layer MUX tree would be present. The selector clock for each stage of the MUX tree would be 4/8/16 GHz.</p>
+<p>Designing a PLL that can distribute all these high-speed clocks accurately with minimal skew (phase delay // timing offset) is challenging.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987555924-19.png" alt="" loading="lazy"></p>
+<p>Designing a high-speed MUX (aka final MUX) is also challenging.</p>
+<p>The reason I bring up these details is to help you understand that parallel vs SerDes has a hard/rigid definition, but this definition is pedantic and somewhat silly.</p>
+<p>Basically, every modern PHY interface you know (Ethernet, PCIe, InfiniBand, OIF, UCIe, USB, …) is a SerDes. Parallel interfaces for off-chip I/O essentially no longer exist in the real world. Note that parallel interfaces do exist in NoC (network-on-chip). For example, it is common for the internals of a 2 GHz clocked chip to have say a 500 MHz internal network connecting compute blocks together.</p>
+<p>Even Avicena running their system at 4 Gbps NRZ (on a theoretical host chip running at 2 Ghz) is technically a SerDes.</p>
+<p>You should think about this stuff as a spectrum. Faster or slower is not necessarily better. It depends a lot on the context. Going too fast or too slow leads to severe problems that must be overcome.</p>
+<p><b>From a purist system design perspective, my opinion is 32-64G NRZ is the sweet-spot optimal speed for most electrical and optical systems.</b></p>
+<h3>1.b] Analog vs DSP SerDes</h3>
+<p>All modern high-speed SerDes are DSP/ADC based. Avicena uses an analog-based SerDes which is very different, especially if you are like me and never worked on old style SerDes.</p>
+<p>As much as I hate Tony and Alphawave, their YouTube videos are excellent.</p>
+<p>Let me walk you through a modern 224G PAM4 SerDes then explain how Avicena’s analog SerDes (2-4G) differs.</p>
+<p>Synopsys Serdes2.75MB ∙ PDF file</p>
+<p>Download</p>
+<p>See all of this complexity and clock interleaving? The slices for the DAC? This is complexity that leads to nasty problems later on. Necessary complexity to be clear.</p>
+<p>I have read this paper like 10 times and only just noticed they are using 80 ADC interleaves. This is retarded lol. Going past 64 tends to cause unnecessary problems. Competent teams go for 48 interleaves. Skill issue for Synopsys. It is not possible to design ADC that runs fast enough for these speeds. Everyone uses time interleaving. Take a bunch of slower ADC and stagger them.</p>
+<p>Most of the latency of modern SerDes comes from the FFE taps and MLSD/Viterbi.</p>
+<p>Avicena basically has none of the above. The upcoming product only has a single-stage CTLE (capacitor based, not inductor based, important!) two analog (not digital) DFE taps in next gen (one DFE tap in current demo platform). Current-gen evaluation kit (eKit) does not even have a CTLE, only single tap DFE.</p>
+<p>A very common problem in normal high-speed SerDes is the CTLE inductor acting as a coupling aggressor or victim.</p>
+<p>Slow-speed CTLE can get away with capacitor-based peaking.</p>
+<p>As an example, here is a die-shot of Marvell’s garbage 224G SerDes that had to be re-spun and resulted in alleged fines allegedly paid to Innolight.</p>
+<p>VGA and CTLE are essentially the same thing. VGA has much less tuning options and different frequency response shape but same concept and very similar end function.</p>
+<p><b>CTLE/VGA inductors are quite dangerous and Avicena has none in their CTLE design.</b></p>
+<h3>1.c] Crosstalk, CDR, Clock-Forwarding, Synchronous Noise, and Current Loops</h3>
+<p>To understand crosstalk, you must understand that everything is an antenna and this leads to satanic nightmare problems.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987575305-39.png" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987576517-40.jpg" alt="" loading="lazy"></p>
+<p>Inductive coupling is evil and the source of much pain and suffering. Very difficult to properly simulate. A nightmare to debug once silicon is back. By far the #1 problem that kills projects.</p>
+<p>What makes inductive coupling so insidious is the many ways it can show up and all the strange and unusual aggressor paths.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987578122-41.png" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987579138-42.jpg" alt="" loading="lazy"></p>
+<p>Recall the Synopsys 224G SerDes slides from above section.</p>
+<ul><li>ADC interleaves lead to complexity and risk of <b>asynchronous noise.</b>- CDR with very complex phase interpolator can have INL/DNL issues which lead to <b>asynchronous noise.</b>- Tx driver slices can induce <b>asynchronous noise.</b>- Complex multi-stage CTLE has large inductors that can pick up <b>asynchronous noise.</b>- Skew from multi-rate clock tree can lead to <b>asynchronous noise.</b></li></ul>
+<p>Naively, noise is bad because it flips data bits, eventually.</p>
+<p>Bits get flipped because analog voltages are too high or too low <b>relative to what they should be at a given point in time and relative to a reference.</b></p>
+<p>Ground does not mean 0 volt. There is noise on ground dumped by other things.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987579825-43.png" alt="" loading="lazy"></p>
+<p>Reference does not mean ground. It is common but you can reference against a fixed or dynamic voltage. This is commonly referred to as biasing.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987580702-44.png" alt="" loading="lazy"></p>
+<p>I can’t find a good picture for this so just use your imagination for a moment.</p>
+<p>Imagine a design that has 10 different circuits. Each of these 10 circuits has a unique function. Some of them are chained together (A —&gt; B —&gt; C). Others are in parallel (X above A, eventually feed into C).</p>
+<p>All of these circuits are powered by the same voltage rail, VDD. They all share the same ground rail, VSS.</p>
+<p><b>Synchronous noise</b> is noise that is time-aligned across all the circuits. Imagine waves of voltage or current that go up and down across all circuits at the same time.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987581899-45.png" alt="" loading="lazy"></p>
+<p><b>Asynchronous noise </b>changes over time and effects different circuits on at different times relative to each other.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987583716-46.png" alt="" loading="lazy"></p>
+<p>In general, it is easy to mitigate synchronous noise. Most of the problems in modern DSP/ADC SerDes come from clocking/skew/delay/CDR complexities that generate <b>asynchronous noise.</b></p>
+<p>Design complexity (circuit, tuning algo, firmware) is primarily derived from people trying to <b>make asynchronous noise as synchronous as possible.</b></p>
+<p>Before covering Aviciena old-school slicer/analog style 2-4G SerDes, let’s take a look at a middle ground. Nvidia’s 32G die-to-die clock-forwarded SerDes.</p>
+<p>Both Nvidia and Avicena use clock-forwarding. This eliminates the CDR and many possible sources for asynchronous noise. They reason they can get away with this is the electrical link is very short so it is possible to transmit a high-frequency clock on a dedicated channel. Clock-forwarding is in general not practical for longer reach links.</p>
+<p>Notice how simple the Nvidia D2D clock-forwarded architecture is. No ADC interleaves. No DSP processing. No CDR. No complicated clock tree.</p>
+<p>Minimal opportunities for asynchronous electrical noise to show up and ruin the system. Instead, they have optically induced async noise from the micro-rings.</p>
+<p>Avicena SerDes is even simpler due to its much slower rate, lack of need for thermal tuning of optical impairments, and lower gain requirements.</p>
+<p>In other words, it’s so simple that it is unusually easy to mitigate electrical crosstalk.</p>
+<p><b>Clock forwarding does not automatically fix all problems.</b> Nvidia 32G D2D and other similar D2D (Broadcom Max, UCIe, Marvell D2D) have to put in a non-trivial amount of effort to keep everything clean. At 2-4G, Avicena has a much easier time.</p>
+<p>Intuitively, more stuff means…</p>
+<ul><li>More things to synchronize and back out phase delay.- Higher risk of inductive coupling.- More electrical loss, requiring more amplification stages in Rx, leading to more stuff…</li></ul>
+<p>You will see in section [3] that the vast majority of the bad lanes in Avicena demo systems are from optical and assembly issues. There is only one bad lane/eye that seems to be suffering from electrical crosstalk. And even then, that one bad “failed due to crosstalk” lane might be from wirebond which goes away in next gen anyway.</p>
+<h3>1.d] Forward Error Correction and Striping</h3>
+<p>https://www.signalintegrityjournal.com/ext/resources/PDFs/PAPER_Track9_224GEthernetFECAnalysis_liu_revised.pdf</p>
+<p>The gold-standard in FEC analysis by the legendary Cathy Liu of Broadcom shall be used as a crash course here. Read the full paper if this stuff interests you.</p>
+<p>In general the way you read these charts is pick a target post-FEC BER (1e-13 in this case) and see where the curves intersect in terms of SNR value. Higher SNR requirement is bad. A 1 dB SNR gap between two scenarios is a lot while 0.5 dB is meaningful.</p>
+<p>Additionally, burst errors (usually… other major source is CDR) from DFE propagation are very bad. You can see the over 1 dB difference between red curve (no burst errors, all errors are truly random) and blue+black curves which model 1-tap DFE back-propagation with varying assumptions that we don’t care about for the purpose of this section.</p>
+<p>Finally, note that a <b>pre-FEC</b> <b>BER </b>of 1e-12 is broadly considered to be the minimum bar to operate a link without any FEC at all, saving massive power and latency.</p>
+<p>Simulation curves like this don’t capture the reality that measuring BER at error-free scenarios results in measurement time issues. (it is impractical to measure very low BER because you have to wait a long time… eye masks are used in slower NRZ links to get around this problem)</p>
+<p>Bluntly, my view is 3-orders of pre-FEC BER margin is needed on worst PVT corner of a characterization lot on a representative channel to consider a system commercially viable at high volume.</p>
+<p>However, both uLED and uVCSEL slow-and-wide systems use a light FEC (typically a 2-bit BCH derivative) so let’s keep the pass/fail bar at 1e-12 pre-FEC.</p>
+<p>A “light” FEC involves low amounts of math and is thus energy, area (digital logic), and latency efficient.</p>
+<p>A “heavy” FEC is opposite, obviously. RS-FEC aka RS(544, 514, 15) is a heavy FEC used by Ethernet, OIF, and most 112G PAM4 or higher standards.</p>
+<p>In above plot, note that purple a lot better than yellow which is in turn a lot better than orange.</p>
+<p>That is FEC weight for you. uLED and uVCSEL systems tend to use a FEC that is even lighter than orange Hamming(128,120).</p>
+<p>It infuriates me to no end the Microsoft retards cited IEEE 802.3ck KP-FEC pre-FEC BER as a reasonable bar while also fudging their data and assumptions to polish the turd that is MOSAIC.</p>
+<p>Microsoft was one of the hyperscalers who told IEEE they are idiot clowns with this 2e-4 pre-FEC threshold. This is why IEEE 802.3dj switched to 2e-13 POST FEC.</p>
+<p>Obvious garbage by losers. Now back to a paper written by a winner, Cathy Liu of Broadcom.</p>
+<p>Interleaving can be done at a codeword and lane level. Idea is to have errors spread out across time-domain chunks that are uncorrelated (or at least less correlated) with potential burst error mechanisms.</p>
+<h3>1.e] Fiber Attach // Alignment</h3>
+<p>Fiber attach for single-mode fiber (SMF) is a satanic nightmare. This is because the core is very small to force… only one mode.</p>
+<p>This is where yield of your thing goes to die, assuming the InP is tested as KGD which is standard.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987600528-65.jpg" alt="" loading="lazy"></p>
+<p>Grating couplers have severe drawbacks. Ask TSMC or Nvidia. :) Multimode fiber is much easier to edge couple. Dramatically improves yield and reduces assembly costs.</p>
+<h3>1.f] Fiber Cost</h3>
+<p>Single-mode fiber comes in one primary flavor per band. So if you are on 1310nm like you should be for inside-datacenter links, there is not much to choose from.</p>
+<p>Multi-mode (OM) fiber has 5 variants with significant cost and performance deltas.</p>
+<p>The price is also way higher than single-mode. It’s appalling. The manufacturing process is more complex.</p>
+<h3>1.g] Chromatic and Modal Dispersion</h3>
+<p>Fun fact, up until October 26th 2026, I had never used real AI. Only toy image gen for memes and Google AI search summary that is at the top of every search anyway.</p>
+<p>Wanted to see if Fabel 5.1 on extra effort could make some dispersion-impaired eye diagrams for me to help with this section. Took six iterations. It made some really stupid mistakes along the way. The final output is decent, <b>but still wrong.</b></p>
+<p>Strangely, Fable 5.1 extra and Opus 5.5 medium have similar outcome quality and it mostly depends on the difficulty of the question or task I give them. Either AI kills it and delivers something super impressive or it catastrophically fails. Only reason I can tell the difference is I know what correct looks like for every question and task I have tried so far.</p>
+<p>Anyway…</p>
+<p>Both uLED and uVCSEL suffer from chromatic and modal dispersion.</p>
+<p>uLED is hit way harder. Let me show you the eyes before explaining where the problems come from.</p>
+<p>The slope of uVCSEL BER degradation is shallower than uLED.</p>
+<p>This is important to notice. Stems directly from how they react to the same impairments with differing severity.</p>
+<p>Multi-mode fiber is wide enough to let multiple modes (think of them as beams of light… this is not correct but good enough for intuition which is all that matters) of light pass.</p>
+<p>This is great for alignment yield/cost (as covered in previous section) but a disaster for channel quality. Those other modes act as severe ISI (inter symbol interferance).</p>
+<p>Fastest way to understand ISI is with a real-world impulse response from an electrical channel.</p>
+<p>In an ideal world, the above plot would just be a perfectly thin line. In reality, some very near-field ISI creates the main pulse, usually handled by Tx FIR and DFE for the bulk of EQ with Rx FFE making some contribution as well. The farther away ISI gets handled by only FFE and floating FFE taps.</p>
+<p><b>In optics, chromatic dispersion makes the main pulse wider while modal dispersion adds nasty crap spikes farther away.</b> This is oversimplified but good enough.</p>
+<p>Let’s take a look again at the AI generated eye diagrams. You can see the patterns its easy.</p>
+<h2>2] Avicena Overview</h2>
+<p>It was difficult to structure this section given how many aspects of their system interact with each other. Hopefully coherent enough despite all the incoherent light. PUN INTENDED.</p>
+<h3>2.a] uLED Fabrication and Structure</h3>
+<p>Let’s start with the core fabrication process.</p>
+<p>Each rectangle is one LED. The individual hexagons are an artifact of how the epi (growing process) works.</p>
+<p>Due to the 3D structure and manufacturing process, only a small sub-rectangle lights up. Lenses are located at the center of the chunk that lights up for obvious reasons. Thus you get this offsetting effect where the lenses look like they are not centered if the LEDs are off.</p>
+<h3>2.b] Test Die Overview</h3>
+<p>Tx appears to be larger than Rx because the lenses to change LED beam shape (mode) make it look larger at this angle. Physically, Tx and Rx are similar size. In general, coupling light on the Tx to the fiber is much more difficult than coupling from the fiber to Rx. This is because the light exiting the fiber and entering the Rx is already a clean-ish mode relative to the Tx where the uLED sort of vomits light.</p>
+<p>Note that the base electronics die is TSMC N12. A huge amount of area is dedicated to SRAM for their diagnostic tool. This chip is very much a science project test vehicle.</p>
+<p>Also notice the wire bonds. These are used for power, ground, and low-speed signals (SPI, JTAG and such).</p>
+<p><b>Wire bonds are evil. </b>Avicena agrees and that is the funny thing about all the test results. It’s gona be so much better when the move to TSV. But getting ahead of myself.</p>
+<h3>2.c] System Packaging Flow</h3>
+<p>Right now, the packaging flow looks something like this.</p>
+<p>LEDs are grown on their own wafer, then attached to the logic wafer (TSMC N12) in a die-to-wafer process.</p>
+<p>The lenses are also attached in a similar way. The process is called lens replication.</p>
+<p>Several companies specialize in this.</p>
+<p>https://moveonsg.com/</p>
+<p>https://www.viseratech.com/</p>
+<p>https://www.evgroup.com/</p>
+<p>Because all of the above process steps are attaching one grid of lithographically printed devices (high uniformity and spacing accuracy within the entire grid), this does not concern me. What really concerns me is fiber attach and alignment which will be covered in a later section.</p>
+<p>here is what the optics looks like after bonding lens array to the LED array.</p>
+<p>Regarding why they are using horrible, evil, garbage wirebonds…</p>
+<p>There are TSVs in the N12 die. For whatever reason, something went wrong and they decided to not grind down the logic die and use the TSVs in this gen. Wirebond is backup and it is REVOLTING.</p>
+<p>Your power integrity gets absolutely murdered by these dogshit wirebonds. It’s a miracle their existing results (see section [3]) are this good given how much inductance and general voltage ripple the CRAP wirebonds inflict upon the system.</p>
+<p>On fiber alignment, they have a really cool demo.</p>
+<p>Each of these knobs move the FAU by one micron per tick. They message they have from the plots is they are tolerant of +/- 5 micron error in all axis, way more in z-axis.</p>
+<p>In my opinion, +/- 7 micron is fine. Got to play with the knobs and watch the eye diagram in real time and this is incredible.</p>
+<p>In single-mode fiber world, +/- 0.5 micron alignment accuracy is needed (bare minimum!) or else your system falls apart. Real target is +/- 0.2 micron.</p>
+<p>Really incredible.</p>
+<h3>2.d] Electronics</h3>
+<p>The electronics are quite simple due to the slow speed. LEDs need current-mode drivers.</p>
+<p>Within optics, one nasty problem is voltage swing and bias requirements. Almost all optical modulators (MZI, ring, EMA) need voltage that a modern leading-edge logic node cannot provide. Thus, external amplification of the SerDes is necessary.</p>
+<p>The current gen evaluation kit (eKit) needs 1.5 mA drive and around  pk-pk swing. These numbers are high because the current-gen has garbage photodiodes. Trash linearity and apparently 0 dB gain lol.</p>
+<p>Next-gen they go to silicon PD co-designed with TSMC which are WAY BETTER, with allegedly up to 10 dB of gain. This will in theory allow from drive current to be cut to 1/3rd (0.5 mA / LED) but they need to test it.</p>
+<p>Finally in the existing design, Tx is 0.9 pj/bit while Rx is 0.6 pj/bit which is unusual. Almost every system I have worked with has higher Rx energy burn. In Avicena’s case, this makes sense as reh receiver is just a simple CTLE and 1 (going to 2 next gen) DFE tap.</p>
+<p>Most of the Tx power burn is from Avicena trying to compensate for the absolutely garbage PDs.</p>
+<h3>2.e] Medium Options (Fiber vs Plastic)</h3>
+<p><b>This section is by far the longest because it is the most important!</b></p>
+<p>DO NOT SKIP OR SKIM.</p>
+<p>READ IT TWICE IF YOU HAVE TO.</p>
+<p>Let’s start with plastic versus fiber. uLED can use both (with different limitations) while uVCSEL must use fiber.</p>
+<p>In this simulation (that has some wrong, some sensitive and redacted assumptions) you can see how plastic and fiber differ for uLED.</p>
+<p>Plastic becomes very bad after 3 meters due to modal dispersion. Fiber in theory can hit 10 meters but chromatic dispersion slowly degrades the link.</p>
+<p>Same plot but in terms of SNR penalty.</p>
+<p>There are many choices it turns out, but two categories matter the most.</p>
+<p>Step index is shit but cheap.</p>
+<p>Graded Index (GRIN) compensates for modal dispersion but is expensive and difficult to manufacture.</p>
+<p>On the chromatic dispersion front, plastic is apparently very good. This is why GRIN plastic is the holy grail. Plastic to handle chromatic dispersion, GRIN profile to deal with nasty modal dispersion.</p>
+<p>This plot does a good job of showing how disastrous modal dispersion is on step index (opposite of GRIN) fibers.</p>
+<p><b>Note/Edit: </b><i>Completely redacted the original slide to hide Avicena custom fiber designs at their request. They sent a plot that only shows a commercial OM3 fiber they bought and measured. Blue and Green plots (hidden) are their own designs and you can use your own imagination.</i></p>
+<p>Orange is normal off-the-shelf OM3 fiber. You can see it is super smooth and wide.</p>
+<p>Smooth = needs lots of layers = expensive</p>
+<p>Wide = easier to couple light into the fiber</p>
+<p>Blue is cheaper custom fiber.</p>
+<p>Green is MUCH CHEAPER custom fiber.</p>
+<p>What makes this fiber stuff so interesting is all the tradeoffs. Single-mode fiber is quite simple. You get fucked on active alignment but otherwise the fibers are benign in terms of link impairment.</p>
+<p>Multi-mode is so much worse in almost every way. Coupling optics and GRIN structures interact with each other in complex ways, cost is a huge factor, dispersion (modal and chromatic) is a huge problem.</p>
+<p><b>The key problem to solve when working with multi-mode fiber systems is to maximize coupling efficiency while minimizing modal dispersion.</b></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987623484-92.jpg" alt="" loading="lazy"></p>
+<p>Before speaking with Howard/Avicena, my understanding was that uLED hit hard by modal dispersion while uVCSEL mostly unaffected. And both of them hit by chromatic dispersion.</p>
+<p>Turns out this is wrong. uLED (at least Avicena’s version) can have modal dispersion compensated will with custom GRIN structures and careful coupling (lens) optics design. But chromatic dispersion kills uLED. Meanwhile uVCSEL is mostly unaffected by chromatic but hit by modal. More on this later</p>
+<p>This plot is good for illustrating how chromatic dispersion harms uLED links. 10nm FWHM is wrong. The real power penalty number is around 2.5x higher although Avicena has some clever ideas on how to reduce it.</p>
+<p>Another visualization of the modal dispersion versus coupling loss tradeoff.</p>
+<p>Now for some interesting pictures of plastic fibers before circling back and trying to tie together the entire section with a great paper Howard shared.</p>
+<p>This thing is one fiber. It’s made by taking a bunch of large fiber cores, bundling them together, than stretching the entire thing.</p>
+<p>Obviously light not coupled to the fiber has to go somewhere. Usually it is scattered and becomes crosstalk/noise. Sometimes you get absorption but that is mostly at higher power with lasers.</p>
+<p>Clever lens design massively improves optical crosstalk when using plastic fibers.</p>
+<p>Seriously, 10 dB is huge. This is measured result!</p>
+<p>Switching back to fiber (not plastic) attach…</p>
+<p>The bending of their fiber bundle looks amazing. Super sharp 90 degree bends no problem. First thing my team lead is going to ask is this and I have perfect answer for him lol.</p>
+<p>4 dB coupling loss is appalling. Howard/Avicena was up-front with this. It is a reality of uLED. Avicena claims that competing uLED companies are even worse than this.</p>
+<p>As a point of reference, in single-mode optical world (O-band), edge coupling you get 0.5 to 1.5 dB loss. Competent companies (Lumentum, TFC, Innolight) get under 1 dB consistently. Fabrinet West is not part of the competent list.</p>
+<p>Visual approximation of Fabrinet West active alignment process.</p>
+<p>Let’s go over a wonderful paper Howard/Avicena shared to help me understand why uVCSEL is stuck with OM3 fiber and cannot play the cheapo/custom GRIN structure strategy Avicena uses.</p>
+<p>I’m sure Ashkan wants to jump in and remind us all how painful 1060nm uVCSEL is going to be compared to AMS OSRAM 850nm uVCSEL.</p>
+<p>Cheaper (few layer) GRIN fibers simply won’t work for uVCSEL.</p>
+<p>Full paper here.</p>
+<p>Photonics 13 00408 V2 (2)4.8MB ∙ PDF file</p>
+<p>Download</p>
+<p>Final topic… fiber manufacturing! Optical fibers are made like fancy candy.</p>
+<p>You start with a thick version of the design, in optics it is called the preform.</p>
+<p>Then you pull it to thin it out.</p>
+<p>Single-mode fibers have very simple preform. Just one core and a cladding. Two layers.</p>
+<p>Multi-mode (GRIN) fibers have an ultra expensive preform with HUNDREDS of layers.</p>
+<p>It’s pretty neat you can see the light from the molten part of the preform make it all they way (5 floors) down to the tip of the final cooled and thinned fiber.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987641660-116.jpg" alt="" loading="lazy"></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987642324-117.jpg" alt="" loading="lazy"></p>
+<h3>2.f] Equalization and FEC</h3>
+<p>As previously mentioned, Avicena current gen does not have a CTLE and relies exclusively on a single DFE tap EQ. Next gen adds a CTLE (capacitor based, no large inductor) and moves to a two-tap DFE which raises concerns on burst error from back-propagation.</p>
+<p>I gave Nigel a long list of questions, including some very specific requests on FEC/SNR/BER plots and much to my surprise the Avicena engineer responsible for this (Emad) actually <b>shared exactly what I was looking for.</b></p>
+<p>Let’s start with the obvious question of how many DFE taps is optimal.</p>
+<p>The answer is 2. There are absolutely massive gains going form 1-tap to 2-tap in next gen. Diminishing returns going to 3-tap, although 3-tap is effectively a perfect equalizer for their ISI model.</p>
+<p>Back-propagation depends on the DFE coefficients chosen. Broadly speaking, DFE and FFE equalizers have rules on the max value of main-tap and pre/post taps. This is why Avicena modeled the worst case as when H1/H0 = 0.6 which is perfectly reasonable.</p>
+<p>For the upcoming product, they have two inner-FEC schemes. The outer FEC is of course RS(544,514), standard Ethernet FEC.</p>
+<p>There are some details that I want to keep obfuscated on why there are two inner FEC options but let’s just say I think they can go with the BCH (much lower power and latency) and ignore the RS FEC. Debated several Avicena employees on this and got them to agree that most likely once the chips are back they can tune and avoid using the heavier FEC.</p>
+<p>Important and somewhat unique to Avicena, they can stripe the codewords very aggressively across lanes. This helps massively with FEC-induced latency and burst-error tolerance. Suppose you have a single lane with a nasty 10-error sequential burst. <b>Each of the 10 errors on that burst are striped in time and each BCH(redacted,redacted,redacted) symbol only sees one error from that lane effectively.</b></p>
+<p>Naively, if you have this dimension BCH FEC running at 8 GHz, the latency would be 36.5 ns which is not great but not terrible.</p>
+<p>But because of the aggressive striping (enabled my massive  lanes in parallel, all clock forwarded and synced), in theory that drops to 0.14 ns. Of course, full-parallel processing would not be practical from a timing closure perspective.</p>
+<p>Avicena claims that the FEC latency in the final product will be</p>
+<p>Finally we have the total simulation. Marco/CEO was arguing they will be at 1e-9 and thus I need to extent the plot. While I normally give people grief for extending plots by multiple orders of magnitude, in this case that is valid. These SNR vs post-FEC BER plots have linear asymptotes in loglog domain.</p>
+<p>UCIe spec is a reasonable proxy for all die-to-die PHY requirements.</p>
+<p>There is no FEC in UCIe, only a CRC and retry mechanism.</p>
+<p>With the FEC Avicena is using, they burn 0.2 pj/bit (UCIe is 0.5 pj/bit for Tx and Rx and has no FEC) and Avicena gets MASSIVE coding gain of 4.5 dB due to the -lane codeword striping.</p>
+<p>Thus in order to hit UCIe spec (after using their FEC), Avicena only needs 4e-8.</p>
+<p>A standard 3-order BER margin forces pre-FEC BER requirement to 5e-9.</p>
+<p>Finally, the simulation makes some optimistic assumptions (because it is very annoying to model otherwise), such as lanes fully independent. In reality, optical crosstalk (light bleed) and many other factors will lead to some lane correlation. Thus, I added another 3-order  buffer which leads to pre-FEC BER of 8e-10 or lower.</p>
+<p>Interestingly, this is pretty close to what Marco said Avicena is targeting (1e-9). Bluntly, I think they can do even better than this. Their plan seems to be push speed as far as possible until the FEC breaks. My view is from a pessimistic side of what pre-FEC BER needs to be delivered at a PHY level such that CRC and re-try never get executed unless some tail event like cosmic rays flips a bit.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987648864-125.jpg" alt="" loading="lazy"></p>
+<h3>2.g] Real Vertical Integration</h3>
+<p>One of the unfortunate realities of optics world is how the West has almost zero capabilities for manufacturing. Everything is in China.</p>
+<p>Fabrinet West does not count. They are retarded.</p>
+<p>Avicena is uniquely vertically integrated.</p>
+<p>They have an Aixtron MOCVD reactor.</p>
+<p>They have a lithography tool that is apparently massive overkill for what they need.</p>
+<p>They have wafer dice and grinding tools.</p>
+<p>They even have a (quite large) machine that turns water into hydrogen gas and carbon dioxide. Apparently, they need hydrogen gas for certain process steps and it’s way cheaper to just make your own.</p>
+<p>One of many rooms for internal assembly, inspection, process control, and failure analysis.</p>
+<p>The ability to <b>rapidly iterate</b> is a MASSIVE ADVANTAGE.</p>
+<p>You will see in later sections how much of a difference epi settings make.</p>
+<h3>2.h] Next-Gen Improvements</h3>
+<p>What’s so incredible is how many optimizations and improvements Avicena has coming.</p>
+<p>Almost all of the potential improvements for next-gen (tapeout soon) have been covered in prior sections.</p>
+<p>Epi stuff will be discussed in section [3].</p>
+<p>So let’s discuss the 8 Gbit LEDs.</p>
+<p>But first, detour on bandwidth and link budgeting!</p>
+<p>Let’s say I have a modulator, in this case a normal VCSEL, that has 11 GHz of bandwidth and high bias current. The response is pretty flat and clean.</p>
+<p>Just because I can go 11 GHz does not mean I should. There are many reasons why driving the modulator as fast as possible might backfire.</p>
+<ol><li>Reliability2. Thermals3. Power efficiency4. Noise performance of the device itself or the driver.5. …</li></ol>
+<p>Likewise, is it possible to run this VCSEL at 14 GHz and compensate with a powerful CTLE that has an extra 6 dB of gain at 14 GHz in the receiver?</p>
+<p>Sure. Your SNR is going to be crap because the CTLE amplifies noise massively. But sure you and try that.</p>
+<p>And this is where we come back to Avicena. One of the topics I wanted to discuss is speed per lane. Is it really a good idea for them to push to 8 Gbps per LED?</p>
+<p>Ways this could backfire:</p>
+<ol><li>Electronics (SerDes, driver, TIA) need to be much higher quality, adding risk to the next-gen design.2. Larger electrical structures may result in more risk of inductive coupling.3. Power-supply ripple requirements go way up.4. Potential for increased sensitivity to optical crosstalk.</li></ol>
+<p>Suresh/Avicena made an excellent counterargument. The point of the 8 Gbps LED is not necessarily to run it at that rate. If something goes wrong and they can’t run it at scale, so what? The modulator has more bandwidth and thus higher margin from both linearity and link-budget perspectives.</p>
+<p>Avicena states that the Rx analog front-end has tuning knobs that can reduce the bandwidth to minimize noise if the final datarate ends up being slower than the max the design was built around.</p>
+<p>In other words, say you have a receiver designed for 8 GHz bandwidth but end up running at 4 Ghz for whatever reason. If the AFE stays at full bandwidth, noise between 4 and 8 GHz is going to show up for no good reason. It is very desirable to be able to tune Rx bandwidth. Here is a random example to help you visualize.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987656726-134.jpg" alt="" loading="lazy"></p>
+<p>“We are not trying to push a 1 Gbps LED to 4 Gbps here.” - Suresh/Avicena</p>
+<p>The above quote is a not so subtle shot taken at all the other uLED companies.</p>
+<p>Anyway, if they run an 8 Gbps LED (3 dB bandwidth) at 6 Gbps and thus only have say 2 dB of modulator loss, great! Saved a dB.</p>
+<p>Unexpected problems happen as you scale bandwidth and circuit speed. My worry was these guys are chasing speed without understanding the risks and about to step on rakes.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987658843-135.png" alt="" loading="lazy"></p>
+<p>But they have a good plan and are not hinging the product roadmap on getting 8 Gbps per LED to work.</p>
+<p>With that said, the demo they had was pretty impressive.</p>
+<p>Disclaimers on the demo:</p>
+<ol><li>A BERT with a 4-tap Tx FIR filter was used. This is valid to de-embed the test fixture.2. A high-quality timing trigger was used for the scope. Valid for test environments but note that real clock-forwarded systems will have skew and jitter impairments.3. The entire setup is free space so no fiber distortions.4. A real driver and PD (Avicena made, PoR designs) were used but the TIA was an off-the-shelf Texas Instruments PON device.5. The lenses used in free space probably are meaningfully better than PoR lenses.^ apparently that lab lenes setup is quite bad compared to real lenes.</li></ol>
+<p>The Tx is running at 0.2 pj/bit, a massive improvement over the current demo kit of 0.9 pj/bit running at 3 Gbps. This is interesting because if you back out the speed delta (normalize)…</p>
+<p>Current gen forced to run at 8 Gbps (magic wand here…) with linear power scaling results in 2.4 pj/bit.</p>
+<p>Demo is 0.2 pj/bit so… more than an order of magnitude better than fake-scaled current gen.</p>
+<p>Eye is super clean. Excellent linearity. No RIN issues.</p>
+<p>Funny story, I asked the guy working on this if he is using scope waveform averaging and he (correctly) responded with surprise and incredulity.</p>
+<p>Real engineers know that scope waveform averaging is cheating. :)</p>
+<p>Anyway the lab setup of a single 8 Gbps uLED was completely above board. Obviously there are some aspects of the setup that make it quite favorable but these are all reasonable for early lab testing and were properly disclosed.</p>
+<h2>3] Eye Diagrams Deep-Dive</h2>
+<p>Let’s start with the eKIT.</p>
+<p>These are self-contained demo boxes. Some have connectors. Others have fiber directly going from one chip to the other.</p>
+<p>I have detailed data for two units, both running at 3 Gbps per LED.</p>
+<ol><li>old-ish built late summer 2026 that uses old epi but has epoxied fibers.2. Brand new unit built mid-October that has new epi but no epoxy for fibers. Instead fibers held in place on a test bench.</li></ol>
+<p>By default, the GUI sets the color-coding to 1e-8 for min. This is too optimistic so I changed it to 1e-12.</p>
+<p>You can see that 298 out of 340 lanes pass 1e-12 spec, an 87.6% pass rate.</p>
+<p>Around 15 minutes later, it dropped to 291 lanes passing, an 85.6% pass rate.</p>
+<p>The reason I bring this up is this demo kit and the mini PC and the monitor and the mouse were all on the same table. Myself and several others were crowded around and bumping into the table and such.</p>
+<p>Optics are sensitive to vibration, much more so than electronics. This is a nice example of real-world vibration manifesting in performance degradation.</p>
+<p>Now let’s call the pass rate at 85%. My honest expectation was a pass rate of 30-50%. Already this unit is way above my expectations based on the disastrous garbage Avicena showed at OFC only ~ 6 months prior.</p>
+<p>Funny story… it turns out the wafers used in that live OFC demo came back <b>25 days</b> before OFC. Avicena was scrambling to put together a functional unit, go from literal un-diced wafer to live demo in less than two months.</p>
+<p>Following chain of discussion happened roughly.</p>
+<ol><li>Me: Oh I had no idea wow impressive you got demo together that fast.2. Them: Why didn’t you talk to us?3. Me: Busy covering huge expo show floor. Hatred/bias against uLED. Saw garbage, took picture, moved on. No time to speak with companies I believe to be fraudulent.</li></ol>
+<p>There is probably a lesson to be learned here but it’s unlikely I will internalize it.</p>
+<p>Anyway…</p>
+<p>You can see that the bad lanes are sort of clustered near each other.</p>
+<p>Clicked on a subset of 10 bad lanes to see if we can guess what is wrong.</p>
+<p>You can tell by the red-biasing in the top that most of the bad LEDs are over-driven, have uniformity issue, some kind of focus or lens issue, ect ect IDK.</p>
+<p>Not electrical or optical crosstalk. Mostly manufacturing and assembly problems.</p>
+<p>The way to interpret the (my guesses) failure modes is:</p>
+<ol><li>Hot 1-level (red) fixed by better manufacturing.2. Skew (purple) fixed with EIC improvements for clock distribution.3. And the last two (orange and yellow) might be from wirebond. Not sure. Outliers anyway.</li></ol>
+<p><b>Edit/Note: </b>Nigel/Avicena shared the known failure mode causing some of the hot 1-level bad eyes.</p>
+<p>The root cause makes sense. Optical crosstalk between the feed-forward clock and some data lanes nearby. Notice how lanes 1/3/5/6 are all in a straight vertical line.</p>
+<p>I have debugged these kind of crosstalk problems before (mostly electrical) and this situation does seem easy to fix. Let’s just say there are much more painful crosstalk scenarios I have seen before.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987671847-148.png" alt="" loading="lazy"></p>
+<p>You can see the clock forward (and receive) LEDs labeled here.</p>
+<p>BUFF means buffer and those are pure electrical nodes to distribute electrical clock.</p>
+<p>Now remember, this is data from an eKIT built in ~summer. In mid-October they got new dice with new epi process. Think of this as better settings for the Axitron MOCVD machine when growing the LEDs.</p>
+<p>Keep in mind this unit does not have epoxy for fiber attach which is reasonable given this is lab testing. So results with epoxy will be slightly worse.</p>
+<p>Look at this! Only 5/330 lanes fail 1e-12 pre-FEC BER.</p>
+<p>This is fucking amazing. A 98.5% pass rate!</p>
+<p>Even if I include the 10 LEDs that are off due to defects, that is 325/340 = 95.6% pass rate!</p>
+<p>Here are the 5 bad lanes on new epi unit.</p>
+<p>Bottom two are super dead. Not sure what happened there.</p>
+<p>Top three look… fine? I suppose they are all skew/timing offset issues.</p>
+<p>This is incredible progress from epi improvements which raises an obvious question…</p>
+<p>Avicena has been doing this uLED thing for years. How are you guys figuring out epi (something rather fundamental) now within the last 3-6 months?</p>
+<p>Suresh gave a good answer once again. A lot of their wafer runs were MPW (multi project wafers) and they never got good wafer-level uniformity data. Now that they have finalized the design (or I suppose down-selected to a small subset of designs), they are running single-design wafer runs to get the uniformity data and make final tweaks.</p>
+<p>I want to highlight the crazy progress Avicena has made in case this is not clear enough.</p>
+<ul><li>~Feb 2026 —&gt; Garbage with most lanes failing- ~Summer 2026 —&gt; 85% lane pass rate at 1e-12- October 2026 —&gt; 95%-98% lane pass rate at 1e-12</li></ul>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987678535-153.png" alt="" loading="lazy"></p>
+<p>One final note on the eyes. You probably noticed the double-tracing of horizontal lines on each eye. Avicena claims this is an artifact of how the DFE and their eye monitor interact with each other.</p>
+<p>Normally, a DFE tap makes the eye look like it has curvy triangles. Just FYI something interesting.</p>
+<h2>4] Product Roadmap</h2>
+<p>To be clear, everything Avicena has right now is a science project for demo purposes.</p>
+<h3>4.a] Gearboxed 1.6T Cables</h3>
+<p>1.6T AEC can’t go past 5 meter at the time of writing. There are many rumors of everyone (Credo+Broadcom+Marvell) failing at 6 meter.</p>
+<p>Obviously optical transceivers (traditional SiPho MZI) can go up to 100 meter no problem. But those are super expensive and extremely Chinese. Rumors are circulating about more aggressive Chinese transceiver ban by USA gov by end of year.</p>
+<p>Slow-and-wide is here to save the day but you need a gearbox that converts the 224G per lane SerDes from host into… whatever slow-and-wide is implemented at.</p>
+<p>Avicena’s first product is a 1.6T gearboxed slow-and wide AOC (active optical cable, Credo marketing took active light cable lol) targeting 10 meter of reach. I have their preliminary datasheet and there are some interesting tidbits in there but not going to publish.</p>
+<p>I am curious on if whatever tricks Avicena has to deal with chromatic dispersion (digital pre-distortion/oversampling?) can really make 20 meter functional.</p>
+<p>But regardless, I agree with Nigel that the economics don’t work. Frankly 10 meters is good enough for applications I am interested in from dayjob perspective.</p>
+<h3>4.b] Direct-Drive (“IO-Squared”)</h3>
+<p>Gearboxing is a form of re-timing and is thus lame.</p>
+<p>What if you could drive the LEDs directly from a leading-edge TSMC process node such as N3P?</p>
+<p>Avicena is working with TSMC on a process that prints the LEDs directly onto the logic wafer. They call it IO-squared. I call it direct-drive because that really is the holy grail of datacenter communications. Slow-and-wide direct drive of LED, uVCSEL, or ring modulator. I don’t care which, just that it works and is at a reasonable/sane price.</p>
+<p>Marco did some math on the whiteboard.</p>
+<p>He is claiming 400 Tbps from 20 mm^2 of die area.</p>
+<p>A reticle-sized logic die is around 825 mm^2.</p>
+<p>Let’s assume some keep-out zone and pessimism.</p>
+<p>Say I allocate 25 mm^2 to Avicena in exchange for 400 Tbps of bandwidth that could in theory go up to 1.5 meters (maybe even 3 meters) over dirt cheap plastic fibers.</p>
+<p>That would be fucking amazing.</p>
+<p>It’s all just hopes and dreams right now. They are frankly resource constrained and busy making the AOC (gearboxed/retimed) products work.</p>
+<h3>4.c] Optical Waveguide Package</h3>
+<p>Avicena has plans to make a waveguide-based package using a secret specialty material to allow insane optical bandwidth on package. Lightmatter execs heads would explode if Avicena actually pulls this off.</p>
+<p>This effort is very sensitive so sorry for lack of details.</p>
+<h2>5] Competitive Positioning against uVCSEL</h2>
+<p>I want to thank the Avicena team for taking the time to review the draft and give useful feedback. This one comment on mode partition noise enhancement prompted me to spend some extra time and write a dedicated section.</p>
+<p>(no idea what it means… one moment…)</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987683182-159.png" alt="" loading="lazy"></p>
+<h3>5.a] Deep-Dive on Mode Partition Enhancement</h3>
+<p>https://en.wikipedia.org/wiki/Mode_partition_noise</p>
+<p>Ok… optical mode problems become jitter. Still don’t understand the root cause.</p>
+<p>Nigel (I think Howard wrote this TBH) send some starting material. A point in the right direction.</p>
+<p>https://opg.optica.org/oe/fulltext.cfm?uri=oe-34-3-4576</p>
+<p>Ok this paper is useful for building intuition. They are trying to design various VCSEL geometries (shape of the laser itself) to suppress mode partition noise (MPD).</p>
+<p>Linewidth is clearly effected.</p>
+<p>RIN too.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987691752-167.jpg" alt="" loading="lazy"></p>
+<p>Ok to recap….</p>
+<ul><li>VCSEL spectrum is spiky with gaps in-between.- If you don’t couple the VCSEL correctly into a fiber, the modes will be phase delayed and show up as both jitter and RIN.- If the multi-mode fiber is not precisely designed and manufactured (expensive), same problem.</li></ul>
+<p>So why are LEDs not effected by this? The answer is in the fact LED are not coherent light while all lasers are coherent light. The spikes you see in the VCSEL spectra are mode hops where the light jumps spontaneously from one wavelength to another.</p>
+<p>LED just vomits incoherent light in a smooth, random manner. In a way, this is like free (legal/intrinsic) waveform averaging lol. The drawback is obviously chromatic dispersion.</p>
+<p>So in a way, this comment by an Avicena engineer is a re-hash of the same previously covered tradeoff between uLED and uVCSEL.</p>
+<p>uLED severely harmed by chromatic dispersion but mostly unaffected to MPN.</p>
+<p>uVCSEL severely harmed by MPN but mostly unaffected to chromatic dispersion.</p>
+<p>Thus, uVCSEL <b>must</b> use expensive GRIN OM3 or better fiber while uLED can play tricks with cheaper custom GRIN fiber or even plastic.</p>
+<p>At the same time, uVCSEL <b>always</b> has a significant, intrinsic reach advantage because of chromatic dispersion disproportionately harming uLED.</p>
+<h3>5.b] Market/Economics Stuff</h3>
+<p>Let’s start with datarate because this feeds directly into the core (PUN INTENTED) issue of fiber count and thus fiber cost.</p>
+<p>For this analysis, I will compare Credo/uVCSEL and Avicena/uLED using datarate only and ignoring over-provisioning, redundancy, and clock forward fibers. Too many variables that frankly neither of these companies have an answer to right now. It is plausible that both Avicena and Credo will change fiber counts in the next 6 months.</p>
+<p>Credo is the easiest. The most obvious datarate to adopt is borrowed from PSM4, 25.78125 Gbps.</p>
+<p>64 fibers gets you to 1.6T.</p>
+<p>For Avicena, I still do not think 8 Gbps per LED is a realistic near-term goal. Sure, they have a single LED running great at that speed. Running a full system at that speed is entirely different effort. Fun and excruciating problems are going to punch these guys in the face repeatedly.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793987692601-168.png" alt="" loading="lazy"></p>
+<p>Right now, Avicena has 3 Gbps working in lab samples very well. Let’s assume a modest boost to… 4.25 Gbps for next gen.</p>
+<p>If you are wondering where I am picking these oddly specific numbers, here you go.</p>
+<p>https://helpfiles.keysight.com/scopes/FlexDCA-UG/Content/Topics/Eye-Mask-Mode/Mask-Testing/mask_available.htm</p>
+<p>Neither Avicena nor Credo are obligated to use a standard data rate or mask, but it is helpful to use history as a guide in the brave new world of modern slow-and-wide. If I worked at either of these companies, mask tests at these datarates would be the benchmark with margining set to hit ratio with an appropriate EQ added.</p>
+<p>https://helpfiles.keysight.com/scopes/FlexDCA-UG/Content/Topics/Eye-Mask-Mode/Mask-Testing/d_mask_margins_explanation.htm</p>
+<p>In Avicena case, that would be 8e-10 (given FEC setup) with two DFE taps and a CTLE of… whatever peaking they will have… I forgot to ask about that.</p>
+<p>Probably 1 pole 1 gain. Avicena needs 376.5 fibers which is not anywhere near a power of 2 and this irritates me. Let’s make it a multiple of 64 to make comparisons easier. 64*6 = 384 and gives cleaner numbers.</p>
+<p>Thus roughly, Avicena needs 6x the fibers as Credo for the same 1.6T AOC/ALC/whateverthefuckwearecallingthis.</p>
+<p><b>This is a huge structural cost disadvantage.</b></p>
+<p>The fiber problem is why section [2.e] is so long. In a way, this is the only thing that matters when trying to evaluate the competitive dynamics of uLED and uVCSEL.</p>
+<p>Here is the email with list of topics for the second+third meeting. Sent this to Nigel after the first meeting where Avicena addressed most of the pre-existing concerns.</p>
+<p>You can see vast majority of the remaining questions between meeting #1 and meetings 2+3 were fiber related. Was worried Credo/uVCSEL was going to decapitate Avicena.</p>
+<p>If Avicena loses on reach and (more importantly) cost, their attempted entry into the optical cable market is going to be a disaster.</p>
+<p>Howard (Avicena fiber/optics expert) spent ~1.5 hour with me explaining… all the stuff that went into section [2.e] so go scroll up and re-read it.</p>
+<p>Several claims on cost of custom (reduced layer count OM fiber, custom refractive index design) Avicena fibers were made. Not publishing these claims because…</p>
+<ol><li>The claims contain proprietary information.2. I have no way of comparing or validating these claims.3. From a customers perspective raw fiber cost does not matter.</li></ol>
+<p>Howard managed to move my opinion from “Credo/uVCSEL will vaporize you” to “maybe they have a chance to be cost competitive”.</p>
+<p>What is going to happen is myself and many other potential customers are going to request samples from Avicena and Credo H2 next year. We are all going to get quotes at 1K/10K/100K/1M volume pricing, and we all find out if Avicena got around the fiber-cost risk.</p>
+<p>Personally, I give Avicena a 70% chance of making to 10 meters. Vibe opinion pulled from ass, augmented with several slides Howard shared that I am not going to publish.</p>
+<p>From a 1.6T cable go-to-market perspective, Avicena really needs to make reach work.</p>
+<p>Avicena 1.6T cables must hit 10 meter to be commercially successful, in addition to getting cheaper/customer OM fibers to work to mitigate the ~6x fiber cost penalty against Credo/uVCSEL.</p>
+<p><b>Notes/Edits: </b>Nigel makes a reasonable counterargument.</p>
+<p>Also agree with this comment from Nigel. Personally I am much more excited for scale-in. Direct-drive optics is the dream. Re-timing is a necessary evil right now that I hope the industry can band together and banish.</p>
+<p>Another problem, albeit much smaller, is the 224G SerDes gap.</p>
+<p>I know exactly which 224G SerDes Avicena is using and the performance (reach, interopt, pj/bit) and they are absolutely at a disadvantage to Credo.</p>
+<p>Part of why I am so excited (more than Howard/Avicena…) for the GRIN (custom) plastic fibers is if this works, they win. The cost advantage will be incredible. Avicena would not merely compete in 5-10 meter range. That entire market would be their property. No way uVCSEL (needs OM3 fiber) could hope to compete against fancy plastic.</p>
+<p>Next year is going to be very exciting.</p>
+<p>Subscribe for engineering-driven investment analysis. Pledge your support</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

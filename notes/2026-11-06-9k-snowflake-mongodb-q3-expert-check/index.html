@@ -1,0 +1,431 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.06 | 9K | Software | Snowflake &amp; MongoDB Q3 Expert Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.06 | 9K | Software | Snowflake &amp; MongoDB Q3 Expert Check</h1>
+<p class="orig">原标题：Merit Snowflake、MongoDB Q3业绩调研(2026-11-06 15:00:00)</p>
+<p class="tags">#software #cloud #agents</p>
+<p class="meta">Meritco 久谦 · 2026-11-06</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>专家估计Snowflake Q3客户消费同比增速约为34%至35%，略高于此前预期的33%，核心SQL、数据仓库和BI计算仍是主要支出来源。</li>
+<li>专家预计Snowflake Q4消费增速约35%，下一财年Q1约35%至37%，RPO增速稳步加快但无明显拐点。</li>
+<li>Cortex Code用量每季度增长约30%至40%，且增速每季度提升约5个百分点，每1单位直接支出可带动约3至4倍平台用量。</li>
+<li>AI相关产品约占Snowflake直接产品收入的7%至8%，上一季度约6%，再前一季度约4%至5%。</li>
+<li>Cortex AI Gateway和模型路由刚推出、采用率较低，前者定位为AI控制平面和智能体治理层，后者整体影响预计为正但要到2027年初才更明显。</li>
+<li>企业已逐渐走出POC阶段，但AI部署面临治理法规、变革管理和数据基础等瓶颈，支出将持续渐进而非突然爆发。</li>
+<li>MongoDB Q3使用量同比增长约21%至22%，预计Q4约22%、Q1约23%，Atlas增速快于整体，RPO增速估计约20%。</li>
+<li>Atlas约25%的业务来自AI工作负载，Voyage AI基数仅为较低的数千万美元但环比增速可能达50%，智能体带来的阶跃式变化预计还需2至4个季度。</li>
+<li>专家认为CRO离职转投Meta主要影响市场观感而非运营，Agent Engine可能只是边缘性产品，而Databricks、Postgres及Google Firestore等平台的竞争是中长期风险。</li>
+</ol></section>
+<div class="body">
+<h2>音频信息</h2>
+<p>音频标题: 261106 - Merit Snowflake、MongoDB Q3业绩调研</p>
+<p>相关标的：undefined</p>
+<p>议题：</p>
+<p>完整音频链接：http://mw-meeting.oss-cn-shanghai.aliyuncs.com/audio/1793951944104-261106%2520-%2520Merit%2520Snowflake%25E3%2580%2581MongoDB%2520Q3%25E4%25B8%259A%25E7%25BB%25A9%25E8%25B0%2583%25E7%25A0%2594_20261106_155834.mp3</p>
+<h2>音频纪要总结</h2>
+<h2>专家访谈纪要</h2>
+<h2>1. Snowflake消费增长与未来展望</h2>
+<h3>a) Snowflake Q3客户消费增速是否达到此前预期，主要驱动因素是什么？</h3>
+<ul><li><b>Q3消费表现</b></li></ul>
+<ol><li>Snowflake客户消费同比增速约为 <b>34%</b>，甚至可能达到 <b>35%</b>，略高于此前预期的33%。</li><li>核心SQL、分析、数据仓库及BI等计算业务仍是主要支出来源。</li><li>主要工作负载包括数据迁移、数据工程以及Iceberg开放格式相关应用。</li></ol>
+<ul><li><b>AI带来的影响</b></li></ul>
+<ol><li>AI目前主要发挥增长加速作用，尚未形成大规模、直接的收入贡献。</li><li>Cortex、Copilot等产品会生成更多查询，从而间接提升计算和数据使用量。</li><li>过去几个季度，AI首先提升了Snowflake平台的重要性；目前已开始出现AI推动Snowflake实际增长的迹象。</li></ol>
+<h3>b) Snowflake Q4及明年初消费增速如何预测？</h3>
+<ul><li>Q4客户消费同比增速预计约为 <b>35%</b>。</li><li>下一季度，即Q1同比增速预计约为 <b>35%至37%</b>。</li><li>增长预计将持续并略有加快，主要原因是企业AI应用不断深入，带来更多数据和计算需求。</li><li>增长路径将是持续、稳步改善，而不是突然出现“曲棍球棒式”增长或集中追赶效应。</li><li>上述判断基于地缘政治及宏观经济环境保持基本稳定的假设。</li></ul>
+<h3>c) Snowflake的RPO增速是否较上季度加快？</h3>
+<ul><li>企业客户RPO同比增速仍在加快。</li><li>与Q2相比，Q3延续了稳步提升趋势，但尚未出现显著拐点或趋势突变。</li><li>整体表现与消费增速一致，属于持续改善而非突然跃升。</li></ul>
+<h2>2. 企业迁移与AI规模化部署趋势</h2>
+<h3>a) 美国企业向Snowflake迁移的节奏如何？</h3>
+<ul><li>当前Snowflake的大部分增长仍来自 <b>现有客户渗透率和支出提升</b>，而非大量全新客户一次性迁移。</li><li>Snowflake客户通常从小规模使用开始，之后逐步：</li></ul>
+<ol><li>迁移更多计算负载；</li><li>使用更多平台模块；</li><li>提升整体支出。</li></ol>
+<ul><li>企业正减少平台数量并进行技术栈整合，采购策略由“同类最佳”逐渐转向“最佳套件”。</li><li>Snowflake等平台持续完善生态系统，有利于承接客户平台整合需求。</li></ul>
+<h3>b) 企业AI部署何时会明显加速？</h3>
+<ul><li>企业已经逐渐摆脱POC和试点阶段，开始扩大AI部署规模。</li><li>一年前或半年前，企业普遍存在大量分散试点，但缺乏规模化落地；目前已有更多项目进入生产和企业级推广阶段。</li><li>Snowflake能够提供底层数据基础设施和计算能力，因此会随着AI规模化部署持续受益。</li><li>AI部署不是从0到1的离散事件，而是逐个工作流、逐个业务流程推进的连续过程。</li><li>实施项目正在变得更高效、更快速，企业级全面部署的比例也在提升。</li><li>仍需管理预期：AI支出不会突然爆发，而会持续、逐步增长。</li></ul>
+<h3>c) 企业实施AI面临哪些主要瓶颈？</h3>
+<ul><li><b>治理与法规</b></li></ul>
+<ol><li>欧洲企业需要应对GDPR、欧盟《人工智能法案》等监管要求。</li><li>企业在进入生产环境前，需要完成大量治理、合规和审批工作。</li><li>美国企业同样需要处理数据防泄漏协议、访问规则、智能体身份及授权等问题。</li><li>更高层面的治理还包括Token支出管理和智能体编排。</li></ol>
+<ul><li><b>变革管理</b></li></ul>
+<ol><li>很多企业错误地将AI视为纯IT项目或纯技术项目。</li><li>AI会深入影响运行多年甚至数十年的业务流程，而这些流程中包含大量既有逻辑和隐性知识。</li><li>AI项目需要项目管理、变革管理和业务分析师共同参与。</li><li>企业需要获得重新设计流程的授权；如果仅在旧流程上叠加AI，很难释放完整业务价值。</li><li>规模化部署需要高管支持，并以自上而下、覆盖全公司的方式推进。</li><li>许多早期试点缺少进一步推广的正式授权，这是项目无法规模化的重要原因。</li></ol>
+<ul><li><b>数据与IT基础</b></li></ul>
+<ol><li>企业需要统一、可访问且适合AI使用的数据环境。</li><li>如果基础建设时间过长，会拖慢AI业务落地；如果基础尚未完备就快速实施，也可能因数据分散而停滞。</li><li>数据难度因用例而异：跨多个来源、格式复杂的用例问题更突出；仅依赖单一系统、且智能体已内置于该系统的用例，数据问题相对较小。</li><li>在企业级全面推广过程中，数据基础问题不可避免。</li></ol>
+<h2>3. Cortex Code的渗透率与收入贡献</h2>
+<h3>a) Cortex Code目前的采用和增长情况如何？</h3>
+<ul><li>Cortex Code（CoCo）已成为Snowflake重要的增长驱动力，既能直接贡献AI产品收入，也能间接带动核心计算用量。</li><li>CoCo在Snowflake技术栈内部能够感知客户完整的平台环境和代码库，这是其相较Claude Code、GitHub Copilot等通用编程助手的重要优势。</li><li>在Snowflake平台内部的核心场景中，CoCo已经证明具备与通用编程助手竞争的能力。</li><li>CoCo用量每季度增长约 <b>30%至40%</b>，且增速每季度约提升5个百分点。</li><li>产品正在持续增加净新账户，并有望较快成为Snowflake客户的标准配置。</li></ul>
+<h3>b) AI产品占Snowflake产品收入的比例是多少？</h3>
+<ul><li>核心SQL、分析、数据仓库及BI业务仍占产品收入的大多数。</li><li>Co-work、CoCo及其他Cortex功能等AI相关产品，预计占直接产品收入的 <b>7%至8%</b>。</li><li>上一季度占比约为 <b>6%</b>，再前一季度约为 <b>4%至5%</b>，整体提升速度较快。</li></ul>
+<h3>c) CoCo对Snowflake整体消费有多大带动作用？</h3>
+<ul><li>每1单位直接用于CoCo的支出，可能带来约 <b>3至4倍</b> 的相关平台用量增长。</li><li>CoCo能够提升Snowflake开发者生产效率，加快数据管道和相关功能建设，从而增加底层计算及数据消费。</li><li>部分间接用量即使没有CoCo也可能发生，因此无法准确区分净新增贡献。</li><li>总体而言，CoCo已经是Snowflake较为可观的收入和用量增长来源。</li></ul>
+<h2>4. Cortex AI Gateway、模型路由与商业化</h2>
+<h3>a) Cortex AI Gateway当前的客户采用情况如何？</h3>
+<ul><li>Cortex AI Gateway目前尚未产生显著使用量影响，判断产品成效仍为时过早。</li><li>产品定位不是单纯增加计算消费，而是将Snowflake打造为覆盖平台内外的 <b>AI控制平面和智能体治理层</b>。</li><li>其核心能力包括：</li></ul>
+<ol><li>治理Snowflake内部及外部的智能体；</li><li>路由和控制第三方智能体流量；</li><li>为企业提供智能体编排和治理能力。</li></ol>
+<ul><li>产品推出具有较强的战略和信号价值，补齐了Snowflake生态系统中的能力空缺。</li><li>预计需要再观察3至6个月，才能判断其是否形成实际采用和使用量贡献。</li></ul>
+<h3>b) AI Gateway对Snowflake的战略意义和商业模式是什么？</h3>
+<ul><li>AI Gateway主要帮助第三方智能体访问Snowflake数据，提升平台数据的可访问性。</li><li>主要商业价值不是直接收取网关费用，而是推动底层Snowflake数据和计算消费。</li><li>产品可能产生少量直接收入，但预计规模有限。</li><li>为争夺治理层控制权，Snowflake可能对AI Gateway提供较大折扣。</li><li>随着更多第三方智能体通过Gateway访问Snowflake数据，平台消费有望间接受益。</li></ul>
+<h3>c) 模型路由产品目前采用情况如何？</h3>
+<ul><li>模型路由功能在Q3较晚阶段才推出，目前几乎尚未正式投入生产，企业采用率较低。</li><li>该功能可以根据模型成本及具体用例，动态选择合适的底层模型，提高Token使用效率。</li><li>随着企业开始重视Token投入产出比，市场对Token监测和成本治理的需求明显提升。</li><li>企业也开始更多考虑开源模型和较早代际模型，而非所有场景都使用前沿模型。</li></ul>
+<h3>d) 模型路由会降低还是提升Snowflake消费？</h3>
+<ul><li>模型路由可能使Cortex和Co-work的单次Token成本及相关Token收入略有下降。</li><li>但成本下降也会降低Snowflake自身成本，并支持更多AI用例落地。</li><li>更高的Token效率有望推动更大范围的使用量，因此总体影响预计为正面。</li><li>相关效果可能要到 <b>2027年初</b> 才会更加明显。</li></ul>
+<h3>e) 未来哪类公司可能主导AI编排和治理市场？</h3>
+<ul><li>当前市场参与者非常多，主要包括：</li></ul>
+<ol><li>Salesforce、Workday、ServiceNow等企业软件平台；</li><li>UiPath、Automation Anywhere等自动化平台；</li><li>微软、AWS、Google等超大规模云服务商；</li><li>Snowflake、Databricks等数据平台；</li><li>Palo Alto Networks等专业安全平台；</li><li>原生智能体平台及前沿模型实验室。</li></ol>
+<ul><li>目前尚未出现明确领先者。</li><li>企业最终选择可能取决于其主要底层平台：</li></ul>
+<ol><li>深度使用Salesforce的客户可能选择Agentforce；</li><li>深度使用微软生态的客户可能选择微软方案；</li><li>深度使用Snowflake的客户可能采用Cortex AI Gateway。</li></ol>
+<ul><li>当前编排产品发展略超前于客户实际需求，大部分企业的AI部署仍处于相对早期阶段。</li><li>跨平台编排和第三方智能体治理将成为长期需求，但最终市场格局仍高度开放。</li></ul>
+<h2>5. Snowflake与Databricks的竞争格局</h2>
+<h3>a) Q3两家公司竞争是否进一步加剧？</h3>
+<ul><li>Q3没有出现改变竞争格局的单一重大事件，双方仍处于持续性竞争状态。</li><li>客户通常会在Snowflake和Databricks之间二选一，同时大规模使用两者的客户相对较少。</li><li>数据和工作负载迁移成本较高，因此客户黏性较强。</li><li>两家公司都在扩展生态系统，以：</li></ul>
+<ol><li>增强客户黏性；</li><li>提高单客收入；</li><li>补齐产品功能；</li><li>向对方业务领域延伸。</li></ol>
+<ul><li>双方业务重叠度越来越高，但仍各自拥有稳定客户群。</li><li>现有客户内部仍有大量数据和计算需求可以挖掘，因此当前竞争并非零和博弈，也不是以大规模争夺对方存量客户为主。</li></ul>
+<h3>b) Iceberg能力完善是否明显促进Snowflake使用量？</h3>
+<ul><li>Q3 Iceberg能力的变化未在数据中形成明显影响。</li><li>Iceberg并未成为本季度Snowflake增长的重大事件。</li><li>现阶段尚难观察其对客户消费和平台使用量的实质性拉动。</li></ul>
+<h2>6. MongoDB消费增长与未来预期</h2>
+<h3>a) MongoDB Q3使用量增速是否达到此前22%的预期？</h3>
+<ul><li>MongoDB Q3使用量同比增速约为 <b>21%至22%</b>，与此前22%的预期基本一致。</li><li>若按实际数据观察，可能略低至21%，但主要是多年期大额交易确认节奏不均导致的数据波动，而非趋势转弱。</li><li>整体增速稳定在20%左右。</li><li>Atlas增速快于MongoDB整体，是最值得关注的增长来源。</li></ul>
+<h3>b) MongoDB Q4及明年初增速如何预测？</h3>
+<ul><li>若平滑大额交易及新旧日历年交界带来的波动：</li></ul>
+<ol><li>Q4同比增速预计约为 <b>22%</b>；</li><li>Q1同比增速预计约为 <b>23%</b>。</li></ol>
+<ul><li>增速预计略有提升，主要由Atlas持续较快增长推动。</li><li>上述数字为趋势参考，单季度数据仍可能受到大型合同分布不均影响。</li></ul>
+<h3>c) MongoDB的RPO增速如何？</h3>
+<ul><li>专家没有MongoDB本季度RPO的确切数据。</li><li>估计RPO同比增速与整体业务增速相近，约为 <b>20%</b>。</li><li>暂无证据表明RPO出现明显加速或减速。</li></ul>
+<h2>7. AI与智能体对MongoDB需求的影响</h2>
+<h3>a) AI工作负载对Atlas贡献有多大？</h3>
+<ul><li>估计Atlas约有 <b>25%</b> 的业务来自AI工作负载。</li><li>但AI工作负载定义较宽，任何具备AI功能的应用均可能被纳入统计。</li><li>如果仅计算智能体直接产生的负载，占比可能明显低于25%。</li><li>AI已经对Atlas增长带来有意义的促进，但尚未出现智能体应用驱动大部分增长的情况。</li></ul>
+<h3>b) 企业何时会大规模部署智能体应用？</h3>
+<ul><li>企业智能体采用不会像单一事件一样突然爆发，而是持续、逐步扩大的过程。</li><li>从季度维度看，可能还需要 <b>2至4个季度</b> 才会观察到较为显著的阶跃式变化。</li><li>即使届时变化更加明显，智能体普及仍会继续推进，不会在某个单一季度完成。</li><li>对MongoDB的需求促进预计将逐步体现，而非短期倍增。</li></ul>
+<h2>8. MongoDB 9.0与Voyage AI产品进展</h2>
+<h3>a) MongoDB 9.0能否推动Q4及后续使用量增长？</h3>
+<ul><li>MongoDB 9.0在Q3末期发布，企业客户升级周期较长，目前尚未反映在使用量数据中。</li><li>主要更新包括：</li></ul>
+<ol><li>提升吞吐量；</li><li>加快读取速度；</li><li>加快更新速度；</li><li>扩展加密能力。</li></ol>
+<ul><li>性能提升属于符合预期的渐进式优化，而非带来阶跃式变化的颠覆性升级。</li><li>扩展后的加密能力可能对受监管行业更有吸引力，并带来新增业务机会。</li></ul>
+<h3>b) Voyage AI商业化后的增长情况如何？</h3>
+<ul><li>Voyage AI仍处于较早阶段，但产品方向正确。</li><li>MongoDB将其嵌入数据库和Atlas生态，而非作为独立产品销售，有利于向价值链上游延伸并增强智能体应用相关性。</li><li>Voyage AI当前基数较小，预计仅为较低的数千万美元规模。</li><li>其环比增速可能达到 <b>50%</b>，未来两个季度较容易维持较快增长。</li><li>当前增长主要通过Atlas实现，而非依靠独立产品销售。</li><li>企业客户采用速度较慢，因此Q3尚未在MongoDB整体数据中形成明显贡献。</li><li>中长期看，Voyage AI将促进Atlas增长，并填补MongoDB此前的产品空白。</li></ul>
+<h2>9. Atlas Infinite与Agent Engine产品评价</h2>
+<h3>a) Atlas Infinite会对MongoDB产生什么影响？</h3>
+<ul><li>Atlas Infinite能够实现 <b>计算与存储分离</b>，是具有较大战略意义的产品更新。</li><li>目前该产品可能仅支持AWS。</li><li>核心价值包括：</li></ul>
+<ol><li>缩短扩容时间；</li><li>快速提升计算能力和数据容量；</li><li>应对周期性负载峰值；</li><li>减少客户为覆盖峰值而进行的过度资源配置。</li></ol>
+<ul><li>短期内，产品可能降低客户闲置存储支出，因此对MongoDB消费并非完全利好。</li><li>长期看，弹性能力有助于MongoDB赢得更多负载波动较大的工作负载，并与Postgres等平台竞争。</li><li>总体预计产生净正面影响，但兑现需要时间，且取决于能否获取原本可能流向其他平台的工作负载。</li></ul>
+<h3>b) Agent Engine的市场前景如何？</h3>
+<ul><li>Agent Engine代表MongoDB向智能体基础设施和价值链上游拓展。</li><li>产品尝试将状态、记忆、检索、权限及统一执行整合起来，本质上属于智能体编排与治理能力。</li><li>MongoDB靠近数据层，这是其优势之一，但并非独有优势。</li><li>Agent Engine需要与以下产品和平台竞争：</li></ul>
+<ol><li>Microsoft Foundry；</li><li>AWS Bedrock AgentCore；</li><li>Google相关平台；</li><li>Databricks Agent Bricks；</li><li>其他AI平台及智能体框架。</li></ol>
+<ul><li>企业更可能优先选择主要云服务商或AI平台供应商提供的编排层，而非数据库厂商的方案。</li><li>MongoDB可能通过智能体记忆等功能获得一定收入，但智能体运行时和统一编排能力面临较大竞争压力。</li><li>Agent Engine大概率不会成为默认的企业智能体基础设施，可能最终是一款边缘性产品。</li></ul>
+<h2>10. MongoDB管理层变化与竞争风险</h2>
+<h3>a) CRO离职是否影响客户采购和公司运营？</h3>
+<ul><li>CRO突然离职对MongoDB外部信誉和市场观感造成了一定负面影响。</li><li>其转投Meta可能使外界认为MongoDB对高管人才的吸引力不足，且离职时点较为不利。</li><li>从运营角度看，目前未发现明显影响，也没有迹象表明客户因此延迟或取消采购。</li><li>该高管更偏向平台和销售职能，而非核心运营管理，因此单次离职不构成重大运营风险。</li><li>后续需要观察管理团队或工程团队是否出现更多高级人员离职；若出现连续离职，才可能形成实质性风险信号。</li><li>在没有更多高管离职的情况下，本次事件更接近短期噪声。</li></ul>
+<h3>b) Snowflake、Databricks及Postgres是否会加大MongoDB竞争压力？</h3>
+<ul><li>MongoDB面临两类主要竞争：</li></ul>
+<ol><li>Snowflake、Databricks、Lakehouse及Postgres等数据平台向运营数据库领域延伸；</li><li>Google等超大规模云服务商进入MongoDB市场，例如Google通过Firestore提供MongoDB兼容能力。</li></ol>
+<ul><li>这些竞争对手拥有更广泛的平台能力，可以提供迁移方案、产品捆绑及统一采购优惠。</li><li>当前数据尚未显示竞争对MongoDB造成特别显著的实际冲击。</li><li>但从中长期看，平台型竞争者可能利用生态、捆绑和迁移能力持续压缩MongoDB空间，是MongoDB需要重点关注的风险。</li></ul>
+<h2>结构化总结表格</h2>
+<div class="tbl"><table class="t wrap"><thead><tr><th>业务板块</th><th>核心指标/产品</th><th>当前状态</th><th>后续预期</th><th>关键驱动与风险</th></tr></thead><tbody><tr><td><b>Snowflake消费</b></td><td>Q3同比增速</td><td>约34%-35%，高于此前33%预期</td><td>Q4约35%，Q1约35%-37%</td><td>核心计算、数据迁移、数据工程及AI需求</td></tr><tr><td><b>Snowflake RPO</b></td><td>同比增速趋势</td><td>较Q2稳步加快</td><td>延续改善，但暂无明显拐点</td><td>现有客户扩容和支出增长</td></tr><tr><td><b>Snowflake AI收入</b></td><td>AI产品收入占比</td><td>约7%-8%；上季约6%</td><td>占比继续快速提升</td><td>CoCo、Co-work及Cortex功能</td></tr><tr><td><b>Cortex Code</b></td><td>季度用量增速</td><td>每季度增长30%-40%</td><td>有望成为标准配置</td><td>提升开发效率，每1单位直接支出或带动3-4倍用量</td></tr><tr><td><b>AI Gateway</b></td><td>企业采用</td><td>采用率较低，影响尚不明显</td><td>3-6个月后观察效果</td><td>战略定位为AI控制平面，主要推动底层数据消费</td></tr><tr><td><b>模型路由</b></td><td>使用与商业影响</td><td>Q3末推出，尚未规模化生产</td><td>总体影响预计为正，2027年初或更明显</td><td>降低Token成本、支持更多用例，但可能压低单次Token收入</td></tr><tr><td><b>Snowflake竞争</b></td><td>Databricks竞争格局</td><td>双方业务重叠扩大，客户黏性均较强</td><td>继续扩展生态和单客支出</td><td>高转换成本，当前并非零和竞争</td></tr><tr><td><b>MongoDB消费</b></td><td>Q3同比增速</td><td>约21%-22%</td><td>Q4约22%，Q1约23%</td><td>Atlas增速快于整体</td></tr><tr><td><b>MongoDB RPO</b></td><td>同比增速</td><td>估计约20%</td><td>暂无明确加速信号</td><td>缺乏确切数据</td></tr><tr><td><b>Atlas AI业务</b></td><td>AI工作负载占比</td><td>约25%，但定义较宽</td><td>智能体影响将在2-4个季度后更明显</td><td>AI应用逐步部署，尚未出现爆发</td></tr><tr><td><b>Voyage AI</b></td><td>环比增速</td><td>基数较小，或约50%</td><td>未来两个季度有望维持较快增长</td><td>主要通过Atlas商业化，促进生态协同</td></tr><tr><td><b>MongoDB 9.0</b></td><td>产品影响</td><td>当前尚未体现于使用量</td><td>中长期渐进式促进采用</td><td>性能、吞吐量和加密能力提升</td></tr><tr><td><b>Atlas Infinite</b></td><td>产品定位</td><td>计算存储分离、支持弹性扩容</td><td>长期净正面，短期影响有限</td><td>降低闲置支出，同时争取波动型工作负载</td></tr><tr><td><b>Agent Engine</b></td><td>市场前景</td><td>向智能体编排与治理延伸</td><td>可能形成边缘性收入，较难成为默认平台</td><td>面临云厂商和AI平台激烈竞争</td></tr><tr><td><b>管理层风险</b></td><td>CRO离职</td><td>影响市场信誉，未见运营冲击</td><td>关注是否出现连续高管离职</td><td>单次事件暂不构成实质风险</td></tr><tr><td><b>MongoDB竞争</b></td><td>数据平台与云厂商进入</td><td>当前尚未形成显著数据影响</td><td>中长期竞争压力上升</td><td>平台捆绑、迁移方案及MongoDB兼容产品</td></tr></tbody></table></div>
+<h2>新版prompt提炼之后的转译</h2>
+<p><b>提问者：我们上一季度访谈时，您认为今年Q3客户在Snowflake上的消费同比增速为33%。实际增速高于还是低于这一预期？背后的变化原因是什么？</b></p>
+<p>回　答　者：实际增速略高，约为34%，甚至可能达到35%。核心计算仍是主要支出来源，相关工作负载包括迁移、数据工程和Iceberg开放格式。AI正在发挥加速作用，Cortex和Copilot也会生成查询，但目前更多是起到加速作用，尚未带来大规模的直接贡献。过去几个季度我们一直在讨论，AI的发展正在提升Snowflake平台的重要性；现在已有迹象表明，AI也将加快Snowflake的增长。</p>
+<p><b>提问者：您对今年Q4 Snowflake上的消费增速有何预测？对明年的增速又有何预测？</b></p>
+<p>回　答　者：我们不会进行非常详细的季度环比预测，但预计增长将持续，甚至会有所加快。主要原因正如刚才所说，AI正在各家公司得到越来越深入的推广和应用，并带来更多需求。</p>
+<p>回　答　者：从数据量和计算量来看，如果进行预估，我认为Q4为35%，Q1为35%至37%。整体趋势明确向好，但我们并不预期出现“曲棍球棒式”增长，也不预期出现瑞典语中所说的追赶效应。当然，这一判断未考虑地缘政治动荡或经济崩溃等因素，而是假设地缘政治环境保持稳定。</p>
+<p><b>提问者：2026年Q3，企业客户在Snowflake上的RPO增长情况与上季度相比如何？相较Q2，Q3的同比增速是加速还是减速？</b></p>
+<p>回　答　者：增速仍在加快，但并未出现显著的趋势变化，更多是稳步提升，尚未看到趋势拐点。</p>
+<p><b>提问者：您如何看待美国企业向Snowflake迁移的节奏和速度？本季度是否有更多美国企业开始使用Snowflake作为数据库？您认为何时能够看到美国企业在Snowflake及整体AI部署方面出现较为明显的加速？</b></p>
+<p>回　答　者：我的观察主要来自EMEA，但由于我在业务领导团队任职，对美国市场也有一定了解。总体而言，目前大部分增长实际来自现有客户渗透率和支出的提升。许多Snowflake客户会从小规模使用起步，随后逐步将更多计算负载迁移至Snowflake，增加使用的模块，并提高整体支出。这也是整体IT行业的发展趋势。</p>
+<p>回　答　者：企业正努力整合并减少所使用的平台，而包括 Snowflake 在内的平台本身也在构建更加完整的生态系统。因此，企业采取的是“最佳套件”策略，而非“同类最佳”策略。</p>
+<p>在 AI 部署方面，我们已经摆脱了 POC 和试点阶段的困境。大约1年前，或许是0.5年前，企业还只是在各处开展大量试点，并未实现规模化。现在，企业已经开始扩大部署规模。Snowflake 非常适合推动这一进程，也能从中受益，因为它提供底层基础设施、计算能力等。因此，随着 AI 部署不断推进，Snowflake 将日益受益。</p>
+<p>不过，AI 部署并不是从0到1的离散事件，而是一个逐渐向上的连续过程。每当企业将 AI 应用于一项工作流时，都需要开展相应的实施项目。这些实施项目正变得更加高效、更加迅速，也越来越多地以企业级全面部署的形式推进，整体规模无疑在持续扩大。但仍需适当管理预期：AI 支出不会突然呈现雪崩式增长，而是会持续、逐步增加。</p>
+<p><b>提问者：目前正在进行 AI 部署的企业主要面临哪些瓶颈或难题？例如，缺少统一的数据库、AI 权限治理，还是其他方面的问题？</b></p>
+<p>回　答　者：企业面临多个瓶颈，您提到的确实是其中一些较为突出的问题。首先，尤其是在欧洲，企业需要应对治理和法律法规方面的问题，包括 GDPR、欧盟《人工智能法案》等。这些法规的初衷都很好。根据不同的政治立场，人们可能认为这些法规具有必要性并能创造价值，也可能持相反看法。但对欧洲企业而言，这意味着在进入生产环境之前，需要完成大量工作；如果持较为轻视的态度，也可以将其称为文书工作。</p>
+<p>即使从美国企业的角度来看，也需要开展大量治理工作，包括数据丢失协议、数据访问规则、智能体身份、授权等。此外，还需要进行更高层面的治理，包括 Token 支出和智能体编排等。因此，治理和法律法规是第1类瓶颈。另一个我认为被低估的障碍，是传统的……</p>
+<p>回　答　者：变革管理至关重要。很多公司错误地将其视为纯IT项目或纯AI项目，但实际上，无论在哪里实施AI，都会深入影响已经运行多年甚至数十年的现有业务流程。这些流程包含大量既有逻辑和隐性知识，因此需要项目管理、变革管理和业务分析师等方面的支持。</p>
+<p>要真正理解相关业务流程，还必须获得从头重新设计流程的授权。如果保留原有设计，只是在其上叠加AI，就无法充分释放业务价值。因此，变革管理还需要高管支持，并将其作为一项自上而下、覆盖全公司的计划来推进。许多早期项目仅作为试点开展，由中层管理人员、倡导者和推动者提供支持，但并没有获得进一步规模化推广的授权。因此，企业必须具备明确的规模化推广授权。</p>
+<p>底层数据也至关重要。企业需要具备能够支持AI广泛应用的IT环境和数据环境，这是实施前必须完成的基础工作。不过，其中存在权衡：如果在基础工作上投入过多时间，就没有足够时间在实际业务中实施AI；但如果尚未完成必要的基础工作就仓促推进AI实施，也可能因缺乏统一、可访问的数据而放缓，甚至停止。</p>
+<p>具体情况需要根据不同用例进行权衡。有些用例需要使用来自不同来源、采用不同格式的大量多样化底层数据，相关数据问题会更加复杂；另一些用例主要依赖1个系统中的数据，而所使用的智能体可能已经集成在该系统中，此时数据问题几乎不存在。因此，问题的严重程度会有所不同，但在企业级推广过程中，这一问题必然存在。</p>
+<p><b>提问者：本季度，Cortex Code，即CoCo，在Snowflake客户中的渗透率如何？CoCo的consumption占Snowflake总consumption的比例是多少，上个季度的比例又是多少？本季度CoCo带动Snowflake整体consumption增长了几个百分点？与上个季度相比有何变化？</b></p>
+<p>回　答　者：这个问题包含多个方面，我会逐一说明。</p>
+<p>首先，Co-co，即 Cortex Code，是 Snowflake 非常重要的增长驱动力，因为它本质上能够带动核心用量增长。它既有直接影响，也有间接影响。值得关注的是，它正在与 Claude Code、GitHub Copilot 等产品展开有效竞争。我们在几个季度前可能讨论过，Co-co 在 Snowflake 平台内部使用时具有明显优势，而 Claude Code 更像是可跨不同环境使用的通用型编程助手。Co-co 能够内置感知用户完整的 Snowflake 环境和代码库，这是一个巨大优势。</p>
+<p>因此，Co-co 能否与 Claude Code 等产品竞争，目前至少在 Snowflake 技术栈内已经有了明确答案：可以，而这正是相关的核心场景。这是第1点，相关数据也支持这一判断。Co-co 的用量每季度增长约30%至40%，且增速仍在加快，大约每季度提高5个百分点。同时，它正在新增大量净新账户。从 Snowflake 的角度看，这一点也很重要，因为该模块正被现有客户持续采用，我认为它很快会基本成为标准配置。Snowflake 也会公布 Co-co 的客户数量、用户数量等数据。考虑到基数也在扩大，每季度增长30%至40%，且增速大约每季度提高5个百分点，这一表现相当突出。</p>
+<p>从产品收入占比来看，根据我的估算，核心 SQL、分析、数据仓库和 BI 仍占大多数。AI 相关产品包括 Co-work、Co-co 及其他一些 Cortex 功能，可能占直接产品收入的7%至8%，而且正在迅速上升。前1个季度可能约为6%，再前1个季度约为4%或5%。</p>
+<p>此外，每1单位直接用于 Co-co 的支出，可能会带来约4倍的用量增长；这一倍数也可能是3或4。由此可见，Co-co 已经成为 Snowflake 相当可观的收入来源。当然，其中许多间接收入原本也可能会产生，这部分确实较难估算。但从根本上看，Co-co 显著提高了 Snowflake 开发人员的生产力，使其能够更快地构建数据管道并增加推动用量增长的功能。</p>
+<p><b>提问者：本季Q3，Snowflake发布了Cortex AI Gateway。目前该产品在企业客户中的渗透率如何，有多少客户正在使用？它是否提升了客户在Snowflake上的使用量？</b></p>
+<p>回　答　者：目前尚未产生显著影响，现在判断还为时过早。我也不确定是否应该从使用量的角度理解Cortex AI Gateway。从战略角度看，包括超大规模云服务商、Snowflake、Databricks、Salesforce和UiPath等在内的众多AI平台，都在争夺编排和治理领域的主导地位，AI Gateway正是Snowflake对此作出的回应。</p>
+<p>该产品旨在将Snowflake定位为AI控制平面，即一个覆盖Snowflake内部及外部的智能体治理层。它还能够路由和控制第三方智能体流量，这是成为编排层的必要条件，因为Snowflake需要具备在企业内部编排其他智能体的能力。</p>
+<p>编排和治理领域竞争非常激烈，各方都在争夺领先地位。按照行业逻辑，随着市场逐渐成熟，负责处理编排的平台将占据核心位置。不过，目前参与竞争的企业很多，最终选择取决于客户所采用的底层平台。例如，如果客户主要使用Salesforce或Agentforce，并围绕该平台构建整体体系，可能会选择Agentforce作为编排层。如果客户深度使用Microsoft的超大规模云服务，则可能会采用Microsoft的解决方案。该方案目前还不够成熟，但正在持续发展。如果客户深度使用Snowflake，Cortex AI Gateway就是一个可信的模块，可以将第三方智能体接入其中。</p>
+<p>该模块推出得非常及时，也会对增长作出贡献，但它更像是一个填补能力空缺的模块，而非直接推动使用量的产品。随着第三方智能体流量访问Snowflake中的数据，未来可以观察到相应的使用量变化。或许可以在3个月甚至6个月后再讨论，届时将开始看到该产品是否真正取得成效。目前，它更多体现出信号价值，也是完善生态系统的一项举措。</p>
+<p><b>提问者：这一产品对Snowflake意味着什么？Snowflake将如何实现该产品的商业化？</b></p>
+<p><b>提问者：这款产品对 Snowflake 有何重要意义？Snowflake 如何通过它实现商业化？</b></p>
+<p>回　答　者：该产品主要帮助第三方智能体访问 Snowflake 数据，核心作用是提升 Snowflake 及其数据对第三方智能体的可访问性，从而推动 Snowflake 的数据消耗。该产品可能也会带来一些直接收入，但预计规模很小。Snowflake 会非常重视对治理层的掌控，因此甚至可能对 AI Gateway 提供大幅折扣。总体而言，该产品主要用于推动底层 Snowflake 数据消耗。</p>
+<p><b>提问者：您是否关注到第3季度 Snowflake 与 Databricks 的竞争情况？您认为两家公司的竞争是否变得更加激烈？双方的能力是越来越接近，还是差距正在扩大？</b></p>
+<p>回　答　者：第3季度没有出现任何特定的单一事件，这更多是两家公司之间持续性的竞争。目前基本属于二选一的局面，客户通常选择 Databricks 或 Snowflake，同时使用两者的客户相对较少。随着客户迁移至 Snowflake 或 Databricks，转换成本相当高，因此客户黏性也很强。</p>
+<p>两家公司都在扩展各自的生态系统，以增强客户黏性、提高收入并弥补功能差距，这意味着双方的业务重叠度越来越高，彼此之间确实存在竞争。但总体来看，两家公司都拥有各自的客户群，而且这些客户通常不太可能迁移至另一平台。此外，双方现有客户群中仍有大量数据消耗增长空间，可以在未来多个季度持续挖掘。因此，这并不是双方激烈争夺彼此客户的零和博弈。</p>
+<p><b>提问者：AI Gateway 中也包含模型路由产品，目前是否已有企业客户使用？如果企业客户使用了这类模型路由产品，其使用后的整体 AI 消耗相比使用前是加速了，还是放缓了？</b></p>
+<p><b>提问者：消费是在加速还是减速？</b></p>
+<p>回　答　者：路由可以被视为网关的一部分，但它直到第3季度相当晚的时候才推出。我看到了相关公告，Snowflake也曾以合作伙伴身份向我们介绍过，但该产品几乎尚未投入生产，目前的采用率非常低。</p>
+<p>从本质上看，它能够提高Token效率，这一点非常有价值。整个AI行业乃至更广泛的软件行业都在讨论Token支出需要得到监控。今年年初，市场几乎以Token支出来衡量AI采用情况，但随后Token支出开始失控。因此，目前业界普遍强调，需要具备衡量Token支出的能力，确保投入能够带来相应价值。企业也开始考虑开源模型及较早一代的模型，而非前沿模型。</p>
+<p>因此，这项功能推出得非常及时。提高Token支出效率，有助于支持更多用例，并推动更多Snowflake消费。动态路由是实现这一目标的合理方式，它会根据不同模型的成本，动态选择最适合特定用例的底层模型，具有明确价值。</p>
+<p>Cortex和Co-work的Token收入可能会略有下降，因为它们产生的Token成本将减少，但部分收入损失也会被成本下降所抵消，因此影响并不严重。同时，这项功能还会推动更大的使用量。我认为Snowflake愿意作出这样的选择，预计其总体影响将是正面的，但相关效果可能要到2027年初才会更加明显。</p>
+<p><b>提问者：除Snowflake外，许多公司也在布局模型路由、监测和编排层，例如云服务提供商、安全类公司以及Datadog。您认为未来哪类公司更有可能成为企业模型编排和监测的主要入口？这一市场未来可能形成怎样的格局？</b></p>
+<p>回　答　者：这是一个价值100万美元的问题，非常值得关注。</p>
+<p>回　答　者：这一领域非常拥挤，因为AI是一项横跨多个领域的技术。正如之前提到的，在编排和治理方面，Salesforce、Workday和ServiceNow等软件平台都在开发各自的智能体产品；UiPath和Automation Anywhere等自动化平台也在参与；此外还有超大规模云服务商、数据平台，以及Snowflake这样的代表性企业。正如您指出的，Palo Alto Networks等更加专业化的平台、原生智能体平台，甚至前沿实验室本身也在参与竞争。</p>
+<p>各方都在尝试解决这一问题，并希望掌控最上层，但目前很难判断最终将由谁主导，我也没有看到明确的领先者出现。我认为市场的发展略微超前。推出这些编排产品具有积极意义，因为它们指明了市场的发展方向：未来确实会出现跨平台编排和使用第3方智能体的需求。但大多数客户目前尚未发展到这一阶段，他们在AI部署进程中仍处于更早期。因此，最终结果只能由时间验证。这个问题仍然非常开放，目前没有明确答案。</p>
+<p><b>提问者：第3季度，Snowflake的Iceberg能力是否得到进一步完善？这对企业以及Snowflake的使用量产生了什么影响？</b></p>
+<p>回　答　者：坦率地说，这并不是一个影响很大的事项。我尚未看到它在数据中有所体现。也可能是我掌握的信息并不完整，但从我的角度来看，它在第3季度并未成为一个重大事件。</p>
+<p><b>提问者：关于MongoDB，上个季度您预计其第3季度使用量同比增速可能为22%。实际增速高于还是低于22%？背后的原因是什么？</b></p>
+<p>回　答　者：实际增速与22%大致相同，并未出现大幅增长。其中，Atlas的增速相对更快。</p>
+<p>回　答　者：有时，多年期交易的分布会不太均匀，但整体情况基本相同。我认为增速甚至略低，约为21%，不过这更多是数据波动，而非趋势信号。总体来看，增速稳定在20%左右。Atlas的增长速度更快，值得重点关注。除此之外，整体表现相对稳定。</p>
+<p><b>提问者：对于今年Q4和明年的同比增速，您的预期是什么？背后的原因有哪些？</b></p>
+<p>回　答　者：如果对增长曲线进行平滑处理，实际数据可能会受到大额交易分布不均的影响，尤其是处于新旧日历年交界附近的Q4和Q1。尽管如此，我预计增速可能会略有提升，达到22%至23%，例如Q4为22%，Q1为23%。这些仅是参考数字，主要原因是Atlas保持了较高增速。</p>
+<p><b>提问者：目前企业内部基于智能体的应用场景是否出现了明显增长？您认为企业何时会大规模部署智能体应用，从而加速MongoDB的需求增长？</b></p>
+<p>回　答　者：刚才您的声音中断了一会儿，不过我应该理解了问题。您想了解智能体的发展是否加速了需求。整体方向上确实如此，但并未带来大幅倍增。我估计，Atlas约有25%的业务来自AI工作负载。不过，AI工作负载的定义可能比较宽泛，任何具备AI功能的应用都可能被计入其中。如果仅看智能体产生的负载，占比可能还要更低。因此，这确实带来了有意义的加速，但尚未出现大规模智能体应用推动大部分增长的情况，实际影响要温和得多。</p>
+<p><b>提问者：您认为企业何时会开始大规模采用智能体？</b></p>
+<p>回　答　者：这个回答可能比较乏味，但我对所有人都是这么说的，因为这是我在一线实际观察到的情况。它不会像一次大规模的“灭绝事件”那样突然发生。至于具体什么时候……</p>
+<p>回　答　者：这并不是像彗星撞击一样突然发生，而是一个逐步增长的过程。最终回头看时，我们会发现已经取得了很大进展。从季度维度来看，大约还需要2个、3个，甚至可能4个季度，才会出现阶跃式变化。即使到那时，整个过程也不会结束，但变化将会非常显著。</p>
+<p><b>提问者：MongoDB 9.0发布后推出了一些重要的功能更新。这些更新是否会对客户在Q4及后续阶段的使用量产生明显促进作用？</b></p>
+<p>回　答　者：MongoDB 9.0是在Q3发布的，接近Q3末期。由于客户的采用周期较长，这些更新显然还不会体现在当前数据中。我们主要服务企业客户，而企业客户不会在新版本发布几周后就完成升级，因此目前还看不到对使用量的影响。</p>
+<p>MongoDB 9.0确实带来了性能提升，包括吞吐量提升、读取速度加快和更新速度加快，这些都是积极改进。不过，我认为这些更像是符合预期的性能优化，本身并不构成阶跃式变化。此外，该版本还扩展了加密功能。据我了解，这项功能可能有利于受监管行业，因此或许能够带来更多业务机会。但坦率地说，这次发布更像是渐进式演进，而不是颠覆性升级。</p>
+<p><b>提问者：8月13日，Voyage AI产品整合已经进入全面商用阶段。客户在Voyage AI方面的使用量是否出现显著增长？您认为Voyage AI可能会为今年Q3、Q4以及明年的MongoDB整体使用量增长贡献几个百分点？</b></p>
+<p>回　答　者：首先，Voyage AI目前仍处于相对早期的阶段，但可以明确一些发展方向。我认为，将其集成并嵌入数据库功能，而不是作为独立产品进行采购，是正确的产品设计。可以将其理解为MongoDB借此向价值链上游延伸，并在智能体应用领域提升相关性。目前，Voyage AI的增长速度很快。</p>
+<p>回　答　者：目前基数很小。我认为其环比增速可能达到50%，并且由于当前基数可能仅为较低的数千万美元，因此未来2个季度很容易维持这一增速。不过，更值得关注的是客户基础的变化及其未来增长方式。目前，其增长主要通过Atlas实现，而非作为独立产品发展。因此，应将其视为一个生态系统，整体价值大于各部分价值之和，这就是一个很好的例子。</p>
+<p>不过，企业客户的接受速度相对较慢，因此目前尚未在数据中看到明显体现。但这是一次很好的产品发布，未来将反映在数据中，尤其会促进Atlas增长。同时，它填补了MongoDB此前的产品空白，我认为这是更恰当的定位方式。</p>
+<p><b>提问者：MongoDB的CRO离职后，对MongoDB产生了多大影响？在Q3，是否有客户因此对采购MongoDB产生犹豫或延迟？这一影响是否会长期存在？</b></p>
+<p>回　答　者：我认为不会。表面来看，这次离职对MongoDB的信誉造成了较大负面影响，但从运营角度看，影响并不明显。他的离职确实比较突然，而且据我了解，他去了Meta，这同样会带来负面观感，因为他转向了一家非常热门的公司，可能让外界认为MongoDB缺乏吸引力。此外，离职时点也相当不利。</p>
+<p>不过，我认为这并不构成运营风险。他更偏向平台和销售，而非运营管理。因此，这件事主要影响的是公司信誉。未来几个月需要观察管理团队或工程团队是否还有更多高级人员离职，如果出现这种情况，才可能是一个信号。但孤立地看这次离职，我认为更多只是噪声。目前我也没有听说还有其他高级人员离职，因此可能不会产生进一步影响。</p>
+<p><b>提问者：Snowflake和Databricks正在积极与Postgres等开源数据库进行产品整合。您认为这是否会对MongoDB形成越来越大的竞争压力或威胁？</b></p>
+<p><b>提问者：MongoDB面临哪些竞争？</b></p>
+<p>回　答　者：MongoDB的竞争主要来自2个方面。其一是数据平台向运营数据库领域扩展，例如Lakehouse、Databricks、Postgres和Snowflake都在进入MongoDB的市场。其二是超大规模云服务商也在采取相同策略，尤其是Google。Google推出了Firestore，并提供MongoDB兼容性。</p>
+<p>这对MongoDB构成了较大挑战，因为超大规模云服务商、Databricks和Snowflake拥有更广泛的平台，如今几乎可以提供迁移方案，并进行产品捆绑。虽然我尚未从相关数据中看到特别显著的影响，但如果我是MongoDB，确实会对此有所担忧。</p>
+<p><b>提问者：9月29日，MongoDB有2款产品进入公测，分别是Atlas Infinite和Agent Engine。这2款产品会对MongoDB产生怎样的影响？</b></p>
+<p>回　答　者：可以将这2款产品分开来看。首先是Atlas Infinite。虽然该产品仍处于早期阶段，但意义较为重大。它能够将计算与存储分离，这本身就很有价值。据我记忆，该产品目前仅支持AWS。它还可以缩短扩容时间，这一点非常重要，因为用户希望尽快扩展计算能力和数据容量。</p>
+<p>Atlas Infinite可以应对负载峰值，使客户不必为了覆盖峰值而过度配置存储资源。不过，这也是一把双刃剑，因为它可以降低客户在闲置资源上的支出，从这一角度看，对MongoDB并不完全有利；但同时，它也有助于MongoDB赢得更多负载波动较大的工作负载。</p>
+<p>对于负载波动，用户可以通过弹性能力加以处理，而Atlas Infinite正是采用这种方式，因此无须配置过多存储资源来确保覆盖峰值。短期内，客户的存储需求可能会下降；但长期来看，MongoDB可能赢得更多负载波动较大的项目。总体而言，这将产生净正面影响，但需要一定时间才能体现。</p>
+<p>这一判断成立的前提是，Atlas Infinite能够吸引原本可能流向其他平台的工作负载，例如Postgres。因此，该产品短期内的影响有限，长期表现仍有待观察。</p>
+<p>回　答　者：这非常有意思，本质上是向智能体基础设施领域拓展。这个领域竞争非常激烈，很难胜出。其提到治理层、统一执行等能力，正如我们此前讨论的，各方都希望参与其中。</p>
+<p>MongoDB非常接近数据层，这在某种程度上是优势，但并非只有它在这样做。将状态、记忆、检索和权限整合起来具有价值，这本质上就是编排。没有人质疑编排的价值，但问题在于，其编排与治理层需要同Microsoft Foundry、Bedrock Agent Core、Google、Databricks以及相关框架竞争。Databricks有一款产品，我记得叫Agent Bricks。</p>
+<p>我认为，企业更有可能选择其云服务供应商或AI平台供应商提供的治理与编排层，而不是数据库供应商提供的方案。目前，MongoDB正尝试从数据库供应商转型，向价值链上游拓展。我能理解其原因，因为数据库本身已经是一种商品。Snowflake也做出了类似判断，但其在摆脱单纯的计算和存储业务方面更加成功。</p>
+<p>总体而言，这是一项不错的产品发布，也体现了当前的发展趋势。智能体记忆功能可能会取得成效，但智能体运行时可能面临困难。MongoDB或许能够从中获得收入，但我认为它不会成为默认的智能体基础设施供应商。整体来看，这可能只会是一款边缘性产品，这是我的判断。</p>
+<p><b>提问者：MongoDB本季度的RPO增速与上季度相比是否有所加快？</b></p>
+<p>回　答　者：我没有确切数据。我认为其增速可能与整体增速处于相近区间，但你也可以通过其他来源进行核实。我目前没有相关数据，估计约为20%。</p>
+<h2>原文转译</h2>
+<p>喂。</p>
+<p>Uh, two minutes.</p>
+<p>Yeah, yeah, no worries.</p>
+<p>相关人员应自主做出投资决策并自行承担投资风险。九千咨询不因使用本次内容所导致的任何损失承担任何责任。专家发言内容仅代表专家个人观点，不代表本公司观点。本次会议内容不得涉及国家保密信息、内幕信息、未公开重大信息、商业秘密、个人隐私。不得涉及可能引发不当炒作或股价异常波动的敏感信息。不得涉及影响社会或资本市场稳定的言论。未经九千咨询事前书面许可，任何机构或个人不得以任何形式复制、录音、刊载、转载、转发、引用本次会议内容。否则由此造成的一切后果及法律责任由该机构或个人承担。本公司保留追究其法律责任的权利。感谢您的理解和支持。</p>
+<p>好的专家，咱们开始今天访谈前，请您做一下陈述，表明我同意或我不同意，就是您知道保密信息的定义，并同意不会在访谈中透露内幕信息及其他的保密信息。</p>
+<p>Hi expert, before our interview, please confirm that you are aware of the definition of confidential information and will not disclose such information in the interview.</p>
+<p>Uh, hello. Yes, I'm aware of the definition and I will not disclose such information.</p>
+<p>好的，好的。我想问一下专家，就是我们上一季度跟您聊的时候，您认为就是在今年的三季度，客户在Snowflake上面的consumption的一个同比增速是33%。想问一下实际的情况的话，是比这个数字高了还是低了？然后背后的变化的原因可能是什么？嗯。</p>
+<p>And last quarter when we had the interview, you mentioned that in Q3 the expected customer spending growth on Snowflake was 33%. So for the actual number, is it higher or lower than that expectation and what are the reasons?</p>
+<p>Uh, it's, it's slightly higher. So I would say around uh 34 to to maybe even 35%. And it's uh, I mean core, core compute is still the the the bulk of the dollars, sort of migration, data engineering and uh uh Iceberg open format workloads. Um, AI is uh acting as an accelerant. Um, um, and then you have Cortex and Copilot sort of generating queries, but that that that is more an acceleration and not not actually massively contributing. But we're starting to see signs that uh, if you remember we've been talking the last few quarters how AI is absolutely uh coming and and increasing the relevance for the Snowflake platform and now we're seeing signs I would say that it's also uh going to accelerate the growth.</p>
+<p>嗯哼，明白。好的，那我想问一下就是专家的话，对今年的Q4，Snowflake上的consumption增速的一个预测可能是多少？然后对于明年这个预测可能是多少？对。</p>
+<p>And what's your expectation for this year Q4 Snowflake spending growth and also what's the expectation for next year's growth?</p>
+<p>Yeah, I mean, we don't do uh very detailed sort of quarter on quarter forecasts. Um, but but our expectations is that the growth will continue, even accelerate a bit. And and the main reasons for that is like I explained, you know, the AI um the AI uh spread or implementation is in in general going deeper and deeper across companies and it's driving more and more... Um data data volume and compute volume. Um so uh if if I were to give you a guess I would say for Q4 uh 35%, Q1 uh 35 to 37. I will give you a range there if that's okay. Uh so a positive trend absolutely but we're not expecting any any hockey stick uh or catch up effect as we say in Swedish. Um also this is of course you know not taking into account any geopolitical turmoil or economic meltdown. This is assuming steady state uh from a geopolitical uh point of view.</p>
+<p>Mhm, 明白。好的,OK,然后我想问一下,那么,那么在本在2026年三季度的话,就是企业客户在在Snowflake上面的一个RPO的一个的一个增长情况,相较于上个季度是什么样的?就是RPO的一个同比增速相较上个季度有进一步的一个加速或者说降速吗?对。</p>
+<p>Um and in 2026 Q3 for the enterprise customers Snowflake RPO growth compared with last quarter is this growth accelerating or uh de- decelerating?</p>
+<p>Uh could sorry could you repeat that which which uh uh for Q3 or because I didn't quite get the question.</p>
+<p>Yes, okay, I can repeat that. Like in 2026 Q3, the enterprise customers RPO, RPO growth on Snowflake compared with last quarter that is Q2, um the growth rate in Q3 is it accelerating or decelerating?</p>
+<p>No, it's it's also accelerating uh but it's not again it's not a massive trend shift. It's more uh uh a steady increase I would say. We don't see a a trend break.</p>
+<p>Mhm, 明白,OK。好的,然后我想问一下就是专家的话怎么看待美国企业的话就是他们他们向Snowflake这边的迁移的一个节奏还有速度?然后本季度的话有看到更多的美国的企业的话开始开始使开始使用Snowflake的话作为他们的一个数据库吗?对,然后包括就是专家认为什么时候的话可以看到美国企业在Snowflake包括整个AI部署上面的一个比较明显的一个加速?专家认为这个时间点可能在什么时候?对。</p>
+<p>Um and what's your view on the US companies' migration to Snowflake's speed and the pace? And also in this quarter are you seeing more American companies using Snowflake as their databases? And also in your opinion at what time point like when do you think there will be a very uh obvious acceleration for this uh uh American companies to do the AI deployment on Snowflake?</p>
+<p>Yeah, so uh I mean my my view is mostly EMEA but I can I can speak in general to US as well since I have that um uh sort of you know in in in uh I I work in my practice leadership team so I got some insights into US as well. Basically uh most of the growth we are seeing is actually uh you know increased penetration and increased spend among our existing customers. Uh and I think that's that's a pattern uh that that that uh many Snowflake customers they uh they start small and then they migrate more and more compute to Snowflake, they add more and more uh uh modules and increase the overall spend. And and this is an overall IT trend as well where you where you sort of... strive to consolidate on fewer platforms and and the platforms themselves including Snowflake are are sort of building more uh uh complete ecosystems. Uh so basically you have a best of uh best of suite strategy rather than a best of breed strategy. Um uh with with regards to AI deployment, we we are absolutely at the stage where you know, we have left the the POC and pilot uh purgatory as it was sometimes called back back about a year ago uh maybe half a year ago. Basically where where we were only doing a lot of pilots everywhere but not scaling. Now companies are scaling and and Snowflake is in a great position to uh facilitate that and also benefit from that because as you know of course the uh you know they provide the plumbing, the compute uh etc. So uh they will they will start to increasingly benefit from the AI rollouts. Uh but again, an AI rollout is not a discrete uh event like a zero to one. It's more like a gradual uh analog uh you know curve that goes upwards. For every uh for every workflow that you apply AI to, you need to do a a an implementation project. Uh so basically and and and those uh implementations are uh getting more efficient, they are getting quicker, uh you know, it's more like enterprise-wide rollouts, so absolutely increasing. Uh but I just want to temper the expectations. It's not a uh an avalanche an avalanche of of like AI spend coming. It's more like a continuous gradual increase.</p>
+<p>Mm-hmm. Mm-hmm. Mm-hmm. 对的，然后我想问一下就是，那目前的话正在进行AI部署的这些企业，他们遇到的遇到的遇到的一些瓶颈或者难题的话可能是什么？比如说他们的话没有那种统一的一个数据库，还是说面对AI的权限治理，还是说还是说一些其他的方还是说一些还是说一些其他的方面？对。</p>
+<p>Mm. And for the companies that are deploying uh that are doing the AI deployment, what are the bottlenecks or the challenges they face? For example, uh no unified database or about the AI uh permission governance or some other bottlenecks?</p>
+<p>Yeah, there there are several bottlenecks uh and I think you have uh correctly pointed out uh uh you know, some of the larger ones. So so let me go through it from my my perspective. Um first of all, um especially in Europe, you have uh you have uh governance uh legislation issues so that you want to uh you know, we have GDPR, EU AI Act etc. It's all very well-meaning regulation and and depending on your political view, you can also think that they are necessary and adding value or or not. Uh but but you know, they basically mean that for for European companies there there is a lot of uh if you're dismissive you could call it paperwork uh before you go into production. Uh even for from an American point of view, you have a lot of governance work. So you have like data loss protocols, uh data access rules, uh agent identity, uh um uh uh authorization etc. Uh plus the overarching governance in terms of token spend, uh in terms of uh uh you know, um basically uh agent orchestration and so on. Uh so governance and uh uh legislation is one. Then you have an an underappreciated hurdle I think, which is the old-fashioned change management. So basically a lot of companies make the mistake of treating this as a pure IT project or pure AI project, but in reality, wherever you implement AI, you are doing so deep into business processes that are existing, that have been running for years and maybe decades. They have a lot of logic built into them. There's a lot of, you know, tacit knowledge as well. So you basically need, you know, project management, change management, business analysts, and so on. And to really understand the business flow in question, you also need the mandate to redesign it from scratch, because if you keep the original design but you just slap AI on top like lipstick on a pig, then you're not going to get the full business value out of it. So the change management aspect, and an extension of that is like executive support and running this as a top-down company-wide initiative. Because again, like a lot of projects early on, they were run as pilots, you know, with middle management support, you know, from evangelists and champions, and they didn't really have the mandate to then scale it. So you need to have a clear mandate to scale. And then lastly, I think you mentioned that, and correctly so, the underlying data is absolutely critical as well. So you need to have an IT landscape and a data landscape that facilitates widespread AI adoption. So that's like a, almost like a homework you need to do before. And there is a trade-off here, because if you spend too much time on the homework, you don't have enough time in the real world actually implementing AI. But if you rush into the AI implementations without doing enough homework at least, then you're going to get slowed down or even stopped by the lack of unified and accessible data and so on. And this, here it's like a use case by use case trade-off. Some use cases use a lot of varied underlying data in different formats from different sources, and there the data issue is more complex. Others are relying more on data from one system, maybe the agent you're using is integral in that system already, so then it's almost like a non-issue. So the extent of the issue can vary, but for enterprise rollout, it's absolutely there.</p>
+<p>明白。好的，OK，然后想问一下专家的话，就是本季度的话，就是Cortex Code，就是CoCo的话，就是在Snowflake客户当中的一个渗透率的话，它是一个什么样的情况？对，然后整个CoCo的一个consumption的话，可能在本季度的话占到Snowflake总consumption的比例是多少？然后上个季度是多少？同时CoCo它本身带动的整个整体的Snowflake consumption，它能会带动起几个点？对，相较于上个季度。</p>
+<p>And in this quarter, what is the Cortex Code or CoCo's adoption rate among customers? And another question is that what is the proportion of CoCo consumption in the total Snowflake consumption? And also what was the proportion in last quarter? And one more question is that for how much percentage point of Snowflake consumption is driven by CoCo in this quarter? And also, like compared with last quarter, how much percentage point of Snowflake consumption is driven by CoCo?</p>
+<p>Yeah, okay. That, that, that's... That's a, that's a mouthful, but I, I will try to break it down and answer them absolutely. Uh, uh, first of all, uh, Co-co or Cortex Code, it's, it's a very good growth driver for, for Snowflake because it's basically, um, you know, it's a core consumption driver. So I think, and, and I think your questions reflect that, that it has a direct impact and an indirect impact. It's also very interesting how it's, um, uh, you know, successfully competing against, you know, Claude Code and GitHub Copilot, etc. And I think, if I'm not mistaken, we, we spoke about that, um, some quarters ago, how, how Co-co is like, uh, you know, it, it has, uh, benefits to use within the Snowflake platform, whereas Claude Code is more like a horizontal coding assistant that you can use across different environments. But with Co-co, you have, uh, or it has, I should say, uh, an inbuilt awareness of your entire Snowflake estate and codebase. So, and that's a huge advantage. So, so I think that the question whether Co-co can sort of compete against Claude Code, for example, is basically, for the time being at least, answered. Yes, it can within the Snowflake stack, which is the relevant, uh, point here. So that's number one. And, and, you know, that's backed up by numbers as well. Uh, so, uh, you know, uh, I would say it's, uh, it's growing by, you know, 30, maybe even 40% quarter on quarter, and that's accelerating as well. Uh, it's adding a lot of net new accounts, which is also interesting from a, uh, from a Snowflake, uh, position, right? That this is, this is a module that is being added to existing customers, and I think it will quite, uh, quickly become more or less standard as well. Uh, and I think they have, uh, you probably have seen that more than me, but they, they do publish numbers in terms of, uh, number of clients, etc., or users on, on Co-co. Uh, so, so you can say, uh, 30 to 40% quarter on quarter increasing, so I would say maybe increasing by five percentage points per quarter, roughly. Uh, and that's accounting for a, a larger base as well, right? So it's, it's quite impressive. Uh, then, then I would say if you look at the, uh, share of the product revenue, um, and then you have like, this is my estimate, but you have like core, core SQL, analytics, etc., the data warehousing and BI, that's still the majority, but the AI, and here I include, uh, Co-work, Co-co, etc., some other Cortex functions, but I would say they are, uh, probably, uh, 7 to 8% of the, of the direct product revenue, um, and, and rising rapidly. So, you know, probably 6% the quarter before and four or five the quarter before that, etc. So, so rising rapidly. And also, you can think of it like every direct, uh, spend on Co-co is probably increasing consumption by maybe a factor of four, something like that. So it's, so you can see it's already, maybe three or four, but it's already a sizable revenue contributor to, uh, to Snowflake. And, and of course, a lot of that indirect revenue generation, uh, would have happened anyway. I think it's, this is a bit hard to, to estimate, to be honest, but, but basically you're making the Snowflake developers a lot more productive so they can quicker build pipelines and, and add features that, that drive consumption. That's basically it.</p>
+<p>Mm-hmm. 明白。然后想问一下就是本季，呃，就是Q3的时候的话，那个Snowflake的话，它其实也发布了那个Cortex AI Gateway，然后想问一下，这个发布后的话，其实目前的话整个在客户里面的一个渗透率的话，可能是有多少，多少客户在使用？同时的话呢，它对于整个客户他们在Snowflake上面的一个consumption的影响是什么样？对。</p>
+<p>And in Q3, uh, the Cortex AI Gateway was also launched. So what is the current adoption rate among enterprises and has it led to, uh, the increased consumption on Snowflake?</p>
+<p>Uh, not, not in a meaningful way, I would say. It's still too early. Uh, and, and basically, I, I, I'm also not sure that's the way to think about the gateway. The gateway, I think the gateway is more, uh, from a strategic point of view, basically a lot of these AI platforms, uh, and, uh, you know, from different angles, from the hyperscalers to the Snowflakes and Databricks to Salesforce to UiPath, etc. They, they're all fighting for the orchestration and governance piece. Uh, and the AI Gateway is basically Snowflake's answer to that. So, so it's, it's basically positioning Snowflake as an AI control plane, sort of an agent governance layer that goes across Snowflake and, and also beyond it. And, and also it, uh, enables you to, to, to route and control third-party agentic traffic. Uh, and that's a prerequisite to really be an orchestration layer that you can also orchestrate, uh, you know, others' agents, uh, within your company. So, so the orchestration and, and the governance is a very crowded place. Everyone is, is vying for that top spot because if you, if you're the one handling the orchestration, uh, so the thinking goes, you have the, uh, you know, the prime position as, uh, as the market matures. But, but, but it's a lot of players are competing for this. I think, um, uh, it really depends on the, on the underlying customer. You know, if you have a, for example, Salesforce or Agentforce customer that is really sort of building everything around that, they will probably go with Agentforce as the orchestration layer. If, if you, uh, if you're deep into Microsoft as a hyperscaler, you will probably run with, uh, you know, their, their solution, uh, which is not very mature, but it's coming. Uh, but, but if you're deep into Snowflake, yes, this is a, uh, uh, you know, a credible, uh, module so that you can add third-party agents to it. So I think it's, it's like, uh, certainly an, uh, uh, module that, that has its, uh, you know, it's very timely. It, it will, uh, it will contribute to growth, but I think it's more like a module that fits a capability gap, if you will, rather than a, um, uh, you know, a consumption. But, but you can see the consumption or, you know, we will be able to see the consumption as a third-party agent traffic hitting Snowflake data. But I think let's have this conversation in maybe three months or even six months, and then we will start to see if this really pans out. But right now it's more like a signal value and, and sort of a completing the ecosystem kind of, uh, move, if you will.</p>
+<p>明白。然后想问一下就是，呃，这个产品的话，那对于Snowflake的话意味着什么？就是Snowflake如何把这个产品的话就是把它就是做一个货币化呢？ 对，然后</p>
+<p>And so what is this product's significance for Snowflake? How can Snowflake monetize from it?</p>
+<p>Yeah, exactly. So it's basically, uh, yeah, it's basically facilitating third-party agents to access Snowflake data. So I think that's, that's, that's the core thing. It makes Snowflake and Snowflake data more accessible to third-party agents, and that will drive Snowflake consumption. Then, then there will be probably some direct revenues as well, but I actually expect that to be very small. And, and they will be so keen on owning the governance layer, so they might even, you know, give huge discounts on the, on the gateway. But it's basically a driver of underlying Snowflake data consumption.</p>
+<p>明白。好的，然后我想问一下，就是说专家有关注到，就是说在三季度期间，就是Snowflake和Databricks这两家公司的话，它们的一个竞争的一个情况吗？专家认为这两家公司竞争有变得更加激、更加激烈吗？同时的话，就是这两家公司的一个能力的话，大家是越来越接近了，还是说它的能力的gap越来越大了？对。</p>
+<p>And in Q3, have you observed the competition between Snowflake and Databricks? Do you think this competition is becoming more fierce? And about their capabilities, do you think they are close to each other or the gap becomes more widened?</p>
+<p>Um, I mean, I don't see any single event in Q3 specifically. So this is again more, more, you know, a continuous competition between the two. Both are more or less, it's almost like an either-or situation. Either you run with Databricks or with Snowflake. So you have relatively few customers that run on both. So customers pick their sides, so to say. And the switching costs are pretty high as you add, as you migrate to either Snowflake or Databricks. So, so there's also a stickiness there. Having said that, they are both building out their ecosystems to increase the stickiness, to increase revenues and, and cover functionality gaps, etc., which means that they are more and more overlapping. So they are absolutely competing, but, but I think the overall, overall story is that they have their, their customer base, and in both cases, they are unlikely to migrate off to the other platform. Also, there is plenty of consumption growth within their existing customer footprint that they can harvest for, you know, many quarters to come. So it's not like a zero-sum game where they're like, you know, going for each other's throats kind of, kind of situation.</p>
+<p>明白。好的，然后我想问一下，就是说那个AI Gateway里面的话，它也有模型路由产品，我不知道就是客户、企业客户有使用吗？然后企业客户如果说使用了这种模型路由产品的话，他们使用后总体在AI上的消耗它是比使用之前的话是加速了还是降速了？对。</p>
+<p>And in AI Gateway, it also has this model routing product. So is there any customer already using it? If yes, after using this routing, is their AI consumption accelerating or decelerating.</p>
+<p>Yeah, I mean, the the routing is uh uh yeah, you you could see it as part of the gateway, but it also I think it was launched even quite late in Q3 and and yeah, I've seen the announcement and we have had like uh Snowflake talk about it to to us as a partner, but it's but it's not like uh it has hardly gone into production. So it's really minimal adoption so far. Um uh but basically uh yes, it's a way of uh achieving a higher token efficiency, which is uh very interesting because this is uh a general discussions as as you know within uh within the AI well actually within the the larger software community at uh as a whole that you know the token spend will need to be monitored. So early this year it was a lot of like you almost measured AI uh adoption by the token spend and then that went out of control. So now uh there's a lot of talk about we need to be able to measure our token spend, we need to ensure we get value for money, people are looking at open source models and and and sort of the the older generation rather than the frontier ones etc. So so basically uh this one is also very timely. Uh and yes, making the token spend more efficient is a way of ensuring that you can build more use cases and driving more Snowflake uh consumption. Uh so so I think that's good. I think it's also uh uh the the dynamic routing is the way to do that. So basically it dynamically uh uh uh sort of uh chooses the appropriate underlying model which is like the best fit for that particular use case uh um uh given you know the cost of the different models. So I think that's uh it's absolutely valuable. Um and yes, I think the the token revenue on Cortex and Co-work might fall a bit because they will be more they will be driving less token cost, but at the same time uh part of that revenue loss is offset by a lower cost as well. So it's not that bad. And again, it's also driving more volume. So I think that's that's something uh they are ready to do. So I expect this to be a um a net positive uh absolutely. Uh but again, I think we will see this more in in early 2027.</p>
+<p>Okay. 好的，明白。然后想问一下，其实除了Snowflake以外的话，也有很多的呃公司的话在做模型的那个路由监测以及以及编排层，比如说像云厂商啊，然后比如说像那个呃一些安全类的公司啊，包括像那个Datadog等等啊。对，然后想问一下就是专家认为的话，未来的话就是谁的话可能更有希望成为就是企业他们模型编排以及以及那个监测的一个最最主要的入口呢？对，然后未来的话这块的一个格局可能是什么样的？对。</p>
+<p>And in addition to Snowflake, many other companies are also working on this model routing, monitoring and orchestration layer, uh like the some cloud cloud service providers and also security uh related companies and also Datadog. So I want to ask in the future, in your opinion, which company may become a main entrance of this orchestration or the monitoring layer? And what will be the like future landscape in this market?</p>
+<p>Yeah. You know, that that's a that's a that's a million dollar question. So, you know, and it's very interesting. And and I can say this right that this this space is very crowded because AI is such a such a sort of um it's a technology that sort of uh cuts across all the different areas. So like I said before, you know, the orchestration and governance, this is something that you have the individual software platforms working on it like agent for uh you know, Salesforce, Workday and ServiceNow. You have uh the automation platforms like UiPath and and and Automation Anywhere. You have uh the hyperscalers of course. Uh you have uh also the data platforms. Uh Snowflake is a great example. Then you then as you rightly point out, you also have like uh Palo Alto Networks and and other sort of more uh specialized platform if you will. And then you have native uh agentic platforms as well. So plus maybe potentially the frontier labs themselves. So so you know, everyone and their grandmother is approaching this problem and trying to be uh on top owning the owning the top layer so to say. Um but it's super hard to see who's going to own it. I don't see evidence of a winner emerging. I also think that the market is slightly ahead of itself. You know, uh these orchestration products are I mean it's all well and good that they are are shipped and being introduced and so on because they point the direction the market is going that there yes there will be a need for uh you know, for orchestration across uh across platform using third-party agents etc. But that's not not where most customers are yet. You know, they are much earlier on in their uh in their AI deployment journeys. So I think sorry sorry but only time will tell. It's something I think about a lot as well. I don't have a clear answer to give and and maybe that that is an answer in itself that that it's it's very sort of uh open.</p>
+<p>Okay. Alright. 然后还有一个问题就是说那个想问一下就是在三季度期间的话那个Snowflake的Iceberg它这个能力的话是否有进一步的完善，然后对然后对于企业包括对于Snowflake的一个consumption的话有没有带来进一步的影响？对。</p>
+<p>Another question is in Q3, uh does the Snowflake Iceberg capability uh be improved and what is the impact on Snowflake consumption?</p>
+<p>Uh yeah, I mean it it it's not a massive thing to be honest. It's nothing I've seen even reflected in the numbers and maybe maybe I don't have the full picture there, but it has not come up uh as a significant event in in Q3 from from my side to be honest.</p>
+<p>Okay. 好的，好的，然后我想问一下就是MongoDB这边的一个情况，对，然后上个季度的时候专家认为在三季度的时候MongoDB的一个consumption的同比增速可能是22%，对，然后想问一下那么实际的一个增速是比这个数字高了还是低了，然后我想问一下背后的原因是什么？</p>
+<p>Then I want to move on to MongoDB. So last quarter when we talked, you mentioned the forecast for the Q3 year-on-year growth was 22%. So uh was the actual number is higher or lower than that and what are the reasons?</p>
+<p>Yeah, I mean I would say um it it's more or less the same. Uh so it's not like a a massive growth. I mean they have Atlas which is growing uh faster. Then then also it's uh for Mongo DB you sometimes have like somewhat lumpy uh you know multi-year deals but but basically basically the same I think it's even slightly less like 21% uh but again but again that's more noise rather than a signal uh so I think it's uh the overall headline story here is uh around 20% growth pretty stable Atlas is growing quicker and and the one to watch I would say um but other than that it's uh relatively stable</p>
+<p>嗯哼，明白。好的，然后想问一下就是，那么专家对于四季度和明年的一个预期的话大概是什么样的，它的一个同比的增速，然后背后的原因是什么？</p>
+<p>And what's the expectation for this year Q4 and next year about the consumption year-on-year growth?</p>
+<p>Yeah and and if I if I then smooth the curve because like I said the the actual could be somewhat distorted by uh by lumpy deals so to say especially Q4 and and Q1 which is around the uh a new calendar year or end of a calendar year but but having said that I would expect uh a maybe a slight growth uh so so to 22 23% uh say 22 in in Q4 and 23 in Q1 just to give you sort of a an indicative number uh and that is uh on account for the higher growth of uh Atlas</p>
+<p>嗯哼，明白。好的，然后想问一下就是说，目前的话就是，就是企业内部的agent的一个场景的一个，我不知道有没有一个很明显的增长，然后的话专家认为什么时候的话企业才会有大规模的agent场景部署从而去加速对于整个MongoDB的一个需求呢？对。</p>
+<p>And now in enterprises internally do you see the increase of the agent-based use cases or in your opinion when will there be the uh enterprise large-scale agent uh use case deployment and thus accelerating the MongoDB consumption?</p>
+<p>Uh yeah so so so you broke up there for a while but I think I I heard you anyway so let let me try to uh address the question so so I guess the question is if agent growth has you know accelerated demand uh and I would say yes directionally but it's not like a massive uh multiple or uh because it's like um I would say maybe maybe 25% of Atlas is uh originating from AI workloads um and and AI AI workloads you know that's also a bit uh that definition can be a bit broad you know everything with an AI features can be counted in there and and I think if you look at agent generating load then it's probably even even a bit less um so so it's it's meaningful acceleration but it's not like a uh a massive agentic uh adoption you know driving uh a a big chunk of the growth I think it's far more uh muted than that</p>
+<p>嗯哼，明白。好的，那么专家认为什么时候的话可以看得到大规模的agent采用呢在企业这一块？</p>
+<p>And in your opinion when can we see this kind of massive agentic adoption in enterprises?</p>
+<p>Yeah I mean this is a boring answer but I but I say it to everyone because it's it's what I see in the trenches it's it's not going to be like a massive you know extinction event you know when does the comet hit it's not like that it's it's more like a gradual gradual growth and then uh you know eventually we will look back and and and look how far we've come kind of so I I think it's like but but I can give you a quarter view it's it's we're we're talking like two three maybe four quarters before this is going to be uh you know a step change and even then it's not going to be done right but but it will be uh massively noticeable by then I would say</p>
+<p>嗯，明白。那我想问一下，那么在MongoDB 9.0发布之后有一些重要的功能更新，然后这些的话对于客户在四季度或者说后面的一个consumption是否有一个明显的帮助呢？对。</p>
+<p>And there were major updates introduced with the release of MongoDB 9.0 and uh will this have some uh significant impact on the Q4 or even next year's consumption?</p>
+<p>Uh I mean it it was released in um I think uh yeah in Q3 or almost like end of Q3 so that's that's like you know the the the cycles are too slow for this to have to show up in the numbers uh obviously. Um and and you know enterprises especially we work with enterprise customers so they are like you know we don't upgrade based based on a few weeks uh so that the consumption effect is invisible. Um um I I guess you know it's it's uh it it is an performance improvement in you know throughput faster reads faster updates you know all good stuff but it's more like uh you know you know an expected uh performance improvement than a step change in itself um I would say. Uh they have like uh encryption extension which I've heard should be uh good for like regulated industries uh so maybe that opens up a few more doors uh that could happen. Um but again it's more like an evolution than a than a sort of disruptive release I would say to be honest.</p>
+<p>嗯嗯，明白。好的，那我想问一下就是在8月13号的时候的话Voyage AI的话，它已经进入了整个产品整合已经进入了全面商用的阶段，那么请问客户的话就是在Voyage上那个consumption的话它有显著的增长吗？然后专家认为这个可能对于整个Q3然后Q4然后以及明年的话可能对于整个MongoDB的consumption可能会有几个点的影响？对。</p>
+<p>And on August 13th Voyage AI uh products already entered full commercial availability and has this increased the customer consumption because of this Voyage AI and also what do you think is uh how like how much percentage point will it uh contribute to the growth in this year Q3 and Q4 and also next year?</p>
+<p>Yeah. Okay let's let's let's look at that. I mean first of all it's like uh Voyage it's still quite early uh as well but but I can I can give you some direction. Um I think it's it's the right design that it's integrated um it's sort of embedded into uh the database features rather than a standalone uh product or procurement and and that's basically you can think of it it's like MongoDB you know climbing up the value chain with that and and becoming more um agentically relevant if you will. Um um so and it's growing fast but it's from a tiny base. Um, so it, so you know, it's, yeah, it's, it's probably growing, I would say 50% quarter on quarter and, and it can easily do that for a couple of quarters because it's, the base is probably, you know, tens of millions of dollars, like low tens of millions of dollars, I would say. Uh, so, so maybe, so, so, but, but it's more interesting to see, you know, what's happening with the customer base and how will it grow. And, and there basically, it's growing through Atlas, not as a standalone product. So I think this is a, another common point I make that, that you, one should think of this like an ecosystem where, where the sum is, is greater than the parts basically. Um, and, um, and, and I think this is a good example of that. Um, but, but, but you know, enterprise customers are a bit slower on the uptake and, uh, you know, so, so I'm not going to claim we see anything in, in, in the numbers basically. But, but, uh, it's a good release. It will show up in the numbers, uh, especially, uh, you know, contributing to Atlas growth. And it, it fills a gap basically that, that MongoDB had. I think that's the, the right way to push it, uh, to pitch it.</p>
+<p>明白。然后想问一下就是MongoDB的CRO离职之后的话，专家认为对于MongoDB可能有多大的影响？在本季度有看到有一些客户的话，他们对于MongoDB的采购会有一些犹豫或者说是一些延迟吗？对，然后专家认为这个影响可能会长期存在吗？对。</p>
+<p>Um, and after MongoDB's CRO left, uh, what was the impact on MongoDB? And in Q3, did you see some customers hesitating or delaying their procurement because of that? And will this kind of impact be a long-term impact?</p>
+<p>No, I don't think so. I think this was like, optically it looked, looked pretty bad, you know, from a credibility point of view. But, uh, but from an operations point of view, not so much. I mean, he stepped down, um, I mean, he stepped down a bit abrupt. That's absolutely true. I think he went to Meta, which is also bad because then he moves to a really hot company, which by, by extension means that MongoDB is not a hot one, etc. Um, and it was also timing-wise, I think pretty, pretty bad. Uh, but it's, uh, you know, I wouldn't say it's, uh, there is an operating risk here. I mean, he was more of a platform and a sales guy than, than an operating guy. So it's, it's bad for the credibility. Uh, I mean, if there, I think we will see in the next few months if there are further, uh, dropouts in the executive team or in the engineering team, etc., then that would be a sign. But this, this move in isolation, I, I, I think it's more noise, to be honest, uh, in the scheme of things. Um, but let, let's see. So, so I would watch for further senior, uh, dropouts. And I haven't, I haven't heard anything about that. So, uh, probably nothing.</p>
+<p>嗯，明白。好的，然后想问一下，我们也关注到就是Snowflake和Databricks的话，和Databricks在积极地和Postgres这类开源型数据库做产品上的整合。专家认为这个会对MongoDB的话造成越来越大的一个竞争上的一个压力或者说是威胁吗？对。</p>
+<p>And we are seeing that Snowflake and Databricks are actively doing the products integration with open source databases like Postgres. Do you think this will be a more and more bigger threat for MongoDB or competition? competition for MongoDB.</p>
+<p>Yes, absolutely. So, so you have competition from, from two sides basically. One is from the, from the data platforms moving into sort of operational databases. So that would be, you know, the lake, the lakehouse, Databricks and the Postgres, Snowflake, they both, they both push into, um, into MongoDB territory. Then you also have the hyperscalers doing the same, especially I would say Google, and they have something called Firestore, which is basically, they offer MongoDB compatibility. So, so that's a, that's, that's difficult because of course the hyperscalers and the Databricks and the, and the Snowflake, they have a much wider platform, and, and now they have almost like a migration case of that they can, so they can, and they can bundle that. So I think this is pretty bad, yes. It's not like massively, I haven't seen it in the numbers etc. But yes, I would be a bit worried if I were, um, I were MongoDB.</p>
+<p>Mhm. 好的。然后想问一下就是9月29号的时候的话，MongoDB有公测两个新的产品，一个是Atlas Infinite，还有一个是Agent Engine，然后想问这两个产品的话，它对于MongoDB的一个影响是什么样的？</p>
+<p>And on September the 29th, two products, Atlas Infinite and Agent Engine, entered the public preview. And what would be the impact on MongoDB?</p>
+<p>Yeah, um, I mean, if we, if we separate it a bit, so you have, if we start with Infinite, Infinite, Infinite, sorry. It's, it's, I mean it's early, but it's, it's significant still. So it's, I think you're right to, to mention it. So, so basically what it does, it separates compute and storage, which is interesting in its own right. It's in, I think it's on AWS only if I, if I remember correctly. Uh, and it, it, it can cut time to scale, which is basically important because you want to to scale compute and scale volume as fast as possible. Um, and, and this is by, by sort of addressing spikes and, uh, that means you need to overprovision on storage etc. So, so it does have a, a, sort of a, um, a use case. And then of course it's a double edge because it basically, uh, it means that you can lower idle spend for customers. So, so in, in fact then that's, that's a bit bad for, for, for MongoDB because it's, uh, but it also means that they can win more spiky workloads. So basically the, the spikiness, uh, you can either handle by elasticity and that's something you do with Atlas Infinite, and then you don't need as much storage to, to be sure to cover your spikes. So, uh, the, the immediate storage needs may go down, but long term they may win more spiky workload deals, which is a, I think a net positive, but over time, okay? So, so it's only working if they pull in workloads that would otherwise go elsewhere to, to Postgres for example. So, so minimal impact, uh, uh, over time we will see how this plays out. Um, for, for the Agent Engine, uh, This is uh yeah, it's very interesting. Uh it's um it's basically, you know, a move into agent infrastructure. Uh so again, a very crowded place, you know, hard to win. Um it's it almost like uh I'm not going to play it down as a joke, but it's like, you know, it's talking about the governance layer, unified execution and all of that, which is um like what we talked about before, right? That everyone wants a piece of this. Um uh and and um basically you have uh they they are very close to the to the to the data, which is good in one way, but I mean they're not the only ones doing that. Um and and yes, you you have like you can stitch together state, memory, retrieval, permissions, consolidating consolidating that has a value and that's basically the orchestration. So so the value of orchestration no one is disputing. Uh the the problem of course is that you're competing uh with uh you know, with the orchestration and governance layer against, you know, Microsoft Foundry, Bedrock Agent Core, Google, uh Databricks, they have something Agent Bricks, I think it's called, uh the frameworks themselves, etc. So so, you know, and and enterprises I think it's they they they are more likely to pick the governance and orchestration layer from their cloud or AI platform vendor rather than their database vendor. Uh and and basically a lot of what we're seeing is that MongoDB is trying to move from a database vendor uh to something more, going upstream, up the value chain, etc. Uh and I can understand why because the database itself is just a commodity and and you know, Snowflake has done the similar uh similar analysis and see and and they but they have been more uh uh successful in moving away from just the compute and the storage, right? Um so so yes, it's it's a good release. It's it's uh it's it's a sign of the times, I guess. Um but but I it's and it's a natural uh I think agent memory will work. Uh agent runtime maybe will struggle. Uh I still they they will probably make money from this, but I don't think it will be the, you know, the agent infrastructure provider default or anything like that. That that's it will be a marginal product in the scheme of things. That that's my guess.</p>
+<p>Okay. 好的，然后在这想问一下就是 MongoDB 的一个 RPO 的一个增速的话，它相较于上个季度，它有进一步的一个增长吗？对，然后对。</p>
+<p>Mm. And about MongoDB RPO growth this quarter versus last quarter, do we see this quarter accelerating?</p>
+<p>Sorry, did sorry, did you say MongoDB overall growth or was it for a for a certain module or or RPO. RPO. Well, yeah, I don't have exact numbers for that. I I think it will be in the range of the overall growth. Um I would guess, but you can you maybe you can check that with other sources. Sorry, but I don't have that uh at hand. But I would guess around 20%.</p>
+<p>Mhm. Mhm. 明白，好的。好，我这边的话暂时没有其他问题了，非常感谢专家的一个时间。后续有新的问题的话，我们通过中介这边再跟专家联系。嗯。</p>
+<p>Okay. Thank you for your time.</p>
+<p>Mm. Thank you too. Good luck with your study. Thank you.</p>
+<p>Thank you. Bye.</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

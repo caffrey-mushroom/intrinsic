@@ -1,0 +1,291 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.05 | Substack | ASIC | Google TPUv7 AgentX Inference Benchmarks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.05 | Substack | ASIC | Google TPUv7 AgentX Inference Benchmarks</h1>
+<p class="orig">原标题：The Iron(wood) Throne: Google's TPU Stakes Its Claim on Inference</p>
+<p class="tags">#asic #llm #semis</p>
+<p class="meta">Substack · 2026-11-05</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>SemiAnalysis称其2025年11月关于Google对外出售TPU的判断已被验证，Oracle、OpenAI、Anthropic和Meta都已成为TPU客户，TPU也在与PyTorch、vLLM、SGLang、llm-d等上游生态深度合作。</li>
+<li>作者首次发布TPUv7在InferenceX/AgentX长上下文多轮智能体推理基准上的结果，覆盖Muse Spark Open、GLM-5.2、Qwen3.5和Kimi K3四个模型。</li>
+<li>在GLM-5.2 FP8场景下，TPUv7在60至300 tok/s/user区间的每美元token数是B200、B300和MI355X的1.2至2.7倍，在150 tok/s/user时是H200的4.4倍。</li>
+<li>由于TPUv7不原生支持FP4，GB300和GB200的FP4在100 tok/s/user时每美元token数分别是TPUv7的3.6倍和3.5倍，支持FP4的TPUv8要等到2027年一季度。</li>
+<li>Qwen3.5 397B上TPUv7 FP8的每美元性能比FP4 GB300 NVL72高1.67倍，英伟达加班推出的首个FP4反击提交在大部分曲线上每美元性能仍差1.64倍。</li>
+<li>借助llm-d分离式服务，TPUv7 FP8在所有交互度上击败GB300，最快点p90首token时间为8.6秒、优于GB300 FP4的11.1秒，缓存感知路由使解码缓存命中率从56%升至76%。</li>
+<li>Kimi K3于10月17日发布时TPUv7每美元token数为GB300的0.77至0.91倍、单用户速度391 tok/s/user快1.6倍，但经过英伟达四次优化后GB300 FP4已领先1.5至2.6倍，VR200则是TPUv7的4.3至5.6倍。</li>
+<li>Meta已用SGLang-TorchTPU在生产中部署TPUv7，即便Muse Spark Open的64维head对TPU不友好，TPUv7解码每美元性能仍具竞争力。</li>
+<li>作者批评英伟达官僚化严重、对开源开发者提供集群吝啬，某驱动功能卡在内部法务审核三个月，认为这是黄仁勋必须解决的护城河风险，而AMD和Google反应更快。</li>
+</ol></section>
+<div class="body">
+<p>In November 2025, we published a newsletter saying that Google is selling TPUs to external customers. Since then, we have been proven right over and over again with Oracle, OpenAI, Anthropic, and Meta all becoming customers of TPUs just as our Accelerator Model reported.</p>
+<p>Hardware demand is only half the story, as NVIDIA’s moat has historically been its software and large developer ecosystem. This is where TPU is also making headway, partnering with upstream maintainers across the entire ecosystem, including the Meta PyTorch team, vLLM (Inferact, RedHat), SGLang (RadixArk), llm-d, Ray, etc. This is not a surprise to folks that have read our September 2026 article laying out Google TPU’s externalization strategy.</p>
+<p>Back in our September article, we published the first third-party TPUv7 results on InferenceX on single-turn workloads, showing that in an apples-to-apples FP8 comparison on Qwen 3.5 397B, TPUv7 Ironwood) delivered up to 50% better performance per dollar than B200 and B300.</p>
+<p>We also reported that many Google TPU customers were asking for AgentX results, since long-context, multi-turn agentic serving is where inference spend is heading.</p>
+<p>Today we are releasing long-context, multi-turn, realistic agentic inference benchmark results on TPUv7 across four models, showing that TPUv7 is either competitive on perf per dollar for external customers or delivers the best state-of-the-art result:</p>
+<ul><li><b>Muse Spark Open SGLang AgentX (NVFP4 weights):</b> Competitive TPU performance per dollar result even though the architecture was co-designed for GPUs. Submitted by OSS ecosystem developer, RadixArk (Makers of SGLang).</li><li><b>GLM-5.2 vLLM AgentX (FP8):</b> TPUv7 is the cheapest FP8 option, delivering 1.2x to 2.7x the tokens per dollar of B200, B300, and MI355X from 60 to 300 tok/s/user. NVIDIA NVFP4 still beats TPUv7 FP8, but with accuracy / quality loss.</li><li><b>Qwen3.5 vLLM AgentX (FP8):</b> With llm-d disaggregated serving, TPUv7 beats GB300 FP8 at every interactivity level and restores parity even against GB300 FP4 at higher quality / accuracy.</li><li><b>Kimi K3 vLLM AgentX (MXFP4 weights):</b> Competitive with GB300 NVL72 at launch; With TPUv7 delivering 1.15x to 2.5x the tokens per dollar of GB200, B200, B300, and MI355X. Submitted by vLLM OSS ecosystem developer, Inferact.</li></ul>
+<p>This was benchmarked on InferenceX/AgentX, the industry-standard inference benchmark supported by almost every major buyer of compute, from Microsoft Azure to Oracle to Meta and many more. Furthermore, it has the support of the ML community, including vLLM, LMCache, SGLang, PyTorch, and Huggingface, and the support of major labs like OpenAI, MiniMax, ZAI, Qwen, Moonshot Kimi, etc.</p>
+<p>Google potential TPU customers and current TPU customers are asking Google for AgentX results because of how realistic the AgentX benchmark is and how similar it is to their real inference workload. For our SemiAnalysis supply chain shipment estimates on TPUv8i, TPUv8t, TPUv9, TPUv10, check our Accelerator Model for full quarter by quarter breakdown of shipments.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905828814-6.jpg" alt="" loading="lazy"></p>
+<p>Source: InferenceX</p>
+<p>Star the InferenceX GitHub repository if you find the open-source benchmark and data useful!. InferenceX is the only inference benchmark in the world to have TPUv7, OpenAI Jalapeño, Nvidia Rubin NVL72, AMD, and soon, SambaNova and Trainium2/3.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905829733-7.jpg" alt="" loading="lazy"></p>
+<p>Source: InferenceX</p>
+<h2>Recommendation to Jensen</h2>
+<p>NVIDIA only occasionally loses to AMD on some model/scenarios, but TPUs delivering better performance per dollar or competitive performance per dollar is a new experience that NVIDIA senior leadership is unwilling to accept. As soon as TPU posted its first AgentX result on Qwen3.5 397B FP8 showing that even TPUv7 FP8 could beat GB300 NVL72 FP4, NVIDIA tasked a strike force of human engineers and agent swarms to work 997, late into the night until 2am local time and on weekends, across USA and China. Unfortunately for NVIDIA, their first GB300 FP4 counter submission is still 1.64x worse per dollar than TPUv7 FP8 for external customers across most of the curve. We do think that with enough agent swarms, NVIDIA could regain a slight performance lead on GB300 NVL72 FP4 vs TPUv7 FP8, but on NVIDIA FP8 versus TPUv7 FP8, we believe that it is not possible for NVIDIA to regain SOTA for certain models.</p>
+<p>One thing we hear a lot from open-source maintainers in PyTorch and NVIDIA customers is that there is a lot of bureaucracy; simple things, like adding a new feature to the NVIDIA driver to support a certain feature for PyTorch CudaGraph capture, have been stuck in “internal NVIDIA legal review” for three months. It makes little sense for lawyers to be the blocker for technical driver features. We have seen similar challenges when trying to get NVIDIA to add features like improving ConnectX, NVSwitch, HGX Board (Vulcan, Umbriel) DCGM power telemetry, where it takes a while just to get the timeline for the timeline. In comparison, startup mindset companies like AMD (under the leadership of Anush, Ramine, Vamsi, Lisa) can rapidly develop these features.</p>
+<p>There needs to be an cultural shift in massively reducing bureaucracy at NVIDIA. This is one of the biggest risks to NVIDIA Moat that Jensen has to tackle. In our experience and many customers experience, Nvidia is now slower moving than AMD, Google, and Amazon to external suggestion, git commits, and feedback.</p>
+<p>That being said, certain teams at NVIDIA are cutting through the bureaucracy, such as the NVIDIA ex-CentML vLLM team. AMD and TPUs added innovative Megakernel decode support to open source popular production inference engine. Within a week, they were able to defend the NVIDIA by rapidly adding and merging Megakernel support too (PR approved by AMD vLLM maintainer).</p>
+<p>TPU is making big headway into the ecosystem, and multiple models, like Day 0 Meta’s Muse Spark Open support and Kimi K3.1 Pro already has day 0 TPU support, as it applies the NVIDIA playbook of giving open-source maintainers lots of chips. <b>In contrast, NVIDIA’s contribution of clusters to community maintainers has increasingly been wrapped in DMV style bureaucracy and stingy at best. For a $5 trillion company, one would expect NVIDIA to be more liberal in contributing resources to OSS developers who work for free on improving the NVIDIA stack. We hope Jensen figures out how to eliminate the bureaucracy slowing progress.</b></p>
+<p>In comparison, AMD has been increasingly less stingy and providing the upstream vLLM, TileRT, SGLang, Tokenspeed, etc. maintainers liberal access to clusters and rapdily increasing the CI fleet without miminal levels of bureaucracy.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905830854-8.png" alt="" loading="lazy"></p>
+<p>Source: vLLM Dashboard</p>
+<h2>Meta’s Muse Spark Open FP4 816B on SGLang TorchTPU Agentic Inference Performance</h2>
+<p>Meta is one of the early adopters of TPU and is already deploying TPUv7 in production using SGLang-TorchTPU.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905831704-9.jpg" alt="" loading="lazy"></p>
+<p>Source: Meta</p>
+<p>Muse Spark Open is Meta’s latest 816B-parameter open model, and it is one of the launch models for SGLang-TorchTPU. On InferenceX’s agentic inference workload, a submission from RadixArk, a community developer and a lead maintainer of SGLang, shows that TPUv7 is competitive for decode performance per dollar even when using the cost basis of what Meta would pay when buying TPUs. For production inference, Meta uses SGLang for LLM inference and uses vLLM for RL training rollouts. When looking at end-to-end latency, TPUv7 still needs improvements to be competitive, such as continuing to optimize its prefill kernels. For decode kernels, TPUv7 SGLang is using a fully fused megakernel, which eliminates kernel launch latency. Furthermore, the submission uses SGLang HiCache CPU DRAM offloading using Google’s open-source, TPU native TPU-Sync library at high concurrency in order to improve prefix cache hit rates.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905832616-10.jpg" alt="" loading="lazy"></p>
+<p>Source: SemiAnalysis &amp; RadixArk</p>
+<p>Note that Muse Spark Open is an extremely GPU-optimized model, and, in theory, not friendly to TPUs at all. This is due to Muse Spark Open’s 64 head dim, which means that for long-context attention, 25% of the systolic array is padded.</p>
+<p>In comparison, GPU matrix cores consume small tiles, so a wide range of head dimensions, expert widths, and post-sharding KV head counts all land near peak. A dimension of 64 instead of 128 pays close to nothing on an H100 or a B200 and gets a cheaper attention layer for it. GPU architecture allowed researchers to prioritize evaluation performance without a loss in inference performance.</p>
+<p>This is quite interesting as TPUs can get quite competitive performance on a model that is extremely unfriendly to TPUs. Note that AI labs with lots of TPU capacity, such as Anthropic and Google Deepmind and soon OpenAI, typically co-design their models such that the attention shapes would fit nicely on TPUs to avoid this issue.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905833511-11.jpg" alt="" loading="lazy"></p>
+<p>Source: SemiAnalysis</p>
+<p>When TPUs see model architecture with attention head\_dim=256, they go full lambo mode.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905834214-12.jpg" alt="" loading="lazy"></p>
+<p>Source: Mario Kart</p>
+<p>Great work to the RadixArk team on this amazing achievement! They are actively working on updating the documentation such that everyone can get access to this optimized SGLang Muse Spark Open TPU configuration. We expect more AgentX results from RadixArk soon, showing that its SGLang-TorchTPU stack is production-ready.</p>
+<h2>GLM5.2 / 5.3 vLLM AgentX FP8 Agentic Inference Performance</h2>
+<p>GLM-5.2/5.3 is a frontier open model. It is an MoE transformer with 744B parameters and roughly 39B active per token. The model supports a 1M-token context through DeepSeek Sparse Attention (DSA): a lightweight indexer scores prior tokens, and full attention runs over only the 2,048 selected tokens for each query.</p>
+<p>For FP8, TPUv7 is the cheapest way to serve GLM-5.2 AgentX. From 60 to 300 tok/s/user, it delivers <b>1.2x to 2.7x the tokens per dollar of B200, B300, and MI355X at FP8</b>, and 4.4x that of H200 at 150 tok/s/user.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905834911-13.jpg" alt="" loading="lazy"></p>
+<p>Source: SemiAnalysis</p>
+<h2>FP4 GPUs Still Lead on Perf per Dollar</h2>
+<p>Because GLM-5.3 was not natively QAT with block scale FP4, FP4 has a slight accuracy drop compared to FP8. FP4 GPUs still deliver more tokens per dollar at most speeds, as TPUv7 has no native FP4 support, and we will need to wait until Q1 2027 for TPUv8 with FP4 support, as tracked in our Accelerator &amp; HBM Model. At 100 tok/s/user, GB300 and GB200 FP4 deliver 3.6x and 3.5x the tokens per dollar of TPUv7. FP4 halves the bytes per weight, and small batch decode is memory bound.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905835912-14.jpg" alt="" loading="lazy"></p>
+<p>Source: SemiAnalysis</p>
+<p>The SemiAnalysis AI Cloud &amp; TCO Model provides a comprehensive breakdown of pricing across all accelerators currently on InferenceX, as well as many more, including future SKUs such as Nvidia Rubin Ultra and Feynman, AMD MI400 through MI700, Google TPU v8 through v12, and AWS Trainium3 through Trainium6.</p>
+<p>Get Access</p>
+<h2>GLM-5.3 Optimizations</h2>
+<p>GLM-5.3 AgentX contexts reach 1M tokens with over 90% of each request already cached, so KV cache capacity sets how many users fit. There are four main changes:</p>
+<ol><li>GLM-5.3’s attention reads one shared compressed KV entry per token, so splitting attention heads across devices would</li></ol>
+<p>copy the whole cache to every device. Decode context parallelism (DCP) splits it by sequence position instead and merges partial attention results every layer.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905836681-15.jpg" alt="" loading="lazy"></p>
+<p>Source: SemiAnalysis &amp; Google</p>
+<ol><li>Each query reads only the 2,048 cache entries an indexer selects. TPUv7’s SparseCores, built for scattered memory</li></ol>
+<p>access, pick those entries and gather them while the TensorCore runs the attention math.</p>
+<ol><li>TPUv7 uses registers that are 8 rows by 128 lanes. Data must be packed into them, which can fragment. The 128 indexer</li></ol>
+<p>key bytes plus the scale byte add up to 129, one byte more than a 128-wide row, so the old layout rounded it up to 256. The new layout turns it sideways: tokens now run along each row, and each token’s key runs down 32 four-byte rows, plus one more row for the scale. That comes to 132 bytes, and only 3 of them are wasted.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905837540-16.jpg" alt="" loading="lazy"></p>
+<p>Source: SemiAnalysis &amp; Google</p>
+<ol><li>One fused kernel runs routing; the experts, the all-reduce, and the attention merge become a single collective. TPU</li></ol>
+<p>programs are compiled for fixed shapes, so Google added 4- and 8-token shapes for small decode steps, which had been padded to 16.</p>
+<h2>Qwen3.5 397B AgentX</h2>
+<p>Two weeks ago, Qwen3.5 397B became the first model Google submitted to AgentX. Its TPUv7 FP8 vLLM results on our agentic inference benchmark demonstrate that it is 1.67x better perf per dollar than even FP4 GB300 NVL72.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905838617-17.jpg" alt="" loading="lazy"></p>
+<p>Source: SemiAnalysis</p>
+<p>NVIDIA may try to claim that it doesn’t care about the Qwen3.5 397B model, but from analyzing our upstream InferenceX submission analytics datalake, the reality is that NVIDIA has spent over 20% of the sweep GPU hours on Qwen3.5 for certain NVIDIA GPU SKUs so it is hard for NVIDIA to claim that. In addition, if you look at the NVIDIA engineers assigned to Qwen3.5, it is some of the top 10x inference performance engineers at NVIDIA so clearly, NVIDIA cares about optimizing this model.</p>
+<p><b>Furthermore, certain major hyperscalers/AI lab use Qwen3.5 397B and multi trillion parameter scale up version based on Qwen3.5 397B architecture as proxy models</b> when making hardware purchasing and capacity planning decisions. So, this is a very important model for certain token factories.</p>
+<p>For readers making purchasing decisions, our AI Cloud &amp; TCO Model extends the analysis into cluster economics, including cash flow, investment returns, and accelerator residual values.</p>
+<p>Get Access</p>
+<p>AgentX captures the four elements of an agentic workload:</p>
+<ul><li>Multi-turn: a session includes many user / assistant interactions (tens or hundreds) compared to a handful in a chatbot scenario.</li><li>Long context: system prompts, tool definitions, and the large number of turns make context accumulate quickly.</li><li>High prefix reuse: since the conversation progresses linearly, where output from turn n-1 is concatenated to turn n</li><li>Sub-agent bursts: a session launches multiple short-lived sub-agents with fresh context, which create bursty KVCache patterns.</li></ul>
+<p>TPU was able to demonstrate that its upcoming TorchTPU vLLM stack can successfully handle agentic workloads.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905839607-18.jpg" alt="" loading="lazy"></p>
+<p>Source: SemiAnalysis</p>
+<h2>NVIDIA First Counter Submission</h2>
+<p>NVIDIA engineers worked overtime to launch their counter submission FP4, which beats TPUv7 FP8 on decode performance, but there is a slight issue: they overtuned decode at the expense of prefill, hurting overall end-to-end performance. Thus, on end-to-end performance, TPUs FP8 is currently still beating GB300 NVL72 FP4.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905840439-19.jpg" alt="" loading="lazy"></p>
+<p>Source: SemiAnalysis</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905841615-20.jpg" alt="" loading="lazy"></p>
+<h2>Open Source Kubernetes llm-d puts TPUv7 far above GB300 FP8 for Decode Interactivity</h2>
+<p>Disaggregated serving runs prefill and decode on separate hosts so long prefills do not stall generation. llm-d is the open-source K8s router that coordinates them, each host is 4 TPUv7 chips, and each result uses 24-32 chips.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905842572-21.jpg" alt="" loading="lazy"></p>
+<p>Source: SemiAnalysis</p>
+<p>Speed comes from capping how many requests each decode host runs, from one at a time at the low-latency end up to 112 at the high-throughput end. Requests over the cap wait for a free host, which adds to their TTFT. Even so, p90 time to first token at the fastest point is 8.6 seconds, against 11.1 for GB300 FP4’s fastest point.</p>
+<p>This uses llm-d, one of the largest ecosystem-based production inference kubernetes orchestrators. During the recent Kimi K3.1 Pro launch, they had Day 0 support for TPUv7 on llm-d.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905843872-22.jpg" alt="" loading="lazy"></p>
+<p>Source: InferenceX</p>
+<p>At FP8, TPUv7 with llm-d beats GB300 at every interactivity, from &gt;2x at high throughput to achieving more than 1000tok/s/user in the ultrafast region.</p>
+<p>Unfortunately, using this turn-based routing algorithm does lead to worse end-to-end performance for TPUs compared to GB300 TRTLLM FP4. However compared to FP8 and FP4 GB300 NVL72 SGLang, it is still much better.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905844655-23.jpg" alt="" loading="lazy"></p>
+<p>Source: SemiAnalysis</p>
+<h2>Qwen3.5 TPU Optimizations</h2>
+<p>Qwen3.5-397B mixes 45 linear attention layers, which keep a fixed-size state per request, with 15 full attention layers. Google describes three main changes:</p>
+<ul><li><b>Decode megakernel.</b> One kernel runs the whole decode step and prefetches the next layer’s weights while the current layer computes.</li><li><b>Host DRAM offload.</b> KV cache and linear attention state spill to host DRAM through TPU Sync, Google’s newly open-sourced offload framework.</li><li><b>Cache-aware routing.</b> llm-d sends each turn to the prefill host holding its prefix and keeps each session on its decode host unless that host is full. Google says routing to the exact data-parallel rank raised decode cache hit rates from 56% to 76%.</li></ul>
+<h2>Kimi K3 AgentX</h2>
+<p>TPU from Inferact and AMD shipped megakernels for frontier MoE models first in open source engines. NVIDIA quickly followed within a week with its own megakernels.</p>
+<p>A conventional decode step launches hundreds to thousands of kernels, and the chip idles between them. A megakernel runs many layers in one long-running kernel that prefetches the next weights, while the current ones compute. AMD calls its version the MonoKernel. On GLM-5.2 across eight MI350X GPUs, AMD reports that it cuts a decode step from about 2,459 launches to 210 and runs 2.31x faster at batch 1.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905845732-24.jpg" alt="" loading="lazy"></p>
+<p>Source: SemiAnalysis</p>
+<p>A megakernel removes the idle gaps between kernel launches. Read more about megakernels in our TileRT article:</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905846239-25.jpg" alt="" loading="lazy"></p>
+<h3>Ultra-High Interactivity on NVIDIA GPUs? - TileRT InferenceX</h3>
+<p>Bryan Shan, Daniel Nishball, and 4 others</p>
+<p>·</p>
+<p>Aug 10</p>
+<p>Read full story</p>
+<p>For this setup, DCP was used for prefill. The prefill and decode variants of context parallelism describe where each technique <i>usually</i> helps, not where it can run. K3 uses MLA which stores KV as one latent shared across heads, so TP cannot split it and every TP rank holds a full copy. DCP fixes this by giving each TP rank a different slice of tokens. Prefill context parallelism would have needed a lower TP degree, which copies weights onto more chips and leaves less HBM for the KV cache, already the scarce resource here.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905847135-26.png" alt="" loading="lazy"></p>
+<p>Source: Inferact</p>
+<h2>Competitive with GB300 FP4 at launch</h2>
+<p>At launch on October 17, TPUv7 delivered 0.77x to 0.91x GB300’s tokens per dollar from 50 to 200 tok/s/user and was 1.6x faster for a single user, at 391 tok/s/user against 251. On Google’s internal cost it beat GB300 at 100 and 200 tok/s/user.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905847948-27.jpg" alt="" loading="lazy"></p>
+<p>Source: InferenceX</p>
+<p>GB300 FP4 now leads by 1.5x to 2.6x after four NVIDIA refreshes. TPUv7 still delivers a competitive 1.15x to 2.5x the tokens per dollar of GB200, B200 and B300, while VR200 delivers 4.3x to 5.6x TPUv7.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905848895-28.jpg" alt="" loading="lazy"></p>
+<p>Source: InferenceX</p>
+<p>In an apples to bananas comparison between TPUv7 &amp; Rubin NVL72, Rubin is up to 6x better perf per dollar. But note that this is an unfair comparison as Rubin should be compared to TPUv8i which we will be benchmarking very soon.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905849990-29.jpg" alt="" loading="lazy"></p>
+<p>Source: SemiAnalysis</p>
+<h2>Built by the Ecosystem</h2>
+<p>This result came from the vLLM ecosystem, not from Google alone. Inferact, founded by vLLM’s creators and maintainers, built the K3 megakernels with Google, and the two submitted the result together. The megakernel plugs into vLLM as a model runner that replaces only the forward, so vLLM’s scheduling, prefix caching and KV transfer work unchanged. The stack is open source on vLLM TorchTPU, and Inferact’s reproduction guide runs it from a Docker image. Ecosystem development like this has mostly happened on CUDA.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1793905850716-30.jpg" alt="" loading="lazy"></p>
+<p>Source: Inferact...</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
