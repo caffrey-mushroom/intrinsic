@@ -1,0 +1,239 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.08 | AC | Memory | NVIDIA's Two Memory Moves</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.08 | AC | Memory | NVIDIA's Two Memory Moves</h1>
+<p class="orig">原标题：英伟达近期存储的两步棋：优化HBM，携手台积电布局3D DRAM</p>
+<p class="tags">#NVIDIA #HBM #3D DRAM</p>
+<p class="meta">AceCamp · 2026-11-08 · article 70568977</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>英伟达在存储上走了两步：优化HBM使用效率，并与台积电布局3D DRAM。</li>
+<li>软件侧通过NVFP4 KV cache、Wide-EP和Dynamo降低单位推理对HBM的占用。</li>
+<li>系统侧引入Vera的LPDDR5X和CMX Flash分层存储。</li>
+<li>Rubin保持288GB HBM，带宽为19.2 TB/s。</li>
+<li>英伟达推动台积电做3D DRAM，是2030年以后的长期路线，短期不影响存储三巨头。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>短期优化HBM利用效率。 NVIDIA通过NVFP4量化、KV</li></ol>
+<p>Cache复用、PD分离、LPDDR内存分层和共享Flash等技术，提高单位HBM能够支撑的有效Token数量。DeepSeek与NVIDIA实现路径不同，但底层方向一致：降低推理对昂贵HBM的依赖。</p>
+<ol><li>长期探索下一代DRAM制造。 NVIDIA推动台积电探索3D DRAM，通过存储单元垂直堆叠，突破传统DRAM平面微缩瓶颈。这是面向2030年以后的长期技术路线，并非未来几年新增DRAM供给的来源。</li><li>台积电潜在进入存储市场的商业逻辑。</li></ol>
+<p>当前DRAM单位晶圆经济价值和盈利能力显著提升，但台积电不会仅为追逐周期性利润进入大众商品DRAM市场。如果有NVIDIA等客户定制需求、联合研发及长期采购承诺，台积电就可能通过自主制造、外部合作或技术集成进入高附加值存储领域，延续其Foundry商业模式。</p>
+<p>近期，NVIDIA连续释放了两个值得关注的存储信号：一方面，通过Memory Full-Stack Co-design，从GPU、CPU、互联、软件到存储系统进行协同优化，提高每GB HBM能够支撑的有效Token数量；另一方面，据The Information报道，NVIDIA正在推动TSMC探索下一代3D DRAM制造。</p>
+<p>这两个动作分别指向AI存储产业的近期和长期演进：短期提高现有存储资源的利用效率，长期寻找新的存储密度增长路径。</p>
+<h2>一、短期：从增加HBM到提高HBM利用率</h2>
+<p>11月5日，NVIDIA发布Memory Full-Stack Co-design方案，系统介绍了其在AI推理存储架构上的优化方向。</p>
+<p>其中一个值得关注的数据是，从GB300 NVL72到Vera Rubin NVL72，单GPU的HBM容量维持在288GB，但HBM带宽提升至19.2TB/s，约为上一代的两倍。与此同时，在SemiAnalysis AgentX特定工作负载下，Vera Rubin NVL72的每兆瓦Agentic Throughput最高达到GB300 NVL72的30倍。</p>
+<p>需要注意，30倍是特定工作负载下的整机系统吞吐量提升，包含GPU、CPU、互联、软件和存储架构等多方面变化，并非单纯由内存优化贡献。</p>
+<p>但这个数据说明了一个重要趋势：GPU性能提升不再仅仅依靠增加HBM容量，而是越来越依赖整个系统如何提高每一GB HBM的有效利用率。</p>
+<p>NVIDIA主要从五个方向进行优化：</p>
+<h2>1. NVFP4：降低模型权重和KV Cache的存储需求</h2>
+<p>通过更低精度的模型权重和KV Cache表示，减少数据占用的HBM空间。NVIDIA表示，NVFP4 KV Cache相较FP8可以减少最高50%的缓存占用，从而让同样的HBM容量支持更多上下文和并发会话。</p>
+<h2>2. Wide-EP：分散MoE模型权重</h2>
+<p>通过将MoE专家分配到更多GPU，减少单张GPU需要保存的专家权重，为KV Cache和并发推理释放更多HBM资源。其前提是NVLink等高速互联能够承接GPU之间的通信需求。</p>
+<h2>3. Dynamo：提高KV Cache的复用率</h2>
+<p>通过KV-aware Routing、Prefill/Decode分离和缓存管理，尽可能让已经计算过的上下文得到重复利用，减少重复Prefill计算。KV Cache不再只是单张GPU上的局部资源，而是逐步成为整个推理集群可以管理和调度的共享资源。</p>
+<h2>4. Vera CPU：利用LPDDR5X承接温热KV Cache</h2>
+<p>Agentic AI与传统Chatbot的区别之一，是模型经常需要调用搜索、代码等外部工具。在工具执行期间，用户会话暂时不需要GPU持续计算，但此前生成的KV Cache仍然需要保存。NVIDIA通过Vera CPU的大容量LPDDR5X，以及NVLink-C2C互联，让暂时不活跃的上下文可以离开昂贵的GPU HBM，在需要时再快速恢复。</p>
+<h2>5. CMX：建立Pod级共享Flash缓存层</h2>
+<p>NVIDIA进一步引入G3.5存储层，通过BlueField-4、Spectrum-X、DOCA Memos和Dynamo，将网络连接的Flash组织成共享缓存池，让不同GPU节点可以复用此前计算过的上下文，减少重复计算和缓存容量浪费。</p>
+<p>DeepSeek也在沿着相近的方向优化推理存储体系，但具体实现有所不同。DeepSeek通过MLA、稀疏Attention等方式压缩KV Cache，通过PD分离、分布式KV和外置NAND缓存池优化存储资源使用；NVIDIA则更多从NVFP4量化、GPU与CPU协同、KV Cache全局调度，以及Pod级共享存储入手。</p>
+<p>两者的技术路径不同，但底层方向一致：不再要求所有数据始终驻留在昂贵的HBM中，而是根据数据的访问频率、延迟要求和复用概率，将其放在最合适的存储层级。</p>
+<p>NVIDIA这次的增量，不是提出了全新的存储理论，而是将这些技术整合到一个完整的AI Factory架构中，并通过AgentX测试展示系统级优化的潜力。HBM仍然是AI推理的核心资源，但其价值越来越取决于整个系统如何使用它。LPDDR、DDR和NAND也开始承担更多原本需要由HBM承载的工作。</p>
+<h2>二、长期：NVIDIA推动TSMC探索3D DRAM</h2>
+<p>如果说系统级优化是在现有存储技术体系下提高效率，那么NVIDIA推动TSMC探索3D DRAM，则指向更长期的制造工艺创新。</p>
+<p>11月6日，The Information报道称，TSMC正在应NVIDIA要求，研究制造一种新型先进存储芯片——3D DRAM。报道提到，TSMC正在考虑新建专用工厂，或者收购现有工厂并改造为存储产能，但目前没有明确的量产时间表和具体工艺方案。</p>
+<p>这里需要区分，3D DRAM并不是传统HBM的简单堆叠，也不是单纯把DRAM Die与Logic Die贴合。传统DRAM主要通过平面微缩提高存储密度，但随着工艺不断推进，存储单元中的晶体管、电容、漏电和数据保持时间等问题越来越难解决。DRAM的微缩速度逐渐落后于先进逻辑工艺。</p>
+<p>3D DRAM则尝试将存储单元沿垂直方向堆叠，在相同的平面面积内容纳更多存储单元，从而打开新的密度增长空间。这与3D NAND的发展方向有一定相似性：当传统平面微缩越来越困难时，通过垂直堆叠寻找新的单位面积存储密度增长路径。</p>
+<p>但两者的工艺实现并不相同。DRAM仍然需要解决存储电容、访问晶体管、垂直互联和数据保持等特殊问题，不能直接复制NAND的堆叠工艺。</p>
+<p>从时间维度看，这是一条非常长期的技术路线。根据Tokyo Electron此前公布的DRAM技术路线图，产业在未来几年仍将主要通过6F²向4F²等结构演进，而3D DRAM的高量产规模预计要到2032年以后才逐步实现。这是设备厂商的技术路线预测，并非三大DRAM厂商已经承诺的量产时间表。</p>
+<p>因此，3D DRAM不是未来一两年就能大规模替代现有DRAM的技术，也不应该被理解为2027—2028年存储供给增加的来源。这次NVIDIA推动TSMC探索3D DRAM，更重要的意义在于提前布局下一代存储制造工艺，为2030年以后的AI基础设施寻找新的存储密度增长路径。</p>
+<h2>三、TSMC为什么可能参与？高附加值存储业务与资本回报</h2>
+<p>TSMC是否应该进入DRAM制造，是这次报道中最值得讨论的问题。传统DRAM市场由Samsung、SK Hynix和Micron主导，三家公司拥有几十年的工艺积累、成熟的制造体系和规模化生产能力。</p>
+<p>TSMC如果只是复制传统DRAM厂商的商业模式，进入标准化DDR等大众商品市场，未必能够获得有吸引力的资本回报。</p>
+<h2>首先，存储的单位晶圆经济价值已经非常高。</h2>
+<p>按照每片300mm DRAM晶圆产出约2TB有效存储容量、DDR ASP为1.6美元/Gb的假设：</p>
+<p class="qq">2,048GB × 8 × US$1.6/Gb ≈ US$26,214</p>
+<p>即一片DRAM晶圆对应约2.62万美元的芯片销售价值。作为对比，当前先进逻辑N3晶圆的行业估算价格约为2万美元。按照这一简化口径，一片DRAM晶圆对应的销售价值已经高于N3晶圆代工收入。</p>
+<p>需要说明，这里比较的是最终芯片销售价值与晶圆代工收入，并非两者的利润直接比较。DRAM还需要考虑后道封装、测试等成本，实际产出也取决于工艺节点、Die Size和良率。</p>
+<p>但DRAM工艺在单位晶圆制造成本上具有一定结构性优势。与先进逻辑相比，其工艺成本结构不同，在当前高价格环境下，单位晶圆的经济性非常突出。SK Hynix 2026年第三季度整体毛利率达到86%，也反映了当前存储产业极强的盈利能力。</p>
+<h2>其次，也是笔者认为最重要的原因：TSMC并不需要进入大众商品DRAM市场。</h2>
+<p>即使短期DRAM利润率再高，笔者认为TSMC也不会仅仅因为当前存储价格上涨，就决定进入传统商品化DRAM市场。TSMC长期以来的资本配置纪律，是围绕可持续的技术壁垒、客户需求和资本回报进行投资，而不是追逐某一阶段的周期性高利润。</p>
+<p>传统DRAM市场由Samsung、SK Hynix和Micron主导，三家公司拥有几十年的工艺积累、成熟的制造体系和规模化生产能力。TSMC若以标准化DDR产品为目标，不仅需要重新建立DRAM工艺平台，还要面对成熟厂商的成本、规模和周期竞争。即使当前利润率很高，也不代表长期ROIC足够有吸引力。</p>
+<p>但如果这次是NVIDIA等客户希望TSMC共同开发定制化3D DRAM，投资逻辑就可能发生变化。产品不再是面向手机、PC和服务器市场销售的标准化DRAM，而是围绕特定AI加速器的需求进行设计，包括容量、带宽、功耗、延迟和存储结构。</p>
+<p>如果客户愿意提供明确的产品规格、联合研发投入以及长期采购承诺，TSMC就有机会将其作为一项专用的高附加值制造业务来评估。客户需求和采购承诺能够提高产能利用率的可见度，也有助于降低新工艺投资的不确定性。</p>
+<p>这与TSMC过去发展CoWoS、SoIC等先进制造和封装业务的商业逻辑有相似之处：不是简单进入一个大众商品市场，而是围绕客户需求，提供竞争对手难以复制的制造能力。</p>
+<p>当然，客户承诺并不意味着项目必然具有良好的ROIC。新工艺研发、设备投资、良率爬坡和产能利用率仍然需要充分验证。但与单纯进入传统DRAM商品市场相比，客户定制化的3D DRAM确实提供了一个更有吸引力的投资逻辑。</p>
+<p>存储已经越来越成为AI计算的重要组成部分，而不仅仅是GPU的配套零部件。如果未来计算与存储的制造边界发生变化，TSMC自然有动力评估自己是否应该进入这一价值链。</p>
+<h2>四、TSMC究竟会怎么做？设备基础具备，但DRAM制造Know-how并不容易复制</h2>
+<p>从制造能力看，TSMC并不是没有基础。DRAM和Logic Fab使用的很多设备类别是相通的，TSMC在光刻、刻蚀、薄膜沉积、CMP、清洗和量测检测等方面都拥有成熟的制造能力。</p>
+<p><img src="https://image.acecamptech.com/article_image/50533336/0.4458742526383116.png" alt="" loading="lazy"></p>
+<p>真正的壁垒在于DRAM Cell的工艺和Process Integration。传统DRAM的核心是1T1C：Access Transistor负责控制数据读写，Capacitor负责保存电荷。DRAM必须在非常小的面积里维持足够的电容，同时控制漏电和数据保持时间。</p>
+<p>这需要专门的工艺积累：</p>
+<ul><li>高深宽比刻蚀。</li><li>高介电常数材料沉积。</li><li>电极材料和界面工程。</li><li>Access Transistor的制造。</li><li>电容与晶体管之间的工艺整合。</li></ul>
+<p>而未来3D DRAM还需要解决更多问题：</p>
+<ul><li>多层存储单元的制造。</li><li>垂直字线、位线的连接。</li><li>不同层之间的电气干扰。</li><li>多层结构的良率累积。</li><li>热预算和材料兼容性。</li></ul>
+<p>这些不仅是设备问题，还涉及大量专利、工艺配方和长期制造Know-how。TSMC可以通过自主研发、专利授权、技术合作、收购团队或与DRAM厂商合作来补齐能力，但真正形成稳定的量产工艺平台并不容易。</p>
+<p>因此，笔者认为TSMC未来可能有几种参与方式：</p>
+<h2>第一，自主开发并制造定制化3D DRAM。</h2>
+<p>TSMC自己开发存储单元制造工艺，建设专用产线，围绕NVIDIA等客户提供定制产品。这种模式最接近传统Foundry，但需要承担最大的研发和良率风险。</p>
+<h2>第二，DRAM Die外包，TSMC负责制造和集成的其他环节。</h2>
+<p>由专业DRAM厂商负责存储单元的制造，TSMC负责逻辑部分、垂直集成和先进制造。这种模式可以发挥双方的技术优势，但需要具体的3D DRAM架构支持。</p>
+<h2>第三，与专业DRAM厂商共同开发。</h2>
+<p>通过技术授权、联合研发、合资或共同投资的方式，引入传统DRAM厂商的工艺经验，降低TSMC独立开发的难度。</p>
+<p>目前还没有足够信息判断TSMC会采用哪一种模式。公司也曾重申其核心业务是Dedicated IC Foundry，继续专注逻辑晶圆代工。因此，这件事仍然应当被视为值得关注的长期技术探索，而不是已经确定的投资项目。</p>
+<h2>五、结语：AI存储产业的两个时间维度</h2>
+<p>把NVIDIA的两个动作放在一起看，笔者认为它们并不矛盾，而是对应AI存储产业的两个不同时间维度。</p>
+<p><img src="https://image.acecamptech.com/article_image/50533336/0.2740008931306448.png" alt="" loading="lazy"></p>
+<p>短期，NVIDIA希望通过系统架构优化，让有限且昂贵的HBM承载更多有效Token；长期，则希望通过新的存储制造工艺，突破传统DRAM微缩的限制，寻找下一代密度增长路径。</p>
+<p>这两条路线并不矛盾。即使单位Token的HBM消耗下降，只要AI推理Token总需求、上下文长度和并发量增长足够快，存储总需求仍然可以继续增长。</p>
+<p>同样，3D DRAM是长期研发方向，不应被理解为未来一两年传统DRAM供给增加的信号。</p>
+<p>过去，AI产业的投资重点更多集中在GPU、HBM和先进封装；未来，计算、存储和系统架构之间的协同设计，可能成为半导体产业新的重要增长方向。</p>
+<p><b>AI算力的竞争，不只是计算能力的竞争，也是每一个Byte如何被制造、存储、调度和利用的竞争。</b></p>
+<p><i>本文仅为行业研究与个人观点，不构成投资建议。</i></p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
