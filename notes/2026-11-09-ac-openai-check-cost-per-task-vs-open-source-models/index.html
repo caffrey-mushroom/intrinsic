@@ -1,0 +1,209 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.09 | AC | LLM | OpenAI Check: Cost per Task vs Open-Source Models</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.09 | AC | LLM | OpenAI Check: Cost per Task vs Open-Source Models</h1>
+<p class="orig">原标题：OpenAI调研：单任务成本与DeepSeek类开源模型对比，AI制药与芯片设计领域面临数据壁垒中短期侧重于辅助工具，2027年战略重点为AI端侧硬件</p>
+<p class="tags">#OpenAI #DeepSeek #成本</p>
+<p class="meta">AceCamp · 2026-11-09 · article 70569007</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>专家认为海外模型通过AutoReview和动态路由，在复杂任务的综合成本和可靠性上已超过国内模型。</li>
+<li>Codex任务中约10–20%的token用于审核环节。</li>
+<li>DeepSeek类国内模型的低成本依赖用户很强的IT编排能力，受众较窄。</li>
+<li>AI制药和芯片设计面临数据壁垒，中短期是辅助工具。</li>
+<li>OpenAI 2027年战略重点是端侧硬件，如音箱和桌面机器人。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>本文核心要点包括：1，海外模型通过AutoReview与动态路由机制，在复杂任务交付的综合成本与可靠性上已超越国内模型。而DeepSeek等国内模型定位“口粮模型”，其低成本优势高度依赖用户具备极强的IT编排能力，市场受众较窄。2，AI制药与芯片设计领域面临数据壁垒，核心Know-how仍掌握在默沙东、EDA巨头等头部企业手中，AI暂为辅助工具。3，2027年战略重点为AI端侧硬件（音箱/桌面机器人），旨在通过本地安全芯片解决隐私痛点并构建Agent形态互联网。</p>
+<p>以下为专家观点：</p>
+<p><b>1，从成本角度看，海内外大模型的竞争格局经历了怎样的演变？近期有观点认为海外模型在单位任务成本上已重新取得对中国厂商的优势，这一说法的依据是什么，当前中美两国模型在报价和实际单位成本上的真实情况如何？</b></p>
+<p>海外模型在单位任务成本上确实已经重新展现出优势。这种优势并非体现在基础的token报价上，而是通过更精细化的任务处理机制实现的，从而在完成特定任务的综合成本上超越了国内模型。</p>
+<p>具体而言，海外头部模型（如GPT系列）内置了复杂的验证层，例如“Auto Review”机制。这一机制会利用部分闲置推理资源对任务进行审核、模板匹配和风险控制。在处理Codex相关任务时，约有10%至20%的token消耗就用于此环节。虽然在早期版本（如5.4.0、5.5.0）中，该机制的优势不甚明显，但随着其与决策API的结合，现在能够实现对任务的有效动态路由。</p>
+<p>这种路由机制能够精准识别任务的复杂程度。对于仅需作为信息中转站的简单任务，系统会分配较少的计算资源，实现“降智处理”；而对于需要调用大量推理资源的复杂任务，则会确保充足的资源供给。此外，系统还能判断任务是否需要大量在线检索参照信息，并基于R eview能力快速调用所需参照。</p>
+<p>同时，海外模型在记录和利用用户交互历史方面也更为成熟。通过记录关键交互事件，系统能够有效筛选上下文，在处理相似任务时（例如，在虚拟机环境中恢复某个快照或关键上下文），可以快速复现状态，而无需从头进行完整的推理。</p>
+<p>综合来看，通过Auto Review、动态路由和对交互历史的有效利用，海外模型在任务交付的可靠性和成功率上显著提升。因此，以单个任务的完成效果和经济性来衡量，其单位成本实际上优于国内模型。面对这种局面，国内模型（如DeepSeek）则采取了不同的竞争策略，即通过有限的参数规模和极致压榨推理资源，将自身定位为“口粮模型”，依靠极低的单位token展现成本来参与市场竞争。</p>
+<p><b>2，在完成特定任务时，DeepSeek与海外前沿模型相比，谁的成本更低？成本优势的实现是否依赖于特定前提条件？</b></p>
+<p>在不同前提条件下，成本优势归属于不同的模型。如果用户具备强大的编排能力，例如在制作PPT或前端开发等任务中，已经将所有Harness编排与任务的关键节点进行了深度耦合，那么DeepSeek的成本更低。反之，如果用户缺乏现成的模板，或仅有半成品模板需要参照，则Llama的成本更具优势。同样，在需要大量重启和复用，且用户未进行上下文管理优化的情况下，使用DeepSeek搭建虚拟机或多任务耦合环境的成本可能会高于Codex。总而言之，DeepSeek的低成本优势主要建立在用户具备相当的IT能力或编排能力的基础上，而这类用户在整体市场中属于少数。</p>
+<p><b>3，既然DeepSeek的成本优势依赖于客户的编排能力，为何它在北美市场仍有相当大的用户基础，甚至有用户选择在自己的算力池上运行其开源模型而非直接购买API服务？</b></p>
+<p>DeepSeek在北美市场获得广泛应用主要有以下几点原因。首先，出于数据安全和隐私的考量，许多企业，尤其是中小型企业，希望将上下文和企业数据仓库、环境等敏感信息保留在自己手中，避免暴露给第三方模型提供商。使用开源的DeepSeek模型可以满足这一需求，降低了数据裸奔的风险。其次，DeepSeek已成为一种高性价比的“口粮模型”。在编码等任务中，配合各类开源的代码解释器、验证器以及GitHub工程作为参照，它作为一个低成本的执行模型表现出色。用户在使用时心理负担较小，容错率高，且批量处理成本极低。特别是其V4.1 Flash版本，在任务表现良好的同时，单位成本更低，这促使其使用量大幅增长。最后，从部署角度看，DeepSeek对硬件的要求更低。它对SSD缓存的需求降低了八分之一，同时KV cache的显存占用相比前代版本降低了四分之一。这极大地盘活了许多过去无法承载大模型的小型计算集群，使得自部署变得更加可行和经济，也催生了部分第三方倒卖其模型的现象。</p>
+<p><b>4，在复杂的AI任务中，DeepSeek这类模型与海外前沿模型是如何分工协作的？这种协作模式对解决方案商和SaaS服务商产生了怎样的影响？</b></p>
+<p>在处理复杂任务时，一种新兴的协作模式是将任务进行拆解，形成多智能体的异步构建流程。在此模式中，海外前沿模型（如Azure提供的模型）负责顶层的设计、战略规划、架构设计或智能体编排等决策环节。而DeepSeek这类高性价比模型则承担具体的执行层面任务，例如仓库维护、编写技术代码等。在这种分工下，由高级模型对DeepSeek完成的工作进行审核。这种模式的出现，使得DeepSeek成为了一个重要的中间态模型。这也引发了部分工程技术服务商的策略转变，例如解决方案提供商和SaaS服务商，他们开始将任务拆解，采用多模型编排的策略，将一部分原本由前沿模型承担的工作负载转移到DeepSeek这类模型上，以优化成本和效率。</p>
+<p><b>5，鉴于前沿模型的收入增长高度依赖于少数重度AI用户的客单价提升，而这部分客户的预算终有上限，同时部分潜在客户已转向开源模型或采用混合编排的中间方案，从商业模式角度看，前沿模型公司未来应如何拓展客户群并维持增长？</b></p>
+<p>应对这一商业挑战的解法之一是，通过与不同的工作流和编排流结合，向客户交付具有更高确定性的模板化解决方案。以dot为例，预计在今年（2026年）11月会发布一个新版本，并与Image3一同推出。届时，dot可能会出现专业版，并大概率与企业的p remier账号相结合。这种模式旨在降低用户的使用门槛，例如在客服场景中，用户无需进行复杂的编程或编排，只需将任务、邮箱或相关上下文权限导入，即可快速启动工作。</p>
+<p>其核心逻辑是将run time和always on的智能体整合成一个长线任务，基于职业化的预设结果，将那些不具备编程或编排能力的潜在用户转化为付费用户，同时也能吸引那些尚未使用codex的用户。通过这种方式获取任务的know-how，并服务于那些对数据敏感度不高、追求确定性结果的客户，例如咨询、财税、审计等行业。未来，从明年（2027年）或后年开始，可能会有大量任务被预置到编排流中，客户只需获取任务权限，即可围绕这些预编排好的模块进行部署。这被视为增加一部分ARR的解法。</p>
+<p>然而，市场对此策略的预期并不算非常高。</p>
+<p><b>6，根据对客户的分层理解，顶层客户自发使用AI，中层客户结合开源方案，而当前似乎更关注于为编程能力和IT架构相对薄弱的下沉客户提供服务。这是否意味着公司的核心策略是优化底层技术，例如改进KV Cache，从而降低AI的使用门槛，就像将专业相机简化为傻瓜相机，以吸引更广泛的企业用户付费？</b></p>
+<p>是的，核心策略确实是降低客户的使用门槛。后续需要解决模型的动态智能问题，以及关键性的know-how问题，将具有连续性的任务汇集起来，形成一个可被快速交付的实体，而非停留在FDE（前期探索）阶段。例如，OpenAI基于制药领域的管理系统Rose Light，其形态偏向SaaS，后续的路径就是如何将其嵌入到一个快速SaaS、轻SaaS与SaaS相结合的过程中。这种模式的代价是OpenAI需要自己承担许多隐形成本，最终能否成功取决于财务模型是否能够跑通。</p>
+<p><b>7，随着模型能力不断进步，AGI的实现障碍似乎在减少。那么，是否会出现一款革命性的新模型，能像Codex对编程行业那样，在制药、金融、法律等其他行业也创造出颠覆性的生产力提升，形成一个“必须使用”的局面？</b></p>
+<p>在其他行业中，机器人行业已经出现了类似的alpha机会。AI在机器人领域可参与诸多任务，例如数据仿真、整体方案优化、数据标定、VR训练策略，以及结合编程任务对测序结果进行改进。在此过程中，AI扮演了优化器和自动化教师监督的角色，甚至可能加速整个行业的演进。然而，该行业目前面临一个显著问题：其从业开发者规模（估计在十几万到几十万之间）远小于编程行业。这意味着产品定价不能过高，否则无法获取足够的know-how。因此，公司一方面需要支撑该行业以获取know-how，另一方面该行业贡献的收入又相对有限。在这种情况下，一种典型的策略是基于获取的know-how自主研发机器人和智能系统，将一级核心能力自用，再将二级能力对外释放。这有助于找到行业alpha并加速其价值重估，但OpenAI并非直接从市场增长中获益最大的角色。</p>
+<p><b>8，在AI for Science领域，特别是在制药行业，目前市场参与者的梯队格局是怎样的？领先企业具备哪些核心优势？</b></p>
+<p>在AI制药的AI for Science应用领域，市场格局呈现清晰的梯队分布。超第一梯队是以默沙东为代表的纯制药公司，它们在利用AI进行生物科技研究方面处于领先地位。这些公司自身已经掌握了关键算法和方法论，能够结合体内外数据进行验证，核心的know-how掌握在自己手中，外部AI公司的参与更多是提供效率提升的工具。它们利用AI或机器学习能力在关键任务上进行拟合，但并不需要全流程都使用AI，尤其是最后的验证环节，相关核心部分也不会对外暴露。</p>
+<p>领先企业，尤其是默沙东这类公司，其核心优势在于直接掌握着高质量的专有数据。这包括药代动力学、临床结果等，这些数据对于模型生成候选分子以及验证其在实验中的有效性至关重要。因此，它们可以基于机器学习进行精准的药物预测，而无需完全依赖大模型。此外，这些公司在自研虚拟细胞以及将其与模型耦合方面也投入深入。</p>
+<p><b>9，领先的制药公司是如何利用外部AI能力的？它们与AI公司的合作模式是怎样的？</b></p>
+<p>领先的制药公司，例如默沙东，会采购企业级的AI Agent，如GCP的Gemini企业版。然而，其主要应用场景集中在研发项目管理等环节，本质上是实现数字化转型和效率提升。这种合作也带有一定的战略考量，通过采购服务与AI公司建立关系，以便未来在其他领域进行合作。</p>
+<p>合作模式是有选择性的。制药公司会将部分非核心的、可以节约成本的任务，如药物预测的某些环节，交给Isomorphic Labs这样的合作伙伴。它们会提供一部分数据，但不会开放全部数据。合作的前提是AI公司能够在有限的数据支持下，证明其模型和技术能够有效达成目标。真正掌握核心know-how的行业领导者，只会非常有选择性地进行合作，而那些主动寻求与AI公司合作的，往往是希望从AI行业中套利。</p>
+<p><b>10，OpenAI在AI for Science领域的智能体产品目前的能力水平和发展阶段如何？面临哪些挑战？</b></p>
+<p>OpenAI的AI for Science智能体目前的能力定位更接近于一个企业级的Agent加SaaS的解决方案。通过收购Recursion，OpenAI整合了其在通用药物生产方面的Agent能力，核心作用在于将研发流程标准化，例如对文献进行研究思路的拓展。</p>
+<p>然而，在实际应用中面临巨大挑战。当需要围绕客户需求构建专有模型时，无论是蛋白质模型还是肽分子的合成模型，效果均不理想，甚至无法达到二期临床试验的标准，许多一期临床的结果也难以验证。主要瓶颈在于AI for Science所需的数据量极为庞大，且数据的形式化验证链条极长，其复杂性超过了芯片设计。这些数据涉及药物的整体分布、代谢、毒理等多个维度。</p>
+<p>由于这些挑战，OpenAI目前只能参与到一些较为抽象的层面。为获取关键数据，OpenAI成立了AI Foundation，这是一个半公益性的NGO式基金会，通过以捐赠和共建人类公益数据的名义，获取如阿尔茨海默症等罕见病的数据。总体而言，现阶段OpenAI的模型和智能体仍处于学习和向上层行业推广SaaS的阶段，并且需要持续投入。</p>
+<p><b>11，在芯片设计领域，大模型与EDA软件的结合应用现状如何？面临哪些核心挑战？</b></p>
+<p>目前，通过大模型（无论是基于Transformer架构还是类似AlphaFold的结构）与EDA软件的结合，可以在远程实现一些EDA的通讯功能，例如部分切片和波形验证。然而，这种结合面临着严峻的挑战。首先，模型进行切片操作的准确性不足，看似正确的波形在实际仿真中可能存在问题，因为模型无法获取完整的仿真参数。其次，EDA公司对底层权限的开放极为有限。即便是与Synopsys合作，支付费用并由其单独训练一个专用的EDA版本GPT模型，EDA公司也并未完全开放所有能力。它们倾向于将关键能力封装成可编译的抽象接口，而不是让模型的每一个“神经”与EDA完全耦合，这导致模型最终沦为EDA的“耗件”。EDA公司依然牢牢掌握着核心IP及其知识产权，并决定IP如何与模型产生耦合。</p>
+<p><b>12，除了EDA软件的限制，AI在芯片设计领域还面临哪些环境和重构方面的障碍？</b></p>
+<p>AI在芯片设计领域面临的障碍与药物研发不同。药物研发的环境本身复杂且难以完全理解，而芯片设计则极其依赖明确的生产环境。目前的情况是，几乎无法获得完整的生产环境数据。例如，即便是在AMD环境中进行编译，若没有相应的编译环境，操作也无法进行。这导致AI最终只能成为一个“套件”。此外，与Excel或Photoshop等软件不同，目前无法通过软件栈的能力去重构EDA，将其引擎改造得对模型更友好、更轻量化。因此，最终的结合形态是一种分布式的离散结合，而非一个统一的单一系统。</p>
+<p><b>13，如何理解AI与EDA结合应用中的“分布式离散结合”？这种模式对数据和权限有何具体影响？</b></p>
+<p>“分布式离散结合”可以这样理解：在一个典型工作流中，开发者编写RTL代码后需要进行验证。他会通过SSH调用部署在云端Linux系统上的EDA工具。此时，模型通过命令行和图形用户界面与EDA进行通讯。由于无法获取EDA完整的后端权限，模型能对EDA界面进行的操作（如切片）非常有限。即使是与EDA公司联合开发的模型，双方的权限也并未打通。模型只是基于命令行输入一个指令并获得一个结果，但每次交互的结果都是离散的，无法理解EDA作为一个整体系统是如何运转的，因为EDA本身是经验主义的产物。这个行业实现突破的关键指标是能否真正提高流片成功率，而目前尚未看到显著提升。例如，公司内部一个由TPU团队人员组成的数十人团队，号称用最小团队研发了一款推理芯片，并声称其中一部分Verilog代码由机器生成。但实际上，该项目的可用性很差，最终仍需大量人工修改。</p>
+<p><b>14，在当前的技术和数据权限限制下，AI在芯片设计领域取得突破性进展需要满足哪些前提条件？</b></p>
+<p>在当前的技术水平和智能化程度上，若要取得重大突破，需要满足几个苛刻的前提条件。首先，必须对整个EDA进行逆向工程，并让模型能够完全“吃透”其内在逻辑。其次，需要搭建一个完整的开发环境，例如某个ARM芯片的开发环境。然后，利用这个环境去逆向工程RISC-V的某些结构，如Switch。这需要同时拥有两边（例如ARM和RISC-V）的完整数据，通过批量逆向数据和结果来训练模型，才有可能取得机会。对于常规的智能化应用尝试，目前看来机会不大。这与机器人领域不同，机器人由软件世界驱动，通过优化软件世界的标定和参数仍有较大机会，其后续主要解决的是传感器采样率、触觉、力控与视觉融合等问题。</p>
+<p><b>15，基于当前AI模型的发展现状，是否可以认为其技术进步已进入瓶颈期？具体而言，模型在耗尽公开数据后，似乎难以获取各垂直行业的核心机密数据，这是否是主要的制约因素？</b></p>
+<p>模型进步确实遇到了瓶颈，这与数据获取的困境密切相关。问题的根源在于，之前一些AI领导者试图让所有行业贡献其专有知识（know-how）并将其转化为可编译的抽象数据，这种策略在实践中处理不当，导致与许多掌握关键数据的封闭系统关系紧张。这种局面迫使其他行业参与者，如DeepMind，也开始独立布局，通过自建实验室或与愿意合作的伙伴共同探索，寻找符合其现有技术参数和行为分布的数据。同时，这也促使行业对防火墙和网络安全的意识进一步提高，以防范潜在的数据窃取行为。</p>
+<p><b>16，在数据获取面临瓶颈的背景下，AI公司将如何调整其商业模式和发展策略？</b></p>
+<p>面对数据获取的挑战，AI公司的策略正在分化。一种策略是转向提供SaaS服务，即为客户提供AI化的科研工具和平台席位。这种模式超越了标准的企业版服务，可以提供更多定制化服务，未来甚至可能延伸至提供实验机器人等硬件产品，从而在核心数据之外的领域寻找业务增长点。另一种策略则更为独立，例如DeepMind的创始人Hassabis选择在公司主体之外进行探索，以规避合规问题对主公司的影响，同时坚持其长远的技术战略。这类公司会积极与全球范围内愿意合作的伙伴共同建立实验室，寻找符合其模型需求的专有知识（know-how），同时也会寻求能快速解决灰色数据获取问题的渠道，以确保模型训练的持续进行。</p>
+<p><b>17，如何看Muse这款产品，其核心关键点是什么？以及如何看待其未来的发展方向？</b></p>
+<p>Muse的核心关键点在于它能否构建一套全新的、为机器浏览而设计的互联网形态，即Agent形态的互联网。这种形态将使机器能够更自由地浏览、比价和执行其他任务。然而，这一构想面临的最大挑战是其商业模式尚不明确，是基于消费分成、广告，还是其他模式。用户使用机器进行信息筛选时，对信息质量的要求会更高，这可能引发其他层面的竞争和协议层的变革。这项事业具有巨大的发展空间，但实现过程不会很快，因为当前的互联网生态尚未为此做好准备。未来的机器流量可能会超越人类流量，甚至达到千倍以上，但围绕这一新形态的容器和相关基础建设尚未完善。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

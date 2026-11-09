@@ -1,0 +1,392 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.09 | TB | Software | Druid AI Primer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.09 | TB | Software | Druid AI Primer</h1>
+<p class="orig">原标题：Druid AI</p>
+<p class="tags">#Agent #企业AI</p>
+<p class="meta">Third Bridge · 2026-11-09</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>Druid AI 2018年成立于布加勒斯特，在纽约设第二总部。</li>
+<li>产品从对话式AI转向企业AI编排和Agent工作流。</li>
+<li>重点行业为银行、医疗、高教、保险和零售。</li>
+<li>价值在于自动化客户和员工服务、降低成本、24小时响应。</li>
+<li>无需替换现有系统即可部署。</li>
+</ol></section>
+<div class="body">
+<p>Primer • 26 Oct 2026</p>
+<p>Companies: SOUN US</p>
+<p><b>Expert</b> Former Senior Executive in Strategy &amp; Operations</p>
+<p><b>SIYA DHABDHABE (Analyst)</b> — Third Bridge Sector Analyst</p>
+<h3>Agenda</h3>
+<ul><li>Over two years’ experience in the software space</li><li>Over two years’ experience at Druid AI (left within the last year)</li></ul>
+<h3>Introduction</h3>
+<p><b>Analyst</b>: Please could you just state I agree or I disagree to the following statement: You understand the definition of material non-public information and agree not to disclose any such information, or any other information which is confidential, during the Primer Interview today.</p>
+<p><b>Expert</b>: I agree.</p>
+<h3>Questions</h3>
+<h3>Could you describe what Druid AI does and the products and services it provides?</h3>
+<p><b>Expert</b>: Druid AI is agentic AI as well now, as you know, it's an enterprise-AI and agentic-AI platform, but it was founded in 2018 and is headquartered in Bucharest, Romania. However, since then, they have opened up a second head office in New York in the US. Druid helps enterprises build, deploy, scale and manage AI agents, voice agents and intelligent applications that automate business processes and integrate with enterprise systems. Druid's focus has evolved from conversational AI and chatbots towards enterprise-AI orchestration and agentic workflows. Key industry verticals include banking, healthcare, higher education, insurance and retail. Publicly referenced customers include Liberty Global and Georgia Southern University.</p>
+<h3>What is the value proposition of Druid's products or services?</h3>
+<p><b>Expert</b>: From a value proposition perspective, Druid automates customer interactions, automates employee support, reduces service costs, improves response times, provides 24/7 assistance, connects multiple enterprise systems through a conversational interface and deploys enterprise AI without replacing existing systems. Druid specifically promotes its ability to work across existing enterprise technology stacks.</p>
+<h3>What is the full range of industries and business sizes that could use Druid's products or services? What might be the company's TAM?</h3>
+<p><b>Expert</b>: The primary sectors I'd suggest are healthcare, first and foremost, higher education, banking, insurance, retail, shared services and public sector. They're prominently featured as target industries on the company's own website.</p>
+<p><b>Analyst</b>: What types of organisations within the discussed sectors are Druid's customers?</p>
+<p><b>Expert</b>: I suppose the ideal target customers are medium-sized enterprises because large enterprises have their own lab rats and they're using OpenAI, etc. Organisations with complex workflows, that would be a good target customer. Organisations with large support operations and regulated industries. The platform's most valuable where automation creates measurable productivity gains. That would be my statement.</p>
+<p><b>Analyst</b>: How would you define a small-, medium- and large-sized organisation based on any quantifiable and relevant metrics?</p>
+<p><b>Expert</b>: Medium-sized enterprise, you have your top tiers, take banking as an example. This would help. In banking, you have got your large enterprises and then you have got the medium-sized ones that sit below that. The top tier 1s tend to be self-sufficient internally because they have very large internal teams for the automation, orchestration, etc, and many architects. Therefore, they self-build internally. That's how I'd look at that.</p>
+<p><b>Analyst</b>: Could you define small, medium and large companies based on any common, quantifiable metrics, eg, revenue, employee count?</p>
+<p><b>Expert</b>: I don't have that information at hand. Those metrics are out there and easily accessible, but it's quite typical in our world to understand the large enterprises as being the top tier within each sector vertical industry are well-known to us. Anything that sits below that, those household names would be classed as medium-sized enterprises. The actual facts around number of employees and turnover would be out in the public domain.</p>
+<p><b>Analyst</b>: How does Druid's potential addressable market look? What customer groups or markets does the company not cater to, but could cater to in future?</p>
+<p><b>Expert</b>: I think, as I have suggested, the primary sectors are healthcare, higher education, banking, insurance, retail, shared services and public sector. There's enough there for them to be working with because they cover all regions, North America, western Europe, eastern Europe and Australasia. They have, shall I say, a large target market.</p>
+<h3>Could you profile Druid's typical target customers across industries and business sizes within its TAM? What is the company's sweet spot?</h3>
+<p><b>Expert</b>: Well, the likely revenue streams would be software-as-a-service subscriptions, enterprise licences and professional services.</p>
+<p><b>Analyst</b>: Could you profile Druid's typical target customers across industries and business sizes within its TAM? What is the company's target customer sweet spot?</p>
+<p><b>Expert</b>: Again, this goes back to the industry served. The sweet spot there is, again, healthcare, higher education, banking, insurance, retail, shared service and public sector, medium-sized enterprises, organisations with complex workflows, organisations with large support operations and regulated industries. Anything complex would be their sweet spot, really.</p>
+<p><b>Analyst</b>: How might Druid's revenue be split across business sizes, ie, small, medium and large companies?</p>
+<p><b>Expert</b>: Well, obviously, again, we're not discussing numbers or doing anything that's not out in the public domain. The likely revenue streams would be software-as-a-service subscriptions, enterprise licences and sales.</p>
+<p><b>Analyst</b>: How much does each business size contribute to Druid's business? Might 31-40% come from medium and 21-30% come from large-size enterprises?</p>
+<p><b>Expert</b>: I would suggest the information that's out in the public domain is 21-30% large enterprises, 31-40% medium-sized enterprises and 31-40% organisations with complex workflows and large support operations.</p>
+<p><b>Analyst</b>: How might the 31-40% from complex organisations differ from the 61-70% from the rest of the businesses? Might 61-70% be split into 21-30% large and 31-40% medium?</p>
+<p><b>Expert</b>: There'd probably be an overlap there, but I don't have that information.</p>
+<p><b>Analyst</b>: Might 31-40% come from small-sized organisations?</p>
+<p><b>Expert</b>: Unlikely.</p>
+<p><b>Analyst</b>: What might be Druid's revenue split across key customer groups, eg, healthcare, education?</p>
+<p><b>Expert</b>: I would say healthcare would be 21-30%. Higher education, another 21-30% because of all the universities in America that they're working with, which is in the public domain. The rest would be split over the other primary sectors, but I don't have that split as such. I'd say a 51-60% split between healthcare and higher education and the remaining 41-50% split over the other sectors.</p>
+<h3>Could you share any customer names that are either on Druid's official website or in the public domain?</h3>
+<p><b>Expert</b>: I think I went through those earlier. Some of the publicly referenced customers include Liberty Global, Georgia Southern University, MatrixCare, NHS, BNP Paribas, AXA and Carrefour.</p>
+<h3>What are the key regions Druid derives revenue from?</h3>
+<p><b>Expert</b>: It's North America, western Europe, eastern Europe and Australasia. That'd be Australia and Asia. It's out in the public domain. Australia/New Zealand and Asia.</p>
+<h3>How is Druid's revenue split across the regions – 0-10%, 11-20%, 21-30% or higher?</h3>
+<p><b>Expert</b>: I think the highest percentage split would be 61-70% from eastern Europe because, as is in the public domain, the bulk of their business comes out of Romania. I would say 0-10% from North America. 0-10%, western Europe. 0-10%, Australia and Asia [each].</p>
+<h3>What are Druid's core revenue-generating offerings or segments?</h3>
+<p><b>Expert</b>: The likely revenue streams, as I alluded to earlier, are software-as-a-service subscriptions, enterprise licences, professional services, implementation services, training and support contracts.</p>
+<p><b>Analyst</b>: Might training and support contracts be one segment?</p>
+<p><b>Expert</b>: No. They're separate. Training and support contracts are two separate line items.</p>
+<h3>In your opinion, what is the relative revenue size of each segment?</h3>
+<p><b>Expert</b>: As I have said, there's no public disclosure. My discussion estimates would be that software-as-a-service subscriptions would be 71-80%, with professional services at 11-20% and support and training would together be 0-10%. These are estimates.</p>
+<p><b>Analyst</b>: What might be the revenue size of enterprise licences and implementation services?</p>
+<p><b>Expert</b>: They would sit within the software-as-a-service subscriptions.</p>
+<p><b>Analyst</b>: Does Druid charge separately for enterprise licences and implementation services?</p>
+<p><b>Expert</b>: These are estimates, revenue segmentation contribution estimates. There's no public disclosure. [We] have sold software for many, many years and what you do, when you work with any client, you package the costs. Certain elements would all sit within one cost. Their estimates for the professional services and enterprise licences would sit within the software-as-a-service subscriptions for estimated cost estimations.</p>
+<p><b>Analyst</b>: Might enterprise licences and professional services come under the SaaS subscriptions category, given the revenue is combined?</p>
+<p><b>Expert</b>: Yes. I'd say the enterprise licences and professional services for software-as-a-service subscriptions. It would make sense because those subscriptions would ultimately give you that enterprise licence and professional services where needed.</p>
+<p><b>Analyst</b>: Might implementation services be a category of SaaS subscriptions, similar to professional services and enterprise licences?</p>
+<p><b>Expert</b>: Probably or it might come under support. Anyway, that's up to each individual client. There are no hard and fast rules at this stage of a business for start-ups.</p>
+<p><b>Analyst</b>: Might implementation services, professional services and enterprise licences be add-ons and depend on customers?</p>
+<p><b>Expert</b>: Yes.</p>
+<h3>What is the revenue model for each segment? Is it transactional [one-time], reoccurring [unpredictable yet regular] or recurring [subscription]?</h3>
+<p><b>Expert</b>: It's the software-as-a-service subscription-based model. That's my estimate. As part of the customer, it generally tends to be an annual cost, which is subscription-based software-as-a-service subscription-based overall and then it shows the split within that contract of all of those areas that they have agreed to, broken down in a legal document.</p>
+<p><b>Analyst</b>: Might the fees for implementation services, professional services and enterprise licences be mentioned in the SaaS subscription contract?</p>
+<p><b>Expert</b>: Correct. That's my estimate.</p>
+<p><b>Analyst</b>: Might the revenue model for the training and support contract segment be different?</p>
+<p><b>Expert</b>: No. It'll all be written in the same contract, just broken down. The revenue streams, the revenue segment contributions that sit within the same contract, so these are all estimates within that same contract.</p>
+<p><b>Analyst</b>: How long does a typical contract last for the recurring model for SaaS subscription?</p>
+<p><b>Expert</b>: My estimate would be 12 months up to three years, depending on the size of the customer. As with any software-as-a-service subscription, it's in the interest of the vendor to deliver cost benefits for a longer contract.</p>
+<p><b>Analyst</b>: How often are the payments made? What is the payment frequency within the contract length?</p>
+<p><b>Expert</b>: My estimate on that would be annually.</p>
+<p><b>Analyst</b>: What is the pricing based on? What are customers charged on? Is it based on usage and volume or is it a fixed fee?</p>
+<p><b>Expert</b>: Again, that would depend on the model that they chose because there are multiple models. I can only give you the information that's out in the public domain. I don't have that information.</p>
+<p><b>Analyst</b>: Could you provide a few examples of the pricing models? How might the pricing depend on the models?</p>
+<p><b>Expert</b>: Well, software-as-a-service subscriptions will depend on geographies, the various geographies in there, various regions and also it may mean, from an agentic AI perspective, that you may need the voice elements, which would probably mean partnering with certain companies to deliver that voice element. It's split depending on usage. There are so many credits they'd have to purchase from partners to allow that connectivity to happen.</p>
+<p><b>Analyst</b>: What is the pricing based on for professional services?</p>
+<p><b>Expert</b>: That would be a percentage of the overall contract, depending on the requirement, they may have their own in-house professional services that are able to manage the agents. However, if they don't, my estimate would be that the vendor would provide that support, first level, second level and engineering where required. It would be a defined model for each contract depending on the level of expertise that's required and when.</p>
+<p><b>Analyst</b>: What is the pricing based on for enterprise licences?</p>
+<p><b>Expert</b>: Again, that would be revenue streams that come in from the need for agentic AI. Therefore, that would be dependent on the region, per region. It's normally, with the enterprise licence for AI, would normally be a geographical enterprise licence per geography. Therefore, one for the UK, one for the US, one for Australia, that type of thing.</p>
+<p><b>Analyst</b>: What is the pricing based on for implementation services?</p>
+<p><b>Expert</b>: Again, that would depend on the scope of the project, how big it is and what's required to implement that service. It's a scalable model, so therefore, it could be, how long is a piece of string? These are my estimates.</p>
+<p><b>Analyst</b>: What is the pricing based on for the training and support contract segment?</p>
+<p><b>Expert</b>: Same as implementation services and professional services. Again, that would depend on the scope of the project, the requirements, customer-facing and therefore what's required per customer.</p>
+<h3>Could you provide a use case for each segment? What might be an end-to-end exemplary customer journey?</h3>
+<p><b>Expert</b>: I suppose what I could do is the banking. This obviously, again, as I said, is just stuff that's out in the public domain. For banking, a customer would ask whether they qualify for a personal loan and then an agent would authenticate the customer. It would retrieve the account information. It would perform eligible checks. It would calculate the possible terms. It would present options and then escalate to staff, to a human being, where required.</p>
+<p><b>Analyst</b>: What do customers or product buyers get in professional services? What might be a use case for it?</p>
+<p><b>Expert</b>: Can't think I have one. That's going into competitors.</p>
+<p><b>Analyst</b>: How do professional services look to customers? How do they get access to the services? How does an end-to-end journey look?</p>
+<p><b>Expert</b>: From an agentic-AI perspective, professional services, once the business case is understood and ultimately, the size of the project is fully outlined, the professional services would then be pieced from the customer's own capabilities to be able to deliver. Where they can't, that's where the vendor and their partners would step in to evaluate and support the customer and that's the professional services side of it. That will be human beings supporting the execution and the delivery.</p>
+<p><b>Analyst</b>: How does an end-to-end workflow look for enterprise licences?</p>
+<p><b>Expert</b>: Enterprise licensing, you can take the banking example that's out there in the public domain, really.</p>
+<p><b>Analyst</b>: What might change for the enterprise licences segment?</p>
+<p><b>Expert</b>: Not anything, really. I think I can use that example use case.</p>
+<p><b>Analyst</b>: Are enterprise licences the same as SaaS subscriptions? Do customers get licences for SaaS subscriptions?</p>
+<p><b>Expert</b>: Yes.</p>
+<p><b>Analyst</b>: How do implementation services look to customers?</p>
+<p><b>Expert</b>: Again, that will be probably wrapped up in professional services, implementation services, training and support contracts. All four would be decided depending on the scope of the project. They would look at the customer to understand their ability to deliver and support and where needed the vendor and their partners would step in and those costs would be built into the programme to make sure that that was available to the customer. These are just estimates.</p>
+<p><b>Analyst</b>: What training and support contract does Druid provide?</p>
+<p><b>Expert</b>: It's hand-holding to allow them to step through the process that will be put in place so that they're able to understand what the change of their software-as-a-service subscription would look like once it was implemented.</p>
+<p><b>Analyst</b>: Could you provide a few examples of SaaS subscriptions' capabilities across industries, apart from the banking industry? How might that differ?</p>
+<p><b>Expert</b>: I only have that example, the one example use case. There are multiple example use cases in the public domain.</p>
+<p><b>Analyst</b>: How might the software platform look for sectors apart from the banking sector? How does it differ?</p>
+<p><b>Expert</b>: They don't really differ. It doesn't really matter what the industry is. The processes tend to follow, and in my estimate, they mirror image because, ultimately, it depends on the customer. You take the customer's internal processes and need to map them to ensure that the AI model that you are working with can deliver to the exact processes of that customer. Again, it's customer-driven. That would be my estimate regardless of industry.</p>
+<p><b>Analyst</b>: What systems might Druid integrate with? How does the integration look in customers' workflow?</p>
+<p><b>Expert</b>: You'd have additional users, additional agents and more departments adopting AI. There'd be an expansion across the geographies, new workflows, that sort of thing.</p>
+<p><b>Analyst</b>: Does the software platform integrate with any customer workflow systems to perform before deployment?</p>
+<p><b>Expert</b>: Yes. Of course. You would have, in my estimate, there are many test runs to ensure that each step, each workflow, is working correctly.</p>
+<p><b>Analyst</b>: Could you provide a few examples of the integrations?</p>
+<p><b>Expert</b>: I have given you the names that are out in the public domain already.</p>
+<p><b>Analyst</b>: Does agentic AI integrate with any customer-specific systems? Does it integrate with SAP or EHR [electronic health record] for healthcare?</p>
+<p><b>Expert</b>: It's a seamless integration with any system at all. Anything at all. Anything digital or automated, it can integrate with.</p>
+<p><b>Analyst</b>: What partnerships does Druid have? How does that arrangement look?</p>
+<p><b>Expert</b>: They have a network of partners globally. On their website, you will see per region the names of those partners that they work with predominantly for the professional services and implementation parts of the process.</p>
+<p><b>Analyst</b>: What part of the process is done by Druid vs taken up by its partners?</p>
+<p><b>Expert</b>: Druid would deliver the software-as-a-service subscriptions and the licensing for enterprise. The professional service, implementation, training and support pieces would be discussed with the partners within the regions where available. It may all be done by Druid. It may all be done in partnership with a preferred partner. Some of the customers may have their own preferred partner.</p>
+<p><b>Analyst</b>: What key technology capabilities enable Druid to deliver use cases?</p>
+<p><b>Expert</b>: Are you talking about enterprise conversational AI and agentic AI?</p>
+<p><b>Analyst</b>: What might be the core technology?</p>
+<p><b>Expert</b>: Druid is an enterprise-AI and agentic-AI platform. It's designed to deliver that next-level conversational AI and allow customers to evolve sooner internally to allow them to deliver more with less. It's right across all key industries, including banking, healthcare and higher education.</p>
+<p><b>Analyst</b>: How does agentic and conversational AI help Druid with its use cases?</p>
+<p><b>Expert</b>: It automates customer interactions. It automates employee support. It reduces service cost. It improves response times. It provides 24/7 assistance. It connects multiple enterprise systems through a conversational interface. It deploys enterprise AI without replacing existing systems. It specifically promotes its ability to work across existing enterprise technology stacks.</p>
+<p><b>Analyst</b>: Is the platform completely developed in-house, or does it rely on any third-party infrastructure?</p>
+<p><b>Expert</b>: With the voice part, it would rely on third-party infrastructure.</p>
+<p><b>Analyst</b>: Might the platform, apart from the voice part, be developed in-house?</p>
+<p><b>Expert</b>: My estimate is likely that it's completely in-house, agentic AI, generative AI workflows, AI orchestration, but for the voice AI, you would need to integrate with third-party partners. That aligns with Druid's current market positioning.</p>
+<h3>Which of Druid's segments do you anticipate being the fastest-growing and potentially driving the largest revenue share in future?</h3>
+<p><b>Expert</b>: It's likely to be agentic AI followed by generative AI workflows because that's for the, obviously, businesses that are very complex. AI orchestration and then voice AI. Then, from a revenue model perspective, I'd say the primary would be, and these are estimates, recurring subscription revenue and then secondary would be services revenue and consulting revenue.</p>
+<p><b>Analyst</b>: How do agentic AI, generative AI workflows, AI orchestration and voice AI look for customers?</p>
+<p><b>Expert</b>: Again, that would be very specific per client. Ultimately, what tends to happen is you have a number of agents and this is just right across the industry and out in the public domain. Working with companies like Druid, say you were head of HR, you could, with the right permissions, ask one of the agents a question, albeit by voice or text and it would orchestrate that to any department to get the answer. Again, you would have to have the right permissions to allow it to do that. It fundamentally allows it to sit on top of all the agents and drill through any departmental workflows and business documents and bring you that answer.</p>
+<p><b>Analyst</b>: Why might recurring SaaS subscriptions be the fastest growing? What's the rationale behind that?</p>
+<p><b>Expert</b>: Revenue model, the primary one would be recurring subscription revenue because that is the software-as-a-service hasn't gone away. It's always been there. For nearly 30 years now, that model, the end customer is more comfortable with that and that's quite well-documented in the public domain because it's a very transparent model. It allows you to see exactly what you're getting and a breakdown of those costs and you know that you'll be able to fit that within your budget over the coming years and tends to be staggered. Therefore, depending on the size of the programme would dictate the cost savings. Say you had a three-year contract or a five-year contract, which are quite typical these days, it would allow you a certain percentage of savings, which is always favourable when you're taking that to get your budget signed off.</p>
+<h3>What do you estimate Druid's NRR [net revenue retention] rate to be – less than 80%, 80-90%, 90-100%, 100-110%, 110-120% or 120%-plus?</h3>
+<p><b>Expert</b>: That's regional. Eastern Europe, in Bucharest, was the home of Druid, where Liviu Dragan founded Druid. Obviously, he had another software company and those customers just went straight over to Druid. A high percentage of the business is set in Bucharest. The retention rate there would be higher than the rest of Europe and the globe.</p>
+<p><b>Analyst</b>: What might be Druid's NRR in a percentage range?</p>
+<p><b>Expert</b>: Below 80%. That's my estimate.</p>
+<h3>What do you think the key drivers of Druid's NRR are?</h3>
+<p><b>Expert</b>: The key drivers for NRR are additional users, additional agents, more departments adopting AI, expansion across geographies and new workflows. Market growth drivers as well.</p>
+<h3>Could you specify the industry that best describes Druid's core operations?</h3>
+<p><b>Expert</b>: They sit under conversational and agentic AI.</p>
+<h3>What has been the AAGR of the conversational and agentic AI industry over the past three years – less than 0%, 0-5%, 6-10%, 11-20% or more than 20%?</h3>
+<p><b>Expert</b>: Public estimates show it has greater than 20% annual growth.</p>
+<p><b>Analyst</b>: Would you say the industry's AAGR is more than 20%?</p>
+<p><b>Expert</b>: No. It would be a lot lower than that. If I were estimating, I'd say 0-5%. Especially outside of eastern Europe.</p>
+<h3>What do you think have been the 1-2 key drivers of the industry's growth over the past three years?</h3>
+<p><b>Expert</b>: Digital transformation, automation demand, labour shortages and generative AI adoption.</p>
+<h3>What do you think the market's AAGR will be over the next three years?</h3>
+<p><b>Expert</b>: Estimated in the public domain is greater than 20%, but I'd say 0-5%.</p>
+<h3>What do you think will be the 1-2 key drivers of the market's future growth?</h3>
+<p><b>Expert</b>: Agentic AI, voice AI, workflow automation, enterprise productivity initiatives and cost reduction programmes.</p>
+<p><b>Analyst</b>: How would the discussed points help with the market growth?</p>
+<p><b>Expert</b>: These are the stepping stones to move it forward. Therefore, these are the five areas that the business decision-makers will be starting from.</p>
+<p><b>Analyst</b>: How might the discussed areas increase the demand for companies, eg, Druid?</p>
+<p><b>Expert</b>: They'll have business needs. Again, stepping back to the fact that there are labour shortages, automation is in demand and people are looking at digital transformation every year even without AI. The generative AI adoption is, shall I say, out in the public domain and their peers and competitors will be looking at all of that. That will drive it.</p>
+<h3>What would you estimate the adoption rate to be for conversational and agentic AI software solutions across the addressable market – 0-10%, 10-20%, 20-30% or higher?</h3>
+<p><b>Expert</b>: I'd say 0-10%.</p>
+<h3>To what degree do you think the industry is correlated to economic cyclicality? Is it counter-cyclical, very cyclical, somewhat cyclical, somewhat resilient or resilient, and why?</h3>
+<p><b>Expert</b>: Somewhat resilient, I'd say, because it's not a new thing. It's been around for over 20 years. It's evolving, but it will evolve slowly. It isn't a magic wand that everybody thinks. This is my estimate. It's like any software that [we] have seen. Software, hardware, outsourced managed services, you name it, it doesn't matter what it is. It sounds like it's here to resolve, shall I say, the lack of budgets, the low workforce, etc, but it's not that. It's not that magic wand. It actually takes a lot of workforce to make sure something like this works. You can't just adopt it and run it. You have to have, shall I say, hundreds of man-hours to make sure the workflow is in place and you have to go back again and again and again and again to make sure it works properly. It doesn't just happen. You might call it low-code, no-code, but the reality is it takes a large team of people to roll their sleeves up and do an awful lot of manual work to make this work. It's not a magic wand.</p>
+<p><b>Analyst</b>: How might the demand for conversational and agentic AI software solutions be impacted during economic downturns?</p>
+<p><b>Expert</b>: I think it's somewhat resilient, like I have said, because until they have tried it, then they're not going to dismiss it. It has a journey to go. It has a long way to go. In 20 years' time, this still sits where it is because, as I said, it's not a magic wand. It is one of many solutions out there and it will never replace human beings. That's my estimate.</p>
+<h3>Based on public information, what impactful technological evolutions or innovations should we anticipate in the industry over the next 3-5 years?</h3>
+<p><b>Expert</b>: It will continue with agentic AI and conversational AI that will penetrate the markets. Those will actually evolve into probably an out-of-the-box solution at some point that actually does work. That's going to take a long time because of the level of use cases and the workflows needed to be created.</p>
+<h3>Are there any downside risks you believe might materially impact market growth over the next three years?</h3>
+<p><b>Expert</b>: Yes. You have got AI regulation and that's per region, per industry, per sector, all of it. Data privacy regulations, you have got cybersecurity concerns, you have got budget reductions, you have got a lot of competitive pressure as well.</p>
+<p><b>Analyst</b>: How might regulations and security concerns affect the market?</p>
+<p><b>Expert</b>: My understanding and only an estimate, is that AI regulations will become, shall I say, more rigid depending on the sector, the vertical, etc, that you're working within and your geographical location. Ultimately, this will drive data privacy regulations. There are heavy concerns around cybersecurity, as you're fully aware. As I have said, the budget. Budget reductions. Everybody's being squeezed everywhere. There just isn't the money anymore. I know those equity companies wanted to chuck their money around and they're losing an awful lot. They're keeping the lid on the AI budgets at the moment, thank God, because the markets would crash. It's their estimates from the public domain information, really. It is a risky market. Of course, it is. At the same time, it will continue to evolve.</p>
+<h3>How fragmented do you consider the conversational and agentic AI industry to be? Is the majority of the market share captured by 2-5 players? Is it a monopoly? Is it fragmented or highly fragmented?</h3>
+<p><b>Expert</b>: It's a fragmented market. There's no single dominant provider.</p>
+<h3>Who are Druid's top three competitors?</h3>
+<p><b>Expert</b>: I'd say, based on my estimate from what's out in the public domain, Microsoft Copilot Studio. The strengths there are its ecosystem. The top competitors are Microsoft Copilot Studio, Kore.ai and Moveworks. Then, there are additional competitors such as Cognigy, Amelia, Yellow, ServiceNow and Salesforce. Those are all the ones that are in the public domain and the ones that [we] would come across from an enterprise perspective.</p>
+<p><b>Analyst</b>: Could you mention the private competitors?</p>
+<p><b>Expert</b>: Kore. I would say Cognigy and Amelia.</p>
+<h3>In your opinion, what are Druid, Kore.ai, Cognigy, Amelia and Yellow.ai's market share ranges? Alternatively, could you rank them?</h3>
+<p><b>Expert</b>: I wouldn't have that information, but it is in the public domain. I can only give you estimates. Kore.ai is very well-respected and actually delivers on its proposition 100%. It's a conversational-AI leader. It has strong contact centre capabilities, which is probably, in my estimate, the place where you get more agents that way, far more agents, which is more growth, more revenue, more clients, more repeat business. Number one, Kore.ai. Cognigy and then Amelia. [Druid] is nowhere near. Druid, in my humble opinion, as per the Gartner Magic Quadrant, sits niche right down the bottom. [Yellow.ai] is below because it's smaller.</p>
+<h3>In your opinion, what were Druid, Kore.ai and Yellow.ai's revenues for the last financial year in broad percentage ranges? Cognigy and Amelia are owned by public companies.</h3>
+<p><b>Expert</b>: I don't have that information, but it is out in the public domain. If you look at Companies House, it will give you that. [Druid] is USD 0-50m. [Kore.ai], probably USD 100m-200m. [Yellow.ai], maybe USD 0-50m.</p>
+<h3>In your opinion, what were Druid, Kore.ai and Yellow.ai's revenue growth rates for the last financial year – less than 0%, 0%, 0-5%, 6-10%, 11-20% or more than 20%?</h3>
+<p><b>Expert</b>: [Druid], I'd say 0-5%. [Kore.ai], more than 20%. [Yellow.ai], I'd probably say 6-10%.</p>
+<h3>What has been each player's growth driver for the last financial year? Has the growth been organic, acquisition-based or mixed?</h3>
+<p><b>Expert</b>: I wouldn't know. My estimate would be that it's contact centre growth and net new revenue from new clients. It's a fairly difficult one to answer, honestly. I'm going to have to pass on this one because I'm not allowed to tell you anything that's not in the public domain.</p>
+<p><b>Analyst</b>: Have the players acquired or merged with any companies or grown completely organically from their core operations?</p>
+<p><b>Expert</b>: Organic [for all of them].</p>
+<h3>In your opinion, what is the industry average EBITDA margin for the players – less than 0%, 0-10% or higher, up to more than 60%? How profitable do you think the players are?</h3>
+<p><b>Expert</b>: For the next year?</p>
+<p><b>Analyst</b>: Might the average EBITDA last year be less than 0%, 0-10%, 11-20%, 21-30% or higher?</p>
+<p><b>Expert</b>: 11-20%.</p>
+<h3>Might each player be above, in line with or below the 11-20% industry benchmark?</h3>
+<p><b>Expert</b>: [Druid], below, my estimate. [Kore.ai], above. [Cognigy], above. That's my estimate. [Amelia], above. [Yellow.ai], below.</p>
+<h3>How do you think the players differentiate themselves? What is Druid's differentiator? What does the company do differently?</h3>
+<p><b>Expert</b>: They have a strong automation focus, in my opinion, based on what I read in the public domain and some experience within the regulated industry.</p>
+<p><b>Analyst</b>: What is Kore.ai's differentiator?</p>
+<p><b>Expert</b>: Their contact centre experience. Basically, they are focused. They're not just focused, but they have a lot of clients that have large contact centres, so a lot of agents.</p>
+<p><b>Analyst</b>: What is Cognigy's differentiator?</p>
+<p><b>Expert</b>: Faster deployment, I'd say, and quality enterprise integrations.</p>
+<p><b>Analyst</b>: What do we mean by quality enterprise integrations?</p>
+<p><b>Expert</b>: They're well-respected for their delivery.</p>
+<p><b>Analyst</b>: What is Amelia's differentiator?</p>
+<p><b>Expert</b>: They have got a very strong automation focus and a flexible deployment model, which is well-respected in the industry and it's all in the public domain.</p>
+<p><b>Analyst</b>: Does any player do anything differently in breadth of offerings?</p>
+<p><b>Expert</b>: No. Not really. They're like for like, but ultimately, Kore.ai has a massive client base. They sit within the conversational and agentic AI space.</p>
+<p><b>Analyst</b>: How does Yellow.ai differentiate from the other players?</p>
+<p><b>Expert</b>: Again, the conversation and generative AI, so they sit within the same pack.</p>
+<p><b>Analyst</b>: Does Yellow.ai do anything differently than Druid?</p>
+<p><b>Expert</b>: Each of these companies works differently, but they sit within the same Gartner Magic Quadrant.</p>
+<p><b>Analyst</b>: What does Yellow.ai do differently? Could you provide one example?</p>
+<p><b>Expert</b>: I wouldn't know. Every company works differently. It's a bit like the car industry, obviously. If you get a Maserati, it's for a long road trip, whereas a Ferrari is probably a shorter road trip. It's all cars, but.</p>
+<h3>What do you think are customers' top three purchasing criteria? How do you think they rank by importance?</h3>
+<p><b>Expert</b>: I'd say integration capability, security and governance and a proven return on investment.</p>
+<h3>How important do you think price is to customers in the market? How commoditised is the product? Is it commoditised, somewhat commoditised or not commoditised, and why?</h3>
+<p><b>Expert</b>: Not commoditised because it's an extremely lengthy process to capture the required processes and workflows. Therefore, it's niche to each customer.</p>
+<h3>What is the industry average annual churn rate for conversational and agentic AI software solutions – 0-5%, 6-10%, 11-15%, 16-20%, 21-25%, 26-30% or above 30%?</h3>
+<p><b>Expert</b>: I'd say above 30%.</p>
+<h3>How do you think Druid's churn rate compares to the industry average? Is it above, below or in line with the industry rate?</h3>
+<p><b>Expert</b>: Above.</p>
+<h3>What do you think has been the key driver of Druid's historical growth?</h3>
+<p><b>Expert</b>: AI adoption, enterprise automation demand, partner ecosystem growth, US expansion and generative AI adoption. I think it is all of what I have just said, really. This is so far their historical growth drivers out in the public domain, expanding out in the US, building a larger team, putting a CEO in place from the US, keeping the dual headquarters, Bucharest and the US, to give the overall look of a global business that actually is run out of Bucharest and managed out of Bucharest. That generative-AI adoption is because, obviously, that's the way the markets moved and the demand for automation based on levels of employees, keeping cost down, headcount down, etc. AI adoption generally over the last few years has, shall I say, taken a bit of a jump because it's been around 20-odd years. It's now that people are just starting to align it with digital and automation together.</p>
+<h3>How fast do you think Druid could grow over the next three years – less than 0%, 0-5%, 6-10%, 11-20% or more than 20%?</h3>
+<p><b>Expert</b>: I think 0-5% in reality, based on what's accessible in the public domain.</p>
+<h3>What could be some of the most interesting ways to grow Druid? How would you improve its organic growth profile if you were running the company?</h3>
+<p><b>Expert</b>: I think they're doing all they can do in the sense of deeper US penetration. That's where their market is. They'll probably struggle in other regions, but the US, deeper penetration, focus more on healthcare customers, higher education, insurance would be a good one because of all the contact centres and they'll keep their focus on voice and agentic AI.</p>
+<h3>What would be some of your interesting ways to grow Druid through margin improvement?</h3>
+<p><b>Expert</b>: That's a good one. Improved sales efficiency, that's a very weak area. Net new customers, very weak. Improved sales efficiency with really good salespeople, but aligned with, shall I say, more autonomy to be able to deliver less service reliance, better partners that are geared up to deliver and more partners that can deliver from a software basis so that they're geared up to partner with, shall I say, an out-of-the-box capability to support the customer's needs.</p>
+<h3>Based on publicly announced acquisitions, how would you describe Druid's M&amp;A strategy? Has the company carried out any M&amp;A? If so, has it been opportunistic or growth-related?</h3>
+<p><b>Expert</b>: Well, I don't think there's a major acquisition strategy publicly evident. It appears primarily organic-growth-focused. That being said, in my humble opinion only, Microsoft, Salesforce, ServiceNow, Nice and Genesys would be the key players for any acquisition. However, I don't really see that happening.</p>
+<h3>In your opinion, could it make sense for Druid to acquire, merge with or be acquired by any players in or outside the space? If so, what would be your rationale for it?</h3>
+<p><b>Expert</b>: Druid positions itself as an enterprise-AI orchestration and agentic-AI platform. It's not a chatbot vendor. It does compete with some of the big boys, yet it's actually quite niche because of its, shall I say, very long workflow requirements. There's no rapid technology change with Druid. I don't see it being acquired as such. I would suggest it'll just remain organic-growth-focused.</p>
+<h3>What would you say are the 1-2 biggest risks Druid faces?</h3>
+<p><b>Expert</b>: I suppose the competition. The competition and rapid technological change. Microsoft and hyperscaler competition and rapid technological change would be the two biggest risks.</p>
+<p><b>Analyst</b>: Might the risks be applicable to the market or only the company?</p>
+<p><b>Expert</b>: Most people and it's just my humble opinion only, see Druid as done and dusted now.</p>
+<h3>In your opinion, is there anything the market does not properly understand about Druid? Are there any common misconceptions?</h3>
+<p><b>Expert</b>: It doesn't publicly disclose that metric. My view is based on industry comparisons and observed enterprise software benchmarks rather than company-reported figures and also listening to people's opinions. There is no grounded public disclosure or metric that I have seen.</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

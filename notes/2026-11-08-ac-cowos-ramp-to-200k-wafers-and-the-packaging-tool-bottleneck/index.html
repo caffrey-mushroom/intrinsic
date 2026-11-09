@@ -1,0 +1,257 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.08 | AC | Semis | CoWoS Ramp to 200k Wafers and the Packaging Tool Bottleneck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.08 | AC | Semis | CoWoS Ramp to 200k Wafers and the Packaging Tool Bottleneck</h1>
+<p class="orig">原标题：CoWoS月产能从1.5万片飙到20万片，先进封装哪些设备在领跑？——设备工序各守哪道？</p>
+<p class="tags">#CoWoS #先进封装 #设备</p>
+<p class="meta">AceCamp · 2026-11-08 · article 70568980</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>台积电CoWoS月产能从2023年约1.5万片到2026年底超过13万片，2027年目标20万片。</li>
+<li>作者认为卡脖子的是后道精密激光工序，切割和解键合设备交期从3–6个月拉长到6–8个月。</li>
+<li>DISCO约占晶圆切割设备56%，EVG占临时键合/解键合约24–32%，SUSS约21%，三家垄断超80%高端市场。</li>
+<li>台积电CoWoS报价再上调10–20%，客户只要交期就下单。</li>
+<li>高端激光切割和解键合国产化率不足5%，预计2028年提升到15–20%。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>台积电CoWoS月产能从2023年约1.5万片，到2026年底突破13万片，2027年目标20万片——三年扩张约13倍。[1][2]</li><li>CoWoS扩产卡脖子的不是晶圆厂，而是后道精密激光工序。这些设备交期从3-6个月拉长到6-8个月。[3]</li><li>国外三强：DISCO（迪斯科）占全球晶圆切割设备约56%份额，是激光隐形切割技术发明者；EV Group占临时键合/解键合约24-32%；SUSS MicroTec（苏斯微泰克）约21%。三家合计垄断超80%高端市场。[4][5]</li></ol>
+<p>4.光力科技收购以色列ADT后，高端划片机8230进入头部封测厂，激光隐切机已试切多批客户样片；华海清科在CMP和减薄设备突破；大族激光、华工科技各有布局。[6][7]</p>
+<ol><li>高端激光切割/解键合设备国产化率不足5%，但2026年进入突破加速期——光力激光隐切机验证、华海清科减薄设备放量，预计2028年国产化率提升到15-20%。[3][6]</li></ol>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70568980_71a92484b6945afb.webp" alt="" loading="lazy"></p>
+<p>数据来源：Yole-2020-2027 EQUIPMENT MARKET FORECAST FOR MORE-THAN-MOORE</p>
+<p><b>Q1：CoWoS产能翻13倍，为什么最缺的不是晶圆？</b></p>
+<p>2026年10月，台积电再次传出CoWoS报价上调10-20%，"客户已无暇砍价，只要承诺交期就下单"。[1] 从2023年月产能1.5万片，到2026年底突破13万片，2027年目标20万片——三年时间产能扩张约13倍。[2]真正拖慢CoWoS扩产节奏的，不是台积电的晶圆厂，而是后道那些精密激光设备。</p>
+<p>一颗CoWoS封装从硅片到成品，要经过十几道工序。其中，晶圆切割、临时键合后的激光解键合、晶圆打标——这三道工序，每一道都卡着设备交期。DISCO（迪斯科）的划片机、EV Group（EVG）的激光解键合设备，交期已经从2024年的3-6个月拉长到2026年的6-8个月。[3] 也就是说，台积电即使把厂房建好了、把光刻机要到了，没有这些激光设备，产线还是开不起来。</p>
+<p>为什么CoWoS扩产这么猛？根本原因是AI芯片的需求爆发。H100、H200、GB200、Rubin——每一代AI GPU的封装复杂度都在提升，对CoWoS产能的需求也在指数级增长。台积电自己都没想到，AI算力的需求会这么快、这么猛。</p>
+<p>更关键的是，不只是英伟达在抢CoWoS产能。AMD的MI系列、谷歌的TPU、亚马逊的Trainium、微软的Maia——几乎所有做AI芯片的公司，都需要CoWoS封装。台积电的CoWoS产能，是全行业在抢。</p>
+<p>这就是为什么CoWoS扩产，卡脖子的不是台积电的晶圆厂，而是后道设备。晶圆厂扩产相对容易——买设备、建厂房、招工人，一两年就能搞定。但后道精密设备不一样，DISCO、EVG这些公司，一年的产能就那么多，你再着急也得排队。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70568980_56dd6434ba9f7eef.webp" alt="" loading="lazy"></p>
+<p>数据来源：台积电法说会、TrendForce-台积电CoWoS月产能扩张（2023-2027E）</p>
+<p><b>Q2：CoWoS工艺流程中，激光设备到底用在哪几道工序？价值量占比多少？</b></p>
+<p>要理解激光设备在CoWoS里的角色，先把整个工艺流程拆开看。一颗CoWoS封装要经过：①TSV硅通孔刻蚀与铜填充；②RDL重布线层；③微凸块（micro-bump）；④TCB热压键合把GPU die和HBM die贴到中介层；⑤整体倒装到ABF载板；⑥晶圆切割成单颗；⑦EMC塑封、植球、测试。[1]</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70568980_26b610f25d6d9bff.webp" alt="" loading="lazy"></p>
+<p>数据来源：台积电官网-CoWoS-S</p>
+<p>激光设备主要用在三道关键工序上：</p>
+<p>第一，晶圆切割（Dicing）。这是激光设备价值量最大的一道。CoWoS基板尺寸越来越大——从H100的4倍光罩，到GB200的5倍光罩，再到Rubin的5.5倍光罩认证中。[2]基板越大、晶圆越薄（先进封装减薄到50μm以下），传统机械刀片切割的崩边、破损率就越高。这时候，激光隐形切割就成了刚需。DISCO的激光隐形切割技术，把红外激光聚焦在硅片内部，形成改质层，再通过扩展胶膜把晶粒劈开——表面无ablation、无崩边、 kerf 宽度接近零，超薄晶圆良率超过99.2%。[4][8]</p>
+<p>第二，激光解键合（Laser Debonding）。先进封装里，晶圆要先临时键合到载片上，才能做减薄、TSV、RDL等工艺。做完之后，再把载片解下来。传统的机械解键合在超薄晶圆上良率很低，激光解键合用激光透过载片照射键合层，把临时键合材料分解掉，实现无损剥离。EV Group是这道工序的全球龙头。[5]</p>
+<p>第三，晶圆打标与检测。每颗芯片出厂前都要打激光二维码（Data Matrix），用于追溯。这道工序价值量不大，但也是必选项。</p>
+<p>从价值量看，一条月产1万片的CoWoS产线，设备投资约15-20亿美元。其中，晶圆切割设备约占10%（1.5-2亿美元），临时键合/解键合设备约占15%（2.25-3亿美元），AOI检测约占10%。[3]也就是说，激光相关设备在整条产线里占了25%以上的设备投资——这不是边角料，是真金白银的大生意。</p>
+<p>这里需要补充一个细节：激光隐形切割和传统机械切割的区别是什么？传统机械切割是用金刚石刀片把晶圆"切"开，就像用刀切菜一样。这种方式的问题是：切割时会产生应力，晶圆越薄，应力越大，容易崩边、碎裂。</p>
+<p>激光隐形切割则完全不同——它不是从表面切，而是从晶圆内部切。激光聚焦到晶圆内部，在内部形成一个改质层，然后通过扩展胶带把晶圆"掰"开。这种方式的好处是：切割精度高、热影响小、良率高，特别适合薄晶圆和敏感材料。</p>
+<p>DISCO是激光隐形切割技术的发明者。这项技术最早是DISCO在2000年代初开发的，经过六代迭代，现在已经非常成熟。激光隐形切割的切割道宽度可以做到20μm以下，比传统机械切割窄很多——这意味着同样尺寸的晶圆，能切出更多的芯片。</p>
+<p>从价值量占比看，晶圆切割设备虽然只占整条产线设备投资的10%左右，但它的技术壁垒和客户粘性是最高的。因为切割工序直接影响良率，客户不会轻易换设备供应商。一旦用了DISCO的划片机，就很难换成别的品牌——这就是DISCO的护城河。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70568980_e815bf4991ce610d.webp" alt="" loading="lazy"></p>
+<p>数据来源：Market Growth Reports、DISCO官网-全球晶圆切割设备市场份额（2025E）</p>
+<p><b>Q3：全球先进封装激光设备市场，前三家分别是谁？各自的护城河在哪？</b></p>
+<p>全球高端先进封装激光设备市场，基本被三家垄断：</p>
+<p>第一名：DISCO（迪斯科）。全球晶圆切割设备绝对龙头，整体市占率约56%，在激光隐形切割领域更是独占鳌头。[4][8] DISCO的核心技术是"切割、研磨、抛光"三件套，垂直整合了设备平台和金刚石刀片耗材，从机械刀片切割到激光隐形切割全覆盖。其主力机型DGP8760和DFB8360，在超薄晶圆（≤50μm）切割上良率≥99.2%，这是其他厂商短期追不上的工艺积累。[8] DISCO 2025财年营收约35亿美元，其中切割设备占比约60%。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70568980_42f2924bd1999f15.webp" alt="" loading="lazy"></p>
+<p>数据来源：Disco官网-DFL7362FH激光锯</p>
+<p>第二名：EV Group（EVG，奥地利）。临时键合/解键合设备全球龙头，市占率约24-32%。[5][9] EVG的GEMINI系列全自动键合系统，是3D集成和先进封装的标准配置。在激光解键合领域，EVG推出了激光辅助解键合平台，支持超薄晶圆无损剥离EVG在晶圆级永久键合和临时键合两个领域都是市场领导者。[5]</p>
+<p>第三名：SUSS MicroTec（苏斯微泰克，德国）。临时键合第二，市占率约21%。[9] SUSS的优势在高精度对准和存储芯片减薄领域，在内存 thinning工艺中认可度很高。与EVG相比，SUSS更偏中端市场，但在先进封装客户中也有稳定份额。</p>
+<p>三家加起来，在高端晶圆切割和临时键合设备市场的份额超过80%。这就是为什么台积电CoWoS扩产，首先要找DISCO和EVG排队——不是有钱就能买到设备。</p>
+<p>这三家公司的商业模式也很有意思。DISCO是典型的"设备+耗材"模式——卖划片机只是开始，后续的金刚石刀片、研磨垫、抛光液才是持续的收入来源。这种模式的好处是客户粘性高，设备卖出去了，后续耗材收入源源不断。</p>
+<p>EVG和SUSS则更偏向"纯设备"模式——主要卖设备和工艺解决方案，耗材收入占比相对低一些。这跟它们的应用领域有关：键合设备不像切割设备那样有大量消耗品，更多是一次性设备投资。</p>
+<p>从毛利率看，DISCO的毛利率大约在40-45%之间，EVG和SUSS的毛利率也在40%左右。这个毛利率水平，在半导体设备行业里属于中等偏上——不是最高的（ASML的毛利率超过50%），但也远高于普通工业设备。</p>
+<p>三家公司的研发投入也很高。DISCO每年的研发费用占营收的比例大约在10%左右，EVG和SUSS也差不多。这是因为半导体设备是技术密集型行业，不持续投入研发，很快就会被竞争对手超越。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70568980_00ee7ae8c8245f04.webp" alt="" loading="lazy"></p>
+<p>数据来源：Marketgrowthreports-Global Dicing Equipment Market Size, 2026</p>
+<p><b>Q4：国内激光切割/解键合设备厂商，目前走到哪一步了？</b></p>
+<p>国产高端激光切割/解键合设备，整体处于"中低端已突破、高端在验证"的阶段。国产化率不足5%，但2026年进入加速期。主要玩家有五家：</p>
+<p>第一梯队：光力科技。国内最接近国际水平的划片机厂商。通过三次海外并购——收购英国Loadpoint（LP，划片机发明者）、以色列ADT（软刀切割）——加上自主研发，光力已经形成了"设备+核心零部件+耗材"的完整布局。[6]其国产化高端划片机8230已进入国内头部封测企业，实现批量销售。[7] 更关键的是：激光开槽机已在客户端验证，激光隐切机已试切多批客户样片。[6] 这意味着，光力正在从机械刀片切割向激光隐形切割升级，直接对标DISCO的核心技术。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70568980_e487901ea03a408b.webp" alt="" loading="lazy"></p>
+<p>数据来源：光力科技官网-ADT8230全自动双轴12寸切割设备</p>
+<p>第二梯队：华海清科。国内CMP（化学机械抛光）设备龙头，在晶圆减薄领域有深厚积累。先进封装里，晶圆减薄是切割前的必经工序——减薄到50μm以下，才能做薄晶圆切割。华海清科的减薄设备已经在国内主流封测厂批量出货，是国内少数能做12英寸晶圆减薄的厂商。但在激光切割设备本身，华海清科还在布局阶段。</p>
+<p>第二梯队：中电科45所。国内划片机老牌研究所，在中低端成熟制程划片机上有稳定出货，但在超薄晶圆、激光隐形切割等高端领域，与DISCO差距较大。</p>
+<p>第三梯队：大族激光、华工科技。两家都是国内激光设备龙头，在通用工业激光领域很强，但在半导体级精密激光切割领域，还处于研发或送样阶段。半导体设备对精度、稳定性、良率的要求远高于工业应用，这也是为什么大族、华工切入半导体设备需要更长时间。</p>
+<p>整体看，国内真正具备先进封装激光切割设备能力的，光力科技是独一档。其他四家要么在中低端、要么在研发阶段。这就是为什么说"高端激光切割设备国产化率不足5%"——不是所有叫"激光切割"的设备都能进CoWoS产线。</p>
+<p>这里需要特别说明一下光力科技的路径。光力的国产替代路线跟其他公司不太一样——它不是从零开始自研，而是通过并购+自研的方式快速切入。先收购英国Loadpoint（划片机的发明者），拿到了技术基础和品牌；再收购以色列ADT，拿到了软刀切割的技术和客户资源；然后在这个基础上自主研发激光隐形切割设备。</p>
+<p>这种"并购+自研"的模式，优势是起步快、技术积累厚，少走很多弯路。劣势是并购整合有风险——海外团队的管理、技术的消化吸收、文化的融合，都不是容易的事。从目前的进展看，光力的整合是比较成功的，ADT的产品已经在国内头部封测厂批量出货。</p>
+<p>除了光力，还有一个值得关注的玩家是德龙激光。德龙在超快激光领域有积累，超快激光在晶圆切割里有应用场景——特别是薄晶圆、敏感材料的切割。虽然目前德龙还主要在中低端市场，但未来有可能往高端突破。</p>
+<p>另外，大族激光和华工科技，它们的优势是资金实力强、产业链完整。它们做半导体设备，凭借资金和规模优势，在短期内追得上来，也是为什么市场对这两家公司的半导体业务寄予厚望。</p>
+<p><b>Q5：CoWoS扩产潮下，激光设备交期为什么从3-6个月拉长到6-8个月？国产替代窗口有多大？</b></p>
+<p>交期拉长的原因很直接——需求爆了，供给没跟上。</p>
+<p>需求端，不只是台积电在扩CoWoS。日月光、安靠、长电、通富、盛合晶微等OSAT厂商也在同步扩产2.5D封装。[2]一条月产1万片的CoWoS产线，需要10-15台TCB键合机、5-8台临时键合/解键合设备、20-30台划片机。全行业2026年底要新增近10万片/月的产能，对应激光切割设备需求至少几百台。</p>
+<p>供给端，DISCO、EVG、SUSS都是小批量定制化生产，设备产能弹性很小。DISCO一年的划片机出货量也就几千台，面对突然爆发的先进封装需求，根本接不住。这就是为什么交期从3-6个月拉长到6-8个月。[3]</p>
+<p>辩证地看：交期拉长，对国产设备商反而是好事。以前国内封测厂想都不敢想换国产设备，现在DISCO交期8个月，等不起了，就愿意给国产厂商验证机会。光力科技的激光隐切机能"试切多批客户样片"，就是这个逻辑——客户不是觉得国产好，是等不起了。[6]</p>
+<p>国产设备的验证周期很长。从送样→试切→小批量→批量导入，通常需要2-3年。也就是说，2026年开始验证的设备，真正放量要到2028-2029年。预计2028年国产化率能从现在的不足5%提升到15-20%，距离DISCO的全球份额仍有3-5年差距。[3]</p>
+<p>交期拉长，不仅是供给不足的问题，还有供应链的问题。DISCO的划片机里，有些核心零部件也是外购的——比如高精度直线电机、精密光学镜头、数控系统。这些零部件如果交期也拉长，整机交期自然就更长。</p>
+<p>这对国产设备商来说，既是机会也是挑战。机会是，客户愿意给国产设备验证机会了；挑战是，国产设备商自己也面临核心零部件的供应问题。如果高精度电机、光学镜头也要从日本或德国进口，那国产设备的交期也短不了。</p>
+<p>从历史经验看，半导体设备的国产替代通常需要三个阶段：第一阶段是中低端突破（成熟制程），第二阶段是中端突破（先进制程），第三阶段是高端突破（最先进制程）。目前激光切割设备正处于第一阶段向第二阶段过渡的时期。</p>
+<p><b>Q6：这轮CoWoS扩产潮，激光设备商面临哪些风险？</b></p>
+<p>主要有四个风险：</p>
+<p>第一，AI Capex周期拐点风险。CoWoS扩产是按"AI需求一直爆表"假设推的，如果2027-2028年云厂AI投资ROI不及预期，需求降速，激光设备订单也会跟着砍。</p>
+<p>第二，技术路线迭代风险。DISCO的激光隐形切割已经做到第六代了，国产还在第一代验证。如果技术迭代快，国产刚做出来就落后了。</p>
+<p>第三，出口管制风险。高端激光切割设备、解键合设备都在美日荷出口管制清单上，国产设备商如果用了海外核心零部件（如高精度电机、光学镜头），可能被断供。</p>
+<p>第四，客户验证不及预期风险。半导体设备验证周期长、要求严，国产设备即使做出来了，也可能因为良率、稳定性不达标，无法进入头部客户供应链。</p>
+<p>除了这四个直接风险，还有一个间接风险——客户集中度风险。先进封装激光设备的客户非常集中，全球就是台积电、日月光、安靠、长电这几家。如果其中某一家削减资本开支，设备商的订单就会明显波动。</p>
+<p>另外，技术路线的不确定性也值得关注。目前CoWoS是主流路线，但未来会不会有新的封装技术出现，比如面板级封装（PLP）、扇出型封装（FOWLP）替代2.5D？如果技术路线变了，现有的激光设备投资会不会打水漂？这些都是需要持续跟踪的问题。</p>
+<p><b>风险提示</b></p>
+<ol><li>云厂商GPU/ASIC订单不及预期，CoWoS及配套激光设备需求快速回落；</li><li>DISCO/EVG技术迭代快，国产设备刚量产即面临代际差距；</li><li>高端激光切割/解键合设备受美日荷出口管制影响，核心零部件断供风险；</li><li>国内封测厂客户验证周期长，国产设备导入进度慢于预期。</li></ol>
+<p>风险提示：以上内容不构成任何投资建议，请风险自担。</p>
+<p><b>参考引用</b></p>
+<p>1] TSMC 3DFabric官网 - CoWoS技术页</p>
+<p>https://3dfabric.tsmc.com/english/dedicatedFoundry/technology/cowos.htm</p>
+<p>2] TSMC 2025 Annual Report Chapter 5 - Advanced Packaging</p>
+<p>https://investor.tsmc.com/static/annualReports/2025/english/pdf/2025\_tsmc\_ar\_e\_ch5.pdf</p>
+<p>3] 财联社：台积电法说会实录 - 今年资本支出加码至640亿美元 高端芯片紧缺还将延续几年</p>
+<p>https://m.cls.cn/detail/2428477</p>
+<p>4] Market Growth Reports: Dicing Equipment Market Size 2035</p>
+<p>https://www.marketgrowthreports.com/market-reports/dicing-equipment-market-109698</p>
+<p>5] Yole Group: Lithography and Bonding Equipment Market Report</p>
+<p>https://www.yolegroup.com/press-release/lithography-and-bonding-equipment-more-than-moore-manufacturers-appetite-is-grow ing/</p>
+<p>6] 光力科技投资者互动（证券之星）</p>
+<p>https://stock.stockstar.com/dmhd/signal/sz300480</p>
+<p>7] 光力科技官网 - 半导体划片设备</p>
+<p>https://www.gltechadt.com/about/</p>
+<p>8] DISCO官网 - 隐形切割技术</p>
+<p>https://www.disco.co.jp/cn\_t/solution/library/laser/stealth.html</p>
+<p>9] Market Reports World: Temporary Wafer Bonding Equipment Market：</p>
+<p>https://www.marketreportsworld.com/es/market-reports/temporary-wafer-bonding-and-debonding-system-market-14728584</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

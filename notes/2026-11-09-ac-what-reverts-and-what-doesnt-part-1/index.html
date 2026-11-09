@@ -1,0 +1,209 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.09 | AC | Markets | What Reverts and What Doesn't (Part 1)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.09 | AC | Markets | What Reverts and What Doesn't (Part 1)</h1>
+<p class="orig">原标题：什么会回归，什么不会（上）：好表现会回归，适合的结构不会</p>
+<p class="tags">#投资框架 #均值回归</p>
+<p class="meta">AceCamp · 2026-11-09 · article 70569029</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>作者认为判断回归还是过冲，应看公司结构而不是价格。</li>
+<li>好表现中属于运气的部分必然回归，趋势延续取决于本期对下期的预测力。</li>
+<li>超额利润被竞争摊薄是默认方向，只有持续投入的结构能抵抗。</li>
+<li>7月1日至10月30日创业板指跌44.4%，科创50跌47.4%，而全球半导体8月销售同比+156%。</li>
+<li>作者给出一套检查顺序：分类、校验价格隐含预期、写下切换条件、比较错误代价。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>一段好表现结束时，投资者总要判断：这是均值回归的开始，还是趋势中途的过冲。笔者认为，判断的依据应当放在公司的结构上，价格只能说明波动有多大。</p>
+<p>卡尼曼的研究说明，好表现中属于运气的部分必然回归；趋势延续与均值回归由同一个变量决定，即本期表现对下期表现的预测力。熵的视角说明，超额利润被竞争逐步摊薄是默认方向，只有持续投入、维持秩序的结构能够抵抗它。进化的视角说明，结构的价值取决于它与环境的适配程度；环境的切换少而集中，市场却常常只给当下环境里的赢家定价。</p>
+<p>由此可以形成一套检查顺序：先给资产分类，再用历史基准校验价格隐含的预期，把切换条件写成原因的变化，并想清楚哪种错误的代价更高。本系列下篇将用这套框架，分析AI与量化交易的影响和本轮科技回调。</p>
+<h2>一、同一段下跌，两种读法</h2>
+<p>今年10月以来的科技股调整，把一个老问题重新摆到投资者面前。全球半导体销售额8月同比增长156%，许多硬件公司三季报超出预期。股价却走向另一个方向：7月1日至10月30日，创业板指下跌44.4%，科创50下跌47.4%。</p>
+<p>这段下跌有两种读法。一种认为，过去两年的好表现正在回归均值，反弹就该减仓；另一种认为，产业趋势没有改变，下跌只是途中的过冲，应当买入。只看价格，两种读法都能找到依据。</p>
+<p>本篇先搭建判断框架，回答一个更一般的问题：什么会回归，什么不会。这要从投资者究竟在为什么付钱说起。</p>
+<h2>二、投资换来的，是未来财富中的占比</h2>
+<p>在《无人知晓》播客孟岩与李继刚的一次长谈中，李继刚讲述了他的投资框架：现金只是手上的筹码之一，投资是用它换取未来世界财富中相对占比的增加。未来的世界财富大概率会增长，投资者要做的，是看清在这张增长的版图上，哪些资产的占比会变大，再用现金去换它。</p>
+<p>孟岩认为这个视角足够底层。分母是整个社会的财富，分子是投资者自己的财富；科技和制度推动分母增长时，只持有现金的人，财富占比其实在下降。按这个视角，许多“什么时候止盈”的问题会变成另一个问题：投资者是否认为，现金在未来财富中的占比会高于手上的股票。</p>
+<p>这个定义带来一个直接推论：投资必然包含预测，预测的对象是哪些公司在未来财富中的占比会上升。李继刚用“结构”描述他观察公司的方式。一家公司做什么、不做什么，由一条条“要这么做”“不这么做”的约束划出边界，这些边界围成的可能性空间就是结构。他还提到，复杂现象背后的变量很多，真正构成坐标系的维度往往只有少数几个。</p>
+<p>预测要站得住，首先要面对一个统计规律：好表现大多会回归。</p>
+<h2>三、卡尼曼：好表现中属于运气的部分必然回归</h2>
+<p>卡尼曼在《思考，快与慢》中用一个朴素的公式解释回归：成功等于才能加运气，巨大的成功等于多一点才能加上很多运气。才能会延续，运气不会。一段极端好的表现之后，下一段往往更接近平均，这是运气部分的自然消退，不需要额外的原因。</p>
+<p>人的直觉却总要给回归找原因。卡尼曼记录过以色列空军飞行教官的经验：学员表现出色时受到表扬，下一次往往变差；表现糟糕时受到批评，下一次往往变好。教官据此认为批评有效、表扬有害。实际上，极端表现之后的变化主要来自回归，奖惩的作用被高估了。市场上不少“利好出尽”“估值回归”的解释，也属于同一类故事。</p>
+<p>卡尼曼给出的修正方法，是先找基准，再按证据的预测力有限地调整： 预测值 = 基准 + 相关系数 ×（个案表现 − 基准）</p>
+<p>本期表现与下期表现的相关性高，预测就应贴近个案，也就是趋势延续；相关性低，预测就应大幅收回到基准，也就是均值回归。所以，“趋势延续还是均值回归”只是同一个旋钮拧到了不同位置，旋钮就是相关系数。</p>
+<p>放到公司身上，回归需要分层看。盈利增速的回归最强：Chan、Karceski和Lakonishok在2003年的研究发现，美国上市公司长期盈利增速的持续性，几乎看不出高于随机水平。资本回报率也会回归，但拥有竞争优势的公司回归得慢。估值长期会回归，却可以偏离很多年。一只股票涨了很多，先要拆开看涨幅里有多少来自盈利增长，有多少来自估值扩张。前者只要增长的原因还在，就可以延续；后者更容易回归。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569029_2cdfbdf1b06e681d.webp" alt="" loading="lazy"></p>
+<p>时间尺度也会改变答案。De Bondt和Thaler在1985年发现，过去三到五年表现最差的股票，此后几年往往跑赢表现最好的股票；Jegadeesh和Titman在1993年发现，过去3到12个月的强势股，此后数月倾向于继续走强；一个月以内的超短期，又以反转为主。趋势和回归发生在不同的频率上。</p>
+<p>那么，相关系数从哪里来？笔者认为来自结构：一家公司的优势能否抵抗回归，取决于它持有什么样的约束，以及这些约束能维持多久。</p>
+<h2>四、熵：回归是默认方向，结构在持续做功</h2>
+<p>熵原本用来描述能量扩散、系统趋向无序的程度。在物理学中，系统失去约束时，熵就会增加。</p>
+<p>这句话和李继刚对结构的定义正好接上。结构由约束构成，熵衡量这些约束留下了多大的可能性空间。约束越多，系统可能处的状态越少，秩序越清晰；约束消失，可能的状态增加，旧秩序随之松动。</p>
+<p>企业之间盈利能力的差异最终会趋向平均，护城河则通过某方面强有力的优势，大大减缓这个熵增过程。套用到回归上：超额利润会被竞争者、替代品和新增产能逐步摊薄，这是一种熵增，也是均值回归的默认方向。趋势要延续，需要有东西持续做功。要么公司的结构在持续维持秩序，比如品牌、网络和成本优势不断被投入加固；要么外部世界的约束在持续消失，不断为公司打开新的空间。</p>
+<p>笔者此前在讨论“从低熵到高熵”时区分过两层熵：外部系统的熵增，回答机会出现在哪里；企业内部能否保持低熵，回答谁能把机会转成收入。这里可以再推进一步：熵的变化是信号，结构才是下注的对象。互联网大幅降低了发布和传播信息的成本，信息系统的熵急剧上升。报纸和谷歌面对的是同一个信号。报纸的结构建立在控制分发渠道上，渠道一失效，读者和广告收入随之流失；谷歌的结构是用搜索索引和广告竞价把海量信息重新排序，信息越庞杂，它对用户和广告主越有用。同样的熵增，因为结构不同，走向了相反的结局。</p>
+<h2>五、进化：结构必须“适合”，而环境会变</h2>
+<p>能对抗熵增的结构，仍不一定创造财富。埃里克·拜因霍克在《财富的起源》中提出，价值创造需要满足三个条件：产生不可逆的变化，形成低熵的秩序，并且这种秩序适合人的需要。他据此把财富定义为“适合的秩序”。</p>
+<p>“适合”取决于环境。笔者此前在讨论环境突变时写过诺基亚：它在功能手机时代高度有序，也高度适合；智能手机改变了环境，诺基亚的秩序没有消失，适合度却迅速下降。李继刚说他会看一家公司的结构“符不符合当前的社会发展”，看它在这个时代的生产力中是掉队者还是领先者，这就是在做适合度检验。由此再回到财富占比：一家公司在未来财富中的占比上升，意味着它的结构与环境的适配度在上升。</p>
+<p>那烂陀资本的创始人普拉克·普拉萨德在《我从达尔文那里学到的投资知识》中借进化论讨论投资，书中的几个观察与本文的问题直接相关。生物的变化速度取决于观察窗口：古生物学家测量棕熊的进化速率，几千年的窗口里变化显得剧烈，拉长到几十万年，速率就小得多；加拉帕戈斯群岛的地雀在干旱年份喙变得更大，雨水恢复后选择方向又反转回来。化石记录也显示，物种大多数时间处于停滞，真正的形态转变集中在少数较短的阶段。这和卡尼曼说的回归是同一件事：短期测得的剧烈变化，大多会在更长的窗口里被抵消，真正的切换少而集中。</p>
+<p>放到企业身上，普拉萨德区分了两种时钟：企业质量的状态转换少而慢，股价和叙事却高频变化。季度利润下滑、某个客户流失，是眼前触发变化的原因；客户为什么持续付费、企业凭什么保有议价权，决定一种商业机制能否长期存在。判断该不该改变看法，要看前者是否已经损坏后者，价格本身给不出这个答案。他也强调，稳健的企业更承受得起试错，能从小规模的尝试中长出新能力；长期一成不变的秩序只是僵化。</p>
+<p>把这些放在一起，可以得到一条链条。公司的基因变化最慢，包括创始人的意志、组织文化和成本结构；基因塑造结构；宏观环境和产业竞争像自然选择一样筛选结构；最后要看股票价格是否已经反映了这种适配。笔者认为还需要补充三点。</p>
+<p>第一，环境的变化有快有慢。宏观周期以月和年计，技术与产业竞争以年计，社会偏好以十年计，判断适配度之前要先说清时间尺度。</p>
+<p>第二，适应能力本身也是一种基因。环境变得越快，它的权重越高；对某一个环境优化得越彻底，环境改变时就越脆弱。</p>
+<p>第三，市场通常给当下环境里的赢家定价，却低估环境本身会变，因此超额收益最常出现在环境切换的阶段。普拉萨德偏好变化缓慢的行业，可以看作一种主动选择：在相关系数高的环境里下注，减少对环境切换的预测。</p>
+<h2>六、把框架落到决策</h2>
+<p>这套框架可以整理成一个检查顺序。</p>
+<p>先给资产分类。周期型资产默认回归，重点看供给何时增加；结构型资产默认基本面延续、估值回归；进入成熟期的资产，增速本身会回归。</p>
+<p>再做外部校验。把当前价格倒推成隐含的增长率和持续年限，对照历史上有多少公司做到过。价格要求的结果一旦超过几乎所有先例，回归的风险就很高。</p>
+<p>把切换条件写成原因的变化。切换的理由应当是近因已经损坏了终极层面的价值机制；价格涨跌的幅度，只说明波动有多大。</p>
+<p>想清楚哪种错误的代价更高。对结构型赢家，卖早了的代价通常高于拿过头；对周期型资产，拿过头的代价更高。</p>
+<h2>结论</h2>
+<p>会回归的是运气、情绪和过冲的估值，不会回归的是与环境越来越适配的结构。卡尼曼说明了回归从何而来，熵说明了回归为何是默认方向，进化说明了结构的价值为何取决于环境。三者合起来，把“趋势延续还是均值回归”的判断，从看价格转到看结构：公司握有什么约束，这些约束能维持多久，环境是否正朝着让它更有用的方向变化。</p>
+<p>环境的切换少而集中，市场又常常只给当下的赢家定价，超额收益因此集中在少数切换的时刻。下篇将讨论，AI和量化交易怎样改变了这些规律起作用的速度，以及本轮科技回调中，哪些部分会回归、哪些不会。</p>
+<h2>风险提示</h2>
+<p>本文所述观点仅代表笔者个人研究和分析，不构成任何投资建议。文中涉及的公司、行业及市场分析均基于公开信息和合理推测，可能存在信息滞后或理解偏差。投资有风险，入市需谨慎。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

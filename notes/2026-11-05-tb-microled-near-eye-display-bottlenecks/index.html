@@ -1,0 +1,263 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.05 | TB | Hardware | MicroLED Near-Eye Display Bottlenecks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.05 | TB | Hardware | MicroLED Near-Eye Display Bottlenecks</h1>
+<p class="orig">原标题：AI Hardware Industry 2026 Series – Mass Production Bottlenecks &amp; MicroLED Near-eye Display Cost-cutting Potential (Conducted in Mandarin)</p>
+<p class="tags">#AI眼镜 #MicroLED</p>
+<p class="meta">Third Bridge · 2026-11-05</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>双目全彩microLED光波导方案尚不成熟，光机和光波导占BOM的70–80%。</li>
+<li>单绿色方案是目前量产主力，光机、光波导和SoC成本占比相近。</li>
+<li>8英寸硅基氮化镓单绿microLED良率约70%。</li>
+<li>12英寸路线还要4–5年。</li>
+<li>高成本是大规模商业化的主要障碍。</li>
+</ol></section>
+<div class="body">
+<p>Analyst-led • 27 Oct 2026</p>
+<p>Companies: 002241 CN, META US, 2382 HK</p>
+<p><b>Expert</b> CTO at Shenzhen Liande Automatic Equipment Co Ltd</p>
+<p><b>Eric Shen (ES)</b> — Third Bridge Sector Analyst</p>
+<h3>Agenda</h3>
+<ul><li>BOM (bill of materials) structure differences for monochrome AI glasses vs full-colour ones and for monocular AI glasses vs binocular ones, plus cost proportions and cost-reduction potential of microLED optical engines and optical waveguides</li><li>Actual yield rates and cost metrics of 8-inch GaN-on-silicon, impact of capacity expansion and depreciation on cost-reduction effectiveness, plus economics tipping point for mass production</li><li>Mass production maturity, efficiency and reliability gaps between RGB (red, green and blue) combiner and monolithic full-colour solutions, plus timeline and conditions for technical route shifting</li><li>Cost and power consumption trade-offs for microLED and LCoS (liquid crystal on silicon) solutions, changes in hardware selection criteria for display-equipped AI glasses and 2027 volume growth expectations</li><li>Key process and equipment bottlenecks during mass production, China-based supply chain’s capability gaps and potential beneficiary segments</li></ul>
+<h3>Key Insights</h3>
+<ul><li>The binocular full-colour microLED optical waveguide solution is not yet mature, with the optical engine and optical waveguide together accounting for 70-80% of its BOM. High costs hinder large-scale commercialisation, making this a key industry challenge at present</li><li>The single-green solution is currently the main driver of mature volume production. The cost shares of the optical engine, optical waveguide and SoC are similar, which will benefit first once market volume ramps up. Single-green binocular models are currently used more for ecosystem refinement</li><li>The yield of 8-inch GaN-on-Si single-green micro LEDs is c70%. After meeting yield and monthly capacity targets, the cost is expected to be better than that of 6-inch products. The 12-inch roadmap is expected to take another 4-5 years to materialise, and mass production conditions will not be met in the short term</li><li>Large AI models are driving demand for AI glasses, while non-display models help cultivate the market. The turning point for a large-scale uptick in industry shipments and ecosystem development is expected in 4-5 years. Optical engine makers and complete-device manufacturers with terminal resources deserve more attention</li></ul>
+<h3>Introduction</h3>
+<p><b>ES</b>: [Expert]</p>
+<p>Expert], before we start today’s Interview, please state if you agree or disagree to the following statement: You understand the definition of material non-public information and agree not to disclose any such information, or any other information which is confidential, during this Interview.</p>
+<p><b>Expert</b> [00:00:32]: I agree.</p>
+<h3>Questions</h3>
+<h3>00:00:36] First, could you introduce the binocular full-colour microLED plus optical waveguide solution you are familiar with, and describe the display specifications and approximate procurement scale? What is the approximate bulk purchase price of the complete display and optical system for a full pair of glasses? What are the respective cost shares of the microdisplay panel, optical engine, other components, waveguide, assembly and calibration? Can you break down the BOM [bill of materials] of the product?</h3>
+<p><b>Expert</b> [00:01:18]: From the BOM structure perspective of the entire glasses, whether they are binocular full-colour, monocular full-colour or even monochrome, the two major components are broadly the main control SoC and the optical engine. The second part is the optical waveguide, as it involves light propagation along the optical path. There are also optical coupling and sensing, as well as other components such as batteries and structural parts. For binocular full-colour, the first part is the SoC. Its specifications are more demanding because, among the several solutions, it needs to transmit the largest amount of data or information, and later on it is related to the battery and other factors. The second part is the optical engine. At present, full-colour optical engines are mostly achieved through colour-combining solutions. Therefore, the colour-combining optical engine for full-colour and dual-colour is a problem.</p>
+<p>The next part is optical waveguides. After the three colours are combined, they propagate in optical waveguides. When making optical waveguides, the propagation efficiency, dispersion, stability and uniformity of different wavelengths of light in the optical waveguide material are slightly different. Therefore, ensuring that all three colours have good optical waveguide transmission results may be a relatively big problem. For coupling, since full-colour coupling is currently achieved through monochrome, the overall structure is similar to the previous structure, but it is more refined. Therefore, the technical difficulty should be relatively manageable.</p>
+<p><b>ES</b> [00:03:54]: If we break down the BOM cost, what are the approximate proportions of the major components you mentioned, such as the main control SoC, optical engine, waveguide passive components, optical coupling and sensors? Can it be further broken down?</p>
+<p><b>Expert</b> [00:04:25]: The full-colour technology we are talking about now is still based on the binocular full-colour technology I just mentioned. After disassembling the major components, you will find that the first major difference is the optical engine and the second is the optical waveguide. Although the SoC part is also relatively large, it is more of a data throughput issue and is relatively manageable. There are very obvious differences between the two parts just mentioned.</p>
+<p>For the optical engine part, in the binocular case, it may account for around 30-40%. The optical waveguide may also account for around 30-40%. Therefore, these two parts together account for about 70-80%. At present, the BOM cost or overall cost, of these two parts accounts for the largest proportion of the glasses. However, there is a problem here – at this stage, optical engines – especially the difficult binocular full-colour ones – are rarely seen on the market. It may be fine to release a demo occasionally for show, but when it comes to actually bringing them to market for consumers or in slightly larger quantities, there are basically none. The cost of this part is too high, reflecting that there are still many technical issues to be solved in these two areas. Even if these two are pushed hard into the market and priced higher, many problems will still surface – consumers or the people you are trying to reach will simply not accept them.</p>
+<p>At that time, Zuckerberg at Meta unveiled and demoed a product. There were many problems during the demo, and after it was over, the whole thing fizzled out. The reason it cooled off lies with the optical engine. Even for current industry players working on micro LED, as I just said, the only full-colour solution that can be discussed at present is probably the colour-combining approach. Good colour combining starts with good monochrome performance. Not many companies do monochrome well, and of those, very few can ship that volume to customers – genuinely shipping to customers is extremely rare.</p>
+<h3>00:07:34] At present, binocular full-colour technology is indeed not yet mature, and the market volume is small, so cost estimates have limited reference value. Some products on the market are currently priced at RMB 8,000-9,000. What do you think their approximate cost is? At present, implementing a binocular full-colour solution may cost from several hundred to USD 1,000. By consumer electronics standards, what would be a reasonable selling price range?</h3>
+<p><b>Expert</b> [00:08:16]: As I just said, the cost accounts for roughly over 70%, close to 80%. Working backwards from 80%, that portion of the cost would be RMB 6,000-7,000. But at RMB 6,000-7,000 – and as I said, the bigger context is that the technology itself is not mature – I’d even think optical engine or waveguide manufacturers may not be making much money within that range.</p>
+<p><b>ES</b> [00:08:53]: Is it because there is no volume now?</p>
+<p><b>Expert</b> [00:08:56]: That’s right. It will allocate part of its R&amp;D expenses to it, and that may be the only role this plays. Generally, it is only a few high-end customers that can use this kind of product. Those customers need to grow and progress together with it, so someone has to go out front and test the waters. Otherwise, there is really no chance at all. As for the pricing of this part, I just said it might be around RMB 7,000, but can it make money at around RMB 7,000? I think that might be a bit difficult.</p>
+<p><b>ES</b> [00:09:37]: In your view, if binocular full-colour solutions are to achieve true consumer-grade mass shipments – not necessarily very high volume, but perhaps at the tens-of-millions level that non-display glasses with cameras have reached – what price range would be needed for them to really scale? One view in the market is that the price would need to reach around RMB 3,000. What is your assessment based on market and industry conditions?</p>
+<p><b>Expert</b> [00:10:18]: I think the cost would need to come down to around RMB 2,000, but that RMB 2,000 is for the core part I mentioned. Adding in the other costs, the total would probably be over RMB 3,000, and at that level it would likely lose money or at least make no profit, which is not realistic. As a result, costs may have to be reduced further.</p>
+<h3>00:10:54] Now that we've covered the binocular full-colour solution, the products shipping in higher volumes today are single-green glasses, including monocular and binocular. What does their cost structure look like? Among display-equipped glasses, is the single-green solution seeing the fastest growth in shipment volume?</h3>
+<p><b>Expert</b> [00:11:21]: Right, still referring to display-equipped ones. Currently, the more mature or higher-volume options on the market are single-green and single-red approaches, with single-green being somewhat more common. There are technical reasons behind this. First, green light can easily achieve very high brightness – easily reaching over a million nits. Second, human eyes are more sensitive to green light, so at the same brightness in nits, green light tends to look brighter. That's another reason. Second, the green-light technology path is relatively mature and has high luminous efficiency, so overall, green light currently accounts for the largest share.</p>
+<p>Here, the optical engine currently accounts for perhaps 20%-plus to 30% of the BOM, depending on the specifications and sizes of different manufacturers. Optical waveguides are relatively more mature because the solution is monochrome, with efficiency also in the 20% to 30% range. Why are there more single-green products on the market, while red ones are fewer but still available? One is that red light currently has relatively low efficiency. Second, its mass-production stability is not very good. The biggest issue in full-colour solutions is also the red-light part.</p>
+<p><b>ES</b> [00:13:24]: In the single-green solution, the optical engine and the waveguide each account for 20-30% of the cost. Can the main SoC account for 20-30% too? It should also be a relatively high-cost component, right?</p>
+<p><b>Expert</b> [00:13:39]: Right. As I just mentioned, the SoC does not make much difference between monocular and binocular solutions and does not add high cost.</p>
+<p><b>ES</b> [00:13:57]: Are the absolute costs of the optical engine and the waveguide roughly tens of US dollars? Current mainstream SoC solutions, such as Qualcomm AR1 and Bestechnic's new products, are around USD 60-70. Are the SoC and the waveguide also in this range? How should we think about the overall cost structure?</p>
+<p><b>Expert</b> [00:14:42]: In terms of cost structure, the SoC, optical engine and optical waveguide are roughly comparable, with costs fairly even. When disassembling the whole unit, you will find that the optical engine and optical waveguide still account for the largest share of the cost, though not as extreme a share as in binocular structures or monocular full-colour designs.</p>
+<p><b>ES</b> [00:15:28]: If product shipment volume increases, from the perspectives of growth and profitability, would the three segments – SoC, optical engine and waveguide – benefit the most?</p>
+<p><b>Expert</b> [00:15:46]: That's right. Because in terms of current market acceptance or the overall picture, first, these three parts account for the highest share of BOM cost. Second, these are also the three parts that the market can currently accept. As market volume ramps up, these three parts stand to benefit considerably. Moreover, there are two types of benefits. The first is an economic benefit, and the second is a technical benefit. The economic benefit is that as technology advances, costs will fall somewhat, but these segments will still earn what they should because they already have a certain yield advantage. Second, even monochrome – even the best single-green structure currently available – still has many problems. In this process, as I just said, once volume ramps up, both the client and the supplier are motivated to make it better, so it benefits both sides.</p>
+<h3>00:16:58] Regarding the product's technical structure, in the monocular green and binocular green solutions, are the optical engine and the waveguide simply doubled? Does the binocular solution use two optical engines and two waveguides, or one optical engine with two waveguides? How exactly are they configured?</h3>
+<p><b>Expert</b> [00:17:21]: First of all, in the binocular solution, there are definitely two waveguides. The optical engine also has a certain relationship with the downstream SoC. Normally, the setup does use two optical engines and one SoC. Another possibility is to use a single optical engine to handle the task, which then raises the issue of how the optical engine is positioned or arranged.</p>
+<p><b>ES</b> [00:18:05]: From what you know so far, are most products on the market currently equipped with two?</p>
+<p><b>Expert</b> [00:18:11]: Yes, most of them are still equipped with two. But I vaguely remember seeing a solution somewhere that uses a single optical engine and two waveguide plates, with one SoC main controller placed in the middle and the optical waveguides on both sides. Because normally the light comes from an optical engine outside the glasses and is routed to the middle, then it is guided from the middle out to both sides.</p>
+<p><b>ES</b> [00:18:55]: But isn't that too mainstream?</p>
+<p><b>Expert</b> [00:18:59]: Not too mainstream, that's right.</p>
+<h3>00:19:07] In current single-green solutions, what are the respective proportions of monocular and binocular configurations? What is the approximate cost? Market prices are generally around RMB 2,000 to 3,000. Is there any profit in this price range? At this stage, is the main goal to make a profit or to polish the product and expand the ecosystem?</h3>
+<p><b>Expert</b> [00:19:33]: Monocular ones might still have a bit of profit, but binocular ones probably have very little. It's more about nurturing or expanding the ecosystem.</p>
+<p><b>ES</b> [00:19:54]: In your judgment, what is the approximate overall BOM cost of a single-green product? For example, with a selling price of RMB 3,000, can the BOM cost be kept below RMB 2,000?</p>
+<p><b>Expert</b> [00:20:10]: For single-green, that should be doable. RMB 2,000 should be feasible – there's still some room.</p>
+<h3>00:20:53] What is the current overall yield of 8-inch GaN-on-Si microLED finished panels?</h3>
+<p><b>Expert</b> [00:21:39]: At present, the overall yield for 8-inch single-green is probably around 70%.</p>
+<p><b>ES</b> [00:22:48]: If production capacity is expanded in the future, what yield and line utilisation levels would need to be achieved to make upgrading to larger wafer sizes economically viable? Or would it be more cost-effective to expand capacity within the existing wafer-size production line?</p>
+<p><b>Expert</b> [00:23:11]: For 8-inch wafers, after the significant size increase, the number of dies that can be cut from each wafer is indeed much higher. However, because the cost from epitaxy to chips is relatively higher for 8-inch wafers, the yield is not that high. However, technology continues to evolve and improve, especially for companies like Starksemi that make 8-inch wafers. Having previously worked on silicon-based processes, they can make rapid progress after the switch because they already have that foundation.</p>
+<p>On this basis, as long as they can bring the yield to a certain level – above 70% or 75%, something like that. The first is yield, and the second is volume. If monthly output can reach 2,000 wafers or even several thousand, the overall cost may become lower than that of 6-inch wafers. Because 6-inch wafer technology is relatively mature, its higher cost is due only to the wafer size. If the yield rate and production volume of 8-inch wafers both reach a certain level, their overall cost may become better than that of 6-inch wafers, making them economically viable.</p>
+<h3>00:24:40] At present, mainstream market products still use 4-inch and 6-inch wafers, and 8-inch wafers account for a very small share, right?</h3>
+<p><b>Expert</b> [00:24:49]: That's right. It's very simple. In the micro LED industry, people who started working on micro LEDs a few years ago initially made them on sapphire, using sapphire epitaxial wafers. At that time, the industry was relatively fragmented and sapphire substrates were relatively mature, so basically everyone used sapphire. However, sapphire involves many problems. Sapphire substrates are not suitable for AI glasses-related products. Gradually, people realised that they should simply use silicon substrates. Silicon substrate technology itself is relatively new, so people initially used sapphire substrates. Later, they tried making silicon substrates on 4-inch wafers and then on 6-inch wafers.</p>
+<p>The reason is that when making micro LEDs, epitaxial wafers are made first. The epitaxial growth yield must reach a certain level, and only then is there a chance to continue downstream. The second part is making chips, which are then made into modules. After the modules come the glasses commonly seen on the market today, involving optical engines, micro LEDs and the like. That's about it, so there are several core technical challenges waiting to be solved.</p>
+<p>Many early adopters, driven by cost or accumulated technical expertise, first built 4-inch fabs and then 6-inch fabs. Around 2024, many gradually began moving to 8-inch fabs. In the case of 4-inch or 6-inch, especially 4-inch, there is a complete lack of economic viability. You can prove the process works, but making it economically viable is unrealistic, so 4-inch won't work. 6-inch is barely adequate. It can only produce monochrome, and that type is acceptable.</p>
+<p>But it is only when reaching 8-inch that it becomes economically viable and cost-effective. In the epitaxial part, the requirements for power devices and display devices during CVD growth differ somewhat, but the core focus for everyone is defect control. With this foundation, the technology accumulation provides both economic viability and technical capability, so people have gradually started moving to 8-inch lines. Assuming a 12-inch line is where the industry is headed – since the largest silicon wafer size is 12 inches – if 12-inch can be made to work, there may also be a move to 12-inch later. 8-inch is just a relatively good fit at this stage and what everyone is trying to chase.</p>
+<p><b>ES</b> [00:28:14]: Given that 8-inch wafers can be diced into more dies, is their share of shipments gradually increasing? Can products from 8-inch production lines currently account for 20% of total shipments?</p>
+<p><b>Expert</b> [00:28:33]: There should be, especially in single-green products, because several large manufacturers are well funded and started 8-inch production relatively early.</p>
+<h3>00:28:53] You mentioned that 12-inch may be the future direction. JBD recently announced a route in which small-size epitaxial bare dies are reconstituted onto a 12-inch carrier wafer and then bonded to silicon-based backplanes. Compared with directly enlarging the GaN epitaxial size, how do you view the cost advantage of this route? What additional process costs does it add? About when will its mass production and cost advantages be realised? Can we expect to see them within the next 1-2 years?</h3>
+<p><b>Expert</b> [00:29:26]: This is like what we are talking about with 8-inch products now, but 12-inch is still further off. At least 8-inch now has something coming out, while 12-inch is just a direction everyone is thinking about. This involves an issue – what lies behind everything is the maturity of technology development. For 12-inch, the epitaxial side is the challenge – the chip side is a bit better. The key is to improve the yield of the epitaxial side, control defects to meet requirements and then raise the yield. It won’t be just 1-2 years. I estimate that 12-inch products will be at least 4-5 years away. At this stage, just getting 8-inch to a state where it can be mass-produced is already quite an achievement. Once you have that firmly under control, then consider 12-inch.</p>
+<p>What are the differences between 12-inch and 8-inch? In the CVD stage, the size becomes larger, so the chamber structure may also need to be redesigned to see whether epitaxy is feasible. Some things may only require changing the diameter, while some may require new equipment. That is the epitaxy part. Second, at the chip manufacturing stage, if the equipment you bought was already compatible with 12-inch wafers, then there's no problem. But if the equipment you bought at the time only supported 8-inch wafers, you may need to buy new equipment to produce 12-inch wafers. As for the packaging stage later, I think it's relatively fine, because by then the wafers have already been cut into dies. Once cut into dies, there are basically more things that can be reused. We've just talked about the technical challenges it faces, but its advantage is that, just as 8-inch wafers are now replacing 6-inch wafers, the throughput can directly bring costs down by another order of magnitude, which would make this technology more advantageous to promote.</p>
+<h3>00:32:02] Which manufacturers are currently performing well with 8-inch wafers? Is it also JBD?</h3>
+<p><b>Expert</b> [00:32:09]: That's right. JBD wanted to develop this from the very beginning, so it invested quite heavily. The company is also quite good. Since the beginning, it has invested in the full production line and done its own epitaxy and other processes. The second is Starksemi. It already had a foundation in 8-inch power devices. Although it is a new entrant, thanks to Mr Luo, it is just a change of direction. The core technology behind it is essentially the same. Although it entered late, its technology should also be fairly good. It already had power semiconductor operations and an 8-inch line. It's just that it used to make power devices. In epitaxy, each technical route focuses on different things, but the core point is defect control. Although it entered the market relatively late, it got going fairly quickly.</p>
+<p>Besides, it also has money. It is based at Jiufengshan Laboratory in Wuhan, which itself works on GaN. On the semiconductor side, it has both a foundation and funding. So don't dismiss it for being late – it may actually be a very strong force later on. Because JBD was relatively strong, Meta at the time seemed to want to line up some new suppliers, at least to put some pressure on it – other reasons aside.</p>
+<p><b>ES</b> [00:35:31]: Did Starksemi later enter Meta's supply chain or partner with it?</p>
+<p><b>Expert</b> [00:35:49]: JBD already has quite a lot of partnerships. In the micro LED field, no matter how frustrated you might be, you have to admit it is currently the industry leader, and many solutions in that area are developed in collaboration with it. As for Starksemi, I really can’t tell you exactly what stage it is at, but based on its technology and the whole analysis I just gave you, I think it has a good chance.</p>
+<h3>00:36:45] From microLED microdisplay manufacturing to optical engines and waveguide assembly, which process currently has the highest scrap rate or the slowest takt time? Where is the bottleneck? What is the current progress of the improvements?</h3>
+<p><b>Expert</b> [00:37:28]: The overall bottleneck is mainly reflected in two parts. The first is in micro LED chips. Up to now, there is a problem with the chips – the consistency is not particularly good, which makes the optical engine side difficult and is one reason for the relatively high cost. That is the first problem. The second issue is optical waveguides. At present, their efficiency is still very low, and they have quite a few limitations in terms of applicable scenarios. These two parts remain the overall technical bottlenecks or difficulties.</p>
+<p>The other parts are not difficult, simply because the market hasn’t taken off. Other components are even easier. Another thing that may not have received much attention is that the lack of ecosystem due to application scenarios is also a bottleneck for this market or technology. I think there are relatively few application scenarios at this stage to get more consumers to accept or like this product.</p>
+<h3>00:39:14] You just mentioned that the core bottleneck lies in the optical engine. In terms of waveguides, what are the current differences in technical routes among manufacturers? In the current landscape, is there any manufacturer with a relative advantage?</h3>
+<p><b>Expert</b> [00:39:31]: At present, I think most waveguides on the market are made through nanoimprint lithography, and making templates is relatively more common. There is also an etching method. Volume holographic optical waveguides have higher light conversion efficiency and higher waveguide efficiency, but the etching requirements for the entire optical path are too high, so this approach is relatively less used at present. Basically, it seems there are just these two main routes.</p>
+<p>The most widely used method at present is probably nanoimprint lithography, specifically the surface-relief approach. The typical process is to first etch a template for nanoimprint lithography, then perform imprinting, coating and surface strengthening. As the product is usually made on a large piece of glass, it is cut after the strengthening step. Another one is end-face coupling. There is a coupling component between the output of the micro LED light engine and the optical waveguide, which is used for calibration.</p>
+<p>At present, this type seems to be more common in the market because the technology is relatively less difficult now, and many companies are working on it. However, there is a problem – many materials and equipment are imported, as far as I know. However, the quantity used at this stage is still small, so the impact of imports is not significant. It should be fine. But later, when you really need to scale up to very large volumes, it shouldn't be a big problem for foreign suppliers to keep up – they can all get it done. This is on the optical waveguide side.</p>
+<h3>00:41:54] Once volume ramps up, how will profitability differ among the three segments accounting for the largest shares – SoC [system on chip], optical engine and waveguide? Which segment is likely to have the higher profit margin?</h3>
+<p><b>Expert</b> [00:42:13]: If volume picks up, I think the optical engine and optical waveguide segments may account for a larger share. Specifically, I'd lean toward the optical engine having the edge, because it's the most central component. To get the whole optical engine process going, there are a lot of things you have to tackle along the way – from epitaxy to chips, you have to control everything yourself. It was a fairly sound idea – it thought that if it built everything itself, its core technology would be right there, and it would have a technological advantage, and so on. But that also meant a huge capital investment at the time, and it had a rough patch for a while.</p>
+<h3>00:43:49] Once industry volume ramps up, leading manufacturers may pursue vertical integration. How high do you think the technical barriers are for optical engines and waveguides? Will manufacturers choose to expand horizontally?</h3>
+<p><b>Expert</b> [00:44:07]: Are you referring to manufacturers like JBD, which make both the optical engines and the waveguides, or to companies that are more like terminal-device makers?</p>
+<p><b>ES</b> [00:44:14]: Yes – companies like JBD, as well as some ODM manufacturers. Do you think competition will emerge once volume reaches a certain level? It should be quite difficult to break into the optical engine segment, but aren’t the barriers for waveguides relatively low?</p>
+<p><b>Expert</b> [00:44:39]: If it really comes to that, companies like JBD may make the waveguides themselves. The machines bought for waveguide production are all pretty much the same, so that’s not a big deal. The optical engine is the hardest part because it’s heavily process-driven, and the process involves a lot of know-how. It’s not something you can figure out quickly just by buying equipment and making something. That’s also why I mentioned earlier that Starksemi would enter this space – it has already built up a lot of know-how in power semiconductors, even though displays are somewhat different in this regard.</p>
+<p>But there is a problem here. I mostly agree with what you just said – if the need truly arises, it may be integrated by companies like JBD. Another issue now is that companies like Goertek and Sunny Optical are also ODMs. It used to do only the back-end part, and it also made a mistake. It is said that because it is such an oversized enterprise, it is now building micro LED production lines, doing everything from epitaxy to chips.</p>
+<p><b>ES</b> [00:46:23]: Could you elaborate further on the integration between Goertek and Sunny Omnilight?</p>
+<p><b>Expert</b> [00:46:36]: Companies like these are too large. No matter how big JBD is, it is still just one company. But super-large listed enterprises like Goertek and Sunny Optical have their own capabilities and may integrate the entire product line. Sunny Optical is relatively conservative and mainly focuses on optics. Goertek has now also built its own full production lines for both micro LED and micro OLED. When I heard it talk about micro LED, it said it would build everything from epitaxy to chips. I was very surprised at the time. To be honest, as I just said, this involves a lot of process know-how. Although it has poached some people, I don't think it is that simple – you may have to tough it out for a long time.</p>
+<p>Only if you are strong enough to poach JBD's entire team – they've been through all this and have mass-produced many things – will your progress be any faster. But without that, your technology may not be better than JBD's, and there's no telling when it will reach their level. I think investing that money could be risky. Goertek is more aggressive. It will take on all sorts of projects for you. Sunny Optical is relatively less aggressive, and as far as I know, that may be a bit better. But I was quite surprised when I heard that some friends had gone to Goertek to work on micro LED and micro OLED.</p>
+<p><b>ES</b> [00:48:50]: If it ramps up to volume production, then, for example, the company Meta works with the most right now should also be Goertek. If its display products ramp up to volume production, it will essentially gain an advantage along the supply chain and take away some orders, right? The key is to see exactly when this inflexion point will happen, right?</p>
+<p><b>Expert</b> [00:49:11]: That's right.</p>
+<h3>00:49:17] What are your insights into the industry's short-, medium- and long-term development trends, opportunities and risks? Could you offer a supplementary summary?</h3>
+<p><b>Expert</b> [00:49:41]: I've been working on this technology since 2017 and 2018, so I've been at it for many years now. Earlier, this technology was really hard, and JBD had a rough time for a while. Credit should go to the rise of large AI models – because of them, AI glasses suddenly seem to have something interesting to play with, whereas before they looked completely useless, without an application scenario even in the tiniest niche. Plus, big companies are backing this thing, so I've gradually come to feel that this market is taking off, and it will continue to grow step by step – from 4-inch to 6-inch, to the current 8-inch and later even 12-inch. I think it's a gradual process, but the market is indeed slowly gaining momentum. It's a market worth watching now, unlike before, when some people were even trying to prove it false, wondering whether it was a pseudo-market or pseudo-demand. This is the first one.</p>
+<p>First, you have to set the overall direction. My principle is to settle on the direction first and then look at those other things, because some things can be handled just by paying a certain price. But if your direction is completely wrong, and it's not a matter of paying a price to solve it, then continuing to pursue some of these things won't be very meaningful. This is a broad direction. With the help of large AI models, the market is gradually picking up. With major clients supporting it from behind, applications such as agents or other solutions that are easy to put into practice will keep driving the technology forward. Because no matter how much money JBD invests, to large companies such as Meta, Apple or OpenAI, it is a drop in the ocean – not worth it. To them, the amount is just a pittance within a pittance. With these giants behind it, I believe this technology will see extremely rapid development in the future.</p>
+<p>How should we evaluate things during this development process? First, it's true that we'll start with monochrome. But after monochrome is done, we'll likely move to binocular full-colour, not monocular full-colour. Because of this technology, the boost AI brings to it may be beyond imagination. Going forward, everyone should pay more attention to binocular full-colour. Although this technology is indeed harder, this is the direction we should focus on going forward. On this basis, we then consider what we lack for binocular full-colour, what bottlenecks currently exist and how to solve them. They will be resolved step by step.</p>
+<p>Another thing – before large AI models took off, the reason some people always considered this market to be debunked, or regarded it as a fake or pseudo-market, was that the ecosystem could not be established. This is also why Meta’s metaverse, as you can see, has been in development for so long and still turned out like that. Apple’s Vision Pro is the same – it cost so much to develop and looks dazzling, but its market acceptance is very low, among other things. A major reason for this is the software ecosystem and the hardware ecosystem.</p>
+<p>However, with AI large models serving as agents, things that once seemed unimaginable or out of reach suddenly appear possible. That is why AI glasses can take off – by leveraging the large model, which also completes the ecosystem. As for the hardware I just discussed, once you think in this direction, the corresponding things down the line can all be handled, plain and simple. At this stage, because there is relatively little attention, the main players are JBD and Starksemi – Starksemi has Innoscience behind it and is a listed company. Many are small enterprises, including VIJO Optoelectronics. A lot of micro LED companies are working on this kind of thing.</p>
+<p>However, you'll find that these companies are all relatively small in scale. Companies now entering the space, such as Goertek, are already considered relatively large. But no matter how big it is, it is still a very small part of Meta's supply chain. First look at the direction, then at the specifics. So at this stage, I think the competition is still at a relatively low level or low dimension. Everyone is competing here to break through on multiple fronts, whether it is reducing the cost of optical engines, improving the efficiency of optical waveguides or refining optical paths.</p>
+<p>However, with technological progress, the rise of large AI models and the demand for agents, these things will advance significantly once the capital invested in them grows. Unlike now, where one company may make some progress this year and another just a little, future progress may be rapid or even leapfrog. After that, you will suddenly find that the binocular full-colour display, which was previously out of reach, has become a product that can actually be brought to market. At the same time, once its software ecosystem is built up, you will see that ecosystem start to thrive. Once it takes off, the volume will also increase. With growing volume, the market will gradually expand into the initial vision of making AI glasses, or the ideas those people had imagined all along.</p>
+<p><b>ES</b> [00:55:50]: How long do you think it will be before the ecosystem is fully built out and shipments really take off? Is it a medium- to long-term trend, or will we see it within the next two years?</p>
+<p><b>Expert</b> [00:56:00]: I think two years might be a bit tough, but four to five years is worth considering.</p>
+<h3>00:56:20] Shipments of display-free AI glasses are growing at a solid rate. The market expects roughly 20 million units to ship this year, with Meta accounting for the vast majority. How significant is the ramp-up of such products for educating the market about single-green or full-colour display glasses? Will the market naturally shift to products with displays in the future?</h3>
+<p><b>Expert</b> [00:56:51]: I think you can regard it as market cultivation or early-stage groundwork. It is like the MP3 player of the past – it has no display, but it creates an application scenario. Even though that scenario is relatively basic or low-end, it still helps many people solve many problems. Therefore, annual shipments should exceed 20 million units. But as the technology advances, it should be beneficial for displays down the road.</p>
+<h3>00:57:37] Taking into account short-, medium- and long-term trends, which types of companies do you currently see as the most promising or valuable? Is it something like Goertek?</h3>
+<p><b>Expert</b> [00:57:51]: First, I am quite bullish on companies that make optical engines, including chip and epitaxy companies, because this is indeed where the core know-how is currently being built. The second type consists of companies that make complete devices, and they usually also work on optical waveguides.</p>
+<p><b>ES</b> [00:58:14]: So is it similar to Goertek?</p>
+<p><b>Expert</b> [00:58:18]: That's right. The advantage of such companies is that they have very good relationships with terminal manufacturers. Their know-how may not be as strong as that of optical-engine makers, but those relationships are right there, and you simply cannot ignore them. Moreover, especially for a super-large enterprise like Goertek, it also has a strong capital chain and can do many other things, so such enterprises are worth paying attention to. As I just said, this market really isn't that big yet, especially in the display segment. In the micro LED optical engine segment, focus on a few key companies. Since over a dozen companies are doing this in the market, paying attention to a few leading ones is enough; you don't need to watch too many. First, this market hasn't scaled up yet. There are over a dozen companies in it, but when it really ramps up, it may be companies like Goertek that stand out.</p>
+<p><b>ES</b> [00:59:27]: Thanks again to [Expert] for their input today. This now concludes our meeting. Goodbye.</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

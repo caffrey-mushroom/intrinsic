@@ -1,0 +1,214 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.09 | AC | LLM | GPT-6 Astra and Embodied Models</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.09 | AC | LLM | GPT-6 Astra and Embodied Models</h1>
+<p class="orig">原标题：Open AI GPT-6 Astra对具身大模型影响分析—能力进步与三种可行模式</p>
+<p class="tags">#OpenAI #GPT-6 #具身</p>
+<p class="meta">AceCamp · 2026-11-09 · article 70569039</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>专家称GPT-6 Astra总参数约12万亿，为动态稀疏MoE，单个专家子网络激活约1.2万亿参数。</li>
+<li>包含循环推理框架，可在内部多轮迭代自我纠错。</li>
+<li>原生视觉到动作闭环让模型能直接操作工具。</li>
+<li>直接用于具身智能面临推理时间长和token消耗巨大的问题。</li>
+<li>当前可行方案是接入机器人核心底座，有三种模式。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>以下观点来自行业资深专家：1.GPT-6 Astra相较于前代版本，在计算力操作、抽象推理、科学研究及专业工作场景适配等方面均有显著提升，同时在对齐和安全性方面也进行了优化。2.GPT-6 Astra确实可以应用于具身智能，但现阶段直接应用面临推理时间长和token消耗巨大的挑战。3.将GPT-6 Astra应用于人形机器人，当前比较可行的方案是将其接入核心底座，主要有三种模式。</p>
+<p>1.GPT-6 Astra的整体架构是怎样的？</p>
+<p>GPT-6 Astra的架构主要包含三个层面。第一层是具身骨干架构，由两部分构成：其一是高阶动态稀疏混合专家架构，模型总参数量约为12万亿，包含数十个专家子网络，每个子网络可激活1.2万亿参数，在提升模型容量的同时将计算量控制在合理范围内，并包含负载均衡优化；其二是循环推理框架，该框架允许模型在不消耗外部算力的情况下进行多轮内部迭代推演、自我纠错和路径模拟，直至自信度达到阈值再输出最终结果。</p>
+<p>第二层是具身执行架构，其核心是原生的视觉到动作（vision-to-action）闭环设计，通过端到端的视觉到动作联合建模，使模型能直接操作工具（如点击屏幕、使用鼠标等），并基于执行反馈闭环训练框架，实现“感知-规划-执行-反馈-调整”的完整闭环。</p>
+<p>第三层是训练体系，其特点是从文本偏好对齐转向任务结果对齐，具体包括通过大量仿真数据进行推理轨迹预训练、基于反馈数据进行强化学习训练，以及多智能体协同预训练，让模型在模拟环境中学习分工、纠错和进度同步。</p>
+<p>此外，该架构还包含一套推理部署方案，通过自适应计算和长上下文内存优化，实现了百万亿级的上下文内存优化，显著降低了推理时的显存占用并保证信息精度。</p>
+<p>2.相较于之前的版本，GPT-6 Astra取得了哪些具体进步？</p>
+<p>GPT-6 Astra相较于前代版本，在计算力操作、抽象推理、科学研究及专业工作场景适配等方面均有显著提升，同时在对齐和安全性方面也进行了优化。具体体现在以下几个方面：首先，在自主操作能力上，通过大量的仿真训练，模型能够完成复杂的电路板设计和CAD建模等任务。</p>
+<p>其次，推理能力大幅增强，得益于庞大的参数量，其推理得分从上一代的7.8%跃升至99.9%，已接近人类水平。</p>
+<p>再次，在终端任务执行方面，如系统配置、数据分析和命令行工作等，能力得分从上一代的37.3%提升至57.9%。</p>
+<p>此外，基于Collex处理上下文，模型的上下文持久记忆能力也得到增强。一个重要的进步是工作场景的端到端适配能力，模型能严格遵循模板信息执行操作，具备更强的任务判断力，可以实现单步处理、边处理边执行，或在等待反馈的同时执行任务，这为其在具身智能领域的应用奠定了基础。</p>
+<p>所以GPT-6 Astra是OpenAI面向物理世界自动化打造的新一代旗舰模型，它在计算机使用、长上下文处理、代码开发、网络安全四大维度实现了突破性的能力升级。</p>
+<p>3.GPT-6 Astra是否可以直接应用于具身智能领域，以及Open AI官方论文对此有何论述？</p>
+<p>GPT-6 Astra确实可以应用于具身智能，但现阶段直接应用面临推理时间长和token消耗巨大的挑战。因此，目前更倾向于将其作为连接层，用于仿真机选评测（如桌面操作、移动导航等）或进行demo级别的升级验证，而执行精细的数据操作则难度较高。通常的用法是将其置于上层，负责策略调优、任务推理协助或辅助感知信息处理。此外，也可以接入该模型来编写动作策略，以混合模式使用。</p>
+<p>官方论文并未详细阐述其在具身智能方面的应用或进行相关测评，仅简要提及，其主要强调的是计算机的自主操作能力和在物理产品上的能力展示。关于其在具身智能领域的应用潜力，更多是由其他研究团队（如英伟达、银河通用等）基于其能力发表的相关论文和评测。</p>
+<p>4.GPT-6 Astra的哪些能力能用在具身智能领域？</p>
+<p>①原生视觉-动作端到端生成能力</p>
+<p>GPT-6 Astra实现了通用大模型对视觉触觉融合信息的原生理解，能够直接读取机器人的视觉画面、触觉图像、力觉传感器数据，它不需要经过“图像转文本描述-文本生成动作指令”的中间转换环节，视觉编码器的特征向量可以直接对接动作输出头，从单目RGB画面输入直接输出机械臂、人形机器人的粗粒度动作轨迹。</p>
+<p>②通用运动学知识理解与迁移能力</p>
+<p>Astra在预训练阶段专门学习了大量机器人运动学相关数据，掌握了正逆运动学的基础计算逻辑，不需要调用外部代码工具，就可以直接根据机器人的DH参数、关节角度，快速计算出机械臂末端的空间坐标，也能根据目标位置反推出各关节的目标角度。</p>
+<p>③空间语义记忆与长周期任务规划能力</p>
+<p>Astra可以在完全陌生的未知环境中自主建立空间记忆，记住不同物体的位置、环境布局特征，后续哪怕接收到非常模糊的自然语言指令，也能基于已建立的空间地图，自主规划长距离移动路径，跨越整个房间完成物品整理、目标物体取回这类长周期任务。</p>
+<p>5.GPT-6 Astra能否直接读取人类操作视频并生成机器人动作轨迹？</p>
+<p>GPT-6 Astra在一定程度下能直接读取人类操作视频生成机器人动作轨迹的能力。在一些测评里，把一段人类完成目标任务的普通视频输入Astra，不需要动捕数据、不需要搭建仿真环境，模型就可以自主提取视频中的动作轨迹，通过逆运动学转换，直接驱动机械臂复现人类的操作动作，并且有较高的成功率。</p>
+<p>这种能力直接把人形机器人的新任务学习成本降低了一个数量级：过去需要专业机器人工程师团队花费数周完成的新任务部署，现在部署难度明显降低了。</p>
+<p>6.GPT-6 Astra的调用价格是怎么样的？</p>
+<p>GPT-6 Astra的API定价为输入每百万Token 10美元，输出每百万Token 50美元，这个价格相比GPT-5.6 Sol的旗舰版本提升了约30%</p>
+<p>7.人形机器人直接使用GPT-6 Astra的成本和性能表现如何？</p>
+<p>直接使用GPT-6 Astra的成本非常高昂，且推理延迟很长，通常是几十秒级别而非毫秒级。完成一个任务的token消耗巨大，将一个任务执行好的成本可能高达1万多元人民币，仅优化一个动作就可能花费数千元。</p>
+<p>8.直接调用GPT-6 Astra是否存在优化空间？</p>
+<p>关于优化空间，目前主要依赖OpenAI官方进行原生优化，例如通过大量数据训练来降低延迟和token消耗。对于具身智能模型厂商而言，他们无法直接优化Astra模型本身，只能通过将其与自身模型结合使用的方式来间接优化整体方案的效率和成本。</p>
+<p>9.目前将GPT-6 Astra应用于人形机器人的可行方案有哪些？</p>
+<p>将GPT-6 Astra应用于人形机器人，当前比较可行的方案是将其接入核心底座，主要有三种模式。第一种是作为任务调度大脑，适用于已具备完整运动技能库（如步态、抓取、导航大模型）且能力边界清晰的系统。Astra负责指令拆解、技能编排、参数填充、调用技能库以及进行节奏反馈和迭代调整，全程仅处理语义和任务逻辑，这是目前的首选方案。</p>
+<p>第二种是作为上层监督，适用于本地已部署自研VLA模型或世界模型但泛化能力不足的场景。Astra可被引入进行语义校验、形成合理判断和异常策略修正，让原有的VLA模型生成临时工作轨迹，实现混合使用。</p>
+<p>第三种是负责高层语义推理，适用于本体感知模型仅能输出结构化检测结果但语言理解能力较弱的情况。Astra可以结合上下文推理场景语义，例如，当本体模型检测到物体和坐标后，Astra能推理出这是餐桌上的碗、盘子和水杯，从而提升感知的认知深度。此外，也可以利用Astra来编写或调试基于特定框架的动作策略代码，但这种方式较为复杂，现阶段不太建议。</p>
+<p>10.银河通用基于GPT- 6 Astra进行的人形机器人测试，其效果和结论是怎样的？</p>
+<p>在一项测试中，对比了两种模式：一是直接使用GPT- 6 Astra控制机械臂，二是通过GPT- 6 Astra作为上层调度，结合自研的π0.5模型进行混合调用操作。测试结果显示，在处理真实的工业、交互及复杂商品操作等高难度任务时，直接使用GPT- 6 Astra的模式下，任务平均得分为37.81分（满分100分），整体任务成功率为26%，单个任务的token消耗约为11.3亿，成本接近1,500美金。而在混合调用模式下，任务平均得分提升至62.6分，整体任务成功率达到48%，单任务token消耗约为直接模式的一半。</p>
+<p>另一项使用Franka机械臂进行的单臂抓取基准任务测试中，GPT- 6 Astra直接控制机械臂完成了50个任务中的49个，成功率为98%；而GPT- 6 Astra与π0.5混合调用的模式下，完成了50个任务中的46个，成功率为92%。</p>
+<p>综合结论是，对于简单的、基于语义的、低接触精度的任务，GPT- 6 Astra这类通用大模型可以直接胜任，并且其零样本能力表现远超专用的具身小模型。然而，在涉及双臂协同、精细力控以及复杂接触等高难度任务时，通用大模型的能力会明显下降，必须与垂直领域的具身模型配合使用才能达到理想效果。此外，测试还发现GPT-4o具备一定的失败自检和任务失败补偿能力，其在根据语言区分目标物、记忆排序要求等方面的语音理解能力也显著优于专用的具身模型。</p>
+<p>11.为何在人形机器人控制中单独使用大语言模型（如GPT- 6 Astra）的整体任务成功率反而不高？</p>
+<p>单独使用时，单个机械臂执行单一任务的成功率其实很高，因为所涉及的任务通常不包含力控或复杂的接触操作。模型自身的理解能力、动作轨迹规划以及涌现能力表现都很强。但当将其接入具身智能模型系统时，需要与另一个模型进行协同。例如，若将GPT- 6 Astra作为“慢思考”系统，而具身模型作为“快思考”系统，两者协同工作时会产生信息损耗。在任务拆解、动作合理性判断等环节都会受到影响，从而导致整体任务成功率有所降低。</p>
+<p>12.为何在人形机器人控制架构中必须增加一个具身小模型？</p>
+<p>增加具身小模型的主要作用是将其作为一个“小脑”控制器，负责运动控制。该模型能够生成动作序列，并执行运动学解算和力控适配等高频实时响应任务，从而解决动作执行的精准性和稳定性问题。若不加入这类小模型，系统目前仅能在实验室环境下进行演示，无法实际落地应用。直接使用大模型控制机械臂还面临推理延迟长和token消耗巨大的问题，经济效益上也不划算。</p>
+<p>13.在人形机器人控制中，可接受的延迟必须控制在什么范围内？</p>
+<p>延迟通常需要控制在毫秒级别，例如几毫秒或几十毫秒。如果延迟达到秒级甚至十几秒，对于机器人控制而言将失去实际意义。</p>
+<p>14.为什么具身小模型能够解决大模型存在的延迟问题？</p>
+<p>具身小模型通常部署在端侧，其核心任务是执行逆运动学解算等高速数学计算，因此计算时间非常短。相比之下，像GPT- 6 Astra这样的大模型必须部署在云端，云端到端侧的通信必然会产生延迟。通过两者结合，上层大模型负责语音理解等可以容忍一定等待时间的任务，而底层的动作输出和机械臂控制则由端侧的小模型快速完成，从而确保了执行层面的高效响应。</p>
+<p>15.OpenAI是否有可能自行解决其大模型在具身智能应用中的延迟和控制问题？</p>
+<p>如果OpenAI希望解决这个问题，一个可行的方式是专门训练一个针对具身智能的模型。</p>
+<p>16.当前市场上有哪些较为适用的具身小模型推荐？</p>
+<p>目前来看，PI系列模型，例如π0.5，是比较推荐的搭配选择。从业内反馈看，π0.5模型本身在输出、全场景适配方面表现良好，并且其模型架构内建了类似时序器的能力。与其他公开模型相比，π0.5在综合评分、场景覆盖度和任务完成率等指标上都表现更优。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

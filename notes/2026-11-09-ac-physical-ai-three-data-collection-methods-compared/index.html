@@ -1,0 +1,213 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.09 | AC | Robotics | Physical AI: Three Data Collection Methods Compared</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.09 | AC | Robotics | Physical AI: Three Data Collection Methods Compared</h1>
+<p class="orig">原标题：物理AI——三类数采方式对比_数据仿真平台_头部厂商情况_数据需求量</p>
+<p class="tags">#具身数据 #宇树</p>
+<p class="meta">AceCamp · 2026-11-09 · article 70568990</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>真机遥操作有效但成本高，采集用机器人本体价格已从30多万元降到10万元以内。</li>
+<li>UMI数据对预训练不够高效，被视为过渡形态，2027年将集成触觉。</li>
+<li>Ego第一视角数据是当前预训练用量最大的方式。</li>
+<li>国内厂商到2026年底可达10–50万小时Ego数据，2027年将到百万小时级。</li>
+<li>宇树凭标准化和开发者生态占据主导，模型厂商倾向基于G1做POC。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>1、具身智能数据需求爆发：Ego数据（第一视角）为当前基座模型训练核心，预计2027年需求量将从10-50万小时跃升至百万小时级别。2、硬件生态格局：宇树科技凭借高标准化与开发者生态占据垄断地位，模型厂商倾向针对特定硬件（如宇树G1）进行POC落地，带动零部件需求确定性增长。3、关键催化剂：2027年将开启“大、小脑”协同训练趋势，全身Ego数据与集成触觉传感器（电子皮肤）的Umi数据将进入大规模实验与验证期。</p>
+<p>专家观点：</p>
+<p><b>请介绍一下当前物理AI领域的现状，特别是数据采集和具身训练方面的主要情况和技术路线？</b></p>
+<p>当前物理AI领域，尤其在数据采集与具身训练层面，主要有三种数据采集方式。</p>
+<p>第一种是真机数据采集。这种方式通过遥操作机械臂或机器人直接采集真实物理世界的数据。从2025年到2026年初，这是具身智能硬件厂商、本体厂商及模型厂商采用的主流手段，至今仍有许多团队坚持使用，因为它被证明是有效的。不过，其效率相对较低，且成本高昂，需要分摊设备费用。值得注意的是，硬件成本正在下降，用于数据采集的机器人本体价格已从2025年的30多万元降至目前的10万元以内，这使得真机数据采集的整体成本有所降低。</p>
+<p>第二种是Umi数据采集。这种方式是将机械臂或机器人的末端（主要是两指夹爪）拆解下来，用于采集二指操作数据。实践证明，Umi数据对于预训练的效果可能不够高效，规模化效应不明显，并且对后续模型训练结果的可靠性也不及真机数据。因此，Umi被视为一种过渡性的数据采集形态。一个确定性的趋势是，2027年Umi设备将集成触觉传感器或力控功能，例如在末端增加电子皮肤以采集带触觉的二指数据。目前我们正在进行相关开发并向大厂提供数据进行验证，但整体尚处早期阶段，触觉数据在模型训练中的显著效果尚未显现，预计2027年将成为该领域大规模实验的一年。</p>
+<p>第三种是Ego数据采集，即第一人称视角数据。采集设备包括GoPro、VR眼镜或虚拟头显等。这是当前用于预训练的数据量最大的一种方式。到2026年底，国内许多厂商能够达到10万到50万小时的Ego数据规模来训练基础模型。近期部分模型厂商发布的测评报告，其基础模型大多是基于近50万小时的Ego数据训练而成。狭义的Ego数据指人类第一视角采集的数据，而广义上则包含了使用iPhone采集的数据或标准化的互联网数据。目前，最标准的形式是头戴采集设备记录的第一人称视角数据。</p>
+<p><b>当前及未来一段时间内，哪种数据采集方式的需求最为确定？其市场需求规模和增长趋势如何？</b></p>
+<p>从2026年年底到2027年，Ego数据（第一人称视角数据）的需求增长最为确定。目前，每周的数据增量在30,000小时左右，预计2027年这一增量将会翻倍。</p>
+<p>从需求规模来看，2026年具身模型厂商和互联网厂商对Ego数据的需求量级在10万到50万小时之间。展望2027年，这一需求预计将增长至百万小时级别。根据在2026年底签订的一些框架协议来看，客户的需求量级基本都达到了百万级别，这进一步印证了该需求规模的确定性。</p>
+<p><b>请介绍一下当前机器人训练数据的业务构成、不同类型数据的应用现状以及未来的业务重点？</b></p>
+<p>目前，业务主要由ego（第一人称视角）数据和仿真数据构成。ego数据是基础业务，在2027年将继续作为展业核心。仿真数据在过去半年被证明用于训练基座模型的效果不甚理想，但在工业场景和虚拟环境中，其在强化学习方面的应用效果尚可，因此存在一个分支业务使用仿真资产进行特定模型的POC训练。仿真数据业务目前占比不大，约为20%，其余基本上是ego数据。尽管如此，光轮仿真数据业务在2027年仍是重点发展方向，包括一些简单的POC落地和仿真场景应用，主要服务于场景训练和强化学习。</p>
+<p>此外，还有一些其他类型的数据，例如灵巧手数据、手套数据以及全身ego数据。这些数据的量级目前不大，也尚未经过模型训练的有效性检验。当前，公司正通过不同的业务线开采此类数据，并将其作为实验品提供给海内外头部大厂和实验室进行模型验证。一旦这些数据的有效性得到证实，便会进行大规模采集。从数据采集的视角来看，行业目前大致处于这样的发展阶段。</p>
+<p><b>以谷歌等海外大厂的订单为例，其订单体量、单价、执行周期是怎样的？同时，对于未来订单量的增长趋势以及数据单价的变化有何预判？</b></p>
+<p>以海外的谷歌为例，2026年年底签订的订单量为10万小时。通常，定采数据订单的基础量级都在10万小时以上。在国内，同类定采订单的价格通常在每小时200至300元人民币之间浮动。这些10万小时量级的订单，初始框架通常要求在两到三个月内执行完毕。</p>
+<p>基于此，可以推断2027年全年的数据需求量将远超10万小时。若每两到三个月就需要10万小时，预计全年累计数据量将达到50万至100万小时。海外客户对数据量的需求更为激进，例如FIGURE AI在2026年已累积了近300万小时的数据量。</p>
+<p>然而，从模型训练的现状来看，无限累积数据对模型性能的提升效果并非线性。数据量从1万小时增长到10万小时，基座模型性能会有显著提升；但从10万小时增长到20万小时，即使数据量翻倍，模型能力的提升效果也不再显著。因此，当前行业趋势是尽可能获取场景更泛化、单价更低的数据，以确保投入产出比的合理性。</p>
+<p>所以，2027年的趋势是，对原始视频流的需求会变得更大，而对精标数据的需求反而会减小。厂商倾向于获取原始视频后，根据自身需求和形式进行标注。这意味着，即便2027年订单总量增长，数据单价也可能呈下降趋势。数据单价的衰减是比较明显的，其变化曲线类似于x的负一次方。</p>
+<p><b>请问用于机器人训练的数据，其转售价格和初次采集价格在2026年至2027年期间呈现出怎样的变化趋势？</b></p>
+<p>数据单价会随着数据量的增加和转售次数的增多而降低。以带有轨迹和语义信息的“金标”数据为例，其在国内的转售价格在2026年年初时约为每小时400元，到8、9月份衰减至接近每小时200元，当前（2026年10月）则为每小时100元左右。预计到2 027年，该价格将降至每小时50至70元。对于原始视频流数据，其价格已从最初的每小时200元降至目前的每小时50元，预计2027年将进一步下降到每小时20至40元的区间。</p>
+<p>然而，初次采集的数据价格受人力和设备等固定成本支撑，相对稳定。预计到2027年，初次售卖的数据价格仍能维持在每小时200至300元之间。但这批数据一旦进入转售市场，其单价将显著下降，预计在每小时50至100元的区间内波动。</p>
+<p><b>像OpenAI、苹果等科技巨头进入机器人领域，这对具身智能的数据素材市场是利好还是利空？</b></p>
+<p>这无疑是利好。目前具身智能的数据量相较于大语言模型的数据量而言非常稀少。与可被蒸馏的文本数据不同，具身智能数据无法蒸馏，其核心在于增强基座模型在不同场景、环境和任务下的多样性与泛化能力。为了实现这一目标，模型厂商必须获取尽可能多元化的数据进行训练。</p>
+<p>以OpenAI为例，预计其在2027年将寻求更多元的数据来训练模型，或通过测试不同类型的数据来评估其对模型提升的效果，因此基本上各类数据都会有需求。目前，ego-centric（第一视角）数据已被证明对基座模型训练较为有效。包括苹果、亚马逊在内的海外巨头也已开始在这一领域进行探索。因此，只要数据质量有保障，其转售价值必然存在。基于此判断，2027年的数据规划量和转售量预计将比2026年激进数倍。</p>
+<p><b>为什么仿真数据的生成成本和效率会比真实世界的数据素材采集更高？</b></p>
+<p>仿真数据的成本与效率优势在于它无需投入人力进行真实的物理场景采集。其流程是在仿真引擎（如Blender）中生成所需场景，然后将机器人的URDF（统一机器人描述格式）模型置于该环境中进行训练。通过强化学习的奖励与惩罚机制，机器人可以学习特定任务。完成训练后，这套已经学习好的范式可以直接迁移到实体机器人上，从而达到较好的训练效果。整个过程不涉及人员实地采集、设备投入或遥控机器人等环节，因此路径与采集真实场景数据完全不同。</p>
+<p><b>既然大模型厂商主要使用真实世界数据训练VLA模型，那么他们对仿真数据的投入和使用情况是怎样的？</b></p>
+<p>仿真数据更多被用于机器人强化学习的训练，这与VLA模型的路径不尽相同。目前观察到，这些厂商在仿真领域的投入，远不及他们在采集真实数据以及使用ego-centric数据训练VLA模型上的投入。仿真方面的应用更多停留在前沿模型的实践与探索阶段，尚未达到大规模采购仿真数据进行模型训练的程度。对于基座模型公司而言，使用仿真数据训练时，他们更倾向于自己在仿真环境中搭建场景，实现数据的自产自用。相比之下，对于ego-centric数据，他们主要通过外购形式，向数据供应商或集成商采购，以用于基座模型的训练。因此，数据服务商向这些客户提供的更多是增强仿真能力相关的在线需求服务，而非直接销售仿真数据集。</p>
+<p><b>对于像OpenAI这类基础模型厂商，如果他们进入机器人领域，其数据需求会更偏向于仿真数据还是真实世界采集的数据？</b></p>
+<p>从数据供给方的角度来看，更倾向于向客户销售真实世界采集的Ego数据集。在中国进行这类数据生产具备比较优势，因此会更倾向于引导客户采购成品数据集。不过，从大型模型厂商的角度分析，他们通常会同时探索多种技术路径，仿真训练与真实世界数据训练会协同研究，但内部通常由不同的团队或部门负责，例如仿真团队和VOA团队。这种情况在国内也很普遍，例如园林林机、德塔等客户内部也是两条业务线并行，仿真与VOA各自分管。因此，业务模式是根据客户需求提供相应的产品，无论是仿真解决方案还是成品数据。目前尚无法判断模型厂商会最终选择哪一种技术路径，但可以确定的是，从2027年开始，Ego数据的训练量需求将迎来确定性增长，预计将从十万小时级别跃升至百万甚至千万小时级别。</p>
+<p><b>仿真数据和Ego数据在机器人训练中的具体应用方式和区别是什么？</b></p>
+<p>仿真训练与Ego数据训练的应用路径存在显著差异。仿真训练是在仿真引擎中构建一个与真实世界对应的虚拟场景（如办公室），并创建电脑、水杯等仿真资产。随后，将机器人的URDF模型植入该环境，让虚拟机器人在其中进行模拟训练，最后将训练结果迁移到实体机器人上，以检验训练效果。然而，从2025年到2026年的实践来看，仿真训练结果迁移到实体机器人时仍存在较大的差距，效果并不理想，且非常依赖特定的机器人本体硬件。</p>
+<p>目前，绝大多数仿真开发和训练都是基于宇树的G1机器人模型进行的，很少见到基于其他品牌本体的开发案例，苹果公司的机器人训练也是如此。这意味着通过仿真训练获得的能力，其最终效果的检验和应用也强依赖于宇树G1本体。因此，仿真业务更倾向于以整体解决方案的形式销售，即将仿真软件、训练方案与宇树机器人本体打包提供，以确保方案能在特定车间等场景中完成指定任务。如果将这套仿真方案迁移到其他品牌的机器人上，将无法正常运行。</p>
+<p>相比之下，Ego数据主要用于增强基础模型的通用能力，其训练成果可以迁移到不同品牌、不同形态的机器人本体或机械臂上进行验证。因此，仿真训练更适用于工业等垂直领域中特定场景和任务的部署，例如通过仿真训练让特定型号的机器人在特定工位上完成插拔电缆等任务；而Ego数据则着重于提升模型的泛化能力。</p>
+<p><b>客户获取Ego数据后，是直接用于训练机器人的“大脑”和“小脑”吗？</b></p>
+<p>目前，客户获取的Ego数据基本上都用于训练机器人的“大脑”，而非“小脑”。当前主流的Ego数据采集主要基于上肢操作，即通过头部设备记录两只手臂的运动轨迹，因此生成的模型也主要集中于上半身，即所谓的“一头二臂”形态。这可以理解为只训练了“大脑”。</p>
+<p>然而，行业正在向更全面的数据采集演进。另一种Ego数据采集方式使用大型设备，能够捕捉全身26个关节的数据，包括胯部、膝关节、踝关节乃至指尖和脚尖。这类全身数据对于训练机器人的“小脑”至关重要。像元始智能、德塔智能、足迹和重向科技等公司已开始大量需求此类数据。值得注意的是，用于“小脑”训练的全身数据必须是通过真实场景直接采集，而非通过算法推导得出。</p>
+<p>尽管目前（2026年11月）对外销售的标品数据以及模型厂商使用的训练成果，大部分仍基于VIMA（Visuomotor Imitation with Masked Autoencoders）模型，聚焦于“大脑”训练，全身数据尚未被广泛应用。但预计从明年（2027年）开始，基于全身数据进行“小脑”训练将成为趋势，届时“大、小脑”协同的模型训练将大规模展开。德塔智能和元始智能等公司已经在采集这类数据进行模型训练，预示着明年中国市场将出现“大、小脑”协同配合的机器人技术成果，而美国市场可能会进展更快。</p>
+<p><b>OpenAI在机器人“小脑”训练及“大、小脑”协同方面是否已取得进展？另外，近期市场环境变化对头部厂商在该领域的投入有何影响？</b></p>
+<p>关于OpenAI在“小脑”训练方面的具体进展，目前尚无明确的成果对外公布，因此难以准确评估其技术水平。尽管该公司在2026年10月曾招募团队并划拨预算投入该领域，但行业变化速度极快。在近期美股市场出现“闪崩”之前，市场对数据需求持非常激进和乐观的态度。然而，“闪崩”之后，包括模型厂商、数据厂商以及美国客户在内的市场反应迅速降温。头部厂商如Alphabet和OpenAI在该领域的投入策略变化极快，会根据宏观环境和行业压力迅速调整，可能突然收缩投入。因此，当前的策略是基于现有市场情况，尽可能锁定数据订单需求，待环境好转时再推进数据交付。</p>
+<p><b>请问国内有哪些在机器人数据素材或相关硬件领域表现较好的公司？</b></p>
+<p>我们认为，数据素材采集设备及其零部件供应商在明年（2027年）将迎来明确的商机。具体来看：</p>
+<p>第一，触觉传感器领域，尤其是电子皮肤，市场需求预计会显著增长。当结合了电子皮肤的Umi数据被证明有效后，相关厂商的订单量预计将出现确定性增长。目前我们已储备了大量关于Umi触觉数据的订单，虽然尚未交付，但已观察到强劲的需求。因此，我们明年（2027年）也计划进行大规模采购。如果明年数据采集量达到百万小时级别，相应的素材采集设备需求将达到千台甚至万台级别。以PICO设备为例，我们目前已有上千套的采购量用于数据采集；若明年数据规模扩大，设备需求可能增至五六千套乃至上万套。这种需求增长不仅利好设备厂商，也会传导至整个数据供应链。</p>
+<p>第二，机器人零部件领域，明年（2027年）预计将出现新一轮增长红利。尽管原定于今年（2026年）年中落地的POC场景并未如期出现，但年底出现了一个积极信号：国家数据集团正在探讨将高质量的工业数据用于模型训练。若此项讨论落地，明年对硬件的需求将大幅增加，大量机器人本体将在终端进行部署和检验。这将推动机器人模型厂商从单纯追求测评榜单转向将训练成果部署在特定机器人上，在具体场景中进行规模化落地。因此，硬件、零部件及整机设备的出货量将显著提升。</p>
+<p><b>关于Umi这种带电子皮肤的触觉数据，其采集量和有效性现状如何？明年（2027年）是否会成为一个爆发点？</b></p>
+<p>目前Umi带电子皮肤的触觉数据虽然有一定采集量，但其有效性尚未得到验证，处于“不work”的状态。产出的数据需要经过大厂应用两到三个月后，才能获得关于其有效性的反馈。在当前时间点（2026年11月），这类带触觉的数据尚无法在任何场景下有效使用。预计明年（2027年）情况会有所迭代，但目前来看前景并不确定。</p>
+<p><b>当前带电子皮肤的触觉数据无效的具体原因是什么？提升电子皮肤的精度等硬件性能是否能解决此问题？</b></p>
+<p>数据无效的核心问题在于数据质量。使用这些采集到的数据训练模型后，模型对于力反馈和触觉的感知能力基本为零，导致数据无法被有效利用。理论上，通过升级电子皮肤来提升数据质量和精度，是有可能解决这个问题的。然而，目前行业内尚未出现高质量的触觉数据集，也缺乏原生的、性能优异的触觉模型。包括像帕西尼或戴蒙等公司产出的数万小时电子皮肤数据，也同样面临不work、无人使用的问题。</p>
+<p><b>目前机器人本体公司使用电子皮肤的情况普遍吗？以及Umi和五指手套采集的数据验证进展如何？</b></p>
+<p>机器人本体公司目前基本没有或很少使用电子皮肤。虽然存在像帕西尼这样自身就从事带电子皮肤本体业务的公司，以及一些销售灵巧手的本体厂商，但总体应用非常有限。无论是通过Umi还是五指手套采集的数据，目前都还处于检验阶段，预计到2027年年初可能会有初步的反馈结果。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

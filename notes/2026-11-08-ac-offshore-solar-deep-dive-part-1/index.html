@@ -1,0 +1,216 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.08 | AC | Power | Offshore Solar Deep Dive (Part 1)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.08 | AC | Power | Offshore Solar Deep Dive (Part 1)</h1>
+<p class="orig">原标题：海上光伏行业深度分析（上）—技术路线与示范项目</p>
+<p class="tags">#海上光伏 #新能源</p>
+<p class="meta">AceCamp · 2026-11-08 · article 70568984</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>海上光伏分为滩涂固定式和近海漂浮式两条主流路线，常与海上风电配套。</li>
+<li>陆上优质土地紧张、沿海省份消纳压力加大，海上光伏成为增量方向。</li>
+<li>核心差异化环节在浮体平台、系泊系统、海洋防腐组件、海上升压和海缆。</li>
+<li>用海审批是第一约束条件，直接决定开工节奏。</li>
+<li>滩涂固定式成本低、落地易，远岸漂浮式造价高、运维难。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>海上光伏，是依托近海海域、滩涂、潮间带、内湾等水域空间布设光伏阵列的新能源形态，主要分为滩涂固定式海上光伏、近海漂浮式海上光伏两大主流路线，是海上新能源立体开发体系的重要组成，常与海上风电配套形成"风光同场"一体化基地。在我国陆上优质光伏土地资源日趋紧张、沿海省份能耗双控与新能源消纳指标压力加大的背景下，海上光伏依托沿海广阔海域资源，成为沿海地区新能源增量的重要方向。相较于陆上光伏，海上光伏具备光照利用时长优势、不占用耕地、可与渔业、海上风电、海洋养殖等业态复合开发的特点，但同时面临海域审批、海洋水文腐蚀、台风抗浪、用海成本、生态保护、并网送出等一系列差异化约束。从政策端看，国家层面持续鼓励海上新能源立体分层开发，自然资源部、国家能源局陆续出台文件明确海上光伏的用海管控边界、空间布局要求，区分潮间带滩涂光伏、近海漂浮式光伏的管控规则，明确避让生态保护红线、重要渔业水域、航道、锚地等敏感区域。《可再生能源发展"十五五"规划》提出因地制宜发展海上光伏，推动海上风电与海上光伏、海洋养殖等融合开发，支持沿海省份布局海上新能源综合基地。沿海各省（山东、江苏、浙江、福建、广东、海南等）陆续出台本省海上光伏规划、竞争性配置细则，划定海上光伏适宜开发区块，海上光伏由早期试点示范，逐步进入规模化基地开发阶段。从产业链看，海上光伏区别于陆上光伏的核心差异化环节集中在漂浮式浮体平台、水下锚固系泊系统、海洋防腐组件、海上升压汇集、水下电缆、抗台风结构设计。传统光伏组件、逆变器、支架等成熟品类可适配海洋场景，但必须满足高盐雾、高湿度、强风浪、海水浸泡的海洋环境可靠性要求。国内已落地多个标志性示范项目：山东半岛海上漂浮式光伏试点、江苏滩涂光伏基地、浙江近海渔光融合项目、广东风光同场一体化示范项目，验证了固定式滩涂光伏与漂浮式海上光伏两条技术路线的工程可行性。海上光伏行业核心观测逻辑包括：1）用海政策是第一约束条件，海上光伏用海审批规则、海域权属、立体分层设权落地进度直接决定项目开工节奏；2）项目区位分化极强，滩涂固定式开发成本更低、落地难度更小，远岸漂浮式造价高、抗灾与运维难度大，商业化落地节奏更慢；3）风光同场一体化模式具备显著协同优势，共用送出通道、海上升压站、海域协调资源，是当前政策优先鼓励的模式；4）项目投资回报对水深、潮差、台风风险、海域租金、消纳条件、电价机制高度敏感；5）渔光融合、海上养殖+光伏的复合开发模式，需要平衡生态、渔业生产与新能源开发多方诉求，协调成本是项目隐性变量。本报告依托国家能源局、国家发改委、自然资源部等官方公开文件与统计，叠加产业链上市公司公开披露信息与权威媒体报道，系统梳理海上光伏行业定义、资源与开发边界、全产业链拆解、官方政策体系、示范项目运行进展、竞争格局、重点上市公司基本面、行业核心风险、中长期发展方向。</p>
+<p><b>一、海上光伏行业基础定义与开发分类</b></p>
+<p><b>1.1 行业定义与官方边界</b></p>
+<p>海上光伏，指在潮间带滩涂、近海港湾、浅海海域建设的光伏发电项目，属于水面光伏在海洋场景下的延伸形态，和陆上光伏、内陆湖泊漂浮光伏形成区分。在国民经济行业分类中，海上光伏电站运营归属"电力、热力生产和供应业"；光伏组件、浮体平台、水下电缆、锚固装备制造归属电气机械和器材制造业、橡胶塑料及通用装备制造业；海洋勘测、海域论证、海上施工、运维服务归属专业技术服务与海洋工程服务板块。</p>
+<p>自然资源部、国家能源局文件对海上光伏不同形态的用海管控作出差异化界定：滩涂光伏依托潮间带空间，属于潮间带国土空间管控范畴；漂浮式海上光伏布设于近海浅海海域，需依法办理海域使用权，严格纳入海洋空间规划管理。核心管控红线统一明确：海上光伏项目不得占用生态保护红线、重要海洋生态敏感区、核心渔业产卵场、主航道、锚地、军事管控区，落实海洋环评、海域论证、渔业影响评估等前置审批。</p>
+<p><b>1.2 技术路线分类</b></p>
+<p>海上光伏按照支撑结构形式，分为滩涂固定式海上光伏、近海漂浮式海上光伏两大路线，两条路线在造价、施工难度、适用场景、政策约束上差异显著：</p>
+<ol><li><b>滩涂固定式海上光伏（当前主流落地路线）</b>：在潮间带滩涂区域，采用桩基支架方案，光伏支架桩基打入滩涂底质，光伏板架设于潮位之上，适应潮汐涨落。该路线技术成熟、浮体投入少、抗风浪能力强，施工工艺接近陆上光伏+近海桩基工程，单千瓦投资</li></ol>
+<p>更低，是现阶段沿海省份规模化开发的优先选择；局限在于仅能利用潮间带滩涂资源，资源空间受潮间带范围约束。</p>
+<ol><li><b>漂浮式海上光伏（远期拓展路线）</b>：采用高密度耐候浮体模块拼接形成漂浮平台，光伏组件固定于浮体之上，整套阵列通过锚块、系泊缆固定于海底，随潮汐、波浪浮动。适合水深相对稳定、风浪条件可控的内湾、遮蔽性近海海域；优势是不受滩涂资源限制</li></ol>
+<p>，可拓展海域空间；短板是浮体、锚固系统投资高，台风、大浪工况下结构可靠性要求高，运维难度更大，目前以示范项目为主，大规模商业化尚在验证阶段。</p>
+<p>除此之外，行业重点推进<b>风光同场一体化</b>模式：在同一海域内同步布局海上风电+海上光伏，共用海域协调资源、海上升压站、海底送出电缆、陆上汇集通道，摊薄单位送出工程成本，是国家政策明确鼓励的复合开发模式。</p>
+<p><b>1.3 用海管理与海域资源禀赋</b></p>
+<p>海上光伏用海由自然资源主管部门统一管控，遵循国土空间规划、海洋生态保护管控要求，鼓励立体复合开发。官方政策明确，在符合规划、生态影响可控、相关利益方协商一致的前提下，支持海上光伏与海上风电、浅海养殖、海洋牧场等业态立体分层设权、复合利用，提升海域空间利用效率；同时要求严格管控漂浮式光伏的布局范围，外海开敞海域因风浪条件恶劣、生态风险高，原则上不鼓励布局漂浮式海上光伏。</p>
+<p>沿海省份潮间带、近岸浅海资源总量由各地海洋国土空间规划划定，暂无全国统一的海上光伏可开发资源总量官方测算数据。滩涂资源集中在江苏、山东、浙江等潮间带宽阔的沿海区域；广东、福建近海台风频次高，项目抗灾设计标准要求显著抬升。海上光伏资源开发的核心约束不是光照资源，而是海域合规空间、生态红线避让、渔业协调、送出通道配套，这也是和陆上光伏最核心的区别。</p>
+<p>海上光伏光照资源具备一定优势：海面反射、散热条件优于陆地，同等组件条件下等效利用小时数具备提升潜力，但盐雾腐蚀、海洋生物附着、台风风暴潮等负面因素，会推高设备折旧、运维更换成本，抵消部分发电收益。</p>
+<p><b>二、海上光伏全产业链解析</b></p>
+<p><b>2.1 上游：海洋勘测、原材料与基础零部件</b></p>
+<p>上游分为海洋勘测咨询服务和核心原材料两部分。勘测环节包含海洋水文观测、潮差与波浪参数监测、海底地质勘察、海洋环境影响评价、海域使用论证、渔业资源影响评估、通航安全评估等；海洋滩涂、近海区域底质复杂，存在淤泥、软弱土层，潮差、风暴潮影响显著，海上光伏项目前期勘测论证的深度、成本、周期均高于普通陆上光伏，所有项目必须完成海域使用权审批、环评批复、项目核准后方可开工，手续合规是项目落地前置条件。</p>
+<p>原材料端决定装备制造企业成本中枢，海上光伏差异化核心原材料清单如下：</p>
+<ol><li>光伏玻璃、硅片、电池片：和陆上光伏同源，是组件核心原料；海上场景对玻璃抗盐雾、抗海水腐蚀、防镀膜衰减提出更高标准。</li><li>桩基钢材、热镀锌/防腐合金材料：滩涂固定式光伏支架、桩基核心材料，海洋环境下防腐工艺直接决定支架使用寿命。</li><li>浮体原材料：高密度聚乙烯（HDPE）为主，是漂浮式海上光伏浮箱核心原料，要求耐海水浸泡、抗紫外线、抗老化、低海洋生物附着。</li><li>系泊缆、锚块钢材：漂浮式光伏锚固系统核心材料，长期承受波浪、潮汐往复载荷，对耐疲劳、耐腐蚀性能要求高。</li><li>电缆铜材、绝缘护套材料：水下交流汇集电缆、海缆，要求耐海水腐蚀、防水防渗、抗海洋生物侵蚀。</li></ol>
+<p>硅料、钢材、铜、HDPE粒子均为充分竞争市场化大宗商品，原材料价格波动是制造企业季度盈利变化最主要驱动因素。海上光伏配套装备厂商，通常通过长协锁价、招标价格联动条款对冲成本风险；若招标合同价格固定、调价机制缺失，原材料涨价周期制造端毛利率将被压缩。</p>
+<p><b>2.2 中游：核心装备制造（海上光伏区别于陆上光伏的关键环节）</b></p>
+<p>中游为海上光伏核心装备，也是上市公司集中、差异化技术壁垒所在的赛道，主要细分品类如下：</p>
+<ol><li><b>海洋适配光伏组件</b>：常规N型组件为主，增加盐雾防腐、PID防护、抗海洋生物附着特殊工艺，具备海洋环境认证；是整条产业链体量最大、竞争最充分的环节。组件厂商供给充足，头部组件企业均已推出海洋环境专用组件产品。</li><li><b>滩涂桩基支架系统</b>：包含钢管桩、防腐支架、可调底座，适配潮间带淤泥质底质，需要考虑沉降、潮汐冲刷、风暴潮荷载，桩基设计是滩涂项目工程核心。</li><li><b>漂浮式浮体平台系统</b>：漂浮式光伏专属核心结构件，模块化HDPE浮箱、浮框、连接固件，整套系统需要通过台风、波浪水池试验验证，是漂浮路线成本占比最高的差异化部件。</li><li><b>锚固与系泊系统</b>：包含重力锚、桩锚、系泊缆、连接件，约束漂浮阵列位置，抵御风浪、潮汐位移，避免阵列漂移、碰撞损坏，是漂浮式项目安全底线。</li><li><b>水下汇集电缆、海上升压设备</b>：水下交流电缆、海上升压箱、汇流箱，全部满足水下、高盐雾环境防护等级；风光同场项目可共用海上升压站，节约投资。</li><li><b>逆变器、监控系统</b>：组串式逆变器为主，增加防腐外壳、防潮密封设计，配套水下阵列在线监测、位移监测、防腐监测系统。</li></ol>
+<p>中游制造端整体属于订单驱动模式，业绩跟随业主招标节奏呈现明显季节性、年度波动。当前海上光伏订单以滩涂固定式为主，漂浮式项目订单以示范项目为主，批量订单尚未大规模释放，供给格局和竞争烈度与成熟陆上光伏赛道存在差异。</p>
+<p><b>2.3 下游：开发运营、海上施工安装与运维</b></p>
+<ol><li><b>开发建设业主</b>：以能源央企、省属能源平台、沿海地方国资平台为主，部分具备海洋牧场、滩涂资源的地方主体参与复合开发项目。海上光伏项目考核指标以项目IRR、等效利用小时数、消纳保障、电价水平、海域租金、渔业补偿成本为核心。</li><li><b>海上施工与安装</b>：滩涂光伏施工依赖滩涂作业装备、履带式作业平台、打桩船；漂浮式光伏需要近海组装、浮体阵列拼接、水下锚泊施工。海上有效施工窗口期受季风、风暴潮、台风、大潮期限制，每年可施工天数有限；近海作业船只为重资产装备，短期供</li></ol>
+<p>给存在约束。风光同场项目可以复用海上风电的海工船队资源，降低施工调配成本。</p>
+<ol><li><b>运维服务</b>：组件清洗、浮体巡检、系泊系统位移监测、支架防腐维护、水下电缆检测。滩涂光伏运维可依托潮间带作业；漂浮式光伏离岸作业，依赖巡检船、水下机器人远程监测，运维成本显著高于陆上光伏。</li><li><b>并网送出</b>：独立海上光伏项目需要配套海上升压汇集、海底送出电缆；风光同场项目和海上风电共用送出通道，送出工程单位成本大幅下降，也是风光同场模式最核心的经济性优势。</li><li>下游现金流特征分化：电站运营业务现金流相对稳定、周期长，资本开支集中在建设期；施工、运维服务属于项目制收入，存在进度款、质保金，应收账款风险高于成熟运营电站。</li></ol>
+<p><b>三、行业政策体系</b></p>
+<p>海上光伏开发受能源、海洋、生态、渔业、电网等多部门政策共同约束，核心国家级政策与官方部署如下：</p>
+<ol><li><b>《可再生能源发展"十五五"规划》（国家发改委印发）</b>：提出因地制宜发展海上光伏，推动海上风电与海上光伏、海洋养殖融合开发，支持沿海地区打造海上新能源综合基地，鼓励海域立体复合利用，是海上光伏顶层规划依据。</li><li><b>《海上风电开发建设管理办法》（国家能源局、自然资源部联合印发）</b>：明确海上新能源项目海域选址、海域使用权、项目核准、生态管控通用规则，海上光伏项目参照其中海域管控、环评、避让敏感区的管理原则执行。</li><li><b>自然资源部关于海上光伏用海管控相关指导文件</b>：明确区分潮间带滩涂光伏、近海漂浮式光伏管控逻辑，要求漂浮式海上光伏严格纳入海域使用管理，禁止在开敞外海、生态敏感海域布局；鼓励立体分层设权，统筹新能源开发与海洋渔业、海洋牧场发展。</li><li><b>《海洋环境保护法》及配套环评管理要求</b>：明确海上光伏项目海洋生态保护、渔业补偿、生态修复要求，项目实施前必须评估对底栖生物、洄游鱼类、海洋栖息地的影响，落实生态补偿方案。</li><li><b>渔业管理相关规定</b>：海上光伏涉及养殖海域的，需要取得渔业主管部门意见，协调养殖生产、渔业捕捞权益，落实渔业补偿方案，渔光融合项目必须兼顾渔业生产功能，不得简单挤占养殖空间。</li><li><b>绿色金融相关政策</b>：央行、监管部门将光伏项目纳入绿色产业目录，海上光伏属于绿色金融重点支持领域，支持绿色贷款、绿色债券、绿色REITs融资。</li></ol>
+<p>省级层面，山东、江苏、浙江、福建、广东、海南等沿海省份陆续出台本省海上光伏专项规划、竞争性配置方案、海域出让细则，划定适宜开发区块，明确滩涂光伏优先布局、谨慎发展漂浮式光伏的导向。各省在海域租金标准、容量电价、消纳保障、渔业补偿标准上差异较大，是区域项目投研研判的核心依据。</p>
+<p>政策主线总结：海上光伏已经从零星试点走向规模化布局阶段，政策导向优先支持滩涂固定式、风光同场、渔光融合三类模式；开敞海域漂浮式光伏管控严格，商业化落地节奏偏慢。项目能否落地，取决于海域规划、生态环评、渔业协调、送出通道、电价消纳多重条件共同满足。</p>
+<p><b>四、行业运行基本面</b></p>
+<p><b>4.1 资源潜力与标志性示范项目进展</b></p>
+<p>全国潮间带滩涂资源分布以江苏、山东、浙江为主，各省份在海洋国土空间规划中划定可用于新能源开发的滩涂区块，无全国统一海上光伏技术可开发量官方数据。滩涂光伏是当前落地主力，漂浮式海上光伏以试点验证为主。</p>
+<p>国内代表性海上光伏示范及规模化项目：</p>
+<ol><li><b>江苏滩涂光伏基地</b>：依托沿海宽阔潮间带布局，是国内最早实现规模化滩涂光伏开发的区域，以桩基固定式方案为主，配套沿海送出通道，部分项目采用渔光融合模式，兼顾滩涂养殖与光伏发电。</li><li><b>山东半岛海上光伏示范项目</b>：包含滩涂固定式、内湾漂浮式试点，部分项目配套海上风电基地，打造风光同场一体化示范，验证同一海域多能源协同开发模式。</li><li><b>浙江近海渔光融合海上光伏项目</b>：依托港湾遮蔽海域，在可控风浪条件下开展漂浮式光伏试点，同步保留浅海养殖功能，探索立体复合开发模式。</li><li><b>广东风光同场示范项目</b>：在已批复海上风电基地内配套海上光伏，共用海上升压站与送出海缆，验证风光联合送出的经济性。</li></ol>
+<p>从公开可核验的项目个体信息看，截至2026年10月，国内已投运、建成及在建的代表性海上光伏项目，其业主、海域区位、装机规模与技术路线如下表所示。这些项目构成了海上光伏由示范走向规模化的实物量基础。</p>
+<p><b>表1 国内代表性海上光伏项目进展（截至2026年10月）</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70568984_a19ca954c1c15ecd.webp" alt="" loading="lazy"></p>
+<p>资料来源：国家能源局、山东省人民政府、山东省发展和改革委员会、江苏省人民政府、国务院国资委、上市公司公告及公开招标信息；规模单位为兆瓦，按交流侧口径列示，括号内为直流侧口径。</p>
+<p>上述项目持续验证两条路线的工程方案、防腐寿命、抗台风能力、渔业协调机制，整体来看滩涂固定式路线已经具备规模化复制条件，漂浮式海上光伏仍处在工程验证、可靠性长期观测阶段。</p>
+<p><b>4.2 规划目标与关键结论（官方口径）</b></p>
+<p>依据《可再生能源发展"十五五"规划》，海上光伏作为沿海新能源补充方向，不设置全国统一硬性装机指标，采用"因地制宜、分省布局"原则，装机规模由各省沿海资源条件、海域管控、消纳能力自主确定。</p>
+<p>官方公开口径下，海上光伏当前处于"滩涂路线可规模化、漂浮式路线示范验证、风光同场是优先鼓励方向"的阶段。金融机构跟踪行业景气度，应以省级海上光伏规划发布、海域竞争性配置公告、滩涂项目核准开工、风光同场一体化项目招标、漂浮式示范项目并网等实物量信号为准，而非依赖无官方来源的市场规模测算。</p>
+<p>从统计口径看，国家能源局按月发布的全国电力统计数据及季度新闻发布会口径，仅按太阳能发电（集中式、分布式）分类披露，未单列"海上光伏"装机容量。海上光伏并网容量目前包含在集中式光伏口径之内，官方未披露其占比，也没有全国统一的海上光伏累计装机统计值。市场上流传的海上光伏装机总量数据，多为机构或媒体估算，使用时必须核验口径与来源，不宜直接作为行业规模基准。</p>
+<p>可作为规模参照的官方数据是全国光伏总体盘子。国家能源局披露，截至2026年6月底，全国光伏发电装机容量12.72亿千瓦，同比增长15.8%，其中集中式光伏6.96亿千瓦、分布式光伏5.76亿千瓦；2026年上半年全国光伏新增并网7177万千瓦，其中集中式光伏2955万千瓦、分布式光伏4222万千瓦。海上光伏在全国光伏装机中的占比仍处于很低水平。</p>
+<p>省级官方规划是目前唯一可核验的海上光伏规模目标来源。江苏省《海上光伏开发建设实施方案（2025—2030年）》布局60个海上光伏项目场址，重点利用海上风电场区、围海养殖区和电厂确权温排水区，其中连云港13个场址、总装机535万千瓦，灌云县3个场址、145万千瓦；此前的2023—2027年实施方案明确，到2027年全省海上光伏累计并网规模达到1000万千瓦左右。山东省2022年通过竞争性配置确定首批10个海上光伏项目，总规模1125万千瓦、总投资约675亿元，并提出打造"环渤海、沿黄海"双千万千瓦级海上光伏基地、总装机4200万千瓦。其余沿海省份多以专项规划或年度竞争性配置方式分批释放规模，尚未全部公布量化总量目标。</p>
+<p>从已投运实物量看，依据表1所列公开项目，已实现全容量并网的代表性项目为东营HG14（1000兆瓦）、烟台招远（400兆瓦）、启东吕四一期（400兆瓦），合计1800兆瓦；中核田湾200万千瓦滩涂光伏示范项目采取分批并网，2026年10月并网容量突破1000兆瓦。上述规模为公开项目加总，非官方统计值，仅用于判断量级，不宜直接作为全国海上光伏装机总量引用。</p>
+<p>综合看，海上光伏行业体量仍处于由百万千瓦级实投项目向省级规划千万千瓦级目标推进的阶段，全国实际并网规模距离规划目标仍有较大差距。金融机构跟踪行业景气度，应以省级规划的场址规模、单个项目的核准与并网进度、风光同场基地招标结果作为标尺，避免以规划总量替代实际投产。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
