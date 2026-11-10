@@ -6,7 +6,10 @@
   var root = new URL('../../', location.href);           // site root (notes/<slug>/ -> ../../)
   var from = new URLSearchParams(location.search).get('from') || '';
   var target = null;
-  if (/^track\/[a-z0-9-]+(\/[a-z0-9-]+)*\/?$/.test(from)) {
+  var reading = /^reading\/[a-z0-9-]+\/?$/.test(from);   // temporary reading tabs (reading/<slug>/)
+  if (reading) {
+    target = new URL(from.replace(/\/?$/, '/'), root);
+  } else if (/^track\/[a-z0-9-]+(\/[a-z0-9-]+)*\/?$/.test(from)) {
     target = new URL(from.replace(/\/?$/, '/') + '#weekly-sources', root);
   } else if (document.referrer) {
     try {
@@ -16,8 +19,8 @@
   }
   if (!target) return;
   a.href = target.href;
-  a.textContent = '← 返回周报';
-  a.setAttribute('aria-label', '返回周报');
+  a.textContent = reading ? '← 返回阅读列表' : '← 返回周报';
+  a.setAttribute('aria-label', reading ? '返回阅读列表' : '返回周报');
   // prefer real history back so the weekly keeps its scroll position
   a.addEventListener('click', function (e) {
     try {
