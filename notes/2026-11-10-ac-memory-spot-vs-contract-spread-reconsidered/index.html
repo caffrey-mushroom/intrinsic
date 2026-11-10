@@ -1,0 +1,206 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.10 | AC | Memory | Memory Spot vs Contract Spread Reconsidered</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.10 | AC | Memory | Memory Spot vs Contract Spread Reconsidered</h1>
+<p class="orig">原标题：存储合约价与现货价剪刀差的信号意义再审视</p>
+<p class="tags">#DRAM #现货 #合约价</p>
+<p class="meta">AceCamp · 2026-11-10 · article 70569072</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>11月初DDR5白片现货比合约价低四成多，但TrendForce仍预计4Q26常规DRAM合约价环比+10–15%，服务器RDIMM +18–23%。</li>
+<li>真正跌破合约价的只是白片和利基品，品牌DDR4现货仍比合约价高约71%。</li>
+<li>复盘历史，有预警意义的是同规格现货持续低于合约价，而不是溢价收窄。</li>
+<li>今年溢价收窄是因为合约价追上来，而不是现货跌下去。</li>
+<li>HBM挤占产能、DDR4停产和长约扩张让现货变成剩余需求的价格，长约锁住越多，现货波动越大。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>现货跌破合约价的品类边界在哪里；</li><li>历史上现货与合约价拐点的先后关系；</li><li>长约、DDR4停产与HBM如何改变现货信号；</li><li>原厂与模组厂利润为何分化；</li><li>如何分层跟踪周期拐点。</li></ol>
+<p>11月初，DDR5白片现货已比合约价低了四成多，市场开始讨论存储涨价是不是到头了。可同一个季度，南亚科毛利率创下85.7%的新高，佰维存储的单季利润却比上季少了六成。同样是存储公司，面对同一组价格，结果却截然相反。问题出在哪里？得先弄清楚现货价格到底在反映什么。</p>
+<h2>一、跌破合约价的只是白片和利基品，不是整个存储市场</h2>
+<p><b>合约价还在涨，只是涨得慢了。</b>TrendForce在9月30日发布的季度展望中预计，4Q26常规DRAM合约价环比还会上涨10%到15%；其中，服务器DDR5 RDIMM涨18%到23%，手机LPDDR只涨0%到5%。</p>
+<p><b>现货这边则明显松动。</b>据MemoryIndex和TrendForce现货板，11月5日品牌DDR5 16Gb现货报60.67美元，相对10月50美元左右的合约价，溢价只剩约21%到26%，而在2025年底到2026年初，这个溢价常在35%以上，甚至达到过80%。更弱的是渠道里流通的eTT白片，报价只有28.8到29.07美元，比合约价低了四成多。</p>
+<p><b>这两组数字放在一起，很容易得出"现货跌破合约价，涨价周期快结束了"的结论。但这个推理有一个前提：现货和合约说的是同一种货。实际上并不是。</b></p>
+<p><b>第一，真正跌破合约价的品类很有限。</b>TrendForce在7月的利基型DRAM报告里确认过利基型产品出现现货低于合约的倒挂，eTT白片和零售模组也在合约价之下。但品牌DDR4完全没松：DDR4 8Gb现货10月报47.11美元，合约价27.5美元，溢价仍有约71%。TrendForce 11月4日的周报说得很清楚：DDR4现货仍高于原厂报价，买方因为预期价格会修正而观望，成交量明显萎缩。也就是说，DDR4现货"高价但没人买"，并不是"价格崩了"。</p>
+<p><b>第二，模组价格的下跌不能直接换算成颗粒价格的下跌。</b>今年4月，部分DDR5 32GB UDIMM模组从约500美元跌到400美元以内，当时不少人据此推断上游颗粒也跌了两成。但低规格颗粒、不同品牌、不同用途的产品，价格本来就不在一个体系里，不能混在一起算。同一时期，三星DDR5 64GB 5600 RDIMM的合约报价约为900美元，而原封现货一度被炒到2500美元。现货的下跌，挤掉的主要是这部分投机溢价，并不意味着原厂的大宗成交在转弱。</p>
+<p>所以，所谓"现货"其实是好几层价格叠在一起：同规格颗粒的现货与合约之差、模组零售价与颗粒采购价之差、原厂原封货与拆机条或低等级颗粒之差、DDR4与DDR5之间的跨代价差。它们各自反映不同的供需关系。<b>把这几种价差当成一个信号去推"合约见顶"，问题不在信号本身，而在读法错了</b>。</p>
+<p>这就引出本文的核心问题：<b>现货价格对合约价的预警作用，究竟是失效了，还是换了预警对象？本文的看法是后者。</b>下面先用历史数据验证现货过去是否真的有效，再分析这一轮为什么不同，最后看它对不同公司意味着什么。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569072_278b1cf423b18d42.webp" alt="" loading="lazy"></p>
+<h2>二、过去三轮周期现货都能提前报警，这一轮为什么没有</h2>
+<p><b>要判断现货信号是否失效，先得确认它过去是否有效。</b>用DRAMeXchange的DDR4 8Gb价格序列回看三轮周期，结论是：过去，现货确实比合约价先转向。</p>
+<p><b>2016到2018年</b>那一轮，DDR4 8Gb现货在这组序列中的最高读数出现在2018年1月9日，为9.65美元，之后逐季走低，6月底8.065美元，12月底6.352美元。2018年6月底现货跌破合约价，合约价的回落晚于现货。2019年DRAM均价大幅下跌。</p>
+<p><b>2020到2021年</b>那一轮的时间差更清楚。现货在2021年3月底报5.08美元，随后回落，9月底已跌到3.657美元。据TrendForce的数据，10月29日DDR4 8Gb PC DRAM平均合约价为3.71美元，较9月30日下跌9.51%，是2020年10月以来首次月度下跌；2022年1月合约价又跌了8.09%，至3.41美元。从现货高点到合约转跌，中间隔了大约七个月。</p>
+<p><b>2022到2023年</b>的下行期，看的是价差而不是价格本身。2022年12月现货2.00美元，低于合约价2.21美元；到2023年6月，现货1.50美元，已经反超合约价1.36美元。但要注意，现货价格自身并没有在6月见底，8月底还在1.45美元左右，9月才回升。合约价则在2023年8到9月见底，为1.30美元，随后回升到2024年4月的2.10美元。所以这一轮能证明的是：价差由负转正，比合约见底早了两到三个月。这和"现货价格本身领先"不是一回事。</p>
+<p>三轮放在一起，可以总结出一条规律：<b>真正有预警意义的不是"溢价收窄"，而是"同规格现货持续低于合约价"</b>。道理并不复杂。现货还在合约价之上时，溢价收窄往往只是合约价在追赶；只有当同规格的现货持续低于合约价，才说明边际买家已经不愿意按合约价买货，合约价才会跟着往下走。笔者10月21日报告中复盘三轮周期时分析，涨价放缓与价格见顶之间往往隔着好几个季度；历史复盘是事件级的，不能直接换算成一个平均领先期。所以下图只给时间差的区间，不给精确均值。</p>
+<p><b>用这条规律回头看今年，就能理解为什么溢价收窄不等于见顶。</b>DRAMeXchange数据显示，DDR4 8Gb合约价从2025年4月起连涨11个月，2026年3月持平在13美元，4月起又恢复上涨，5月到10月从20美元涨到27.5美元，累计涨了37.5%。同期DDR4的现货溢价从2月的约152%（现货32.8美元，合约13美元）收窄到10月的71%左右。<b>溢价收窄的原因是合约价追上来了，而不是现货跌下去了</b>，和2018年那种"现货先跌、合约后跟"的结构正好相反。</p>
+<p><b>但今年也确实出现了历史规律解释不了的现象。</b>CFM闪存市场3月31日确认渠道现货先于合约价见顶，4月华强北消费级32GB DDR5单周从约3000元跌到1950元。可按TrendForce的估计，2Q26常规DRAM合约价环比仍涨了58%到63%，3Q26又涨了13%到18%。在本文回溯的三轮样本里，还没有出现过渠道现货见顶之后，合约价又连续大涨两个季度的情况。6月2日报告中把这一段定性为"归位"而不是"崩盘"：渠道溢价从Q1峰值的1.4到2.1倍压到1.0到1.3倍，靠的是合约价从下方追上来。半年过去，这个判断得到了验证。剩下的问题是：<b>为什么这一次现货见顶没有带动合约价下跌？</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569072_0645ed927f0c2517.webp" alt="" loading="lazy"></p>
+<h2>三、长约、停产和HBM，让现货变成了"剩余需求"的价格</h2>
+<p><b>答案在供给和合同结构的变化上。</b>有三个变化同时在起作用，每一个都在削弱现货对合约价的传导。</p>
+<p><b>第一个变化是HBM对产能的占用，而且这种占用很难回退。</b>据产业链调研，HBM占DRAM投片的比例从2025年的18%升到2026年的22%，2027年将超过30%。海外大厂一半以上的产线已改造为DDR5或HBM，只能向更高端升级，不能再改回去。这意味着现货松动时，原厂不会像过去那样很快把产能调回通用产品去抢量，供给端缺少了一个让价格下跌的推手。但这个约束也有边界：今年4月前后，通用DRAM的利润已经一度好过HBM，原厂继续把产能转向HBM的动力在减弱。所以HBM挤占更像是一个已经形成的存量约束，不宜按比例线性往后推。</p>
+<p><b>第二个变化是DDR4停产，它让DDR4的价格和整个周期脱了钩。</b>产业链调研显示，2025年底DDR4每月缺口约10万片，即便韩厂推迟停产，缺口仍超过7万片；DDR4的产能占比从年底的20%降到2026年的10%以内。DDR3和DDR4的涨价是供给减少造成的，不是需求变好了。南亚科、华邦电这类主攻利基型产品的台厂，正是靠DDR4接住了大厂退出后留下的客户。<b>DDR4的溢价反映的是停产带来的稀缺，不能拿来判断全行业周期</b>。如果把它和DDR5现货放进同一个"现货指数"，信号自然会失真。</p>
+<p><b>第三个变化是长约扩张，这也是最容易被误读的一点。</b>据产业链调研估计，HBM的长约覆盖率超过90%，AI服务器DRAM约为50%到60%，传统DRAM和NAND不到20%。长约的核心是"锁量不锁价"：价格大多在一个很宽的上下限区间内按季重谈。美光披露的口径更具体：按协议收入计，约四分之三的战略客户协议有明确的定价框架，以价格上下限为主，最大的几份协议一般是五年期。TrendForce在9月30日的展望里也提到，由于长约约定的定价机制，部分供应商4Q26的服务器DRAM涨幅会落后于市场均值。这说明长约已经在实际影响成交价的涨跌幅度。</p>
+<p>把这三点放在一起，就能推出一个不太直观的结论：<b>长约锁住的需求越多，留给现货市场的需求越少，现货价格反而波动得越厉害</b>。逻辑是这样的：大客户先用长约锁住一半以上的需求，不够的部分再去公开市场补；原厂流入现货市场的，往往是零散的剩余货源。于是，整个市场的需求波动被集中挤到消费和渠道这一小块。MLCC市场存在类似的"样本偏差"：AI直供链的高容量料根本不进现货池，华强北的报价只代表中低端通用品。DRAM现在也是这种情况。</p>
+<p><b>所以，现货信号并没有失效，而是预警对象变了。</b>它过去反映的是整个市场的供需，现在主要反映没被长约覆盖的那部分需求，也就是消费电子、渠道库存和第三方模组厂。对这些环节，现货的变化不但仍然有效，而且传导得更快、更直接。下一章用财报来验证这个判断。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569072_71461df27940bfbe.webp" alt="" loading="lazy"></p>
+<h2>四、同一轮涨价，原厂和模组厂的利润正在背道而驰</h2>
+<p>如果上面的判断成立，应该能在财报里看到两种完全不同的利润走势：<b>靠合约定价的原厂继续受益，而按市场价采购的模组厂先受冲击。</b>三季报的数据正好印证了这一点。</p>
+<p><b>先看原厂一侧</b>，最典型的样本是南亚科。据公司10月12日的法说会，3Q26营收1336.49亿新台币，环比增长61.9%；毛利率升到85.7%，环比提高6.2个百分点。原因是部分旧的长期供货合约在6月底到期，7月起按新的合约价执行，ASP单季上涨超过60%。也就是说，<b>在现货最疲软的那个季度，南亚科恰好迎来了长约重新定价</b>，现货回落几乎没有影响到它的利润。10月营收464.76亿新台币，连续12个月创新高，说明这种重定价的效果还在延续。</p>
+<p><b>再看模组厂一侧</b>，走势完全相反。佰维存储三季报显示，Q3营收61.42亿元，环比下降29.89%；归母净利16.02亿元，环比下降62.45%。资产负债表的变化更值得注意：期末存货从上年末的78.68亿元升到240.53亿元，预付款项从1.55亿元升到73.75亿元，前三季经营现金流为负100.41亿元。德明利的利润曲线也类似：一季度归母净利33.46亿元，二季度回落到26.71亿元，三季度为27.29亿元，高点停在一季度，正好在渠道现货见顶前后。</p>
+<p><b>为什么模组厂受影响更早、更大？关键在于成本和售价错了位。</b>第三方模组厂在原厂那里拿货的优先级最低，处境和渠道商、现货商差不多，拿不到原厂的长期价格和供应保障。上半年，它们还能用早期的低价库存支撑毛利；但低价库存最迟在Q2基本用完，Q3开始，高价采购的库存就在侵蚀毛利。佰维存储的存货和预付款同时大幅增加，说明它是在价格高位锁货。如果现货继续走弱，这批库存的毛利空间会最先被压缩。从本轮几家公司的情况看，现货见顶到模组厂利润见顶，大约相差一个季度。不过样本有限，这还只是本轮观察到的现象，不能当成稳定规律。</p>
+<p><b>模组厂内部也在分化，江波龙就是一个反例。</b>三季报显示，Q3归母净利37.45亿元，前三季毛利率53.55%，单季经营现金流转正，为8.77亿元；按三季报中的负债和总资产计算，资产负债率为45.14%。这说明同样面对现货回落，企业级产品的占比、自研主控和库存管理，决定了哪家模组厂受冲击更大。</p>
+<p>10月16日报告中的判断是：涨价的一阶导仍为正，二阶导已经转负；长约压低的是利润峰值，延长的是利润停留在高位的时间。本文在此基础上补充一点：现货回落主要冲击的是长约之外那一小部分需求，对南亚科这类在合同到期后重新定价的公司，短期反而是利好。但资本市场并没有做这种区分。佰维存储三季报发布次日跌超14%，德明利、江波龙跟跌；南亚科股价从10月12日法说会前的532元一路跌到11月3日的411元，波段跌幅22.7%。<b>当市场用同一个现货信号给整条产业链定价时，原厂和模组厂之间的定价偏差，很可能成为下一阶段超额收益的来源</b>。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569072_57131d6d5b647c9e.webp" alt="" loading="lazy"></p>
+<h2>五、存储周期是否转向，要看这三层信号依次出现</h2>
+<p>既然现货信号有了分层，验证本文的判断也要分层看：信号是否从最底层逐级向上传导。</p>
+<p><b>第一层是消费和白片。</b>如果eTT和利基型现货连续两个月低于合约价并且价差还在扩大，模组厂"成本高、售价低"的压力会继续体现在Q4报表里。这一层出问题，主要影响的是模组厂。<b>第二层是品牌DDR5。</b>如果16Gb品牌现货的溢价跌破10%甚至转负，这种压力就会进入PC厂1Q27的合约谈判，这是"现货信号向上传导"的第一个实质节点。<b>第三层是服务器。</b>调研显示4Q26服务器DRAM的试探性报价拟涨15%到20%，能否落地并延续到1Q27，决定了原厂的利润还能在高位停多久。</p>
+<p><b>证伪条件。</b>如果eTT白片的折价在一两个月内传导到品牌DDR5，同时服务器合约的试探报价明显落空，那就说明剩余需求池的波动已经穿透长约，现货信号重新变回全行业的拐点信号。到那时，原厂和模组厂的利润会一起下行，分化的逻辑也就不成立了。至少从11月初的数据看，还没有这种迹象。</p>
+<p>另外还有两个时间节点值得留意。按产业链的惯例，NAND和非HBM DRAM的2027年长约一般在12月前确定；如果签约进度推迟，或者客户转签短约，说明长约的缓冲作用开始减弱。另一个是SK海力士取消部分长约价格上限一事，目前仍是媒体报道，有待官方确认。在这些信号出现之前，现货回落更多是渠道和模组厂的问题，还不足以说明整个存储周期已经转向。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569072_69066a4201d01697.webp" alt="" loading="lazy"></p>
+<p><b>以上内容不构成任何投资建议，请风险自担。</b></p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

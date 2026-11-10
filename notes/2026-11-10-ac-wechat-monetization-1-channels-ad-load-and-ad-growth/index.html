@@ -1,0 +1,207 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.10 | AC | Internet | WeChat Monetization (1): Channels Ad Load and Ad Growth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.10 | AC | Internet | WeChat Monetization (1): Channels Ad Load and Ad Growth</h1>
+<p class="orig">原标题：微信商业化调研（1）：视频号广告加载率、投放效率与微信广告增长</p>
+<p class="tags">#腾讯 #视频号 #广告</p>
+<p class="meta">AceCamp · 2026-11-10 · article 70569081</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>视频号DAU约6.4–6.5亿，人均时长约76分钟，总流量同比约+20%。</li>
+<li>算法推荐已贡献近六成播放量，承载的广告密度高于社交推荐和私域流量。</li>
+<li>抖音日均VV约是视频号的三倍，算法流量占比预计70–80%以上。</li>
+<li>视频号综合Ad Load较2025年4%出头明显提高。</li>
+<li>腾讯升级推荐算法和智能投放工具后，广告主平均ROI提升约10%。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>视频号总流量同比增长约20%。效果广告收入增量主要来自流量增长和广告加载率提升。算法推荐已贡献视频号近六成播放量，能承载的广告密度高于社交推荐和私域流量。腾讯广告升级推荐算法、推广智能投放工具后，广告主平均ROI提升约10%。微信广告的增量还来自小程序、搜一搜和泛内循环投放。</p>
+<p><b>以下为专家观点</b></p>
+<p><b>1. 请分享一下视频号近两年的核心经营数据，包括DAU、人均使用时长和广告收入的变化情况？</b></p>
+<p>当前视频号的日活跃用户约为6.4亿至6.5亿，该数据采用的统计口径是用户单次消费时长超过15秒。若采用更宽松的口径，即用户点击即计入，则DAU可达6.67亿至6.8亿。目前，人均使用时长大约为76分钟。从年同比增速来看，总流量（DAU与时长的乘积）增速约为20%，其中DAU增速约为10%，时长增速略高于10%。在广告收入方面，业务仍处于增长阶段。</p>
+<p><b>2. 视频号当前的总VV（视频播放量）表现如何，其增长来源构成是怎样的？</b></p>
+<p>目前，视频号整体增速与总流量增速基本一致。从VV的来源构成来看，主要可以分为三部分：首先是算法推荐，这部分流量的占比持续提升，其次是社交推荐，即通过朋友点赞等方式分发的内容，这部分在业务冷启动阶段曾是核心，占比一度达到40%-50%，但现在已下降，其份额正逐步让渡给算法推荐；最后是私域流量，包括基于关注、分享等场景产生的播放。</p>
+<p><b>3. 视频号的VV构成与抖音有何差异，以及不同来源的VV在商业化潜力上有何不同？</b></p>
+<p>抖音的日均VV体量大约是视频号的三倍，其分发机制更为中心化，基于算法推荐的流量占比预计在70-80%以上。关于商业化潜力，并非只有算法推荐流可以进行商业化。但算法推荐流的商业化空间和广告加载率（Ad Load）确实更高。相比之下，基于社交推荐和私域流量的场景，由于关系属性较强，更适合电商、直播打赏等变现方式，若强行插入广告，其Ad Load会受到较大限制。</p>
+<p><b>4. 视频号当前的Ad Load（广告加载率）水平是怎样的，不同场景下的Ad Load有何差异？</b></p>
+<p>目前视频号的综合Ad Load约相较于2025年4%出头的水平有显著增长。这是一个综合结果值，在不同消费场景和用户群体中存在差异。例如，新用户会受到一定的保护，其Ad Load较低；而重度用户的Ad Load则可能被调得更高。具体到不同场景，社交推荐（如朋友点赞）和私域场景的Ad Load较低，即使算上评论区广告，也仅为2-3个百分点。而在公域的算法推荐流中，Ad Load已提升至较高水平，平均可达到7-8个百分点，至少也有6-7个百分点。</p>
+<p><b>5. 视频号与抖音在Ad Load水平及未来提升空间上存在哪些差异？</b></p>
+<p>抖音的Ad Load如果包含原生广告等形式，已经达到了20%出头的水平，基本上每浏览四条内容就会出现一条商业化内容，这可能已接近其天花板。对于视频号而言，算法推荐流的Ad Load目前为6%-7%，仍有提升空间。行业内通常认为10%是一个分界线，但并非绝对的天花板，主要取决于平台对用户体验影响的承受能力。未来，除了提升Ad Load，通过短剧等原生内容将消费性质内容转化为商业价值，也是扩大商业化空间的另一种方式，这对两个平台而言都是共通的路径。</p>
+<p><b>6. 视频号广告的eCPM（千次展示有效成本）在过去两年的趋势如何，其主要增长驱动力是什么？</b></p>
+<p>视频号的广告价格在过去一年整体变化不大。合约售卖的广告位价格可以达到40多元，但目前主流的效果广告定价大约在27-28元。价格保持相对平稳是两个因素相互抵消的结果：一方面，随着2026年算法和广告基础设施的升级，部分广告位的价格有所提升；另一方面，由于Ad Load的快速提升导致广告位供给大幅增加，从供需关系角度抑制了价格的上涨。因此，广告收入的增长主要来源于流量增长和Ad Load的提升，而非价格驱动。</p>
+<p><b>7. 视频号的eCPM与抖音相比处于什么水平？</b></p>
+<p>抖音的eCPM同样保持稳定，但价格略高于视频号。</p>
+<p><b>8. 从业务执行层面，视频号是如何平衡Ad Load提升与广告收入增长之间的关系的？</b></p>
+<p>视频号的商业化涉及两个协同但又相互博弈的团队：负责业务的微信视频号团队和负责商业化的腾讯广告团队。广告团队的目标是希望Ad Load越高越好以增加收入，而业务团队则需要确保用户的核心体验指标（如使用时长、留存率、跳出率等）不受Ad Load过高带来的负面影响。这是一个博弈过程。同时，业务团队也需要通过收入来证明其业务价值，因此也会致力于优化用户生命周期价值等指标，从而为承载更高的Ad Load提供支持。这是一种在共同目标下，过程中存在博弈与平衡的状态。</p>
+<p><b>9. 微信内部业务团队与商业化团队在提升Ad Load（广告加载率）方面是如何协调与博弈的？可否分享具体的合作案例与策略？</b></p>
+<p>微信内部业务团队与商业化团队在提升Ad Load方面确实存在一个博弈过程。业务团队并非完全抵触提升Ad Load，因为业务本身也需要通过创收来证明其价值，并承担相应的OKR。因此，业务团队有动力提升Ad Load，但同时也要兼顾用户体验指标，如流程优化、跳出率和用户人均消费时长等，确保这些指标不受Ad Load提升的负面影响。 通常，两个团队会以季度为单位设定一个Ad Load的目标值，但并不会立即调整到位，而是在过程中动态调整。例如，在“双十一”等营销节点，广告库存需求上升，业务团队可能会在一定程度上牺牲部分用户体验价值以满足营销诉求。反之，如果业务团队观察到用户时长或留存率出现显著下滑，也可以要求商业化团队相应调低Ad Load。此外，双方还会采取分桶测试等精细化策略，例如对新用户或轻度消费用户设置较低的Ad Load以进行保护。这是一个双方设定共同目标，并在过程中允许根据实际情况进行双向调整与退让的协作模式。</p>
+<p><b>10. 抖音和快手的商业化团队与业务团队的组织架构是否也采用类似的博弈模式？</b></p>
+<p>抖音的组织架构与此类似，其商业化部门（巨量引擎）与抖音业务部门也是分开的。</p>
+<p><b>11. 展望未来两至三年（如2027-2028年），微信广告收入的增长区间预计如何？其主要的增长驱动力将来自哪些指标？</b></p>
+<p>预计微信广告的增速将持续高于腾讯广告整体大盘，其中视频号广告是核心增长引擎，小程序广告和搜一搜广告的增速也表现良好。未来主要的增长动力来自于以下几个方面： 第一，广告加载率（Ad Load）仍有显著的提升空间。第二，流量增长。尽管用户人均使用时长面临分流压力，流量仍有增长空间。 第三，广告基础设施的完善。特别是智能投放产品的渗透率提升，将进一步提高广告的ROI，从而吸引广告主提高出价或增加预算。第四，原生商业内容生态的构建。视频号正在积极发展自身的商业生态，包括微信小店、微信电商、本地生活、视频号原生游戏以及端原生短剧等。这些商业内容生态的丰富将增强对广告主的吸引力，类似于抖音电商闭环对其广告业务的带动作用。</p>
+<p><b>12. 微信广告内部各主要业务（如视频号、朋友圈、搜一搜、公众号、小程序）当前的收入体量和增长情况如何？</b></p>
+<p>2025年，整个微信广告的收入规模为900多亿元，已占腾讯广告总收入的70%。 具体到各业务： 视频号广告是第一大广告媒体，2025年年底其收入已超过朋友圈，接近500亿元。朋友圈广告是第二大广告媒体，收入规模约400亿元，目前年同比增速较为平稳，约为7-8个百分点，除非上调广告条数上限，否则难有大幅增长。 搜一搜广告增速非常可观，达到40%左右，但绝对值相对较小，2025年收入体量约50亿元。公众号广告在今年（2026年）下半年增速不错。 小程序广告的收入体量接近80亿元，2025年增速也较快，达到了35%左右。</p>
+<p><b>13. 2026年宏观经济环境疲软对视频号广告主的预算有何影响？视频号广告业务是否因其内生增长动力而抵御了宏观压力？</b></p>
+<p>2026年的宏观环境对整个广告市场造成了压力，这种压力无疑也传导到了视频号广告业务。然而，视频号乃至整个微信广告业务依然实现了逆势增长，其增速显著高于市场大盘。 这主要得益于几个因素：首先，视频号自身的内生增长动力非常强劲，在流量、广告库存释放、基础设施和内容生态建设方面均有显著进展。 其次，广告主行业表现出现分化。虽然传统电商平台（如京东、淘宝）的广告投放增速放缓或停滞，但短剧、漫剧等新兴行业的需求却出现了爆发式增长。腾讯广告之所以能在大盘疲软的情况下实现逆势增长，一方面是由于自身效率的提升和视频号等强劲增长引擎的拉动；另一方面则是因为成功抓住了增长型行业的份额，例如在短剧、微信闭环电商、小游戏等增速良好的行业中表现出色。</p>
+<p><b>14. 从广告主角度看，过去一两年在微信平台投放广告的ROI、点击率、转化率等效果指标有何变化？</b></p>
+<p>广告主的投放效果因行业和个体差异而异，但整体而言，腾讯广告平台的投放效率有比较明显的提升。这主要源于以下几个层面：第一，广告推荐算法的升级。自2025年腾讯广告升级至3.0版本后，底层采用了基于大模型的生成式推荐算法，相较于传统的基于规则匹配的推荐方式，精准度和效率更高，为广告效果带来了至少5%至10%的提效增量。第二，广告投放工具的普及。今年（2026年）推出的妙思Pro、AdBody等投放Agent工具，极大地提升了中小广告主的投放效率。同时，用于AIGC素材自动生成的妙思工具渗透率已达到40-50%，而主推的AIM+智能投放产品渗透率也超过了60%。第三，针对重点行业的垂直化应用。在游戏、短剧、线索类行业以及微信小店等重点领域，上述工具的垂直化应用效果显著，这些行业的广告主可以明显感受到ROI的提升。</p>
+<p><b>15. 综合来看，在平台提供多项提效工具且eCPM未显著上涨的情况下，广告主近一年的平均ROI或ROAS是否有所增长？</b></p>
+<p>是的，广告主的ROI肯定是有增长的。</p>
+<p><b>16. 与抖音平台相比，广告主在抖音上的ROI绝对水平如何？以及近两年抖音平台广告主的ROI是呈现提升还是下降趋势？</b></p>
+<p>关于抖音平台广告主ROI的具体数据和变化趋势，无法得知。</p>
+<p><b>17. 从广告主的角度来看，微信和抖音在广告投放上各有哪些优势，广告主会如何根据自身定位进行选择？</b></p>
+<p>不同定位的广告主其体感会有差异。对于追求高ROI且日均消耗在数千至一万元的小规模电商广告主而言，微信小店是比较适合的选择。然而，对于日均消耗达数十万甚至百万元以上、旨在扩大业务规模的广告主，抖音仍然是首选平台，因为微信的流量可能无法满足其消化需求。尽管单次广告投放的ROI在抖音上可能很高，但微信生态具备私域沉淀和复购的优势。对于追求长期生意价值的小商家，在微信生态内可以获得更高的ROI。例如，一个月销售额在十几二十万元的商家可以在微信生态内实现高ROI，但若要实现数千万级别的月销售额并同时保持高ROI，则较为困难。</p>
+<p><b>18. 微信的广告主结构是否因此更偏向长尾？另外，不同行业的广告主在微信和抖音平台上的投放表现有何差异？</b></p>
+<p>上述关于电商广告主的比较主要局限于微信小店与抖音电商。在其他行业，情况有所不同。例如，在游戏行业，特别是微信小游戏，其在微信平台上的投放效果不亚于抖音，具有自身优势。而在短剧行业，字节跳动旗下的红果等平台及其生态和广告系统表现更佳。因此，不同行业的广告投放效果需要分开来看。</p>
+<p><b>19. 微信广告业务中“泛内循环”和外循环广告的收入体量、增长速度以及定义是怎样的？</b></p>
+<p>微信的广告循环概念与抖音有所不同，微信称之为“泛内循环”。抖音的“内循环”特指最终成交发生在抖音小店的广告。而微信的“泛内循环”范畴更广，涵盖了所有不跳出微信生态的广告形式，包括推广微信小店、小程序、小游戏以及微信客服等。按照当前口径，泛内循环广告的收入占比约为50%。如果仅统计推广微信小店的广告，其占比大约为20%多，低于抖音的内循环比例。总体而言，泛内循环广告的增速相对更快，其中微信小店和短剧等小程序推广是增长较为显著且受重点关注的行业。</p>
+<p><b>20. 在微信生态内，投放微信小店的广告主所获得的ROI是否优于投放外循环的广告主？这是否会反映为更高的eCPM？</b></p>
+<p>将投放外链至淘宝成交的广告与投放微信小店的广告进行直接的ROI比较没有太大意义。但从平台角度看，官方支持并鼓励商家进行内循环投放。内循环投放不仅链路完整，还能帮助商家进行私域沉淀，用户的订单信息会留在平台，便于后续的复购运营，因此综合ROI通常会更高。反映在广告系统上，这类内循环广告的eCPM也确实会比投向阿里UD、CID等外链的广告更高。</p>
+<p><b>21. 相较于推荐算法已经非常成熟的抖音，AI技术的发展是否能帮助微信在推荐精准度上缩小差距？</b></p>
+<p>是的，微信在推荐算法上的提升空间远大于抖音。抖音的推荐精准度好比从90分提升到95分，而微信则是从60分提升到80分，提升的幅度会更显著。不过，推荐精准度是一个综合性的系统工程，不仅取决于算法，还与数据和算力密切相关。尽管提升空间更大，但从绝对水平来看，抖音在推荐效果、用户画像和行为数据丰富度等方面目前仍优于公司。以Meta为例，其广告系统在应用AI技术后，即便原有基础已经很好，仍在2025年实现了20%的效率提升，显示了AI技术的巨大潜力。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

@@ -1,0 +1,286 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.10 | GP | Datacenter | Ex-Oracle OCI VP on Stalled GPU Rollouts and Neocloud Delivery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.10 | GP | Datacenter | Ex-Oracle OCI VP on Stalled GPU Rollouts and Neocloud Delivery</h1>
+<p class="orig">原标题：Data Centers: Former Oracle OCI VP and Google Fleet Operations Head on Stalled GPU Rollouts, Neocloud Delivery, and Capex Payback</p>
+<p class="tags">#甲骨文 #Neocloud #capex</p>
+<p class="meta">GuidePoint · 2026-11-10</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>专家认为电力是最大约束，并网、许可、变电站和输电设备往往比建机房本身更慢。</li>
+<li>光有资金解决不了这些监管和供应链障碍。</li>
+<li>电力、网络、冷却、劳动力和GPU供应链都可能推迟进度，已开工项目比仍在审批的更有优势。</li>
+<li>专家不认为大型项目会出现灾难性延期，但交付日期会移动。</li>
+<li>如果未来一年内没有显著收入出现，部分运营商可能削减或转移支出。</li>
+</ol></section>
+<div class="body">
+<p>Associated:</p>
+<p>AMZN</p>
+<p>MSFT</p>
+<p>GOOGL</p>
+<p>ORCL</p>
+<p>IBM</p>
+<p>NBIS</p>
+<p>CRWV</p>
+<p>2454:TT</p>
+<p>EQIX</p>
+<p>QCOM</p>
+<p>CBRS</p>
+<p>DLR</p>
+<p>SPCX</p>
+<p>INTC</p>
+<p>AMD</p>
+<p>Anthropic, PBC</p>
+<p>OpenAI, L.L.C.</p>
+<p>VRT</p>
+<p>AVGO</p>
+<p>NVDA</p>
+<p>Viewpoint:</p>
+<p>Industry Consultant</p>
+<p>Moderator: David Guo (DG)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Nov 09, 2026</td><td>29 Min Read</td></tr></tbody></table></div>
+<p>Obi Nwaojiga (ON), Former Vice President of Oracle Cloud Infrastructure, Dedicated Region Cloud - Oracle</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The expert drew on experience at major cloud providers to discuss GPU cluster deployment, data center capacity, and the constraints affecting new builds. The discussion covered power and equipment availability, project schedules, specialist cloud providers versus hyperscalers, component costs, and whether large capital investments will generate adequate returns.</p>
+<p>Key Insights</p>
+<p>Power availability is the most significant constraint. Grid connections, permits, substations, transmission equipment, and utility queues can take longer than constructing the data center itself. The expert said funding alone cannot resolve these regulatory and supply-chain barriers. Delays affect projects broadly. Power, networking, cooling, labor, construction, and GPU-related supply chains can all push schedules back. Proactive permitting and supplier coordination may help, but no project is fully insulated. The expert does not expect the cited large projects to suffer devastating schedule slips, though delivery dates may move. Projects already underway may be better positioned than those still seeking approvals. Returns from AI infrastructure remain uncertain. The expert warned that if significant revenue does not emerge within the next year, some operators may reduce or redirect spending. Financial capacity varies substantially by company. The moderator followed up on specific projects, schedule risks, and cash flow, reflecting particular interest in whether new capacity will arrive as planned and prove economically sustainable.</p>
+<p>Competitive Landscape</p>
+<p>Provider type or company</p>
+<p>Hyperscalers</p>
+<p>Positioning and advantages</p>
+<p>Challenges or risks</p>
+<p>Established supplier relationships, standardized build processes, broad operating experience, and mature incident and fault management.</p>
+<p>Must manage power, permits, construction, and infrastructure directly; capital needs are substantial.</p>
+<p>NeoCloud providers</p>
+<p>Smaller and more nimble; can deploy individual clusters quickly, often using colocation facilities and shifting some construction risks to partners.</p>
+<p>The expert viewed them as less mature in long-term availability, operational processes, and incident management.</p>
+<p>NVIDIA</p>
+<p>A key GPU supplier whose allocation decisions can affect delivery timing.</p>
+<p>GPU availability is only one dependency; memory, networking, power, and facility readiness must also align.</p>
+<p>Google, Oracle, and Amazon</p>
+<p>Major infrastructure investors with differing levels of financial capacity.</p>
+<p>The expert suggested companies with thinner margins may have less flexibility to sustain spending if returns remain delayed.</p>
+<p>11/10/2026 at 18:27 PM UTC</p>
+<p>Quantitative Insights</p>
+<p>Metric</p>
+<p>Expert’s estimate or observation</p>
+<p>Major data center build timeline</p>
+<p>More than five years in some cases</p>
+<p>Power infrastructure delay</p>
+<p>Can add nearly two years relative to facility construction</p>
+<p>Example large project</p>
+<p>About 1.2 GW; six of eight parts reportedly completed, with delivery expected in the first half of 2027</p>
+<p>High-bandwidth memory demand growth</p>
+<p>At least 40% over the prior year, according to the expert</p>
+<p>Rack power density</p>
+<p>Around 200 kW for a rack of GPU servers, versus roughly 10 kW for older server racks</p>
+<p>AI data center construction cost</p>
+<p>Approximately $24–$25 per watt</p>
+<p>The expert also noted that specialized AI networking components, including advanced optics, may face supply constraints lasting several months or longer.</p>
+<p>DG: Hello everyone, this is David from Guidepoint. I will be your moderator today. So on the phone with us today is Obi, and our discussion today will be around the talk of GPU rollouts and data center capacity, including what separates GPU clusters that go live on schedule from what can get delays, and how new cluster deliveries compare with hyperscalers and dedicated region buildouts, and why hyperscalers are pushing more CapEx into the first half of '27. So yeah, thanks Obi for joining us. Why don't you give us a brief introduction to your background to start with?</p>
+<p>ON: Absolutely. Thanks, David. My name is Obi. I've been in this industry for, gosh, over 2 decades now, mostly with hyperscalers. I had my stint in VMware and eventually with Google. I was the one who led all of the deployments in Google at the time when I was there. I ended up being in Oracle. The mandate was to come and help build an infrastructure that would target customers who were concerned about data security, data privacy, data sovereignty type concerns, right? So the name of that program under OCI was called Dedicated Region Cloud Customer, so DRCC. So I've been in the data center world for a mighty long time, mostly with hyperscalers, and I'm happy to be online to help out here. David, are you still there?</p>
+<p>DG: Oh, I'm sorry. So yeah, thanks for the introduction. So just a quick disclaimer, please limit the discussions to your own observation in the industry. Don't share any material and non-public information about any public companies, including our released product roadmaps. I will not announce any speakers or confidential customer contacts.</p>
+<p>ON: Absolutely, yeah.</p>
+<p>DG: Great. And then for the audience, if you have anything you want to add to the conversation, please send them to ask@guidepoint.com and we will get your question next. So yeah, thanks, Obi, for joining us. I think you have run a cloud operation in VMware and then the fleet management of Google and Oracle for regional business. So which part of experience matter most when you judge today's GPU build out and why?</p>
+<p>ON: I said, again, you're kind of muddled up, David. I didn't hear your question clearly. Can you repeat yourself?</p>
+<p>11/10/2026 at 18:27 PM UTC</p>
+<p>DG: So which part of the experience that you shared do you think that matters the most for your own judgment for today's GPU build-out?</p>
+<p>ON: Which area matters the most for GPU build-out? Is that what you said?</p>
+<p>DG: Yeah, just based on your experience spread from like VMware and then Google and Oracle, right? So which part of the experience do you think it's best for you to judge the today's GPU build out? I just want to give us a context to your experience.</p>
+<p>ON: Yeah, sorry, and again, the audio is coming out a little bit muddled. But yeah, my experience across the board, those places have been within the machines, GPU build out and all that stuff. But a whole lot of it has happened within the last, I'd say, 6 to 8 years. And that's Google and mostly Oracle, because again, GPU is the bedrock of all we do within the AI and ML space. You cannot do ML, machine learning or artificial intelligence without GPUs. Before now, what we used to deal with was just high capacity CPU. So yeah, the short answer to your question is all of my experience in Oracle and a lot of my experience in Google was in that space and that's where I'm going to be able to help have this conversation.</p>
+<p>DG: Understood. So when you run a fleet management at Google, which signals told you that a capacity program was delaying or, for example, is it going to be the rack-ready dates or the burn-in yields or the time from dock to production? What do those signals supply? Is this still the case for the current cluster of the GPUs?</p>
+<p>ON: Yeah, that's a good question. Delays. So when I was in Google, I actually ran this program around lead time reduction, and it was around determining the areas where there were delays end-to-end from the start of the program or the start of the delivery to when the final milestone. So along the line, across the board there are various areas where delay can happen, right? But when it comes to deployment, typical issues that you have is in sort of like GPU allocation because there's always a bottleneck since the 1 major player is NVIDIA. There's always this issue around who are they prioritizing the most? Who is the person on top of the queue? So there's also always going to be a delay for GPU deployment based off of the allocation that you're supposed to have. The likes of Google already have their GPUs, so it's not much of a play there. But with Oracle, it was always a play to see how we are prioritized top so that we can have that delay. Also, you have GPUs don't just stand alone. You have what they call high bandwidth memory, right? You have to... the system is, it's not just, oh, I have a GPU. You have to have your networking, you have to have your memory and all of that stuff in play. And there's also that issue about manufacturing and getting those HBMs in a timely fashion so that when you're deploying your GPU, everything that sits within the machine itself, it's available. So the system production, all of the high bandwidth memory is in place. So that can also bring delay in. Once there's a delay in shipment, it also brings delay in deployment, right? Then all of the things that you have within your... just integrating everything together, if your rack is not ready, that is a bottleneck. You can't put... so the rack and stack, which is a very, very important milestone. Once we have the system in place, all of that can bring about delay when you're not putting all of the things together in play at the OEM. They're supposed to assemble it. If it doesn't get it in a timely fashion, that also delays stuff. So because I'm a deployment guy, I can... there's just so many things that we look at to feel, even up to the network stack and cooling and all that stuff. Yeah, so a number of things can cause that delay. Yeah.</p>
+<p>DG: Right. Yeah, so I guess, how would you rank today's bottlenecks? If you rank between power, networking, the cooling, or the hardware right there, you know, how would you rank the bottlenecks today?</p>
+<p>ON: Oh man, the number 1 by a nautical mile, by a country mile is power, right? 10 years ago, when I used to do these, GPU, CPUs and all those things were sort of like... the gating factor for deployment and even getting the location itself. So there's what we call... there are 3, there are 4 basic things for an operator like me. We talk about space, power, cooling, and connectivity and security. 5 of those things kind of drive me and that's how I'm measured</p>
+<p>11/10/2026 at 18:27 PM UTC</p>
+<p>as an operator, right? Today, power availability is at the apex of what... that's what I'll rank as the highest because today, for you to even... the typical time horizon for a major build, you're looking at, you know, upwards of 5 years plus, right? It's just crazy because of the... and what's delaying that is not the build. For the first time, power takes longer than building the entire infrastructure. Just getting the utility connected, the permits, the equipment, the HV equipment... the high voltage equipment and all that kind of stuff, your transmission lines and your substation and all of those things... they take longer, almost 2 years than the actual building out of a data center. So that is the number 1 rank up there. Of course, just below it, nowhere close to it though, I'd say maybe networking, because networking has so many bits and pieces of it. You look at the optic side of things, look at the copper side of things, look at the long haul fiber that you're bringing in, and when you're terminating it into the data center, it's now just a distributed architecture. So there are many dependencies that will make it be a challenge across the board. But other than that, yeah, for me, the one that is head and shoulder the major bottleneck, will be power availability, or actually just getting time to power, essentially, which is the metric that we look at, right? So that makes sense.</p>
+<p>DG: Yeah, absolutely. So do you think it can be solved by adding up funding or how hard do you think on the ground it's still sort of a policy constraint?</p>
+<p>ON: So the question, what would help this constraint? What is causing this constraint? Is that the question?</p>
+<p>DG: What's causing this constraint? Yes, correct.</p>
+<p>ON: Yeah. So for power... First of all, the hyperscalers, money is not a problem. A lot of them are liquid. And I'm just saying hyperscalers. Most other people, money is a problem because this is a very expensive and high capital business, sort of like project building out the data center. But it's not really money that's the bottleneck; it's mostly regulatory type concerns and manufacturing type concerns. So let's look at it. For you to get onto the grid... if you're doing FTM, which is front-of-the-meter strategy... you have to, first of all, go and make applications with the government or the utilities and get yourself on the queue to be able to tap into the grid. Now, the grid is already hugely constrained. So it doesn't even matter what money you have; you have to be on that queue. There are people ahead of you on that queue. And that timeline is now in multiple of years, right? So for you to be able to get that permit and locked in, it doesn't even matter how and get all of the requirements from a government requirement constraint. Those things are the things that are the bottleneck and that's why it's on a critical path. Once you don't have power, it doesn't matter what you're building; power is the number 1 thing. So the mitigation that they're doing now is that they're doing on-site generation and most of the data centers. Google the other day... last about 1 year ago... about beginning of this year... bought a power company and that's the reason why, because it's no longer a competitive advantage to deal with power. It's now an existential threat for them if they don't find a way to navigate the whole power issue. So they start generating their own power infrastructure to be able to meet these delays or mitigate this risk. So yeah, that to me, that's where the issue is. It's not really money. It's mostly around manufacturing, supply chain and, most importantly, just the grid, just the inavailability of that interconnect or the congestion of the grid is where the problem is.</p>
+<p>DG: Understood. And then there is obviously 1 thing that we learned from last week is that with the Democrats winning the majority of states, and we have seen a nationwide pause of the building for data centers, right? So I guess how would you assess the impact for this political reason? And then, especially given Texas is only 30% of the data center capacity now, how would you assess that outcome and impact to the build out into next year?</p>
+<p>ON: Yeah, the impact is significant, depending on how you are looking at it, right? If you are looking at power availability, for example, the fact that projects are now sort of delayed or projects that were queued up in 2005 or at the beginning of this year, a lot of those things are going to be delayed because of the availability of power. Now, there is also the construction delays that will happen because power is on the critical path of the deployment. It delays certain aspects of your building your infrastructure; you have to build a substation and that is taking long to complete</p>
+<p>11/10/2026 at 18:27 PM UTC</p>
+<p>because you are not able to get your high voltage equipment, your transformers, because those things are taking dozens of weeks to even... and that is best case... to get it on site to be able to deploy and move to the next phase of the project. So, to the question, my expectation is that the industry will experience some issues around delivery and deployment because of these constraints. It does not mean that you are not going to have CapEx deployment because a lot were queued 2, 3 years ago.</p>
+<p>Some of those ones are getting to be deployed as we speak today and they're already, for example, the Oracle build out in Abilene, Texas. I mean, they've done 6 out of 8, I believe, already been completed, right? They might be behind schedule, but at least they're going to deliver by sometime in the first half of 2027. So projects like that that were already built out or that were already executed a little bit while ago are already queued to get. So there will be an imbalance. There's some projects, yes, you're going to get. First half of 2027, we're going to get that locked in. But some others, because of the fact that they are constrained by those delays in the construction and delays in power availability and electrical equipment is taking forever to get there, even cooling infrastructure is still a challenge, those ones will be the ones that I would say might have some challenge. But overall, I would say my expectation is that a lot of the bigger projects that were queued up that have been already executed, like the Abilene, Texas one, the Shackelford one in Texas, I expect that those ones should be live by first half of 2027.</p>
+<p>DG: Understood. How about the project Jagger, which is the one with Google? I guess that is still under a similar type of risk.</p>
+<p>ON: Yeah, most of the projects like that one in Wisconsin and the other one in Michigan, those ones are facing the same. Almost every project is facing the same similarities. I am just saying that even if they don't make the first half, the second half for sure, 2027 is going to be locked in. I think where the challenge will be mostly... oh, by the way, while we talk about challenges, there's also the political landscape, right? And a lot of the changes that will come with new governance coming into play, because they also have a major play, can also shift things one way or the other, right? And so there's also that uncertainty. As to certain newer projects that will need some approval or permits, those might be placed on hold. I believe the ones that are already on go, I don't think there's going to be a restriction or say, "Hey, you're not going to stop building," or anything like that. I doubt that will be the case. But those that were on the queue or trying to get those permits might see some delay because of, you know, like I said, some of the changes in the socio-political landscape, right?</p>
+<p>DG: I understand. Okay. So I guess, you know, you also mentioned the network as part of the shortage as well. So where do you see the network shortage is holding up the live clusters today? For example, is it the transceivers, the switches, or cabling, or any other workarounds that we can think about?</p>
+<p>ON: Yeah, so networking. You know, the network fabric is made up of various... how do I call it?... it's made up of various aspects of various components, right? You have the switches, you have the transceivers, you have the optics, you have the copper, and all of these things because it's not just compute or GPUs that I was challenged with, right? It's the entire, whole spectrum, right? So compute, networking, storage, and all that stuff. So the things that must be ready, for example, to be able to make sure you don't have a slip in your schedule, for example, outside of the power and the facility and all those things, is the IT equipment. And by IT, I'm saying that very loosely. I'm talking about your compute, your networking, and a lot of the InfiniBand, the IB, the InfiniBand switches, the optics, the fiber optics, and structural cabling, all of those things. There's also the supply chain constraints that are there, obviously nowhere compared to the power side of things, but you also have that as a challenge. And that is something because remember in a normal build-out, standard switches, there are many OEMs, standard switches that can work, and you can, if this OEM doesn't deliver, you move to the other OEM. But in the world of networking, what you have for AI and ML are very specialized equipment. So they're specialized optical fiber equipment. In standard deployment, I don't need to use transceivers, for example. You have to almost guaranteed use it for AI build-out. So those ones are also, there's constraints that are several months, even could be even longer, because you're trying to make sure that you</p>
+<p>11/10/2026 at 18:27 PM UTC</p>
+<p>get this special optics in place. All of the manufacturing delays that are already existing, you have to qualify each of the things that you bring into play, and when it lands, you have to make sure that you get it locked in, and the interoperability of it is locked in because you're bringing in different types of components into the fabric as well. So, yeah, so those things can cause problems. You're not even talking about things like you're moving from 800-gig fabric to 1.6-terabit fabric. Not everything can work with that. You have to change other support equipment around that space, right? So, yeah, those are some of the things why I say the fiber side of things, especially when you're looking at next-gen AI networking type of solutions like 1.6-terabit optics. Yeah, it will come with some constraints and challenges.</p>
+<p>DG: Understood. I guess, you know, going back to Project Jagger with Oracle, can you talk specifically about your expectation for the delay? And then, you know, what is the status quo there?</p>
+<p>ON: For the delay on which side now? Are you talking about just generally or just for networking?</p>
+<p>DG: No, not networking, just in general for that project.</p>
+<p>ON: Okay. Yeah, so in my opinion, I think I've already talked a lot about the power side of things and what my expectations will be. There's going to be...</p>
+<p>DG: Right, I guess just, you know, specifically towards Project Jagger, because that's the one that signed up last, I think a year ago, was tied with the Oracle in the opening night. And now we're facing this changing environment, and how do you think about the delivery of that project?</p>
+<p>ON: Oh, you're probably not talking specifically for Project Jagger. Yeah, so no, like I said, I already said that, right? That all of the challenges that we're faced with across the board, whether it be relating to Project Jagger or any of the other ones, we are faced with the same challenges. Nothing is different. Now, depending on the size of the project, because Abilene is a 1.2 gigawatt project, and many of these things are gigawatt factory projects, that also puts a lot of constraints on the ability to finish in a timely fashion. Now, do I think that it is going to... The schedule is going to slip in a devastating way? I don't think so. Again, this is, I'm only saying this from my own worldview of what I know it takes to bring a data center to life, but there are also other constraints that can be a problem, right? Like I said, the socio-political climate and new leaders coming in place can put a hold on that. Bearing out or bearing because you can't control that, right? But if you remove all of that, my expectation is that there's not going to be a significant slip. The same challenges that I've just mentioned will still be in play regardless of, and yeah, that's my expectation.</p>
+<p>DG: So what, like with those constraints that we just talked about, what are the challenges that you're facing? Talk about why do you think it's not going to, you know, face a big slip? Like, so you think they're still going to be able to deliver, you know, sort of in time, but like how, well, what are the drivers behind, and then how, basically, how would you think they're going to solve this bottleneck situation with Project Jagger?</p>
+<p>ON: Yeah, it's almost like I'm kind of repeating what I'm saying, right? The same, so none of these projects are unique to the same... how do I put it? A lot of projects have a unique situation whereby these things, these big ticket things that I'm talking about—like power, supply chain constraints, construction delays, all of those things—they all have the same. They're all faced with the same, none of them are insulated from that. But the mitigation, sort of the way you mitigate this is being proactive, getting in front of the queue, working at the back end with most of the players... especially for permits related matters to see if you can be put in play. The same challenge that they're faced with and the same slippages that might occur, whether it be in the power permits, transformers, GPUs, even the networking side of things. I've not even talked about labor and construction, of course, is part of it. Labor is still a constraint. Every single one of these projects by all these hyperscalers are faced with this. So that's why I see many of them are revising their delivery dates. And looking at how it affects their customers across the board and looking at all of the... how</p>
+<p>11/10/2026 at 18:27 PM UTC</p>
+<p>would I call it, like the actual progress versus where their planned schedule is and trying to make adjustments across the board. But yeah, is it going to be affected? Absolutely. Every one of them are affected. Who is able to navigate through this? It's not necessarily with the funding per se but it is also more with the... how you go and navigate with this at the political end, close, see how to get the profits that are needed, push forward in a timely fashion. Work with other OEMs for electrical equipment to get your equipment timelines, lead time closer and once that is done, all the other things that are on the critical path will be let go at that time and things will improve. So that's my overall assessment regardless of what the project is, as a matter of fact.</p>
+<p>DG: Understood. So another question is around NeoCloud versus hyperscalers. So how does the NeoCloud execution compare with hyperscalers' ability on the schedule reliability, the uptime and then operation maturity? Like how do NeoClouds usually fall short or where do they can actually go faster than hyperscalers?</p>
+<p>ON: Yeah, so I think the real value proposition of a NeoCloud is mostly because they are smaller, they are nimble, they don't have to... How would I put it? They don't have to generate the huge capex that is required to build net new stuff. They work mostly with colo, so they transfer the risk and the issues around building the infrastructure to another player, and so that they're able to be very fast, one-off projects to deliver GPU clusters for customers. And that's the biggest value proposition across the board. You know, the fact that they're more able to do much with less for smaller projects, though I need to put that clause. But if you look at the hyperscalers, you know, they have long-term established relationships with OEMs and the suppliers. And you know, because of their global footprint, they are solidly placed in a way that they're very mature in their processes and their standards and everything. We have playbooks that are, when we build out stuff, we call it Lego. And there's a reason why we call it Lego, because it's just like a Lego, you just plug in and plug and play and boom, boom, boom, it's done. Those are the biggest advantages of the fact that because we have standardized processes and repeatable sort of like playbooks that help us build out, we have this deep knowledge on the networking front. All of the operational excellence that we've built into place, incident management is rock solid. That's where we blow the NeoClouds out of the water, right? Across the board when it comes to execution, and so whereas they're able to be faster and probably quicker in deploying clusters that are one-off, but if we look at long-term availability, you know, things like fault management and hardcore operational excellence, you cannot beat the hyperscaler to that. I don't care what NeoCloud that is. So that's it. But the challenge is that a hyperscaler has to go and deal with the things around permitting, the things around power, cooling, all of that infrastructure. A lot of that is passed on to the provider that houses the NeoCloud infrastructure, right? So mostly the hyperscalers, I mean, the big colo players and stuff like that. So they don't necessarily need to deal with a lot of that challenge, which is a massive challenge to be honest, and risk around, you know, permitting and risk around compliance and all the local government issues that we face with and all that stuff. They don't deal with that.</p>
+<p>DG: Understood. So how would you expect the component cost inflation? Because I think analysts is sort of expecting the memory to reach roughly two-thirds of the major cloud capex in '27. That's part of it, but other components are also rising in the price as well. You know, how hard would you think about what's your current expectation for the component cost going to '27 and how much can an operator pass through the GPU pricing or the memory and, you know, how much are the operators going to absorb that themselves?</p>
+<p>ON: Yeah, component costs would... I don't see it not increasing, right? You talked about—let's just use the example you gave—memory, like your NAND or your DRAMs and all your high bandwidth memory. Those things are in high demand. I think the growth so far has been at least no less than 40% within the last year or so, and it's only going to increase. The last 1 or 2 years, it's just been increasing in leaps and bounds because there's just so much. But with all of that demand, the forces of demand are always clear, right? The more that you're looking for, there's more demand for a product and there's way less supply, of course, costs increase. So I imagine that there's going to be some level of inflation that will occur in that space because of the high demand for all of these equipments, a lot of the components. And even that, because I just zoomed into, double-clicked into memory because you mentioned memory, there's also</p>
+<p>11/10/2026 at 18:27 PM UTC</p>
+<p>the cooling infrastructure, the support systems, components that will... all of the CDUs and all of the cooling equipment that will be needed to cool this. That's the rack. Density is increasing in orders of magnitude much more than ever before. Like I said about 10 years ago, which is not too long ago, like 2017 or 2016, we could run a rack of servers with 10... double digits, maybe 10 kilowatts to a 24-rack server, 32-rack server rack. And it was very sufficient. Today, that's about what used to run just a rack of NVIDIA servers. Just 1 rack, 8 servers. We're looking at close to about 200 kilowatts. So power density has increased significantly, and whenever power density increases, cooling increases. And that means components around cooling, all of the ductwork, all of the CDUs, all of the things that are involved in the whole process, there will be a huge more demand and huge more purchases that are happening there. The good news is that a lot of players are in that space today. But the bad news is, obviously, because there are also delays in components on the manufacturing, it would also cause some level of cost increase within that industry. So, long story short, yes, there is going to be some level of inflation cost concerns when you're looking at the components that run a data center as we go into the next year and so on. It might get better in coming years, but next year, I don't anticipate not to see some kind of increase in that space.</p>
+<p>DG: Understood. So I guess... we have seen Amazon, both Amazon and Google, as well as Oracle, all posted negative cash flow recently. So that was the biggest concern that the data center build up for the next year is not going to be sustainable. Based on the timeline and ramp curve that you have seen, when should today's GPU CapEx show up as free cash flow? What could push that out? And how would you assess the current cash issue within the data center build out?</p>
+<p>ON: So again, a little muddled up. Let me summarize. I think that what I thought I heard you say, you're asking what, given all of the issues that are happening, how we will look at free cash flow going into the next year. Is that a summary of what you asked?</p>
+<p>DG: Yeah, that is correct. And how would you assess the outlook of the build out? Is that going to be impacting the pipeline for the data center build out next year?</p>
+<p>ON: Yeah, so here's the thing. The people who are doing these massive build-outs, first of all, let's just calibrate here, is hyperscalers. And the hyperscalers... the reason why they are hyperscalers is because they have a lot of cash to burn. The other truth... that's one lane of the truth. The second part of the truth is also that what we're building here is not a very cheap thing. To build a data center, the current building cost to build CAPEX to build a data center, you're looking at maybe about $24 to $25 a watt, right? It is very expensive to build an AI data center today. And the third part to that whole truth, I'm coming to the free cash flow thing, is the fact that with all of this investment, we're not seeing the quick time to revenue that we're expecting. In other words, the AI and ML have not today generated the kind of returns that we're expecting given how much that has been expended by these hyperscalers. So while those 3 things are true, the question is, how much would hyperscalers be willing to spend? How much free cash flow would there be across the board given all of these fleet economics that I've given you, and all of the need to self-optimize your capacity utilization and start seeing returns and all that kind of stuff. My honest assessment is that within the next year, I see, if there's no quick... if we don't see some level of significant returns, that cash flow would not keep rolling. Already we're seeing a lot of data centers pull back on certain projects or reassess or sort of remove their cash flow to other areas. Cut some other areas of their projects that they're running so that they can move cash flow to certain other areas. And all of this is born out of the quote-unquote distress that is being felt on the AI infrastructure or AI data center infrastructure side of things. Because there is this huge value proposition. Everybody knows that. There's no doubt about that. There's a whole lot of expenditure that has been put in place. The returns are not coming yet. And yet there's still a whole lot more that needs to be done to get to where we need to go. So some people have, the likes of the Googles of this world and the Amazons of this world, AWSs of this world, have more of their free cash flow than the Oracles of this world, right? Honestly, it will all depend on who the players are. The Googles of this world might still have a lot of free cash flow to be able to push on various projects and initiatives. The Oracles of this world and all</p>
+<p>11/10/2026 at 18:27 PM UTC</p>
+<p>of those other players that have thinner margins may not. And so that's why it's not one size fits all. That's why I went through this whole round about just to let you know that it's not just a one size fits all kind of scenario. It all depends on who the player is and what the initiatives are and what their end goal is.</p>
+<p>DG: Gotcha. Okay. I think those are all the questions that I have for you today. Thanks so much, Obi, for this really good discussion. And then we'll have more follow-up calls around the capacity build-out for data centers. So let's stay in touch, okay?</p>
+<p>ON: Thank you, sir. It was nice coming online. I'm always happy to come on anytime to have these conversations. Thanks a lot.</p>
+<p>DG: Awesome. All right. Thanks so much. Have a good one.</p>
+<p>ON: All right. You too. Take care.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>11/10/2026 at 18:27 PM UTC</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

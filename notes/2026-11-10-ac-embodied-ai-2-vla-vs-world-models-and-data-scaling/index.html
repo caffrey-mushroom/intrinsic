@@ -1,0 +1,239 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.10 | AC | Robotics | Embodied AI (2): VLA vs World Models and Data Scaling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.10 | AC | Robotics | Embodied AI (2): VLA vs World Models and Data Scaling</h1>
+<p class="orig">原标题：具身智能系列调研(2)_ VLA_世界模型泛化能力与Scaling Law, 数据采集成本及机器人商业化降本, 具身智能模型竞争与核心硬件供应链 - 聚焦智元机器人_宇树科技_Figure_奥比中光_绿的谐波</p>
+<p class="tags">#具身智能 #世界模型 #数据</p>
+<p class="meta">AceCamp · 2026-11-10 · article 70569068</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>专家认为VLA适合当前商业化，世界模型偏长期，两者会长期并存。</li>
+<li>跨场景泛化仍有限，例如从做咖啡切到做奶茶也需重新采集数据微调。</li>
+<li>未来两年头部企业有效数据需求可能达千万小时，原始数据达数千万小时，但参数量不一定同步增长。</li>
+<li>若算力成本两年内下降50%，整机价格有望平均降约30%，销量可能达到2026年的2–3倍。</li>
+<li>智元2026年出货预计约2万多台，工业场景部署上千台。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>· 方向：围绕具身智能模型训练从算力投入向真实数据采集、数据基础设施及持续后训练扩展的方向展望。· 结构：围绕VLA与世界模型的技术路线、真实与仿真数据配比，以及不同机器人厂商模型能力和供应链优势的结构分化展望。· 节奏：围绕机器人硬件及模型成本下降、跨场景泛化能力改善和工业及零售应用商业化的影响节奏展望。</p>
+<p><b>以下是调研纪要总结：</b></p>
+<p><b>· 机器人商业化与成本结构：</b>专家称当前部分零售、商超及文旅机器人项目主要承担展示、引流功能，直接销售商品的经济性较差，单套系统售价约100万至300万元。即使未来3至5年零部件降本20%至30%，模型成本仍是重要支出。专家预计若未来两年算力成本下降50%，整机价格有望平均下降约30%，销量可能达到2026年的2至3倍。公司当前通过贵州算力中心和算力券控制成本；B200与H100相比主要优势是训练速度，例如相同模型使用B200可能2至3天完成，而H100可能需要1至2周，但专家认为总体训练费用差异不大。</p>
+<p><b>· VLA与世界模型及数据Scaling Law：</b>专家认为VLA适合当前商业化场景的动作策略与任务执行，世界模型更偏长期方向，两者将长期并存，世界模型的预测能力也可以集成到VLA架构中。现阶段模型跨场景泛化能力仍然有限，例如咖啡制作切换至奶茶制作，即使动作流程相近，也需要重新采集数据并微调，主要受物品形态、环境、光照及动作策略差异影响。训练数据包括Ego第一视角、UMI手持夹爪、真机操作、仿真及部署回流数据；VLA后训练更依赖真实操作数据，世界模型预训练则更重视大规模视频数据。专家认为行业更需要建设数据基础设施，未来两年头部企业有效数据需求可能达到千万小时，原始数据需求则达到数千万小时，而模型参数量不一定同步增长。</p>
+<p><b>· 主要厂商与硬件供应链：</b>专家称智元机器人偏向世界模型和动作执行稳定性，2026年出货预计约2万多台，工业场景部署上千台；宇树科技具备较强硬件运动控制能力，VLA及通用基础模型仍在迭代；千寻智能重点发展VLA和柔性操作，在工业线缆操作等任务上投入较多。海外方面，Figure强调全身协同与真实场景部署，Physical Intelligence则通过大规模异构数据、人类示范和真实数据后训练优化操作策略。硬件供应链方面，专家较看好奥比中光的视觉相机、华依科技的IMU、昆维科技和蓝点触控的六维力传感器、速腾聚创和镭神智能的雷达，以及绿的谐波的谐波减速器。算力平台仍以NVIDIA为主，地平线和昇腾等国产平台正在适配。数据采集设备方面，六路相机头戴设备可能配置6颗摄像头及至少4颗六轴IMU，同时带动数据清洗、标注及海天瑞声等服务商的需求。</p>
+<p><b>以下是专家观点：</b></p>
+<p><b>Bryce Wang：刚提到零售和医疗服务。医疗服务如果由政府推动是有可能的，因为很多医院本质上是国企或央企。那零售服务这边也是国家在推动吗？</b></p>
+<p>专家：零售服务目前很多落地项目，确实是和商超、文旅集团等合作的。</p>
+<p>Bryce Wang：推动这些项目的核心阻力是什么？是性价比不够，回收期太长吗？</p>
+<p>专家：如果面向C端用户，客户主要是物业公司或大型商超。对他们来说，回本周期很长，甚至可能亏本。更多是为了引流。最大阻力还是成本问题。</p>
+<p>Bryce Wang：成本问题具体体现在哪里？</p>
+<p>专家：一套系统的成本基本都在百万元级别。售卖的商品可能只是几元的水或几十元的小型文创产品。</p>
+<p>Bryce Wang：一台机器几百万？你们有这样的产品吗？</p>
+<p>专家：有的，单台价格在一百多万到三百万不等。</p>
+<p>Bryce Wang：你们内部有预测未来一到两年零部件降本的速度吗？比如明年会是什么趋势？</p>
+<p>专家：零部件降本是一方面，即使未来三到五年降20%到30%，模型的投入费用也需要考虑在内。</p>
+<p>Bryce Wang：你们也希望算力和Tokens的费用能降本对吗？</p>
+<p>专家：公司当然希望算力越便宜越好。</p>
+<p><b>Bryce Wang：所以你觉得这个行业的智能度还可以，单台机器人能做到80%～90%的准确率，顶峰可以做500多单，人工一天也就500多单。只是成本比较高，主要是硬件。那一百多万的成本里，硬件成本大概是多少？</b></p>
+<p>专家：一百多万的成本里，太空舱体大概30万，硬件和模型部署大概70多万。其中硬件的BOM大约30万。</p>
+<p>Bryce Wang：这个BOM包含半导体存储和算力芯片吗？</p>
+<p>专家：BOM只包含纯硬件，没有把存储算进去。</p>
+<p>Bryce Wang：你说的硬件主要是指机械手等设备吗？</p>
+<p>专家：主要包括手机、相机、关键模组等纯硬件，再叠加模型费用。模型的价格预估一台机器大约30万左右。</p>
+<p><b>Bryce Wang：你们观察到算力租赁的单卡价格也在上涨吗？这样的话，明后年的成本还会继续上涨吗？</b></p>
+<p>专家：公司有点类似于“东数西算”，用贵州那边的算力中心，叠加算力券，成本还能控制。整个行业的算力投入都在增加，比如今年（2026年），很多公司把消费级卡如5090、4090也算进去，头部公司都在往万卡规模堆算力。</p>
+<p>Bryce Wang：如果未来算力和存储价格能降低50%以上，你觉得对行业是好事还是坏事？如果算力成本大幅下降，你觉得销量会有多大提升？</p>
+<p>专家：如果算力在未来两年下降一半，整体价格预计平均也能下降30%左右。销量方面，基于今年（2026年），实现两到三倍的增长。</p>
+<p><b>Bryce Wang：你刚刚提到训练时用B200和H100芯片，分别用了几十张和几百张。你觉得用B200训练模型的成本相比H100有下降吗？</b></p>
+<p>专家：不是成本下降的问题，主要是速度。比如用B200训练一个模型，两三天就能完成，而H100可能需要上百张卡，训练一到两周，时间会多很多，但成本变化不大。</p>
+<p><b>Bryce Wang：怎么看VLA和世界模型这两条技术路线的未来？会保持分工还是逐步融合成统一架构？</b></p>
+<p>专家：如果公司已经有基于VLA的模型并在商业化落地，VLA路线目前是比较稳妥的选择，适合做场景和策略落地。如果想往世界模型和更深层次发展，这条路线是未来方向，但投入和遇到的问题也会更多。这两条路线在个人看来是并存的。当然，世界模型中的部分预测头可以加到VLA里。</p>
+<p><b>Bryce Wang：在推广工业机器人时，有遇到蓝领的反对吗？比如零售、医疗等场景。</b></p>
+<p>专家：没有遇到蓝领工人的反对。公司推广的多是脏、累、重复、繁重的场景，他们反而催公司尽快部署，这样他们可以被调岗到更轻松的岗位。</p>
+<p>Bryce Wang：但这样会不会裁掉很多工人？</p>
+<p>专家：目前来看，没有出现因为机器人覆盖了重体力工作而裁员的情况，工人更多是被调到其他岗位。</p>
+<p><b>Bryce Wang：怎么评价现在的泛化能力？比如你刚刚说的顶峰几百单的机器人，如果换个场景还能做吗？</b></p>
+<p>专家：那个只适用于零售场景，换到其他场景就不行。</p>
+<p>Bryce Wang：泛化还不够吗？比如从商超做咖啡，换成做奶茶可以吗？场景很相近。</p>
+<p>专家：不行，需要重新采集一部分数据，对模型进行微调，不能直接迁移。</p>
+<p>Bryce Wang：这是因为数据问题吗？</p>
+<p>专家：是的。</p>
+<p>Bryce Wang：还是模型能力或硬件不够？</p>
+<p>专家：不是硬件问题。主要是部署落地时用的模型大多是针对特定场景的垂直模型，不是通用大模型。可以基于垂直模型覆盖类似场景，但需要针对新场景做微调。</p>
+<p>Bryce Wang：你觉得主要问题在哪里？</p>
+<p>专家：主要问题在于训练过程中没有针对新场景的数据。例如只训练了做咖啡的场景，没有训练做奶茶。不同的规格、杯子、颜色都会影响模型。第一是数据不够，第二是动作策略也有差异，需要调整。</p>
+<p>整体流程虽然相近，但换场景后需要微调才能复制，不能直接迁移。</p>
+<p>Bryce Wang：根源问题是什么？比如同样大小的杯子，操作范式类似，如果这两个场景都无法泛化，根源在哪里？</p>
+<p>专家：根源还是在于不同的数据、环境和光照等因素的叠加影响，数据量还不够大。</p>
+<p><b>Bryce Wang：你觉得现在，比如以公司为例，或者你看到行业头部公司的情况，主要训练数据会如何分类？比如第一人称、第二人称、第三人称的视频操作，还有真实机器人的自主采集，或者仿真合成的数据。这些数据在预训练和后训练阶段大致占比是多少？</b></p>
+<p>专家：目前数据主要包括第一人称视频（ego数据），这是第一类。第二类是UMI（手持夹爪）数据。第三类是真机操作数据，第四类是仿真数据，第五类是回流数据。此外还有一些互联网视频和世界模型生成的视频数据，这些都归为视频数据。目前主要以这些数据为主。在预训练过程中，如果是VLA模型，建议真机数据多一些，同时补充异构数据和部分公有数据。</p>
+<p>在后训练或中训练阶段，建议VLA预训练可以用大量仿真数据，不同路线选择不同数据配比。VLA后训练建议以真实数据为主，适当补充仿真轨迹数据以完善策略。如果是世界模型，建议预训练阶段以大规模ego数据或视频数据为主。</p>
+<p><b>Bryce Wang：你觉得数据的来源成本高吗？你们是否在用人工模拟？这个成本怎么算，是否划算？</b></p>
+<p>专家：不同类型数据的成本不同。</p>
+<p>Bryce Wang：你刚才提到单位机器人的成本分摊，比如几十万是大算力的部分，这个数据成本是包含在内还是不包含？</p>
+<p>专家：这些数据成本肯定是包含在内的。</p>
+<p>Bryce Wang：这个成本包含在内，但刚才说的三十多万，这部分是不是不好计算？很难界定几十万中有多少是算力成本，多少是数据成本？</p>
+<p>专家：确实很难计算。比如选用某个模型，假设用了1000卡时，可以直接算出模型训练阶段的投入，但数据投入和研发投入全部算进去就很难精确分开。大头肯定还是模型相关的投入。</p>
+<p><b>Bryce Wang：你觉得现在具身智能领域有没有比较明确的数据scaling law？比如训练数据扩大10倍，模型泛化能力是否还能提升？比如能否从咖啡迁移到奶茶？</b></p>
+<p>专家：公司有相关实验和论文论证，比如将数据从1万小时增加到100万小时，泛化能力大约能从百分之十几提升到55%到58%左右，确实有这方面的论证。</p>
+<p>Bryce Wang：你们还是希望有更大的训练算力投入吗？</p>
+<p>专家：更需要的是更大的数据基础设施投入。模型参数量和数据投入量不是线性关系，不是数据量越大，模型参数就越大。比如选用20B的模型，预训练阶段可能用了1000万小时数据，后续主要是后训练阶段的数据补充。此时模型参数基本保持不变，后续再补充数据，参数量也不会有太大变化。这是一个非常复杂的数学计算公式，可以查阅相关资料进一步研究。</p>
+<p><b>Bryce Wang：能否梳理一下主要玩家的优势，比如智元、宇树、乐聚、Figure等？</b></p>
+<p>专家：主要玩家方面，智元的优势在于模型技术路线，尤其是GO-1和GO-2，偏向世界模型和世界动作模型方向。模型架构强调动作的准确性和执行链路的稳定性，模拟能力更强，算法能力相对一般。数据以真人数据为主，近期也补充了大量EGO数据。出货量业内领先，今年（2026年）约两万多台，工业场景铺设上千台，强调操作稳定。</p>
+<p>宇树有自己的VLA模型和Unified-LM世界通用模型，技术路线以基础模型为主，目前处于迭代阶段，后续还需大量投入。基础模型部分采用开源模型，硬件本体具备较强的运动小脑能力。</p>
+<p>千寻模型能力较强，落地路线以VLA为主，专注手部和柔性操作，做了大量专项训练。模型更偏向柔性操作，如在宁德等场景下的线缆操作表现较好。数据来源以生数据为主，目前以EGO和升级回流数据为主要来源。</p>
+<p>个人对“具脑磐石”这家公司不是特别了解，但它应该是做世界模型的公司，业内做世界模型的公司非常多。</p>
+<p>海外方面，Figure采用三系统架构，强调全身协同操作，最大优势是为业内公司提供了真实场景部署的参考，注重协调和稳定性。Physical Intelligence的Pi-0.5已迭代到Pi-0.7，模型被广泛用于后训练。其技术路线和数据配比变化为行业提供了示范，Pi-0.7采用大规模异构数据和人类示范数据进行策略学习，再通过真实数据进一步训练。</p>
+<p><b>Bryce Wang：能否介绍一下供应链，比如硬件成本较高，像台升、机械手等，主要供应商有哪些？可以点评一下行业主要玩家或表现最好的公司。</b></p>
+<p>专家：感知环节主要包括相机、雷达、六维力传感器和IMU。相机方面，国内表现最好的是奥比中光。IMU方面，华依科技表现不错。六维力传感器主要有昆维科技（常州）和蓝点触控（北京），这两家在行业内表现突出。雷达方面，速腾聚创和镭神智能较为领先，消费级产品可以选择大疆。</p>
+<p>如果做餐饮场景落地，雷达建议选用速腾聚创，消费级则推荐大疆。算力平台目前以英伟达为主，国产平台如地平线（地瓜机器人J6系列）和昇腾Atlas 300I也在逐步适配。零部件方面，减速器中的谐波减速器首选绿的谐波。此外还有丝杠和其他小型零部件，涉及多家供应商。</p>
+<p><b>Bryce Wang：最近大家对这个领域关注度上升的主要原因是什么？其他投资者关注的核心点有哪些？</b></p>
+<p>专家：资本市场关注度上升，主要是物理AI的驱动。GPT-4发布后，包括OpenAI和Google都在做基础模型，目标是将基础模型转化为通用模型，接入具身智能领域。因此对数据，尤其是EGO数据的需求大幅增加。同时，下游设备如EGO、遥操、数据采集手套等，对数据采集和传感器（如柔性传感器、电容、霍尔声呐等）需求也在增加。</p>
+<p>每个采集设备通常标配相机和IMU，比如一个六路相机头戴设备配有六个摄像头和至少四颗IMU（六轴IMU）。数据采集后还需清洗和标注，部分标注工作可外包给公司如海天瑞声，按条计费。整个过程涉及完整产业链。</p>
+<p>今年（2026年）下半年，许多公司数据需求量已达到百万级。未来两年，每家公司有效数据量预计达1000万小时，为筛选出1000万小时有效数据，原始数据集需达到数千万小时。此外，很多数据是定制化的，不是通用数据或供应商采集后转售，而是基于自身参数定制采集。</p>
+<p>很多数据并非通用数据，而是根据具体需求定制采集，供应链和数据链条高度定制化。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
