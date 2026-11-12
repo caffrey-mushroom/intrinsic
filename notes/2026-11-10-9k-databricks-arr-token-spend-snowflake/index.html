@@ -1,0 +1,261 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.10 | 9K | Software | Databricks ARR, Token Spend &amp; Snowflake</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.10 | 9K | Software | Databricks ARR, Token Spend &amp; Snowflake</h1>
+<p class="orig">原标题：Databrick离职专家|Databricks 现有客户推动了 80% 的年度经常性收入扩张，同时通过路由 token 价格下降约 25%、成交量上升 20% 导致部分客户支出暂降约 10%；明年预算重置、AI 预算增长 40% 至 45% 以及试点进入生产预计将恢复 token 增长，平台整合、Lakebase、agents、Unity AI Gateway 和本体层增强了 Databricks 对抗 Snowflake 的竞争力</p>
+<p class="tags">#software #agents #llm</p>
+<p class="meta">Meritco 久谦 · 2026-11-10</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>Databricks第三财季合并口径退出率约81亿美元，同比增长58%、环比增长18%。</li>
+<li>年度经常性收入增长中80%来自现有客户，其中45%来自新工作负载、35%来自现有工作负载自然增长，净新增客户贡献20%。</li>
+<li>借助Unity AI Gateway路由和更低模型价格，token单价下降约25%而体量上升约20%，导致客户净支出约下降10%。</li>
+<li>由于预算重置和试点转入生产，预计按Databricks日历明年第一季度即二月至四月token消耗将较当前增长25%至30%，客户AI预算明年平均预计增长40%至45%。</li>
+<li>北美企业AI用例的生产渗透率约20%至25%，欧洲约18%至24%，主要约束依次为用户权限、法律与治理审批以及多平台环境下的所有权不清。</li>
+<li>客户正倾向于在Databricks与Snowflake之间整合而非双平台并存，迁移更多偏向Databricks，专家认为Lakebase、agent记忆和本体层投资将拉大两者能力差距。</li>
+<li>约90%的客户尝试过Genie，45%至50%使用Genie Code进行变更或部署，近40%持续使用，相关pull request增长60%至70%，免费额度持续到2027年1月。</li>
+<li>对于约1000万至8000万美元、为期3至5年的承诺，Databricks提供40万至80万美元成功积分用于前线部署工程师，可使用例投产速度提高约120%。</li>
+<li>制造、汽车和物流是增长最快的新兴板块，Lakebase在agent记忆工作负载上已与MongoDB激烈竞争。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>Databricks 第三财季合并退出率约为 81 亿美元，80% 的年度经常性收入增长来自现有客户。token 价格下降约 25%、成交量上升约 20%，使得支出下降约 10%，但预算重置和试点进入生产可能在明年第一季度将 token消耗提高 25% 至 30%。在欧洲和北美，生产环境渗透率保持在 18% 至 25% 之间，治理约束仍然存在，对 agents、Lakebase、Unity AI Gateway 和迁移工具的投资增强了 Databricks 相对于Snowflake 的竞争地位</p>
+<h2>要点</h2>
+<ol><li>Databricks 第三财季合并退出率约为 81 亿美元，同比增幅 58%，环比增幅 18%，80% 的年度经常性收入增长来自现有客户，其中 45% 来自新工作负载，35% 来自有机扩张，净新增客户贡献 20%</li><li>Unity AI Gateway 的路由和更低的模型价格使 token 成本下降约 25%，同时成交量上升约 20%，产生约 10% 的净支出下降；在 Databricks 日历下，预算重置和进入生产的试点预计将在明年第一季度推动</li></ol>
+<p>token 增长 25% 至 30%，而客户的 AI 预算可能上升 40% 至 45%</p>
+<ol><li>企业级 AI 在北美的生产渗透率平均约为 20% 至 25%，在欧洲为 18% 至 24%，更广泛部署的主要制约因素是用户权限，其次是法律与治理审批、数据共享文档以及在多代理、多平台环境中不清晰的所有权</li><li>客户越来越倾向于在 Databricks 或 Snowflake 之间进行整合，而不是同时维持两个平台，更多迁移似乎偏向 Databricks；对 Lakebase、agents、agent memory</li></ol>
+<p>和本体层的持续投资预计将拉大能力差距并提升企业上下文理解和 agent 的准确性</p>
+<ol><li>约 90% 的客户以某种形式尝试过 Genie，45% 至 50% 使用 Genie Code 进行变更或服务部署，近 40% 的用户继续消费该产品，相关的 pull request 增长 60% 至 70%；免费额度持续到 2027</li></ol>
+<p>年 1 月，而 Lakebridge 支持仓库、报表和 ETL 的迁移</p>
+<ol><li>Databricks 通过约 3 至 5 年、金额约为 1000 万至 8000 万美元的多年承诺，资助 40 万至 80 万美元的成功积分，从而使前线部署工程师能够将生产部署速度提高约 120%，尤其在具代理能力的项目、ETL</li></ol>
+<p>和数据仓库迁移方面</p>
+<h2>Q:在您覆盖的客户中，目前对 Databricks 的消费情况如何，现有客户的同比增长率是多少？我们看到第二季度的年化经常性收入大约为 70 亿美元。第三季度的当前数据是多少，增长率是多少？</h2>
+<p>A:同比增长为 58%，环比增长为 18%。合并口径下，第三季度的期末速率（exit-rate）数值大约为 81 亿美元。</p>
+<h2>Q:第三季度的年化经常性收入数字是多少？</h2>
+<p>A:大约为 18 亿美元。</p>
+<h2>Q:推动年化经常性收入增长的主要因素是现有客户还是新客户？在今年上半年，有些客户已经达到了他们的 token 上限。这些客户是否还有额外的 IT 或 token 预算，您是否观察到他们的 token 消耗有所增加？</h2>
+<p>A:在总体的年化经常性收入增长中，20% 来自首次在 Databricks 上部署的净新增客户，80% 来自现有客户。在这 80% 中，45% 的增长来自现有客户部署新的工作负载，特别是新的数据管道、仓库迁移、AI 服务和Lakebase。另有 35% 来自现有工作负载的自然增长，包括更高的流量和并发，以及部分的尺寸调整（right-sizing）。</p>
+<p>关于 token 最大化，客户已经进行过这类优化。Databricks 提供自有模型，也允许客户使用托管在平台上的本地模型，包括成本较低的模型。Unity AI Gateway 正在被推广，以帮助客户管理他们的 AI 预算。客户仍然有token 预算，但在分配上更加注重成本并具备战略性。</p>
+<h2>Q:是否可以理解为在上半年达到 token 上限的客户变得更敏感于价格并在 token 使用上更具策略性，从而其 token 消耗增长放缓？</h2>
+<p>A:是的，情况正是如此。token 消耗之前增长更快。即便是 Databricks 的 Foundation Model API 在第一季度的增长也强于第二季度。因此当前的重点是通过像 Unity AI Gateway这样的产品，帮助客户治理消费成本。</p>
+<p>客户也在试点使用 Foundation Model API。一些试点已进入生产，增加了这些客户的整体推理计费。然而，其他客户要么推迟了试点，要么推进速度比预期更慢。</p>
+<h2>Q:您提到一些客户已经开始使用 Unity AI Gateway。随着 token 价格下降，他们可能会在更多工作负载上使用 AI 或 Databricks。目前整体 token 体量和在 Databricks 上的总支出有哪些趋势？</h2>
+<p>A:客户通过 Unity AI Gateway 在不同模型间分摊 token 成本，该网关允许他们在高性能模型和低成本模型之间进行负载均衡。token 单价下降了约 25%，而体量上升了约 20%。在净值上，尽管消耗的 token比以前多，但客户的支出大约减少了 10%。</p>
+<p>客户在 Agent Bricks 等领域的支出有所增加，他们在这些领域构建定制代理。对于 Genie Agents，Databricks 仍在承担所有 token 成本，因此客户不承担这些费用。因此客户的支出集中在 Agent Bricks、Foundation Model API 以及直接使用 Databricks 托管模型上。token 体量增加，但总体成本下降，导致总支出净减少大约 10%。</p>
+<h2>Q:如果价格下降 25% 而体量仅增长 20%，总支出就会下降。如果这一趋势持续到明年，尽管体量更高，总营收仍可能下降，从而可能放缓 Databricks 的营收增长。您如何看待这一趋势？</h2>
+<p>A:计费大约下降了 10%。客户现在运行的是 120 个任务而不是 100 个，但花费是 0.75 美元而不是 1 美元。支出下降，而任务数量增加。这本来就会对推理收入形成一定压力。当客户直接向模型提供商付费时，影响对这些提供商会更大。</p>
+<p>预计在几个季度内模型支出会再次增长，因为当试点进入生产时，客户在 token 消耗上的支出会增加。在接下来的几个季度中，预计会有大量代理和其他用例进入生产部署。许多迁移也在推进中。一旦数据进入Databricks，就更容易构建代理并在其上应用 AI，从而导致更高的消耗。</p>
+<p>迁移活动目前处于超速增长阶段。净效应应在明年第二季度可见，当客户把更多数据放入 Databricks 时，整体 token 消耗预计将再次上升。</p>
+<h2>Q:是否可以认为现有客户消费放缓是暂时的，增长应在明年再次加速？尽管 token 体量增加，但并未达到预期。企业客户的主要约束是什么？是否仍有大量工作负载停留在概念验证阶段，或者客户是否达到了年度预算上限？如果企业的生产部署在明年加速，您预计预算增长幅度有多大？</h2>
+<p>A:有两个因素在起作用。Databricks 将 8 月至 10 月定义为第三季度，因此其财务季度与常规日历季度不同。其最后一个季度从 11 月到次年 1月。在那段期间，大多数客户要么已耗尽预算，要么只剩下一小部分可用于概念验证（POC）。他们可能会用剩余预算做小规模的概念验证或价值验证（POV），然后将项目推迟到二月或三月。届时预计消费会增加。</p>
+<p>预计增长反映了两个因素：预算将重置，且许多当前的试点和概念验证将转入生产。综合考虑这两点，按 Databricks 的日历计算，明年第一季度——即二月到四月——在 token 端的增长估计相较当前水平为 25% 到 30%。</p>
+<h2>Q:您预计 Databricks 客户的整体 AI 预算明年相比今年会增长多少百分比？</h2>
+<p>A:大多数客户讨论的是将 AI 预算提高大约 40%。他们正在寻求优化其他基础设施工作负载并将更多支出转向 AI。他们也在增加整体 IT 预算中分配给 AI 的部分。平均预期增长约为 40% 到 45% 相较于今年。</p>
+<h2>Q:除了编码之外，哪些企业 AI 用例在部署速度或接受度上更快？</h2>
+<p>A:大多数 Databricks 客户在编码方面的支出并不大。Databricks 提供诸如 Genie Code 之类的产品，但其消耗尚未达到预期，尽管增长迅速。Databricks 上的主要用例是 Genie Agents和在平台上构建的定制代理。最大宗的用例是面向员工的知识助理。</p>
+<p>Databricks 在金融与运营分析方面也有大量应用，包括成本差异解释、库存异常调查以及使用经过策划的数据集或黄金表（gold tables）。一些客户将其应用于 IT服务台和支持运营，包括工单分类、运行手册检索、回复草拟等类似任务。以文档为主的工作流推动了 Databricks 上大部分代理的消耗。</p>
+<p>编码主要通过 Genie Code 处理。许多用户之前使用 Claude 和 Codex 来管理 Databricks，但他们现在正在回归 Genie Code。它在部署 Databricks 以及简化客户迁移方面都很有效。</p>
+<h2>Q:除了 Databricks 特定的用例之外，企业在大语言模型、云平台和其他服务上正在加速推进的更广泛 AI 应用有哪些？</h2>
+<p>A:大多数客户在 Azure 上使用 Databricks，也称为 Azure Databricks。对于使用 AI Foundry 或 Azure Copilot 创建 agent 的场景，Azure 的采用率很高。对于在 Azure上创建的 agent，客户主要使用 Claude 作为后端模型，因为使用 Anthropic 模型的 agent 在准确性和性能上相较于使用 OpenAI 模型的 agent 略有优势。</p>
+<p>在 AWS 上使用 Databricks 的客户越来越多地部署通过图形用户界面或虚拟桌面基础设施（VDI）环境运行的 agent。例如，SAP 可能不允许通过 API 提取数据，这就要求 agent在屏幕间导航、捕获信息、将其复制到另一个工具并执行完整工作流。这类基于 GUI 执行或 VDI 的 agent 正变得流行，尤其是在医疗和金融领域，用于发票处理、从采购到付款等类似工作流。后端模型也在持续改进。</p>
+<h2>Q:对于您提到的这些用例，总的 token 消耗量是多少？它们在企业客户中的渗透率有多广？</h2>
+<p>A:对于大多数以文档为主的后台工作和在 VDI 上运行的 agent 用例，采用通常通过部门或业务单元的采购而不是集中采购来实现。一个大型企业在单个用例上可能会部署大约 30 到 40 个 agent。此类场景下的 token消耗大约是每月 500 亿到 800 亿 token。</p>
+<h2>Q:在北美和欧洲，企业 AI 部署达到了什么阶段？更广泛部署的主要制约因素是什么：token 消耗控制、访问控制、治理与管理，还是其他问题？</h2>
+<p>A:在各自的不同用例中，北美客户平均大约有 20% 到 25% 已经进入生产。欧洲这一比例约为 18% 到 24%，这反映出在批准这些用例时涉及的额外监管要求。</p>
+<p>主要的制约因素是权限以及确定用户应如何访问这些用例。Databricks 自身的用户界面对管理员更为丰富，而终端用户通常通过与 Microsoft Teams、Copilot、Codex 或其他平台的集成来访问 Databricks Genie 或 agent。因此，提供和管理用户访问是主要关切。</p>
+<p>第二个制约因素是法律和治理审批，包括关于哪些数据被发送到模型、哪些数据不被共享的保证与文档。第三个问题是所有权。客户正在建立 AI 卓越中心并转移最初由 IT 或数据工程团队承担的职责。在多个团队在不同平台上运行多个 agent的环境中建立实践需要时间。</p>
+<p>构建整体治理框架需要时间。客户通常希望在该框架建立之后才将工作负载推向生产。</p>
+<h2>Q:Databricks 的营收现在已接近 Snowflake 的水平，但 Databricks 的营收增长速度要快得多。造成这种差异的主要原因是什么？</h2>
+<p>A:Databricks 正在对现代用例进行大量投资。除了让客户能够在平台上构建 agent 之外，它还通过 Lakebase 和 Databricks Apps 等服务应对下一个需求——agent的记忆。客户可以部署应用，用同一数据库为其提供动力，并使用 Lakebase 作为 agent 的记忆。</p>
+<p>Databricks 还在进入新细分市场，包括面向营销用例的 Customer Lake 和面向安全用例的 Lakewatch。这些产品在之前的产品无法触达的客户中创造了新的销售管道。客户可能从 Spark和数据工程起步，进而进入数据仓库，然后增加模型服务和 agent，PostgreSQL 数据库也是另一个增长领域。</p>
+<p>客户通常在 Databricks 数据仓库上的开销低于在 Snowflake 上的开销，这也是一些客户从 Snowflake 迁移到 Databricks 的原因之一。不过，主要的增长驱动力是 Databricks将其大量营收和资金再投资于创新和新产品，目标是获取新客户，尤其是在安全、营销和与 agent 相关的工作负载方面。</p>
+<h2>Q:企业更倾向于由单一供应商提供数据仓库服务，还是倾向于 Databricks 与 Snowflake 共存的混合模式？如果他们整合到一家供应商，双方的竞争会不会加剧？中长期来看，Databricks 与 Snowflake 之间的能力差距会收窄还是会扩大？</h2>
+<p>A:许多尝试同时维持两平台的客户发现，这样做会削弱 lakehouse 的初衷。因此大多数客户正在在 Databricks 或 Snowflake 之间进行整合。看起来更多迁移倾向于 Databricks，包括一些 Snowflake客户迁移到 Databricks。</p>
+<p>差距很可能会扩大。除了在 Lakebase、agent 和 agent 记忆方面的投资外，Databricks 还在大量投资本体（ontology）层。这应当能提升 agent 的准确性并提供强有力的企业上下文，使 Databricks的产品比竞争产品更无缝地协同工作并具有更强的组织语境。</p>
+<p>竞争将变得更加激烈并由创新驱动。Databricks 往往会推出更多产品，而 Snowflake 则在尝试弥补导致客户流失的差距。Databricks 正迅速进入新领域。现有客户具有高度粘性，但当前目标是赢得更多新客户并进一步加速增长。</p>
+<h2>Q:Databricks 提供 Unity AI Gateway，Snowflake 提供 Cortex AI Gateway，许多其他公司也在开发类似服务。为什么会有更多公司投资于模型路由和 agent 访问治理？若有效执行这些功能，一家公司可以获得哪些收益？</h2>
+<p>A:随着 agent 进入生产，企业必须确定每个 agent 可以使用哪些模型和工具。他们需要控制 agent 能访问哪些模型、能调用哪些工具。通过网关，企业不仅希望监控和治理 agent，还希望治理技能、为全组织创建集中技能，以及管理Model Context Protocols 和其他 AI 资产。</p>
+<p>Databricks 已经提供了 Unity Catalog，它对 AI 资产包括 AI 函数提供了一定的控制。Unity AI Gateway 将这些能力扩展到模型路由、成本控制、负载均衡、使用跟踪和预算管理。随着组织将 agent推向生产，这些功能变得越来越重要，因为需要对整体解决方案有更强的控制。</p>
+<p>Databricks 的主要优势在于 Unity AI Gateway 与客户已用于治理数据和工具的 Unity Catalog 集成。Snowflake 提供类似服务，但目前并未覆盖所有内容。Databricks 的周期性 SQL管道、模型服务和 Lakebase 使用也能推动 Unity AI Gateway 的采用。如果大多数工作负载都整合在 Databricks 上，客户通常不太可能再想要第三方的网关工具。</p>
+<h2>Q:如果客户使用 Databricks 自己的 AI 网关，Databricks 可以获得哪些好处？Databricks 将如何对 Unity AI Gateway 收费，该产品如何为营收增长做出贡献？</h2>
+<p>A:在未来一年中，对 AI 资产治理的需求将显著增加。传统的目录产品，包括 Unity Catalog 及其替代方案，不足以管理 agent、Model Context Protocols、技能和其他 AI 资产。因此 Unity AI Gateway 和类似产品非常重要。Databricks 使开发者能够访问 Databricks 托管的模型或来自 OpenAI、Anthropic 和 Amazon Bedrock 的模型，同时应用速率限制、预算和集中化管理。</p>
+<p>对于 Databricks 托管的模型，推理按模型服务（model-serving）条款计费。如果客户有自己的模型合同，仍然需要一个网关来管理和测量使用情况。计费将基于计算资源。Unity AI Gateway所执行的使用跟踪和控制功能最终将向客户收费。</p>
+<p>在最初几个季度内，Databricks 不太可能对 Unity AI Gateway 收费，因为即时目标是提高采用率，类似于对 Genie Code 和 Genie Agents 的做法。一旦客户在其 AI治理中大量采用该网关，Databricks 就可以开始按治理和管理所消耗的计算资源进行计费。</p>
+<h2>Q:Databricks 和 Snowflake 并不是唯一在开发用于代理管理的统一网关的公司。超大规模云厂商如 AWS 和 Google Cloud，以及软件公司如 Salesforce 和 ServiceNow，也在开发类似产品。这些不同类型公司的各自优势是什么，哪一类最有可能成为统一 AI 管理的入口？</h2>
+<p>A:结果取决于客户整合其代理的平台。客户并不局限于在单一平台上创建代理。即便在使用 Microsoft Azure Databricks 的客户中，许多人也更倾向于使用 Microsoft 来管理代理状态。因此 Microsoft 对以Microsoft 为中心的企业来说拥有最强的默认代理管理控制台之一，而在 Databricks 客户中，以 Microsoft 为中心的企业比以 AWS 或 GCP 为中心的企业更多。</p>
+<p>因为 Databricks 是 Azure 的一级服务，Microsoft 与 Databricks 成功的机会之一很高。代理整合正在他们的平台上发生，他们的产品在成本管理、治理、支出优化和预算方面具有差异化能力。</p>
+<p>大量相关数据已经驻留在 Databricks 或 Microsoft Fabric 中。通过 AWS Lake Formation 或 GCP 的 BigQuery 等产品实现的可比 lakehouse采用率并不如前者广泛。代理倾向于部署在数据所在之处，客户也更可能在该平台上使用其网关。</p>
+<h2>Q:Genie Code 在企业客户中的渗透率在第三季度是多少？在迁移到 Databricks 的过程中它能节省多少时间？</h2>
+<p>A:Databricks 正在通过 2027 年 1 月提供 Genie Code 的免费额度以提高采用率。大约 90% 的客户以某种形式尝试过 Genie，约有 45% 到 50% 的客户现在使用 Genie Code 在Databricks 上进行变更或部署服务。与 Claude 或 Codex 相比，一个主要差别是 Genie Code 无需集成，客户一打开 Databricks 就可以使用。</p>
+<p>重复使用率相当可观。在开始使用 Genie Code 的客户中，几乎有 40% 持续使用。与 Genie Code 相关的 pull request 也在以约 60% 到 70% 的速度增长，表明已经出现了显著的采用。</p>
+<p>Databricks 正在围绕 Genie Code 构建如 Lakebridge 的迁移加速器。第一类迁移是数据仓库，包括通过 Lakebridge 将 Synapse 和其他仓库迁移到 Databricks。第二类是报告迁移，涉及Tableau、Power BI 和 Qlik 等工具。用户可以向 Genie Code 提供仪表盘的截图，Genie Code 能在 Databricks 上创建一个 AI/BI 仪表盘。第三类是诸如 Informatica 的 ETL工具，Genie Code 在这方面也表现良好。</p>
+<p>Databricks 正在鼓励合作伙伴在构建加速器时使用 Genie Code，而不是依赖 Anthropic、OpenAI 或其他产品和模型。对 Genie Code 的侧重运作良好。</p>
+<h2>Q:哪些行业已经广泛部署了 Databricks 或 Snowflake？哪些行业正在加速使用或迁移到这些平台，哪些行业相对较慢采用？</h2>
+<p>A:在 Databricks 上消费足迹最大、最成熟的行业是数字原生企业和金融服务。数字原生包括软件和 SaaS 公司，以及数字商务。金融服务包括银行和保险，使用场景涉及信贷、承保、支付和可审计性。</p>
+<p>医疗和生命科学也是增长显著的强劲细分市场。一些医疗和生命科学客户为 Databricks 带来的年经常性收入已超过 1000 万美元，金融服务客户同样强劲。</p>
+<p>汽车和制造业是增长最快的新兴细分市场，此前这些领域的增长较少。这些客户通常拥有大型 SAP 资产。SAP 过去对数据提取有较多限制，但 SAP 与 Databricks 的合作正在快速演进。早期的重点是选定的 SAP BW迁移，而不断扩展的合作正在改变这一做法。</p>
+<p>制造、汽车和物流是 Databricks 的下一个增长板块，因为客户已找到在 Databricks 上创建数据层的方法，然后使用代理和其他工具从 SAP 提取数据。其他与 SAP相关的工具也在被迁移。客户希望降低他们已经承担的大量许可成本。</p>
+<p>Databricks 目前尚非针对 SAP 数据或所有 SAP 相关工作负载的完全成熟平台。因此制造和汽车客户比金融服务和医疗客户需要更多时间才能完全迁移到 Databricks。</p>
+<h2>Q:制造、汽车和物流的主要 AI 用例是什么？</h2>
+<p>A:一旦制造和物流客户在 Databricks 上部署了数据层，各部门就会出现 AI 代理用例。它们通常从财务开始，包括报告和财务部门现代化。在制造业，预测性维护是常见用例，模型用于预测工厂设备故障。</p>
+<p>制造商还使用视觉质量检测来识别缺陷、误报和废料，并减少损害。另一个领域是环境、社会与治理（ESG）报告，尤其是环境可持续性。此前依赖静态报告的客户正转向动态报告，以便更快地管理碳排放和其他可持续发展目标。</p>
+<p>在物流方面，常见用例包括运力预测、需求计划、路线规划和送达 ETA 预测。客户的目标是比当前水平提高大约 4 到 5 个百分点的预测准确率。</p>
+<p>物流公司还有财务和税务现代化的用例。许多公司仍依赖 Excel 和大量人工运算，希望将其迁移到支持 AI 的仪表盘。然后他们可以使用 AI 代理查询其财务数据。制造和物流的采用通常是基于部门或业务单元，而不是集中式的。</p>
+<h2>Q:Databricks 和 Snowflake 是否有内部的 Forward-Deployed Engineer 团队，帮助传统行业加速 AI 应用？Forward-Deployed Engineers 能否实质性地加速这些客户的 AI 采用？</h2>
+<p>A:有的。Databricks，以及很可能的 Snowflake，正在大力投资 Forward-Deployed Engineer 团队。传统的专业服务团队正在被转型为 Forward-Deployed Engineer团队，因为许多当前用例涉及 AI 和代理。一些专业服务资源正被相应地重新部署。</p>
+<p>Databricks 更加关注多年期承诺，而不是单年合同。对于大约 1000 万到 8000 万美元、为期三到五年的承诺，Databricks 提供可观的成功额度（success credits）。客户可能会获得 40 万到 80万美元的成功额度，可用于部署 Forward-Deployed Engineers 并推进用例。</p>
+<p>当部署在前线的工程师（Forward-Deployed Engineers）参与时，客户将用例投入生产的速度比独立推进快了120%。一些客户无法独立完成agent式迁移。当前许多迁移由Databricks的Forward-Deployed Engineer团队执行，团队使用一个harness和agents来完成大部分迁移工作，尤其是针对ETL和数据仓库。</p>
+<p>Forward-Deployed Engineers 对于加速整体用例采用非常重要，因为客户承诺规模越大会产生越多的成功积分，从而能够更多地使用这些工程资源。</p>
+<h2>Q:您之前提到企业客户可能在明年第二季度加速其token消耗。为什么您将第二季度识别为拐点？</h2>
+<p>A:Databricks将11月至1月定义为一个季度，而客户可能将1月至3月视为第一季度。大多数客户在一月更新预算。当前周期剩余两个月可用的预算通常较小——约在25,000美元到200,000美元之间——只能支持概念验证（PoC）和价值验证（PoV），而无法支持广泛的部署。</p>
+<p>大多数客户打算在明年使用新的年度预算。由于新年假期，许多人要到1月15日左右才完全恢复工作。Databricks 的新季度从二月开始，因此预计大多数此类用例将在那时启动。</p>
+<h2>Q:Databricks 正在与诸如 PostgreSQL 之类的开源数据库技术进行集成。这是否可能进一步从像 MongoDB 这样的传统数据库公司夺取市场份额？</h2>
+<p>A:会的。在希望为agent-memory工作负载采用 PostgreSQL 的客户中，Databricks 已经在与 MongoDB 激烈竞争。</p>
+<p>Lakebase，Databricks 的 PostgreSQL 产品，是公司与 Unity AI Gateway 和 agents 并列的战略重点之一。Databricks 一直在持续聚焦 Lakebase，目的是不仅能在 SQL 和与agent 相关的采用上与 Microsoft 竞争，还能与 MongoDB 和 DynamoDB 竞争。公司显然把与这些平台的竞争作为重点。</p>
+<p>以上仅供交流探讨，不构成投资建议</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
