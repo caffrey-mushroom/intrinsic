@@ -1,0 +1,208 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.11 | AC | Software | HubSpot CTO Dharmesh Shah: AI-Native SaaS Architecture and One-Person Companies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.11 | AC | Software | HubSpot CTO Dharmesh Shah: AI-Native SaaS Architecture and One-Person Companies</h1>
+<p class="orig">原标题：HubSpot 联合创始人兼首席技术官 Dharmesh Shah：AI驱动的SaaS架构演进与单人公司市场机遇</p>
+<p class="tags">#HubSpot #SaaS #Agent</p>
+<p class="meta">AceCamp · 2026-11-11 · article 70569128</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>这是a16z合伙人11月10日对HubSpot联合创始人兼CTO Dharmesh Shah的访谈。</li>
+<li>Shah认为当前是最好与最坏并存的时代，AI像20年前的互联网一样，中小企业想受益又感到畏惧。</li>
+<li>软件开发史是抽象层次不断提升的历史，AI让人在更高抽象层工作，迭代速度大幅加快。</li>
+<li>他认为迭代周期最短、学习成本最低的团队长期会胜出，现在是创业的好时机。</li>
+<li>访谈还讨论了AI驱动的SaaS架构演进和单人公司的市场机会。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>文章来源于2026年11月10日，a16z 合伙人 Joe Schmidt 对 HubSpot 联合创始人兼首席技术官 Dharmesh Shah的采访。</p>
+<p><b>以下是访谈全文：</b></p>
+<p><b>Q&amp;A</b></p>
+<p><b>在当前AI技术浪潮下，您如何看待市场情绪以及这对HubSpot这样的成熟软件公司意味着什么？</b></p>
+<p>当前的市场环境可谓“最好与最坏的时代并存”。一方面，这种巨大的技术变革带来了巨大的能量和兴奋感，这与HubSpot成立之初的情形颇为相似。公司成立近20年前，是基于互联网这一新兴事物，旨在帮助中小企业利用其实现增长，因为当时他们对fragmented的工具感到不知所措。20年后，AI成为了新的变革力量，中小企业同样需要从中受益，但依然感到畏惧。这感觉像是为同一客户群体，利用新技术重振了公司的使命。另一方面，这也带来了大量的“战争迷雾”和不确定性。作为团队，我们主要致力于关注客户，市场的波动则顺其自然。我们对行业发展有自己的论点和投入的赌注，但我更关注积极的一面。我从事商业软件开发已超过30年，现在是我职业生涯中最有趣的时期，对于“建设者”而言，这是一个前所未有的好时代。</p>
+<p><b>从历史角度看，软件开发经历了从机器语言到3GL、4GL的抽象层次不断提升的过程。在您看来，当前AI技术的发展如何延续或改变了这一趋势，以及这对初创企业的迭代和创新方式产生了哪些影响？</b></p>
+<p>软件开发的历史本质上是抽象层次不断提升的历史。从最初的机器语言、大型机，到后来的C、C++等3GLs，再到4GLs，我们一直在努力简化将想法转化为现实的过程。AI为我们提供了一套全新的工具集，使我们能够在更高的抽象层次上工作，这是根本性的变化。人类和企业面临的问题依旧，但我们现在拥有了更好的工具。例如，近期TypeSafe发布的DevModel就表明，AI可以被视为软件开发的另一个维度，它为建设者的工具箱增添了新工具，并扩大了“建设者”的定义范围。尽管如此，许多核心问题并未改变。在更高的抽象层次上工作，使得AI能够极大地加快迭代速度。过去可能需要6个月、1年甚至2年才能学到的教训，现在可以通过快速构建、发布、测试来获得。因此，我认为现在是创办公司的绝佳时机，因为迭代周期最短、学习成本最低的团队，从长远来看最终会胜出。</p>
+<p><b>考虑到AI技术使得软件开发和迭代速度大幅提升，您认为初创企业在选择创业方向和切入点时，策略上应做出哪些调整？</b></p>
+<p>选择创业方向始终是困难的，尤其对于初次创业者。一个常见的错误是认为这可以通过严谨的分析，比如制作包含18列数据的电子表格来确定最佳想法。事实上，几乎不可能预先知道一个想法的“质量”或成功概率。检验想法好坏的唯一方法是实际去测试它。并且，最终成功的业务形态往往与最初的设想大相径庭。因此，明智的做法是尽快将想法推出市场，快速学习并判断其可行性。AI的出现使得这种快速迭代成为可能。然而，当前面临的一个更大挑战是分销。由于软件构建变得更容易，市场上的选择会更多，如何穿透噪音、触达客户变得更加困难。我坚信，在早期阶段应该“缩小光圈”（narrow the aperture），聚焦于一个狭窄的领域，这能增加学习和突破的几率。创业者常犯的第二个错误是，一开始就追求巨大的潜在市场规模。更重要的是思考最初30天内要做什么，如何获得第一美元的收入。即使在HubSpot内部探索新想法时，我们也会缩小视野。能够以最短的时间和最低的成本完成迭代学习的团队，平均而言更容易获胜。</p>
+<p><b>HubSpot最初是如何从一个针对律师事务所的ERP概念演变为专注于中小企业市场的营销平台，并最终扩展为CRM平台的？</b></p>
+<p>我们在商学院时就看好中小企业市场，因为它服务不足。我们都曾从事企业软件，但其销售周期长、收入集中度高，并非创业的理想选择。而消费级市场则结果两极分化，且通常难以直接收费。SMB市场兼具两者的优点：可以为解决问题而收费，同时又能实现消费级市场的规模，避免收入集中。我们最初参加MIT 50K商业计划竞赛的想法是为小企业打造一个类似Oracle的ERP系统。为了使范围更具体，我们将商业计划聚焦于律师事务所的ERP，即LegalSpot。但在早期市场测试中，我们发现律师事务所并不是一个理想的销售市场。与他们交流时，他们对ERP中的营销和网站功能最感兴趣，核心诉求是“能否帮我找到更多客户”。这让我们在“SMB的ERP”和“SMB的营销”两个方向之间抉择。最终我们选择了后者，这后来演变成了HubSpot的营销产品。</p>
+<p><b>从最初的营销应用套件发展到完整的CRM平台，HubSpot是如何进行产品扩张决策的？特别是，是什么契机促使公司进入CRM领域，并采取了怎样的市场策略？</b></p>
+<p>公司创立之初，我们并未计划成为一个CRM平台。最初我们提供的是一套营销应用。随着公司的发展，我们意识到需要推出第二款产品。营销软件业务与销售和CRM领域天然邻近，这是一个合乎逻辑的延伸方向。大约在公司成立五六年后、IPO前几年，我们对客户进行了一项调查，发现20%的客户使用Salesforce.com，20%使用其他CRM，但高达60%的客户根本没有使用任何CRM。这些付费使用我们软件来获取销售线索的客户，却没有系统来管理这些线索，这让我们感到震惊。我们分析他们不使用CRM的原因主要是觉得产品过于复杂、令人望而生畏，且成本太高。基于此，我们决定开发一款CRM产品来满足这60%的市场空白。我们的策略是：第一，打造当时市面上最易用的CRM，以解决“太难”的问题，这与我们专注SMB市场的核心优势相符；第二，为了消除“太贵”的顾虑，我们决定将CRM产品免费提供，而非免费增值模式。我们的理念是先创造客户价值，再考虑价值获取。通过营销软件业务的收入，我们可以支持CRM的免费策略。随着产品的迭代，我们逐渐认识到，要在CRM领域取胜，必须将其发展为一个平台。</p>
+<p><b>HubSpot是如何成功构建其开发者生态系统的？在与开发者和合作伙伴建立信任方面，有哪些关键的经验和原则？</b></p>
+<p>我们从作为平台和生态系统的消费者经历中吸取了教训。许多平台在初期会吸引开发者，但随着时间推移，会有意或无意地侵占开发者的空间，例如关闭API或变得对开发者不友好，Twitter早期的经历就是一个例子。我们将这些教训铭记于心，致力于成为我们自己期望存在的那种平台——友好、可靠。我们努力与合作伙伴保持尽可能的开放和透明，明确告知我们正在做的事情，并指出我们认为存在机会且我们极不可能涉足的“留白”领域，以此建立信任。我们将构建生态系统视为构建产品。对于核心客户，我们关注“价值实现时间”（time to value）；同样，对于开发者，我们关注“愉悦实现时间”（time to joy）。我们致力于缩短开发者从接触HubSpot API到实现功能，再到通过生态系统赚取第一笔收入的时间。</p>
+<p><b>面对前沿AI实验室（frontier AI labs）正在积极布局的通用工作流产品，您认为像HubSpot这样的公司应该如何思考自身的护城河和长期价值，以避免直接走上那条竞争激烈的“黄砖路”？</b></p>
+<p>首先，一个常见的错误是仅仅因为ChatGPT或Claude Co-work等产品目前还不能做某件事，就认为这是一个机会。这种想法有两个误区：第一，如果在这个论断后加上“yet”（尚未）仍然成立，那么这就是一个危险的信号。第二，需要区分评估的是“产品”还是“公司”。例如，ChatGPT产品本身可能做不到，但其背后的OpenAI公司是否有能力推出新产品或新产品线来实现它？因此，不仅要避开“黄砖路”本身，还要与其保持一定距离。明智的选择是寻找那些前沿模型公司存在结构性限制（如监管）或激励机制限制（incentive constraint）的领域。例如，尽管OpenAI的团队有能力进入CRM市场并与HubSpot竞争，但考虑到他们的雄心和战略重点，他们不太可能这样做。这需要巨大的投入和专注，而他们的核心目标是将其在模型预训练上投入的巨额资本，通过销售推理和tokens来实现商业化。</p>
+<p><b>前沿模型公司在商业化其AI能力时，主要面临哪些路径选择？这为其他软件公司创造了怎样的市场机会？</b></p>
+<p>前沿模型公司在投入了数千亿美元进行模型预训练后，其核心业务是如何将这些资本支出变现，即销售推理服务和tokens。他们主要有两条路径。第一条是直接面向终端用户，通过消费级产品向全球每个人销售tokens，或者直接与财富500强公司（如摩根大通）合作，绕过中间商，通过自己的全职员工团队提供服务。这是一种直接销售的路径，他们也正在这样做。</p>
+<p><b>从企业家的角度来看，与2023年相比，当前在AI领域创业的环境有何变化？SaaS公司在AI生态中可能扮演怎样的角色？</b></p>
+<p>与2023年相比，当前在AI领域创业的畏惧感有所降低。2023年时，少数公司似乎掌握了某种“魔法秘方”，并且需要巨大的资本支出，这使得外界难以判断是否有人能真正解决相关问题并与之竞争。然而，目前的情况是，模型虽然尚未完全商品化，但已变得越来越普遍，其性质更接近于基础设施。无论是从定价还是可替代性角度看，模型都在朝这个方向发展。例如，OpenRouter这类工具的存在使得替换模型变得容易。多数SaaS公司，包括HubSpot在内，都在进行某种形式的用例分解和模型路由，以确定适合特定任务的最佳模型。这种趋势的副产品是，创业公司不再面临单一供应商控制关键要素的供应链风险。由于开源模型和众多优质商业产品的存在，只要创业公司避开与基础模型直接竞争的路径（即“yellow brick road”），就有多种选择，从而避免被边缘化。</p>
+<p>对于SaaS公司而言，一种可行的路径是成为“推理”服务的分销商。这些公司了解其特定领域和市场，拥有一定的分销渠道，可以销售tokens。这并非一个二元选择，它们可以同时采取两种策略：一方面，对于消费者市场等核心领域，它们会选择自建并主导，不希望出现类似ChatGPT的竞品；另一方面，它们可以将AI视为基础设施，就像15年前的AWS和云计算一样，从而创造出大量的商业机会。对于非基础模型领域的初创公司或成熟企业而言，其核心优势仍然在于构建高质量的软件，通过整合各种AI基础设施，为客户提供独特的价值。关键在于在应用层构建能够产生规模收益递增或复利优势的系统，例如通过构建特定的循环和测试来识别并占据有利的市场定位。</p>
+<p><b>像ChatGPT这样的AI交互界面是否会削弱HubSpot等现有B2B应用的长期价值？您如何看待AI界面与B2B应用核心价值之间的关系？</b></p>
+<p>交互界面的重要性存在一个谱系，其影响程度因产品而异。以Uber Eats或DoorDash为例，尽管它们的应用程序体验很好，但其核心价值并非应用本身，而是其建立的餐厅合作网络、司机网络以及背后的物流体系，这部分是难以被取代的。相比之下，也有些产品，其全部价值几乎都体现在交互界面上。</p>
+<p>大多数商业应用更接近Uber Eats的模式，其核心价值在于完成实际工作，交互界面只是实现目标的手段。对于HubSpot而言，界面之所以重要，是因为它帮助营销和销售人员完成任务、达成业务成果。在AI出现之前，HubSpot的优势在于深刻理解用户问题并构建了简洁易用的界面。然而，这并非其价值的全部。可以肯定地说，HubSpot的价值构成中，交互界面占比远低于99%。</p>
+<p>因此，ChatGPT和Claude等AI工具可以被视为新一代的“浏览器”，是人们消费价值的新入口。正如当年浏览器成为访问网页应用的通用界面，但并未垄断整个应用生态一样，如今的AI界面也将催生一个丰富的生态系统。OpenAI在其开发者日（Dev Day）上展示的插件架构和市场，正是为了丰富其平台内的应用和服务，这与历史发展规律相符。</p>
+<p>对于B2B领域的创业者而言，不应过度纠结于交互界面，而应专注于以最佳方式帮助客户实现业务成果，包括提供最具经济效益、最低延迟和最少摩擦的解决方案。大型语言模型虽然功能强大，但并非所有问题都适合用推理来解决。任何能够通过结构化查询确定性解决的问题，就应该使用结构化查询。例如，查询来自特定国家（如爱尔兰）的收入金额，应该通过数据库查询直接获得，而不是让一个高智能模型去海量非结构化数据（如Slack消息和邮件）中进行推理。</p>
+<p><b>考虑到AI模型处理非结构化数据的强大能力，您如何反思HubSpot最初为人类用户设计的架构决策？公司正在采取哪些措施来调整其底层框架以适应AI时代？</b></p>
+<p>软件开发的一个核心理念是构建一套随时间演进的基础原语，通过对这些原语进行新颖的重组和再混合来适应市场和产品的变化。HubSpot自创立之初便遵循此道，最初构建的核心操作系统和营销自动化工作流等原语，在后续开发销售和CRM产品时得以复用，从而在产品发布第一天就具备了强大的功能。</p>
+<p>面对AI时代，我们正在重新思考未来20年HubSpot所需的框架。过去，数据主要存储在关系型数据库中，以支持确定性的结构化查询。如今，数据同时包含结构化和非结构化两部分。这些非结构化数据过去虽然存在，但无法被有效利用。现在，我们正在重新审视基础原语。我们仍然需要一个持久化的结构化数据存储机制，作为记录事实和数据的“记录系统”（system of record）。与此同时，我们正在构建一个我们称之为“上下文系统”（system of context）的体系，用于处理非结构化数据。</p>
+<p>未来的演进方向是构建一个“第二大脑”（second brain）或某种上下文图谱（context graph）。这个系统将整合所有正在发生的事情，可能采用图结构进行存储。其理念是将这个上下文图谱与传统的结构化数据存储相结合，从而进行推理、驱动智能体并最终完成工作。</p>
+<p><b>AI驱动的“智能体编码”（agentic coding）为HubSpot这样的成熟公司带来了哪些新的可能性？公司如何利用现有资产在这种新技术趋势中建立优势？</b></p>
+<p>智能体编码不仅能帮助我们更快地生产软件、测试想法和构建产品，更重要的是，它使我们能够执行以前可能无法考虑的、更深入、更大型的项目。</p>
+<p>以HubSpot为例，我们拥有一个代码的“记录系统”，即GitHub。现在，我们可以利用最新的AI模型（如Fable 5.1或6 Astra）来“回放”过去20年的代码历史。比如，我们可以设想，如果当初在设计基础原语时做出了不同的选择，或者将某个功能实现为可复用的服务，系统会演变成什么样。理论上，现在可以花费数十万美元的tokens成本，让AI重写整个代码库，探索不同架构选择下的“平行宇宙”。</p>
+<p>成熟公司的一大优势在于拥有大量的单元测试（unit tests），现在这些测试可以作为评估标准。当我们让AI进行大规模代码重构后，可以通过运行这些评估来衡量新代码的有效性，检验其是否仍然通过所有测试、产生预期的结果。当新模型发布时，我们也可以运行这套评估体系，来权衡新模型的质量、延迟和成本等方面的得失。同样，我们可以用小规模的工作来测试一些理论，例如，如果用Rust语言重写整个系统会是什么样子。这种能力让我们能够以可控的方式验证大规模架构变更的可行性。</p>
+<p><b>HubSpot内部是如何组织创新活动的？公司通过哪些机制来探索新产品、新市场或新技术，并如何将这些探索的成果反哺给核心业务？</b></p>
+<p>HubSpot内部设有一个名为HubSpot Next的创新实验室，其运作模式类似于“公司内部的创业公司”。该团队享有高度自由，可以不受公司现有规则、技术栈或品牌的束缚，专注于解决特定问题。HubSpot Next的项目通常聚焦于探索新产品类别、新市场或测试新技术。这种模式在公司早期开发CRM产品时就已采用，并延续至今。</p>
+<p>目前正在进行的一个项目是Uspot，这是一款面向个体创业者的单人CRM。通过这类项目，我们可以用更低的成本、更快的节奏来验证新想法，例如测试“第二大脑”或图谱模型在特定场景下的有效性。Uspot项目上线仅30天，就已经在验证一些关于“第二大脑”作为底层原语的构想。对于创业者而言，关键不是去解决ChatGPT等通用模型在记忆等方面的横向问题，因为这些问题会逐步得到改善。正确的做法是，在特定的客户群体中，识别出可以受益于“第二大脑”理念的特定问题，并思考如何设计注入点、整合数据以及构建相应的智能体来完成工作。</p>
+<p>当HubSpot Next的项目取得成功并达到一定规模时，我们会通过多种方式将其成果整合到主公司。一种方式是类似内部“收购”，将项目（如之前的Agent.ai项目中的agent builder部分）转变为HubSpot的核心产品之一。另一种可能是，项目本身作为独立产品继续存在，但其核心理念（如Uspot验证的“第二大脑”概念）和关键技术被核心团队采纳，并应用于面向中小企业和团队协作的产品中。这种“公司内部创业”的模式，使得创新团队能够摆脱大公司的“包袱”，轻装上阵，快速实验。同时，当需要时，他们又可以利用主公司的品牌、分销渠道和客户关系等资产，从而兼具初创公司的敏捷性和大公司的资源优势。</p>
+<p><b>您如何看待单人公司（one-person company）市场的兴起？Uspot项目在该市场的早期实践中观察到了哪些值得注意的趋势？</b></p>
+<p>单人公司市场正在经历前所未有的增长。2025年，美国新成立公司的数量创下历史新高，达到约560万家。今年的数据同样强劲，截至8月份已超过400万家，预计将再创历史新高。更值得关注的是，这些新公司中，预计将长期保持单人运营模式的比例达到了历史最高点，并且仍在持续增长。根据美国人口普查局的数据，新公司中预计在未来两年内不会雇佣任何员工的比例现已超过70%。</p>
+<p>这标志着一个全新的、巨大的市场正在形成，就像当年中小企业市场一样。Uspot项目的一个关键学习目标是探索该市场的定价和商业化模式。在项目早期就引入了基于消费的付费模式，一个令人惊讶的发现是，用户为这类服务付费的意愿非常高。与以往在HubSp ot推出的众多项目相比，Uspot在商业化方面的早期信号是最成功的。这表明，AI技术使得为单人公司提供高度个性化的CRM成为可能，而这在过去几乎是无法实现的。这种趋势不仅为服务于该市场的创业者带来了巨大机遇，也预示着这些由AI赋能的单人公司将释放出前所未有的增长潜力。</p>
+<p><b>面对“SaaS末日论”的观点，您认为AI将如何重塑软件行业的机遇格局？</b></p>
+<p>AI本身就是软件，是一种极其智能的软件。它的出现并非宣告软件行业的终结，而是极大地扩展了软件能够解决的问题范畴。回顾HubSpot创立之初，当时风险投资界普遍认为营销软件市场规模有限，因为历史上营销更多被视为一门“手艺活”。然而，我们的论点是，互联网的兴起使得营销越来越像一个可以用软件来解决的问题，因此一个巨大的市场机会随之诞生。</p>
+<p>今天的情况与此类似。在AI出现之前，存在大量软件难以有效解决的问题。现在，AI使得解决这些问题成为可能，从而创造了一个比以往任何时候都更加广阔的机会集。诚然，一些无法适应向SaaS和云转型浪潮的软件公司最终会被淘汰，这是行业发展的自然规律。但从宏观上看，整个软件行业的机遇总量是空前巨大的。对于身处软件行业、具备创业精神的人来说，现在是创办一家软件公司的最佳时机。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

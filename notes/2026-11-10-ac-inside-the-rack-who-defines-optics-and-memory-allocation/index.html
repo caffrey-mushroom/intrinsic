@@ -1,0 +1,224 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.10 | AC | Optics/Memory | Inside the Rack: Who Defines Optics and Memory Allocation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.10 | AC | Optics/Memory | Inside the Rack: Who Defines Optics and Memory Allocation</h1>
+<p class="orig">原标题：机柜之内的定义权_光互联和存储的跟踪学习</p>
+<p class="tags">#NPO #HBM #英伟达</p>
+<p class="meta">AceCamp · 2026-11-10 · article 70569085</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>作者认为AI机柜增量正从卖器件转向定标准，竞争焦点变成2027–2028年的产能分配、合同条款和代工位。</li>
+<li>光互联代工位分配已基本结束，2027年NPO合计约750–850万只，2028年英伟达约2000万只需求大概率沿用现有分工。</li>
+<li>英伟达柜间光互联为自研方案，国内厂商只能承接代工；在AWS和AMD体系内可拿到整机方案位，价值量差别很大。</li>
+<li>AWS计划2027年四季度NPO定型上量，样品2026年底送到旭创、新易盛和Coherent。</li>
+<li>存储2027年增长几乎全来自位元，价格被长协上限锁定；2028年风险在于量只锁下限、价格没锁。</li>
+<li>Rubin体系的HBM和SoCAMM全部经英伟达转售，是否被纳入平台方机柜定义决定议价空间。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>AI 机柜的增量正在从“卖器件”转向“定标准”，竞争焦点已经从技术路线转移到 2027—2028 年的产能分配、合同条款和代工位归属。</p>
+<p>注：以下内容的数字部分，均来自个人搜集整理和行业专家调研，图表为笔者自制，可能存在不准确、不完整的情况，请自担风险</p>
+<p><b>一、核心结论</b></p>
+<p><b>一句话总结：</b>两份材料分别来自光互联与存储两个环节，指向同一个变化——AI 机柜的增量正在从“卖器件”转向“定标准”，竞争焦点已经从技术路线转移到 2027—2028 年的产能分配、合同条款和代工位归属。</p>
+<p><b>行业正在发生的六件事</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569085_48ba5831e0548e0d.webp" alt="" loading="lazy"></p>
+<p><b>三个最重要判断</b></p>
+<p><b>判断一，光互联的代工位分配已经结束。</b>2027 年的量已经分到客户和供应商，后续变化主要来自各家的良率与交付，格局重排的概率不高。国内厂商在英伟达体系内拿到的是代工位，在 AWS、AMD 体系内可以拿到整机方案位，两种位置的价值量差别很大。</p>
+<p><b>判断二，存储 2027 年的增长几乎全部来自位元。</b>价格被长协上限锁死，出货量由合同决定，收入的可预测性来自这两条，与现货价格的关系已经很弱。2028 年的风险落在扩产节奏与合同结构上：量只锁了下限，价格完全没有锁。</p>
+<p><b>判断三，平台定义方在机柜内同时掌握存储与光互联的分配权。</b>Rubin 体系匹配的 HBM 与 SoCAMM 全部经英伟达转售，NVLink 光互联由英伟达自研、外部只做代工；服务器 DRAM 与 AWS、AMD 的 NPO 留在开放供应链。议价空间的分界线落在“是否被纳入平台方的机柜定义”。</p>
+<p><b>二、NPO：从路线之争进入分工定型</b></p>
+<p><b>需求表已经落到客户和年份。</b>材料给出的 2027—2028 年需求分布相当具体，且按客户区分了速率、通道设计与供应方式。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569085_3294189507cb6891.webp" alt="" loading="lazy"></p>
+<p><b>节奏上，AWS 计划 2027 年四季度定型上量，样品在 2026 年底送达旭创、新易盛、Coherent；</b>这两个时点决定了 2027 年 NPO 的实际出货能否接近 750—850 万只的合计规模。</p>
+<p><b>为什么是变化：</b>行业讨论的焦点已经从“NPO 与 CPO 谁代表未来”，转到“谁做哪一段”。代工位一旦在 2027 年确定，2028 年英伟达 2,000 万只的需求基本沿用它，后来者很难在中途切入。这是产业链分工的固化，属于不可逆的进展。</p>
+<p><b>供应方式存在一条清晰分界。</b>英伟达的柜间光互联采用自研方案，国内头部厂商无法提供完整 NPO 引擎，只能承接代工；AWS 与 AMD 的方案向模块厂开放，旭创、新易盛、Coherent 都可以参与整机方案。同是 NPO，代工位与整机位的价值量并不相同。</p>
+<p><b>卡点集中在两个工程环节。</b>NPO 配套的 socket 尚未经过大规模量产验证，目前只有样品阶段表现合格，量产可靠性待检验；AWS 方案依赖 Astera Labs 的交换机，该厂商没有自研 SerDes，采用第三方 IP 加软件优化实现链路稳定，硬件底层能力偏弱，存在成为量产卡点的可能。英伟达的方案成熟度较高，2027 年整体出货量不大，物料出现硬缺口的概率偏低。</p>
+<p><b>市场认知差：</b>公开讨论仍在争论路线归属。2026 年 10 月 7 日有产业观点认为“NPO 只是过渡、CPO 才是确定性未来”；UBS 在 2026 年 10 月 13 日判断近两三年 NPO 是主流、CPO 全面渗透要到 2029—2030 年。产业侧的实际状态是，2027 年的产能和代工位已经分完，路线争论不影响当年的订单落地。从量级看，2026 年 10 月 11 日的一份产业调研把 2027、2028 年全球 scale-up 光引擎出货预测下调至 650 万只、4,200 万只；材料两年合计分别约 750—850 万只、4,700—4,800 万只，方向一致、量级接近，差异来自客户覆盖范围。</p>
+<p><b>三、DSP：天花板已经出现，Marvell 在买下一个底座</b></p>
+<p><b>1.6T 的份额在 2027 年发生反超。</b>2026 年 Marvell 与博通的 1.6T DSP 发货量基本持平，各约 1,300 万只；2027 年博通产能规划 6,000 万只、保守估计发货约 5,500 万只，Marvell 按产能规划 4,000 万只、保守估计约 3,500 万只。800G 的情况相反：Marvell 的份额从早期 90% 以上降至 2026 年约 65%，2027 年预计回升至 70%，原因是博通因毛利不理想减少了 800G 布局。同一家公司在两代产品上一升一降，份额故事不能整体套用。</p>
+<p><b>2026 年的供给曲线被一次事故改写。</b>Marvell 的 1.6T DSP 在 2026 年二季度后半段出现批次性生产事故，停产至 8 月中旬才恢复出货，二、三季度交付均不及预期，全年计划 1,400 万只、实际约 1,300 万只。同期博通的 1.6T DSP 受 GPU 产品挤占 3nm 产能影响，发货节奏同样不及预期。两家的缺口叠加，构成了 2026 年下半年 1.6T 光模块出货偏慢的直接原因。</p>
+<p><b>2026 年的分配量显示集中度。</b>800G 方面，旭创获 Marvell 2,200 万只，新易盛获博通 1,500 万只，Coherent 获 Marvell 1,000 万只加博通 150 万只，索尔思 500 万只，剑桥 450 万只，光迅 150 万只。1.6T 方面，旭创合计约 1,250 万只，新易盛约 630 万只，Coherent 约 500 万只。分配量按终端客户份额传导，云厂商给模块厂多少份额，模块厂才能拿到多少 DSP。</p>
+<p><b>为什么是变化：DSP 的应用边界在收缩。</b>高速 DSP 只覆盖可插拔光模块、部分 NPO 与相干模块；scale-in、内存池化等新增光互联场景没有 DSP 需求。这意味着即使光互联总市场快速扩张，DSP 的可及市场也在被新架构绕开，三年后增长趋于乏力。这是理解 Marvell 战略动作的前提。</p>
+<p><b>收购 Lumentum 是买“没有 DSP 的新场景”。</b>2026 年 11 月 2 日，Marvell 宣布以全股票方式收购 Lumentum，企业价值约 1,150 亿美元，合并后 Marvell 股东持股约 67%、Lumentum 股东约 33%。公司口径强调补齐光学版图、新增 600 亿美元可触达市场；产业侧的解释更直接：DSP 的增长天花板已现，收购带来的是激光器、磷化铟产能、OCS 与 CPO 器件，配合既有的 TIA/driver，构成不依赖 DSP 的产品底座。同一笔交易，两种估值逻辑，差异在于对 DSP 生命周期的判断。</p>
+<p><b>收购后的业务处置有明确方向。</b>Marvell 大概率剥离 Lumentum 体系内的光模块业务，避免与模块客户直接竞争；垂直整合模式已被验证效果不佳，保留光模块会拖累其光互联芯片业务。只要美国政府不干预，Marvell 对国内模块厂的 DSP、TIA/driver 供货维持不变，国内代工需求不受影响。</p>
+<p><b>相干光模块是低覆盖的增量信息。</b>Marvell 相干光模块出货量连续三年排名第一，最大客户微软占比约 85%，其余为 AWS、Oracle，2026 年新增谷歌，2027 年谷歌份额将大幅提升。客户的产品路径差异明显：微软从 100G、400G 起步，跳过 800G 直接升级 1.6T；谷歌从 800G 切入；AWS、Oracle 从 400G 起步；Meta 仅有少量 400G 采购。相干模块全部基于硅光技术，2016 年已出货首款用于 DCI 的 PAM4 模块。</p>
+<p><b>四、NPO 的价值量：被高估的单机 ASP</b></p>
+<p><b>电芯片不享受形态升级溢价。</b>NPO 场景下的 TIA、driver 与光模块用的产品在电路和尺寸上基本一致，封装形式不同；为无 DSP 链路增加的 CTLE、光路探测等功能，同样可以放进光模块用的同款芯片，不构成独占。结果是单价不提升，出货金额的增长只来自通道数变多（36 通道、32 通道对比 8 通道）。这与市场按“NPO 提升单机价值量”外推电芯片 ASP 的假设存在偏差。</p>
+<p><b>真正的价值增量在光源与光学封装。</b>光源功率要求由调制方案决定，与 NPO 形态无关。英伟达采用 CPO 引擎搭配硅光微环调制器，调制损耗高，接收端 CMOS 工艺的 TIA 灵敏度比商用产品低 2dB，因此需要 400mW 高功率激光器；旭创、新易盛采用 MZ 调制器加外置光源，功率需求 150—180mW，内置光源优化后可控制在 150mW 以内。两种方案的功率差接近三倍，直接决定了上游磷化铟衬底与高功率 CW 激光器的紧张程度。</p>
+<p><b>为什么是变化：</b>NPO 把价值从“数字芯片”转移到“光源、光引擎封装、FAU 与高密度连接器”。上游衬底的紧张已被市场充分定价——据 Yole 与 SMM 数据（开源证券 2026 年 11 月 4 日引用），2026 年全球磷化铟衬底需求 260—300 万片，有效产能约 75 万片，缺口超过七成，4 英寸衬底年初以来累计涨幅约 63.8%。材料的增量在于解释了功率分层的技术成因，把“缺光源”从现象落到了具体方案。</p>
+<p><b>2027 年 TIA/driver 产能不构成瓶颈。专家</b>判断当年 NPO 总量不大，TIA/driver 产能没有压力，DSP 产能同样不是问题所在；真正的紧张集中在光源侧与先进制程。这一判断与市场把“缺 DSP”泛化为全环节缺料的叙事形成区别。</p>
+<p><b>五、存储：涨价的天花板已经写进合同</b></p>
+<p><b>长协有两种价格模式。</b>第一种是传统长协，只设下限、不设上限，2026 年二季度合约价成为 2027 年的底价，按 Gb 计价约 2.1—2.2 美元；第二种把过去一年一签改为三到五年，在合同期内写明价格区间，同时设上下限，DRAM 为 0.7—2.7 美元/Gb，NAND 为 0.1—0.4 美元/Gb。两种模式都保留季度议价，价格在约定范围内逐季确定。北美四家中，亚马逊、微软选择只设下限，谷歌、Meta 选择区间模式；选择下限模式的客户同样知道竞争对手的上限，因此不担心中途被抬价。</p>
+<p><b>上限已经触及。</b>2026 年三季度价格已接近 2.7 美元，四季度涨不动；从 2.1—2.2 美元到 2.7 美元，剩余空间约 28%。这是“2027 年增长速度低于 2026 年”的直接来源，也是铠侠给出下一季度持平指引的原因。</p>
+<p><b>上限由数据中心的预算倒推。</b>2026 年初，全球数据中心对 2027 年资本开支的预期约 1 万亿美元；受存储涨价推动，当前预期上调至 1.4 万亿美元，其中计划用于采购存储的额度为 7,000—8,000 亿美元，且是原厂口径，不含英伟达等中间环节的加价。资本开支规模不能再扩、采购额度固定，存储继续涨价就会减少采购量，原厂因此需要测算“采购量×价格”的收入最大化点，再由数据中心按资本开支倒推可接受价格。定价权由此从原厂报价转向预算约束。</p>
+<p><b>押金规模超过三星一年资本开支。</b>北美四大数据中心各支付约 100 亿美元，合计约 400 亿美元；Oracle 约 30—50 亿美元，合计约 450 亿美元；若计入阿里、腾讯，总规模可能达到 600 亿美元。这笔钱的性质是 3—5 年期的免息可用资金，原厂可以先使用、盈利后归还，不构成违约罚款——三星、海力士认为数据中心不会违约，双方合作十几年没有出现过违约。600 亿美元的绝对规模超过三星一年整体资本开支，三星存储部门资本开支不到 400 亿美元。</p>
+<p><b>市场认知差：</b>公开信息已经覆盖“长协设价格上限、不少协议已触及上限”（长江证券 2026 年 10 月 8 日、10 月 22 日），也提到供应商要求预付款、新增长协包含照付不议与保证金。专家补充的是可操作的量：具体区间、底价、剩余涨幅、四家客户的模式选择，以及押金的绝对规模与性质。“涨价放缓”由此从判断变成了可以跟踪的条款事实。</p>
+<p><b>六、HBM：毛利率低于服务器 DRAM，但必须生产</b></p>
+<p><b>HBM4 的定价与机制。</b>2027 年供货的 HBM4 价格于 2026 年六七月谈定；机制上，HBM 一年谈一次价、全年固定，服务器 DRAM 按季度议价。这一模式源自英伟达：其按台积电代工业务的方式要求供应商一年一价，其他公司跟随成为行业标准。</p>
+<p><b>当前代际存在毛利率倒挂。</b>2026 年 HBM4 对英伟达的价格为 2.6 美元，服务器 DRAM 同期也达到 2.6 美元，HBM4 毛利率因此偏低。从单位产能回报看，服务器 DRAM 更优。</p>
+<p><b>为什么仍要生产 HBM：</b>本轮 AI 需求由 HBM 带动，HBM 又匹配产生服务器 DRAM 与企业级 SSD 的需求；没有 HBM，配套需求会一起消失。原厂主观上更愿意多产服务器 DRAM，客观上必须保留 HBM 产能。这条约束解释了 HBM 供给的刚性，也解释了为什么价格倒挂不会引发产能转移。</p>
+<p><b>Rubin 平台的 HBM 配置已经定型。</b>2027 年出货主体仍是 12-Hi，新增的是 Rubin Ultra Lite 这一 8-Hi SKU。</p>
+<p><img src="https://image.acecamptech.com/article_image/50526836/0.3043450372712797.png" alt="" loading="lazy"></p>
+<p><b>Lite 版本的成因是工艺转换差异。</b>三星的 HBM4 与 HBM4E 都采用 1c 工艺，两者转换容易，HBM4E 测试样品的推进速度快于同业；海力士、美光的 HBM4 采用 1b 工艺，到 HBM4E 才切到 1c，初期出货量跟不上英伟达的要求。英伟达因此增加 8-Hi HBM4 的 Lite 版本，用成熟代际补足供应。这一因果链把“客户降层”从供给紧张的笼统解释，落到了具体的工艺路线差异上。</p>
+<p><b>市场认知差：</b>公开信息已经讨论 8-Hi 将成为 2027 年主流配置。摩根士丹利 2026 年 10 月 11 日判断这一变化由供给与成本驱动、8-Hi 对 12-Hi 存在每 Gb 10%—20% 的溢价；客户调整规格、降低堆叠层数以在有限产能下部署更多系统，也已被提及。专家补充的是 SKU 对应关系与工艺成因，并给出一个反向数字：8-Hi 并不会显著更贵，在当前价格水平下 base die 的成本占比已经下降。</p>
+<p><b>七、2027 靠锁量，2028 靠不住</b></p>
+<p><b>2027 年的收入几乎被合同写死。</b>三星 2027 年长协覆盖其总 bit 产能的 60%—63%，其中服务器 DRAM 约 43%、HBM 约 20%；HBM 100% 通过长协销售，服务器 DRAM 约 95% 被锁定，非长协部分只有 5%—10%。剩余 35%—37% 的产能安排给消费级、汽车、中国模组厂、PC 与 GDDR，转产空间基本用尽。价格锁定、数量由合同决定，2027 年的变量只剩位元出货。</p>
+<p><b>供需缺口可以量化。</b>服务器 DRAM 2026 年供给约 1,400 亿 Gbit；2027 年供给约 2,000 亿 Gbit、需求约 3,000 亿 Gbit，需求满足率不到 70%；2028 年供给有望达到 2,800—3,000 亿 Gbit，对应需求约 3,000 亿 Gbit。2027 年服务器 DRAM 供给从 1,400 亿 Gbit 增至 2,000 亿 Gbit，增速高于整体 bit 增速，差额来自 LPDDR 等产品减产转产；2028 年的供给测算尚未包含进一步转产，若转产落地，供给还可增加。</p>
+<p><b>位元增速与产能。</b>2027 年三星 DRAM 按 bit 增长约 30%、按 wafer 增长约 15%，差额来自 1A 到 1C 的工艺跃迁，被 TSV 面积增加与新工艺良率两个负向因素部分抵消。2028 年全球 bit 增速预计 35%—45%，三星自身 30%—40% 甚至更高。</p>
+<p><b>P4 是三星 2027 年唯一的主要新增产能。</b>P4 为 20 万片规模的工厂，2026 年底前后扩出约 10 万片，前 10 万片主要生产 HBM4，后 10 万片 HBM 与 DRAM 混合。按材料认可的算法（10 万片 × 400—500 die/片 × 80% 后道良率 ÷ 12）测算，对应约 270—330 万颗 12-Hi HBM4 stack。谷歌、Meta 锁定后 10 万片中的一部分，估计至少 5 万片，且只有优先安排、没有强约束条款。P5 在 2027 年下半年可能部分建成，2028 年贡献增量，时间尚不确定。</p>
+<p><b>2028 年的合同只锁下限。</b>2027 年的量由客户按需求写入合同，确定性高；2028 年及以后写入的是客户最低采购量，实际需求更高时可以上修。按当前合同，2028 年约 50% 的产能被锁定，这个比例可能在 2027 年二、三季度谈判后提高到 60% 以上。合同的约束力也弱于 2027 年：长协属于 agreement，强约束条款通常不写入。</p>
+<p><b>2028 年下半年是观察窗口。专家给出</b>两处口径不同的判断：一处认为 2028 年二季度后扩产偏多，下半年会出现降价压力；另一处在“资本开支不增长、不额外转产”的假设下，认为服务器 DRAM 供需平衡或略微短缺，对下半年并不特别担心。两者可以调和：前者是全球价格视角，后者是服务器 DRAM 单一品类、给定资本开支的口径。可操作的结论是，2028 年下半年是价格拐点的观察窗口，尚不构成确定判断。</p>
+<p><b>市场认知差：</b>高盛在 2026 年 10 月 29 日提出，涨价趋势有望延续至 2028 年上半年，长协覆盖率若达 60%—70% 会平滑涨价斜率。专家给出的补充是：2028 年的量本身只锁了一半，价格完全没有锁；覆盖率的分母是公司全部产能，结构上 HBM 已 100% 锁定、服务器 DRAM 已 95% 锁定，真正可交易的非长协供给只剩 5%—10%。这意味着现货价格对业绩的边际影响，比市场预期的更小。</p>
+<p><b>消费端的扰动被单独记录。</b>闪迪与铠侠的指引出现分化：闪迪向小客户提供长协、锁定供货量，价格比三星、铠侠更贵，涨价阶段毛利与展望更好；一旦进入降价，小客户违约的概率上升，设置罚款也难以阻止客户放弃采购。手机客户在 2026 年二季度集中囤货、三季度停止采购，三星、海力士、铠侠均受到影响；数据中心没有出现同类推迟。</p>
+<p><b>八、机柜之内的定义权</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569085_da265282872f0881.webp" alt="" loading="lazy"></p>
+<p><b>分界线在于是否被纳入平台方的机柜定义。</b>HBM 与 SoCAMM 被纳入英伟达整机柜体系，原厂无法绕开平台方直接供货，数据中心也无法自提；服务器 DRAM 与 AWS、AMD 的光互联方案留在开放供应链，云厂商可以直接向原厂或模块厂采购。机柜之内的存储与连接由平台方定价与分配，机柜之外与代工环节留给开放供应链。</p>
+<p><b>分析：</b>这解释了 2027 年的一个反直觉现象——量最确定的环节，议价空间反而最小。HBM 100% 走长协、NVLink NPO 由平台方自研，量与价同时被锁定；真正保留价格弹性的，是那 5%—10% 的非长协服务器 DRAM，以及尚未定型的谷歌、Meta 光互联项目。</p>
+<p><b>这条线索的证伪条件有三条。</b>第一，CSP 直采比例上升：SoCAMM 比板载 HBM 更容易拆卸，LPDDR 颗粒供给缓解后，数据中心可能转向自行采购；第二，NPO 标准收敛到 OCP、OIF 等组织，平台方开放整机位，代工位的价值被重新分配；第三，定制化 HBM（C-HBM）推进，客户直接参与 base die 定义，平台方的中间地位被削弱。三条中任何一条落地，都会改变当前的利润分配结构。</p>
+<p>风险提示：以上内容仅为个人学习总结，不构成任何投资建议。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

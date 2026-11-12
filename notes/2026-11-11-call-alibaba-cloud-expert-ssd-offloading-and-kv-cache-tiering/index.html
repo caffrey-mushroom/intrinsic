@@ -1,0 +1,749 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.11 | Call | Memory | Alibaba Cloud Expert: SSD Offloading and KV Cache Tiering</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.11 | Call | Memory | Alibaba Cloud Expert: SSD Offloading and KV Cache Tiering</h1>
+<p class="orig">原标题：阿里云技术专家 - SSD Offloading Check</p>
+<p class="tags">#KV Cache #SSD #阿里云</p>
+<p class="meta">Expert Call · 2026-11-11</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>这是Caffrey自己的专家访谈。专家称推理集群HBM:DRAM:SSD典型配比约1:2:8，部分场景1:4:20，极端情况SSD可到50。</li>
+<li>阿里不采用DeepSeek式单卡超大SSD，而是通过计算、内存、存储和网络池化形成集群级共享SSD池。</li>
+<li>百炼自有千问长程任务缓存命中率约78–85%，平台整体约60–68%，DeepSeek特定模型多轮后可超90%。</li>
+<li>阿里KV Cache分层为HBM约1分钟、CXL内存池约1.5小时、SSD池通常24小时，专家认为24小时落盘会成为行业基础能力。</li>
+<li>SSD采购2026年约16–17EB、2027年约27–30EB，同比增55–80%；DRAM从0.8EB增到1.1–1.2EB。</li>
+<li>KV Cache专用SSD占比从2026年不到10%升到2027年近18%，重算成本约为存储的2–3倍，“以存代算”有明显TCO优势。</li>
+</ol></section>
+<div class="body">
+<h2>纪要总结</h2>
+<h2>专家访谈纪要</h2>
+<h2>1. 推理集群存储架构与配置比例</h2>
+<h3>a) 2026—2027年推理集群中，单GPU的HBM、DRAM和SSD如何配置？</h3>
+<ul><li>推理集群主要考虑HBM、DRAM和SSD三层资源的配比。</li><li>典型配置比例约为：</li></ul>
+<ol><li><b>HBM∶DRAM∶SSD约为1∶2∶8</b></li><li>部分场景可提升至<b>1∶4∶20</b></li><li>极端情况下，SSD比例甚至可能扩展至50</li></ol>
+<ul><li>DRAM配置主要取决于节点类型：</li></ul>
+<ol><li><b>Prefill节点</b>通常采用HBM∶DRAM约为1∶2</li><li><b>Decode节点</b>通常采用约1∶4，配置更大的DRAM池</li></ol>
+<ul><li>SSD配置更加灵活，不需要全部部署在单台GPU服务器内，可以通过远端共享存储、高密度闪存服务器及CXL扩展形成共享SSD池。</li><li>在PD分离架构下，一个Decode节点可能挂载4—5台高密度SSD服务器，形成集群级SSD共享池。</li></ul>
+<h3>b) 为什么阿里不会采用DeepSeek式的单GPU超大SSD配置？</h3>
+<ul><li>阿里云面向的是多模型、多租户和异构算力的大型公有云平台，需求与DeepSeek针对特定模型深度优化的模式不同。</li><li>阿里云已形成四类池化能力：</li></ul>
+<ol><li>计算池化</li><li>内存池化</li><li>存储池化</li><li>网络池化</li></ol>
+<ul><li>阿里认为没有必要在每台服务器或每张卡上配置特别大的SSD，可以通过高性能网络和共享存储池实现更灵活的资源调度。</li><li>整体SSD容量会快速增长，但不会均匀分配到每张卡或每台服务器上，不同卡型、8卡/16卡服务器及超级节点会采用不同规格。</li></ul>
+<h3>c) 哪些业务场景需要更高的DRAM和SSD配置？</h3>
+<ul><li><b>AIGC向量检索场景</b></li></ul>
+<ol><li>类似Lindorm的检索服务需要实现秒级召回</li><li>大量数据需要驻留内存，因此DRAM配置较高</li><li>大规模向量数据还需要本地大容量SSD，DRAM与SSD会同步放大</li></ol>
+<ul><li><b>模型权重热备场景</b></li></ul>
+<ol><li>阿里的E-gin模型权重热切系统需要将大量非激活模型权重常驻共享内存</li><li>因此需要大容量DRAM和CXL内存扩展</li></ol>
+<ul><li><b>Agent长程任务场景</b></li></ul>
+<ol><li>长上下文、长记忆和历史KV数据会持续占用SSD</li><li>SSD将逐步承接原本放在HBM或DRAM中的部分数据</li></ol>
+<h2>2. Prefix/KV Cache命中率与行业对比</h2>
+<h3>a) 阿里百炼不同场景的缓存命中率分别是多少？</h3>
+<ul><li>不同模型、任务和部署方式之间差异较大：</li></ul>
+<ol><li><b>百炼自有千问模型的长程任务、在线编码及文档审阅场景：约78%—85%</b></li><li><b>百炼平台整体平均水平：约60%—68%</b></li><li><b>DeepSeek等外部托管模型或多Agent场景：约40%—50%</b></li><li><b>客户在裸机上自行搭建、尚未优化的Agent：约20%—35%</b></li></ol>
+<ul><li>百炼自有模型命中率更高，主要原因是模型、平台、自研DPU、编译器和底层存储之间进行了白盒协同，部分优化已经达到微码级。</li><li>外部开源模型只能进行平台适配和编译器优化，除非由阿里长期托管并持续调优，否则命中率很难达到自有模型水平。</li><li>从阿里云全平台口径看，平均缓存命中率接近70%，平台追求的是大规模、多场景下的综合表现，而非单一模型的极致指标。</li></ul>
+<h3>b) 国内其他厂商的最佳缓存命中率处于什么水平？</h3>
+<ul><li><b>DeepSeek</b></li></ul>
+<ol><li>针对特定模型、经过多轮运行后，缓存命中率可以超过90%</li><li>前几轮命中率可能不高，但几十轮之后可稳定在较高水平</li><li>主要受益于模型与存储的深度协同，以及低秩KV压缩</li></ol>
+<ul><li><b>月之暗面</b></li></ul>
+<ol><li>在特定超长上下文场景中，有效命中率可能达到90%以上，甚至约92%</li><li>但在Agent长程任务和多模态任务中的表现未必同样突出</li></ol>
+<ul><li>阿里与上述厂商的差异在于，阿里云更像综合型平台，需要兼顾多模型、多客户和多应用，不能仅针对单一场景优化。</li></ul>
+<h3>c) DeepSeek为什么能够实现较高的缓存命中率？</h3>
+<ul><li>DeepSeek采用低秩压缩，将每层、每个Token的KV压缩为较小的潜变量。</li><li>在相同SSD容量下：</li></ul>
+<ol><li>常规方案可能只能加载数万个Token的上下文</li><li>压缩后可加载数十万甚至100万以上Token的上下文</li></ol>
+<ul><li>本质上是显著降低单Token KV占用的物理字节数，从而提高可缓存上下文规模和后续轮次命中率。</li></ul>
+<h3>d) 如果不继续增加SSD，还有哪些方式可以提升命中率？</h3>
+<ul><li><b>全局KV Cache调度</b></li></ul>
+<ol><li>阿里自研tier KVCM缓存调度系统</li><li>统一管理多级缓存、全局KV Cache Store和PD分离资源</li><li>新实例可以从G3.5层以毫秒级速度拉回历史KV块</li></ol>
+<ul><li><b>模型与框架协同</b></li></ul>
+<ol><li>针对千问及Agent产品进行专门的底层框架优化</li><li>通过动态加载缓存技术提升特定产品的缓存利用率</li></ol>
+<ul><li><b>软硬件协同</b></li></ul>
+<ol><li>仅依靠软件优化不足以解决容量、时延和成本问题</li><li>还需要定制主控器、NAND颗粒和企业级SSD</li><li>相比采购标准SSD模组，定制方案成本可能降低30%—40%</li></ol>
+<h2>3. 多级缓存体系与KV Cache保存周期</h2>
+<h3>a) 阿里的KV Cache分层存储体系如何划分？</h3>
+<ul><li>阿里已经实现存储与内存融合的多级缓存架构，主要包括：</li></ul>
+<ol><li><b>G1：HBM层</b>，缓存时间约为分钟级，约1分钟</li><li><b>G2：本机DRAM</b></li><li><b>G2.5：本机挂载的CXL内存池</b>，缓存时间约1.5小时</li><li><b>G3/G3.5：SSD/NAND池</b>，通常按24小时配置</li><li>更低成本的层级可用于更长期的数据留存或归档</li></ol>
+<ul><li>不同层级的时间配置并非完全固定，部分SSD数据可能保存1小时，也可能保存24小时甚至更长。</li><li>24小时并非绝对上限，系统会通过热度和访问策略进行滚动，部分企业级及Agent数据需要更长期保存。</li></ul>
+<h3>b) 24小时KV Cache落盘是否会成为行业标准？</h3>
+<ul><li>随着Agent和企业级应用发展，历史上下文、长记忆和任务状态不能轻易丢失，24小时落盘预计会逐步成为基础能力。</li><li>如果厂商不建设分层缓存和落盘体系，将面临更多重算成本，Token成本和毛利率可能缺乏竞争力。</li><li>OpenAI已开始提供最长约24小时的缓存策略；英伟达推出KVBM、Dynamo等技术，本质上同样是将部分KV卸载至闪存池。</li><li>专家判断，KV Cache落盘和“以存代算”最终可能成为全球通用技术路线。</li></ul>
+<h2>4. SSD采购规模与KV Cache Offloading需求</h2>
+<h3>a) 2026年和2027年的SSD采购量分别是多少？</h3>
+<ul><li><b>2026年SSD采购容量约为16—17EB</b></li><li><b>2027年规划采购约为27—30EB</b></li><li>按上述口径计算，2027年同比增速至少在55%以上，按照中高位规划测算可能接近80%。</li><li>SSD采购容量的增速将明显快于HBM和DRAM。</li><li>2027年虽然SSD容量大幅增长，但由于将更多采购60TB、64TB、120TB等高密度产品，SSD盘数增幅可能不到20%。</li></ul>
+<h3>b) 2026年和2027年的DRAM采购量分别是多少？</h3>
+<ul><li>2026年DRAM采购量约为<b>0.8EB</b></li><li>2027年约为<b>1.1—1.2EB</b></li><li>同比增速约为45%—50%，低于SSD的容量增速。</li></ul>
+<h3>c) KV Cache Offloading占SSD采购容量的比例是多少？</h3>
+<ul><li>2026年专门用于KV Cache Offloading的SSD容量占比不到10%。</li><li>2027年该比例预计提升至接近18%。</li><li>该口径主要指专门服务于KV Cache的独立高密度NAND/SSD资源，不包括GPU服务器中同时承载多类任务、难以拆分的混用SSD。</li><li>2027年KV Cache Offloading相关容量相比2026年可能增长1倍以上，是新增SSD需求的重要驱动力。</li></ul>
+<h3>d) 其余大部分SSD主要用于哪些场景？</h3>
+<ul><li>传统通用计算和公有云存储。</li><li>2026年新增约55万台CPU服务器，其中部分承担Agent执行任务所需的CPU计算。</li><li>GPU服务器及8卡、16卡或超级节点中的本地SSD。</li><li>推理集群中的高密度SSD服务器及共享存储池。</li><li>向量数据库、检索、模型权重、企业应用和其他云服务数据。</li></ul>
+<h3>e) 为什么2027年SSD采购量增长如此明显？</h3>
+<ul><li>Agent任务从2026年开始发展，2027年需要提前建立底层IT和存储基本盘。</li><li>主要驱动因素包括：</li></ul>
+<ol><li>KV Cache落盘比例提升</li><li>Prefix缓存保存时间延长</li><li>长上下文和长记忆需求增加</li><li>PD分离后Decode节点挂载更多高密度闪存服务器</li><li>向量数据、模型权重及企业级Agent数据持续增长</li></ol>
+<ul><li>上层应用对底层基础设施需求存在滞后，因此必须提前建设，不能等Agent应用全面爆发后再补充存储。</li></ul>
+<h2>5. “以存代算”的TCO与技术争议</h2>
+<h3>a) SSD延迟较高，为什么不直接让GPU重新计算Prefix？</h3>
+<ul><li>专家测算显示，在超大规模推理平台中，重新计算的综合成本约为存储成本的2—3倍。</li><li>以100万Token为例：</li></ul>
+<ol><li>压缩后的KV Cache仅占几GB，通常不超过10GB</li><li>在SSD中保存24小时的折旧和电费成本较低</li><li>删除后重新执行100万Token的Prefill，需要消耗GPU卡时和电费，成本约为0.3—0.5元</li><li>存储一天的成本可能比重新计算一次低数十倍</li></ol>
+<ul><li>因此，对于1万卡至10万卡级别的大型云端推理平台，“以存代算”具备明显TCO优势。</li></ul>
+<h3>b) 什么情况下重新计算可能更合理？</h3>
+<ul><li>小模型或单机运行场景。</li><li>对时延极度敏感、SSD读取速度无法满足需求的场景。</li><li>车载、端侧等对实时性和硬件资源约束更强的场景。</li><li>如果GPU利用率较低、任务规模较小，重新计算的性价比可能更高。</li></ul>
+<h3>c) 哪些任务最适合KV Cache Offloading？</h3>
+<ul><li>长程Agent任务。</li><li>在线编码、文档审阅和多任务协同。</li><li>Harness类任务及多Agent协作。</li><li>这些任务的核心要求是降低长期Token成本，时延通常不是第一优先级，因此更适合采用SSD落盘和Prefix复用。</li></ul>
+<h2>6. SSD产品需求、采购模式与供应链策略</h2>
+<h3>a) 阿里未来重点需要什么类型的SSD？</h3>
+<ul><li>更倾向于236层以上的NAND产品。</li><li>单盘容量至少需要达到60TB、64TB，进一步向120TB以上发展。</li><li>TLC和QLC均存在增长空间：</li></ul>
+<ol><li>QLC更适合追求大容量和低成本的场景</li><li>TLC适合对寿命和性能要求更高的场景</li></ol>
+<ul><li>阿里无法自研NAND颗粒，但可以自研主控器，并将主控器与采购颗粒结合，定制企业级SSD。</li></ul>
+<h3>b) 2027年SSD采购将采用什么模式？</h3>
+<ul><li>采购结构大致分为：</li></ul>
+<ol><li><b>约40%完全白牌化</b>：平头哥开发主控器，阿里向三星、长存采购颗粒，再交由代工厂生产</li><li><b>约30%半白牌化</b>：使用阿里主控器，但颗粒由板卡或代工厂采购并按阿里要求定制</li><li><b>约20%多采购三星、海力士的标准SSD模组</b></li><li><b>约5%采购长存标准SSD模组</b></li></ol>
+<ul><li>整体方向是提高自研主控和白牌化比例，降低对标准SSD模组的依赖。</li><li>通过定制主控器和颗粒，可以在寿命、容量、延迟和成本之间进行针对性优化。</li></ul>
+<h3>c) 采购订单是否已经全部锁定？</h3>
+<ul><li>2026年的主要需求已基本锁定。</li><li>当前锁定的重点是NAND颗粒，而不是大量标准SSD模组。</li><li>阿里已与三星、长存等供应商签订NAND颗粒长期协议，即LTA。</li><li>2027年约27—30EB的需求尚未全部以标准SSD订单形式覆盖，较大比例将通过自研和白牌化方式完成。</li></ul>
+<h3>d) 是否会导入铠侠、闪迪推广的SLC类产品？</h3>
+<ul><li>目前没有明确的大规模导入或测试计划。</li><li>2026—2027年的重点更偏向自研主控、定制TLC/QLC和白牌企业级SSD。</li><li>SLC类产品预计不会形成较大采购量。</li></ul>
+<h3>e) 2027年SSD和DRAM的采购金额约为多少？</h3>
+<ul><li>SSD采购金额预计约为<b>100亿—120亿元人民币</b></li><li>DRAM采购金额预计约为<b>95亿—110亿元人民币</b></li><li>该金额不包含HBM和HDD。</li><li>HBM支出可能高于普通DRAM和SSD支出的总和。</li></ul>
+<h2>7. 国内外KV Cache Offloading技术路线差异</h2>
+<h3>a) 为什么国内KV Cache Offloading进展相对更快？</h3>
+<ul><li>国内模型较多采用稀疏模型、MoE和多模型架构，海外则较多采用稠密模型，模型架构不同导致KV卸载方式不同。</li><li>国内高端Prefill算力相对不足，更需要通过缓存复用和减少重算降低计算压力。</li><li>国内Token价格竞争激烈，厂商有较强动力降低单位Token成本。</li><li>国产模型从架构设计初期就更重视缩小KV：</li></ul>
+<ol><li>DeepSeek采用MLA，将单Token KV从数百KB压缩至几KB</li><li>阿里研发GDN线性注意力，目标是减少约一半的KV层</li></ol>
+<ul><li>海外算力更充足、Token定价和毛利率更高，过去缺少通过存储节省算力的紧迫性。</li></ul>
+<h3>b) 海外是否会跟进KV Cache落盘？</h3>
+<ul><li>2026年下半年开始，海外厂商已经加大相关投入。</li><li>OpenAI已采用最长约24小时的缓存策略。</li><li>英伟达推出KVBM和Dynamo软件栈，将部分KV卸载至闪存池。</li><li>专家判断，随着Agent长任务增加和推理成本竞争加剧，海外KV Cache Offloading占比也会结构性提升。</li></ul>
+<h2>8. 2027年CAPEX、算力卡与基础设施规划</h2>
+<h3>a) 2027年阿里云CAPEX预计是多少？</h3>
+<ul><li>专家预计阿里云2027年CAPEX约为<b>2300亿—2500亿元人民币</b>。</li><li>相比2026年仍有增长，但增速可能略有放缓。</li><li>存储采购金额占总CAPEX比例看似不高，主要是因为：</li></ul>
+<ol><li>尚未计入HBM</li><li>算力卡和服务器仍占较大比例</li><li>HBM金额可能高于普通DRAM和SSD总和</li></ol>
+<h3>b) 2027年CAPEX大致对应多少张算力卡？</h3>
+<ul><li>规划口径接近200万张。</li><li>考虑自研芯片产能约束，实际采购或部署量可能为<b>180万—200万张</b>。</li><li>自研卡占比预计超过一半。</li></ul>
+<h3>c) 国内和海外分别部署多少张卡？</h3>
+<ul><li>海外约为<b>40万—45万张</b>，接近45万张。</li><li>海外最多可能投放约10万张自研TPU用于推理，其余主要为英伟达GPU。</li><li>国内部署100多万张卡，主要使用平头哥自研卡。</li><li>海外CAPEX占总CAPEX比例预计约40%，低于一半。</li></ul>
+<h3>d) 30EB SSD平均到每张卡是多少？</h3>
+<ul><li>如果按200万张卡和30EB容量简单计算，平均约为每张卡15TB。</li><li>但该数字不能视为实际单卡配置：</li></ul>
+<ol><li>部分卡可能配置8TB</li><li>部分节点会通过共享池挂载更大容量</li><li>大量SSD还用于传统云、CPU服务器、向量检索和其他公有云业务</li></ol>
+<ul><li>阿里更强调集群级池化，而非统一的单卡SSD配置。</li></ul>
+<h2>9. Agent发展对长期存储需求的影响</h2>
+<h3>a) 2027年之后SSD需求是否会趋于平缓？</h3>
+<ul><li>从单集群、单卡配置角度看，2027年完成基础配置后，单位算力对应SSD的增长可能有所放缓。</li><li>从整体数据量和应用规模看，SSD需求未必会平缓，增长曲线仍可能保持陡峭。</li><li>主要原因包括：</li></ul>
+<ol><li>2025年以对话推理、网页推理为主</li><li>2026年Agent应用开始发展，但渗透率仍不高</li><li>2028—2029年Agent可能替代大量传统应用</li><li>传统应用也可能被迫转向Agent化</li><li>数据形态将从结构化数据转向向量、KV和长记忆数据</li></ol>
+<ul><li>存储性能要求也会提高，部分传统PCIe 4.0 SSD可能逐步升级至PCIe 5.0或PCIe 6.0。</li></ul>
+<h3>b) 2027年在整个发展周期中处于什么位置？</h3>
+<ul><li>2027年可能是SSD导入斜率最快的年份之一。</li><li>这一阶段的核心任务是建立KV Cache、长记忆和Agent数据存储的基础盘。</li><li>上层Agent应用真正大规模发展可能滞后于底层IT建设，因此2027年的投入具有提前预置性质。</li></ul>
+<h2>10. 推理业务毛利率与Token商业模式</h2>
+<h3>a) 阿里百炼推理业务的毛利率是多少？</h3>
+<ul><li>通义自有模型的平均毛利率约为<b>25%</b>。</li><li>百炼托管的第三方开源模型毛利率可能略高。</li><li>上述毛利率为Blended整体口径，包含KV Cache、Prefix等因素。</li><li>阿里Token业务毛利率明显高于字节，专家估计字节推理业务毛利率约为10%多。</li></ul>
+<h3>b) 阿里Token成本优势来自哪里？</h3>
+<ul><li>主要来自底层网络、自研芯片和软硬件协同，而不仅是软件算法。</li><li>阿里可以围绕自研芯片、自研DPU/PPU、模型和基础设施进行深度适配。</li><li>自有模型在自研芯片上的吞吐和成本表现最好，但毛利率没有同步做到最高，原因包括：</li></ul>
+<ol><li>阿里云主动降价</li><li>管理层认为Token不应维持过高定价</li><li>Token更多被视为云服务和Agent产品的引流工具</li></ol>
+<h3>c) 自研卡与H20等通用GPU的Token成本有何差异？</h3>
+<ul><li>在相同网络、相同时间段、约30B模型、FP8精度的推理测试中：</li></ul>
+<ol><li>平头哥PPU每100万Token综合成本约为<b>0.5元</b></li><li>H20约为<b>1.5—1.7元</b></li><li>寒武纪、昇腾910C整体接近H20，寒武纪可能略低</li><li>海光约为<b>1.3—1.4元</b></li></ol>
+<ul><li>自研芯片成本优势明显，也与平头哥向阿里云提供芯片的内部成本较低有关。</li><li>该测试适用于阿里自身技术栈和当前推理需求，不能完全代表腾讯、字节、DeepSeek或海外超大稠密模型场景。</li></ul>
+<h3>d) Token价格和商业模式将如何发展？</h3>
+<ul><li>专家预计未来一年行业Token价格可能继续下降50%以上。</li><li>极端情况下，到后年Token价格可能降至当前的约1/5。</li><li>单独经营“Token工厂”的商业模式可能难以持续。</li><li>阿里的战略是通过低成本Token带动更高价值的上层产品，包括：</li></ul>
+<ol><li>千问办公</li><li>Work Buddy</li><li>High Cloud等Agent应用</li><li>模型工具链和云服务</li></ol>
+<ul><li>长期高毛利主要来自Agent应用、工具链和云服务，而不是单纯出售Token。</li></ul>
+<h2>结构化总结表格</h2>
+<div class="tbl"><table class="t wrap"><thead><tr><th>维度</th><th>核心指标</th><th>2026年情况</th><th>2027年规划/判断</th><th>关键驱动与策略</th></tr></thead><tbody><tr><td><b>推理集群配置</b></td><td>HBM∶DRAM∶SSD</td><td>典型约1∶2∶8</td><td>部分场景可达1∶4∶20或更高SSD比例</td><td>PD分离、CXL扩展、共享SSD池</td></tr><tr><td><b>DRAM节点配置</b></td><td>Prefill/Decode比例</td><td>Prefill约1∶2</td><td>Decode可达1∶4</td><td>Decode节点需要更大DRAM池</td></tr><tr><td><b>长任务命中率</b></td><td>千问长程任务</td><td>约78%—85%</td><td>继续通过调度和软硬件协同提升</td><td>自有模型、DPU、微码级白盒协同</td></tr><tr><td><b>平台平均命中率</b></td><td>百炼整体</td><td>约60%—68%，综合平均接近70%</td><td>随Agent渗透提升</td><td>多模型托管与持续调优</td></tr><tr><td><b>外部模型命中率</b></td><td>托管/裸机部署</td><td>托管约40%—50%；裸机约20%—35%</td><td>深度托管后有提升空间</td><td>编译器适配、持续调优</td></tr><tr><td><b>SSD采购容量</b></td><td>年度采购量</td><td>约16—17EB</td><td>约27—30EB</td><td>Agent、长上下文、KV Offloading</td></tr><tr><td><b>SSD容量增速</b></td><td>同比增长</td><td>—</td><td>至少55%，中高位规划接近80%</td><td>高密度盘带动容量快于盘数增长</td></tr><tr><td><b>DRAM采购容量</b></td><td>年度采购量</td><td>约0.8EB</td><td>约1.1—1.2EB</td><td>同比增长约45%—50%</td></tr><tr><td><b>KV Offloading占比</b></td><td>SSD容量占比</td><td>不到10%</td><td>接近18%</td><td>专指独立KV Cache资源口径</td></tr><tr><td><b>缓存周期</b></td><td>NAND层保存时间</td><td>G3/G3.5约24小时</td><td>24小时可能成为基础配置</td><td>热度滚动、长期归档</td></tr><tr><td><b>SSD采购金额</b></td><td>人民币</td><td>—</td><td>约100亿—120亿元</td><td>白牌化、自研主控、颗粒长协</td></tr><tr><td><b>DRAM采购金额</b></td><td>人民币</td><td>—</td><td>约95亿—110亿元</td><td>不包含HBM</td></tr><tr><td><b>SSD采购结构</b></td><td>白牌/标准模组</td><td>颗粒需求已锁定</td><td>约40%全白牌、约30%半白牌</td><td>降本30%—40%、提升寿命和性能</td></tr><tr><td><b>重点SSD规格</b></td><td>容量与介质</td><td>TLC/QLC逐步导入</td><td>60TB、64TB至120TB以上</td><td>236层以上、高密度企业级SSD</td></tr><tr><td><b>云CAPEX</b></td><td>年度投入</td><td>—</td><td>约2300亿—2500亿元</td><td>算力卡、HBM、服务器和存储建设</td></tr><tr><td><b>算力卡规模</b></td><td>规划部署量</td><td>—</td><td>约180万—200万张</td><td>自研卡占比超过一半</td></tr><tr><td><b>海外算力卡</b></td><td>海外部署量</td><td>—</td><td>约40万—45万张</td><td>以N卡为主，自研卡最多约10万张</td></tr><tr><td><b>推理毛利率</b></td><td>通义自有模型</td><td>约25%</td><td>Token价格仍可能大幅下降</td><td>Token作为Agent和云服务引流工具</td></tr><tr><td><b>百万Token成本</b></td><td>PPU/H20</td><td>PPU约0.5元；H20约1.5—1.7元</td><td>自研芯片优势延续</td><td>芯片、网络、模型与Infra协同</td></tr><tr><td><b>长期存储趋势</b></td><td>2028—2029年展望</td><td>Agent处于导入期</td><td>整体SSD需求仍可能高速增长</td><td>传统应用Agent化、向量与KV数据重构</td></tr></tbody></table></div>
+<h2>新版prompt提炼之后的转译</h2>
+<p><b>提问者：此前的问题清单已经发给您。我们特别关注SSD用于KV cache offloading的进展，以及明年的采购量。首先，以目前的情况来看，现有集群中单卡配置DRAM和SSD的水平如何？可以按单卡或单机柜口径介绍。</b></p>
+<p>回答者：从26年的情况来看，我们建设推理集群时，如果按单GPU计算，主要考虑HBM、DRAM和SSD这3层之间的配比。DRAM的比例可能是2，也可能是4，因为可以通过池化进行配置；SSD的比例约为8到20。</p>
+<p>SSD更加开放，底层可以挂载远端共享存储，包括高密闪存服务器。总体而言，如果采用一个大致比例，HBM、DRAM和SSD约为1比2比8。</p>
+<p><b>提问者：在1比2比8的配置下，Agent推理的prefix命中率大约能达到什么水平？</b></p>
+<p>回答者：命中率需要区分不同情况。我们有百炼推理平台，百炼下的灵骏智算也可以部署客户自己的Agent推理集群，因此需要分别观察。</p>
+<p>从百炼平台来看，对于长程任务、在线编码、文档审阅等Agent，其缓存命中率约为78%到85%。这部分主要由HBM、DRAM和SSD的KV cache共同承担，各自占有一定的存储比例。</p>
+<p>从百炼整体大盘来看，除长程任务和在线编码外，还包括较多企业级应用，其整体缓存命中率约为60%到68%。</p>
+<p>此外，部分DeepSeek等托管模型部署在外部环境，可能涉及多Agent场景，缓存命中率约为40%到50%。</p>
+<p>回　答　者：第4种情况是在裸机之上，用户作为散客自行搭建一些Agent。这种情况下，缓存命中率较低，差不多只有20%到35%，实际上还没有经过优化。前3种情况则是阿里已经在自己的平台上完成了相关优化。</p>
+<p><b>提　问　者：我理解，百炼托管了自有的千问模型，执行长程任务时，缓存命中率基本能达到78到85，对吗？由于采用自有模型和自有基础设施，相关优化效果最好，而且也是最适合的任务。</b></p>
+<p>回　答　者：对。第2档是百炼平台既有自己的统一模型，也托管了很多DeepSeek、Kimi等模型。按整个平台平均计算，缓存命中率可能是60%到68%。</p>
+<p>第3种情况是只看特定的外部开源模型，缓存命中率可能会更低。因为这一部分涉及相关优化。对于前面2种情况，尤其是百炼的统一模型与百炼平台之间进行了深度结合，底层还使用了自研DPU，属于微码级的白盒协同。外部开源模型则不同，只能针对平台进行一些编译器适配。</p>
+<p><b>提　问　者：我理解，外部开源模型在阿里自研的基础设施上进行配置和适配时，仍需要投入很多工作，才能将缓存命中率提升到较高水平，对吗？这个过程较为复杂。</b></p>
+<p>回　答　者：除非阿里托管了该模型，并对托管模型进行持续调优，才可能提升缓存命中率。相比自行部署开源模型，也就是第4种情况，托管模型的缓存命中率会高很多。</p>
+<p><b>提　问　者：您观察到的行业最佳水平是什么状态？其他企业执行长程任务时，缓存命中率能否高于我们的78到85？它们的DRAM与NAND配比和我们有何区别？</b></p>
+<p>回　答　者：我认为，我们的缓存命中率相对而言表现较好，差不多可以达到70，接近70，平均下来也接近70。</p>
+<p>国内表现较好的可能是DeepSeek。由于整个模型与存储进行了很多底层协同，相当于采用3个粒度的自动落盘。它的缓存命中率需要结合具体情况来看，针对特定模型可以达到很高的水平，能做到90%。</p>
+<p>但DeepSeek与阿里云不同，阿里云追求的是平均水平。DeepSeek前几轮的缓存命中率可能不高，经过几十轮之后，缓存命中率可以稳定在超过90%，但此前的缓存命中率可能较低。</p>
+<p>第2个可能是月之暗面。针对一些特定的超长上下文，其缓存命中率可以达到较高水平。但在一些长程任务中，包括Agent推理以及类似的多模态任务，缓存命中率并不高。针对超长上下文，它可以将有效命中率提升到将近超过90%，达到92%也有可能，但仅限于特定场景。</p>
+<p>除阿里之外，我观察到国内其他企业没有表现特别好的。阿里有所不同，因为它是一个大平台。</p>
+<p>回答者：就像1个百货超市，打法不一样。</p>
+<p><b>提问者：您刚刚提到，DeepSeek能做到90%以上的命中率，但前数轮的命中率不高，后续较高。这是否意味着其缓存命中机制和存储时长机制不同，可能需要多次命中后才会延长存储时间，从而保证较高的命中率？还是存在其他原因？</b></p>
+<p>回答者：它采用低秩压缩，每层都会将每1个Token的KV压缩成1个非常小的潜变量。也就是说，从KV占用的物理字节数来看，例如同样使用1块SSD，其他方案每秒只能加载数万个Token的上下文，而它通过对Token的KV进行低秩潜变量压缩，使每个Token的KV占用更小。因此，当其他方案只能读取数万个Token的上下文时，它可以一次性加载数10万甚至100万以上Token的上下文，整体逻辑就是这样。</p>
+<p><b>提问者：我们刚才提到HBM、DRAM、NAND的配比是1比2比8。其中，1比8对应的NAND是否均用于KV Cache，还是会混合承载RAG等各种需求？换一个角度来看，今年年初Agent任务还不普遍，当时的配比是多少？</b></p>
+<p>回答者：当时的配比约为1比2比4，后来扩充到1比2比8，甚至1比2比50，NAND的规模明显扩大。</p>
+<p><b>提问者：从今年年初到年末，HBM与DRAM的配比实际上没有变化，主要是在扩展NAND，是吗？</b></p>
+<p>回答者：是的，主要扩展的是NAND。整体来看，从26年到27年，我们也有SSD、HBM和DRAM的采购。按采购量计算，SSD的增速可能比HBM更快。27年SSD采购量相比26年至少增加55%，DRAM的增速约为45%到50%。</p>
+<p>SSD不仅增速更快，相应的采购规模也更大。27年SSD采购量接近30EB，至少为27EB、28EB。</p>
+<p><b>提问者：这是27年的采购量吗？</b></p>
+<p>回答者：是的，应该达到数10EB，具体为较低的数10EB。</p>
+<p><b>提问者：刚才提到27年20、27到30EB，这一规模大致是按照什么配比考虑的？是1比2比10吗？</b></p>
+<p>回答者：不是按照这一配比，实际比例可能更高。现在有很多应用场景，例如KV和IG推理。推理集群采用PD分离后，会分为P节点和D节点。我们在D节点加载了很多高密度闪存SSD服务器。可以理解为，1个D节点可能挂载4到5台类似CPU的SSD服务器，并采用CXL方式。</p>
+<p>回答者：类似于1套SSD共享池化。</p>
+<p><b>提问者：也就是池化，类似DeepSeek的3FS，相当于1个大池子，对吗？</b></p>
+<p>回答者：对。至少在1个数据中心、1个推理集群内部是这样的，但不可能跨地域从北京调用上海的数据，一般不会这么做。</p>
+<p><b>提问者：明年的NAND采购量大约是30EB。您了解DRAM的采购量吗？</b></p>
+<p>回答者：如果是27年，DRAM采购量相对较少，约为1EB，满打满算可能接近1.2EB，大约是1.1EB至1.2EB。</p>
+<p><b>提问者：您刚才提到45个点至50个点的增速和55个点的增速，我可以据此倒推26年的采购量，对吗？</b></p>
+<p>回答者：对。26年的SSD采购量接近10几EB。</p>
+<p><b>提问者：10几个EB，接近20EB，对吗？</b></p>
+<p>回答者：可能只有10几EB，不到20EB。26年大约是16EB至17EB。</p>
+<p><b>提问者：那么明年的增速实际上会超过50个点，对吗？</b></p>
+<p>回答者：至少会增加55%左右。</p>
+<p><b>提问者：如果27年的采购量是27EB至30EB，增速可能接近80，甚至翻倍。</b></p>
+<p>回答者：今年约为17EB，也就是16EB至17EB；明年的规划是20多EB。因此增速可能不止55%，大约接近80%。</p>
+<p><b>提问者：也就是80至100，对吗？如果采购量达到27EB至30EB。</b></p>
+<p>回答者：对。</p>
+<p><b>提问者：今年DRAM的采购量大约是多少？</b></p>
+<p>回答者：容量增长较多，但盘数没有增长那么多。因为明年可能会增加更多高密度硬盘，盘数的增幅可能不到20%。</p>
+<p><b>提问者：我再确认一下，NAND采购量的数量级是今年16EB至17EB，明年约27EB至30EB，对吗？</b></p>
+<p>回答者：对，这个数量级没有问题。</p>
+<p><b>提问者：DRAM明年是1.1EB至1.2EB，那么今年大约是什么水平？</b></p>
+<p>回答者：今年不到1EB，大约为0.8EB。</p>
+<p><b>提问者：明年NAND采购量可能增长近80个点，主要是由KV cache offloading驱动的吗？</b></p>
+<p>回答者：也可以这么说。KV cache offloading的占比从26年至27年提升较快。27年，offloading占整体SSD容量的比例接近18%；26年大约不到10%。</p>
+<p><b>提问者：您指的是26年不到10%，还是25年？</b></p>
+<p>回答者：26年。</p>
+<p>专家：26年、27年差不多。在增加的几十亿币中，至少有约18%用于KV cache offloading方案，专门服务于大模型Agent推理侧。相比26年，其增速可能达到1点几倍。</p>
+<p><b>分析师：此前我们也请教过其他业内专家。无论国内还是国外，大部分专家都提到，SSD的延迟非常高，因此使用KV cache做prefix时，可能还不如让GPU重新计算。由于GPU的utilization也没有拉满，重新计算的性价比可能更高。行业内对这一问题和相关方案有哪些争论？</b></p>
+<p>专家：关于重新计算，我们之前测算过。虽然可以忍受一定程度的速度下降，但还需要考虑整体TCO。如果重新计算，成本大概比存储成本高将近2到3倍，存在重新计算成本与存储成本倒挂的情况。</p>
+<p>尤其是引入3.84、GDN和QLC后，我们会采用混合注意力，以降低显存和显存使用率。根据测算，如果将100万token压缩成KV cache，大概只占几GB，不会超过10GB。存储24小时的折旧和电费成本可能很低；但如果删除后重新计算，100万token的prefill，加上消耗的GPU卡时和电费，成本可能至少需要3毛钱到5毛钱。也就是说，存储1天的成本可能比重新计算1次便宜几十倍。</p>
+<p>因此需要区分场景。如果是在云端超大规模、1万卡至10万卡的大模型推理平台中，我们认为重新计算的成本更高。但如果是小模型，甚至是单机运行的情况，就需要考虑存储的代价。综合各种因素，在这类场景中，存储可能并没有重新计算更快。我们当时主要从性价比角度进行了测算。</p>
+<p><b>分析师：我的理解是，长任务的Agent任务没有那么延迟敏感，因此更适合重新进行prefix，而不是重新计算，对吗？</b></p>
+<p>专家：对。对于现在的长程任务、harness和多任务协同，时延根本不是最大问题，因为它们不同于车载、端侧的小模型。车载和端侧场景对计算和延迟更加敏感。</p>
+<p><b>分析师：还想确认一个口径。您刚才提到，26年采购的16个EB，即16、17EB的SSD中，只有10%用于KV cache offloading，对吗？</b></p>
+<p>专家：大致如此。我们说的是27年相比26年，offloading在这一比例中的变化。</p>
+<p>专家：另一块增加了差不多至少1.5倍。</p>
+<p><b>分析师：明白，但是另外90%主要用于什么？这个数量其实相当高。</b></p>
+<p>专家：另一部分属于通算。26年新增了差不多55万台CPU服务器，其中一部分可能用于推理集群，承担推理集群中执行类Agent所需要的CPU任务。还有一部分会挂载在GPU服务器的8卡、16卡及超级内部的SSD上，用于Offloading。具体而言，就是在推理集群中配置专门的高密度SSD服务器，并将相关设备挂载在这些服务器上。</p>
+<p><b>分析师：明白。所以您提到的10%和18%，专指仅用于KV Cache的独立NAND柜。原有GPU Rack中的设备是混用的，因此无法明确区分具体数量，对吗？</b></p>
+<p>专家：对，此外还有SSD。</p>
+<p><b>分析师：明白。还有一个问题，明年大概30亿B的订单是否已经全部确定并下单，还是仍在观望，可能因价格或Capex等原因继续评估？</b></p>
+<p>专家：目前还没有完全覆盖这些订单。其中将近40%可能通过自研白牌化完成，即由平头哥开发主控器，再向三星、长存采购颗粒，交由下游代工厂生产。这部分大概能够覆盖40%。</p>
+<p>剩余部分中，至少还有30%左右采用我们的主控器，但颗粒不由我们自行采购，这也是一种白牌化模式。另有将近20%到30%，其中20%多采购三星、海力士的标准SSD模组；还有5%左右的标准SSD模组采购自长存，大致是这样的比例。</p>
+<p><b>分析师：明白。我提出这个问题，是因为今年NAND供应仍然很紧张。您判断明年的市场供需会趋于平缓、偏宽松，还是仍需尽快锁单、抢货？</b></p>
+<p>专家：关于锁单，26年的需求已经锁定。我们锁定的主要是颗粒，例如与三星、长存签订了NAND颗粒的长期协议，即LTA，但似乎并未锁定太多标准SSD模组。</p>
+<p><b>分析师：明白，也就是说主要锁定的是颗粒。听起来，明年的采购规模大概是30亿B。由于存在混用，很难明确最终DRAM和NAND的具体比例，对吗？</b></p>
+<p>专家：对。我只能从金额角度说明。例如，明年整体SSD的金额可能是100……</p>
+<p>回答者：应该在100亿到120亿人民币左右。DRAM的金额约为95亿到110亿人民币。</p>
+<p><b>提问者：您提到的金额是美元吗？</b></p>
+<p>回答者：是人民币。</p>
+<p><b>提问者：从技术方向来看，NAND的配比是否还有继续上升的空间？</b></p>
+<p>回答者：对于NAND，我们更需要236层以上，以及容量至少达到60、60、64TB到120TB以上的QLC、TLC产品。我们认为，TLC和QLC方面仍有一定空间。由于颗粒无法自研，只能采购；但主控器方面没有问题，我们有自己的主控器。在此基础上，我们会结合自己的主控器与颗粒进行定制，开发企业级SSD。</p>
+<p><b>提问者：目前缓存命中率基本达到78到85，对吗？我理解，Prefix缓存命中率达到78到85，基本上是按照明年的配比能够实现的水平，对吗？未来如果希望继续提高这一数值，是否还需要进一步提升DRAM和NAND的比例？</b></p>
+<p>回答者：这一点不太好判断，但从27年相较于26年的趋势来看，我们认为SSD的需求确实存在，很多需求会被放在Offloading环节。通过上层软件和算法，可以进一步降低显存占用。原本需要在HBM或DRAM中运行的内容，可以尽可能卸载到SSD上。此外，长上下文和长记忆最终也会消耗并占用大量SSD。</p>
+<p><b>提问者：您此前在介绍HBM、DRAM和NAND的配比时，提到了1比2比8和1比4比20两个比例。对于DRAM，什么情况下会考虑1比2，什么情况下会考虑1比4？这两种配比是否存在应用场景上的区别？大家都希望配置更多DRAM和NAND，采用不同配比主要基于哪些考虑？</b></p>
+<p>回答者：我们认为SSD的配置比较灵活，单台服务器不一定需要一次性增加很多SSD。我们更看重HBM与DRAM之间的配比。在这种情况下，我们会考虑PD节点。对于PD节点，我们不会配置很大的DRAM，通常采用1比2；对于Decode节点，则可能采用1比4，配置相对更高。</p>
+<p><b>提问者：也就是说，进行PD分离后，不同节点会配置不同的DRAM池？</b></p>
+<p>回答者：对。</p>
+<p>回　答　者：我们有很多不同的产品。例如，AIGC向量检索产品会提供一套类似Lindorm的检索服务，底层需要实现秒级召回，因此SSD和DRAM的配置都要很大。要实现秒级召回，很多数据必须存放在内存中；如果向量规模很大，本地也需要配置大容量硬盘，因此SSD和DRAM的配置会同步放大。</p>
+<p>此外，阿里有一套名为E-gin的模型权重热切系统，相当于热备系统。运行E-gin推理系统时，需要将大量非激活的模型权重常驻共享内存，因此底层1是需要配置较大的DRAM，2是需要支持CXL内存扩展。针对不同的云产品，会选择类似的服务器主机规格进行部署。</p>
+<p><b>提　问　者：您了解明年阿里云总CAPEX大概是什么规模吗？是否听说过相关消息？</b></p>
+<p>回　答　者：阿里云的CAPEX至少可能在2300到2500。27年相比26年，增速应该会稍微放缓。</p>
+<p><b>提　问　者：明白，2300到2500，对比今年仍有不错的增长。</b></p>
+<p>回　答　者：但是27年相比26年，好像少了一点。</p>
+<p><b>提　问　者：您刚才提到SSD只花100多亿，DRAM也只有100多亿，存储的占比应该不会这么低吧？</b></p>
+<p>回　答　者：因为存储中还没有计算HBM，也没有计算HDD。HDD可能有一些，但金额比较少。HBM的费用可能比所有DRAM和SSD加起来的总和还要高。</p>
+<p><b>提　问　者：您了解DRAM和NAND谈判后的单价大概是多少吗？DRAM大概是20、20块钱，还是18块钱？我说的是美元。</b></p>
+<p>回　答　者：实际价格并不相同。</p>
+<p><b>提　问　者：您指的是TB级价格吗？我问的是DRAM。</b></p>
+<p>回　答　者：DRAM的价格变化很大，而且有不同的价格，因此不太好界定。</p>
+<p><b>提　问　者：铠侠和闪迪正在推广SLC产品，称其适合小块、小规模、高带宽和高读写场景，也适合配合TLC进行KV Cache Offloading。我们是否有比较明确的导入意向，还是这类产品对我们而言并不属于规模较大的应用场景？</b></p>
+<p>回　答　者：目前可能暂时没有导入。对于这类SSD，今年到明年可能更多倾向于自研。</p>
+<p>回　答　者：从自研情况来看，一种方式是使用我们的主控器，颗粒也由我们采购，再交由代工厂生产。第2种方式是使用我们的主控器或国产第3方主控器，颗粒由板卡代工厂采购，并按照我们的要求进行定制。您提到的这种情况，目前没有看到我们在导入或开展类似测试，预计不会有太大的量。</p>
+<p><b>提　问　者：我想快速请教一下，SD的KV cache offload方面，阿里的进展似乎比较快。有一种说法是，海外进展比较慢，因为延迟会导致其用户体验下降较多。您如何看待这一点？</b></p>
+<p>回　答　者：海外与国内的应用场景有所不同。国内使用的模型包括稀疏模型、MOE和多模型，而海外很多是稠密模型。卸载KV cache时，相当于需要将模型切分成很多部分，再进行合并，因此场景并不相同。</p>
+<p>此外，国内目前希望降低token成本。无论是提高KV cache缓存命中率，还是提高prefix前缀缓存命中率，最终目的都是减少重算、降低token成本，尤其是在国产卡上。国内token成本竞争较为激烈，而海外整体token定价和毛利率仍然比较高，可能也与此有关。本质上，提高缓存命中率是为了让token变得更便宜，并减少重算。</p>
+<p><b>提　问　者：海外后续缓存占比或offload占比的提升，听起来具有一定的结构性，是吗？从技术角度看，是否与其模型架构有关？</b></p>
+<p>回　答　者：国内缺少高端的Prefill算力，但显存和带宽相对还可以。算不动主要是Prefill方面的问题。相比之下，海外的算力相对更充足，因此当前形成的差异也与模型架构有关。海外闭源模型长期采用类似GQA的架构，例如KV Cache需要从S3和网络上传输时，就会涉及这一架构带来的影响。</p>
+<p>专家：有一个前提，就是KV必须足够小。因此，这也促使国内模型从一开始就在架构上进行妥协。例如，DeepSeek采用MLA，就是为了将单个token的KV从几百KB压缩到只有几KB。我们也研发了GDN线性注意力，目的同样是砍掉差不多一大半的KV层。</p>
+<p>本质上，目前还存在另一个问题。由于国内存在价格战，而海外原本定价较高，因此没有太多节省算力的动力。我认为大概有这些原因。</p>
+<p><b>分析师：明白，我的问题就是这些，感谢专家。</b></p>
+<p>专家：不过，从下半年开始，我们也观察到海外可能正在加大对KV cache落盘和缓存的投入。OpenAI也在做，包括英伟达的Dynamo等，都是类似的技术。这反而有点像抄了这些玩家技术上的作业。</p>
+<p>我们认为，后续KV cache这套方案，或者提高缓存命中率，应该会成为全球通用的技术路线。</p>
+<p><b>分析师：明白。Henry，你还有问题要继续追问吗？</b></p>
+<p>Henry：我没有了。</p>
+<p><b>分析师：专家，您刚刚提到观察到OpenAI正在做相关工作。这个信号是来自业内交流，还是通过其他方式了解到的？另外，您好像没有提到Anthropic在做。</b></p>
+<p>专家：Anthropic的情况我不知道。OpenAI方面，在GPT-5.5时，其缓存策略已经可以切换到24小时落盘。英伟达也推出了KVBM和Dynamo。</p>
+<p><b>分析师：Dynamo软件栈，对吧？</b></p>
+<p>专家：对。其本质是将部分KV offload，也就是卸载到闪存池中，本质上是一种以存代算的方案。</p>
+<p><b>分析师：明白。您刚刚提到的这一点，我也想进一步请教。此前我在阅读OpenAI开发者文档时发现，在您所说的5.5那一代，突然增加了KV cache落盘功能，存储时间可能达到1天甚至以上。GPT-5、5.5还是5.6？对，就是那一代。我们目前系统内的存储时间大概是怎样的？</b></p>
+<p>专家：我们的时间设置好像不一样，也是分时长的，比如短的有5分钟。因为我们已经实现了存储和内存融合的架构，分成了5层，类似于G1到G4，包括G1、G2、G2.5、G3、G3.5、4。每一层的缓存时间不同，比如G1……</p>
+<p><b>提问者：G1是DRAM还是HBM？</b></p>
+<p>回答者：这一层目前约为1分钟级，使用的是HBM。G2或G2.5之所以分别称为G2和G2.5，是因为G2指本机DRAM，2.5指本机挂载的CXL内存池，因此称为2.5，时长约为1个半小时。G3.5目前约为24小时，但也存在差异，有的是1小时，有的是24小时。</p>
+<p><b>提问者：G3.5应该就是NAND池，对吗？</b></p>
+<p>回答者：是的。NAND的存储时间有时可能更长。目前至少G3、G3.5肯定按照24小时配置。</p>
+<p><b>提问者：这是国内互联网厂商的普遍做法，对吗？如果其他厂商不跟进这一策略，在毛利率层面可能根本无法竞争，是吗？</b></p>
+<p>回答者：是的。这个24小时并不是存储24小时就足够了，还需要通过各种策略进行滚动。有些数据需要存储更长时间，不能不允许用户存储。整体而言，随着Agent和企业级应用的发展以及使用时间延长，数据不会丢失。本质上，这些数据也可以使用成本更低的SSD或归档备份进行存储。</p>
+<p><b>提问者：听起来，27年SSD导入的斜率会非常大，对吗？如果进一步往后看，您认为还有什么上升空间？还是到27年完成这一配置后，后续会趋于平缓？</b></p>
+<p>回答者：不一定会趋于平缓，这条增长曲线可能仍然很陡峭。25年主要还是对话推理和网页推理，26年才算是Agent应用开始发展，但渗透率还不是非常高。到了28年、29年，真正的Agent应用可能开始取代很多传统应用，很多传统应用也会被迫转向Agent，由此带来的存储需求本质上是一种重构。</p>
+<p>此前存储在SSD上的主要是结构化数据，而Agent应用下存储的可能是向量或KV等数据，因此对存储的要求可能更高。以前部分PCIe 4.0 SSD就可以运行，现在可能需要PCIe 6.0、5.0。随着应用不断深入，需求不一定会趋于平缓，我目前无法保证其会平缓，可能仍然会保持很陡峭的增长趋势。</p>
+<p><b>提问者：这里可以拆分为2个方面。1个是用户对Agent的需求提升，带动更多算力卡和存储需求。第2个是单看集群内部，26年可能刚开始尝试存储24小时，27年存储24小时可能成为事实标准。28年以后，数据是否会存储更久？或者1个集群中，同样1张算力卡是否会配置更多SSD？还是这一维度会趋于平缓？</b></p>
+<p>回答者：这一维度可以说会有些趋于平缓，但我前面所说的是整体数据量。</p>
+<p><b>提问者：27年是SSD导入最快的一年，大家开始普遍提升SSD的配置量级，对吗？</b></p>
+<p>回答者：对，这是基础和基本盘。只有先建立基本盘，后续才能推进。上层应用对底层IT的需求可能存在一定滞后，因此需要提前预置IT体系，不能等上层应用发展起来后，再建设底层存储和IT架构，否则时间上来不及。</p>
+<p><b>提问者：明年2500亿元，即2300亿元到2500亿元的capex，大概对应多少张卡？</b></p>
+<p>回答者：卡量接近200万张，其中自研卡的比例超过一半。保守估计可能在180万张到200万张之间，因为这涉及产能问题。如果自研卡产能跟不上，实际数量可能达不到200万张。我认为规划应当是按照200万张制定的，但实际可能在180万张到200万张之间。</p>
+<p><b>提问者：这200万张卡中，海外和国内分别是多少？</b></p>
+<p>回答者：这200万张卡中，海外可能占45万张左右，具体约为40万张到45万张；国内仍有100多万张。</p>
+<p><b>提问者：海外使用N卡，国内使用平头哥的自研卡，是吗？</b></p>
+<p>回答者：对。海外接近45万张，也可以按45万张计算，接近50万张。其中可能投放十几万张自研卡，剩余部分应当都是N卡。最多可能在海外投放10万张左右自研TPU，用于推理，其余应当都是N卡。海光、昇腾等国产卡不太可能再投放到海外。</p>
+<p><b>提问者：海外capex听起来应该占整体capex的一半？</b></p>
+<p>回答者：应该不到一半，可能占40%左右。</p>
+<p><b>提问者：如果总量按照200万张卡测算，明年采购量大概可能是50、5……抱歉，我确认一下。明年NAND采购量是30EB，对吗？按照30EB计算，平均每张卡基本配置15TB，对吗？</b></p>
+<p>回答者：差不多。部分卡的配置可能更大，平均下来也有部分卡配置较小，例如配置8TB。</p>
+<p><b>提问者：我想请教一下，不知道您是否读过DeepSeek此前公开的DeepInfer细节？它的单卡配置比例非常高。</b></p>
+<p>回答者：您指的是它的单卡配置吗？</p>
+<p><b>提问者：对。</b></p>
+<p>回答者：这是因为阿里考虑的是异构化集群，并不是只采用一种卡。以整个推理体系为例，6月份时，整个大型推理池中就有将近5……</p>
+<p>回答者：我们有2类卡：N卡和自研卡。每类卡最终落到物理形态上，可能是8卡、16卡或超级节点。我们也会考虑每类卡的特性，为其配置DRAM和SSD。例如，某类卡可以配置很大的SSD，但并非所有卡都适合。因此，在服务器白牌化方面，我们有自己的一些规格。</p>
+<p><b>提问者：DeepSeek的架构大约是每个GPU配置14TB。我们的情况应该不能这样计算，因为SSD中还有很多用于公有云、传统云的部分，所以配比肯定会更低。长期来看，DeepSeek的DeepInfra架构会是我们的目标吗？还是我们长期也不会做到这一水准？他们做得过于极致，我们是否不会采用这种方式？</b></p>
+<p>回答者：我们应该不会采用这种方式，不会配置非常大的SSD。</p>
+<p>回答者：我们认为没有必要在单盘、单服务器上配置这么大的容量，完全可以通过底层类似HPN的高性能网络，实现更灵活的架构。现在阿里云实现了4层池化，包括计算池化、内存池化、存储池化和网络池化。每一种池化都是为了构建更灵活的架构。整体存储规模肯定会变大，但不代表每台服务器都会配置很大的存储容量。</p>
+<p><b>提问者：关于SSD，我们已经进行了较多讨论。目前长任务的prefix达到78到85个点，已经表现不错，但长期来看肯定还要继续提升。如果不考虑继续增加存储，还有哪些优化方向？</b></p>
+<p>回答者：我们主要从工程层面进行优化。第1，我们会通过自研的tier KVCM，即缓存调度系统，管理各种资源。tier KVCM本质上是一套KV cache管理调度系统，用于管理前面提到的G1到G3、G4分层存储架构。</p>
+<p>这套系统通过tier KV和全局KV cache store池，实现PD分离和实例与PD分离。针对不同实例，我们可以进行请求调度。例如，对于新实例，可以直接从G3.5层以毫秒级速度拉回历史KV块。因此，我们具备一套全局调度系统。</p>
+<p>第2，针对千问大模型和Agents，我们也有High-Clow底层框架，专门针对这些产品进行底层处理。</p>
+<p>回答者：我们搭建了1套类似的动态加载缓存技术，专门针对特定产品进行优化。整体而言，除缓存命中率外，还存在底层容量如何优化的问题。我们认为，仅通过软件进行优化是不够的，还需要结合硬件。</p>
+<p><b>提问者：您所说的硬件，是指通过一些方式帮助 NAND 实现更快读取吗？</b></p>
+<p>回答者：例如，通过定制主控器和 NAND 颗粒，可以延长 SSD 的使用寿命，并在存储空间、延迟和成本方面实现优化。与采购标准 SSD 模组相比，成本可能降低30%-40%。</p>
+<p><b>提问者：我还有最后2个小问题。第1个与 NAND 没有太大关系。您刚才提到推理层面的情况，我想再请教2个延伸话题。您了解目前推理业务的毛利率大概处于什么水平吗？</b></p>
+<p>回答者：对于阿里百炼的推理业务，如果只看纯 Token，即公共 Token，需要区分通义的毛利率，以及百炼上托管的 DeepSeek 和 Qwen 等模型的毛利率。</p>
+<p>阿里通义目前的平均毛利率应该能做到25%，接近25%。第三方开源模型托管的毛利率似乎还要高一些。</p>
+<p><b>提问者：这里所说的是通义的毛利率为25%，还是整体毛利率为25%？</b></p>
+<p>回答者：通义的毛利率为25%，第三方开源模型的毛利率似乎还要高一点。</p>
+<p><b>提问者：开源模型的毛利率还可以更高一些，是吗？</b></p>
+<p>回答者：是的，主要与价格有关，还有1个因素可能是与部分大客户进行捆绑。整体来看，我们认为阿里的 Token 毛利率远高于字节。</p>
+<p><b>提问者：为什么会出现这种差异？</b></p>
+<p>回答者：据我们了解，字节的毛利率可能只有10%多一点。</p>
+<p><b>提问者：这是推理效率的差异，还是字节在客户询价过程中采取了较为激进的降价策略？</b></p>
+<p>回答者：降价属于外部因素，我们更看重内部因素。阿里通过1套网络和自研芯片大幅降低 Token 成本，核心优势在于底层硬件。我们认为，无论软件如何优化，即使大家都使用同1种卡，软件算法再强，也很难在短时间内显著降低 Token 成本。</p>
+<p><b>提问者：再确认一下，通义的毛利率为25个百分点，托管模型的毛利率更高。这里的 Token 指的是包括 KV Cache 的 Prefix 在内的 Blended 口径，对吗？</b></p>
+<p>回答者：对，应该是总体口径。</p>
+<p><b>提问者：从总体趋势来看，假设使用同样的1套 Infra，托管5-10种甚至更多模型，与托管2-3种自有 In-house 模型相比，自行托管自有模型并进行最深度的硬件适配，毛利率是否应该可以做得更高？</b></p>
+<p><b>分析师：之所以能做到最高，是因为它的吞吐表现最好，对吗？</b></p>
+<p>专家：是的。我们当时做过对比，例如在自研芯片、自研PPU上运行通义和DeepSeek，成本实际上是最低的。但毛利率不高，一方面是因为阿里云在降价；另一方面，内部商业高层认为Token本身不应该定价过高。在百炼中，Token更多是作为引流工具。</p>
+<p><b>分析师：明白，我们真正想销售的是云服务，对吗？</b></p>
+<p>专家：对。我们内部预判，到明年这个时候，整个行业的Token价格可能还会降低50%以上，甚至降幅更大。极端情况下，到后年可能只有当前价格的1/5。</p>
+<p>我们认为，单独做Token工厂的商业模式可能走不通，必须依靠上层推出的千问办公、Work Buddy、High Cloud等Agent应用支撑。这些应用会让Agent像自来水或电一样被持续消耗。更高毛利率的业务主要依靠上层工具链带动，例如模型单元等。</p>
+<p><b>分析师：平头哥是自研的，这意味着我们可以在底层进行各种模型及Infra层面的适配。N卡是在海外采购的通用GPU，价格更高，但算力吞吐也更高。如果在同等算力能力下进行比较，您认为自研卡和通用N卡哪一种效率更高？</b></p>
+<p>专家：在这种情况下，我们会选择更细分、能够公平评判的场景进行测算。当时我们在物理分离的集群上进行测试，例如1000卡的H20集群和类似的1000卡PPU集群。我们在两个集群上部署相同的网络，并在相同时间段内运行相同的推理模型。</p>
+<p>我们主要测试推理，因为认为训练测试并不公平。测试采用约30B的模型，在FP8精度下，计算各自在相同时间段内产生100万Token的综合成本。</p>
+<p>当时测试的是810及其下1代，测试模型为30B、FP8精度。PPU产生100万Token的成本接近0.5元，H20则约为1.5元至1.7元。</p>
+<p>我们还测试了寒武纪和昇腾910C，其成本基本接近H20，其中寒武纪的单100万Token成本可能略低于H20。海光也进行了测试，可能是其中最便宜的，成本约为1.4元，即1.3元至1.4元左右。</p>
+<p>整体而言，其他芯片仍不及自研芯片降低成本的空间大。这也有一个原因，就是平头哥提供给阿里云的成本本身就很低。以上测算的是每100万Token的综合成本。</p>
+<p><b>分析师：您认为这种Benchmark标准测试是否公平？例如，NV作为领先厂商，一直在针对明年Anthropic、OpenAI运行最长任务的推理需求进行优化。我们的测试是否符合使用最大模型、最Dense模型执行最长任务的测试形式？</b></p>
+<p>专家：也算符合，至少符合我们自己的技术栈。</p>
+<p><b>分析师：也就是符合我们自身已经看到的需求，对吗？</b></p>
+<p>专家：对，但我们无法覆盖腾讯、字节以及DeepSeek的需求。</p>
+<h2>原文转译</h2>
+<p>哎，你好你好。</p>
+<p>哎，你好。你好你好。</p>
+<p>哎，感谢感谢，感谢您这个百忙之中又抽出来时间，对，要向您请教这个问题。呃，要不就能不能稍等个一分钟，我问问我老板有没有上线，他也想来参加这个我们的这个访谈。</p>
+<p>哦，可以啊，可以。</p>
+<p>好嘞好嘞。</p>
+<p>等一会吧，没关系。</p>
+<p>好的好的，感谢。</p>
+<p>OK，哎，我我看到我我我那个我老板也上线了，那个，那那好呀，那我就这边先来向您请教这个这个问题吧。哎，好，那个，呃，之前其实问题清单主要也给您已经发过去了，对，主要就是特我们特别关注的是这个SSD做KV cache offloading的这个进展，然后还有就是可能对应到明年的采购大概会有什么样的量。对，首先想，那我们就开始吧，就首先想向您请教就是，呃，就以现在的这个这个情况来说的话，您看到我们现在的现在的这个集群啊，我们配的这个单卡配DRAM和配SSD是个什么样的水平？单卡或者单单单机柜都可以，看您哪个口径您比较清楚。</p>
+<p>呃，因为我们26年的话呢，其实现在来看呢，呃，我们建推理集群的时候，如果用单GPU，其实就是相当相当于我们是把它分成了HBM、DRAM、SSD之间的配比嘛，对吧？其实就是这三层的配比呢，现在差不多是1比，呃，1比2，1比2或者是1比2比，1比2，因为这个中间后面两个是变的哈。</p>
+<p>明白。</p>
+<p>呃，就是1比，1比那个DRAM这一块呢可能是2也可能是4，因为它可能会通过池化嘛。</p>
+<p>明白。</p>
+<p>那后面的SSD呢差不多是8到20其实。</p>
+<p>OK。</p>
+<p>也就是说呢，因为后面的SSD更加开放，它底下可以挂那种远端的那种共享存储那个，那个那个我们有高密的那个闪存的那个那个那个服务器嘛。</p>
+<p>明白。</p>
+<p>就挂在那个，差不多呢如果非要说的话呢，那差不多就是1比2比8其实，对吧，就是这么一个大概比例，其实。</p>
+<p>明白。明白，了解。那个，OK，那像在1比2比8这样的一个这个这个配置下，我们那个做这个这个这个Agent推理的这个这个prefix命中率大概能做到什么水平啊？</p>
+<p>哎，这个命中率呢又又分好多种，分好多种情况，我看看你这个问题好像我专门还专门后台还去还去确认了一下。就是，呃，比如说我们会分两种情况，因为我们是有一个百炼的推理平台，我们还有一个专专门的百炼下面的那个灵骏智算呢，它也可以部署客户自己的Agent的这个推理集群嘛。那也就是说这两种情况下呢我们都会看。那我们缓存命中率这一侧呢，我们我们要从那个，呃，百炼这个角度来说呢，要看了运行的这个，比如说有一些长程任务，在线编码这种，文档的审阅这种Agent，差不多呢我们看了它的缓存命中率差不多是在78%到85%的样子。</p>
+<p>明白。</p>
+<p>因为它这一块呢更多是靠，呃，我们的那个HBM啊、DRAM啊和类似的这种SSD的KV cache啊，那个那个那个都去分担的嘛。</p>
+<p>明白。</p>
+<p>它们各自的可能有有存储比例。第二个呢，我们说的像，像百炼的整个大盘，综合的啊，因为百炼里面不光是运行长程任务、在线编码嘛，对吧，它还有很多大盘，我们认为主力的企业级这一块，它整个缓存命中率差不多是在60%到68%的样子其实。那剩下的呢还有一些像，呃，我们觉得可能有一些像，就是比如说DeepSeek的模型，对吧，一些托管的模型部署在我们这个外部的啊，可能会涉及到这种，呃，多Agent的差不多缓存命中率在40%到50%嘛。那还有一些呢我们说的低 第四种情况，就在裸机之上，他自己作为散客，自己去搭建自己的一些agent。那这种缓存命中率就他们就做得比较低嘛，差不多只有20%到35%之间的样子，还没有经过优化其实。上面的三个就是阿里放在自己的平台已经做了这些优化了嘛其实。</p>
+<p>明白。我理解了，我理解了。哎，我想向您再请教一下，就是，我们这个说的其实就是，我们说的是百炼就是在托管我们自己的千问的模型，然后它做长程任务基本上能做到78到85的这个命中率，对吧？然后这是我们自己的，自己的模型，自己的infra，所以我们优化的是最棒的，然后是，然后又是最适合的任务。</p>
+<p>对。然后呢，第二档呢，就我刚刚说了在百炼上因为有，百炼有统一自己的模型，还托管了很多DeepSeek、Kimi这个整个大盘，平均下来，对吧，那命中率可能是60%到68%，差不多是这么。那第三种情况就是说我们只看特定的外部的开源模型，那可能就是这个缓存命中率又会低一点。因为这一块涉及到这种优化呀，涉及到这种，就是因为上面两种情况来说，尤其是百炼的这个统一的模型跟百炼之间的结合以及下面用了那个自研DPU，它是一种算是一种微码级的白盒的协同嘛，它做了，它不像外部开源模型，它只是针对我们的这个平台做了一些编译器上的适配嘛。还是不一样啊。</p>
+<p>明白。明白。OK，所以我理解就是外部的开源模型在，一套就是我们阿里自研的这套infra下面其实在配置，在在适配上还是要花非常多的功夫，可能说才能把缓存命中率拉得很高，对吧？就这个是非常麻烦的。</p>
+<p>除非，除非是阿里，阿里说我托管了你的模型了，对吧，那我托管的模型我要进行持续的调优，我可能会拉上了这个缓存命中率，要远远比你自己如果开源模型部署的，就是我说的第四种情况嘛，你自己部署的，那上面要高很多。</p>
+<p>了解，了解。明白，明白，好的。哎，那我想向您请教，就是您刚刚，就是，我不知道就是这个行业最佳水平您看到是个什么样的状态？就他们的长程任务能够做到比如说比我们78到85更高吗？然后他们的这个DRAM和NAND的配比会跟我们有什么样的区别？</p>
+<p>因为我们这个缓存命中率呢，我认为呢相对来说呢还是做得比较OK的，其实。因为我们差不多都是在70，差不多可以达到70，接近70加平均下来啊，接近70的样子嘛，对吧。那国内如果说做得比较好的话，要看其实。DeepSeek可能做得稍微还可以点。DeepSeek呢因为它涉及到就是说它整个模型跟存储，它做了很多底层的这种，就是它其实也是相当于一个三个，三个粒度的这种自动落盘嘛。总体来说它这块缓存命中率呢要看。针对特定的模型呢它缓存命中率做得很高，超能做到，能做到90%。但是呢它跟阿里云这上呢不一样。因为阿里云追求的是一个平均数嘛。因为你看比如说DeepSeek它缓存命中率是因为在后面，比如说前几轮缓存命中率不高，对吧，经过几十轮之后，它缓存命中率可以稳定在，差不多超过90%了，但在之前的缓存命中率可能就不高嘛。其实我觉得它是这样的。第二个可能是月之暗面。月之暗面这块缓存命中率的话呢，应该，它只是针对一些特定的超长上下文，它缓存命中率可以做得很高。但它不是，比如说它的一些长程任务对吧，包括一些agent推理，包括一些类似的多模态这种，它的缓存命中率就做得就不是很高。它针对超长上下文这一侧，它可以把有效命中率也能推到将近超过90%，达到92%也有可能，对吧。它只是在特定的。剩下的我看了国内啊，就没有特别好的了，除了阿里。阿里不太一样，我总觉得阿里它是一个大平台。 就像一个百货超市一样。</p>
+<p>打法不一样。</p>
+<p>对。</p>
+<p>明白，明白。哎，我我我想向您请教的就是，呃，这个您刚刚提到DeepSeek这个能做到90%几的命中率，您提到有个点是说前几轮不高，后面高，它这个是不是代表着它的这个缓存的命中和存储的这个这个时间机制不一样？就它可能是多次命中之后才会它会刻意地给存更多的时间，从而保证这个命中率很高吗？还是还是什么样的一个就是</p>
+<p>它，嗯，它相当于，它是通过那种低质的那种压缩，它每层啊，它它每层都会将每一个token的KV压成一个非常小的一个叫浅变量嘛。就也就是说，当当它的KV的物理字节数，就是差不多就是相当于是，嗯，相当于是啥呢？相当于是比如说一块SSD对吧，别人比如说每秒钟只能加载几万个token的上下文嘛，那么它因为是它相当于把这个token这个头啊，做了一个低质的这种浅浅变量嘛，对吧，它就相当于它取每个token的KV嘛，然后压的就更小嘛，所以说别人只能取几万个token上下文的时候呢，它就可以一下就拉起几十万甚至上百万的token上下文嘛。它是说这个逻辑是。</p>
+<p>明白。明白，明白，了解。好的呀。哎，那那想还想向您请教就是我们接着刚刚那个话题，就是说我们HBM、DRAM、NAND是1比2比8嘛，然后那我们那个1比8的这个NAND里面是都是for KV cache的，还是说就是会有各种各样混搭的这个需求？可能有RAG呀各种各样的东西。或或者这样问，就是咱们对比今年年初的时候，当时Agent的任务还不是很普遍嘛，那个时候我们的配比是个什么样的配比？</p>
+<p>那个来说呢，我们配比差不多1比2比4，对吧。就是后面然后就把它扩充到1比2比8，甚至1比2比50嘛，对不对？那这块就变得更大。</p>
+<p>明白。明白，所以所以这个很有意思，就是你看从年初到年末的话，我们的DRAM，HBM比比DRAM的配比其实是没有变的，主要就是就是在扩展NAND是吧？</p>
+<p>对，我们NAND这块扩展的，嗯，整体来说呢，比如说我们说从26年，我们看27年，因为27年我们也有这个SSD的这种采购嘛，包括HBM的这种采那个那个DRAM的采购嘛，增速这一块来看呢，如果量，如果是量的话呢，其实SSD的这个增速可能其实要比HBM的增速更更快。因为SSD的增速27年相比26年的话，应该是差不多至少会增加55%吧。那DRAM这块增速呢差不多是45%到50%嘛。</p>
+<p>明白。</p>
+<p>那就也就是说增速更快，而且呢它相应来说呢，它的盘子会更大。因为你看SSD我们差不多在27年要采购的是小30EB嘛，至少是27EB，28EB嘛，对吧。</p>
+<p>27年是吧？</p>
+<p>嗯。几十EB应该是，有小几十EB好像是。</p>
+<p>明白，明白，明白，了解。了解。这个这个，OK，明白。</p>
+<p>嗯，差不多嗯。</p>
+<p>哎，抱歉我打断，就是这个咱们这个说的这个27年20，27到30EB这个对应的是咱们是大概是按什么样的配比去考虑的？1比2比10？还是</p>
+<p>嗯，不是，不是，也不是按配，可能会更高比例。因为我们现在来说呢，用到了很多，比如说我们的KV，啊比如说我们的IG的这个推理，下面推理集群不是通过PD分离了嘛，对吧。PD分离之后呢，有P节点和D节点。那我们在D节点这个地方呢，就加载了很多的这种高密的这种闪存的这种SSD的服务器嘛。</p>
+<p>明白。</p>
+<p>你可以理解成它其实一个相当于一个D节点可能是挂了四到五台的这种类似的CPU的这种SSD的服务器嘛，它是通过CXL的方式去 就是类似那种一套那个叫SSD共享池化</p>
+<p>明白，就池化。明白。就跟那个DeepSeek那个3FS其实差不多，对吧，一个大的池子。</p>
+<p>对，对，我们相当于在至少在一个数据中心内部，一个一个推理集群内部它是这样的，但是它也不可能说通过北京要去拉上海的这种还是不行的，这种一般来说不会不会这么干。</p>
+<p>明白，明白，理解，理解。OK，所以所以所以，所以呢听起来明年的这个NAND的采购量大概就是30EB左右，您了解DRAM的采购量吗？</p>
+<p>DRAM这一块采购量的话呢，如果27年的话呢，DRAM这一块采购...哦，它就比较少哎，DRAM差不多是在一也是1EB，但是它应该是在差不多是满打满算可能是接近1.2，就是1.1、1.2EB嘛。</p>
+<p>明白，明白，明白，了解了解了解。OK，哎，那那您您您就是那那OK，所以说那您刚刚说的那个45个点到50个点增速和55个点增速，我就可以用这个去倒推这个26年的采购量了对吧？</p>
+<p>对，26年你看SSD差不多我们差不多有将近有十几EB嘛。</p>
+<p>OK。</p>
+<p>十几个EB，就是OK，那感觉是20个EB对吧？</p>
+<p>可能有十，我们可能有十，不到没有到20EB，我们可能是有16，16EB，17EB的样子好像26年。</p>
+<p>明白，那那那明年的增速其实比50个点还要快，对吧？</p>
+<p>嗯，我们差不多能至少会增加55%的样子吧，差不多。</p>
+<p>明白，因为您您刚刚说27年是27EB的话，27到30EB，那可能增速将近80甚至double，就是以翻倍了。</p>
+<p>哎，没有，没有，嗯，因为因为我明年，我们今年差不多就是在十差不多17，16、17EB嘛，明年我们规划的应该是在20多EB嘛。那增速不止55%啊，那可能是不止，那可能相当于增加接近80%的样子差不多。</p>
+<p>对吧，80到100嘛，你要是如果27到30，对吧？</p>
+<p>对，是。</p>
+<p>明白，明白。哎，那DRAM会是个，今年采购的量大概是多少？</p>
+<p>嗯，对，它这个容量是增加这么多，它的盘数好像没有增加这么多哎。因为明年我们可能会增加更多的高密度的这种，高密度的盘，盘数好像增加的数量就不多，可能增加个不到20%的样子。</p>
+<p>明白，明白，明白。但但但我再确认就是，但反正数量级应该是今年是16、17EB，明年是大概27到30EB，这个数量级是没问题的对吧？</p>
+<p>对对，没问题，这个。</p>
+<p>明白，明白，明白。DRAM呢？DRAM明年是1.1、1.2，那今年大概是个什么水平啊？</p>
+<p>今年应该是不大一不到1EB，它差不多是在有将近0.8EB吧。</p>
+<p>明白，明白。OK，哎，那我理解是不是说咱们这个主要的增量，这个咱们明年NAND的这个增量可能增加将近80个点的增增长，是不是主要都是KV cache offloading去驱动的？</p>
+<p>也可以这么说，你像这种KV cache这种offloading这个比例啊，其实它其实也就是从26年27年它的比例一下提升很多嘛。你看在整个26年的时候，就是27年吧，27年我听说就是offloading这个在这里边占了整个SSD的这个容量的比例差不多就能达到了差不多接近18%嘛。那这个这个比例就很大了，因为在27年的时候哪有这么大呀，27年大概只有可能也就10%不到的样子。</p>
+<p>您说26年10%是吧？还是25年？</p>
+<p>对，26年。 呃，26年，呃，OK，OK。</p>
+<p>26年，27年差不多，在增加了這幾十億幣裡面，至少有差不多18%的樣子是放在這個KV cache的offloading那個那個那個方案裡面，就是專門做大模型agent推理那一側。</p>
+<p>OK。</p>
+<p>它，它的暴增，你它的增速可能是，能達到一點幾倍，差不多，相比相比26年。</p>
+<p>明白，明白，明白。明白，明白。哎，因為，因為就是，呃，呃，呃，因為就是之前有，有，有那個，之前我們也請教過其他的業內專家，就是，我感覺，呃，就是大部分的專家給我們的反饋，不管是國內還是國外，他們都跟我們提到一個問題，就是說，SSD的延遲非常高，所以說呢，導致了你KV cache做prefix的時候，還不如讓GPU重新算，因為GPU的utilization也沒有拉滿，就讓它重算是性價比更高的，這個這個這個這個方式。這個這個，我我不知道咱們行業內到底是個怎麼，什麼樣一個，一個一個一個一個爭論，方案。</p>
+<p>呃，這個點，這個這個點，這個點分點其實，因為重算的那個那個那個事上來說，因為我們之前算過一筆賬，其實，我們寧願，我們寧願可能忍受一些慢，對吧，但是我們要考慮到整個TCO嘛。</p>
+<p>對。</p>
+<p>我們當時算了一筆賬好像是，就是如果重算的話呢，大概比，呃，比比，比那個，比我們存儲的這個成本要多，將近兩到三倍呀好像，我們當時測過呀，就是重算成本和存儲成本的這個，這個倒掛。</p>
+<p>明白。</p>
+<p>尤其是我們說的這個3.84，我們會引入了那個GDN和那個QLC的那種，那也就是說呢，這個時候我們會，混合注意力嘛，我們會，加上這個混合注意力就會，降低這個顯存嘛，</p>
+<p>對。</p>
+<p>顯存使用率嘛，然後呢，我們在這個算了一筆賬，就是，如果我們把100萬的token壓縮成這種KV cache，大概只需要，佔那個幾GB嘛，或者是不會超過10GB的。然後呢，如果你存24小時的費用，大概整個折舊，加電費成本，可能很低，但如果你刪掉重算，這100萬token prefill，加上消耗的這種GPU卡時，電費成本，可能是至少需要三毛錢到五毛錢吧。</p>
+<p>明白。</p>
+<p>也就是說，存一天的這個成本，可能要比你重算一次要便宜幾十倍。</p>
+<p>OK，而且這是存一天的成本對吧，這還是存一天的成本。</p>
+<p>對，對，一天，一天的，對。所以說呢，我們覺得呢，要分場景，如果放在一個雲端的超大規模，萬卡十萬卡的這種大模型推理平台裡面，可能我們認為存，就是重算的成本要高，但是你要針對一些小模型對吧，</p>
+<p>嗯。</p>
+<p>比如說一些我們說的那種，甚至單機運行的對吧，</p>
+<p>嗯。</p>
+<p>我們說的那種情況之下呢，呃，這裡面可能要考慮的問題，因為你存，就是，就是，存的這個這個裡面的這個，這個，這個代價呢，可能我覺得，幾乎來說呢，它沒有算得更快可能是，因為呢，我們說的這個，這各種各種原因吧，其實我們當時是從性價比的角度去算這個這筆賬。</p>
+<p>明白，明白，而且我還有一個，我有一個假設，我我我一個理解，我不確定對不對，想請教就是，我覺得長任務的agent任務其實是沒有那麼延遲敏感的，所以說其實更適合我們去重新去，重新去prefix，而不是重新算。對吧？</p>
+<p>對，對對對，因為你現在長程任務，harness的對吧，多任務協同的，根本就不是，時延根本就不是最大問題，因為它不是那種我們說的車載呀，端側的一些那種那種小模型嘛。</p>
+<p>明白。</p>
+<p>那一塊對算的這個，這個敏感更更更高，其實就是延遲敏感更高。</p>
+<p>是的，明白，理解了，理解了。呃，好的，哎，那那還想再向您確認一個口徑，您剛剛說到就是說，您說26年的時候是有，咱們採購的16個EB的這個，這個16、17EB的這個SSD裡面只有10%是用來做KV cache offloading的是吧？</p>
+<p>好像是，對，因為我們說的就27年相比26年，在這個比例裡面，就是在offloading這 另一块的增加了差不多至少1.5倍嘛。</p>
+<p>明白，明白，但是那还有90%都是用来干什么呢？那个那个数量其实还挺高的。</p>
+<p>另一块来说呢就是，有一部分呢我们说是通算的一部分，对吧？通算因为去因为在26年其实有有差不多新增了55万台的CPU服务器嘛。</p>
+<p>明白。</p>
+<p>那这CPU服务器可能有一部分服务器也是做推理集群的，对吧？也是做做推理推理集群里面的一些执行类的这种agent所需要的CPU啊那种服务器。但还有一部分呢就是我们会挂载在这个GPU服务器八卡16卡及超级内部的那种SSD嘛，对吧？我们说的这个做做offloading这个，这个这个是指什么呢？就是指我们在推理集群里面，要专门放一些类似的这种高密度的这种SSD的服务器嘛，专门去挂载的这些那部分嘛，对吧？</p>
+<p>哦哦明白了。明白。所以所以您说的这个10%和18%是专指那些专门用来做唯一只做KV cache的那个独立的NAND柜，然后那个你那个你那个你那个原来那个GPU rack里面那个它是混混用的，所以你也说不清楚的有多少，对吧？</p>
+<p>那肯定还有啊，对吧，对对对，还有SSD嘛。</p>
+<p>明白明白明白，对对对对对，我明白。明白明白，了解了解了解，了解。好的。呃，好的呀。哎，那那还有个问题就是，呃，这个从就是明年的这个大概30亿B的这个订单我们是已经全部定下下了单了嘛，还是说我们还在观望，可能是因为价格或者说因为capex的原因在在考虑？</p>
+<p>还没有，还没有完全完全把这个订单给cover住，因为这里边呢可能有将近40%的样子，对吧？我们是可能是通过这种自研白牌化嘛，对吧？就是平头哥搞搞主控器，然后找三星长长存去采购颗粒嘛，交由下游的这种代工厂帮做，这大概可能有40%我觉得是cover住的。那剩下的还有差不多有至少还有百分之，还有30%左右啊，是怎么办的呢？是用我们的主控器，但是呢颗粒我们不自己买，也是一种叫白牌化，对吧？那这种，那剩下的还有一部分呢就是将近有20%到30%的样子呢，里面有20%多的样子，是买的标准的这种三星海力士的这种SSD模组。还有差不多标准的SSD模组是5%左右，是买的是那个长存的，对吧？大概就这么一个比例，其实。</p>
+<p>明白，明白。因为因为我我问这个问题的原因是因为我看就是其实去就今年这个NAND还是很紧的嘛，就我不知道说明年的这个市场您判断下来是可能供供供需是偏平缓了，就供需偏偏宽松了，还是说我们还要着急去锁单，去抢抢货？就这个情况。</p>
+<p>这个这个锁单这个事来说呢，其实26年已经锁了，对吧？你看我们锁的是什么呢？我们锁的更多是颗粒嘛，对吧？就是你看我们找三星啊长存啊都签了这种NAND颗粒的这种锁单嘛，LTA嘛。但是我们好像并没有锁太多的那种标准的SSD模组的那种。</p>
+<p>OK，明白，明白，明白，了解。</p>
+<p>只是我们锁定颗粒了，可能是，嗯。</p>
+<p>了解，了解，了解。好的，好的。呃，好的呀。呃，所以所以所以听起，呃，所以听起来明年是大概是一个30亿B的一个采购规模，呃，然后接近，然后然后这个这个这个咱们就很难说清楚说这个最后的这个DRAM NAND的比例到底是比是比例是多少，对吧？就是因为可能是有混用的。</p>
+<p>哎对对是，我只能说这么说，就是一个金额嘛，对吧？大概金额是多少嘛，比如说，嗯，金额的话好像是，整体的这个SSD的金额的话，明年的话可能，我们看看啊，SSD的话，SSD的金额的话，差不多明年的话应该是在100... 应该100亿到120亿的样子吧，差不多。然后我们的那个DRAM这个金额，差不多是95亿到110亿嘛。然后，这个金额是大概这么多好像至少。</p>
+<p>美金是吧？</p>
+<p>人民币，这个是，是，是人民币。</p>
+<p>哦，人民币，OK，OK，OK。明白，明白。好的。哎，那，那您看到就比如说从技术的方向上，我们这个NAND的这个配比还有继续上场的空间吗？还是说就是，因为，因为，因为...</p>
+<p>NAND的这个，嗯，如果说的话呢，嗯，我们可能更需要是那种，比如说236层以上的呀，那种，比如说至少是像那种，那个，那个60，60，64TB到120TB以上的这种，这种QLC，这种TLC啊，这种。可能我们觉得在TLC和QLC这一侧呢，可能还是，还是有一些，嗯，因为颗粒嘛，因为颗粒这一侧，好像我们，我们自研不了嘛，我们只能采购。其他的像主控器啊这一块，我们觉得我们都没问题，我们有自己的主控器。嗯，剩下的就是，我们针对这种自己的主控器加上颗粒之后的定制，我们会定制自己的这些，叫企业级SSD嘛。你说的技术这一侧好像...</p>
+<p>或者，或者我这样问，专家，或者我这样问，就这样请教您，就是，就是咱们现在这个，比如说咱们现在长城任务基本上是78到85了，对吧？然后我们的配比，我理解这个，这个78到85的prefix，基本上是按照说明年的配比能够做到的水平，对吧？</p>
+<p>哦，你说的缓存命中率这个...</p>
+<p>对，那，那就是说我们未来肯定是还想继续把这个数给拉高，我们是不是还需要进一步的去提升比如说DRAM的比例和NAND的比例，就是我想的是这个，这个东西。</p>
+<p>嗯，这块来说不太好，不太好判断，但是至少来说从现在27年看26年的趋势来看呢，我们觉得SSD的需求的确，这为了有很多都是放在offloading那一块，那一块去放的。</p>
+<p>明白。</p>
+<p>它也是为了去提高就是经过我们上层的一些软件和算法之后，去，去，去做更多的就是降显存吧，我们叫，我们说把很多东西可以在本来在HBM里面或者DRAM里面去跑的，我就尽可能的卸载到SSD上嘛。</p>
+<p>嗯。</p>
+<p>它其实，还有一个就是长上下文，嗯，包括长记忆，包括这些我们认为呢它都会最后都会消耗占用大量的SSD的其实，嗯。</p>
+<p>明白，明白。好的。哎，或者我再想，我这样问就是，咱们您刚刚给我提到，就最早我在问您说HBM、DRAM、NAND配比的时候，您给我提到了两个比例，一个是1比2比8，还有一个是1比4比20。就是我想从DRAM这里请教您，就是咱们什么时候会考虑说1比2的DRAM和1比4的DRAM，就这个里面会有是场景的区别吗？因为，因为，因为我理解说大家也是会想把DRAM也配得更多，NAND也配得更多，就是我想知道说咱们是在什么样的考虑下会做这样不同的这个配比的区分？</p>
+<p>因为我们现在认为呢就是说，嗯，比如说呢我们说的，我们认为SSD是灵活的，对吧？</p>
+<p>嗯。</p>
+<p>SSD其实我们觉得单，单服务器不一定非要一下就加点那么多。我们更多的看重HBM和DRAM之间的配比，对吧？</p>
+<p>嗯。</p>
+<p>那这种情况下我们可能会考虑到这种PD，PD节点嘛，PD节点这一块我们不，我们不会把DRAM这块配很大的，对吧？一般来说呢1比2，对吧？那比如说在decode节点我们可能配，配成1比4，对吧？</p>
+<p>OK，OK。</p>
+<p>相对更重高。那其实我们觉得是这样的，嗯。</p>
+<p>明白，OK，所以我们，我们是PD分离之后不同的节点用不同的这个DRAM池子去配。</p>
+<p>对。对，还有一些呢，嗯，比如说我们认为呢就是说，因为我们... 咱们有很多不同的产品嘛。</p>
+<p>嗯。</p>
+<p>比如说就是相当于做AIGC的这种向量检索的，对不对？</p>
+<p>嗯。</p>
+<p>它专门去，它就提供一套类似Lindorm这套检索的服务。那底下呢它的确是需要这种我们说的叫需要这种类似的这种秒级召回嘛。</p>
+<p>嗯。</p>
+<p>那也就是说它这一块来说呢，你这个时候就可能就需要我们说SSD和DRAM都要配很大。为什么呢？因为你要是实现秒级召回就要很多数据都在内存里存在着，但是如果这个这个向量很大，它又需要在本地加很大盘，所以它的比例是相当于同比都会放大的。那比如说还有一些呢，我们说有一些像，嗯，有一些就是阿里其实有一套那个叫模型权重的这个热切，就是相当于热备系统嘛，叫叫E-gin的，E-gin这个东西。那E-gin这个东西呢，它其实运行E-gin这套推理系统的时候，它就需要大量的这种，就是有很多那种非激活的模型权重常驻共享内存嘛，所以它底下就是相当于要支持第一DRAM配的比较大，第二它还支持CXL的内存扩展。也就是说它针对不同针对不同的云产品，它会选择类似的这种服务器的主机规格去部署，大概就长这样。</p>
+<p>明白，明白明白，了解了解。哎，我再想一下，您请教两个小问题，一个是咱们明年capex大概是，您知道阿里云总的capex大概是什么规模吗？您有听说这个消息吗？</p>
+<p>我不知道，我知道阿里云可能</p>
+<p>就阿里云也可以的，阿里云也可以的，没问题。</p>
+<p>阿里云应该是，阿里云至少应该是在，可能要比现在可能要，它的增速应该相比27年比26年要稍微要放缓一点，差不多是在2300到2500的样子好像是。</p>
+<p>明白，2300到2500，哦那还是对比今年还是有不错的增长的。</p>
+<p>但是相比27年比26年来说的话，它好像少少了一点。</p>
+<p>明白，对对对，对。明白。哎这里就有一个问题想请教，就是，那您刚刚提到那个说SSD只花100多亿，DRAM也只有100多亿，这个存储的占比应该不会只有那么低吧？对吧？就是</p>
+<p>嗯，因为存储你看还没算HBM呢，对吧？我们只是说的这还没算HDD，HDD可能有一点，HDD钱比较少，但是我们说HBM的那个价格，可能是，费用可能是，就是所有的这个DRAM和SSD加起来总和还要高。</p>
+<p>啊明白，明白，啊OK，OK，OK。哎，但是咱们咱们咱们咱们DRAM的价格您您知道，DRAM和NAND的价格单价您知道大概是多少钱吗？谈的价格？</p>
+<p>呃这个是论GB的好像是，价格的话</p>
+<p>对，就是咱们DRAM大概是20，20块钱，18块钱还是多少，就美金啊，我说的是美金。</p>
+<p>嗯。</p>
+<p>是，您您了解吗？不了解的话也可以咱们也可以就是跳过，对。</p>
+<p>不是，这个价格，这个价格不一样的其实。</p>
+<p>嗯。</p>
+<p>因为我们好像，你说的是TB级的吧？</p>
+<p>我我说的是DRAM，我说的是DRAM，就是，对对对对。</p>
+<p>DRAM啊，这个我不太好说，因为好像这个价格，价格变化很大，就是，嗯，DRAM好像有不同的价格，我这个不太好去界定。</p>
+<p>OKOK，明白，没问题没问题没问题。我还有一个小小问题就是，因为我看铠侠和闪迪他们其实在推SLC的一个产品，然后说这个东西它就是方便小块小块小规模高带宽高读写，然后适合KV cache做，就是配着TLC一起出，然后去做这个这个这个offloading，我不知道这个咱们有有比较明确的有导入意向吗？还是说这个对于我们来说就不是那么大的一个场景的一个产品？</p>
+<p>嗯，其实我们可能现在来说呢，可能暂时没有导入，因为我们这一块像这种SSD我们可能今年到明年可能更多的是倾向于这种就是就是自研加上那个 加定制嘛，对吧。自研的这个情况来说呢，就是比如说主控器是我们的，颗粒也是我们采购的，我们交给代工去做。第二个就是用我们的主控器，以及还有国产的第三方主控器，颗粒这一块来说是由板派代工厂去采购的，然后就按照我们要求去定制的。像你说的这种情况，我们觉得现在好像没有看到我们导入在做一些类似的测试，应该是不会有太大的量。明白，明白。好，我老板也有一个问题想向您请教一下。客气。喂。嗯。这边好像有点听不到声音。现在呢？可以了，可以了。现在好了。对，我就想快速问一下，这个 SD 的 KV cache offload 这块，听起来阿里这边进展还是挺快的嘛。对，就有一种说法是海外进展比较慢，因为这个延迟会让他们的用户体验下降比较多，这一点您怎么看？其实我们觉得，怎么说呢，因为海外这一块来说，它不像国内，国内这一块呢，第一呢，我们像模型西数嘛，MOE嘛，对吧，多模型嘛。还有一个呢，就像海外很多都是稠密模型嘛，对吧。也要卸载的 KV cache 的时候，相当于你把你的模型要全都要切成很多片嘛，再去做合并嘛。我觉得跟这个场景不一样。第二个呢。 呃，还有一个呢，就是原因是什么？原因是，现在国内的你看，我们现在为了去降低 token 成本嘛，因为你像提高 KV cache，提高缓存命中率，不就是为了减少 token 生成嘛，对不对？那我们也是为了去考虑到这种在国产卡上，其实这种，我觉得提高的这种，无论是 prefix 还是提高你的前缀缓存命中率，都是为了去，最终目的是为了降低你的 token 成本。因为国内这块 token 成本这一块原因就是因为在卷，海外这一块呢，我们看整个 token 的定价和毛利率还是比较高嘛，可能我觉得跟这块有这样的关系。但我觉得就是本质上来说呢，就是说，我觉得提高缓存命中率还是为了去让这个 token 变得更便宜，减少重算嘛，相当于。主要是我们看到一个用……所以海外这边他们之后会，这块，所以他们的听起来他们缓存的这个占比，或者 offload 的这个占比提升有一点是结构性的，是吗？就技术上来讲，他们模型架构就……因为我们觉得，就是国内其实缺的是那种高端的这种 profile 的算力嘛，对吧？但是我们觉得我们显存和带宽相对来说还 OK 一点嘛，对吧？就算不动嘛，算不动就是 profile 的事嘛。就是说，我们觉得国内这一块来看呢，就是说，所以说我们觉得海外这一块，我们觉得它算力还是…… 还是比较肯定是负阻的吧。现在来说呢，就造成了一个模型的架构的问题。其实，就是我们觉得海外的币源这一块长期用的那种模型都是类似一种叫 GQA 的这种架构，GQA 的架构。就是说，比如说你的 KV Cache 要是从 S3 和网络上去传的时候。 有个前提嘛，就是你KV必须要要小嘛，对吧，所以说小的时候呢就是逼着国内的模型从一开始就在做这种架构上的妥协嘛，比如说DeepSeek搞那种叫什么MLA嘛，对吧。这种，那他就是为了去把单个的你的token的KV从几百KB压缩到只有几KB嘛。你看我们也搞了那个叫GDN的什么线性注意力，也是为了砍砍掉这差不多一大半的这种KV，KV层嘛。</p>
+<p>其实我们现在觉得，呃，是本质上来说呢就是，呃，就是现在还有一个问题呢就是国内就是因为价格价格战问题，海外这一块本来价格定得很高，他也没有，没有感觉就没有太多的这种动力去省算力，对吧。所以我觉得他这一块呢，我觉得跟这有，大概有这些原因其实。</p>
+<p>啊，明白，明白。好呀，那我就这些问题，嗯，感谢专家。</p>
+<p>好的好的，哎。不过我觉得，我觉得海，我觉得那个从下半年我们也看到了就是海外其实他们可能也在去加加大对这种KV cache的这种落盘啊，对这种缓存啊，就是你看OpenAI也在弄，包括那个英伟达，他还有叫什么那个什么Dynamo的什么那些东西，也类似的，就是我觉得他反而有点像这，这，这超，这超，这超过了这个这些玩家的这些技术上的一些作业其实，嗯。但是我觉得后面我们觉得像KV cache这套方案应该是，或者提高缓存命中率应该是全球化都会通用的一个技术路线其实，嗯。</p>
+<p>明白，哎，您刚刚，Henry你还有还有要follow吗？</p>
+<p>我没有了。</p>
+<p>OK，OK，哎，专家您刚刚提到就是说您刚刚观察到说OpenAI在做，然后这个这个我不知道您这个这个信号您是您是咱们是业内交流来的还是还是怎么怎么了解到的？但您好像也没提到说Anthropic在做。</p>
+<p>嗯，这个Anthropic我不知道，反正我知道OpenAI，它的GPT的5.5的时候啊，它就是在一些那个缓存策略上来说，它就是就是切换到可以24小时落盘嘛。也就是说它这一块，还有像英伟达，它不是搞了一个叫KVBM那个东西嘛，叫什么Dynamo。</p>
+<p>Dynamo那个软件，软件栈，对吧？</p>
+<p>对，它其实本质上来说都是相当于，是，就是相当于怎么把那个offload，呃，就是卸载，把我们的说一些KV啊卸载到我们的闪存，呃，就是卸载到那个闪存的一个池子里面去嘛。就本质上来说，就是一种以存代算的这种方案嘛，其实。</p>
+<p>明白，明白。对，这个您刚刚提到的这个点我也想向您请教，就是，呃，因为之前我也是在读那个OpenAI的那个开发者文档的时候发现它突然就是在那个，呃，就是您说的那个5.5那一代的时候。</p>
+<p>GPT5，5.5还是5.6啊。</p>
+<p>对，那一代的时候就增加了说我可以把我的那个KV cache做落盘，然后可能存存储时间会在一天甚至以上。就是就是这个我不知道说咱们的这个，就咱们的现在这个系统内我们的存储时间大概是什么，什么样的一个时间段？</p>
+<p>哦，我们时间好像不一样，我们也是分时间的，比如短的有5分钟的，嗯，好像是我们有分，嗯，因为我们是，因为我们是，我们是已经实现了一个叫把存储和内存形成一个融合的架构嘛，我们分成了五层嘛，对吧。也也是类似的G1到到G4嘛，对吧，就G3.5什么，我们G1，G2，G2.5，G3，G3.5，4。那好像每一层我们这个缓存时间是，呃，有的是比如说G1 这一块，我们应该是目前来看呢，应该也是一个差不多是一个分钟级的，对吧？</p>
+<p>就是G1就是DRAM嘛，对吧？还是HBM？</p>
+<p>就是HBM。</p>
+<p>OK，HBM，明白。</p>
+<p>对吧，然后我们的那个G2就是或者G2.5，为什么叫G2和G2.5呢？G2就是指本机的DRAM嘛，2.5就是指本机挂载的一个CXL的那个内存池嘛，就2.5嘛。它差不多就是一个半小时的样子嘛。那G3.5...</p>
+<p>嗯。</p>
+<p>差不多就是我们现在来说呢，差不多也是24小时，但是也分，有的是一个小时，有的是24小时。</p>
+<p>哦，G3.5应该就是NAND池子了对吧？</p>
+<p>对对，NAND我们呢，比如说你像，有的我们可能还时间更长。其实我们现在来看呢，就是说得分好像，我们现在至少G3、G3.5肯定是打24小时的，嗯。</p>
+<p>明白，明白，明白，了解。所以说，所以说其实就是，然后我想请教就是这个是国内网厂的普遍做法对吧？因为我理解如果说大家不跟进这个策略的话，大家在毛利率层面根本没法竞争了，对吧？</p>
+<p>是，因为因为这个东西，这个24小时也不是一个说24小时就够了，不是的，你看还有各种策略去滚动嘛，对吧？</p>
+<p>明白。</p>
+<p>有的时间就要存得更长，你不能不让别人存。反正我觉得它它它整体来说呢就会随着这种Agent呀，企业级的这种应用啊，它一旦的上升才时间长了，那数据其实都不会丢失的。那本质上来说我可以用更便宜的这个SSD或者是这种归档备份，你那也要存其实对吧？</p>
+<p>明白，明白，明白，了解了解。好的呀，那个，那个，我想一下啊。OK，所以所以听起来就是说这个咱们就是27年的这个咱们这个SSD这个导入的斜率是非常大的对吧？但是但是但是我就但是可能从如果再往后看的话，您觉得还有什么上升空间吗？还是说您觉得说比如说可能到比如说到了27年这个配置之后后面可能就比较趋于平缓了，可能就是比如说大家可能...</p>
+<p>不一定会，不一定会，我觉得我觉得可能这个陡线也不一定用说很平缓，因为我们认为呢就是说你看25年其实还算是对话推理嘛，网页推理嘛，26年才算是我们说才算是Agent这种应用算起来，但是它这种起来还不是一个渗透率非常高的起来嘛，对不对？</p>
+<p>对。</p>
+<p>那比如说到了28年、29年，那真正的我们说的这种Agent应用已经开始把传统的这种很多应用做取代对吧？很多传统应用被迫转向做Agent，那带来的这种存储，它本质上来说就是一种重构嘛。你之前存在你SSD上是一些结构化数据，你现在存的这个Agent这种应用下的数据类似向量或者是一些KV这种数据，那可能我觉得对存储的这种要求就会有更高的要求了嘛。你之前的一些PCIe 4.0都可以跑的，SSD都可以跑，现在6.0、5.0才可以对吧？所以我觉得它可能随着应用的加深呢，这种需求不一定是个平缓，我现在不敢保证它说是平缓的，我觉得可能还是一个很陡峭，嗯。</p>
+<p>明白，明白。明白，或者我们我们这样拆分，就是这里面有两个，您刚刚提到的是两个点，一个是就是我们说本身是人们对于Agent的需求提升了，带动了大家需要更多的卡和更多的存储嘛。第二个我在想的是在我们就单看这个集群内，那您觉得说比如说可能在26年的时候大家可能存的是刚开始尝试去存24小时，27年的时候存24小时可能是一个事实标准了，28年之后您觉得还会存更久吗？或者说一个集群可能还会配更，就是同样一张算力卡会配更多的SSD吗？还是说就是可能这个是比较趋于平缓了，我刚刚是这个意思。</p>
+<p>哦，哦，那个应该是可以这么说，有点趋于平缓，但是我说是整体的数据量。</p>
+<p>明白，明白，就是或者说... 其实27年是SSD导入最快的一年对吧，大家开始普遍的去把SSD的这个量级给配上去。</p>
+<p>对，你这是一个基础嘛，基本盘嘛，对吧。你先有基本盘后面再说，因为我们说的这种上层的应用对底下IT的需求，它可能有一个滞后，对吧。也就是说你IT这一套东西你要先预置好，对不对。你不能等上面应用起来了，你再去搞底下那套，底下那套存储啊IT的架构那种就来不及了嘛。</p>
+<p>明白，明白，了解了，了解了。咱们咱们明年的，咱们明年2500到2300到2500亿的这个capex大概对应您知道卡量有多少张卡吗？</p>
+<p>卡量的话差不多接近200万张的样子。</p>
+<p>200万张是吧？</p>
+<p>200万张，应该有200万张，至少有自研卡的比例就差不多超过一半嘛。</p>
+<p>明白。</p>
+<p>200万张，应该是保守的话可能就180到200万之间，因为这里面涉及到个产能，自研卡的产能如果跟不上，那可能也只能达不到这么一个量，但是我觉得他定的这个规划应该是按照一个200万张的一个量定的，但实际上可能是180到200万之间。</p>
+<p>明白。咱们这200万张卡的话呢，咱们...</p>
+<p>海外是多少是国内啊？</p>
+<p>这个海外和国内呢其实要看的其实，我们说的呢海外这一块呢，这200万张卡里面呢可能海外这一块呢应该差不多能占到了将近...嗯...45...40万张到45万张的样子。反正也就是说国内差不多还是能占到100多万张。</p>
+<p>所以海外是就是N卡，然后国内是平头哥是吗？</p>
+<p>对，海外这个将近就45万张，算是45万张，算是将近50万张吧。可能啊这里面有自研卡可能会投放个十几万张，剩下的应该都是N卡。最多也就是海外会投放我们自研的那个TPU啊可能会投放个10万张左右做推理用的，剩下的应该都是N卡。可能我觉得像外部，像海光啊昇腾啊这种国内的国产卡不大我们会再送到海外去其实。</p>
+<p>明白明白，那海外的capex听起来应该占整体capex一半？</p>
+<p>应该不到，可能会占到40%的样子。</p>
+<p>40左右，嗯。</p>
+<p>嗯。</p>
+<p>明白，好的，谢谢。</p>
+<p>好的。明白，明白，了解了。OK，好的。哎，然后，那那咱们我理解就是咱们这个海海外的这个，咱们总共就是200多万张卡的话，我这样子按照我们...</p>
+<p>200万张。</p>
+<p>对对，我按200，200万张卡来拍的话，咱们整体的这个，就咱们把这个所有咱们明年采购的这个大概可能50，5...sorry我看一下啊，咱们明年是30EB嘛，对吧，30EB的这个这个这个这个这个这个NAND的采购，那摊下来的话大概每张，每张卡基本上是对，对对15TB，对吧？我我...</p>
+<p>嗯，差不多，嗯，差不多，因为有的可能会更大，对吧。反正，反正它平均下来吧，有的可能还配小了，比如有的可能还配8TB的也有，对不对，嗯。</p>
+<p>明白，明白。呃，哎，但是那个我我理解我我想请教就是对比，我不知道您有没有读过之前那个DeepSeek公开那个DeepInfer那个那个那个那个细节，它那个单卡配置的比例就非常非常的高。</p>
+<p>它那个单卡是吧？</p>
+<p>对。</p>
+<p>它那个因为阿里它其实考虑的是一个异构化的一个一个集群其实。也就是说呢我们不是一种卡嘛，你看我们整个推理，你看6月份的时候我们就差不多整个大的推理池子里面就有将近有5... 我算两张卡了吧，对吧有N卡，有自研卡。每种卡并不是说，我每种卡最终落在物理形态上可能就是一个8卡、16卡或者超级节点这种形态嘛。它不可能说，我也会考虑每种卡的特性嘛，对吧，我给你配这种DRAM啊，包括SSD嘛。应该是放在某一种卡下，你可能比如说你可以配得很大SSD，但是不是所有的卡都适合。所以我们可能是在我们这个服务器白牌化这一块呢，有自己的一些规格的其实。</p>
+<p>明白，明白明白。明白。或者或者我我我因为因为抱歉我看一下就是DeepSeek那个大概应该是每个GPU算下来的话是配14个TB。然后我们这个我觉得应该不能那么算，是因为我们的这个，我们的这个这个咱们这个里面SSD里面还有很多应该是for公有云，就是传统云的这些东西嘛，所以我们的配比应该肯定还是要低一些的，对吧。但但但我就不知道说，长期来说我们是，我们觉得DeepSeek，就我不知道您有没有读过DeepSeek那个DeepInfra，就是那个架构会是我们觉得长期的目标吗？还是说就是我们可能长期来说也不会做到那个水准？他们做得太极致了，就是我们不会那样做。</p>
+<p>嗯，我们应该不会那么做，嗯，配很大很大的一个那个SSD。</p>
+<p>明白，明白明白。明白。了解了解。</p>
+<p>我们觉得没有必要在单盘上，单服务器上非要配这么大，我们完全可以通过底下的一套类似的HPN啊这种高性能网络去做更灵活的这种架构。因为我们实现的是个什么东西呢？现在阿里云是实现四层的池化了嘛，计算的池化，内存的池化，存储的池化，还有网络的池化嘛。它每一种池化就是为了更适合一个更灵活的这种架构嘛。我觉得它不会在一个单节点上，我整体的存储盘子我肯定变很大，但不代表每个服务器我都会配很大其实。</p>
+<p>明白，明白，明白。好。那我还想向您请教个问题，就是，那刚刚我们其实聊SSD聊了很多了，就是，长期来看的话，就因为我觉得这个，就是我觉得我们这个现在这个长任务做到78到85个点的prefix其实已经不错了，但是长期来看肯定还要继续提升嘛，就是长期来看的话继续提升的这个这个这个方向有哪些，就是如果说不考虑接着堆存储，还有哪些方式可以去优化这个事情？</p>
+<p>嗯，我们好像有几些工程上的一些，嗯，就是，就是我们有一些工程上的一些优化的一些方案我记得。就是首先是我们怎么做的呢，我们是在，嗯，现在我们说有，我们在工，主要在工程上去做。第一个呢就是相当于我们会通过自己的一套类似的这种tier这种KVCM这套，你可以理解成叫缓存调度系统嘛，它里面会管着这些，嗯，我们说的这种各种，就是我们叫，你可以理解成我们一个叫叫tier的KVCM，它其实就是一套叫KV cache的一个管理调度系统嘛。它去管理了我刚刚说的G1到G，G3、G4的这些分层的存储架构嘛。那它这套东西呢，其实就是，第一呢就是说通过这种tier的这种KV加上我们说的一个叫全局的这种KV cache的store这种池子，那就是彻底就是把实现这种PD分离的这种，就是通过实例与PD分离，那个，就是我们会针对不同的实例呢，去请求调度到，就是相当于我们可以做到，相当于可以比如说新实例的话，我们可以直接从G3.5层秒，毫秒级地拉回到，就是拉回它的历史的KV块嘛。所以就是说我们是有一套这样的一套，反正全局的调度系统吧。第二个呢就是我们也有一些像针对，你像千问大模型还有Agent，Agents，就是我们说的High-Clow这种底层的框架这一层呢，它专门针对这些产品去做了底层的 搞了一套我们说的一套类似这种专门的一些那个动态加载的这种缓存技术，就是针对特定产品去做。我觉得大概是这些，反正整体来说缓存命中率我们认为还有一个问题就是底下的 capacity 怎么去优化的问题。我们认为仅仅是通过软件啊，它是不够的，还要通过硬件。</p>
+<p>硬件的话您指的是比如说有有比如说更一些帮助 NAND 的去做更快读取的啊？</p>
+<p>比如说比如说我们通过定制的主控器加上 NAND 颗粒，我们可以实现一个这个 SSD 的寿命更长。它存储空间比如说还有一个这个延迟可以做得很更低，以及它成本更低。它比采买标准 SSD 模组可能便宜个百分之三四十，对不对？</p>
+<p>了解。</p>
+<p>那这些。</p>
+<p>明白明白。好的，了解了。OK。呃好呀，我我还有最后两小问题吧，对。一个就是呃这这个可能就跟 NAND 就没有什么特别大的关系了，就是正好您刚刚提到这个推理层面的东西，想再请教两个延伸的话题。就是呃就是我理解一下就是我们我们现在您您了解我们现在推理的毛利率大概是什么水平吗？</p>
+<p>推理的毛利率啊，那阿里在百炼上推理的毛利率如果只看纯 token 的啊，如果只看纯 token 的这种公共 token，那这种其实就分成了一个通义的这个毛利率和就是百炼上托管的 DeepSeek 和 Qwen 这些毛利率了对吧，这这叫公共 token。</p>
+<p>我明白。</p>
+<p>那阿里这块毛利率呢差不多是在目前平均下来的话，应该是能做到百分之百分之二十五，接近百分之二十五，对吧？</p>
+<p>嗯。</p>
+<p>就是我们说的，这个就是按照这种情况。那好像第三方开源模型托管的好像差不多能比它高，还高一点。</p>
+<p>呃等一下，我理解一下，就是咱们说的是通义是百分之二十五，还是说总的是百分之二十五？</p>
+<p>嗯通义是百分之二十五。好像第三方开源模型呢好像还高一点点。</p>
+<p>开源的开源的毛利率还可以更高一些是吗？</p>
+<p>对，因为这块价格的问题。还有一个呢就是可能是捆绑到一些大客户的问题吧，整体来看。那我们觉得这个毛利率，阿里的这个 token 毛利率其实要远远比字节要高很多的，其实我们认为。</p>
+<p>OK，哎这个是为什么呀？</p>
+<p>嗯反正我们听说字节毛利率其实应该是在也就百分之十多一点点样子好像是。</p>
+<p>明白。那是这个这个是推理效率的区别还是说他们在做客户问询的时候做了很激进的降价？</p>
+<p>降价是外部的因素嘛，我们说更看重内部的。内部是因为阿里的那套网络加上它自研芯片在做大幅度的这个 token 成本的降降低嘛。我们认为它核心在在这个底下的硬件上。其实我们认为软件再怎么去做，哪怕你比如说大家都用同一种卡，你软件算法再强，也很难说你短时间内就能把 token 成本降下来。</p>
+<p>了解。明白，我我我明白您您的意思了。OK。呃好的。哎然后我再想确认就是咱们说的这二十五个点的毛利率，就通义还有托管更高一些，咱们这个 token 指的是包括了 KV cache 的这个 prefix 之后 blended 的对吧？</p>
+<p>对，这总体的，应该是总体的。</p>
+<p>明白明白。明白明白，了解了解。然后然后想向您请教就是呃从总的趋势上来看，就是我一直在想的是呃是不是云就是假设说同样是一个 infra，托管可能五到十种甚至更多的模型，对比托管可能两到三种自己 in-house 的模型来说的话，这这两种模式应该是自己的自己托管自己的模型在做最深度的这个硬件适配是是是是是这个毛利率应该是可以做 做到最高的，因为它的吞吐可以做到最好，对吧？</p>
+<p>对对对对对，这个，这个问题，这个问题是这样的其实，因为我们在，我们当时做了对比嘛，比如说在自研芯，自研的PPU上去跑，跑通义和跑DeepSeek，其实我们的成本是最低的。但是我们为什么毛利率才做的不高呢？是因为阿里云它是降价嘛，要去，还有一个问题，我们其实内部的这个商业，这个高层认为呢，Token本身就不应该定很高的价格。它更多的是在百炼里面，它是靠Token作为一个引流的工具。</p>
+<p>明白，我们想卖的是云服务啊。</p>
+<p>对。我们内部预判啊，就是说现在整个行业的Token的价格到明年这个时候可能还要再降低，降低一半以上，甚至可能更更高，甚至极端的情况下后年可能大概只有现在价格的五分之一，对吧？</p>
+<p>嗯。</p>
+<p>我们认为就Token，那你，你看做Token，单独的做Token工厂这种生意的模式可能就走不通了嘛。那一定是靠上面的很多，推的很多类似的千问办公啊，类似这种什么Work Buddy啊，类似这种，它什么High Cloud啊之类的这些Agent的应用去撑起来，它会把你的Agent作为一种像一个自来水或者电一样的去消耗嘛。那更多的是毛，更高毛利率的业务是靠上层的工具链那些那些东西去带动的，比如说模型单元啊这些东西，对吧？</p>
+<p>明白，明白，了解了解。OK，哎，我再向您请教一个问题，就是，呃，我我我我不知道这个问题可能很难回答，就是我我我就也没有想特别清楚，就是，呃，因为平头哥是我们自己自研的，然后意味着说我们可以底层去做各种各样跟模型和跟Infra层面的适配。N卡是我们在海外采购的一个通用的GPU，然后呢，所以所以说，我我，但但是，但是，我我这个比较也不公平，就是因为N卡的算力的这个，N卡的价格更高，但N卡的算力吞吐也更高。但是，但是就是我们如果把它拉齐来看的话，就是效率上您觉得是，比如说一个在同样的算力能力下，呃，到底是自己的卡效率更高还是，我们说最通用的N卡效率更高？</p>
+<p>这这这种情况下呢，我们，我们一定会切到一个比较细的，可以去公平评判的场景上去算这个事。我们当时就是就是，相当于在物理分离的集群上，比如千卡的H20的集群，对吧，类似的千卡的PPU的集群上，做同样的这种网络，我们也做部署好了，我们就就，我们在同样的时间段内去运行同样的这个推理模型嘛，因为我们主要是测推理的，训练我们觉得测不公平，对吧？那么就测推理集群，推理的这种负载，大概一个30B的模型，如果是FP8的精度下，那我们就算，在这个时间段内，大家各自产生100万Token，综合的这个成本嘛，对不对？那我们算下来了，其实我们当时测的是810，下一代，我们就测30B的模型，FP8的精度，那，那产生100万Token对PPU而言，差不多是将近五毛钱的一个一个成本。但是H20呢，H20的话呢，差不多是一块五吧，到一块七的样子吧。但是我们还测了寒武纪的，还有那个昇腾910C的，基本上接近于H20的这个价格，可能那个寒武纪的要比H20的价格单百万Token成本要低一点。海光也测了，海光可能最便宜的，海光差不多是一块四，对吧，一块三一块四的样子。但整体来说呢，它还是没有自研的这个芯片，呃，拉低的这个成本空间更大嘛。这里面肯定也有个原因的，因为平头哥给阿里云的这个成本本来就很低。</p>
+<p>对，对，对。</p>
+<p>嗯，对吧？</p>
+<p>这这也有这原因吧，反正。</p>
+<p>明白，明白。</p>
+<p>算下来这个一个百万Token的综合成本嘛，相当于。</p>
+<p>明白，明白。然后我也一直还有一个问题，就是，就是您觉得这样的一个，我们说这样的一个Benchmark下的标准测试是否公平？就是，比如说我理解NV作为最好的这个玩家，它其实是一直按照说，我们是，比如说它就看到说明年Anthropic、OpenAI它们要跑最长任务的这种推理，它是按这个方式去优化的。就我不知道说我们的测试可能是不是符合这种比如说最大的模型、最Dense的模型、做最长的任务这样的形式去去做测试？</p>
+<p>呃，也算，因为至少它是符合我们自己的这个技术栈和。</p>
+<p>符合我们自己的需求，看到的需求的是吧？</p>
+<p>对对对，对，但是我们不能Cover住腾讯啊、字节啊，包括DeepSeek它们的需求嘛，对吧？</p>
+<p>理解了。明白，明白。好的，呃，Henry你这边还有问题吗？我这边就基本上差不多就这些了。哦，他没有了，那好，那就感谢您今天的时间。那个我之后就直接转给您，就是您看看到时候转多少我就直接转给您好吧？感谢感谢，那个后面的话随时就可能过个一两个季度就再找您Follow一下，非常感谢非常感谢。</p>
+<p>好的好的。</p>
+<p>哎，庄家，您您平时Base在杭州是吧？</p>
+<p>我Base在，我Base在上海。</p>
+<p>OK，那那下次有机会我我请您吃饭。</p>
+<p>就在上海了。</p>
+<p>有机会请您吃饭。好嘞，感谢感谢感谢，非常感谢，好嘞好嘞好嘞，好。</p>
+<p>好好好，拜拜。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

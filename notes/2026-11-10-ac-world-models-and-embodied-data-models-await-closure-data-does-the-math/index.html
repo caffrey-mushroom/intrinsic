@@ -1,0 +1,238 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.10 | AC | Robotics | World Models and Embodied Data: Models Await Closure, Data Does the Math</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.10 | AC | Robotics | World Models and Embodied Data: Models Await Closure, Data Does the Math</h1>
+<p class="orig">原标题：世界模型与具身数据：模型侧在等闭环，数据侧在算账</p>
+<p class="tags">#世界模型 #具身智能 #数据采集</p>
+<p class="meta">AceCamp · 2026-11-10 · article 70569083</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>作者认为世界模型竞争焦点从生成得像不像转到预测稳不稳、数据够不够。</li>
+<li>字节世界模型三线并行，资源偏向能收钱的实时交互；Genie 4把生成和推理拆成多模型闭环。</li>
+<li>隐式模型可靠预测窗口约2–6秒，长任务失败主要归因于记忆失效，解法是外挂结构化记忆。</li>
+<li>实时生成把视频成本变成按观看分钟计费，约21元/分钟，免费广告模式无法覆盖。</li>
+<li>数采设备是数据链最先兑现收入的环节，但有效数据转化率低，模型迭代会让旧数据失效。</li>
+<li>兑现顺序为设备与零部件、独享数据服务、模型与本体，2027年1000万小时产能目标面临利用率和价格风险。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>世界模型的竞争焦点，已经从“生成得像不像”转到“预测稳不稳、数据够不够”。产业链上先兑现收入的是数采设备，先暴露风险的是实时生成的单位成本。</p>
+<p>注：以下内容的数字部分，均来自个人搜集整理和行业专家调研，图表为笔者自制，可能存在不准确、不完整的情况，请自担风险</p>
+<p><b>一、核心结论</b></p>
+<p><b>（一）行业正在发生的八件事</b></p>
+<p><b>•</b> <b>字节世界模型三线并行</b>，实时交互、Fed 3D、VLA 同时推进，资源明显偏向能收钱的实时交互。</p>
+<p><b>•</b> <b>Genie 4 把生成与推理拆成多模型闭环</b>，24 帧实时渲染、约两分钟一致性、原生音频同步生成。</p>
+<p><b>•</b> <b>混合架构成为路线共识</b>，接触环节局部切换 3D 与物理引擎，避免全程运行求解器。</p>
+<p><b>•</b> <b>隐式模型的可靠预测窗口被量化到 2-6 秒</b>，有效规划依靠分层拆解，单次长时序预测难以覆盖。</p>
+<p><b>•</b> <b>长任务失败的一线归因指向记忆失效</b>，解法是外挂显式结构化记忆，靠加大参数难以解决。</p>
+<p><b>•</b> <b>实时生成改变成本结构</b>，视频成本从一次制作转为按观看分钟计费，一分钟约 21 元。</p>
+<p><b>•</b> <b>数采设备成为数据链最先兑现的环节</b>。</p>
+<p><b>•</b> <b>有效数据转化率低</b>，且模型迭代可能使半年前的数据失效，数据带有保质期。</p>
+<p><b>（二）三个最重要的判断</b></p>
+<p><b>判断一：</b>12 月 Pico 发布提供主题催化，收入拐点取决于付费模式。按 21 元/分钟的实时生成成本与当前短剧万播收益测算，免费广告模式无法覆盖，短期更可能以硬件捆绑与付费互动内容落地。</p>
+<p><b>判断二：</b>数据瓶颈已从总量转向有效供给与单位经济。共享数据在当前成本结构下多数不赚钱。</p>
+<p><b>判断三：</b>兑现顺序为设备与零部件、独享数据服务、模型与本体。2027 年 1000 万小时的产能目标，需要需求端延续数倍增速才能消化，利用率与价格是主要风险。</p>
+<p><b>二、世界模型：路线未收敛，资源压在能收钱的实时交互</b></p>
+<p><b>（一）四条路线走向混合架构</b></p>
+<p>专家把世界模型拆成四条路线：视频生成视觉效果好、数据多样，长时序存在物理漂移，输出难以直接被机器人使用；潜空间预测效率高、噪声低，隐向量可解释性弱，适合作为智能体与机器人的中间表征；显式 3D 几何一致性强、物体身份稳定，推理成本高、依赖3D 数据；物理引擎精度最高，内容生产成本高、视觉真实感弱。</p>
+<p>四条路线各有适用边界，理想形态是多架构混合：线下交互类模型采用视频生成或生成式 3D，需要稳定几何表现时嵌入 3D表征，需要严格遵循物理规律时加入求解器。这一判断与公开研报的表述基本一致，增量在于实现方式——<b>局部切换</b>。模型生成过程中检测到物体发生接触交互时，局部切到显式 3D与物理引擎，交互结束再切回隐式渲染，无需让整个世界模型持续运行物理引擎。这把“混合架构”从概念变成了可执行的成本方案。</p>
+<p><b>（二）字节的三条线：资源在主生成，VLA 仍在探索</b></p>
+<p><b>表 1：字节世界模型三条路线的目标、进展与资源</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569083_7c2bdd98b3c258cf.webp" alt="" loading="lazy"></p>
+<p>市场对字节世界模型的公开认知，主要停留在“2026 年底前至少发布一版、性能对标 Genie 3、创始人亲自督战、训练数据预算数千万元、投入约为同行 3-4 倍”（36 氪 2026 年 6 月报道，中泰证券 2026-11-07引用）。一线信息补上了资源切分，<b>资源重心在实时交互，VLA 是探索项</b>。市场按“发布即催化”定价，一线把 VLA 放在“进展偏慢、本体不自研”的位置，这是一处明显的认知差。</p>
+<p><b>（三）Genie 4 的闭环怎么跑</b></p>
+<p>Genie 4 于 2026 年 10 月 27 日发布，官方定位为迄今最逼真、交互性最强的世界模型：场景一致性窗口延长至约两分钟、为上一代的两倍，首次实现原生音频与世界同步生成，以约 24帧/秒实时生成。公开报道已覆盖这些参数，专家材料补上了协同分工与上线边界：</p>
+<p><b>•</b> <b>主生成器</b>负责 24 帧实时画面渲染，根据用户动作与原始指令迭代视觉状态，同步生成人物图像、环境影像与角色对话，交互时长可达两分钟，不输出 mesh 或点云。</p>
+<p><b>•</b> <b>Gemini Omni</b> 提供现实世界的外观与行为经验，约束模拟不脱离常识；<b>Gemini 3.8 Flash</b> 负责新型画面生成、长任务拆解、执行结果校验与用户干预后的重新规划。</p>
+<p><b>•</b> <b>安全模型仅用于离线研究验证，在线交互时不启用</b>。</p>
+<p>闭环流程是“生成—观察—规划—再生成”：输入文本或动作后先做意图拆解，由 Genie 4 渲染画面与音频，再由 Omni 观察画面、校验子目标是否完成，必要时生成修正指令继续推演。</p>
+<p>字节自身的复用路径同样有工程量：计划 12 月发布与接口结合的事件模型，在多年视频生成能力上生成多视角影像，再结合 3D 能力训练世界模型；Seaweed 在该场景使用较多，但<b>不能直接使用，需要演进</b>，后续接入空间几何表达、3DGS与轻量级物理训练。公开信息也提到发布时间多次延期，原因是功能效果仍需打磨，两条信息互相印证。</p>
+<p><b>三、实时生成的账：从一次制作到按分钟计费</b></p>
+<p><b>（一）单位成本：一分钟约 21 元</b></p>
+<p>在 720P、24FPS 条件下，一分钟视频约 1440 帧。使用 Seaweed 生成时成本约 0.22 元/秒，一分钟约 13.2 元；实时世界模型约 0.35-0.36 元/秒，一分钟接近 21 元，<b>单位成本提升约59%-64%</b>，核心原因是计算量与 token 消耗同步增加。</p>
+<p>这个量级可以与公开数据交叉验证：有报道称 AI 剧单集算力成本从早期 17 元涨到 80-100 元（妙投 2026-10-26），按单集 8 分钟折算约 10-12.5 元/分钟，与 Seaweed 的 13.2元/分钟同量级，差异来自抽卡次数与折扣。</p>
+<p><b>（二）成本结构改变带来的商业模式约束</b></p>
+<p>离线视频生成的成本是一次性的：一条片子生成一次，成本随播放量摊薄。实时世界模型每一次会话都要重新生成，成本随观看时长线性增长。这是两种完全不同的生意。</p>
+<p>做一个量级测算：按 21 元/分钟、当前 AI 短剧万播收益 30-50 元（即单次播放约 0.003-0.005 元）计算，<b>同一分钟内容若每次观看都重新生成，成本约为单次播放广告收入的 4200-7000倍</b>。该测算假设每分钟观看对应一次实时生成，并以短剧万播收益作为单次播放变现的上限；实际互动内容可能采用订阅、硬件补贴或单次付费，数字仅用于说明量级。结论很直接：免费加广告的模式无法覆盖实时生成成本，可行路径是硬件捆绑、付费互动内容，或将单次会话时长压缩到几十秒。</p>
+<p>这也解释了专家为何把互动短剧视为新赛道：它需要新的付费方式，并且首先依托 Pico 这样的独立终端，短期内难以在现有免费短剧盘子里做替代。</p>
+<p><b>（三）模型侧的短期压力</b></p>
+<p>Seaweed 推出后 AI 短剧生产力大幅提升，2026 年 7、8、9 月高峰过后生产端供给十分充足，用户消费时长有限、消费端跟不上，供给膨胀、流量变少、内卷加剧，很多短剧开始不赚钱，<b>当前生产调用整体在下滑，可能影响 Seaweed后续营收</b>。</p>
+<p>公开数据支持这一判断：2026 年一季度全国上线微短剧约 12.8 万部，AI 微短剧占比超过 95%，贡献播放量仅占全网 4%；上半年抖音端新上线 AI 剧、漫剧 22.19 万部，播放量破亿的仅 1055 部、占0.48%；部分作品万播收益降至 30-50 元；全行业投流日耗 1.5-1.7 亿元、流量成本同比上涨超过 100%；花旗估算约 95% 的制作方处于亏损状态（虎嗅 2026-11-10、格隆汇2026-11-04）。模型层正在从“卖生成时长”转向“卖交互体验”，后者需要终端与付费闭环，2026 年内难以形成规模收入。</p>
+<p><b>四、能力边界：2-6 秒的预测窗口与记忆失效</b></p>
+<p><b>（一）预测窗口被量化</b></p>
+<p><b>表 2：不同世界模型形态的可靠预测与有效规划窗口</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569083_f38190b73743d5ea.webp" alt="" loading="lazy"></p>
+<p>超过预测窗口后，系统通过高层模型一次性拆解长程目标，切成能落进窗口内的子目标；每个子目标执行时用真实传感器刷新状态，判断完成或失败，再回到高层重新规划。架构上分为三层：顶层 LLM 或 VLM输入自然语言、场景与记忆信息并输出子目标序列；中层世界模型在窗口内评估候选动作能否达成子目标；底层输出连续基本动作。Agent 每执行几百毫秒到一秒，就用 RGB、深度、力触觉重新观测世界，覆盖并修正内部视觉状态。</p>
+<p><b>（二）失败归因：记忆失效排在首位</b></p>
+<p>专家自测显示，<b>记忆失效的可能性最大</b>：内部世界状态与真实世界脱节，例如忘记物体已被抓走、回到原位置抓取，或混淆物体 A 与物体 B 的 ID。其次是子目标拆解错误、顺序错误、缺少依赖条件，以及执行过程中的预测误差累积。</p>
+<p>解法是外挂显式结构化记忆：用 slot、centric 表征与物体级状态 bank，分别记录每个物体的独立ID、位置、材质、铰接属性，以及是否已被抓起等历史事件，并与渲染分支结合。这套方案的本质，是把“记住世界状态”从模型参数里拿出来，变成可查询、可更新的外部结构。</p>
+<p>市场认知存在排序差异：东北证券 2026-11-06 把累计误差导致的长时序漂移与“记忆崩塌”并列；兴业证券 2026-10-25的专家把模块间分布偏移排在第一位、状态表示与记忆一致性排在第二位。一线自测把记忆失效排第一，来自其特定系统与任务集，与公开专家的排序不同，反映系统与任务差异，不宜直接裁决谁对。可以确认的趋势是：<b>记忆已被当作系统结构问题处理，单靠加大参数与数据无法解决</b>，这为“世界模型</p>
+<ul><li>外部记忆 + 真机高频反馈”的组合栈提供了依据。</li></ul>
+<p><b>五、数据侧：设备先赚钱，数据后赚钱</b></p>
+<p><b>（一）设备与订单：率先兑现收入的环节</b></p>
+<p>觅蜂科技的 MEgo 无本体采集设备于 2026 年 6 月发布、7 月底量产，8 月 31 日第 2 万套下线并交付京东，9 月累计约 2 万台，月产能约 1 万台。京东一次性采购 2万台；地方数采中心与数采商通过采购或租赁参与，专家预计 2026 年第三、四季度集采规模约 2-3 万台。公开信息同时披露，觅蜂累计无本体数据突破 100 万小时，覆盖 22 大类场景、1 万余个真实环境、5 万余类物体、500余种细分任务（每日经济新闻 2026-09-01）。截至 2026 年 8 月，国内已公开披露 106 家具身智能数采中心，其中 84 家已运营（中银证券 2026-11-09 引用虎嗅数据）。</p>
+<p><b>表 3：MEgo 设备的价格及供应链</b></p>
+<p>供应链方面，摄像头为奥比中光与舜宇光学科技，IMU 为华依科技，代工为龙旗科技。公开调研信息显示华依科技为觅蜂数采 IMU 独家供应商，2026 年二季度起贡献业绩，全年数采 IMU 出货指引 20 万套以上。按单台 IMU 150-200元测算，2 万台对应约 300-400 万元，20 万套（含多客户）对应约 3000-4000 万元。单机价值量不高，订单可见度是这条链当前的主要看点。</p>
+<p><b>（二）竞争：设备差距半年内可追平</b></p>
+<p>专家列出的主要竞争者是简智、智元、鹿明，以及一家未能对应公开主体的厂商。简智进入较早，2026 年初已有设备，当前迭代至新版本，专家称其销量与觅蜂基本持平、生态建设弱于觅蜂；第三方统计显示简智累计订单突破 1 万台（DAS 系列，2026年上半年）。智元设备形态与觅蜂类似。鹿明（FastUMI）等厂商的设备参数与生态较弱、份额较低。公开专家判断，数采设备之间的硬件差距半年内可以追平，竞争焦点会转向数据产线、场景资源与客户验证。</p>
+<p><b>六、数据的单位经济：转化率与贬值</b></p>
+<p><b>（一）转化漏斗：8 小时只剩 1-1.5 小时</b></p>
+<p>一线人员佩戴设备作业 8 小时，原始素材要经过四道筛选：清洗只保留有效动作（叠被子、套垃圾袋等），剩余 3-4 小时；模态对齐剔除光线过强或过暗、双手不在视野内、动作突变不平滑的内容；自动标注采用千问、豆包等模型，成功率约 70%，失败的30% 被剔除；轨迹重建要求关键点误差在 10 毫米以内，超阈值剔除。最终，<b>8 小时原始素材只剩 1-1.5 小时有效数据，转化率约 12.5%-18.75%</b>。</p>
+<p>这组数字解释了一个容易误判的问题：设备出货量不等于数据供给量。按 2 万台设备、每台每天 1-1.5 小时有效产出、每年 300 天测算，年产能约 600-900 万小时；而专家给出的 2026 年采集目标是 50-100万小时，隐含设备利用率仅 6%-17%。<b>当前的约束主要来自订单与数据链路，设备产能相对充裕</b>。</p>
+<p><b>（二）成本与售价：独享赚钱，共享不赚钱</b></p>
+<p><b>表 4：有效数据的成本、售价与毛利测算</b></p>
+<p>公开口径可以交叉：国内一手定制数据 150-300 元/小时、二手共享 80-150 元/小时、海外 300-400 元/小时、真机数据约 700 元/小时，平台处理成本 100-150 元/小时（中银证券 2026-11-09、华安证券2026-10-28）。专家给出的 250 元与 100-150 元均落在公开区间内。</p>
+<p>按这组数字，<b>独享定制是当前能够稳定覆盖成本的模式</b>；共享数据更接近获客与摊薄链路的补充，规模越大亏损越明显，除非一线成本继续下降或链路效率提升。数据商的规模效应，应来自链路成本下降与同一数据的复用次数；单价上涨的空间有限。</p>
+<p><b>（三）数据有保质期</b></p>
+<p>专家判断：模型公司对数据的精度、内参等要求会随模型迭代变化，<b>半年前采集的数据可能不再适用</b>，需要通过市场校验。这意味着数据更接近有保质期的库存，小时数需要按“仍可售”折算，扩产的同时会积累减值风险。</p>
+<p>这也解释了兑现顺序：设备卖断即确认收入，数据要等模型验证与交付验收，收入确认更慢、不确定性更高。设备端先于数据服务兑现，与产业节奏一致，与公开研报“硬件设备是当前最先兑现收入的环节”的判断一致（天风证券 2026-10-26）。</p>
+<p><b>（四）供需：产能扩张快于需求</b></p>
+<p>专家给出的路径是 2026 年采集 50-100 万小时、2027 年目标 1000 万小时。公开口径显示，2027 年具身智能数据需求较 2026 年整体翻 3 倍（招商证券 2026-11-04）；全球高质量真实交互数据约 50万小时，而训练一个通用具身大模型至少需要 1000 万小时，缺口约 20 倍（浙商证券 2026-10-28、国信证券 2026-11-01）。</p>
+<p>做一个供给侧测算：即使以 2026 年百万小时级需求为基数，按翻 3 倍计算，2027 年行业需求约 300 万小时量级；单一供应商的目标即达 1000万小时，且尚未计入其他厂商扩产。<b>供给扩张速度快于需求增速，价格与利用率面临下行压力</b>，这是 2027 年数据服务环节最需要跟踪的变量。</p>
+<p>风险提示：以上内容仅为个人学习总结，不构成任何投资建议。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
