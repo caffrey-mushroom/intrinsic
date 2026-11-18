@@ -259,6 +259,11 @@ class Sanitize(HTMLParser):
                 self.out.append("</article>")
             elif opened in ("h2", "h3", "h4", "p", "a"):
                 self.out.append(f"</{opened}>")
+            return
+        # Wrappers such as strong/em/blockquote are unwrapped. Their end tag
+        # must still pop that unwrap, or the next heading never closes.
+        if self.stack and self.stack[-1] is None:
+            self.stack.pop()
 
     def handle_data(self, data):
         if self.skip or self.drop_text or not data:

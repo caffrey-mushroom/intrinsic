@@ -82,6 +82,20 @@ class PublishTest(unittest.TestCase):
         self.assertLess(home.index('id="twitter"'), home.index("</main>"))
         self.assertIn("Notes", home)
 
+    def test_strong_inside_heading_does_not_swallow_the_next_paragraph(self):
+        html = (
+            '<h2><strong>Executive Summary</strong></h2>'
+            '<p>UNIQUEPARAGRAPH</p>'
+            '<div class="post" id="post-1"><h4>条目</h4><p>正文</p></div>'
+        )
+        # The fixture publisher path expects post- ids already.
+        added = publish(self.repo, html.replace('class="post" ', ''), "2026-11-19", "am", "2026-11-19T06:46:33+08:00")
+        self.assertEqual(added["status"], "add")
+        text = self.page("2026-11-19-am")
+        self.assertEqual(text.count("UNIQUEPARAGRAPH"), 1)
+        self.assertIn("<h2 id=", text)
+        self.assertIn("</h2>", text.split("UNIQUEPARAGRAPH")[0])
+
     def test_same_day_morning_and_evening_are_distinct(self):
         publish(self.repo, V2, "2026-11-08", "am", "2026-11-08T21:30:00+08:00")
         publish(self.repo, V2.replace("V2TEXT", "PMTEXT"), "2026-11-08", "pm", "2026-11-08T14:19:37Z")
