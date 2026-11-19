@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026.11.19 | Primer | XPU Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Noto+Serif+SC:wght@500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+
+.tags{font-family:var(--sans);font-size:13.5px;color:var(--slate-500);margin:6px 0 2px;letter-spacing:.01em;word-spacing:.35em}
+.layout{display:grid;grid-template-columns:220px minmax(0,912px);gap:56px;justify-content:center;max-width:1240px;margin:0 auto}
+.layout .page{margin:0;max-width:none;min-width:0;padding-left:0;padding-right:0}
+.side{position:relative}
+.side-in{position:sticky;top:calc(env(safe-area-inset-top,0px) + 32px);max-height:calc(100vh - 64px);overflow-y:auto;padding:var(--s6) 0 24px}
+.side-t{font-size:12px;letter-spacing:1.5px;color:var(--muted);margin:0 0 14px 12px}
+#tocnav{display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--rule)}
+#tocnav a{display:block;white-space:pre;overflow:hidden;text-overflow:ellipsis;text-decoration:none;color:var(--muted);font-size:13.5px;line-height:1.5;padding:6px 12px;margin-left:-1px;border-left:1px solid transparent}
+#tocnav a:hover{color:var(--text)}
+#tocnav a.l3{padding:3px 12px 3px 24px;font-size:12.5px}
+#tocnav a.l3[hidden]{display:none}
+#tocnav a.on{color:var(--text);border-left-color:var(--text)}
+#tocnav a.l2.cur{color:var(--text)}
+.page h2[id],.page h3[id]{scroll-margin-top:24px}
+@media (max-width:1100px){.layout{display:block}.side{display:none}.layout .page{margin:0 auto;max-width:var(--page-w);padding-left:var(--s3);padding-right:var(--s3)}}
+
+/* page-specific: text, tables, charts share one width */
+.prose p,.prose ul,.prose ol{max-width:none}
+.summary{max-width:none}
+.fu{margin-top:var(--s3)}
+.fu h2{margin-bottom:var(--s1)}
+table.t td{white-space:normal;text-align:left;vertical-align:top}
+table.t th{text-align:left}
+table.t td.c,table.t th.c{text-align:center}
+table.t td.num,table.t th.num{text-align:right;white-space:nowrap}
+.dot{color:var(--slate-700)} .half{color:var(--slate-400)} .no{color:var(--faint)}
+.callout{margin-top:var(--s3);padding:var(--s2) var(--s3);background:var(--soft);border-radius:var(--radius)}
+.callout .h{font-weight:600;margin-bottom:4px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)}
+@media (max-width:760px){.two{grid-template-columns:1fr}}
+.src{font-size:var(--fs-note);color:var(--muted);margin-top:var(--s1)}
+/* svg roles */
+.f-compute{fill:var(--slate-500)} .f-hbm{fill:var(--slate-300)} .f-io{fill:var(--slate-700)}
+.f-interp{fill:var(--slate-100)} .f-sub{fill:var(--soft);stroke:var(--rule)}
+.f-gray{fill:#BFBFBF} .f-s200{fill:var(--slate-200)} .f-s800{fill:var(--slate-800)}
+.t-lab{font-family:var(--sans);font-size:12.5px;fill:var(--text)}
+.t-mut{font-family:var(--sans);font-size:12px;fill:var(--muted)}
+.t-in{font-family:var(--sans);font-size:12px;fill:#FFFFFF;font-weight:600}
+.t-ind{font-family:var(--sans);font-size:12px;fill:#141413;font-weight:600}
+.ln{stroke:var(--muted);stroke-width:1}
+.grid{stroke:var(--rule);stroke-width:1}
+/* calculator */
+.calc{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s2) var(--s3);margin-top:var(--s3)}
+.calc label{display:block;font-size:var(--fs-note);color:var(--muted)}
+.calc input{width:100%;margin-top:4px;font:inherit;font-variant-numeric:tabular-nums;color:var(--text);background:var(--bg);border:var(--hair);border-radius:var(--radius);padding:6px 10px}
+.calc input:focus{outline:2px solid var(--slate-500);outline-offset:1px}
+@media (max-width:760px){.calc{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.formula{font-size:13.5px;color:var(--muted);margin-top:var(--s2);line-height:1.8}
+.formula b{color:var(--text);font-weight:600}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="side" aria-label="目录"><div class="side-in"><div class="side-t">目录</div><nav id="tocnav"></nav></div></aside>
+<main class="page">
+
+<h1>2026.11.19 | Primer | XPU Design</h1>
+<p class="tags">#asic #xpu #primer #semis #avgo #mrvl #mediatek #alchip #tsmc #googl #openai #anthropic</p>
+<p class="meta">v1 · 内部 · 零基础版：所有缩写在第 9 节有解释</p>
+
+<p class="summary">一颗 XPU 分两半：中间的计算核心决定"算得对不对路"，外围的高速接口、HBM 连接、2.5D 封装和量产决定"造不造得出来"。OpenAI、Anthropic、Google 自研做的是前一半 (定义架构、写计算核心、配编译器)，后一半要靠十几年攒下的 IP 和 TSMC / CoWoS / HBM 的产能关系，目前只有 AVGO、MRVL、MediaTek 这类公司能稳定交付。所以"自研 ASIC"不是甩掉设计服务商，而是重新分工：客户越成熟，分工边界越往客户那边移，服务商每颗芯片拿到的钱 (content/chip) 越少，但颗数越多。</p>
+
+<section class="fu" id="followup">
+<h2>Follow-up</h2>
+<div class="prose"><ul>
+<li><b>OpenAI Jalapeño 能否在 2026 年底按时上量</b>：这是第一颗"实验室从 0 做到量产"的 XPU，2026.06.24 才出样片。按时上量 → 说明实验室 + AVGO 全包模式约 2 年可以走通，其他实验室会跟；延期或良率问题 → 说明后一半比想象难，AVGO 的议价权更强</li>
+<li><b>Google TPU 8i (MediaTek) 在 TSMC 2nm 上的进度，目标 2027 年底</b>：这是"客户自己做大部分、服务商只做 IO"模式的大考。做成 → AVGO 在 Google 的 content/chip 有下行压力，MediaTek 拿到第二个大客户的筹码；做不成 → 回到 AVGO 全包</li>
+<li><b>Anthropic 芯片团队选谁做 partner、何时首次 tapeout</b>：团队 2026.08 才公开，据报道和三星谈过 2nm。选 TSMC 系 (AVGO / MRVL / Alchip) → 走成熟路线，2028 年前难有量；选三星代工一体化 → 说明 TSMC 先进封装产能是真约束，愿意拿技术风险换产能</li>
+<li><b>AVGO / MRVL 的 custom 收入增速 vs 客户芯片出货量增速</b>：收入增速 &gt; 出货增速 → 服务商还在多拿 content (代采 HBM、加网络芯片)；收入增速 &lt; 出货增速 → 分工边界在往客户移，看毛利率是否同步上升 (卖 IP 毛利高、转手 HBM 毛利低)</li>
+<li><b>CoWoS 和 HBM 的配额分给谁</b>：ASIC 最终能出多少颗，卡在封装和 HBM，不在设计。TSMC CoWoS 扩产和 HBM 厂长约里 ASIC 客户的占比上升 → GPU 之外的 XPU 真的在放量，对内存是纯加项</li>
+</ul></div>
+</section>
+
+<section class="sec" id="s1">
+<h2>1. 先把名词对齐：GPU、ASIC、XPU</h2>
+<div class="prose">
+<ul>
+<li><b>GPU</b>：通用 AI 加速器。NVDA 设计一颗，卖给所有客户，什么模型都能跑。代价是通用性占面积、占功耗，而且 NVDA 的毛利率约 70% 以上，客户付的钱里大部分是 NVDA 的利润</li>
+<li><b>ASIC</b> (Application-Specific Integrated Circuit，专用芯片)：为一类任务专门设计的芯片。比特币矿机芯片就是 ASIC，只会算一种哈希，但算得最省电</li>
+<li><b>XPU</b>：行业对"大客户定制的 AI 加速器"的统称 (AVGO 带起来的叫法)。Google TPU、AWS Trainium、Meta MTIA、Microsoft Maia、OpenAI Jalapeño 都算。它比矿机芯片通用得多 (能跑各种 Transformer 模型)，但比 GPU 窄 (只为自己的模型和框架优化)</li>
+<li><b>真正的区别不在"能不能做矩阵乘法"</b>：大家都能。区别在取舍。只服务自己的模型，就可以砍掉用不上的功能，把省下来的面积和功耗花在自己最缺的地方，比如推理最缺的 HBM 带宽和片上缓存</li>
+</ul>
+</div>
+</section>
+
+<section class="sec" id="s2">
+<h2>2. 一颗 XPU 长什么样</h2>
+<p class="psub">从上往下看一颗封装好的 XPU (示意图，按 2026 年主流旗舰的典型结构画，比例非实测)</p>
+<figure class="chart" style="border-top:none;margin-top:var(--s2);padding-top:0">
+<svg viewBox="0 0 900 380" role="img" aria-label="XPU 封装结构示意图">
+  <rect x="150" y="20" width="600" height="320" rx="6" class="f-sub"/>
+  <text x="160" y="40" class="t-mut">封装基板 (substrate)</text>
+  <rect x="190" y="55" width="520" height="250" rx="4" class="f-interp"/>
+  <text x="200" y="73" class="t-mut">硅中介层 (interposer)，CoWoS 工艺</text>
+  <!-- HBM left -->
+  <g>
+    <rect x="205" y="85" width="80" height="48" rx="2" class="f-hbm"/><rect x="205" y="138" width="80" height="48" rx="2" class="f-hbm"/>
+    <rect x="205" y="191" width="80" height="48" rx="2" class="f-hbm"/><rect x="205" y="244" width="80" height="48" rx="2" class="f-hbm"/>
+    <rect x="615" y="85" width="80" height="48" rx="2" class="f-hbm"/><rect x="615" y="138" width="80" height="48" rx="2" class="f-hbm"/>
+    <rect x="615" y="191" width="80" height="48" rx="2" class="f-hbm"/><rect x="615" y="244" width="80" height="48" rx="2" class="f-hbm"/>
+    <text x="245" y="113" text-anchor="middle" class="t-ind">HBM</text><text x="655" y="113" text-anchor="middle" class="t-ind">HBM</text>
+  </g>
+  <!-- compute dies -->
+  <rect x="300" y="85" width="145" height="207" rx="2" class="f-compute"/>
+  <rect x="455" y="85" width="145" height="207" rx="2" class="f-compute"/>
+  <text x="372" y="180" text-anchor="middle" class="t-in">计算 die</text><text x="372" y="198" text-anchor="middle" class="t-in">N3 / N2</text>
+  <text x="527" y="180" text-anchor="middle" class="t-in">计算 die</text><text x="527" y="198" text-anchor="middle" class="t-in">N3 / N2</text>
+  <!-- die to die -->
+  <rect x="445" y="150" width="10" height="80" class="f-s800"/>
+  <!-- IO dies -->
+    <rect x="330" y="310" width="240" height="22" rx="2" class="f-io"/>
+  <text x="450" y="326" text-anchor="middle" class="t-in">IO die：SerDes / PCIe</text>
+  <!-- callouts -->
+  <line x1="150" y1="110" x2="205" y2="110" class="ln"/><text x="140" y="106" text-anchor="end" class="t-lab">HBM 堆栈 ×8</text><text x="140" y="122" text-anchor="end" class="t-mut">存模型权重和 KV</text>
+  <line x1="750" y1="190" x2="600" y2="190" class="ln"/><text x="760" y="186" class="t-lab">计算核心</text><text x="760" y="202" class="t-mut">矩阵阵列 + SRAM</text>
+  <line x1="750" y1="245" x2="455" y2="210" class="ln"/><text x="760" y="249" class="t-lab">Die-to-die 连接</text><text x="760" y="265" class="t-mut">两颗 die 当一颗用</text>
+  <line x1="750" y1="321" x2="570" y2="321" class="ln"/><text x="760" y="317" class="t-lab">对外接口</text><text x="760" y="333" class="t-mut">连别的芯片和网络</text>
+  <text x="150" y="365" class="t-mut">注：IO 也可能做进计算 die 的边缘，不单独成 die；HBM 堆数 6–12 不等</text>
+</svg>
+<figcaption>Source: 作者根据公开的 TPU / Trainium / B200 结构归纳，示意用</figcaption>
+</figure>
+
+<h3 id="s2a">五个部件，各管什么</h3>
+<table class="t" style="margin-top:var(--s2)">
+<thead><tr><th style="width:18%">部件</th><th style="width:42%">做什么</th><th>难点在哪 / 谁擅长</th></tr></thead>
+<tbody>
+<tr><td><b>计算 die</b></td><td>真正做乘法加法的地方：一大块矩阵乘法阵列 (TPU 叫 systolic array，NVDA 叫 tensor core)、向量单元、片上 SRAM、控制逻辑</td><td>面积逼近光刻机一次能曝光的上限 (约 26×33mm ≈ 858mm²)，所以旗舰都拼两颗。架构取舍是客户最懂的部分</td></tr>
+<tr><td><b>HBM</b></td><td>把 DRAM 芯片垂直叠 8–12 层，紧贴计算 die 放，提供每秒数 TB 的带宽</td><td>HBM 本身买 SK Hynix / 三星 / MU 的；难的是 HBM PHY (连接电路) 和 interposer 上上千根走线。推理 decode 速度基本由 HBM 带宽决定</td></tr>
+<tr><td><b>对外接口 (SerDes)</b></td><td>把芯片内部的并行数据变成高速串行信号发出去：连同机柜里的其他 XPU (scale-up)、连网络 (scale-out)、连 CPU (PCIe)</td><td>全球最难的模拟电路之一。当前前沿是单通道 224Gbps，能量产的只有 AVGO、MRVL、MediaTek、Synopsys、Cadence 等少数几家</td></tr>
+<tr><td><b>Die-to-die</b></td><td>让两颗计算 die、或计算 die 和 IO die 之间像在一颗芯片里一样通信</td><td>要做到带宽极高、延迟和功耗极低；有 UCIe 等标准，但旗舰多用自有方案</td></tr>
+<tr><td><b>封装</b></td><td>把以上所有东西放到一块硅中介层上 (TSMC 叫 CoWoS)，再装到基板上</td><td>翘曲、散热、信号完整性；产能几乎全在 TSMC，要提前一年以上抢配额</td></tr>
+</tbody></table>
+<div class="callout"><div class="h">芯片之外还有一块：软件</div>编译器、算子库 (kernel)、运行时。芯片造出来但模型跑不起来、跑不满，等于白造。NVDA 的 CUDA 就是这块的护城河。这块完全是客户自己的事，服务商不管</div>
+</section>
+
+<section class="sec" id="s3">
+<h2>3. 一颗 XPU 的钱花在哪 (可调估算)</h2>
+<p class="psub">改下面任意参数，成本拆分实时重算。默认值是行业经验值，不是任何公司的披露数据，用来看量级和结构，不用来算某家公司的利润</p>
+<div class="calc">
+  <div><label for="area">计算 die 面积 (mm²)</label><input id="area" type="number" value="800" step="50"></div>
+  <div><label for="ndie">计算 die 颗数</label><input id="ndie" type="number" value="2" step="1" min="1"></div>
+  <div><label for="wafer">晶圆价 (USD，N3 约 2 万)</label><input id="wafer" type="number" value="20000" step="1000"></div>
+  <div><label for="yield">良率 (%)</label><input id="yield" type="number" value="60" step="5"></div>
+  <div><label for="nhbm">HBM 堆数</label><input id="nhbm" type="number" value="8" step="1"></div>
+  <div><label for="phbm">每堆 HBM 价 (USD)</label><input id="phbm" type="number" value="600" step="50"></div>
+  <div><label for="pkg">CoWoS 封装 + 基板 (USD)</label><input id="pkg" type="number" value="1200" step="100"></div>
+  <div><label for="other">IO die + 测试 + 其他 (USD)</label><input id="other" type="number" value="450" step="50"></div>
+</div>
+<figure class="chart" style="margin-top:var(--s3)">
+<div class="title" id="calcTitle">单颗 XPU 制造成本</div>
+<svg id="bar" viewBox="0 0 900 90" role="img" aria-label="成本拆分条形图" style="overflow:visible"></svg>
+<figcaption>Source: 作者估算；参数可调</figcaption>
+</figure>
+<div class="formula" id="formula"></div>
+<div class="prose" style="margin-top:var(--s2)"><ul>
+<li><b>默认参数下，HBM 占制造成本六成以上</b>：8 堆 × 600 美元 ≈ 4,800 美元，而两颗 N3 计算 die 合计只有一千美元出头。这就是为什么"谁替客户采购 HBM"会大幅改变设计服务商报出来的收入</li>
+<li><b>面积和良率是非线性的</b>：die 面积从 800 降到 600mm²，每片晶圆能切的颗数多三成以上，良率通常也更高。这是架构师拼命省面积的原因</li>
+<li><b>制造成本不等于售价</b>：服务商在这上面加自己的毛利卖给客户；NVDA 同类 GPU 的售价是制造成本的数倍。两者的差，就是客户自研想省下来的钱</li>
+</ul></div>
+</section>
+
+<section class="sec" id="s4">
+<h2>4. 从想法到量产：2–3 年、约 5 亿美元</h2>
+<figure class="chart" style="border-top:none;margin-top:var(--s2);padding-top:0">
+<div class="title">一颗先进制程 XPU 的典型时间线 (月)</div>
+<svg id="gantt" viewBox="0 0 900 330" role="img" aria-label="芯片设计时间线"></svg>
+<figcaption>Source: 行业经验值归纳；各项目差异很大。据报道 OpenAI Jalapeño 设计阶段只用了约 9 个月，靠 AVGO 现成平台和 AI 辅助设计</figcaption>
+</figure>
+<table class="t" style="margin-top:var(--s3)">
+<thead><tr><th style="width:16%">阶段</th><th style="width:44%">做什么</th><th>说人话</th></tr></thead>
+<tbody>
+<tr><td><b>架构定义</b></td><td>拿自己的模型跑性能模拟，决定算力、HBM、SRAM、互联带宽各配多少</td><td>相当于盖楼前定户型。<b>实验室自研的价值几乎全在这一步</b>：它最清楚自己的模型 2 年后长什么样</td></tr>
+<tr><td><b>RTL 设计</b></td><td>用硬件描述语言 (Verilog 等) 写出电路逻辑</td><td>画施工图。计算核心客户可以自己写；SerDes、HBM PHY 这些模块一般直接买现成 IP</td></tr>
+<tr><td><b>验证</b></td><td>用仿真、硬件仿真器 (emulator) 和 FPGA 证明电路行为和设计一致</td><td>最耗人的一步，通常占设计人力一半以上。芯片不能打补丁，漏一个 bug 就可能重来</td></tr>
+<tr><td><b>物理设计</b></td><td>把逻辑变成几百亿个晶体管的摆放和连线，满足频率、功耗、面积 (PPA)</td><td>施工。高度依赖 EDA 工具 (SNPS / CDNS) 和对 TSMC 工艺的经验</td></tr>
+<tr><td><b>DFT + Tapeout</b></td><td>埋入测试电路，然后把最终设计交给 TSMC 做光罩</td><td>交图纸开工。N3 一套光罩约数千万美元 (经验值)</td></tr>
+<tr><td><b>流片 + Bring-up</b></td><td>晶圆厂生产约 3–4 个月，芯片回来后点亮、调试、跑模型</td><td>第一次通电。出问题要改设计重新流片 (respin)，多花一套光罩和约半年</td></tr>
+<tr><td><b>量产爬坡</b></td><td>拿 CoWoS 和 HBM 配额、提良率、做系统 (板卡、机柜、散热)</td><td>从"能做出来"到"能做出几十万颗"。供应链关系在这一步决定成败</td></tr>
+</tbody></table>
+<div class="prose" style="margin-top:var(--s2)"><ul>
+<li><b>成本</b>：Reuters 引用的业内估算，设计一颗先进 AI 芯片约 5 亿美元，主要是工程师、验证和测试。对年收入几百亿美元的实验室，这笔钱不大；难的是人和时间</li>
+<li><b>人</b>：一个完整项目通常要几百名工程师 (经验值)，其中验证和物理设计占大头。实验室招来的多是架构、RTL 和编译器的人，后端和模拟电路的人最难招</li>
+</ul></div>
+</section>
+
+<section class="sec" id="s5">
+<h2>5. 谁做哪一块：三种分工模式</h2>
+<table class="t" style="margin-top:var(--s2)">
+<thead><tr><th style="width:28%">工作</th><th class="c">客户 (实验室 / 云)</th><th class="c">设计服务商 (AVGO / MRVL / MediaTek)</th><th class="c">其他</th></tr></thead>
+<tbody>
+<tr><td>Workload 分析、架构定义</td><td class="c dot">●</td><td class="c half">◐</td><td class="c no">—</td></tr>
+<tr><td>计算核心 RTL</td><td class="c dot">●</td><td class="c half">◐</td><td class="c no">—</td></tr>
+<tr><td>编译器、kernel、软件栈</td><td class="c dot">●</td><td class="c no">—</td><td class="c no">—</td></tr>
+<tr><td>SerDes / HBM PHY / Die-to-die IP</td><td class="c no">—</td><td class="c dot">●</td><td class="c half">◐ SNPS / CDNS 卖 IP</td></tr>
+<tr><td>验证、物理设计、DFT</td><td class="c half">◐</td><td class="c dot">●</td><td class="c half">◐ EDA 工具</td></tr>
+<tr><td>封装设计 (CoWoS)</td><td class="c no">—</td><td class="c dot">●</td><td class="c half">◐ TSMC</td></tr>
+<tr><td>抢晶圆 / CoWoS / HBM 产能</td><td class="c half">◐</td><td class="c dot">●</td><td class="c half">◐ TSMC / HBM 厂</td></tr>
+<tr><td>测试、良率、量产交付</td><td class="c no">—</td><td class="c dot">●</td><td class="c half">◐ 封测厂</td></tr>
+<tr><td>网络芯片 (交换机)</td><td class="c no">—</td><td class="c dot">● AVGO / MRVL</td><td class="c half">◐ NVDA</td></tr>
+</tbody></table>
+<p class="src">● 主做　◐ 参与 / 部分做　— 基本不碰。Turnkey 模式下的典型分工；COT 模式下"客户"一列往下多填几格</p>
+
+<h3 id="s5a">三种模式</h3>
+<table class="t" style="margin-top:var(--s2)">
+<thead><tr><th style="width:18%">模式</th><th style="width:36%">怎么分</th><th style="width:26%">服务商的钱</th><th>例子</th></tr></thead>
+<tbody>
+<tr><td><b>Turnkey (全包)</b></td><td>客户给架构和计算核心规格，服务商做其余全部，并以成品芯片卖给客户</td><td>每颗收入高 (含转手的 HBM、封装)，毛利率低于卖自有芯片</td><td>AVGO–OpenAI、AVGO–Meta、AVGO–Google TPU 历代</td></tr>
+<tr><td><b>COT / 部分</b></td><td>客户自己做大部分设计、直接管 TSMC 和 HBM 供应；服务商卖 IP、做 IO 和部分后端</td><td>每颗收入低，毛利率高</td><td>Google–MediaTek (据报道 Google 做大部分设计，MediaTek 主要做 IO 部分)；AWS 自家 Annapurna 团队 + MRVL / Alchip</td></tr>
+<tr><td><b>全自研</b></td><td>所有环节自己做，直接对 TSMC</td><td>没有服务商</td><td>NVDA、AMD。云厂和实验室目前没有一家走到这一步</td></tr>
+</tbody></table>
+<div class="callout"><div class="h">一句话</div>客户都想从 Turnkey 往 COT 走，因为每往前走一步就少付一层毛利；但每走一步都要自己补上一块能力 (后端团队、供应链团队)，所以只有量足够大、做了好几代的客户走得动。Google 做了 10 年 TPU 才开始把一部分交给更便宜的 MediaTek</div>
+</section>
+
+<section class="sec" id="s6">
+<h2>6. 实验室为什么离不开 AVGO 们</h2>
+<div class="prose"><ul>
+<li><b>SerDes 是十几年的积累，买不来也招不来</b>：224G SerDes 能量产的公司一只手数得过来。XPU 的价值越来越取决于芯片之间连得多快 (几十到上千颗芯片当一台机器用)，这块做不好，计算核心再好也白搭</li>
+<li><b>第一次就要成功</b>：一次 respin = 多花一套数千万美元的光罩 + 约半年。AVGO、MRVL 每年 tapeout 几十颗先进制程芯片，踩过的坑都写进了流程和 IP 里。实验室第一颗芯片，最怕的就是时间</li>
+<li><b>产能是关系，不是钱</b>：TSMC 的 N3 / N2 晶圆和 CoWoS 封装要提前一年以上分配，HBM 要签长约。AVGO 是 TSMC 前几大客户，拿配额的能力远强于一家第一次下单的实验室</li>
+<li><b>系统和网络打包卖</b>：OpenAI 的方案用 AVGO 的以太网交换机做 scale-out。服务商在芯片上让一点利润，在网络芯片上赚回来</li>
+<li><b>后端人才极度稀缺</b>：模拟电路、物理设计、封装工程师的培养周期以十年计，全球大部分集中在这几家公司和 TSMC 生态里</li>
+</ul></div>
+</section>
+
+<section class="sec" id="s7">
+<h2>7. 那为什么还要自研</h2>
+<div class="prose"><ul>
+<li><b>省中间商毛利</b>：客户每颗芯片省下的钱 ≈ 售价 × (NVDA 毛利率 − 服务商毛利率)。NVDA 毛利率约 70% 以上，服务商的定制芯片业务远低于此，差额在百万颗级别的出货量下就是每年数十亿美元</li>
+<li><b>只为自己的模型优化</b>：推理占的算力越来越大，Google 第 8 代 TPU 第一次拆成训练 (8t) 和推理 (8i) 两颗，OpenAI Jalapeño 也是推理优先。通用 GPU 做不了这种取舍</li>
+<li><b>第二供应源 = 谈判筹码</b>：GPU 给谁、给多少由 NVDA 决定。手里有一颗能用的自研芯片，买 GPU 的价格和配额都好谈</li>
+<li><b>软件门槛对实验室反而低</b>：云厂把芯片租给外部客户，需要 CUDA 级别的生态；实验室只要跑通自己的几个模型、一个框架。这是实验室比普通企业更适合做 XPU 的根本原因</li>
+<li><b>风险</b>：架构押错 (模型结构 2 年后变了)、延期、第一代通常打不过同期 GPU。所以没有一家只押自研，全部是"GPU + 别人的 XPU + 自研"并行</li>
+</ul></div>
+<div class="callout"><div class="h">实证 vs 理论 (截至 2026.11)</div>
+<b>已被大规模验证</b>：Google TPU (7 代、约 10 年，Anthropic 是外部大客户)；AWS Trainium (Anthropic 大规模使用)<br>
+<b>已出样片、未验证量产</b>：OpenAI Jalapeño (2026.06 出样，计划 2026 年底部署)<br>
+<b>只有团队、没有芯片</b>：Anthropic (2026.08 公开组建团队，合作方未定)<br>
+省钱多少、性能对标 GPU 如何，目前都只有厂商口径，没有第三方 TCO 数据</div>
+</section>
+
+<section class="sec" id="s8">
+<h2>8. 现在谁和谁在做 (截至 2026.11)</h2>
+<table class="t" style="margin-top:var(--s2)">
+<thead><tr><th style="width:15%">客户</th><th style="width:17%">芯片</th><th style="width:27%">设计伙伴</th><th>状态</th></tr></thead>
+<tbody>
+<tr><td><b>Google</b></td><td>TPU v7 Ironwood；TPU 8t / 8i</td><td>AVGO (历代 + 8t，协议到 2031)；MediaTek (8i)；MRVL (据报道做配套芯片)</td><td>Ironwood 2026 年 GA；8t / 8i 走 TSMC 2nm，目标 2027 年底。Google 未正式确认设计伙伴分工</td></tr>
+<tr><td><b>AWS</b></td><td>Trainium 2 / 3 / 4</td><td>自家 Annapurna + MRVL；Alchip (据报道)</td><td>Trn2 大规模部署 (Anthropic)，Trn3 爬坡</td></tr>
+<tr><td><b>Microsoft</b></td><td>Maia 100 / 200</td><td>MRVL (据报道)</td><td>规模远小于 TPU / Trainium</td></tr>
+<tr><td><b>Meta</b></td><td>MTIA</td><td>AVGO</td><td>推荐系统起步，扩向推理</td></tr>
+<tr><td><b>OpenAI</b></td><td>Jalapeño (原代号 Titan)</td><td>AVGO (全包)；TSMC N3；三星 HBM4 (据报道)</td><td>2026.06 出样片；2026 年底开始部署；AVGO 合作总计 10GW，2029 年底前完成</td></tr>
+<tr><td><b>Anthropic</b></td><td>未命名</td><td>未定；据报道与三星谈过 2nm</td><td>2026.08 确认组建团队，同时继续用 TPU、Trainium、GPU</td></tr>
+</tbody></table>
+<p class="src">Source: 公司公告及 Reuters、The Next Platform 等报道，见文末；"据报道"项未经公司确认</p>
+</section>
+
+<section class="sec" id="s9">
+<h2>9. 对我们的含义</h2>
+<div class="prose"><ul>
+<li><b>服务商收入 = 客户芯片颗数 × 每颗 content</b>：颗数看客户的部署 GW；content 看服务商包了多少。同一颗 TPU，AVGO 全包和 MediaTek 只做 IO，每颗收入可以差好几倍，所以不能只看谁"拿到了客户"</li>
+<li><b>分工边界只会往客户那边移</b>：Google 已经在移；OpenAI、Anthropic 第一、二代大概率全包，第三代以后会开始拆。AVGO 的长期问题不是丢客户，而是每个成熟客户的 content/chip 会下降，要靠新客户和网络芯片补</li>
+<li><b>不管 GPU 还是 XPU 赢，HBM 和 CoWoS 都是必经之路</b>：默认参数下 HBM 占 XPU 制造成本六成以上。XPU 放量对内存是纯加项，而且 XPU 为了推理往往配更多 HBM。这和我们内存的主线是一致的</li>
+<li><b>实验室自研的真正门槛是时间，不是钱</b>：5 亿美元对年收入几百亿的实验室不算什么；但从组队到量产至少 2–3 年。Anthropic 2026 年才组队，2028 年前它的算力仍然来自 TPU、Trainium 和 GPU</li>
+</ul></div>
+</section>
+
+<section class="sec" id="s10">
+<h2>10. 术语表</h2>
+<table class="t" style="margin-top:var(--s2)">
+<thead><tr><th style="width:20%">词</th><th>意思</th></tr></thead>
+<tbody>
+<tr><td>EDA</td><td>芯片设计软件，几乎被 Synopsys (SNPS) 和 Cadence (CDNS) 两家垄断</td></tr>
+<tr><td>IP</td><td>现成的电路模块，像买零件一样授权使用，例如 SerDes IP、HBM PHY IP</td></tr>
+<tr><td>RTL</td><td>Register Transfer Level，用代码描述的电路逻辑，相当于芯片的"源代码"</td></tr>
+<tr><td>Tapeout</td><td>设计定稿、交给晶圆厂做光罩的那一刻</td></tr>
+<tr><td>Respin</td><td>芯片回来发现问题，改设计重新流片</td></tr>
+<tr><td>光罩 (mask)</td><td>晶圆厂印电路用的"底片"，先进制程一套几十层，数千万美元</td></tr>
+<tr><td>NRE</td><td>Non-Recurring Engineering，一次性开发费，客户付给服务商的设计费用</td></tr>
+<tr><td>SerDes</td><td>串行器 / 解串器，把芯片内部数据变成高速信号传出去的电路</td></tr>
+<tr><td>PHY</td><td>物理层电路，负责芯片和外部 (如 HBM) 之间真正的电信号收发</td></tr>
+<tr><td>HBM</td><td>High Bandwidth Memory，垂直堆叠的 DRAM，紧贴计算芯片放置</td></tr>
+<tr><td>CoWoS</td><td>TSMC 的 2.5D 封装：把计算 die 和 HBM 一起放在一块硅中介层上</td></tr>
+<tr><td>Interposer</td><td>硅中介层，一块布满细密走线的硅片，让上面的芯片互相连接</td></tr>
+<tr><td>Scale-up / Scale-out</td><td>Scale-up：机柜内几十到上百颗芯片高速互联，当一台机器用；Scale-out：机柜之间通过网络连接</td></tr>
+<tr><td>Turnkey / COT</td><td>Turnkey：服务商全包，卖成品芯片；COT (Customer-Owned Tooling)：客户自己主导设计和供应链，服务商只做一部分</td></tr>
+<tr><td>PPA</td><td>Performance、Power、Area，芯片设计的三个核心指标，互相取舍</td></tr>
+</tbody></table>
+</section>
+
+<section class="sec" id="sources">
+<h2>Sources</h2>
+<div class="prose"><ul style="font-size:13.5px">
+<li><a href="https://techinformed.com/?p=36990">TechInformed：OpenAI 与 Broadcom 10GW 定制加速器</a></li>
+<li><a href="https://www.unite.ai/anthropic-confirms-it-is-building-an-in-house-silicon-team-for-claude/">Unite.AI：Anthropic 确认组建芯片团队；Jalapeño 2026.06.24 发布</a></li>
+<li><a href="https://techwireasia.com/2026/08/anthropic-custom-ai-chips-claude/">TechWire Asia：Reuters 引用的约 5 亿美元设计成本</a></li>
+<li><a href="https://siliconangle.com/?p=808513">SiliconANGLE：Anthropic 芯片计划；Jalapeño 设计约 9 个月</a></li>
+<li><a href="https://aiweekly.co/alerts/anthropic-stands-up-custom-chip-team-keeps-multi-silicon-mix">AI Weekly：Anthropic 与三星 2nm 洽谈、多芯片并行</a></li>
+<li><a href="https://thenextweb.com/news/google-ironwood-tpu-inference-cloud-next">The Next Web：TPU 8t (Broadcom) / 8i (MediaTek)，2nm，2027 年底</a></li>
+<li><a href="https://letsdatascience.com/news/google-splits-tpuv8-into-training-and-inference-chips-400e5fbd">Let's Data Science：Google 未正式确认设计伙伴</a></li>
+<li><a href="https://en.mashdigi.com/google-is-reportedly-working-with-mediatek-to-create-a-lower-cost-tpu-which-is-expected-to-start-production-in-2026/">mashdigi：MediaTek 在 TPU 中负责 IO 设计</a></li>
+<li><a href="https://www.nextplatform.com/compute/2025/09/03/marvells-custom-xpu-pipeline-is-a-declaration-of-ai-independence/1635256">The Next Platform：Marvell 与 Trainium / Maia</a></li>
+<li><a href="https://tech-insider.org/openai-titan-chip-samsung-hbm4-custom-ai-chip-2026/">Tech Insider：三星为 OpenAI 供 HBM4 (报道)</a></li>
+</ul></div>
+</section>
+
+</main></div>
+
+<script>
+(function(){
+  const nav=document.getElementById('tocnav');
+  const hs=[...document.querySelectorAll('.page section h2, .page section h3')];
+  hs.forEach((h,i)=>{ if(!h.id) h.id='h'+i; });
+  const S=[['Follow-up','Follow-up'],['1.','1  名词'],['2.','2  解剖'],['五个部件','部件'],['3.','3  成本'],['4.','4  流程'],['5.','5  分工'],['三种模式','三种模式'],['6.','6  离不开'],['7.','7  为何自研'],['8.','8  玩家'],['9.','9  含义'],['10.','10  术语'],['Sources','Sources']];
+  const short=t=>{const m=S.find(([k])=>t.startsWith(k));return m?m[1]:t;};
+  let grp=null;
+  nav.innerHTML=hs.map(h=>{ if(h.tagName==='H2') grp=h.id; const t=short(h.textContent.trim());
+    return `<a href="#${h.id}" class="${h.tagName==='H3'?'l3':'l2'}" data-id="${h.id}" data-g="${grp}" title="${t}">${t}</a>`}).join('');
+  const links=[...nav.querySelectorAll('a')];
+  function upd(){let cur=hs[0].id; for(const h of hs){ if(h.getBoundingClientRect().top<140) cur=h.id; else break;}
+    const g=links.find(a=>a.dataset.id===cur).dataset.g;
+    links.forEach(a=>{a.classList.toggle('on',a.dataset.id===cur); if(a.classList.contains('l3')) a.hidden=a.dataset.g!==g; if(a.classList.contains('l2')) a.classList.toggle('cur',a.dataset.id===g);});}
+  addEventListener('scroll',upd,{passive:true}); upd();
+})();
+
+/* Gantt */
+(function(){
+  const rows=[['架构定义',0,4],['RTL 设计',3,12],['验证',3,16],['物理设计',9,17],['DFT + Tapeout',15,18],['流片',18,21],['Bring-up / 封测',21,24],['量产爬坡',24,32]];
+  const L=150,R=880,T=30,H=32,maxM=32,x=m=>L+(R-L)*m/maxM;
+  let s='';
+  for(let m=0;m<=maxM;m+=4){s+=`<line x1="${x(m)}" y1="${T-8}" x2="${x(m)}" y2="${T+rows.length*H}" class="grid"/><text x="${x(m)}" y="${T-12}" text-anchor="middle" class="t-mut">${m}</text>`;}
+  rows.forEach((r,i)=>{const y=T+i*H+6; const cls=i>=5?'f-s200':'f-compute';
+    s+=`<text x="${L-12}" y="${y+15}" text-anchor="end" class="t-lab">${r[0]}</text><rect x="${x(r[1])}" y="${y}" width="${x(r[2])-x(r[1])}" height="20" rx="2" class="${cls}"/>`;});
+  const ty=x(18); s+=`<line x1="${ty}" y1="${T-8}" x2="${ty}" y2="${T+rows.length*H}" stroke="var(--navy)" stroke-width="2"/><text x="${ty+6}" y="${T+rows.length*H+18}" class="t-lab" style="font-weight:600">Tapeout ≈ 第 18 个月</text>`;
+  s+=`<text x="${L}" y="${T+rows.length*H+18}" class="t-mut">深色 = 设计阶段 (主要花人)；浅色 = 制造阶段 (主要花钱和等产能)</text>`;
+  document.getElementById('gantt').innerHTML=s;
+})();
+
+/* Cost calculator */
+(function(){
+  const ids=['area','ndie','wafer','yield','nhbm','phbm','pkg','other'];
+  const fmt=n=>Math.round(n).toLocaleString('en-US');
+  function calc(){
+    const v={}; ids.forEach(k=>v[k]=Math.max(0,parseFloat(document.getElementById(k).value)||0));
+    const d=300, A=Math.max(v.area,1);
+    const gross=Math.max(0, Math.PI*(d/2)**2/A - Math.PI*d/Math.sqrt(2*A));
+    const good=gross*v.yield/100;
+    const perDie=good>0? v.wafer/good : 0;
+    const parts=[
+      ['计算 die', perDie*v.ndie, 'var(--slate-700)', '#FFFFFF'],
+      ['HBM', v.nhbm*v.phbm, 'var(--slate-300)', '#141413'],
+      ['封装 + 基板', v.pkg, 'var(--slate-500)', '#FFFFFF'],
+      ['IO / 测试 / 其他', v.other, '#BFBFBF', '#141413']];
+    const tot=parts.reduce((a,p)=>a+p[1],0)||1;
+    document.getElementById('calcTitle').textContent=`单颗 XPU 制造成本 ≈ ${fmt(tot)} 美元`;
+    let x=0,s='';const W=900;
+    parts.forEach(p=>{const w=W*p[1]/tot; if(w<=0) return;
+      s+=`<rect x="${x}" y="10" width="${w}" height="48" fill="${p[2]}"/>`;
+      const pct=(p[1]/tot*100).toFixed(0);
+      if(w>70) s+=`<text x="${x+8}" y="31" style="font-family:var(--sans);font-size:12.5px;font-weight:600" fill="${p[3]}">${p[0]}</text><text x="${x+8}" y="48" style="font-family:var(--sans);font-size:12px" fill="${p[3]}">${fmt(p[1])} · ${pct}%</text>`;
+      else s+=`<text x="${Math.min(x+w,W)}" y="78" text-anchor="end" class="t-mut">${p[0]} ${pct}%</text>`;
+      x+=w;});
+    document.getElementById('bar').innerHTML=s;
+    document.getElementById('formula').innerHTML=
+      `每片晶圆毛 die 数 = π×150² ÷ 面积 − π×300 ÷ √(2×面积) = <b>${gross.toFixed(1)}</b>；好 die = ${gross.toFixed(1)} × ${v.yield}% = <b>${good.toFixed(1)}</b><br>`+
+      `每颗计算 die = ${fmt(v.wafer)} ÷ ${good.toFixed(1)} = <b>${fmt(perDie)}</b> 美元；× ${v.ndie} 颗 = <b>${fmt(perDie*v.ndie)}</b><br>`+
+      `HBM = ${v.nhbm} × ${fmt(v.phbm)} = <b>${fmt(v.nhbm*v.phbm)}</b>；封装 ${fmt(v.pkg)}；其他 ${fmt(v.other)}；合计 <b>${fmt(tot)}</b> 美元`;
+  }
+  ids.forEach(k=>document.getElementById(k).addEventListener('input',calc)); calc();
+})();
+</script>
+</body>
+</html>
