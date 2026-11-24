@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.24 | Primer | Kernel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Noto+Serif+SC:wght@500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: 研究笔记，平实、克制
+   IDEA: 一份内部 primer，像一本带插图的厨房操作手册
+   PICTURE: 厨房 = GPU 的存储层级图；软件栈分层图
+   COLOUR and TYPE: Rota Slate (rota.css)，衬线标题 + 无衬线正文
+   LAYOUT: 左侧目录 + 912px 正文 */
+:root{
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; }
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:var(--fs-body);line-height:1.75;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;overflow-x:clip}
+a{color:var(--slate-600);text-decoration:none} a:hover{text-decoration:underline;text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500);outline-offset:3px;border-radius:4px}
+.page{max-width:var(--page-w);margin:0 auto;padding:var(--s6) var(--s3) var(--s8)}
+h1{font-family:var(--serif);font-weight:500;font-size:var(--fs-display);line-height:1.15;letter-spacing:-.012em;margin:0}
+h2{font-family:var(--serif);font-weight:500;font-size:var(--fs-title);line-height:1.35;margin:0}
+h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-body);margin:var(--s3) 0 0}
+.tags{font-family:var(--sans);font-size:13.5px;color:var(--slate-500);margin:6px 0 2px;letter-spacing:.01em;word-spacing:.35em}
+.meta,.note,.cap{font-size:var(--fs-note);color:var(--muted);line-height:1.6;margin:4px 0 0}
+.lede{color:var(--muted);margin:var(--s2) 0 0;max-width:72ch}
+.sec{margin-top:var(--s6);padding-top:var(--s3);border-top:var(--hair)}
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em;max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em;padding-left:1.3em;max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong{font-weight:600}
+.prose code{font-family:var(--code);font-size:.86em;background:var(--soft);padding:.1em .4em;border-radius:4px}
+.summary{font-family:var(--serif);font-size:var(--fs-title);line-height:1.6;margin:var(--s4) 0 0;padding-left:var(--s3);border-left:2px solid var(--slate-500);max-width:68ch}
+.summary p{margin:0 0 .6em}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s3);margin-top:var(--s4);padding:var(--s3) 0;border-top:var(--hair);border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note);color:var(--muted)}
+.kpi .v{font-family:var(--serif);font-weight:500;font-size:var(--fs-display);line-height:1.1;letter-spacing:-.015em;margin-top:var(--s1);font-variant-numeric:lining-nums tabular-nums;white-space:nowrap}
+.kpi .n{font-size:var(--fs-note);color:var(--muted);margin-top:var(--s1)}
+.fu{margin-top:var(--s2)}
+.fu p{margin:0 0 1em;max-width:72ch}
+.one{margin:var(--s3) 0 0;padding-left:var(--s2);border-left:1px solid var(--text);font-weight:600;max-width:72ch}
+.tbl{overflow-x:auto;margin-top:var(--s2)}
+table.t{border-collapse:collapse;width:100%}
+table.t th{font-size:var(--fs-note);font-weight:600;color:var(--muted);text-align:left;padding:var(--s1) 12px;border-bottom:var(--hair);white-space:nowrap}
+table.t td{font-size:13.5px;text-align:left;padding:10px 12px;border-bottom:var(--hair);vertical-align:top}
+table.t th:first-child,table.t td:first-child{padding-left:0}
+table.t td.num,table.t th.num{text-align:right;white-space:nowrap}
+table.t tr:hover td{background:var(--hover)}
+figure.fig{margin:var(--s4) 0 0;padding-top:var(--s3);border-top:var(--hair)}
+figure.fig .title{font-family:var(--serif);font-weight:500;font-size:var(--fs-title);line-height:1.35}
+figure.fig svg{display:block;width:100%;height:auto;margin-top:var(--s2)}
+figure.fig figcaption{font-size:var(--fs-note);color:var(--muted);margin-top:var(--s1)}
+svg text{font-family:var(--sans)}
+.bars{margin-top:var(--s2)}
+.bar{display:grid;grid-template-columns:150px minmax(0,1fr) 56px;align-items:center;gap:12px;padding:5px 0}
+.bar .nm{font-size:13.5px}
+.bar .tr{height:14px}
+.bar .fl{height:100%;background:var(--slate-500)}
+.bar .vl{font-size:13.5px;text-align:right}
+/* sidebar TOC */
+.layout{display:grid;grid-template-columns:220px minmax(0,912px);gap:56px;justify-content:center;max-width:1240px;margin:0 auto}
+.layout .page{margin:0;max-width:none;min-width:0;padding-left:0;padding-right:0}
+.side{position:relative}
+.side-in{position:sticky;top:calc(env(safe-area-inset-top,0px) + 32px);max-height:calc(100vh - 64px);overflow-y:auto;padding:var(--s6) 0 24px}
+.side-t{font-size:12px;letter-spacing:1.5px;color:var(--muted);margin:0 0 14px 12px}
+#tocnav{display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--rule)}
+#tocnav a{display:block;white-space:pre;overflow:hidden;text-overflow:ellipsis;text-decoration:none;color:var(--muted);font-size:13.5px;line-height:1.5;padding:6px 12px;margin-left:-1px;border-left:1px solid transparent}
+#tocnav a:hover{color:var(--text)}
+#tocnav a.l3{padding:3px 12px 3px 24px;font-size:12.5px}
+#tocnav a.l3[hidden]{display:none}
+#tocnav a.on{color:var(--text);border-left-color:var(--text)}
+#tocnav a.l2.cur{color:var(--text)}
+.page h2[id],.page h3[id]{scroll-margin-top:24px}
+@media (max-width:1100px){.layout{display:block}.side{display:none}.layout .page{margin:0 auto;max-width:var(--page-w);padding-left:var(--s3);padding-right:var(--s3)}}
+@media (max-width:760px){:root{--fs-display:32px}.page{padding:var(--s4) var(--s2) var(--s6)}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:var(--s3)}.kpi .v{white-space:normal}.bar{grid-template-columns:110px minmax(0,1fr) 48px}}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="side" aria-label="目录"><div class="side-in"><div class="side-t">目录</div><nav id="tocnav"></nav></div></aside>
+<main class="page">
+
+<h1>2026.11.24 | Primer | Kernel</h1>
+<p class="tags">#kernel #cuda #pytorch #triton #pallas #primer #nvda #googl #avgo #amd</p>
+<p class="meta">v1 · 内部 · 复查 2027.02.28</p>
+<p class="lede">Kernel 是模型里每一步数学运算在芯片上的具体做法。这份 primer 讲清楚它是什么、为什么同一块芯片跑出来的速度能差几倍、它和 PyTorch、CUDA 是什么关系、会写的人为什么少，以及这些对 NVIDIA 和自研芯片意味着什么。把之前几次讨论 (CUDA 是什么、kernel 调优、TPU 外部化) 收成了一篇。</p>
+
+<div class="summary">
+<p>Kernel 决定了同一块芯片实际能干多少活：FlashAttention 只改了计算顺序，数学结果不变，GPT-2 训练就快了 3 倍。</p>
+<p>标准运算有 NVIDIA 写好的库和编译器自动生成；真正要人手写的，是新的模型结构、特殊的数据形状和新芯片。会写的人很少，而且换一种芯片，就要从头写一遍。</p>
+<p>NVIDIA 的护城河，具体就是这批已经写好的 kernel 和会写的人。AI 自己写 kernel 是唯一可能很快改变这一点的变量，但到 2026 年 7 月，经过严格验证，最好的模型写出来的 kernel 平均还是比 PyTorch 自带的慢。</p>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="l">FlashAttention 让 GPT-2 训练提速</div><div class="v">3×</div><div class="n">同样的数学，只改了计算顺序 (Dao 等，2022)</div></div>
+  <div class="kpi"><div class="l">Llama 3 405B 训练的算力利用率</div><div class="v">38–43%</div><div class="n">Meta 在 1.6 万颗 H100 上的实测，已经是顶尖水平</div></div>
+  <div class="kpi"><div class="l">用 Triton 写一个追平 cuBLAS 的矩阵乘法</div><div class="v">~25 行</div><div class="n">OpenAI，2021。门槛在降，但只限常见运算</div></div>
+  <div class="kpi"><div class="l">AI 写的 kernel，严格验证后的平均速度</div><div class="v">0.88×</div><div class="n">最好的 GPT-5.5，相对 PyTorch (Meta，2026.07)</div></div>
+</div>
+
+<section class="sec">
+<h2 id="fu">Follow-up (复查 2027.02.28)</h2>
+<div class="fu">
+<p><strong>AI 写 kernel 的严格验证成绩。</strong>它是唯一能很快打破"会写的人少"这个瓶颈的变量。现在的基线：Meta 的 KernelBench-Verified 上，最好的模型平均速度只有 PyTorch 的 0.88 倍，每道题挑最好的一个样本，也只有约一半的题能跑赢。看到平均超过 1.2 倍、作弊被堵住，说明 kernel 不再靠人，AMD 和各家自研芯片追赶会明显加快；一直低于 1 倍，说明人仍然是瓶颈。</p>
+<p><strong>新模型在非 NVIDIA 芯片上的上线速度。</strong>这是 kernel 存量差距最直接的读数。现在的基线 (我们的判断)：新模型在 N 卡上通常发布当天就能跑得不错；在 TPU 上要靠 Google 和外部团队 (Inferact、RadixArk) 一个模型一个模型地写。看到 TPU、Trainium 也能发布当天上线且效率接近，说明护城河在变浅；仍然要等几周，说明没变。</p>
+<p><strong>同一个模型在不同芯片上的实测吞吐，随时间怎么变。</strong>它直接决定我们 1GW capex 比较里"每 MW 产出多少"那一项。现在的基线：SemiAnalysis 报道 TPUv7 在一个推理榜上一度超过 GB300，NVIDIA 随后组织工程师和 agent 加班追回。差距持续缩小，说明 kernel 差距在缩；来回拉锯，说明双方都在靠人堆，谁人多谁赢。</p>
+</div>
+</section>
+
+<section class="sec">
+<h2 id="s1">1. Kernel 是什么</h2>
+<div class="prose">
+<p><strong>一句话：kernel 是一段跑在 GPU (或 TPU) 上的小程序，负责把模型里某一步数学运算真正算出来。</strong></p>
+<h3>底层怎么工作</h3>
+<ul>
+<li>一个大模型说到底是一长串数学运算：矩阵乘法、attention、softmax、layernorm 等等。跑一次推理，背后要依次执行几百到上千个这样的步骤</li>
+<li>每一步要在芯片上跑起来，都得有人把细节写清楚：数据从哪里搬来、切成多大的块、几千个计算单元各算哪一块、算完放到哪里。这段"具体做法"就是 kernel</li>
+<li>同一个运算，可以有很多种写法，数学结果完全一样，速度可以差好几倍</li>
+</ul>
+<h3>一个贯穿全篇的比喻：厨房</h3>
+<ul>
+<li><strong>GPU 是一个有几千个厨师的大厨房。</strong>每个厨师只会切和炒这种简单动作，但可以同时开工</li>
+<li><strong>HBM (显存) 是后面的大仓库</strong>：东西放得多，但离灶台远，来回一趟慢</li>
+<li><strong>片上 SRAM 是每个灶台边的小台面</strong>：伸手就能拿到，很快，但只放得下一点点</li>
+<li><strong>模型是菜单，kernel 是每道菜在这间厨房里的作业指导书 (SOP)</strong>：先从仓库拿哪些料、在台面上怎么摆、厨师怎么分工、做好的菜放哪</li>
+</ul>
+<h3>核心指标：算力利用率 (MFU)</h3>
+<p>厨师们实际在炒菜的时间，占全部时间的比例。理论峰值是所有厨师一刻不停地炒；实际上很多时间在等料从仓库运过来。Meta 训练 Llama 3 405B 时，在 8,192 到 16,384 颗 H100 上做到了 38–43%，这已经是业内顶尖的水平。也就是说，即使是最好的团队，一半以上的算力也在空等。</p>
+<h3>举个例子：FlashAttention</h3>
+<p>原来的 attention 做法，每算完一步，就把中间结果送回仓库，下一步再从仓库取出来。FlashAttention 把数据切成刚好放得下台面的小块，在台面上一口气做完几步，大大减少了跑仓库的次数。数学结果完全一样，GPT-2 训练快了 3 倍，长文本 (1K–4K 长度) 的任务快了 2.4 倍；省下来的内存，也让以前跑不动的 16K、64K 长度第一次能跑出有意义的结果。</p>
+<h3>现在到哪一步</h3>
+<ul>
+<li>标准运算 (常见尺寸的矩阵乘法等)：NVIDIA 的现成库已经调得很好，大部分人直接用</li>
+<li>新的模型结构、新芯片：靠各家团队手写</li>
+<li>编译器能自动生成一部分 (见第 3 节)</li>
+<li>AI 自动写 kernel：还在实验阶段，严格验证下还跑不赢现成实现 (见第 6 节)</li>
+</ul>
+</div>
+<p class="one">一句话：厨房和菜单都一样，SOP 写得好坏，出菜速度能差几倍，这份 SOP 就是 kernel。</p>
+</section>
+
+<section class="sec">
+<h2 id="s2">2. 机制：快慢从哪来</h2>
+<div class="prose">
+<p>大多数时候，慢的不是"算"，而是"搬"。FlashAttention 的论文以 A100 为例：仓库 (HBM) 有 40–80GB，每秒能搬约 1.5–2.0TB；台面 (SRAM) 每个计算单元只有 192KB，但每秒能搬约 19TB。仓库比所有台面加起来还大约 2,000 倍，但台面快大约 10 倍。所以写 kernel 的核心问题是：怎么让厨师尽量少跑仓库。</p>
+</div>
+<figure class="fig">
+  <div class="title">GPU 的厨房：仓库大但远，台面快但小</div>
+  <svg viewBox="0 0 860 210" role="img" aria-label="HBM、SRAM 和计算单元三层的示意图">
+    <rect x="0" y="40" width="250" height="120" rx="8" fill="var(--slate-100)"/>
+    <text x="125" y="82" text-anchor="middle" font-size="15" font-weight="600" fill="var(--text)">仓库 = HBM (显存)</text>
+    <text x="125" y="108" text-anchor="middle" font-size="12.5" fill="var(--muted)">A100：40–80GB</text>
+    <text x="125" y="128" text-anchor="middle" font-size="12.5" fill="var(--muted)">每秒 1.5–2.0TB</text>
+    <rect x="305" y="55" width="250" height="90" rx="8" fill="var(--slate-300)"/>
+    <text x="430" y="92" text-anchor="middle" font-size="15" font-weight="600" fill="#141413">台面 = 片上 SRAM</text>
+    <text x="430" y="116" text-anchor="middle" font-size="12.5" fill="#141413">每单元 192KB，每秒约 19TB</text>
+    <rect x="610" y="40" width="250" height="120" rx="8" fill="var(--slate-500)"/>
+    <text x="735" y="92" text-anchor="middle" font-size="15" font-weight="600" fill="#FFFFFF">厨师 = 计算单元</text>
+    <text x="735" y="116" text-anchor="middle" font-size="12.5" fill="#FFFFFF">算得最快，常常在等料</text>
+    <line x1="254" y1="100" x2="300" y2="100" stroke="var(--muted)" stroke-width="2"/>
+    <polygon points="300,95 300,105 306,100" fill="var(--muted)"/>
+    <line x1="559" y1="100" x2="605" y2="100" stroke="var(--muted)" stroke-width="2"/>
+    <polygon points="605,95 605,105 611,100" fill="var(--muted)"/>
+    <text x="277" y="190" text-anchor="middle" font-size="12.5" fill="var(--muted)">慢的一段</text>
+    <text x="582" y="190" text-anchor="middle" font-size="12.5" fill="var(--muted)">快的一段</text>
+  </svg>
+  <figcaption>数字来自 FlashAttention 论文对 A100 的描述；新一代芯片数字更大，但"仓库慢、台面小"的比例关系没变。</figcaption>
+</figure>
+<div class="prose">
+<h3>写 kernel 常用的四招</h3>
+</div>
+<div class="tbl"><table class="t">
+<thead><tr><th>手法</th><th>做什么</th><th>厨房里的意思</th></tr></thead>
+<tbody>
+<tr><td>融合 (fusion)</td><td>把几个小运算合成一个 kernel，中间结果不写回 HBM</td><td>切、腌、炒在同一个台面上一口气做完，不把半成品送回仓库</td></tr>
+<tr><td>分块 (tiling)</td><td>把大矩阵切成刚好装进 SRAM 的小块</td><td>每次只拿一台面装得下的料</td></tr>
+<tr><td>用专用单元</td><td>用好 Tensor Core、FP8 / FP4 低精度单元</td><td>用上专门的切菜机，但得照它的规矩摆料</td></tr>
+<tr><td>搬算重叠</td><td>这一块在算的同时，下一块已经在路上</td><td>厨师炒这锅的时候，下一锅的料已经在推车上</td></tr>
+</tbody></table></div>
+<div class="prose" style="margin-top:var(--s3)">
+<h3>性能是三段串起来的，最弱的一段说了算</h3>
+<ul>
+<li><strong>算什么</strong> (模型结构)：由模型团队决定</li>
+<li><strong>怎么在这块芯片上算</strong> (kernel)：由芯片厂的库、框架和编译器、各家 infra 团队决定</li>
+<li><strong>芯片能算多快</strong> (硬件)：由芯片厂决定</li>
+</ul>
+<p>硬件参数可以在发布会上一次说清楚，kernel 却要一个运算一个运算地补。新模型、新芯片刚出来的时候，卡住的几乎总是中间这一段。</p>
+</div>
+<p class="one">一句话：同一块芯片的实际产出，取决于 kernel 能让它少等多少料。</p>
+</section>
+
+<section class="sec">
+<h2 id="s3">3. 和 PyTorch、CUDA、Triton 是什么关系</h2>
+<div class="prose">
+<p>研究员写的是 PyTorch (或 Google 的 JAX)，几乎不碰 kernel。PyTorch 更像点菜系统：把菜单上的每道菜，变成厨房里一张张具体的工单。工单落到厨房，最后执行的还是 kernel。</p>
+</div>
+<figure class="fig">
+  <div class="title">从一行 PyTorch 代码到芯片上跑的 kernel</div>
+  <svg viewBox="0 0 860 330" role="img" aria-label="软件栈分层图">
+    <rect x="0" y="0" width="860" height="52" rx="8" fill="var(--slate-100)"/>
+    <text x="20" y="32" font-size="15" font-weight="600" fill="var(--text)">模型代码</text>
+    <text x="200" y="32" font-size="13.5" fill="var(--muted)">研究员写的 PyTorch / JAX，比如 y = attention(q, k, v)</text>
+    <rect x="0" y="70" width="860" height="52" rx="8" fill="var(--slate-100)"/>
+    <text x="20" y="102" font-size="15" font-weight="600" fill="var(--text)">算子</text>
+    <text x="200" y="102" font-size="13.5" fill="var(--muted)">PyTorch 约 750 个标准算子 (矩阵乘、softmax……)，每个都要有对应的 kernel</text>
+    <rect x="0" y="140" width="276" height="112" rx="8" fill="var(--slate-300)"/>
+    <text x="16" y="168" font-size="15" font-weight="600" fill="#141413">① 厂商现成的库</text>
+    <text x="16" y="194" font-size="13" fill="#141413">cuBLAS、cuDNN (NVIDIA)</text>
+    <text x="16" y="216" font-size="13" fill="#141413">不用写，直接调</text>
+    <text x="16" y="238" font-size="13" fill="#141413">只覆盖标准运算</text>
+    <rect x="292" y="140" width="276" height="112" rx="8" fill="var(--slate-300)"/>
+    <text x="308" y="168" font-size="15" font-weight="600" fill="#141413">② 编译器自动生成</text>
+    <text x="308" y="194" font-size="13" fill="#141413">torch.compile → Triton 代码</text>
+    <text x="308" y="216" font-size="13" fill="#141413">TPU 上是 XLA</text>
+    <text x="308" y="238" font-size="13" fill="#141413">能自动融合一部分</text>
+    <rect x="584" y="140" width="276" height="112" rx="8" fill="var(--slate-500)"/>
+    <text x="600" y="168" font-size="15" font-weight="600" fill="#FFFFFF">③ 人手写</text>
+    <text x="600" y="194" font-size="13" fill="#FFFFFF">CUDA C++、CUTLASS、Triton</text>
+    <text x="600" y="216" font-size="13" fill="#FFFFFF">TPU 上是 Pallas</text>
+    <text x="600" y="238" font-size="13" fill="#FFFFFF">新结构、最后那截性能</text>
+    <rect x="0" y="270" width="860" height="52" rx="8" fill="var(--slate-800)"/>
+    <text x="20" y="302" font-size="15" font-weight="600" fill="#FFFFFF">芯片</text>
+    <text x="200" y="302" font-size="13.5" fill="#FFFFFF">NVIDIA GPU、AMD GPU、Google TPU、AWS Trainium……每种都要自己的一套 kernel</text>
+  </svg>
+  <figcaption>算子数量来自 PyTorch 2.x 官方文档 (算上各种重载有 2,000 多个)；torch.compile 在 NVIDIA 和 AMD GPU 上通过 Triton 生成代码。</figcaption>
+</figure>
+<div class="prose">
+<h3>几个常被混在一起的名字</h3>
+</div>
+<div class="tbl"><table class="t">
+<thead><tr><th>名字</th><th>是什么</th><th>谁做的</th><th>能跑在哪</th><th>难度</th></tr></thead>
+<tbody>
+<tr><td>PyTorch</td><td>写模型用的框架，点菜系统</td><td>Meta 起家，现归 PyTorch 基金会</td><td>都能</td><td>研究员日常</td></tr>
+<tr><td>CUDA</td><td>在 NVIDIA 卡上写 kernel 的语言和工具，外加一大本现成的 SOP (库)</td><td>NVIDIA</td><td>只有 NVIDIA</td><td>难</td></tr>
+<tr><td>cuBLAS / cuDNN</td><td>NVIDIA 写好、调好的标准 kernel 库</td><td>NVIDIA</td><td>只有 NVIDIA</td><td>不用写，直接调</td></tr>
+<tr><td>CUTLASS</td><td>写高性能矩阵乘法的模板库</td><td>NVIDIA</td><td>只有 NVIDIA</td><td>难</td></tr>
+<tr><td>Triton</td><td>用类似 Python 的写法写 kernel</td><td>OpenAI</td><td>NVIDIA、AMD</td><td>中等</td></tr>
+<tr><td>torch.compile</td><td>自动把几个运算合并，并生成 Triton 代码</td><td>PyTorch</td><td>NVIDIA、AMD 等</td><td>不用写</td></tr>
+<tr><td>XLA / Pallas</td><td>Google 的编译器 / 手写 TPU kernel 的语言</td><td>Google</td><td>TPU (Pallas 也支持 GPU)</td><td>中等到难</td></tr>
+</tbody></table></div>
+<div class="prose" style="margin-top:var(--s3)">
+<ul>
+<li><strong>CUDA 不会自动把 kernel 写好。</strong>它是工具加一本现成的 SOP。用 CUDA 能写出很快的 kernel，也能写出很慢的</li>
+<li><strong>Triton 把门槛拉低了一截。</strong>OpenAI 2021 年说，用 Triton 不到 25 行代码就能写出和 cuBLAS 一样快的 FP16 矩阵乘法，这是很多 GPU 程序员做不到的。但这说的是最常见的运算；新结构和最后那截性能，仍然要懂硬件的人来抠</li>
+<li><strong>每种芯片要自己的一套。</strong>CUDA kernel 搬不到 TPU 上，TPU 的 Pallas kernel 也搬不到 N 卡上。厨房布局不同，SOP 就得重写</li>
+</ul>
+</div>
+<p class="one">一句话：研究员写 PyTorch，PyTorch 调 kernel，kernel 才真正在芯片上跑；CUDA 是 N 卡上写 kernel 的工具和现成的 kernel 库。</p>
+</section>
+
+<section class="sec">
+<h2 id="s4">4. 一句话规则：什么时候要人手写</h2>
+<div class="prose">
+<p><strong>规则：这个运算的"结构、形状、芯片"三样里，只要有一样是现成库和编译器没覆盖到的，就要有人手写；三样都是常见的，直接用现成的就够了。</strong></p>
+</div>
+<div class="tbl"><table class="t">
+<thead><tr><th>场景</th><th>现成的能覆盖吗</th><th>要不要手写</th><th>例子</th></tr></thead>
+<tbody>
+<tr><td>常见尺寸的矩阵乘法</td><td>能 (cuBLAS)</td><td>不用</td><td>自己重写很难赢</td></tr>
+<tr><td>新的 attention 结构</td><td>不能</td><td>要</td><td>DeepSeek 自己写并开源了 FlashMLA、DeepGEMM</td></tr>
+<tr><td>推理时 batch 很小、要求低延迟</td><td>部分</td><td>常常要</td><td>把整个 decode 步骤写成一个大 kernel (megakernel)</td></tr>
+<tr><td>新一代芯片的新指令 (比如 FP4)</td><td>刚出时不全</td><td>要</td><td>新卡上市后，库要过一段时间才把新指令完全用上</td></tr>
+<tr><td>非 NVIDIA 的芯片</td><td>库薄得多</td><td>大量要</td><td>Google 请 vLLM 创始人的公司 Inferact 一起把 vLLM 搬上 TPU</td></tr>
+</tbody></table></div>
+<div class="prose" style="margin-top:var(--s3)">
+<h3>为什么这件事值钱</h3>
+<p>利用率每提高一点，都是直接省下来的设备钱。用我们 v1 sizing 里的数算一遍：一个 1GW 的 VR NVL72 集群，IT capex 约 $41.6bn。如果 kernel 优化把利用率从 40% 提到 50%，同样的设备多出 25% 的产出；换个角度说，要达到原来的产出，只需要买 $41.6bn ÷ 1.25 = $33.3bn 的设备，<strong>相当于省下 $8.3bn</strong>。对每天跑几百亿 token 的实验室，这就是养一支 kernel 团队的理由。</p>
+<p class="note">算式：省下的 capex = IT capex × (1 − 原利用率 ÷ 新利用率) = $41.6bn × (1 − 40% ÷ 50%)。40% 和 50% 是举例用的假设，不是实测。</p>
+</div>
+<p class="one">一句话：结构、形状、芯片三样都常见，用现成的；有一样是新的，就要人写，而写好的那部分直接变成省下来的 capex。</p>
+</section>
+
+<section class="sec">
+<h2 id="s5">5. 会写的人为什么少</h2>
+<div class="prose">
+<ul>
+<li><strong>要同时懂三样东西。</strong>芯片内部怎么搬数据、怎么算 (存储层级、专用指令)；数值精度会不会出问题 (FP8、FP4 下的溢出和误差)；这个运算在模型里是干什么的。三样都懂的人很少</li>
+<li><strong>技能不能直接迁移。</strong>CUDA 上的经验搬到 TPU 要重新学一套内存模型和写法。过去十年，会写 TPU kernel 的人基本只在 Google 内部有市场，外面几乎没有人学</li>
+<li><strong>活永远干不完。</strong>每出一个新的模型结构、每出一代新芯片，都要重新写一遍。不是写完就结束的工程，是一直要有人跟着</li>
+</ul>
+<h3>市场上看到的证据</h3>
+<ul>
+<li>Google 为了让 TPU 跑好 vLLM 和 SGLang，找外部团队一起开发：vLLM-TorchTPU 是和 vLLM 创始人创办的 Inferact 合作做的，SGLang 那边有 RadixArk 参与。连 Google 都要从外面借人</li>
+<li>SemiAnalysis 报道，TPUv7 在一个推理榜上一度超过 GB300 之后，NVIDIA 组织了工程师加 agent 连夜优化追回。拉开或追回性能差距，靠的就是这批人</li>
+<li>推理服务商 (Fireworks、Together 等) 卖的就是"比你自己跑更快更便宜"，核心就是自己写的 kernel，比如 Together 的首席科学家是 FlashAttention 的作者</li>
+<li>薪酬：没有找到可靠的公开数据，这里不写数字</li>
+</ul>
+</div>
+<p class="one">一句话：会写 kernel 的人要同时懂芯片、数值和模型，技能换一种芯片就要重来，活还永远干不完，所以连 Google 都要从外面借人。</p>
+</section>
+
+<section class="sec">
+<h2 id="s6">6. 最容易被误读的几点</h2>
+<div class="tbl"><table class="t">
+<thead><tr><th>大家以为</th><th>实际</th></tr></thead>
+<tbody>
+<tr><td>CUDA 会自动把 kernel 做好</td><td>CUDA 是工具加一本现成的 SOP。现成的只覆盖标准运算，新结构要人写</td></tr>
+<tr><td>编译器 (torch.compile) 很快会取代手写</td><td>编译器能自动拿到一部分好处；前沿实验室的关键 kernel 仍然手写，因为最后那截差距就是钱</td></tr>
+<tr><td>芯片参数好，就能跑得好</td><td>实际产出取决于 kernel 有没有写好。新芯片刚发布时的 benchmark，往往低估它半年后的水平</td></tr>
+<tr><td>AI 已经能自己写 kernel 了</td><td>2025 年的 KernelBench：模型写的 kernel 平均不到 20% 的题能跑赢 PyTorch。2026 年 7 月 Meta 做了更严格的验证：最好的模型平均速度只有 PyTorch 的 0.88 倍，还发现有模型靠跳过计算"作弊"</td></tr>
+</tbody></table></div>
+<figure class="fig">
+  <div class="title">AI 写的 kernel：每道题挑最好的一个，能跑赢 PyTorch 的题目比例</div>
+  <div class="bars" id="kb"></div>
+  <figcaption>KernelBench-Verified (Meta 等，2026.07)：约 250 道题，H200，每题采样 5 次取最好的那个。即便如此，所有模型的平均速度都低于 PyTorch (最好的 GPT-5.5 为 0.88×)；按原来较松的测法，GPT-5.5 是 1.43×。</figcaption>
+</figure>
+<p class="one">一句话：AI 写 kernel 在进步，但到 2026 年 7 月，严格验证下平均还跑不赢 PyTorch 自带的实现，"人少"这个瓶颈还在。</p>
+</section>
+
+<section class="sec">
+<h2 id="s7">7. 对投资意味着什么</h2>
+<div class="prose">
+<ul>
+<li><strong>NVIDIA 的护城河是一个可以数的存量：</strong>多少个模型、多少个算子、已经有人花了多少工程师小时调好。中小客户和长尾模型没有能力自己写，这部分护城河最稳</li>
+<li><strong>自研芯片要一个模型一个模型地补。</strong>Google、Anthropic 这样有全栈团队的玩家补得起，所以 TPU 能在最大的几个客户身上拿份额；没有团队的客户，买 N 卡最省事</li>
+<li><strong>和我们 1GW capex 工作的关系：</strong>我们比的是每 GW 花多少钱，但客户真正比的是每 MW 能产出多少 token。这个产出差距，有很大一部分就是 kernel 差距，而且会随时间变。新芯片刚出来时的对比，容易低估还在补 kernel 的一方</li>
+<li><strong>最大的变量是 AI 写 kernel。</strong>如果它真的能稳定跑赢人写的版本，门槛会大幅下降，最受益的是 AMD 和各家自研芯片，NVIDIA 的软件优势会变薄。这目前还只是"理论上可能"，严格验证的数据还不支持</li>
+</ul>
+</div>
+<p class="one">一句话：kernel 是 CUDA 护城河的具体内容，自研芯片能不能追上，看的是人和 AI 写 kernel 的速度，而不是硬件参数。</p>
+</section>
+
+<section class="sec">
+<h2 id="ev">证据分级与来源</h2>
+<div class="tbl"><table class="t">
+<thead><tr><th>内容</th><th>来源</th><th>类型</th></tr></thead>
+<tbody>
+<tr><td>FlashAttention 提速 3× (GPT-2)、2.4× (长文本)；A100 的 HBM 和 SRAM 参数</td><td>Dao 等，arXiv 2205.14135 (2022)</td><td>论文，一手，作者自测</td></tr>
+<tr><td>Llama 3 405B 训练 MFU 38–43%</td><td>Meta，The Llama 3 Herd of Models (2024)</td><td>论文，一手，自测</td></tr>
+<tr><td>Triton 25 行追平 cuBLAS</td><td>OpenAI 博客 (2021.07)</td><td>官方，一手，自测</td></tr>
+<tr><td>PyTorch 约 750 个标准算子；torch.compile 生成 Triton</td><td>PyTorch 2.x 官方文档</td><td>官方，一手</td></tr>
+<tr><td>AI 写 kernel：2025 年不到 20%；2026 年最好 0.88×</td><td>KernelBench (Stanford，2025.02)；KernelBench-Verified (Meta 等，2026.07)</td><td>论文，一手，第三方测评</td></tr>
+<tr><td>vLLM-TorchTPU 与 Inferact 合作</td><td>Google Developers Blog (2026.10.20)</td><td>官方，一手</td></tr>
+<tr><td>NVIDIA 组织工程师和 agent 追回推理榜</td><td>SemiAnalysis (2026.11.05)</td><td>第三方报道</td></tr>
+<tr><td>"新模型在 N 卡上当天能跑、在 TPU 上要等几周"</td><td>我们的判断，基于此前讨论</td><td>未验证</td></tr>
+</tbody></table></div>
+<p class="note" style="margin-top:var(--s2)">Changelog：v1 (2026.11.24) 把此前关于 CUDA、kernel 调优和 TPU 外部化的讨论收成一篇；补了 KernelBench-Verified 的最新数据。</p>
+</section>
+
+</main>
+</div>
+<script>
+{
+  const kb=[["GPT-5.5",53.0],["Gemini 3.1 Pro",51.4],["Gemini 3 Flash",42.9],["Claude Opus 4.8",42.1],["Kimi K2.6",40.9],["Claude Opus 4.7",40.5],["Claude Sonnet 4.6",39.7]];
+  document.getElementById('kb').innerHTML=kb.map(([n,v])=>`<div class="bar"><div class="nm">${n}</div><div class="tr"><div class="fl" style="width:${v}%"></div></div><div class="vl">${v.toFixed(1)}%</div></div>`).join('');
+  const nav=document.getElementById('tocnav');
+  const hs=[...document.querySelectorAll('.page section h2')];
+  const S=[['Follow-up','Follow-up'],['1.','1  是什么'],['2.','2  机制'],['3.','3  软件栈'],['4.','4  规则'],['5.','5  人'],['6.','6  误读'],['7.','7  投资'],['证据','证据与来源']];
+  const short=t=>{const m=S.find(([k])=>t.startsWith(k));return m?m[1]:t;};
+  nav.innerHTML=hs.map(h=>`<a href="#${h.id}" class="l2" data-id="${h.id}">${short(h.textContent.trim())}</a>`).join('');
+  const links=[...nav.querySelectorAll('a')];
+  function upd(){let cur=hs[0].id;for(const h of hs){if(h.getBoundingClientRect().top<140)cur=h.id;else break;}links.forEach(a=>a.classList.toggle('on',a.dataset.id===cur));}
+  addEventListener('scroll',upd,{passive:true});upd();
+}
+</script>
+</body>
+</html>
