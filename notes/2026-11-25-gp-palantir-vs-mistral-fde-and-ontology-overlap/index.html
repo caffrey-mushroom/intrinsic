@@ -1,0 +1,323 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.25 | GP | Software | Palantir vs. Mistral FDE and Ontology Overlap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.25 | GP | Software | Palantir vs. Mistral FDE and Ontology Overlap</h1>
+<p class="orig">原标题：Palantir: Mistral Overlaps in Forward-Deployed Engineers and Platforms, as Well as the Ontology Debate</p>
+<p class="tags">#software #agents #llm #ai-demand</p>
+<p class="meta">GuidePoint · 2026-11-25</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>PLTR与Mistral在前沿部署工程师（FDE）与企业AI平台存在直接竞争，Mistral直接从PLTR招募人才并沿用已运营约2.5年的FDE模式，主要服务缺乏内部AI能力、运行在老旧基础设施上的传统企业。</li>
+<li>双方商业合同普遍打包软件、算力与人力服务，典型试点金额为数十万美元，中型企业年合同约50万至数百万美元，超大型项目年合同超1,000万美元；在航空航天多物理场等定制化应用科学案例中，FDE方案可带来约30%的性能提升。</li>
+<li>两家平台的核心分歧在于Ontology（本体论）：PLTR Foundry强制将原始数据映射至受治理的对象层，在监管严格行业和可解释性上占优（因AI当前价值仍低且常自信地犯错）；Mistral Studio允许直接接入CSV等原始数据，灵活性更高但初期效果与治理稳定性较弱。</li>
+<li>AI Agent正显著压缩企业级实施文档与项目管理工时，例如原本需数周完成的安全与架构合规文档（ARD）现仅需数小时，PPT制作从一天缩至5分钟，但梳理复杂企业需求与内部决策对齐仍难以自动化。</li>
+<li>传统垂直SaaS的护城河正被Agent瓦解，年营收约1亿美元的垂类软件可被训练良好的Agent在数月内低成本复制，迫使Shift Technology等SaaS厂商转向FDE交付，Mistral自身也极少外购软件许可。</li>
+<li>欧洲数据主权顾虑与国防标签正令PLTR承压，德国部分政府立场已转向排斥PLTR，空客在早年合作失败后转投Mistral；此外主权客户要求“本地人员+本地模型”，Mistral曾因指派中国籍FDE遭欧洲主权客户拒绝，依托法国政界支持占据地利。</li>
+<li>OpenAI与Anthropic近1至5个月才开始在欧洲早期搭建FDE团队，面对本地化部署（如交付Docker镜像与数周安全审批门禁）及各行业连接器定制需求，其现有产品管线与组织架构将面临显著转型阵痛。</li>
+</ol></section>
+<div class="body">
+<p>Primary:</p>
+<p>Mistral AI SAS</p>
+<p>PLTR</p>
+<p>Associated:</p>
+<p>MSFT</p>
+<p>GOOGL</p>
+<p>META</p>
+<p>Hangzhou DeepSeek Artificial Intelligence Co., Ltd.</p>
+<p>Beijing Moonshot AI Technology Co., Ltd.</p>
+<p>2513:HK</p>
+<p>BABA</p>
+<p>OpenAI Group PBC</p>
+<p>NVDA</p>
+<p>100:HK</p>
+<p>ANT</p>
+<p>Viewpoint:</p>
+<p>Competitor</p>
+<p>Moderator: Eileen Segall (ES)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Nov 24, 2026</td><td>32 Min Read</td></tr></tbody></table></div>
+<p>Jean-Christophe Boulon (JB), Founding Lead for Customer Success - Mistral AI SAS</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The expert, who works in enterprise success at an AI company, discussed how forward-deployed engineers (FDEs) help businesses implement AI, and compared Mistral’s platform with Palantir’s Foundry. The conversation also covered data sovereignty, partnerships, pricing, and how AI may change enterprise software and implementation work.</p>
+<p>Key Insights</p>
+<p>FDEs are especially valuable to traditional businesses that lack in-house AI expertise. They help with infrastructure, tailored applications, and specialized scientific work. AI-native firms are less likely to need this support. FDEs can accelerate early deployments and train customer teams to take over routine work. Expert-led applied science projects may still require vendor specialists. AI can substantially reduce documentation, project coordination, and data-migration effort. However, understanding a customer’s needs and navigating internal decision-making remain difficult to automate. The expert sees Palantir’s structured data ontology as a strength when governance and reliable outputs matter, particularly in regulated settings. Mistral’s more flexible approach may be easier to adapt, but can require more initial work and produce weaker early results. European data sovereignty concerns may create opportunities for Mistral and challenges for Palantir, although national relationships and perceptions vary. Palantir’s established deployments and switching costs remain meaningful advantages.</p>
+<p>Competitive Landscape</p>
+<p>11/25/2026 at 05:12 AM UTC</p>
+<p>Company or group</p>
+<p>Positioning and competitive factors</p>
+<p>Palantir</p>
+<p>Mistral</p>
+<p>Experienced in FDE-led deployments and offers a structured ontology through Foundry. The expert noted its expanding work with systems integrators, while its defense-oriented image and sovereignty concerns may hinder some European opportunities.</p>
+<p>Offers flexible data connections, models, infrastructure, and deployment support. The expert sees its technical deployment experience and European identity as advantages, while acknowledging that its less structured approach may take time to deliver strong results.</p>
+<p>OpenAI and Anthropic</p>
+<p>Building enterprise deployment capabilities, but the expert characterized these efforts as early. On-premises requirements and varied customer needs could force changes to teams, infrastructure, and product priorities.</p>
+<p>Systems integrators and consultants</p>
+<p>Can help customers scale implementation and develop internal capability. They may be less suited to specialized scientific work, and partnerships can reduce vendor control and complicate commercial arrangements.</p>
+<p>Vertical SaaS firms</p>
+<p>Some are shifting toward FDE-style delivery as AI agents threaten to replicate parts of their software products.</p>
+<p>Quantitative Insights</p>
+<p>Metric</p>
+<p>Detail</p>
+<p>Mistral FDE experience</p>
+<p>About 2.5 years</p>
+<p>Typical pilot</p>
+<p>A few hundred thousand</p>
+<p>Mid-market enterprise contract</p>
+<p>Roughly $500,000 to a few million annually</p>
+<p>Very large deals</p>
+<p>More than $10 million annually</p>
+<p>Specialized analytics example</p>
+<p>The expert cited a potential 30% performance improvement in a tailored aerospace use case</p>
+<p>AI-assisted documentation</p>
+<p>Work that previously took weeks may now take hours</p>
+<p>Pricing</p>
+<p>Deals commonly combine software, computing, and staff, with terms tailored to the use case and customer needs. Mistral publishes token rates but may negotiate on large contracts.</p>
+<p>ES: Hi everyone, this is Eileen from Guidepoint. I'll be your moderator today to discuss the topic of Palantir, where Mistral overlaps in forward-deployed engineers, platforms, and the ontology debate. And on the phone with me, I have Jean-Christophe Boulon. And J.C., a quick disclaimer, please don't discuss security prices, valuations, investment holdings, or investment recommendations, and please limit the discussion to your own observations in the industry. Don't share any material, non-public information about any public companies, including unreleased product</p>
+<p>11/25/2026 at 05:12 AM UTC</p>
+<p>roadmaps, unannounced earnings figures, and please also don't share confidential customer contract terms or specific clients by name. And for those listening to the call, if you have any questions, please send them to ask@guidepoint.com and I can read them anonymously. Now, J.C., would you please start with describing your background for those who may be listening to us for the first time that would be relevant to the topic of this call today, and welcome.</p>
+<p>JB: Thank you, Eileen. So my name is J.C. I worked a bit in research and aerospace in California. And more recently, I worked in tech for 5 years in London for a vertical SaaS company, and I joined Mistral 5 months ago to be the head of enterprise success. And so it's making sure that our products that we deploy to our customers with our FDEs see value and get adoption. So we compete in the space, sometimes with Palantir and other AI labs, GSIs and internal competition.</p>
+<p>ES: Yeah, I definitely want to delve into that now. Thank you for the background. Let's start by talking about the forward-deployed engineer model. It's one thing that Palantir is really known for. And why do you think that model was so successful for them when they first started it?</p>
+<p>JB: Yeah, well, they sort of invented it, right? And I think it was at a time where the products they deployed and the things they were deployed were so specific that companies just didn't have the people, neither did consulting firms or other GSIs. So they really were developing something cutting edge and they realized they need specific people for it. So at the time, it was very much, not only was it needed, it was very much an edge for them to be successful and for their clients to be successful.</p>
+<p>ES: And when you think about forward deployed engineering at Mistral, could you tell us how your team there started to develop and what does a forward-deployed engineer do at Mistral, and how does that differ from Palantir's version of the role?</p>
+<p>JB: Actually, we recruited people from Palantir, so the model is very, very similar. And FDE now has different flavors, so it's everything from someone who would do project management to somebody who would do applied engineering or science. So for applied engineering, it might be GPU model or GPU sizing infrastructure consultancy, basically, when it's on the client's premises or building our own if the client decides that they'd rather use Mistral Infra. For the specific cases where applied science is necessary, so it could be a geothermic activity, it could be a multi- physics analysis, we would also have what the client and what the contract would say in FDE, which is somebody who would tailor those models or build that use case for them.</p>
+<p>ES: Right. And what portion roughly of customers need this kind of help?</p>
+<p>JB: So I think there's 2 different questions. The question is who needs it; from my point of view, a lot would need it. Now, the ones that select it, that's a bit different. Obviously, AI-native companies don't really need us, don't really need FDEs, because they have the understanding, they have the technical understanding, they recruit people that know their onions when it comes to AI. So the companies that do need it are those legacy industries that run on, sometimes... well, even, I mean, legacy could be 5 years ago, right?... legacy infrastructure that don't really have the type of innovation strive to go and build those use cases, and that's when they need those FDEs.</p>
+<p>ES: You mentioned also, sometimes customers will use GSIs, global systems integrators. What makes a customer decide whether to use a vendor like yours, FDEs, or an integrator, or an internal team?</p>
+<p>JB: Oh, that's a good question because a bit of it is timeline. They don't necessarily oppose themselves. Today, I don't think customers go to the Accenture's of the world, for example, and say, "Well, I want to build this AI use case," because that's not their forte. However, what we see now are clients going to Palantir or Mistral and saying, "Oh, well,</p>
+<p>11/25/2026 at 05:12 AM UTC</p>
+<p>we want your FDEs." And after a while, once they've upskilled themselves on our products, then they get their own FDEs, sometimes through the likes of Accenture, so that we can train them and they could have their own team there and that lets them scale internally in a way.</p>
+<p>ES: Got it. So it's really that initial use case and implementation where the forward-deployed engineers really stand out versus the GSIs. Is that right?</p>
+<p>JB: Yes, the only caveat would be applied science. You'd be hard-pressed to find somebody at Accenture, for example, who is a multi-physics expert and who will build for a big aerospace name who will enhance the performance of their analytics by 30%, right? They would still use us for that. But for those sort of mid-layer, "Oh, I want an agent that does this and that," that's something where they can upskill somebody internally.</p>
+<p>ES: Okay, and you were talking about someone who's an expert in multi-physics, does Palantir have experts like that? Do you have experts like that at Mistral?</p>
+<p>JB: Yes. Yes.</p>
+<p>ES: Okay.</p>
+<p>JB: And the way it works sometimes is through M&amp;A. And this is public information, right? Mistral would buy companies with that sort of knowledge and its people, while we onboard their people and we also hire them directly.</p>
+<p>ES: I'm curious because I know OpenAI and Anthropic also have their own large deployment teams they're building. How do you think they've done compared to Mistral and Palantir in that area?</p>
+<p>JB: Well, it's very new. If we're talking about Europe, for example, they just announced a month ago maybe that they would start building something, OpenAI. There was a connection that joined, I think, 5 months ago to be an enterprise success manager, and he's dealing with more the case where they release just a good old-fashioned chatbot, so it's not those types of use cases in FDEs. So they're going to put it... they're putting a motion in place, but it's very, very early days.</p>
+<p>ES: Yeah.</p>
+<p>JB: Which is interesting because it's one thing to have an FDE motion. What I think is less taken into account is the impact that that can have on a company. Because right now, if you take Anthropic, OpenAI, their engineering teams, their science teams, their everything team is based on their client needs. When those needs shift, then internally, the company needs to shift itself to be able to accompany those new types of clients, and that's pretty painful.</p>
+<p>ES: Could you expand more on that? So could you give like an example in a certain area of where a client's needs would shift and how that would be painful for them?</p>
+<p>JB: Yeah, so I guess 2 things I'll talk about. So infra, so if you allow for on-prem deployment, it's a game shifter. On- prem deployment means you can't really just push things in your environment and have it live, quote unquote, in a SaaS world. You need to be able to ship Docker images to your clients, have certain security gates in the deployment type. Instead of being relatively real-time, will take weeks and weeks and it's just a whole... It's very different. So basically it's adding constraints onto your deployments and onto your teams that need to manage that. The second thing is types of features that are needed. So if you take connectors for example, well if you all of a sudden decide to go into the retail industry, well these guys work a lot with Google, so you would need to have Google connectors. Whereas if you go for another type of industry and they use Microsoft connectors, well that's what you need to build. And so you're sort of tied to how your business runs and that becomes your priority to keep the customers happy.</p>
+<p>11/25/2026 at 05:12 AM UTC</p>
+<p>ES: Right. And so do you think OpenAI and Anthropic would have trouble adapting to that?</p>
+<p>JB: Like any company, yes, they will. Well, they've been here for a while. I mean, if you think about it, they've been here for years now. They set up something really successful. And all of a sudden, their product managers are going to have a whole new pipeline of requests that are going to clash with their current requests. And it's pipelines, I would say. And so down the line, they're going to need new teams, they're going to need to integrate those new teams, they're going to need to make decisions on what gets prioritized because they're going to want to grow that business model that right now isn't that big, right? Their enterprise business model. Well, their use case... sorry, business model. And so they're going to have to make decisions, which slows them down. So it's, yeah.</p>
+<p>ES: Yeah, that's interesting. And so now to bring it back to Palantir, it sounds like in this area, at least they have a real edge because they've been doing this for a long time now.</p>
+<p>JB: Mm.</p>
+<p>ES: How long has Mistral been doing it and who else do you see adopting the forward-deployed engineer model that we haven't discussed?</p>
+<p>JB: So Mistral has been doing it for, let me think, about 2.5 years now. And even then, the company was just a year and a half old when they started it. And even then it was painful. So you just imagine what it could do for the scale of somebody like Anthropic or OpenAI. The other people in that space, 2 sort of categories jump to mind. First of all, the vertical SaaS industry is pivoting. Everybody knows that they don't really have a moat anymore with the capability of agents that's now so much stronger. So some companies are really shifting from a product SaaS model to an FDE model, which is interesting. So it'll compete on those special use cases. The second thing is large top 3 MBB consultants, so McKinsey, Bain, BCG, with their QuantumBlack, BCGX, and Bain, can't remember their name, but they're efficiently building that model that's more driven to delivering and partnering with us, for example, on the delivery, but they're still... They have an FDE motion as well.</p>
+<p>ES: Yeah, both of those points are really interesting. Let's start with building on that model with McKinsey, Bain and BCG as partners. I know historically Palantir has not embraced the partner channel. Do you think that's been to their detriment? And do you think that's to your advantage that you guys partner with these companies more? I mean, I know they're making changes at Palantir and they are starting to embrace it, but would you call them behind in that way, or on trend with you and everyone else?</p>
+<p>JB: Well, the thing is, partners are always a curse and a blessing, right? Because there's things that they do that you can't do, which is why you have to partner with them. But also, it just slows you down, you have less control, and there's a battle over who gets what in the pie that you're sharing from the customer. So, in the beginning, they didn't really need them because they were the only ones, they were the first ones to do what they do, so they could sort of control the game. Naturally, having a bit of history helps, and it helps you scale the business because these partners... I mean, take Accenture... it's 380,000 people, right? They're everywhere. And if you don't work with them, they're close enough to block you anyway. So it is a benefit if you could do it well to work with them, which is why Palantir is shifting, right? They're working with GSIs now, and why we're doing it as well.</p>
+<p>ES: Yeah, that makes sense. And also, could you talk about what you were saying about the SaaS companies starting to compete in this model? Could you give us an example? Is this like Adobe going in and helping implement Adobe? Is it something like that?</p>
+<p>JB: Not really what I had in mind, but those companies.</p>
+<p>11/25/2026 at 05:12 AM UTC</p>
+<p>ES: That's the first thing that came to mind.</p>
+<p>JB: That's all right. Those companies that might make $100 million or so building something they've worked on for the past 8 years, they now realize a good trained agent model could replicate their product in a couple months and not cost as much. I mean, if you take that, just the revenue. And the cost to a company where they'd have to pay, you know, they'd have to pay a couple million a year for a SaaS company, and now they can build themselves an agent that does that, the math is pretty clear. And so it's those types of products that are changing. I mean, just if you just take Mistral, for example, we build ourselves our tools. We have very few licenses that we buy because we just know that we can build it ourselves.</p>
+<p>ES: Yeah, that makes sense. And you're seeing some of these SaaS companies offering something similar to an FDE to help companies build a similar functionality. Is that what you're saying?</p>
+<p>JB: Yes. My previous company is doing it.</p>
+<p>ES: Can you share who that was?</p>
+<p>JB: Yep, Shift Technology.</p>
+<p>ES: Interesting. And so what I'm hearing is that everyone's going through this FDE model. Does that make hiring FDEs more expensive and harder to scale for each individual company?</p>
+<p>JB: Yes and no, because it depends which market you go after. I mean, the Mistrals, Palantirs and, you know, the Anthropics, we pay enough that we could get the top or we have to compete in that top tier channel. Obviously, the ones just below, well, they're going to have a harder time competing, but it's bigger because if you just take the average bell curve, right, they're going to have more people, whereas us, it's the same 5%, right? So it's going to get a little more expensive, but there's only so many companies that compete. It's the middle of the range that's going to have a hard time, indeed.</p>
+<p>ES: Yeah, that makes sense. And Palantir says it has AI agents that can do some of the FDE work, such as migrating data systems. They say it can sometimes take days versus weeks. Do you believe that? Do customers believe that? And do you see AI replacing part of this implementation model?</p>
+<p>JB: So you went a little fast on the example. You said migrating database?</p>
+<p>ES: Well, just in general. So Palantir is saying its AI agents can do some FDE work, and 1 example is migrating data systems in days vs. weeks. I'm just wondering if you think AI agents can do some more of this work going forward that FDEs do?</p>
+<p>JB: Okay, generally, yes. Now, I talked about different types of FDEs, right? The one that do more, like program delivery, and that's already helped a lot by agents naturally. The one, just on your good old-fashioned milestones, risk management, and all this stuff, that's being helped by AI massively. Just building decks now takes 5 minutes instead of taking sometimes a day. So that's 1. The second part is infra. Yes, something very specific. When you want to migrate data for a large company, you have to build a lot of documentation that needs to go through security approvals committees. That would have taken weeks and weeks for an FDE to do. You do ARD, like security and architecture documents. Now with AI, it takes a couple hours. So in each of those basically, yes. Yes, I believe agents can replace a bit of the work, all of it, probably not, but it does help productivity massively.</p>
+<p>ES: Yeah, that's interesting. And what do you think would be the hardest work for them to replicate, for AI agents replicate what a human does?</p>
+<p>11/25/2026 at 05:12 AM UTC</p>
+<p>JB: It's always getting the right information that's tough, especially in these large companies and aligning what needs to be done. For example, knowing you're new to a company, I mean, Palantir is all over, but if they get into a new industry, they're like, oh, well, now we're in the healthcare sector, for example. Just learning what needs to be done and what needs to be done for that company is what takes the longest. Producing the work is now easy and fast, but that's still very much of a person thing to do that can't really be replaced.</p>
+<p>ES: Yeah, that makes sense. Okay, this has been really helpful on the FDEs in terms of understanding this business model. Let's move on to Mistral Studio. Could you explain to us what is Mistral Studio, what does it do, and how would you compare it to what Palantir's Foundry does on the commercial side?</p>
+<p>JB: Yes. So there's some similarities in the case that it's a platform where you can do pipeline analytics, you can build apps. You can run actually different models on it. Because both Palantir and Mistral... Mistral is a bit more restrictive, but you can have Mistral models, but you can have also other models... and Palantir will pretty much build any model that you like for that. So that's, I guess, for the similarities. The big difference is the ontology, right? Because Foundry requires the ontology and agents act on governed objects, not just raw tables, whereas Mistral will let you, you know, plug it into basically whatever you want. Now that has got advantages, but also drawbacks. It does make things more... I mean, it does make the output more efficient if you've designed it correctly in Palantir... but it is a bit more restrictive. Yeah, it is a bit more restrictive, and I guess, do you have questions on that? Because I've talked a lot.</p>
+<p>ES: Yeah, you brought up a really interesting point about the ontology debate, which is a structured map of a company's data, the processes and the permitted actions. And Palantir talks a lot about how that's really important to do for their customers. But it sounds like what you're saying is Mistral can do something similar and there's advantages and disadvantages to each approach. So could you talk a little bit about what those are?</p>
+<p>JB: Yes. I'll just give an example. If I don't know what everybody's favorite industry is, I'll talk about one I don't know so that I keep things simple, I guess. If I'm just looking at... there's a lot of desks and computers right in front of me at the moment. So if you're a company that does that, you have a lot of data. So what the Foundry does, it says, well, actually, we have objects such as... if we want to manage the supply chain that are going to be shipment and customer and factory and all this stuff. And when we do pull your data, it'll be mapped to those, and we already have a pipeline in place to map your raw, messy, and sometimes usually bad data to a structured model that we know how to run very efficiently. Whereas Mistral will say, just plug in whatever CSV you have lying around and we will read all the data and go through it and give you the best possible outcome with the models that we have. So you're basically running a tighter ship with Foundry, but you need that step, and potentially you're going to be missing out on things that aren't in their models. So sometimes the FDEs will have to add to their ontology to make things work.</p>
+<p>ES: That's super interesting. And then also I have heard from a systems integrator that also can be kind of like a proprietary way that they string all this data together in the ontology, like through code that makes it like you need to keep with Palantir to maintain it. Is that your understanding as well?</p>
+<p>JB: Oh, yeah. I mean, 100%, they will have their own mapping, which is, you know, essentially a data model. And it just... I mean, right to keep things... once again, they'll have problems. I haven't worked for them, but they'll have a supply chain model that says these are the type of objects that we look for, and this is how we want them to interact. So we think that, for example, we'll have a data table for factory and we'll look for things like machines, machine runtime, and all this, and then we'll have something for stock. And so effectively, it's an ontology, right? It's a way to think about things, and it's very useful if you've built it correctly.</p>
+<p>ES: Right. And I know they've been successful selling their artificial intelligence platform on top of the Foundry, but it sounds like what you guys are doing is sort of skipping that step a bit. And it sounds like it might be more adaptable, would you say, Mistral's method of doing it?</p>
+<p>11/25/2026 at 05:12 AM UTC</p>
+<p>JB: Yes, because it's less stringent, you know? It's... I mean, yes, basically it's more adaptable. We could just go to anything and just build it from the ground up. So it does mean that it'll take us some time and sometimes it might mean that the results we produce first won't be good, but we're not really constrained by having that ontology because when you have a data mapping or a data layer, data model, you want to update it. And if you're a company that wants to run efficiently, it means that you're going to have guardrails around what you can update, what you can't update, and that just takes time.</p>
+<p>ES: Yeah, and I'm wondering as AI agents get better, does that structured layer matter more or less?</p>
+<p>JB: Oh, that's a good question, because technically you could use AI agents to manage your data model, but that's extremely risky, in my opinion, because it could grow a million places. And now, could I ask an agent to build an ontology? Yes. And I think it will get better and better. I'm not sure that today that would be advisable because the nice thing about having an ontology is that it lets you... it makes you review the data, right? And give a feed and get feedback on it and understand it. Whereas if you just let agents run wild, sure you get a result, but as AI is AI, you can't really... you don't really have a way to formally understand why it's giving you this output. So at least the ontology is sort of a mid layer of a formal layer that lets you say, well, the output is this because the model went through this layer of the data model.</p>
+<p>ES: Yeah, that makes sense. And I imagine that's even more important in regulated industries, right?</p>
+<p>JB: Yes.</p>
+<p>ES: And what about other data platform companies? I know Microsoft now seems to offer a version, its own version of this layer. Do you see customers seeing those as good enough substitutes?</p>
+<p>JB: I don't really know. Microsoft has partnered with OpenAI so they sort of share and they conquer and divide when it comes to that. For example, Copilot that's served very much on Microsoft's infrastructure is very much divided like that. So I don't know that Microsoft offers an ontology and its own FDs for this.</p>
+<p>ES: Mm-hmm. Yeah. And then back to Mistral versus Palantir's Foundry. When do you run into Palantir and where and what kind of deals? I imagine a lot in Europe, anywhere else, and in any type of particular companies you run into them?</p>
+<p>JB: Well, in defense, obviously in the US because Mistral does operate in the US. So that's, yeah, that's a big one. And so we run also into them in government. So government is where we've seen them. Things have changed a bit, because more and more European governments are walking away from it. I think Germany has made a new stance on not having Palantir around. So that's where we see them a lot. We don't really see them in... actually they tried something with Airbus a couple of years ago, which didn't really work out. So now Airbus doesn't work with them anymore and they work with us. But we would expect them to find in those types of places.</p>
+<p>ES: What about in APAC? Are they there? Are you guys there? Do you run into deals with them there?</p>
+<p>JB: Yeah, we're over there. And they're running into, unfortunately for them, the geopolitical situation between China and the US, which doesn't really help, although not all of APAC reports to China. So we do see, I'm sorry, in some areas, same government and large, how can I put this? Large chip makers and technology providers, yes?</p>
+<p>ES: And in terms of how customers think about working with Foundry, who works with any AI model, or on their government side, where Mistral sells its own, does that matter to buyers and do you see being model neutral or having your own model as an advantage?</p>
+<p>11/25/2026 at 05:12 AM UTC</p>
+<p>JB: It's a complex question. Having your own models has... and I don't think this is... it's sort of new, right, this topic, so I don't think companies, a lot of companies either don't have a stance or are building a position on it because they didn't have one. What they realize now is having access to a model is one thing; knowing how to deploy it correctly is the other, because you have the understanding of how you're going to tailor your inference, how you're going to tailor your RAM, your GPU sizing, what kind of GPUs, your nodes, your experience from other deployments on, "Oh, well, this has worked well, this has worked well." It's sort of important and I think it's a differentiator for Mistral. So if all of a sudden somebody came to Palantir saying, "Well, I want to deploy Kimi or some new model," they would say, "Okay," but the thing is they're going to run into issues and they'll have to build that competency. And if they have to change all the time, it's not easy. The second thing is, of course... The ability to... updating the model of course comes into play. And lastly, depending on how the model is deployed, companies are naturally scared of information that would come out of it. If you're on-prem, it's an air gap that's much less of an issue. Otherwise, companies with a slight worry for sovereignty would refuse models that come from countries that aren't aligned geopolitically.</p>
+<p>ES: Right, right. And do you see, obviously, Mistral would be favored in Europe. Do you see people having any concerns with a European model maker outside of Europe? Like, does US have the same sovereignty concerns about European providers that European customers might have about US providers?</p>
+<p>JB: It's different in a way. It's not so much that as we didn't know Europe had technology. Most of the time, Mistral isn't anywhere near as big these days in the US, so the name isn't even out there for most people. So, we don't really run into this. It's more a credibility thing where it's like, oh, we didn't know Europe had something interesting. Does it work? That's the question we get much less than anything else, especially because Mistral offers on-prem technology. And we are building data centers in the regions, in other regions than France, and in the UK. So, if we were to run something in the US on something they would control, we offer full ownership, basically, to clients. So, I don't think we would get that.</p>
+<p>ES: Right. Yeah. And is that similar to Palantir in terms of giving customers complete ownership of their systems and data?</p>
+<p>JB: Yes. Yeah, they do. They provide air gap stuff. The thing is, Palantir had mostly American people, so the people... it's becoming an interesting topic because... And this is why Mistral has, you know, European people with European models for European everything. Because we're actually running into an interesting situation recently where we had an FDE working on a European sovereign area, and that FDE was Chinese, and that was a big issue. So we couldn't really use that. And so Palantir, because people hold information, not just systems. And so that's on the FDE race, that's a bit of a race as well, right? You can't, it's not going to work to have American FDEs, even if you have an air gap down-prem deployment in Europe.</p>
+<p>ES: Right. That's really interesting. And would you say Mistral benefits from this trend towards sovereignty everywhere in Europe? Mistral is in France, is that okay with Germany, etc.? Especially if you have data centers there?</p>
+<p>JB: So bottom line is yes. The way Mistral is operated is with heavy government support, which is interesting, especially because we have presidential elections coming up in France. A lot of the candidates are roaming into the office because it's kind of a give-give situation. So we do use that support to cater for deals. Now, Germany is a specific, and this is more geopolitics than anything, I guess, more than AI, but Germany is specifically very tight to the US in a lot of areas like military, for example. So our business in Germany, well, consequentially, is not as strong. So I'd imagine there'd be some right to win for Palantir there if you think about Germany specifically.</p>
+<p>ES: And I'm curious, do you have any thoughts about Palantir's place in competition in Europe over the next year to 3?</p>
+<p>JB: Tough. They're going to have a tough place where I would try for them to go to industries that are not heavily</p>
+<p>11/25/2026 at 05:12 AM UTC</p>
+<p>regulated that don't really depend on anything sovereign. But now that people realize, you know, data is precious, whether you work for LVMH or for the Defense Ministry, it's becoming tough, especially with AI regulations in Europe. So, I mean, Germany would be actually a place to start, a place where I'd invest time in if I was working at Palantir. But otherwise, yeah, I wouldn't really be very confident about the rest.</p>
+<p>ES: Yeah, and that sounds like specifically Palantir in government in Europe. Do you have the same opinion it might be difficult for them also commercially in Europe?</p>
+<p>JB: Commercially? Do you mean that governments wouldn't be willing to pay? What do you mean?</p>
+<p>ES: I'm sorry. Yeah, I was wondering, it sounds like it might be difficult, aside from maybe Germany, for Palantir to continue to compete well in Europe in the government sector, given sovereignty issues. And I just wanted to ask if that's the same in commercial as well. I mean, you mentioned LVMH cares just as much about the data. So I just wanted to confirm or not confirm if you see them having challenges due to sovereignty issues, you know, in Europe also on the commercial customer side.</p>
+<p>JB: Yeah, so government 100%. Commercial, they might, like I said, there might be a right to win there. They also, it's something that probably wasn't there 20 years ago, but I guess ethics is... probably or sometimes bigger in Europe and Palantir, or its image being very defense focused, sometimes doesn't help. So especially because it's positioned itself a bit politically... Palantir... down here, so that could also be a blocker in some cases. Not sure if I've answered your question.</p>
+<p>ES: Yeah, you did. Thank you. I'm also curious about, skipping to a totally kind of different topic for now, about the pricing. I know Palantir prices like on value created. How does that compare with how you guys charge and the other competitors charge? You know, is there a difference between companies that charge by usage versus that sell broader platform agreements, and what do customers like?</p>
+<p>JB: It's a mix for everybody. It's a mix and it sort of depends on the client. I'm sorry. Just to give a bit of an overview, when I talk of a mix, you'd have, in a lot of cases, a pilot, for example, which like most pilots can be a couple hundred thousand. And if you have a contract at a mid-market enterprise, it could be anywhere between 500 and a couple million a year tops and then for very large deals it'll be 10 million plus a year. So that's sort of the range. Now what goes into these? You'd have tech and people, basically. And by tech, it could be a subscription to, if it's Palantir, Foundry with an AIP capability built inside it, and usage-based compute. But the negotiation, the commercial aspect of it will depend because if you're talking about a very specific use case with a lot of returns, obviously with a lot of returns but few users, it wouldn't make sense to go heavy on the usage-based compute because it'll be slower on the seats themselves because it'll be small. So the deals get modeled... they're pretty tailored, but they usually go around, okay, how many people do you need for how much time, what kind of tech you need, if it's more the models or if it's more usage-based compute, and then that lets deals get built. Yeah, that's sort of the same here, right?</p>
+<p>ES: Yeah.</p>
+<p>JB: The only difference with Mistral, I guess, is that our token rates are public, but when we negotiate with clients, obviously on very, very large deals, as any company would do, we could be flexible on those.</p>
+<p>ES: Yeah, and I'm wondering if on the horizon you see any big changes to pricing in this industry, how it might work? Or do you think people have sort of figured it out, like you have usage token rates and then with large deals you have more structured agreements. Is that sort of how it's just going to go going forward, you think, or do you think there's more changes in the pricing model to come in the industry?</p>
+<p>11/25/2026 at 05:12 AM UTC</p>
+<p>JB: So we offer infrastructure, so that also weighs into the deal. Otherwise, no, that's still... I mean, if you think of a model which is price to cost and some yearning to become profitable, then you sort of have to look at that, right? Because that's where your costs lie. Yeah, so I think those will sort of stay the same, even though the future might put emphasis on more one than the other, those sort of buckets will still remain.</p>
+<p>ES: Okay, and we just got a few minutes left here. So I'm curious over the next, say, 1 to 3 years, do you see frontier labs like OpenAI, Anthropic, and Mistral becoming fiercer competitors to Palantir or partners or both?</p>
+<p>JB: I wouldn't... for the positioning and geopolitical stance, I wouldn't see us become partners. I wouldn't see a world where that's possible. I think it's going to be a competition. The only place I could see us partnering, if it's Anthropic or OpenAI, if one of the companies absolutely wants one of their models, or that's where I would see us. But otherwise, no, I see no real place for competition. A joint venture might make more sense. But ES: Yeah, that's interesting. Okay, and we just got a few minutes left here. So I just wanted to ask if there's anything we haven't discussed that you think people would find interesting about this space or what's going on with Palantir or the industry or Mistral, or anything you want to emphasize.</p>
+<p>JB: I think 1 of the most interesting questions you asked was, you know, do enterprises still need ontology before agents can work? And that goes to Palantir's side, yes, because AI value is still very low. AI can still be confidently wrong. So I think that's something of a differentiator that they can definitely work on. And as far as Palantir's base, which is, you know, US government intelligence manufacturing, that's something that they're going to see more and more competition in and first mover advantage will be a big thing, right? The switching cost and the time to deploy is years. And so if you can get in quickly to something where you're better, it really locks you in for a couple of years. So I think that's... My 2 cents.</p>
+<p>ES: Yeah, great. Wonderful. All right, JC, this has been super helpful. Really appreciate your time and answering all the questions. JB: Cool. Thanks, everyone.</p>
+<p>ES: Yeah, thanks everyone for listening. Take care. Bye.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>11/25/2026 at 05:12 AM UTC</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

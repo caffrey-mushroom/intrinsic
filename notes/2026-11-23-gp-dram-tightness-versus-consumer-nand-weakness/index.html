@@ -1,0 +1,351 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.23 | GP | Memory | DRAM Tightness Versus Consumer NAND Weakness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.23 | GP | Memory | DRAM Tightness Versus Consumer NAND Weakness</h1>
+<p class="orig">原标题：MU, SKHY, and Samsung:  Pre-Thanksgiving DRAM and NAND Update With a Kingston Executive</p>
+<p class="tags">#memory #semis #ai-demand #supply</p>
+<p class="meta">GuidePoint · 2026-11-23</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>Kingston 资深业务发展经理指出过去 30 天存储市场呈现现货与合约背离：DRAM 与 NAND 合约价仍在上涨，但 NAND 现货大跌 15%-20%，消费级 DRAM 现货微跌个位数，而企业级 DRAM 现货保持持平。</li>
+<li>本轮现货走弱主要源于消费电子（PC 与手机）终端销售不佳及高内存成本压缩利润，消费端客户当前持有约 4 个月库存并从 Q4 起停买观望，预计弱势将持续至 2027 年 Q1，形成约两季度的库存调整周期。</li>
+<li>占据市场超 50% 份额的企业级与数据中心需求依然稳健：中美云厂商（CSP）均按原定计划采购，未出现传闻中的 SSD 砍单；目前企业级 DRAM 库存仅约 2 个月，企业级 NAND 库存约 3 个月。</li>
+<li>DRAM 前景显著强于 NAND：DRAM 由 3-4 家原厂高度垄断且云厂长约仅覆盖约 50% 需求，2027 年 Q1 合约价将继续上涨，2027 下半年预计维持每季度 10%-20% 的涨幅；NAND 预计 Q2 见底，2027 下半年仅温和季增 0%-10%。</li>
+<li>为控制高昂成本，PC 厂商继 2026 年缩容（1TB 降至 512GB）后，2027 年正评估采用降级 NAND 甚至非标 500GB SSD，一旦落地可增加至少 10% 的消费级供给并压低售价；企业端虽亦探讨内存减配（如传闻 NVDA Rubin Ultra），但更低单机成本反而利好 AI 服务器总出货量。</li>
+<li>国产替代难以扭转全球紧缺：YMTC 虽已占据中国本土约 50% 份额并积极拓展海外，CXMT 产能亦已售罄至 2027 上半年，但即便二者规划年扩产 60%（全球其他地区约 30%），因受美方黑名单限制及缺乏企业级认证，仍无法缓解美国云厂的企业级短缺。</li>
+<li>关于 AI Agent 推动 SSD 承担 KV-cache 以分流 HBM/DRAM 负载的长期趋势，专家认为技术架构尚未定型且 2027 上半年无量产项目，实质体量最快要到 2027 下半年至 2028 年才会显现，暂不纳入 2027 预测。</li>
+</ol></section>
+<div class="body">
+<p>Primary:</p>
+<p>MU</p>
+<p>005930:KS</p>
+<p>000660:KS</p>
+<p>Associated:</p>
+<p>688825:CH</p>
+<p>SNDK</p>
+<p>KLAC</p>
+<p>LRCX</p>
+<p>WDC</p>
+<p>ASML:NA</p>
+<p>Yangtze Memory Technologies, Inc.</p>
+<p>NVDA</p>
+<p>AMD</p>
+<p>INTC</p>
+<p>QCOM</p>
+<p>2454:TT</p>
+<p>AMAT</p>
+<p>Viewpoint:</p>
+<p>Competitor</p>
+<p>Moderator: Dan Kaplan (DK)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Nov 23, 2026</td><td>26 Min Read</td></tr></tbody></table></div>
+<p>Kevin Hsiung (KH), Senior Business Development Manager - Kingston Technology Corporation</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The expert, a memory-industry professional, discussed DRAM and NAND flash trends, contrasting contract prices with weaker spot prices. The main pressure is in consumer markets, particularly PCs and mobile devices, where weaker sales and high memory costs are prompting customers to manage inventory and reduce orders. Enterprise and data-center demand remains comparatively resilient, making it the main support for the broader memory market.</p>
+<p>Key Insights</p>
+<p>The expert views the recent spot-price declines as a warning about consumer demand, not proof that the overall memory market has reversed. DRAM has a stronger outlook than NAND because supply is tighter and enterprise demand is more visible. The expert expects DRAM prices to resume rising after a near-term pause. NAND faces greater inventory pressure and weaker confidence in its recovery. Customers may reduce SSD capacity or accept lower-grade products to control costs. The expert expects consumer-market volatility to be temporary if enterprise supply remains tight. KV-cache applications could support NAND demand over time, but the expert sees no clear basis to include material demand from them in the 2027 outlook.</p>
+<p>Competitive Landscape</p>
+<p>Company or group</p>
+<p>Market position and developments</p>
+<p>Samsung, SK Hynix, and Micron</p>
+<p>The expert described DRAM supply as concentrated among a small number of suppliers, supporting tight conditions. Details of a reported Samsung supply agreement with Apple were not available.</p>
+<p>YMTC</p>
+<p>CXMT</p>
+<p>Seeking expansion beyond China, but its enterprise qualifications and access to some large US cloud customers limit its ability to address enterprise supply needs.</p>
+<p>Supply was described as largely committed to China, limiting near-term expansion outside the domestic market.</p>
+<p>Chinese suppliers overall</p>
+<p>Rapid planned capacity growth is not, in the expert’s view, enough to resolve enterprise shortages given qualification and customer-access barriers.</p>
+<p>11/25/2026 at 05:16 AM UTC</p>
+<p>Quantitative Insights</p>
+<p>Metric</p>
+<p>Expert’s assessment</p>
+<p>Recent spot prices</p>
+<p>NAND declined about 15%–20% over roughly 30 days; consumer DRAM fell by a single-digit percentage. Enterprise DRAM spot prices were flat.</p>
+<p>Contract prices</p>
+<p>DRAM and NAND contract prices were still increasing, despite weaker spot prices.</p>
+<p>Consumer demand</p>
+<p>Weakness may persist through Q1; inventory correction could create a roughly two-quarter cycle. Consumer customers were estimated to hold around four months of inventory.</p>
+<p>Enterprise inventory</p>
+<p>DRAM inventory was estimated at close to two months; enterprise NAND at about three months.</p>
+<p>DRAM outlook</p>
+<p>Contract prices were expected to rise in Q1. In the second half of 2027, quarterly increases of about 10%–20% were anticipated.</p>
+<p>NAND outlook</p>
+<p>Consumer NAND could bottom around Q2 or later, with second-half 2027 increases estimated at 0%–10% quarter over quarter. Enterprise NAND was expected to recover earlier.</p>
+<p>Potential NAND supply</p>
+<p>If customers accept downgraded NAND, consumer-grade supply could rise by at least 10%; this option remained under evaluation.</p>
+<p>Technology and Demand</p>
+<p>The expert sees potential for SSD-based KV-cache applications to shift some workloads from DRAM, but expects meaningful volume to remain uncertain and potentially later than 2027. The expert also noted that some enterprise designs may use less memory per system, while strong AI-server demand could still support overall memory consumption.</p>
+<p>DK: Hi, everyone. My name is Dan from Guidepoint. Thank you very much for joining today's call. Let's see. Micron, SK Hynix, and Samsung present the 2026 DRAM and NAND updates to the Kingston executive. If you have any questions, please email me at ask@guidepoint.com and I will work your questions into the call. And it is now my pleasure to introduce Kevin Hsiung, who is our expert today. And as mentioned, he's a Senior Business Development Manager at Kingston Technology. Prior to that, he was a key account sales manager at Western Digital. Kevin, thank you very much for being with us today. DK: TrendForce has reported that NAND spot prices were down 20%. I've also seen some other reports that NAND was down as much as 25%. What are you seeing out there and what do you see both in NAND and DRAM?</p>
+<p>KH: We are seeing currently the trend of the contract price and the spot prices trend are different in the past 30 days, even though the contract price for both DRAM and NAND flash still increases, but we are seeing the NAND flash prices, I mean the spot prices decrease. And these are around 15%, maybe 20% in the past 30 days for the spot prices. For DRAM, DRAM would be better, but it still has slightly single-digit decrease, the price decrease for the spot price. So the trend of the spot price and the contract price are different.</p>
+<p>DK: Okay, got it. So any reason, is there a demand change? Is that a speculative inventory or what's the reason? Why do you think the price has declined?</p>
+<p>KH: Yes, I think there are several reasons. One of the key reasons is, I mean, I think in the past few, maybe over 1</p>
+<p>11/25/2026 at 05:16 AM UTC</p>
+<p>month or 2 months, the end customers realized that the selling status situation is not really good. So there's some time delayed because the supply chain is long, no matter PC or mobile phone. From the end selling back to the headquarters. So now they are realizing that the overall market selling is not good. So their inventory start to increase. So that is one of the key reasons the selling is not good and also the memory price still at a very high level. It is very difficult to make the profit, which means they have the higher pressure. So now our customers become more conservative to build up or place the new orders starting from the Q4. I think that is the major reasons. So the spot price is always very sensitive to reflect the latest situation of this market.</p>
+<p>DK: Was the NAND pricing situation caused more by weakness in consumer devices, by enterprise, or what kind of customers are becoming more conservative? Who are their end users?</p>
+<p>KH: What I mean is mainly for the consumer users, not enterprise. The enterprise NAND or enterprise SSD doesn't have the big change because the enterprise grade SSD or DRAM, the demand is still there. So what I mean is mainly for the consuming NAND flash, because the customers is now becoming more conservative to building up inventory or placing orders in the Q4.</p>
+<p>DK: Got it. I've also seen some reports that there is a possibility of some cancellations of SSD orders from some of the Chinese cloud services providers. Have you seen any evidence of that?</p>
+<p>KH: We are seeing... sorry, repeat your question again. Sorry, the quality is not really good.</p>
+<p>DK: Okay. Sure. So I've seen some reports that there is a possibility that there are cancellations of SSD orders from Chinese cloud service providers. I'm wondering if you have seen any evidence of that.</p>
+<p>KH: The cloud server... the cloud demands, no matter from China or from the US, the demand is still good. What I mean is the demand doesn't have the big change because they already do the plan. So they would still follow up the original purchasing plan, but for the consuming side, especially for the PC and mobile, the demand is worse than what they are thinking about. And this demand should be weak, not only in Q4, but maybe expanding until at least in Q1 next year, which means they are at least 1 quarter or even longer. The total demand would not be good. So that is why currently the attitude from our customers changes, especially for the NAND flash.</p>
+<p>DK: Got it. But again, can I better understand, is it the consumer part, and especially the spot prices, is a very small portion of the market right at this point?</p>
+<p>KH: Yes, so that is just a signal. We are seeing the spot prices decline. That is for the consuming, but we cannot make the conclusion that all the memory, no matter DRAM or NAND flash, the total trend is going down or reverse. Because the spot market or the consuming just takes a few portions. So that is just a signal to reflect that the overall consuming market demand is not good. But if overall speaking, I would still say that the memory overall situation is still good because the enterprise now taking over 50% of the shares. So yeah, overall speaking, you don't need to be too pessimistic, but for the consuming side, the situation looks a little bit challenging.</p>
+<p>DK: Got it. So for DRAM, I think you mentioned that the price is going up in single digits instead of I think the expectation was 20% growth. Why is the weakness in DRAM? Why is it not going as much as it did?</p>
+<p>KH: Well, the current market behavior, portions of the market behavior comes from the expectations about the future market trends. So for DRAM, even the customers, they still expect that the overall DRAM supply will be still tight, even in Q4 or Q1 shortly. Because the overall DRAM supply, it only has around 3 or 4 semiconductors that can supply the DRAM. So they don't expect that the DRAM prices will go down dramatically. But the situation is not the same for the NAND flash. Currently, the NAND flash... The supply is much better than the DRAM. So that is why we are seeing that</p>
+<p>11/25/2026 at 05:16 AM UTC</p>
+<p>the DRAM price is still just slightly decreasing, but the NAND flash drops a lot more than the DRAM.</p>
+<p>DK: Did you say that DRAM price is actually dropping or the increase is not as high?</p>
+<p>KH: The spot market also dropping, but just a single digit, slightly drop.</p>
+<p>DK: Is that consumer grade DRAM mostly or does that include enterprise and data center DRAM?</p>
+<p>KH: No, the enterprise, even the spot market still at least keep the same. So it doesn't drop for the enterprise. So enterprise supply gate is still there. So only changing for the consuming rate, DRAM.</p>
+<p>DK: Is the enterprise spot market flat or is it rising?</p>
+<p>KH: Keep flat. Originally, we expect that the DRAM spot prices should be increases, but now it keeps flat.</p>
+<p>DK: We would love to understand that. Is there more supply or is there less demand?</p>
+<p>KH: Mainly comes from impacted by the demand, not supply.</p>
+<p>DK: Is that enterprise demand or is that data center demand that's affecting it?</p>
+<p>KH: Well, even the data center demand doesn't have a big change, but even the data center procurement, they still expect that the DRAM should be slowing down to increase. So they don't worry about to build up the inventory so quickly. Some customers, they decide to just wait and see because now we are seeing a little bit of noise from consuming sites. So even the enterprise customers, they are slowing down to place the new orders. So we are seeing the prices keep flat. But the demand, I think it is much better from the enterprise side. The overall visibility is still much better than the consuming side.</p>
+<p>DK: Got it. So, and I could see how in light of those changes, how some people might not renew orders and perhaps see if they can drain their inventory a little bit. What do you think that means for '27 and for the full quarter? Do you think... how long can that continue and do you think pricing would... is this enough to slow down pricing or are we still going to see increases?</p>
+<p>KH: Do you mean the consuming side or enterprise?</p>
+<p>DK: For DRAM, by far the majority of the market is enterprise and data center, right?</p>
+<p>KH: I think we need to separate it from the contract price and spot price. For the contract price, I believe that the contract price would be still going up in Q1. Because the semiconductor now, we already discussed a lot about it; they already have signed the long-term agreement or contract, whatever. So now, the upstream semiconductor, they don't have much big pressure in the short term. So I believe that the contract price would be still going up in Q1. For the spot price, I think for the DRAM, the spot price in Q1 may be keep flat or slightly going down, because Q1 is a cold season. Especially in China, there is a traditional Chinese New Year, so we don't expect that the big orders will happen in Q1. So the DRAM price would be difficult to go up, I mean the spot price, but the contract price would be still going up in Q1.</p>
+<p>DK: Got it. So again, just to make sure I properly understand. So what you're saying is that DRAM spot prices, you expect them to remain flat and similar.</p>
+<p>KH: Yes, flat or single digit going down drops for the spot prices.</p>
+<p>11/25/2026 at 05:16 AM UTC</p>
+<p>DK: What do you expect for the second quarter and the second half of 2027?</p>
+<p>KH: Sooner or later, I think the overall 2027 second quarter or the second half of 2027, I think the overall trend doesn't change. So the price will be back to the normal, which means back to the uptrend. So the price will be... we will see a bottom in the short term and maybe in the second quarter or a little bit until the end of the second quarter, the price would be back to going up in the second quarter or second half. Because currently everybody has the inventory. The client, the module house, or even the traders, they all have the inventories, so they are not in a hurry to purchase more. But when the semiconductor, the upstream, they still well manage about the supply and the supply situation doesn't have a big change. So once those inventory be consumed, the price will be back to the normal. So yeah, I will keep the same predictions as before. So the second quarter or second half will be still going up.</p>
+<p>DK: Any expectations? Would you expect that now that we have seen a bit of a hiccup, would the second half increases be more subdued than you previously thought? Or could it go the other way because people will actually not have inventory and they would be a little bit... they would be in a tougher bargaining position?</p>
+<p>KH: The visibility of the DRAM would be better than the NAND flash. So for the DRAM, I think entering into the second half of 2027, I think the quarter-over-quarter price is also expected to increase around 10% to 20% quarterly. Because even the big customers, they already signed up the long-term contracts, but actually the contract only covers around 50% because the customers, they cannot 100% make sure that what is the forecast of demand in 2027. The contract only covers around 50%, which means the other 50% they need to negotiate with the suppliers in 2027. So if overall situation is still good, the price will be, the DRAM price will still go up in the second half because there is still around 50% demand that isn't covered by the long-term contract, even for that CSP. And for the consuming side, the percentage covered by the contract will be lower.</p>
+<p>DK: For consumer, what would be your best expectations for when it is going to bottom and how is the second half of 2027 looking like?</p>
+<p>KH: For the consuming side, I still expect the DRAM Q1 would be flat, but the Q2 would be back to increasing. But for NAND flash, I think the NAND flash would be the overall bottom, we will see the bottom maybe until Q2 or even till the end of the Q2 because for the overall NAND flash, we are seeing more inventory in this market. So it needs to take a longer time to consume those NAND flash in this market.</p>
+<p>DK: You said, again, is there a differentiation here between consumer NAND and enterprise NAND?</p>
+<p>KH: And what I mean is the consuming NAND. For the enterprise NAND, I think it will be similar to the enterprise DRAM because they are well-planted in 2027, or at least around 50%. And also the enterprise NAND, the overall entry level, the level will be higher, which means the overall inventory or supply would be more critical than the consuming rate. So the enterprise NAND would be better than the consuming. So I expect that the enterprise NAND, we will still see the bottom in Q2, maybe early Q2, and then the market would keep going up.</p>
+<p>DK:   So both for DRAM and enterprise NAND, approximately the bottom is in the same timeframe, maybe for NAND a few months later?</p>
+<p>KH: Yes, a few months later for NAND.</p>
+<p>DK: Got it. And then what trajectory would you expect in the second half of 27? Is that back to 10% to 20% quarterly increases or would you say that that trajectory would be different?</p>
+<p>KH: For the NAND flash, I don't have such big confidence like the DRAM, so I would be a little bit conservative about NAND flash. I think it will be still going up, but the percentage will be lower than the DRAM. So I expect that maybe</p>
+<p>11/25/2026 at 05:16 AM UTC</p>
+<p>keep like 0% to 10% quarter over quarter in second half.</p>
+<p>DK: Got it. And is that more driven by additional supply coming into market or is that more driven by demand destruction?</p>
+<p>KH: You mean a NAND flash or DRAM? Well, the NAND flash, we are still seeing that trend... It already happened in</p>
+<ol><li>The customers like the PC, they are trying to reduce the cost. So they are downgrading their SSD capacity in</li><li>And I think this trend will be still kept in 2027. But the difference would be in 2026, they are looking for the</li></ol>
+<p>downgrade, which means the downgrade capacity from 1TB to 512GB, something like that. But in 2027, because the memory prices are really high, so now we are seeing the customers, they are trying to step ahead. It doesn't happen again, but I think the possibility, the percentage, it would be very possible to happen that they can further lose their quality spec, which means for the NAND flash quality, they can accept lower grade NAND flash, so that they can decrease their total NAND flash cost. So that is another trend in 2027. And also from the semiconductor side, they are also considering to provide similar downgrade SSD. For example, the standard grade would be like the 512 gigabytes. But now the semiconductor they are considering to provide something like the 500 gigabytes. So around 12 gigabytes deep, because the NAND flash grade is not good. So they can only achieve something like the 500 gigabytes. But those can provide another cost benefit to the customers. So we are seeing several scenarios to decrease the cost in 2027.</p>
+<p>DK: Sure. And then the usable yield for producers, of course, goes up, right? How much additional supply would such downgrades create?</p>
+<p>KH: No, not yet to make the decision because this kind of the discussion still needs to double check if the market, the end users or customers, they can accept like the 500 gigabyte solutions because it is a little bit weird. We don't ever see it. So it still needs to be tested or do more researches. So not yet decided. But I think this is the trend because this is another way to decrease the overall NAND flash cost.</p>
+<p>DK: But let's say they were decided, if that was decided, is there a way to gauge how much additional supplies it would create? Is that, are we talking about 5%, 10% or 2%?</p>
+<p>KH: You mean a total cost?</p>
+<p>DK: Well, how much additional supply? Because right now my understanding is that the... That type of non-standard memory is being discarded, right? If it's not being discarded, that expands the supply.</p>
+<p>KH: I think it can increase at least a 10% supply if the customers can accept downgrade and NAND flash.</p>
+<p>DK: Yeah. And is that 10% of consumer supply or 10% of overall supply?</p>
+<p>KH: Consumer supply. Consumer grade.</p>
+<p>DK: Okay. And that can continue to pressure prices for at least the first half of '27, right?</p>
+<p>KH: Yes, and the semiconductor's revenue would also be impacted because the total selling prices decreases for each SSD price.</p>
+<p>DK: Okay, that's very helpful. Any, what about enterprise as well as perhaps data centers, cost mitigation measures? Are you seeing... and we have seen some down specs, right? Supposedly, NVIDIA VRubin Ultra is coming out with less memories than NVIDIA Rubin. Are we seeing anything on the DRAM side that would imply potential weakening in demand?</p>
+<p>11/25/2026 at 05:16 AM UTC</p>
+<p>KH: I think even for the enterprise side, both DRAM or SSD, they are trying, they are looking for some down spec solutions, but low down spec doesn't mean the down spec quality, but they want to reduce the total usage of the DRAM and NAND flash. So that is another way to decrease the total demand of the memory. But this, we don't... I don't worry about that situation because when it really happens, which means the total, because the server or AI server, the demand is still very strong. So if the overall solution can really, the overall memory can really decrease this. I think the overall demand or the total market would be also increased. So we don't really worry about that kind of... it is good for the enterprise, no matter as a D or DRAM.</p>
+<p>DK: Right. DRAM is the bottleneck. If there is more DRAM or HBMs, then more chips will be sold. Is that what you're saying?</p>
+<p>KH: Yes.</p>
+<p>DK: Okay, wonderful. So that is helpful. So then if I understand correctly, you do not see a DRAM demand destruction.</p>
+<p>KH: Yeah, DRAM is still good.</p>
+<p>DK: Yes, correct.</p>
+<p>KH: Yeah, DRAM is still okay. I have more higher confidence about a DRAM.</p>
+<p>DK: Got it. How much visibility do you have beyond 2027 and, say, into 2028 and later? What's your expectations for 2028?</p>
+<p>KH: Well, actually, I don't know about the 2028, but I can just tell you that 2027 for the enterprise demand would be much more stable. Because now we already have some certain level of visibility about the enterprise memory demand in 2027. They also do well-planned about their CapEx in 2027. But regarding to the 2028, we still need to wait until 2027 so we can know if those CapEx can be, the higher percentage of the CapEx can be extended until 2028. So I don't know about the 2028. The visibility is not really good at this moment.</p>
+<p>DK: Right. From your side, what do you think in terms of SK Hynix saying that they don't really see any issues through 2030, and others somewhat reiterating similar commentary?</p>
+<p>KH: I guess the one reason is they already signed up the 3 to 5 years contract. So that is the confidence they trust that the overall situation can be extended until 2030. And also normally speaking, the AI server is the trend, which means the demand. It is. If, what if it is not a bubble? More and more people would be heavily reliant on the AI server, like the Chat GPT, whatever. So the demand should not be suddenly stuck in 2028. So even if the cap cannot be increased again, but it will be kept at the very high level because you need to continue to keep investing more money for the AI server. So it should not be suddenly stuck in 2028. So I guess that is why they...</p>
+<p>DK: Go ahead.</p>
+<p>KH: Yeah, so that is why I guess why Hynix, or some people, they are optimistic about the memory prices can be extended until after 2028.</p>
+<p>DK: I see. So you still see the demand, right? It's just not clear if prices can continue rising every quarter because those numbers add up, right?</p>
+<p>KH: Yeah, if the enterprise, especially for the server or AI server, if that demand keeps strong, so the consuming side would be just the noises. We are happy to see that both enterprise and consuming demand are all very strong. But if</p>
+<p>11/25/2026 at 05:16 AM UTC</p>
+<p>not, if the enterprise side is good, then the overall trend cannot be changed, the consuming, we are seeing more and more noises. I believe we will see more noises in consuming side because now the overall market is not... the overall demand is weak. So maybe we will see a slight, small cycle ups and downs for the consuming market. But it will be just a small noises in 2027 because now the enterprise is the majority to decide the overall trend of the memory.</p>
+<p>DK: Can the consuming side just be adjusted to new pricing levels and at some point the demand comes back or that's unlikely?</p>
+<p>KH: I think the consuming side, if the overall memory supply is still tight for the enterprise, which means the allocation of resources cannot fully cover the consuming market. So sooner or later, if the supply is still tight, the demand will be back sooner or later when the overall inventory or the market inventory be consumed. So maybe you will see some small ups and downs cycle from the consuming side in 2027. But overall, speaking, the supply will be still tight.</p>
+<p>DK: So how long do you think it will take for the consumer inventories to adjust?</p>
+<p>KH: I think the small cycle would be like 2 quarters, according to my experience in 2027. So now the customers, they may have like the average around 4 months of inventory, which means they can cover the Q4. They don't need to purchase any single pieces orders in Q4. But in Q1 or entering into Q1, they need to consider to replenish their inventory. So I think the small cycle would be happening around 2 quarters. So they will do the replenishment each 2 quarters if those cycles really happen.</p>
+<p>DK: And that's on the consumer side, right? How long is the inventory on the enterprise and data center side?</p>
+<p>KH: Now the enterprise inventory will be still healthy, so 3 months or less than 3 months for the enterprise.</p>
+<p>DK: Both for NAND and DRAM?</p>
+<p>KH: The NAND would be a little bit tight, so less than 3 months, but it will be similar, but DRAM inventory will be tight.</p>
+<p>DK: So you meant that DRAM inventory would be tighter than 3 months, but NAND is at 3 months, or did I mishear you?</p>
+<p>KH: Maybe we can see that the DRAM inventory would be like close to 2 months and enterprise NAND would be like the 3 months. So still has a little bit different.</p>
+<p>DK: Yeah, okay, that's very helpful. Let's see. So I do have a client question coming in on the Samsung agreement with long-term supply agreements with Apple. Are you familiar with that?</p>
+<p>KH: I heard about some of this news, but depending on your questions.</p>
+<p>DK: Sure. Well, the question is, are you familiar with perhaps some of the minimum volume that are committed and perhaps what percentage of Samsung's overall perhaps would be committed in this year and in the corresponding year? And what might they have agreed in terms of pricing?</p>
+<p>KH: I don't yet know the details about the percentage or the details about this contract, so maybe I can share you next time, but currently I don't have more information about the details of the contract between Samsung and Apple.</p>
+<p>DK: Got it. Well, nevertheless, thank you for considering that. What are you hearing out of China? Are they still mostly consumed on the internal market or are you seeing more of that coming outside of China?</p>
+<p>11/25/2026 at 05:16 AM UTC</p>
+<p>KH: You mean the China suppliers like the YMTC?</p>
+<p>DK: Yeah.</p>
+<p>KH: or CXM? Well, they are still aggressive to... sorry... not aggressive, for NAND flash like the YMTC because we already discussed that the overall NAND flash prices is not good as the DRAM. Comparing to the CXMT, the YMTC is more aggressive to expand their footprint out of China because now they already have like 50% market share in China. I mean for the big giants like the Oppo Vivo, something like that. So they need to expand out of China. But for the CXMT, I think their total supply already be covered and already sold out in 2026. Even in early in first half of 2027. So I do believe that they don't have more resources can cover or can sell out of China because they still have the big supply gap to fulfill or cover the demand within China. So they're still planning to expand out of China, but they don't have resources. So it will be a little bit slower comparing to the YMTC.</p>
+<p>DK: Got it. Yeah, it's my understanding that Chinese plans are both YMTC and CXMT to increase the bit supply about 60% annually for the next few years versus about 30% for the rest of the world. How do you view that? Is that enough to just cover supply or could it create an actual oversupply situation in 2028 or perhaps earlier or...</p>
+<p>KH: It DK: later?</p>
+<p>KH: Still cannot cover the supply, cannot be covered because the YMTC now currently what we are talking about the supply gap. The over-help of the supply gap comes from the enterprise memory. But for YMTC or CXMT, their product cannot be totally achieved the enterprise rate, which means even they increase the supply in 2027, 50% or 60%, but their product quality or qualification is not yet been qualified by the enterprise clients, so they cannot use. Or another reason is those big CSP giants... comes from the US. US would be very sensitive to use YMTC or CXMT solutions because these 2 are on the blacklist of the US government. So low CSP. They cannot use these 2 suppliers. So even they have more supply, they cannot cover it. So no need to worry about the overall these 2 suppliers can cover the supply.</p>
+<p>DK: Got it. So with the surge in demand from AI agents, and say, some of the highlights that SSDs are being used for KV cache as people are trying, suppliers are trying to manage the amount of DRAMs they have. When are we going to see more demand for NAND-type applications from, say, the likes of KV cache and other ways to reduce reliance on HBM?</p>
+<p>KH: Well, I do believe that the KV cache would be... those demands would be happened in some time, but we don't see the real project would be happened for the KV cache. So it still needs to take longer time to make it happen. But yeah, I do believe it will be the very positive news for the NAND flash or for the SSD. They can share the loadings of the HBM. But I think the timing would be, I'm not sure, maybe in second half of 2027, because I don't see very clear project is going to mass production in first half for the KV cache.</p>
+<p>DK: Right. So, no earlier than the second half of '27.</p>
+<p>KH: Yeah, maybe. Yeah.</p>
+<p>DK: And in terms of your thinking, in terms of NAND pricing price increases being weaker than in DRAM, does that include KV cache or KV cache could change that relationship and could put NAND pricing in unison with DRAM?</p>
+<p>KH: I believe, yeah. I think once the KV cache demand really happens, it will do the rebalance in between the DRAM and NAND flash. So some demand will come from DRAM to the NAND flash. So NAND flash prices can have the evidence to support. So it can do a certain level of the balance of the price in between the DRAM and NAND flash. So</p>
+<p>11/25/2026 at 05:16 AM UTC</p>
+<p>yeah, it is a good signal for the NAND flash we can expect.</p>
+<p>DK: Got it. AJ, just to make sure, so earlier you said that you would expect the NAND pricing to come back to an upward trajectory in the second half, but at a slower pace in year-end. Does that include KV Cash or not?</p>
+<p>KH: I would not put the KV Cash demand in 2027 because now we don't see very clear demand or forecast. So the second half is just my prediction. I believe that the big volume of the KV Cash demand would be happening maybe in</p>
+<ol><li>So I will not put my KV Cash demand into my predictions or forecast in 2027. So maybe we will see a little bit</li></ol>
+<p>demand coming from starting from the KV Cash, but it is not a big volume to overall impact the memory market.</p>
+<p>DK: But could it be a significant driver in 2028?</p>
+<p>KH: I think so.</p>
+<p>DK: I see. But is it still unclear or is that a pretty high level of confidence that 2028 is when it happens?</p>
+<p>KH: It is still not clear because the overall architecture about the KV Cash, HBM, how this architecture works to optimize the overall architecture is still not clear. So we can expect a second half or 2028, but I don't have the higher confidence that the KV Cash can really impact starting from 2028.</p>
+<p>DK: Got it. Any other technologies that can have an impact in 2027 or 2028 that you would be watching?</p>
+<p>KH: No, I think we already discussed all the major topics.</p>
+<p>DK: Got it. Wonderful. Really appreciate your time and your thoughts here. So thank you very much. And sorry, everyone, for our communication issues earlier. But hopefully everybody was able to hear us and everybody hopefully has a great day.</p>
+<p>KH: Okay, thank you.</p>
+<p>DK: All right. Thank you. Take care. Cheers.</p>
+<p>KH: Thank you. Bye.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>11/25/2026 at 05:16 AM UTC</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
