@@ -40,9 +40,8 @@ def page(src, title):
 
 
 def index(repo, issues):
-    tpl = (repo / 'track/cpu/index.html').read_text(encoding='utf-8')
-    head = tpl.split('<body>', 1)[0].replace('<title>CPU</title>', '<title>Daily notes</title>')
-    head = re.sub(r'<title>[^<]*</title>', '<title>Daily notes</title>', head)
+    tpl = (repo / 'track/semis/index.html').read_text(encoding='utf-8')
+    head = re.sub(r'<title>[^<]*</title>', '<title>Daily notes · Mushroom</title>', tpl.split('<body>', 1)[0])
     rows = []
     for it in issues:
         d = it['date'].replace('-', '.')
