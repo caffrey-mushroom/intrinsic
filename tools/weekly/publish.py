@@ -94,12 +94,16 @@ def update_home(repo, issues):
     row = ('      <a class="row" href="./track/weekly/">\n'
            f'        <div><div class="name">Weekly</div><div class="desc">最新：{html.escape(latest["week_label"])} · {html.escape(latest["hypothesis"])}</div></div>\n'
            f'        <div class="side">{weeks} 周 · {len(issues)} 篇</div>\n      </a>\n')
-    # Remove legacy Semis / Infra / Application display rows (files remain archived in repo)
+    # Remove legacy Semis / Infra / Application / Weekly display rows (files remain archived in repo)
     for legacy in ('./track/semis/', './track/infra/', './track/application/', './track/weekly/'):
         t = re.sub(r'      <a class="row" href="' + re.escape(legacy) + r'">.*?</a>\n', '', t, flags=re.S)
-    # Place Weekly right below Daily notes
-    anchor = '      <a class="row" href="./track/ai-demands/">'
-    t = t.replace(anchor, row + anchor, 1)
+    # Place Weekly right below Daily notes (or at top of Track list if Daily notes is absent)
+    m = re.search(r'      <a class="row" href="\./track/daily-notes/">.*?</a>\n', t, flags=re.S)
+    if m:
+        t = t[:m.end()] + row + t[m.end():]
+    else:
+        anchor = '<h2 class="sec-t">Track</h2>\n    <div class="list">\n'
+        t = t.replace(anchor, anchor + row, 1)
     p.write_text(t, encoding='utf-8')
 
 

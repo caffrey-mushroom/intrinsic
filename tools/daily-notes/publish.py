@@ -71,8 +71,8 @@ def home(repo, issues):
            f'        <div><div class="name">Daily notes</div><div class="desc">最新：{latest["date"].replace("-", ".")} {LABEL[latest["edition"]]}</div></div>\n'
            f'        <div class="side">{len(issues)} 期</div>\n      </a>\n')
     t = re.sub(r'      <a class="row" href="\./track/daily-notes/">.*?</a>\n', '', t, flags=re.S)
-    anchor = '      <a class="row" href="./track/ai-demands/">'
-    t = t.replace(anchor, row + anchor, 1)
+    anchor = '<h2 class="sec-t">Track</h2>\n    <div class="list">\n'
+    t = t.replace(anchor, anchor + row, 1)
     p.write_text(t, encoding='utf-8')
 
 
