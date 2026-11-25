@@ -1,0 +1,268 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.13 | TB | Robotics | VLA Model Scaling &amp; Ego Data Limits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.13 | TB | Robotics | VLA Model Scaling &amp; Ego Data Limits</h1>
+<p class="orig">原标题：Humanoid Robotics &amp; AI Space – Senior Executive, AI Research at Agility Robotics Inc</p>
+<p class="tags">#robotics #llm</p>
+<p class="meta">Third Bridge · 2026-11-13</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>当前VLA模型规模普遍在50亿至70亿参数（Pi0约30亿、OpenVLA约70亿），主要受限于机载实时高频推理以及人形机器人在Thor/Orin算力与电池续航之间的权衡。</li>
+<li>架构上分为System 2远程慢速推理大模型（无规模上限，Astra已承担该角色）、System 1边缘VLA将子任务转为轨迹、System 0为RL底层电机控制器。</li>
+<li>行业正走向统一模型，Pi0.5已在内部预测子任务，而Figure采用分离式设计，完全远程推理仅适用于静态任务。</li>
+<li>部分500亿参数模型仅激活50亿至100亿参数，专家预计1-2年内通过量化可在端侧运行约1000亿参数模型。</li>
+<li>Pi0.5每帧每摄像头约300个token，3个摄像头加文本约1000 token/步，按10Hz计算每小时约3600万token，100万小时约36万亿token。</li>
+<li>这相当于100亿参数VLA每参数约3600个token，高于LLM约2000的水平，而帧率范围在5-50Hz、平均约20Hz。</li>
+<li>在50亿至100亿参数模型上遍历100万小时数据一次，需100-200张GPU约一个月或1000张GPU约一周，预训练1-5个epoch，窄域微调需50-100轮，成本达数百万美元。</li>
+<li>Dyna的100万小时数据曲线收敛很快，说明模型规模也需同步扩大，固定算力下更多样的数据优于更多轮次，专家粗估500亿参数VLA可吸收至少1亿小时ego数据。</li>
+<li>各实验室出于FOMO心态在购买ego数据但会做筛选，Skild AI、Physical Intelligence和Generalist算力获取最佳。</li>
+<li>Astra不会取代Physical Intelligence类公司，可靠性从90%提升到99%仍未解决，需要触觉数据。</li>
+</ol></section>
+<div class="body">
+<p>Client-led • 5 Nov 2026</p>
+<p><b>Expert</b> Senior Executive, AI Research at ﻿Agility Robotics Inc</p>
+<h3>Agenda</h3>
+<ul><li>Over five years' experience in the AI/ML space, focusing on deep learning, embodied AI and developing AI models and autonomous systems for real-world deployment</li><li>Strong understanding of robotics data collection, data preparation, dataset labelling and quality assurance, including preparing datasets for general-purpose policy training and customer-specific applications</li><li>Knowledgeable on VLA (vision-language action) model architectures, inference constraints and deployment considerations, including the trade-offs between model size, latency, compute requirements and real-time responsiveness</li><li>Deep familiarity with hierarchical robotic intelligence architectures combining remotely hosted high-level reasoning models, edge-deployed VLA policies and low-level motor controllers, as well as the implications of model scaling for embodied AI</li></ul>
+<h3>Questions</h3>
+<h3>00:01:27] We are trying to understand how much egocentric data labs can use, and go a level down and look at the mechanics. We've sketched out a chain that starts from a model's parameter size and goes all the way to how many tokens per parameter and how many hours of video that turns into tokens. What do the models look like today? How might that change over the next 3-5 years? Let's start with the model size. Today's VLA [vision-language-action] models are about 5-7 billion parameters. Pi0 is about three billion and I think OpenVLA is about seven billion. Why are these models restricted to low-single-digit billions when LLMs [large language models] such as ChatGPT have gone to one trillion parameters? What is the fundamental reason behind this difference?</h3>
+<p><b>Expert</b> [00:03:16]: Yes. Fundamental reason is mostly the compute requirements for running inference or robots because these policies are running real time on robot, they should be very reactive, very high frequency. When you compare them to LLMs where you put a prompt and you can wait maybe one hour, five minutes, whatever, that's fine for LLMs. For robots, these models should keep sending the action commands to the robot. That's one reason. Obviously, if you have much bigger models, you're going to have higher latency and higher problems, more problems in the inference side.</p>
+<p><b>Client</b> [00:04:07]: That's because these models have to run on the robot itself, at the edge, right? That probably caps how big they can be. Can they do a split like system 1 and system 2, where system 1 is like the model or the part which is inside the robot physically and then system 2 is what lies in the data centre or in the cloud? Is there a way to make the model bigger that way?</p>
+<p><b>Expert</b> [00:04:40]: Yes, there is. Indeed, some companies like Figure AI, for example, they do that. Especially humanoids, one of the challenges is to make the right trade-off between the compute on board and the battery. Let's say you want to put some nice GPU on your robot, but those nice GPUs are usually drawing lots of power and they just drain the battery quickly. That's why you have the solutions like Nvidia Thor and Orin basically. Idea is that, as you said, those onboard compute can do maybe system 1-like smaller model, higher frequency and you can do higher reasoning at system 2 level. Yes, this could work. The thing is, this system 1, system 2 idea has been around for a fair amount of time. I believe people have been trying to, moving away from this to more unified single black box models. The reason is that when you have system 1, system 2, you always have these frictions between those layers. If they're not tightly coupled, system 2 will say something, system 1 will try to do it regardless if it is feasible or not.</p>
+<p>The idea is that can we have a single model, which implicitly and internally have the system 1, system 2 models? For example, if you look at Pi0.5, you will see that there is an internal module where it predicts the subtasks internally and it sends the subtask commands to the low-level final action, meaning that when the user gives a command such as high level, like clean the table, the policy itself is internally kind of separating into small tasks and trying to do it system 1, system 2 internally. For non-humanoid robots, this is not a big deal because you can always have some workstation computer next to the robot. For humanoids, this has been a challenge indeed. I know some companies do fully remote inference, which is an option for tasks that are mostly static. For example, if you're working on an assembly line where things are coming all the time, then you need a very low latency, you cannot afford this extra latency.</p>
+<p><b>Client</b> [00:07:36]: If it's in the same system, for humanoids and if they don't want to lose system 1 and 2, but they just want to keep everything in one physical humanoid, how big can the parameters get? 5-7 billion parameters is not enough to achieve generalisation. Is that the right assumption?</p>
+<p><b>Expert</b> [00:07:59]: There are other tricks people do. I've recently seen some robotic models, which has around 50 billion parameters with some non-active parameters. Idea is that you have this big model, but not always activated, only the 5 billion or 5-10 billion parameter is activated. There are all of these optimisation tricks for sure. I don't think this is the sole problem. People are trying to figure out what is the trade-off between all of these latency, VRAM, GPU capabilities. You're right. Ideally, if you have a very large model, if you can run Astra on the edge device, so that will be great on real time.</p>
+<h3>00:09:06] If I take two scenarios. One is that the integration communication between systems 1 and 2 will get better. From there, can the parameters of the model get as big as 100 billion or 500 billion, similar to what we are seeing in the LLM world, where now it's reached a trillion? Could it go on the same path if they have a system 1 and 2 sort of dynamic? What would prevent it?</h3>
+<p><b>Expert</b> [00:09:40]: Yes, they could. Normally, the slower model, bigger model, you try to host online. It can be a very strong model. Let's say, you can literally have Astra as your system 2, just high-level telling you everything at some frequency. You can have that if you host this remotely in a very nice CPU cluster. Nothing prevents it. At the end of the day, so this high-level reasoning layer can only provide high-level commands. You still need very high-quality VLA or whatever model you have on the edge, it should be still high quality. Of course, you can have it like five billion, maybe 10 billion, but there's always going to be some constraints for that. Actually, even beyond that, there is system 0 where the low-level controller actually is taking care of the final decision at the motor level.</p>
+<h3>00:11:02] Could you help us paint a picture of systems 1 and 2? What do you mean by that? If I'm instructing a robot to go to the kitchen to grab a cup of coffee for me, what would be system 1 and 2?</h3>
+<p><b>Expert</b> [00:11:28]: First of all, system 1 is fast, system 2 is slow. In this example of yours, let's say, prompt to robot say, "Bring me a cup of water from the kitchen." This is your entry level, this is your prompt to the system. System 2 is basically taking this task and putting it into maybe 5-6 subtasks. For example, first task is go to the kitchen. What system 1 does is that to be able to go to the kitchen, it has to create trajectories, which is leading to the kitchen without hitting any objects. These low-level XYZ locations in 3D, these are system 1 output. The higher level go to the kitchen subtask is actually system 2 input to the system 1.</p>
+<p><b>Client</b> [00:12:25]: System 2 is doing the thinking. If I think about it from a human perspective, system 2 is where my brain would sit. System 1 is where my body and the instructions that go to my body would flow from, like the action head. Is that the right way to think about it?</p>
+<p><b>Expert</b> [00:12:43]: You can think of that way because, I think we need to also include the system 0 so that this kind of makes the picture…</p>
+<h3>00:12:52] What is system 0?</h3>
+<p><b>Expert</b> [00:12:54]: System 0 is actually, let's say, system 1 VLA or whatever model tells me to go XYZ in 3D space. To be able to go to XYZ, let's say, it's a humanoid, I need to set all of my joint angles in the particular level, at the motor level, actuator level to the right angles and torques and everything. Actually, you have this controller at the low level, this is system 0. Most of the time, it is the RL, reinforcement learning-based controller. This is more like the human muscle. You have the muscle actually, which is doing this fine precision. You have the intention to go, let's say, you have the intention to pick up the object as a human. This target location determination is more like, it's system 1. The fact that you know that you have to pick up the object to achieve your goal, this is the system 2. Low-level muscle who is actually taking the cup and completing the task, this is the system 0.</p>
+<p><b>Client</b> [00:14:07]: In this particular situation, we can say system 2 can get as big as we would ideally want to, right?</p>
+<p><b>Expert</b> [00:14:15]: Exactly.</p>
+<p><b>Client</b> [00:14:17]: What would be the constraining factor there? Could it reach 500 trillion parameters, or is there going to be a cap there?</p>
+<p><b>Expert</b> [00:14:27]: There is literally no cap there today. Nowadays, people have been using Astra or some big models as system 2, indeed.</p>
+<h3>00:16:35] When it comes to just training some of the other models, how will Astra accelerate, what PI [physical intelligence] is working on or what Figure is working on? How is Astra going to help them?</h3>
+<p><b>Expert</b> [00:16:58]: Yes. It's a big debate at the moment in the community. Obviously, some people think that these models will get so good and they're just going to wipe out all these Physical Intelligence and Generalist and everyone. Some other people think that it's never going to be at that level by simply scaling up the model size and the data because these models are always going to be so huge and they're not going to be system 1. They can be system 2, but they're not going to be system 1. Personally, I don't think they are going to wipe out everyone in the field. It's just they can get very good at it. For example, next year, maybe we're going to see some models from OpenAI, which is going to match the performance of the VLAs like from Physical Intelligence. The thing is this final bit of getting from 90-99%, this high reliability is still not a solved problem. I don't think they're just going to solve it like that. I think they can get there faster, but they are not going to solve it because you still need these tactile data and (inaudible) and everything.</p>
+<h3>00:18:48] If I assume that system 0, 1, 2 sort of approach, system 2 can scale as big as LLM models today. The other thing that you were saying is that a lot of labs want one system in the robot itself. I'm assuming there's still going to be a cap there in terms of how big or how large the parameters in the model can get. What does that cap look like? Would it be 50-100 billion? Is there any way someone is doing 50 billion right now? Could you go to hundreds of billions, or is there going to be a gap now?</h3>
+<p><b>Expert</b> [00:19:35]: When we talk about this, we probably talk about the humanoid, I assume because, as I said, it is so far static of us. For this, with the current, obviously, we're going to get better GPUs, we're going to get better integration, more efficient models and everything. In the near future, probably in the next one or two years, I would expect to see something around a 100-billion-parameter model with lots of quantisation because at the moment, no one is doing quantisation and all these tricks that has been done for LLMs. This is a not explored area yet because the models are not perfect anyway. When you do quantisation, they get worse. With all of those things in the next one or two years, we probably have models that is maybe up to 150 million parameters. That wouldn't be surprising to me. I think simply scaling the model size is obviously intuitively a good idea to scale. In robotics, there is not a clear signal on this. There is no scaling laws for model size.</p>
+<p><b>Client</b> [00:21:04]: There's just not been enough, for example, Dyna has researched one million hours. Do you think there's an asymptote there? Is that not enough research yet to prove what scaling law would look like for ego data, what scaling law would look like for VLA models in general?</p>
+<p><b>Expert</b> [00:21:31]: Yes. I think generally, scaling laws are not clear. Of course, we have better idea on the data scaling laws than the model size scaling laws. Obviously, as you mentioned, some of those companies already have some up to million parameters… hours of data. You can see that even in their paper, their scaling law is converging very quickly. If that's the scaling law we are seeing, you can go back and check the papers and just have a close look at the numbers. You will see that the loss curve they have there that is scaling up to one million hours, you will see it's actually very tight increase and it's already almost converging to something. That's why it is very limited. You have to also scale the model size. Yes, go ahead.</p>
+<p><b>Client</b> [00:22:31]: I was saying, I thought even Generalist saw something where their bigger model size sort of benefited from more ego data.</p>
+<p><b>Expert</b> [00:22:41]: Yes. These two are basically pushing each other forward, obviously, yes. Maybe today, if Dyna have 10x bigger models, maybe the scaling law, they would expect project from this one million hour data will be much more promising because the model will have better capacity to learn the representations.</p>
+<h3>00:23:13] Today, in the LLM world, there are about 2,000 sort of tokens per parameter. Our understanding is that a model can only learn from so many tokens before the data stops being helpful, correct? What does it look like in the world of VLM [vision-language model] or VLAs? Is it going to be 2,000 tokens per parameter? Do you think it can potentially increase? Where is that at today?</h3>
+<p><b>Expert</b> [00:23:36]: Yes. Good question. Currently, both the training and the data scale is significantly behind the LLMs, first of all. For example, if you today give me one million hours of ego data for me to have enough compute to just get a single epoch, basically single scanning of the whole data during my training even once, that will still require me to spend hundreds of thousands of dollars just on that. Currently, I don't know the exact number. I didn't see people also talking about this much because things are still experimental at the moment. I think once we have some better recipes, more standard approaches, we will probably have better ideas on that. Currently, people are trying to do, simply diversify the datasets they have.</p>
+<p>That's the biggest bet everyone has. If you today give me millions of hours of data, even though my model size cannot match that maybe, there is still lots of benefit, which is the fact that the diversity is going to be at another level where the robotics is mostly about being able to adapt into diverse unexpected environments as quickly as possible. That's why people are focusing more on the data side because there is a clear picture that you put more money, you get out of more data. Model side is more complicated. Currently, the reference number you gave me, 2,000 token per parameter, you might even have a larger number at some point for robotics.</p>
+<p><b>Client</b> [00:26:11]: What's the ceiling when it comes to the number of hours models can process data? Say a model has five billion parameters. These five billion parameters have 1,500 tokens per parameter. That means the base for the number of tokens that this model can learn from is 7.5 trillion. That's the ceiling, the model cannot marginally have more benefit beyond that. That 7.5 trillion tokens will translate to a certain number of hours, correct?</p>
+<p><b>Expert</b> [00:26:54]: Yes.</p>
+<p><b>Client</b> [00:26:55]: Today, when you're saying that labs are just buying data and they're not worried about the size of the model, are these labs just buying ego data that they won't even use? Is that what they're doing? Are they just getting their hands on everything they can?</p>
+<p><b>Expert</b> [00:27:10]: Yes. There is lots of fear of missing by many labs. They are like, "Okay, we are just going to pay now. It's better than regretting later." That's the mentality of many big labs at the moment. They don't even have the clear picture in their mind.</p>
+<p><b>Client</b> [00:27:31]: They will eventually get a bit more picky about the kind of data that they're selecting or like the unique hours that they would need. They are not going to buy 10,000 hours of someone just folding a piece of cardboard in a warehouse, right?</p>
+<p><b>Expert</b> [00:27:43]: Exactly, exactly. They have some definitely filtering on that. It's not like they just buy any data. It is more like they deliberately collect high-quality, high-diversity ego data. Of course, it's not super easy to figure out if something is high quality, high diversity. Yes, they definitely have lots of internal tools, lots of data curating and everything.</p>
+<p><b>Client</b> [00:28:15]: Are you saying today, the LLMs are going up to 2,000 tokens per parameter? You're saying this can be even larger. Why is that?</p>
+<p><b>Expert</b> [00:28:27]: As we talk, at the moment, we cannot simply increase the model size for robotics with the current systems. We can increase the video size, data size. Of course, this is going to saturate very quickly.</p>
+<p><b>Client</b> [00:28:46]: How do I fundamentally decide that I can only have X tokens per parameter?</p>
+<p><b>Expert</b> [00:29:01]: From the classical machine learning point of view, there is no fundamental limit to this. As long as you have some neural net, even only two layers of neural net, in theory, it can represent the whole function. That's why there is no limit to this. For LLMs, it turns out that this number seems to be kind of a sweet spot. We don't know what will be the number for other fields like robotics.</p>
+<h3>00:29:32] Theoretically, if there's a limit, why is there a limit, or sweet spot, for LLMs?</h3>
+<p><b>Expert</b> [00:29:44]: I believe it is because of data itself. Data saturates. The information the model can extract from data becomes very saturated. Even if you keep adding more token, it becomes the same data at the end of the day.</p>
+<h3>00:30:06] The way I was thinking about this was, say, you have like an open notebook and someone is telling you something or you're reading something and you're writing notes on it. There's only so much free paper available to you. After that, even if you read something, you won't be able to take notes, so you won't be able to learn new things. Is that the right analogy for thinking about tokens and parameters?</h3>
+<p><b>Expert</b> [00:30:33]: Yes, this is one side of the picture. Obviously, let's say, if you have 100 million parameter robot model, definitely, you will saturate it more quickly than 10 billion parameter. There is these intuitive relationships. In your notebook example, if you keep writing the exact same thing or very similar things in your notebook, at some point, even if you fill the whole thing, it's not going to learn much from it. It's going to just use from the core ideas and the rest is going to be just repeating itself. The text data will literally consume the whole web, everything out there. That's why my guess is that here is not the model size, which is the main bottleneck for LLMs. It is more like the data which is just consumed. Yes, it could be any. That's why they keep increasing, but I don't think they try to increase it now. Currently, it's probably around trillion parameters with some tricks out there. I don't think they are trying to make it 10 trillion or 100 trillion. Now they're trying to look for very specific datasets. You can saturate the data, you can saturate the model, yes, both are fair.</p>
+<h3>00:31:51] How many tokens per parameter do you think VLA models can take today? How do you think that might improve in the future?</h3>
+<p><b>Expert</b> [00:32:10]: It will be probably maybe 1,000x more than the LLMs. This is the reasoning. The LLMs, we learn from the text mainly, most of the information comes from the text. For robotics, we learn from the videos. We learn from the images. Most of the information comes from the images. If you have a full HD image, it's going to have already two million pixels in it, vs a word, a text sentence which is represented by a couple of tokens. When you represent the image, you sometimes use hundreds, if not thousands of tokens in a single image. That's why you already have 100x, couple of 100x difference between how to represent a single image vs how to represent a single word. Of course, this is a very simplified comparison. That's why I would expect it to be maybe 100x.</p>
+<p><b>Client</b> [00:33:18]: I agree. The unit of measurement here is still going to be, for a model, the unit of measurement is still a token. It's not pixels or text. At the end of the day, I'm distilling both down to tokens. Now, if the same model is the same size or parameter count for LLMs or VLAs, what that token comprises should not really matter because my unit of measurement is the same. If it's a five-billion-parameter model for LLMs, the number of tokens per parameter should not really vary, because I'm still looking at it from a token's perspective. If anything, VLA is that you have more tokens because of pixels, but that means your models have to get bigger to consume that same number of tokens, right?</p>
+<p><b>Expert</b> [00:34:12]: Yes. This assumes that you have saturated the model already, right?</p>
+<p><b>Client</b> [00:34:19]: Yes. I'm telling you it's all diverse data. It's not repeatable data. One video is someone cutting a vegetable, one video is someone folding a box. One video is someone ironing a T-shirt. All different videos. I'm just fundamentally trying to understand, if both are tokens, why is it that the same model parameter is able to read more tokens in VLAs, but read less tokens in LLMs?</p>
+<p><b>Expert</b> [00:34:52]: In LLMs, single token is already representing lots of information. In video, you have multiple. You need hundreds of tokens to represent the information.</p>
+<p><b>Client</b> [00:35:09]: Does that mean that you need a bigger parameter model to read the same information? It doesn't mean that the same parameter model can read more information, right?</p>
+<p><b>Expert</b> [00:35:27]: Yes. I think my point is this is definitely true, but this depends on where you stand on the data vs model size access. For example, can we say that, "Oh, five billion parameter VLAs are already saturated with one million hour of data or 10 million hours of data or 100 million hours of data."? This is not very easy to answer.</p>
+<h3>00:35:52] Is that the concept of entropy, which is how much genuinely new information is in the data? Is that a term that you use? Could you explain what entropy is?</h3>
+<p><b>Expert</b> [00:36:15]: Yes. Entropy here means basically you can think of it in literal senses where if you were to lay down all the images on top of each other, how much diversity you have, how much changes, how much noise, how much risk you have in the dataset. This is basically entropy. Of course, there are some numerical ways of quantifying this. This is a different story. I don't know if you have seen those representations, sometimes people like to do where you have this 10 images or 10 data sets, they put it on a lower-dimensional space and you visualise it in a 3D space, how close they are to each other. That's one way to look at it. You're right. Obviously, data quantity itself is not the most important thing. Assuming that we keep adding more diverse data, which is quite possible in robotics. Definitely, it also drive up the model size at some point. Figuring out the exact number for robotics is, at the moment, I think it's very, very hard because how do you even compare? How do you even get this entropy for the whole one-million-hour dataset?</p>
+<p>Maybe it has the same entropy as another dataset, which has 100,000 hours only. If we do a simple math, for example, usually, one frame is around 1,000 tokens… one timestamp, which has, let's say, three camera streams and a text, this ends up being 1,000 tokens.</p>
+<p>Imagine you're running a Physical Intelligence Pi0.5 model and you have this data, let's say, you have three cameras and basically text prompt. These three cameras plus text prompt is 1,000 token per step. Imagine, this is, let's say, 10Hz, very not super high frequency system. You will have 10,000 tokens per second and you can obviously do the math for the hours. You can do 10,000 hours per second. It's going to be 600,000 per minute and it's going to be more than already 36 million tokens per hour. If you think from this perspective, 36 million tokens per hour, if you have, let's say, one million hours of ego data, it's going to be almost like 36 trillion tokens. Currently, let's say, let's take 10 billion parameter VLA. If you divide 36 trillion by 10 billion, it's going to be like 3,600. It's similar to what you calculated for LLMs, it's almost like 4,000 tokens if you have one million ego data and 10 billion VLA. This, of course, depends on the model architecture, if it's a VLA or world model, obviously gives you the rough idea, right?</p>
+<p><b>Client</b> [00:39:57]: Are you saying higher-diversity data is much better for you in tokens per parameter?</p>
+<p><b>Expert</b> [00:40:06]: Exactly.</p>
+<p><b>Client</b> [00:40:13]: The more diverse data you have, the more you're able to optimise your tokens per parameter and the more new data you're able to feed into the model without the model getting bigger, correct?</p>
+<p><b>Expert</b> [00:40:24]: Yes, exactly.</p>
+<h3>00:40:28] How was the team thinking about figuring out how many hours you would need? We want to get to next is after the tokens per parameter. You said it can go anywhere from 10x to 100x of what we're seeing for a text today. Then what happens in LLMs is that some of the models can reuse the same data multiple times before any incremental benefits come from it, right? I think the term is passes, where you can have multiple passes of the same data.</h3>
+<p><b>Expert</b> [00:41:10]: Yes, epoch.</p>
+<p><b>Client</b> [00:41:12]: Epoch, correct. How many passes before the value falls to zero for VLA models?</p>
+<p><b>Expert</b> [00:41:25]: Good question. You will need hundreds of GPUs in your cluster and you would need to train this for one month to be able to get five epochs on maybe one million hour ego data, be it a traditional with the regular VLA world model.</p>
+<p>Currently, if you have, let's say, 5-10 billion-parameter robot model VLA or world-based approach and you have one million hour of ego data, it will take you around one month if you have maybe 100-200 very modern GPUs to just get a single pass. Obviously, if you scale up your GPU cluster, maybe you have 1,000 GPUs available to you, then it's going to take you maybe one week to get a single pass. What people know is that usually they get maybe one pass or maybe less than five passes. They do lots of pass when they do the fine-tuning. Maybe you do 50-100 pass on a narrow datasets when you do the fine-tuning. That's where you adapt it. That's why none of these robotic models are actually super reliable out of the box because they are undertrained in that sense. You cannot get hundreds of epochs on the whole dataset. That's why you still need the fine-tuning. Yes, it's going to be a few passes during pre-training and maybe 100 pass during the fine-tuning.</p>
+<h3>00:44:01] Are you saying models for VLAs are going to be a lot lower, where you can go a maximum of five epochs until you stop seeing incremental benefits from it?</h3>
+<p><b>Expert</b> [00:44:15]: Here, the bottleneck is the compute actually. More is the better actually. Normally, if you can do more, it is better. You would already spend USD 1m to do this easily. Most of the time, you have to run many other experiments to make sure you're running the right experiment. If you just blindly run one experiment for one month and you realise it's not the best choice you made, that's not a good idea. When you accumulate all of these costs, it's easily millions of dollars. That's why you have to stop even though you can get more benefit from more training.</p>
+<h3>00:45:03] When you train the next version of a model, say, you're going from v1.0 to v2.0, do you typically reuse the whole corpus of old data, or do you drop some of the old data? Which labs have the highest compute capacity for robotics today?</h3>
+<p><b>Expert</b> [00:45:29]: As far as I know, the very well-funded labs like Skild AI, Physical Intelligence and Generalist have very good access to clusters.</p>
+<p><b>Client</b> [00:46:11]: We were calculating earlier. You said after tokens, the video is typically broken down from these models. The videos are broken down into frames, correct? Then the model is reading a certain number of frames per second, and because the gap between two incremental frames is not that different, correct?</p>
+<p><b>Expert</b> [00:46:37]: Yes, correct.</p>
+<p><b>Client</b> [00:46:51]: How many frames per second are these models looking at? Is it 2-3 frames per second?</p>
+<p><b>Expert</b> [00:47:02]: [On] average, if you look at the different models you see out there, they're going to be around 20-30 frames per second. 20 or 30, between those range. These are average. You will see some labs running big models around 5-10 frame per second. You can also see some other people doing 50Hz. Basically, it is around 5-50 with the average of 20.</p>
+<p><b>Client</b> [00:47:37]: What defines that? Why are some models, or why can some labs read 20? Why are some able to read only five? Why can some read 50? What determines that?</p>
+<p><b>Expert</b> [00:47:51]: This is a training-time parameter, obviously, but you can also tune this during the inference when you deploy the model. Let's say all of your data is recorded at 20Hz. Then, when you deploy your model, your model is going to work best at 20Hz, but you can also ask your model to work at slower frequencies. What defines is most of the time the prior data mixture plus the tasks they are interested in. If you are dealing with dynamic tasks, you want to have very high frequency. If you know that you have static task, you can just get away with slower frequencies like 10Hz. That's the logic.</p>
+<p><b>Client</b> [00:48:55]: Are you saying it's up to the labs to choose how many frames per second, and they typically determine that based on the task that they are looking at? If it's a more complex task, are they reducing the number of frames per second?</p>
+<p><b>Expert</b> [00:49:10]: Yes, they would increase it during the fine-tuning, especially. Imagine, for example, if you have very rich contact manipulation, if you're inserting a USB, then you have to have a very good feedback as soon as possible because you don't know how it is going. Is it going in the right direction? Most of these systems, they are blind in a sense that they don't have the tactile feedback. That's why some people are believing that, "Oh, you need to have actual tactile feedback instead of having a very high-frequency cameras." This is the logic because you want to have a feedback immediately so that the model can react to it immediately.</p>
+<h3>00:50:05] How many tokens would there be per video frame? The average number you said is 20 frames per second. How many tokens are going to be used per frame per camera?</h3>
+<p><b>Expert</b> [00:50:31]: Let's take the Pi0.5. It's using around 300 tokens per frame, basically per camera per step, which means usually you have three cameras and you also have some text prompt attached to this step, if you end up around 1,000 tokens per time step. If you have 20 of these in a second, you're going to have 20,000 tokens in a second.</p>
+<p><b>Client</b> [00:51:15]: From a frame perspective, if it's 300 tokens per frame and there are 20 frames per second, that should be 6,000 tokens per second, right?</p>
+<p><b>Expert</b> [00:51:37]: Yes, but you have multiple camera streams. This is only one camera, one frame.</p>
+<p><b>Client</b> [00:51:44]: Yes, correct. This is per camera. You have 6,000 tokens per second per camera?</p>
+<p><b>Expert</b> [00:51:51]: Yes. Of course, this will depend on your choice of vision backbone. If you're using a different one, they're going to change, but, yes, you can take this as a good estimate.</p>
+<p><b>Client</b> [00:52:05]: There's only one camera, not three, correct? If it's a five-billion-parameter model with 20,000 tokens per parameter with four epochs, at 20 frames a second with 300 tokens per frame for that one camera, that gives me 100 trillion tokens the model can use, 21.6 million tokens per hour of video, and that leads to 1.2 million unique hours that the model can take in and learn from? Is that the right way to think about it? Is there a ceiling when it comes to the number of hours that models can be trained on?</p>
+<p>Everyone is saying that ego data is a very large opportunity. The way we were thinking of doing it was like breaking this down into some of the more granular pieces and understanding, what's the limit that these models can train on. Something that we said before was, say, it's a 50 billion parameter model, like one lab is doing 20,000 tokens per parameter today. Is that the right way to think about how a 50 billion parameter model can only read about 11.5 million hours of ego data? This is obviously assuming that only ego data is being used.</p>
+<p><b>Expert</b> [00:55:46]: To be honest, I don't think this is the right way of thinking about it at the moment. Let me give you a perspective, which is, let's say, you have a compute budget. In one case, you have one million hour of data. In other case, you have 100 million hours of data. Let's assume 100 million hours one is 100x more diverse. Let's assume that you only have a budget to go single pass on the one million. In that case, if you train it with the first one, you're going to have one full pass in the one million data.</p>
+<p>Let's take two cases. One case, you have one million hour of ego data. In other case, you have 100 million hours of ego data. Let's assume the second one also has 100x more diversity. Let's say, your compute budget lets you do only one full pass on the one million hour of data. Let's say, you have a compute budget, which can only do one million hour pass. Regardless, you have 100 million or whatever data you have available, you can only do this one million hour pass in terms of compute budget. If you train your model with the first data, if you're going to have one full pass, when you train it with the second data, you're going to have 1% pass. It's not even going to be one full pass.</p>
+<p>However, in the second one because you have 100x diversity, this means your model will keep seeing from many different episodes because when we train, the model is basically picking up a frame from an episode of task from the data. Model will see frames from 100x more diverse datasets. Even though it's not going to be full complete episodes in terms of diversity, it will be exposed to more object, more human, more morphology and environment and everything. The second one, although you train with the second data is definitely going to be much better than the first one, even though you have the exactly same compute budget and even though you were not able to have a full pass in the second one.</p>
+<h3>00:58:27] Are you saying that compute budget is going to be a constraint when it comes to training?</h3>
+<p><b>Expert</b> [00:58:32]: Definitely. It's not purely about the quantity. That's my point because one million hours means how many episodes, how many tasks, how many environments.</p>
+<p><b>Client</b> [00:58:48]: Why would frames from one episode be different?</p>
+<p><b>Expert</b> [00:58:58]: It can be different because of many different reasons. It can be because of the human morphology is different. Every human is a different size robot in a sense. It may be because action taken is more diverse or the objects are different, lighting is different, can be anything.</p>
+<p><b>Client</b> [00:59:16]: If they're all a similar set of frames, wouldn't it be a similar set of frames in one episode?</p>
+<p><b>Expert</b> [00:59:25]: Not really. Imagine a task, at the beginning, you do just picking up an object and at the end, you're just placing the object. In the middle, you're moving on the free space. Every fragment of the episode is going to teach you a very different skill.</p>
+<p><b>Client</b> [00:59:47]: You mentioned that your gave one dataset with one million hours and the other one was 100 million hours. If I assume that compute is not a problem, you will be able to run over the datasets if you want to. If it's a 50 billion parameter model, is there still a limit to how many hours I can use to train that model? I'm assuming you can use the compute you want. You still can't go beyond the math we just did, which was 11 million hours of ego data.</p>
+<p><b>Expert</b> [01:00:41]: That's definitely true. I think the exact ratio is not known. My guess will be that, currently, we probably have maybe at least 100 million hours of ego capacity of learning with 50 billion parameters of VLAs. That will be my rough guess.</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

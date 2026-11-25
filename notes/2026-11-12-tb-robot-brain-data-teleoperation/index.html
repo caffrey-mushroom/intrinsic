@@ -1,0 +1,301 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.12 | TB | Robotics | Robot Brain Data &amp; Teleoperation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.12 | TB | Robotics | Robot Brain Data &amp; Teleoperation</h1>
+<p class="orig">原标题：Physical AI &amp; Robotics Industry – Senior Researcher at Tutor Intelligence Inc</p>
+<p class="tags">#robotics #llm</p>
+<p class="meta">Third Bridge · 2026-11-12</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>Tutor Intelligence的资深研究员解释，机器人VLA模型参数多为数十亿级，原因是推理必须靠近机器人运行以降低延迟：一般应用需低于50毫秒，传送带抓取等高反应场景需接近10毫秒。</li>
+<li>可采用“大型教师模型蒸馏到小模型”的路线，例如小米以Qwen 3.6（约270亿参数）作为VLA骨干，结合仿真和真实数据训练；Qwen、Gemma等骨干模型可在单块GPU上本地运行，教师模型也可以直接使用OpenAI或Anthropic的闭源模型。</li>
+<li>第一视角（egocentric）数据主要用于预训练，以弥补VLM缺乏的操作知识；但同一仓库内重复采集的数据边际价值迅速递减，关键在于覆盖场景的广度而非时长，Dyna已训练约100万小时数据。</li>
+<li>GPT-6 Astra能根据视频构建出可靠得惊人的仿真环境，研究者已开始用这些仿真训练VLA，这可能降低对真实数据的需求，但专家认为现在下结论第一视角数据不再重要还为时过早。</li>
+<li>实现泛化需要遥操作、UMI手持夹爪、仿真和第一视角数据组成的“数据汤”；汽车产线等低变异场景可能只需数万小时仿真和少量真实数据，家庭场景则需要数百到数千小时真实数据，Generalist使用了约50万小时数据。</li>
+<li>LLM的经验是每个参数约1000-2000个token，但机器人数据冗余度高，同质数据可能需要每参数1万至2万个token；小模型的预训练数据饱和点尚无定论，参考Physical Intelligence的实验可能高达1亿小时。</li>
+<li>在客户现场微调中，像活塞杆插入这样的任务约需1-10小时遥操作数据，仓储纸箱包装约需每个SKU 10小时；但专家表示目前尚无公司实现99%甚至90%的自主可靠率，至少未来1-2年仍需人工兜底。</li>
+<li>利用低人力成本地区的远程遥操作员接管故障已成为旧金山多家初创公司的商业模式；每个机器人小时所需的遥操作分钟数会随问题修复而下降，但每新增一种任务都要重新经历干预与数据采集。</li>
+</ol></section>
+<div class="body">
+<p>Client-led • 5 Nov 2026</p>
+<p><b>Expert</b> Senior Researcher at Tutor Intelligence Inc</p>
+<h3>Agenda</h3>
+<ul><li>Around 10 years' experience in robotics research, focusing on multimodal sensory data for robots</li><li>Knowledgeable on physical AI strategies and robot brain architectures, including VLA (vision-language-action model) and VLM (vision-language model) parameter constraints, cloud vs edge processing, teacher model distillation and Physical Intelligence's approach</li><li>Deep insights into pre-training and post-training dynamics, covering egocentric and teleoperation data requirements</li><li>Well-placed to discuss teleoperator involvement dynamics, including the decline of teleoperator minutes per robot hour through fine-tuning and the path toward robot reliability</li></ul>
+<h3>Questions</h3>
+<h3>00:07:45] We are looking at the physical AI space and want to understand what different players are doing and their strategies. From a policy perspective, if I look at most companies making robot brains or robot policies, they're essentially using a combination of VLA [vision-language-action model] and an action head. The number of parameters most people are using is in the range of a few billion. I'm trying to understand why it's a few billion, vs ChatGPT or other LLMs [large language models] where parameters have gone into the trillions. What is the constraint here? Why is that the case?</h3>
+<p><b>Expert</b> [00:09:45]: When you have a certain number of parameters, every single time you do a forward pass on your neural network, you have to run through all of them. The reason why you have high parameter counts is because you want to deal with more complex concepts. An LLM might want to talk about everything going on in geopolitics and also be able to do math and also be able to do physics, all at the same time, and you need a lot of parameters to deal with that. Robotics problems also need a lot of parameters to deal with it . The more parameters that you have, the slower it takes to get an answer. It needs to be run very close to the robot because you can't deal with a lot of delay of getting that sensory information, like cameras, audio, the physical sense of touch of the robot to that model. It has to be a small-enough computer that is close to the robot itself in order to process that information.</p>
+<h3>00:12:13] Are people doing large processing in the cloud and small processing on the robot at the edge? Can you have a configuration like that to help you scale beyond five billion parameters or a few billion parameters? I'm asking because I'm not sure the current number of parameters is sufficient to take this model base to generalisation. My understanding is you might need to increase parameters going forward. How would you manage that?</h3>
+<p><b>Expert</b> [00:13:05]: What you can do is you can have a lot of compute. You could say a data centre that is very close to the robots, and as long as the latency to get information from the sensors on the robot to that data centre is very low, that is a totally viable strategy, but it's all about the ping or the round-trip time to send information and get it back from that data centre because you want it to be equivalent to a local computer.</p>
+<p><b>Client 1</b> [00:13:40]: Based on your experience, how much latency can work in this set-up?</p>
+<p><b>Expert</b> [00:13:50]: We need to be under 50 milliseconds, but it depends on the application. For doing something very reactive like picking things up off of a conveyor belt that's moving pretty quickly or catching something that dropped, it needs to be a lot closer to 10 milliseconds. For picking up things that are all on a table, it can be slower.</p>
+<h3>00:14:34] Can a lab train a very large teacher model on a huge amount of egocentric footage or data, then distil it into a small model that fits onto the robot? Is that a possible option here?</h3>
+<p><b>Expert</b> [00:14:53]: That is definitely a possible option, and that is what the Xiaomi model recently did. They used Qwen as a backbone for VLA. Qwen is just a distilled model built off of these very large models, and you can run it locally very quickly.</p>
+<p><b>Client 1</b> [00:15:16]: How big was this Xiaomi product?</p>
+<p><b>Expert</b> [00:15:21]: I can't remember how many parameters off the top of my head. I can do a quick search, but I do know that they were using Qwen 3.6, which I believe is a 27-billion-parameter model.</p>
+<p><b>Client 1</b> [00:15:37]: Do you have any idea what it was trained on?</p>
+<p><b>Expert</b> [00:15:46]: Xiaomi was trained on a combination of simulated and real-world data, a real mixture of different things. The Qwen model was also trained on a little bit of robot data as well.</p>
+<p><b>Client 1</b> [00:16:06]: Theoretically speaking, if that is a possibility where you can have a large teacher model which can take a huge amount of data, how large can this model become? Can it go to trillions of parameters, which is the case with LLMs, or is that not even required?</p>
+<p><b>Expert</b> [00:16:32]: So far, it has not been required. Certainly, if we could run a trillion-parameter model at the edge where a robot is, we'd probably get better results, but it's not been proven to be required yet.</p>
+<h3>00:16:53] I'm trying to understand the reason for it. Is it because LLMs deal with knowledge work, which has a lot of multidimensionality attached, vs physical AI operating in a more deterministic physical world? Is that why you don't require such huge models in the physical world?</h3>
+<p><b>Expert</b> [00:17:19]: It's a combination of things. One thing we've noticed is that there is a trend in the LLM space where having a trillion-parameter model helps you learn more reliably. It makes it just easier to learn the problem. When I go to an LLM, I go to try to build something that handles language.</p>
+<p>What that points to is there exists smaller models that could do this. They're just much harder to train. Once you find a valid solution in the very large model space, you can then distil it into a much smaller model. Because of this, it's difficult for me to tell you it's impossible for a smaller model in the robotic space to work. I think there exists a training regime that could make it work. I just know that the compute constraints are often why people are not trying to do this through cloud. [It] is that I need reactivity and there's already enough latency in the rest of the system that I am building to make a robot work well.</p>
+<h3>00:19:07] Then you see companies such as Physical Intelligence moving towards that large teacher model because, to use your example, you need to crack that large model to distil certain things, such as distilling to particular models that work in particular settings. At the end of the day, you'll have to train those models, which will be very large in nature. Is that the right understanding?</h3>
+<p><b>Expert</b> [00:19:42]: The field is using things like Qwen or Gemma as the backbone, and those comfortably run on a single GPU locally. You don't need any cloud infrastructure at all. Even a 27-billion-parameter model will run locally.</p>
+<p><b>Client 1</b> [00:20:02]: That is for the VLM part, right? For the action head part, you're saying you don't require a lot of data to train action head. Is that the right understanding?</p>
+<p><b>Expert</b> [00:20:18]: If we look at what Generalist is doing, they're using 500,000 hours of data. I don't know that that's true. I think it also requires a lot of data as well. It's just a different kind of data.</p>
+<h3>00:20:34] If you move towards a 500 billion-parameter approach for physical AI, what would change? Would the parameter count for the VLM [vision-language model] change, or would you add more parameters to the action head?</h3>
+<p><b>Expert</b> [00:21:03]: You would probably have more parameters for the VLM part. I don't know that the action head would get more parameters, but you do need a lot of good robot data to ground what it means to translate between that high-level understanding in the VLM part and how to translate that into good actions for the robot to follow.</p>
+<p><b>Client 1</b> [00:21:29]: Hypothetically speaking, how large can these VLMs become in terms of the number of parameters, if it's a teacher model?</p>
+<p><b>Expert</b> [00:21:51]: Within a single GPU or within a few GPUs, you can get up to…</p>
+<p><b>Client 1</b> [00:21:56]: I'm just taking an example of that teacher model, which can be trained in the cloud and in a data centre and then used to distil into a smaller model. The teacher model will be very heavy in terms of parameters and will require a huge amount of data, right?</p>
+<p><b>Expert</b> [00:22:21]: Yes, that's correct, but that teacher model could be OpenAI's model or Anthropic's model. It doesn't have to be something open source.</p>
+<h3>00:22:36] A lot of companies claim to be doing pre-training using that egocentric data. What does that pre-training mean? Are you saying they can use VLMs from other players? What does that pre-training help you with? Is it only training the action head?</h3>
+<p><b>Expert</b> [00:23:11]: It's not just for the action head. It can also help build better features for manipulation in general. VLMs, at least historically, did not have a good understanding of what it meant to go and manipulate things. They were trained on a lot of available data on the internet, maybe some YouTube videos, but primarily images. They didn't have an understanding of what happens. The field went to collect a bunch of egocentric data to fill in that gap of knowledge because LLMs and VLMs did not have this.</p>
+<p><b>Client 1</b> [00:24:05]: Essentially, the egocentric data fills the gap from a robot's point of view, in terms of how the robot would see the world. That is the gap that egocentric data is filling and that is being filled in the VLM itself. Is that the right way to put it?</p>
+<p><b>Expert</b> [00:24:29]: That's correct.</p>
+<p><b>Client 1</b> [00:24:31]: You can't use Gemma or any Anthropic model off the shelf. Maybe you can use the open-source model and then fine-tune it or retrain it based on a lot of egocentric data or other kinds of data. That's how we would do it essentially, right?</p>
+<p><b>Expert</b> [00:24:57]: I think that was true, especially one year ago, when a lot of these egocentric companies were coming up. I don't know that that's as true anymore because recently, we've seen, with GPT-6 Astra, that people are able to take videos of something happening, whether it's a robot demonstration or it's a video of somebody handling something and it's able to build a simulation of it, which points to it having enough context to take visual data and understand it physically.</p>
+<p><b>Client 1</b> [00:25:37]: I've spoken to a lot of researchers. Simulation doesn't work. They say that they are not able to capture a lot of physical properties into simulation. That used to be my understanding, unless I'm missing something here.</p>
+<p><b>Expert</b> [00:25:52]: It is shockingly good at building a reliable simulation.</p>
+<p><b>Client 1</b> [00:26:01]: Can that simulation be used to train these VLMs or these VLAs?</p>
+<p><b>Expert</b> [00:26:11]: Yes. We've seen some researchers starting to do this already.</p>
+<h3>00:26:17] Do you think the need for egocentric data is going down, or will go down very soon?</h3>
+<p><b>Expert</b> [00:26:34]: I don't know that I would jump to that conclusion quite yet. One of the things that's important to recognise about egocentric data collection is where are you sampling from? What I've seen a lot of people do in the egocentric space is they will go and collect in a warehouse that they already have a bunch of workers doing things in, and they'll record them doing stuff for 40-60 hours a week constantly, but the information contained in every single minute of those 40-60 hours of demonstrations is not very interesting. The first hour of data is really useful and then the second hour of data is a lot less useful because it's the same thing, and then it keeps dropping off because the novelty is not there.</p>
+<p>I think to some extent, Anthropic and OpenAI are very likely, having used some of that data that's already been collected, to make their models work by purchasing it, but I also think that egocentric data is a sampling strategy. It's how I find the kinds of data I haven't seen already. If you go to one of these egocentric places, you'll see that there's not a lot of diversity. I don't know that I would say egocentric isn't relevant anymore. I would ask what the models are missing in terms of knowledge, and [whether] egocentric can fill in that gap. If so, then it's still quite valuable. It was never valuable for it to just be a pile of data that you endlessly collect in the same spot forever.</p>
+<h3>00:28:24] I understand diversity and variety are important here. I would like to change gears because I have a lot to cover. A lot of the training data came from teleoperation data rather than relying heavily on egocentric data. Is that the right understanding?</h3>
+<p><b>Expert</b> [00:29:13]: I see lots of different strategies. If you look at what Generalist does, they have these UMI-style or handheld grippers to collect data. Sunday does the same thing.</p>
+<p><b>Client 1</b> [00:29:31]: That I understand. What I'm trying to understand is, if I use primarily teleoperation data only, what task environment would you use to train the model? How many hours would be required for pre-training?</p>
+<p><b>Expert</b> [00:30:00]: This is actively changing how many hours are required because the VLMs are getting so much better. Also, because simulation is now becoming a lot more capable, it's possible you need a lot less. I would say it's the complexity of the task and the varied conditions of the task. Let's say that you're dealing with a car manufacturing pipeline, and you need very high accuracy in order to make it work, you probably need a very good simulation and you probably need tens of thousands of hours of simulation to make it work, but you probably don't need a lot of samples in the real world because you have very limited variability. The lighting is always the same. The part always looks the same. The arm is always the same. You're not changing things dramatically. If I was in a home, the variability is significantly higher, and I probably need a lot more real-world data, in the hundreds to thousands of hours to make it reliable.</p>
+<p><b>Client 1</b> [00:31:31]: Interesting. Essentially, if I look at teleoperations data, depending on the task and environment, the range can be tens of thousands to hundreds of thousands or even millions, and millions would be the upper case for residential use cases.</p>
+<p><b>Expert</b> [00:31:49]: Correct. It's really about variability, but it could be as few as an hour or two if the task is really reliable.</p>
+<h3>00:31:58] I understand it from a task perspective, but if I look at the promise of physical AI, people are saying the industry is moving towards generalisation. I understand different environments and tasks would require different retraining. To reach generalisation, how much teleoperation data would be required if I'm following a strategy such as Pi0.6, where I'm not using any egocentric retraining?</h3>
+<p><b>Expert</b> [00:32:40]: How much teleoperation data is required, it really depends. The way I look at all of these data collection strategies is they are not one thing you should do. There are multiple things you should do. I would say you need to do teleoperation, you need to do UMI-style data collection, you need to do simulation and you need to do egocentric. It really depends on how you want the behaviour to look and which one is easiest for you to collect. There are going to be activities where teleoperation makes a ton of sense such as in a warehouse setting or doing indoor pick-and-place or things where an operator can be standing nearby, but controlling the robot or even remotely. There are some things that it's just going to be better to collect UMI-style data collection because your human hands are a lot smoother getting that feedback, from touching the world with those gloves than you would be doing teleoperation. Similarly, simulation might be a lot better because we can simulate that particular operation really well and build robust simulators around it. These are all different sampling strategies. I don't think I would be isolated to one.</p>
+<p><b>Client 1</b> [00:34:08]: From what I understand, it looks like to reach the promise of generalisation in physical AI, you would essentially need different types of data for different environments, for different use cases, so it's a data soup that you require. You'll require teleoperations, you'll require egocentric, you'll require UMI [universal manipulation interface] data and for different environments, different data simulation also. Is that the right understanding?</p>
+<p><b>Expert</b> [00:34:36]: That is the right understanding.</p>
+<h3>00:34:39] Where would egocentric data be more relevant? Is it mainly for pre-training? Can it also be used in post-training?</h3>
+<p><b>Expert</b> [00:34:59]: The way I thought about egocentric is that it's mostly pre-training because it is not as easy to make it directly adapted onto what the robot would do, because human hands do things differently than what a robot hand can do.</p>
+<h3>00:35:21] I tried using the Pi0.6 and Pi0.7 papers and it looks like Pi0.7 used a lot of egocentric data that helped generalise the robot brain to many different tasks. I'm trying to understand how to think about the combined need for egocentric data. What's the best way to estimate that?</h3>
+<p><b>Expert</b> [00:35:59]: The way I would look at Pi, anything Physical Intelligence has done is, yes, it was really important to do the egocentric data collection because it got them a lot of different environments and a lot of different behaviours about what to do, but the last mile to make it work really well on the robot has to be data collected on that robot. That is the post-training data.</p>
+<p><b>Client 1</b> [00:36:32]: There is a scaling law that has been proven on pre-training data egocentric data, at least to some extent. As you increase the pre-training data, the extent of post-training reduces. That's my general hypothesis. If you increase the amount of egocentric data, have more variety here, the teleoperation data that's required for post-training might reduce. Is that a fair understanding?</p>
+<p><b>Expert</b> [00:37:17]: I think that is a fair understanding.</p>
+<h3>00:37:27] I think Dyna has gone to the maximum amount of egocentric data it has trained its model on, which is one million hours. I'm trying to understand what that number can become. I know it's hard to estimate, but is there a logical, first-principles way to think about it?</h3>
+<p><b>Expert</b> [00:37:58]: Look at every single model, whether it's an LLM or it's one of these behavioural foundation models or it's a model that's doing biology as needing coverage. There is a distribution of things that can happen in the world, and you need to be able to cover the distribution. Every single machine learning model that exists on earth cannot extrapolate information. It can only interpolate. What that means is I need to understand the fundamental concepts to be able to go between them. If I've never seen a concept before, I cannot go between it. There is no proxy for it. The way to look at how much bigger that number could get, [whether] it could go to 10 million or 100 million is really a question of [whether] there is more information that needs to be covered. What in the world has not been covered yet? One example for me that I have not seen a lot of data being collected for is, let's say, construction data. I don't see coverage for that problem yet. If there's not good coverage for that problem yet, how do I know that my model is actually going to understand how to start doing that if I move it to a construction context?</p>
+<p><b>Client 1</b> [00:39:34]: If I understand what you're saying and interpret it in the right way, you're essentially saying the breadth of the things covered is more important than the amount of data in each of those tasks. Essentially, the way I should look at this is how many environments, how many tasks can I cover in terms of egocentric data and number of hours per task in environment. That is how I should think about egocentric data, right?</p>
+<p><b>Expert</b> [00:40:08]: That's correct.</p>
+<p><b>Client 1</b> [00:40:17]: If, let's say, for all the possible combinations of tasks and environments, I collect enough number of hours, that is where I can say that pre-training data or pre-training egocentric data has stopped paying off, and then the next dollar should go into post-training instead. Is that the right way to think about it?</p>
+<p><b>Expert</b> [00:40:41]: Yes, that is the right way to think about it.</p>
+<p><b>Client 1</b> [00:40:46]: I know, again, it's a very guesstimate sort of a question, but according to you, how many different possible combinations of tasks and environments are possible? How much data would you require per combination of tasks and environments?</p>
+<p><b>Expert</b> [00:41:22]: It's like asking how many atoms are in the universe. How many jobs are on earth? How many unique things do people do to get paid for? I would say that number is probably comparable to what you're looking for as far as an answer. I don't know the answer to that off the top of my head.</p>
+<h3>00:41:50] If you look at a five billion-parameter model, there's a limit to how much pre-training data you can feed it before it starts paying off, and then you need to spend more on post-training. How many hours would you require for pre-training for this five billion-parameter model?</h3>
+<p><b>Expert</b> [00:42:22]: I think pre-training and post-training exist because we are in a local optimum. We have this differentiation because all the pre-training data is about grabbing as much data as we can, somewhat blindly. The post-training is, "I know exactly what I need the robot to do, so I'm going to add this at the last level," but you could just have included the post-training data in your pre-training step and not need post-training data at all. The distinction is somewhat arbitrary.</p>
+<p><b>Client 1</b> [00:43:00]: I could not understand that part. Can you repeat that?</p>
+<p><b>Expert</b> [00:43:04]: Yes. Post-training and pre-training are all just training. You can do some slightly different things to the model itself, but fundamentally, if the knowledge is contained in the model at any stage, you'll be able to do the task you care about. Pre-training is that I am sampling as much as possible. I am covering as much of everything that the model could see, but I'm not being very smart about it all the time. I'm collecting all the data I possibly can from as many sources as I can to train this model. Post-training is, "I have a customer and the customer wants a thing, and I'm going to collect 1-3 hours of that," but you could have just included that 1-3 hours in the pre-training and not needed to talk to the customer at all.</p>
+<h3>00:44:04] For a more humanised model working in a warehouse, where the job is to pick stuff, it's a five billion-parameter VLA model. For that particular task, post-training would be required to fine-tune it to pick stuff. How much pre-training egocentric data can it take before it saturates, or before it doesn't make sense to retrain?</h3>
+<p><b>Expert</b> [00:44:51]: That is actually unknown at this point. Nobody knows the answer to that question. You could estimate it using experiments that Physical Intelligence has done and say it could be 100 million hours of data, but that is not known.</p>
+<p><b>Client 2</b> [00:45:10]: The way we think about this, a model can only learn from so many tokens before data stops helping. Today, for small language models, that is about 1,000-2,000 tokens per parameter. Gemma 3, four billion parameters trained on four trillion tokens. Llama, eight billion parameters trained on trillions of tokens. If I just think about it from that perspective, that a five-billion-parameter model can be trained on, let's say, 2,000 tokens or 1,500 tokens per parameter, that gives you 7.5 trillion tokens. That's the max it can take from a training perspective.</p>
+<p><b>Expert</b> [00:46:03]: That is for LLMs where we have spent a lot of time effectively, implicitly, measuring the information content per token. What you're saying is for the amount of entropy or information contained in 1,500-2,000 tokens, that fits into a five-billion-parameter model. It is unclear how much entropy or information is contained in robot data at this point to give you an accurate estimate of that because a lot of the data that is collected is all the same data.</p>
+<p><b>Client 2</b> [00:46:50]: A VLM model is not really processing a video. It's breaking the video down into frames or, more specifically, frames per second. Those frames have a certain number of tokens attached to it. Say, there are 256 tokens per frame and the model reads two frames per second. That's essentially 1.8 million tokens per hour. Can I think about it that way?</p>
+<p><b>Expert</b> [00:47:26]: It's not clear. Let's say I collected data at one workshop from 10 egocentric data collectors. It's possible that all of their videos look functionally the same. That 2,000 tokens in the LLM space could be 10,000 or 20,000 tokens in this space because the information content is very similar between the demonstrations.</p>
+<p><b>Client 2</b> [00:47:59]: What you're saying is that if the information content is similar, that 2,000 number can go to 10,000. If it's unique, for example, I'm at a warehouse packaging something vs using a hammer to break something, then as you give the model different tasks and different video content, the tokens per parameter, or how much a model can learn, essentially reduces. It's like a notebook where someone is writing information and you only have a certain number of pages to fill with new information?</p>
+<p><b>Expert</b> [00:48:38]: That is the correct way to look at it, yes. I would say the estimates for LLMs are probably closer if you can truly do different things, but I will say, we as humans are not very good at measuring how different two videos are from each other fundamentally, as there is a very compressible space.</p>
+<h3>00:49:04] If I start from the top, you're saying it's possible to have a system one, system two mechanism for robots, where system two lives on the cloud and can be a very large model of up to 100 billion parameters. For these large models or even a smaller model, if I'm giving you unique hours, even if it's the same task, when there is sunlight or there's no sunlight, that's still different unique hours for the same task.</h3>
+<p>How many tokens can these models read? Will it be 2,000, 5,000 or 10,000? Today it's going to be different from what it could look like five years from now with more tech innovation. I know it's hard to predict, but what's your best guess for today and for the future?</p>
+<p><b>Expert</b> [00:50:06]: What's the right way to look at this? The information density and our ability to sample things will continue to get better to the point where we do not need as widespread egocentric data. We will build better mental models of what these LLMs, VLMs and VLAs are doing such that we can be smarter about collecting data and more intentional.</p>
+<p><b>Client 2</b> [00:50:52]: Right now, what we are seeing is labs are buying any egocentric data they can because there's a dearth of data, but moving forward, labs will be picky about what kind of data they're getting. That could be modality or environment. It's not like they'll just keep on buying whatever data they need. They'll buy unique hours of data, which is why the sheer number of hours of data needed would probably reduce moving forward.</p>
+<p><b>Expert</b> [00:51:23]: Or it will (talking over each other) they are a lot more intentional.</p>
+<p><b>Client 2</b> [00:51:26]: Exactly. They will be a lot more intentional. Assuming even they are intentional, and you're giving them the right video, then what's the constraint from a token perspective? How many tokens can each parameter read?</p>
+<p><b>Expert</b> [00:51:44]: It would probably be very similar to what you're seeing in the LLM space. I would be surprised if the information content were fundamentally different if we had that level of intentionality. We're still using the same representations as the VLMs do. We're still using language and images. Maybe we'll use audio as well. We could start using tactile and force as well, and that might change the information density. It's not entirely clear [what] the best strategy is.</p>
+<h3>00:52:17] How does stereo, wrist or tactile data change information density? What's really driving the 10,000 or 2,000 tokens per parameter?</h3>
+<p><b>Expert</b> [00:52:31]: What's driving that is information content. If I have a word like apple, apple contains a certain level of information density that summarises a bunch of things. The question is, are there abstractions across behaviours and visual stimuli that are very compressible or not? Can I summarise all things that look like apples into the concept of apple, or do I need to invent a new word like pear? That is, at a high level, what is happening in these neural networks. Is there a way to separate these spaces of information? That is what drives that. If I am doing stuff at a workshop and I am building engines for cars, is there a very compressible space that's not necessarily human-interpretable? There might not be words for it that you and I use, but exists in this different LLM knowledge space that also allows you to do things like build popcorn machines or something.</p>
+<h3>00:53:57] How does that change with tactile data or different stereo data? Right now I'm assuming this is mono. Does that increase or decrease the number of tokens per parameter?</h3>
+<p><b>Expert</b> [00:54:11]: That would probably keep it the same. I think it's the same information content. The way I would look at tactile and force data is it helps you understand the context in which you find yourself. Using the word Markov Decision Process might not be the best way to describe this. What do I want to say? A neural network can only use what it sees right now to decide what to do next, and if what to do next is ambiguous or unclear, it will pick one of two options, but it will probably pick something poor because you have created a problem that is not easily solvable. In computer science, we call this Markovian behaviour, but it's a similar idea where we want to make sure that the behaviour that we're defining for a robot to do is consistent and clear from the input. There are things like pushing down on a table. If I look at the video stream of pushing down on a table, it is unclear that the hand is doing anything different because the pixels are not changing, but I am behind more force to the table. The way I look at that is it helps me contextually solve for more problems because I'm adding more information about what the state of the world is to make the behaviour more interpretable.</p>
+<h3>00:56:07] When you try out these new models, how do you evaluate them? Does the industry do evaluation in-house or use external vendors?</h3>
+<p><b>Expert</b> [00:56:31]: The way anybody tries models right now is you have to download the weights off of Hugging Face or wherever they're hosted, make sure that your software harness or the software that actually takes the sensory information from the robot, puts it into the model and then gets those actions out is compatible, which is not always the case, because every model has its own idiosyncrasies, and then test it to see if it works on your robot. If it doesn't, then you have to build a fine-tuning curriculum around it. What you're going to then do is take training data that you may already have for your own robot and run it through and then run it through with the harness being modified.</p>
+<p><b>Client 1</b> [00:57:24]: I know you guys are integrated in terms of, you have your own robots plus you have your own robot brain, but for robot brain companies or Physical Intelligence, do they use external vendors to do this evaluation, or do they have robots in-house where they do exactly what you are saying?</p>
+<p><b>Expert</b> [00:57:49]: My guess is that they are doing both. Based on conversations I've had with people in industry is that they do both.</p>
+<h3>00:57:57] Moving to a robot-as-a-service model, which companies such as Formic are doing, when you're deploying a robot to a new site or factory, how do you fine-tune the robots for that factory? Please walk me through the process.</h3>
+<p><b>Expert</b> [00:58:22]: My understanding of how other robotics integrators do this is that they go directly to that factory and bring the robot there and start teleoperating it to make sure that their software stack works. I'm not sure beyond that where other places like Formic, how they fine-tune things.</p>
+<p><b>Client 1</b> [00:58:57]: Maybe not Formic, but there are other companies like Ultra. Let's say, you have a model. You need to fine-tune it. Fine-tuning happens using teleoperation data. Is that what you're trying to say?</p>
+<p><b>Expert</b> [00:59:12]: Teleoperation data is a very good strategy for fine-tuning a VLA for a customer site.</p>
+<h3>00:59:22] According to your experience, how much teleoperation data would be required to reliably fine-tune at a particular new site?</h3>
+<p><b>Expert</b> [00:59:36]: This is very, again, task-dependent, but if we pick a task such as inserting a piston rod into a piston head, that can take somewhere between one and 10 hours of data.</p>
+<p><b>Client 1</b> [00:59:58]: That's it? What does it do in terms of reliability? Let's say, without teleoperation data, you have X reliability. Eventually, when you're doing it in factories, you need to ensure that the reliability is going beyond 99% at least. Otherwise, it won't be useful. I'm just trying to understand where exactly the reliability starts from. Does that 10 hours of teleoperation data take it to more than 99%-plus?</p>
+<p><b>Expert</b> [01:00:36]: The reliability comes from the space by which I can expect different inputs and how varied they're going to be. I don't know that anybody has actually gotten to quintuple-nines of accuracy or even 99% accuracy. I think this is currently where the market is trying to get to and has not succeeded yet.</p>
+<p><b>Client 1</b> [01:01:09]: This is for companies who are using generalised robot brains such as those from Physical Intelligence, but if I look at companies which are making their own robot brains and have their own robots, at least they will require 99%-plus reliability, right? Ultra Robotics claims to have deployed its robots at multiple factories or places. You need 99% or almost 100% reliability for that to happen.</p>
+<p><b>Expert</b> [01:02:02]: My understanding is that they don't have 99% reliability in autonomous behaviour. They would have to be figuring it out via some other strategy such as a human teleoperator or something. Nobody, as far as I'm aware, has 99% or even 90% levels of autonomous behaviour.</p>
+<p><b>Client 1</b> [01:02:02]: That's very surprising to hear.</p>
+<h3>01:02:30] On strategy, many players' approach is to learn from their own robotics, doing paid work with a remote tutor stepping in. I understand that the data is very good, but it comes from a fairly narrow set of factory tasks, for example, picking, packing and palletising. How do you get from there to a more general robot, given you'll have to keep adding new tasks to reach generalisation?</h3>
+<p>For the people you're using for DAgger [data aggregation], those remote operators or people used for DAgger more broadly, would you use a team in some other geography such as India or the Philippines instead of your own tutors? Is that set-up possible?</p>
+<p><b>Expert</b> [01:04:00]: I think we've talked about this throughout this entire conversation. To some extent, what is needed to be able to do the thing that I need to do reliably is coverage. Some of the knowledge to make this better is now being embedded into VLMs like Qwen, like we were talking about at the beginning of the conversation. Some of it is just leveraging the fact that there is better models coming into the marketplace.</p>
+<p><b>Client 1</b> [01:04:34]: I may not have been clear. My understanding is that companies such as Formic put their robots in factories, and then have a person, a teleoperator, controlling the robots whenever the robots go wrong. Is that the right understanding?</p>
+<p><b>Expert</b> [01:04:58]: Certainly, I think there are companies that do that, yes.</p>
+<h3>01:05:28] From an industry perspective, you mentioned people are doing that. Do these physical AI companies need teleoperators? Can they use remote teleoperators sitting in another geography, with them controlling the robots whenever they go wrong?</h3>
+<p><b>Expert</b> [01:06:00]: Yes, that is a thing that one could do to fix reliability with automation.</p>
+<p><b>Client 1</b> [01:06:09]: Is that happening? Do people rely on remote teleoperators? Do you see that happening?</p>
+<p><b>Expert</b> [01:06:16]: I have heard of many start-ups in San Francisco that are based around that entire idea.</p>
+<p><b>Client 1</b> [01:06:23]: The idea is that you have cheap labour costs in different nations, in different geographies, so you use that for teleoperation, right?</p>
+<p><b>Expert</b> [01:06:33]: Yes.</p>
+<h3>01:06:36] I assume that teleoperator minutes per robot hour will decline over time as you repeat a particular task and wrong robot hours fall. How long does it take to reach the reliability level where you no longer need teleoperators to control the robots?</h3>
+<p><b>Expert</b> [01:07:20]: I think that, again, this is just very task-dependent. It can be that 1-10 hours for very specific behaviours. It could be hundreds to thousands of hours. I don't think that there is a solid answer of this that I could give you, it just really depends, but if you have a specific industry, maybe we could talk about that in that context.</p>
+<p><b>Client 1</b> [01:07:53]: In warehousing, let's say you've deployed a robot for the task of packing a carton. Initially, a teleoperator controls the robot to correct mistakes. After how many hours or days can you say you no longer need teleoperators, because the robot has reached sufficient reliability?</p>
+<p><b>Expert</b> [01:08:30]: I might estimate it would be about 10 hours per SKU, however many kinds of cartons you expect to see and however many kinds of containers that you want to insert them in.</p>
+<p><b>Client 1</b> [01:08:46]: Does that mean it will reach 100% reliability, as in there will be no mistakes?</p>
+<p><b>Expert</b> [01:08:57]: I highly doubt that there will be no mistakes.</p>
+<p><b>Client 1</b> [01:09:00]: Will you still require people at the back end to take care of the time when there are mistakes?</p>
+<p><b>Expert</b> [01:09:09]: For at least another year or two, you are going to need a fallback.</p>
+<p><b>Client 1</b> [01:09:15]: You're essentially saying 10 hours of teleoperation will make reliability to, let's say, 99%, but you will still require at least a teleoperator to take over whenever the robot goes wrong for at least two years, so 99-100% reliability will take two years of time?</p>
+<p><b>Expert</b> [01:09:47]: Yes.</p>
+<p><b>Client 1</b> [01:09:49]: The extent of errors will keep on going down over a period of time, right? For example, the robot will make one error per day. That essentially is going to go down, let's say, to one error per 100 days, right?</p>
+<p><b>Expert</b> [01:10:11]: Yes, at which point you may not need a teleoperator anymore. It might be the warehouse administrator that intervenes. Any company is going to keep driving that number down.</p>
+<p><b>Client 1</b> [01:10:35]: The way I was seeing this is, once you have reached 99% reliability, every teleoperator will be able to control multiple robots because you will only take over the robots when they are going wrong, which essentially would mean that for every robot hour, you would require certain teleoperator minutes.</p>
+<p><b>Expert</b> [01:11:06]: Yes, that is likely true.</p>
+<p><b>Client 1</b> [01:11:08]: That will keep on falling?</p>
+<p><b>Expert</b> [01:11:11]: Yes.</p>
+<h3>01:11:13] How fast will the teleoperator minutes per robot hour fall?</h3>
+<p><b>Expert</b> [01:11:20]: The way I would look at it is, for every one of those anomalies, they become a bug in your system that you then go and collect data for, which could be a separate thing where you go and put an engineer on figuring out how to fix that, and it helps you inform where to collect more data. That will likely point to trends downwards as you go and collect and fix that data as a feedback loop. I would just see this as you're going to fix these bugs, it's going to take 1-10 hours for every single one of these bugs, most likely of data collection and then some level of engineering time to go and patch the system so that it now covers that particular case. The number of bugs will go down, but you will have this for every single task that you want the robot to do. That teleoperator may not be necessary anymore for your milk carton task after a few weeks, but you'll need it when you want to go start packing socks or you want to go start packing shirts. For every single additional thing you want to do, this teleoperator will be coming in and intervening for each of them, until eventually, you have coverage for all the things you could possibly care about and then, at that point, you have hit some general behavioural intelligence.</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

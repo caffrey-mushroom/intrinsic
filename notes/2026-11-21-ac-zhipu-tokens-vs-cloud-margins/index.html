@@ -1,0 +1,208 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.21 | AC | LLM | Zhipu Tokens vs Cloud Margins</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.21 | AC | LLM | Zhipu Tokens vs Cloud Margins</h1>
+<p class="orig">原标题：拿下企业开源Token六成却换不回现金流：智谱的流量，云大厂的毛利</p>
+<p class="tags">#llm #cloud #china</p>
+<p class="meta">AceCamp · 2026-11-21 16:29 · article 70569492</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>智谱GLM在Databricks开放权重模型子池中占约60.4%的Token，但开放权重仅占Databricks托管流量30.9%，折算后GLM只占约18.7%；在OpenRouter全站份额约8%-11%。</li>
+<li>智谱MaaS平台全球开发者突破1000万，但这是累计注册账号；Ramp数据显示美国企业对Z.AI、Qwen、Kimi的直接付费采用率均低于0.1%。</li>
+<li>GLM采用MIT或宽松自定义协议，无按调用分成条款，导致第三方大量承接调用：GLM-4.7有91.9%调用由第三方承接，GLM-5.2前15大第三方端点拿走84.2%。</li>
+<li>智谱2026年上半年总收入9.54亿元，云端部署收入8.25亿元、同比增长2736%，但云端毛利率仅24.6%，毛利2.03亿元不到研发开支21.31亿元的十分之一。</li>
+<li>智谱上半年经营现金流净流出33.74亿元，预付计算服务费从2.09亿元涨至16.49亿元，上市9个月累计融资约755亿港元，股价较6月高点2980港元回落约88.8%。</li>
+<li>阿里FY27 Q2 AI云收入609.73亿元、同比增长53%，经调整EBITA约88亿元、利润率14.5%，AI实验室亏损收窄至105.03亿元；管理层称托管开源模型与自研模型毛利相近。</li>
+<li>百度三季度外部客户Token收入增长1159%，智能云基础设施收入82亿元增长94%；腾讯云服务收入同比增长35%。</li>
+<li>作者认为断卡对云厂伤的是增速，对独立模型厂伤的是生存成本，智谱的出路在于协议加入分成、订阅制放量和政企合规交付，月之暗面已在谈Kimi K3托管最高30%的分成。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>GLM“六成开源Token”与“千万开发者”的口径与付费转化；</li><li>第三方推理云与企业自部署如何承接GLM调用；</li><li>云厂与独立模型厂的毛利、折旧与现金流分化；</li><li>断卡与降价对两类公司的不同影响及跟踪指标。</li></ol>
+<p>11月中旬，智谱拿出了两张漂亮的成绩单：GLM在Databricks平台上占了开放权重模型六成以上的Token调用，MaaS平台开发者也突破了1,000万。可同一周，智谱股价两天跌掉近两成，较6月高点已回落近九成。调用量领先、开发者翻倍，为什么换不来资本市场的信任？问题不在流量本身，而在流量最后变成了谁的收入。</p>
+<h2>一、GLM调用量很大，但付费的钱大多没进智谱口袋</h2>
+<p>先把两个数字的口径弄清楚，因为它们决定了后面所有推论的边界。</p>
+<p><b>“六成”出自11月16日发布的Databricks AI Index。</b>它统计的是9月21日至11月7日、跑在Databricks自有集群上的开放权重模型，11月2日当周Z.AI在这个子池里占约60.4%。但开放权重模型只占Databricks托管流量的30.9%，折算下来GLM约占托管总流量的18.7%。换到更开放的OpenRouter公共路由市场，Z.AI旗下23款模型在开放权重池里的份额约15%–20%，在全站约8%–11%。也就是说，分母越宽，GLM的份额越小，“六成”是一个子池里的冠军，不是全市场的冠军。</p>
+<p><b>“千万开发者”来自智谱的披露。</b>2026年11月17日，智谱官方披露MaaS平台全球开发者数量已突破1000万，较中报披露的8月底740万进一步增长。这是覆盖全球218个国家和地区的累计注册账号，不是付费用户。</p>
+<p><b>那付费端是什么情况？</b>Ramp AI Index追踪了超过8.5万家美国企业的公司卡和应付账单。在全部样本企业中，Z.AI、Qwen、Kimi的直接付费采用率都没过0.1%的统计门槛，DeepSeek在10月也只有0.2%。同一数据库的另一个指标是：在已有AI支出的企业里，使用Together、Fireworks、Baseten这类模型托管平台的比例，6月为5.8%，7月为6.1%。这两个指标分母不同，后者覆盖多种模型，不能拿来推算GLM的付费份额。但两组数字放在一起，本文的解读是：<b>美国企业即便用中国开源模型，也更可能通过本土平台去用，而不是直接给中国原厂付钱</b>。</p>
+<p><b>为什么会这样？答案写在许可证里。</b>自GLM-4.5起，智谱核心权重基本采用MIT协议；8月发布的旗舰GLM-5.3改用自定义协议，仍免费授予使用、部署、微调和销售副本的权利，没有任何按调用量分成的条款。唯一的门槛是：如果被许可方或其关联方经营模型即服务业务，且双方合计营收在任意连续12个月超过100亿美元，就要先通过智谱的安全审查。这道门槛管的是安全，不是收钱。</p>
+<p>把这几层放在一起，本文要回答的核心问题就清楚了：<b>开源让GLM的调用量做大了，但调用量带来的钱，到底流向了谁？</b>本文的判断是，智谱并不是没有收入，公司指引年底年化经常性收入30亿美元，这个目标本身不小。真正的问题是，智谱的收入增长追不上算力现金开支，而开源带来的增量调用，大部分变成了别人的算力收入。下面分两步论证：先看流量去了哪里，再看钱落在了谁的账上。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569492_0f1d29c163f8cf39.webp" alt="" loading="lazy"></p>
+<h2>二、流量去了哪里：第三方推理云和企业自部署接走了大部分调用</h2>
+<p><b>流量的去向可以分成两条路。一条是公开的第三方推理云，看得见；另一条是企业内网和合规隔离部署，基本看不见。</b></p>
+<p><b>先看看得见的那条。</b>OpenRouter上GLM-5.3挂了47个标准端点，背后是超过35家GPU云和推理平台，几乎都是从Hugging Face免费拉取权重、自己部署后对外卖API。Z.AI官方端点在这里吃亏在两头。一是价格：Z.AI海外定价比国内BigModel的人民币折算价高出约22%–40%。二是速度：多数主力型号的官方首字延迟在2.11秒到4.41秒，吞吐只有24–50 tok/s。OpenRouter按价格优先、均衡和极速三种算法分配请求，官方端点在哪种算法下都排不上号。</p>
+<p>结果很清楚。GLM-4.7有91.9%的调用由第三方承接，Z.AI只剩8.1%；GLM-5.2前15大第三方端点合计拿走84.2%，Z.AI自己跌出前15；GLM-5.3-Flash大约七成以上由第三方承接。唯一的例外是GLM-5，官方延迟压到了0.89秒，Z.AI守住了六成。这个例外恰好说明，原厂份额高低主要取决于价格和速度，而不是谁训练了模型。</p>
+<p>还有一个反例更能说明问题。GLM-4.5将在12月31日下线，第三方因为无利可图全部撤走，Z.AI反而占回了100%。<b>只要一个模型有商业价值，第三方就会来分流；只有没人要的模型才会完全留在原厂手里</b>。</p>
+<p><b>再看看不见的那条。</b>Hugging Face上zai-org前8大仓库近30天下载量合计超过1,383万次，Ollama上8款GLM官方包累计拉取1,832万次，其中GLM-5.3相关页面写明云端服务托管在美国和欧洲、零数据留存。合规要求又把原厂进一步挡在门外。OpenRouter 11月12日的实测显示，欧美企业开启零数据留存后请求GLM-5.3，会由欧洲本土的Inceptron响应；如果定向请求未签欧美零数据留存协议的中国原厂端点，网关直接报404。AWS Bedrock则把GLM 4.7、GLM 5、GLM 5.3深度拷贝进AWS自有账户，官方文档承诺原厂对部署账户、日志和客户Prompt零访问，费用记在AWS账单上。Databricks在7月被报道计划融资30亿美元，用于扩充GPU容量以满足开放模型需求。</p>
+<p>这里需要划清一条边界：第三方承接了调用，只说明推理由谁执行，不直接等于智谱少收了多少钱，所以“云厂白吃”也不能一概而论。笃研究10月的智谱可转债报告曾梳理到，Amazon Bedrock按调用量向智谱分成，阿里云百炼也签了类似协议。<b>但即便有分成，智谱拿到的也只是一个比例，看不到终端客户，也沉淀不了数据。</b></p>
+<p><b>规模能不能算？</b>只能粗估。仅OpenRouter一个平台，按官方价格和七到八成的第三方承接率计算，GLM-5.3-Flash和旗舰系列由第三方承接的账面流水每年各在数千万美元量级；叠加Databricks、Bedrock和企业内网，海外基于GLM权重的算力消费可能在数亿美元级。这是本文的估算，其中有多少最终转化为智谱收入，公开披露不足以量化。可以对照的是，智谱2025年度业绩公告附注写的是“本集团的收入主要来自位于中国的客户”，因此不提供地区分部。换句话说，海外这一大块调用量，在智谱的账本上还看不到对应的收入。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569492_694d886d1514e3c6.webp" alt="" loading="lazy"></p>
+<h2>三、账本分化：云厂托管开源模型赚毛利，智谱自己扛训练成本</h2>
+<p>流量的去向说清楚了，接下来看钱。<b>同样是做大模型，独立模型厂和云厂的账本结构完全不同。</b></p>
+<p><b>先看智谱。</b>2026年上半年总收入9.54亿元，云端部署收入8.25亿元，同比增长2,736%，占比从15.2%跳到86.5%。表面上看，转型很成功：API均价较年初提升101%，单位Token推理成本下降80%。但云端毛利率只修复到24.6%，8.25亿元收入要付6.22亿元推理和运维成本，剩下2.03亿元毛利，还不到同期21.31亿元研发开支的十分之一。拉长时间看更清楚：云端收入从2024年的0.48亿元涨到2025年的1.90亿元，毛利率一直在个位数到20%左右徘徊。高毛利的本地化部署收入则同比下降约20%至1.29亿元，综合毛利率从50.0%跌到26.4%。也就是说，<b>智谱收入结构越往云端走，毛利率反而越低。</b></p>
+<p>现金流的压力更大。研发开支里超过七成直接付给外部训练算力供应商：2024年算力服务费15.53亿元，占研发开支的70.7%，而且当期全额费用化，没有折旧可以分摊。公司自有算力也很少。2025年租赁电子及算力设备的折旧为1.60亿元，自有电子及算力设备折旧只有6,151万元，算力主要靠租。2026年上半年经营现金流净流出33.74亿元，比2024、2025全年都多；预付计算服务费从年初2.09亿元涨到16.49亿元，计算服务费应付款从7.27亿元翻倍到14.27亿元，应收账款周转天数约102天。上游锁卡要预付，下游客户有百日账期，智谱被两头挤。IPO净募集的48.96亿港元8个月就用完，加上7月、9月两轮配售和可转债，按各次公告净额加总，上市9个月累计融资约755亿港元。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569492_ada9b918a252fec1.webp" alt="" loading="lazy"></p>
+<p><b>再看云厂。</b>阿里从FY27 Q1开始把AI业务拆成两个分部：阿里云加平头哥的“AI云及算力服务”，以及做基座模型和千问应用的“AI实验室及应用”。这一拆分，等于把同一门生意的两本账摆在了投资者面前。FY27 Q1，AI云单季经调整EBITA为56.28亿元，AI实验室亏损138.61亿元。FY27 Q2数据更清楚：AI云收入609.73亿元，同比增长53%，外部客户收入增长64%，经调整EBITA约88亿元，同比增长121%，利润率升至14.5%，AI相关产品收入超过179亿元；AI实验室及应用收入44.35亿元，亏损收窄到105.03亿元。一个季度之内，云端利润和模型亏损之间的缺口从约82亿元缩小到约17亿元。</p>
+<p>为什么阿里的云能赚钱？吴泳铭在FY27 Q1业绩会上给过答案：托管开源的、免费的三方模型，和托管自研模型，毛利水平相差不大。这句话是关键。<b>对云厂来说，模型是谁训练的不重要，只要跑在自己的卡上就有毛利</b>。别人开源得越多，云厂可托管的模型就越多，算力利用率就越高。</p>
+<p><b>腾讯和百度也是一样的结构。</b>腾讯自研AI在2026年二季度拖累Non-IFRS经营利润105亿元，但金融科技及企业服务分部毛利率52.1%；11月18日发布的三季报显示云服务收入同比增长35%。百度千帆托管全系开源模型，三季度外部客户Token收入增长1,159%，智能云基础设施收入82亿元，增长94%。</p>
+<p>当然，云厂这碗饭也不是白吃的。<b>5月的阿里报告</b><b>测算，3,800亿元投入按6年摊销，对应年折旧633亿元，而全云EBITDA仅约340亿至440亿元</b>。阿里FY27 Q2自由现金流为-344.72亿元，腾讯二季度为-138亿元，百度三季度为-45.71亿元。区别在于，云厂的折旧换来的是可以反复出租的资产，腾讯管理层在二季度业绩材料里就提到，这些硬件可以通过腾讯云按有吸引力的回报率对外出租；智谱的训练算力大多是租来的，用完即烧掉，不留资产。</p>
+<p>所以，两类公司的差别不在于谁的模型更好，而在于谁站在算力那一侧。<b>云厂用卖算力的利润去补贴做模型的亏损，独立模型厂只有亏损的那一侧，只能靠融资去补</b>。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569492_cb23b4da41099996.webp" alt="" loading="lazy"></p>
+<h2>四、断卡与降价：市场还没把两类公司分开定价</h2>
+<p>如果上面的账本分化成立，那么外部冲击来临时，两类公司受到的伤害应该不一样。<b>11月16日到17日的行情，正好提供了一个观察窗口。</b></p>
+<p>11月16日，美国商务部发布临时最终规则：向新加坡、马来西亚、泰国、印尼、巴西出口先进AI芯片须获许可，目的是阻止中国客户通过第三国数据中心远程使用先进算力。但智谱的下跌其实早于规则发布。11月16日港股交易时段，规则还没出来，智谱就已收跌13.42%，MiniMax跌18.04%，同期恒生科技指数只跌0.3%。同一天，阿里和腾讯都发布了新模型并继续压价：Qwen4-Max缓存命中价格低至每百万Tokens 0.5元；腾讯称，按其内部WorkIndex评测集测算，Hy4 flash单任务成本只有DeepSeek-V4.1-Flash（Max档位、忙时价格）的八分之一。两件事之间的因果无法直接证明，但时间上的重合值得重视：大厂有卖算力的利润垫底，可以把模型价格一压再压，独立模型厂没有这个底。</p>
+<p>11月17日是规则发布后港股第一个完整交易日，市场这次没有区分：阿里跌5.21%，百度跌5.78%，腾讯跌3.69%，智谱再跌5.26%收于335港元，MiniMax跌7.13%，华虹宏力、中芯国际等国产芯片股则逆势上涨。智谱较6月高点2, 980港元已回落约88.8%。本文的解读是，16日市场更像在给商业模式定价，17日则更多是断卡情绪的一刀切。</p>
+<p><b>那么，断卡对两类公司的影响真的一样吗？</b>本文认为不一样。云厂自己也有敞口，有报道称阿里是Megaspeed东南亚云服务的最大客户，境外租赁受限会直接影响它的算力供给。但对云厂来说，卡少了，模型照样能托管，开源权重越多，可替代的模型供给就越多：Databricks子池里GLM的份额已从7月GLM-5.2一家独大时的92.3%，被DeepSeek和Kimi分流到60%左右，说明模型之间的替代性正在变强。智谱则相反，算力主要靠租，远程算力渠道一旦收紧，境内可租的算力又优先满足云厂自用，智谱拿卡的成本只会更高。<b>断卡对于云厂伤的是增速，对于独立模型厂伤的却是生存成本</b>。</p>
+<p>落到具体公司，<b>阿里</b>和<b>腾讯</b>的看点不在模型榜单排名，而在开源托管能否持续撑住云业务利润率，同时控住资本开支。阿里FY27 Q2云利润率升到14.5%，说明这条路目前走得通。<b>智谱</b>的关键变量有三个：开源协议会不会加分成条款，Coding Plan这类订阅制能否放量，政企客户的原厂合规交付能否顶住本地化收入的下滑。协议方面风向已经在变，据报道月之暗面正与微软、亚马逊、谷歌谈判Kimi K3托管的收入分成，开价最高30%；8月也有报道称，阿里计划对下一代千问开源模型的大型商用用户收取营收分成，但落地情况尚未见公开披露。智谱如果跟进，短期会牺牲调用量排名，但这可能是走出“流量越大越亏”的唯一出口。</p>
+<h2>五、怎么跟踪：哪些数据会改变结论</h2>
+<p>本文的判断能否成立，取决于<b>两条线是否继续分化：一条是云厂托管开源模型的利润，另一条是独立模型厂的毛利率和现金消耗。</b></p>
+<p>阿里这条线已经给出了第一个读数。FY27 Q2云端EBITA约88亿元，与AI实验室105.03亿元亏损之间的缺口明显缩小；如果12月季度云利润继续上升并覆盖模型亏损，说明“卖算力养模型”的模式在大厂内部已经跑通。阿里管理层是否单独披露MaaS中第三方模型的收入，也是验证“托管开源同样赚钱”的直接证据。</p>
+<p>智谱这条线要看三件事：2026年年报中云端毛利率能否突破30%；OpenRouter上Z.AI自营端点份额会不会随新一代模型回升；下一代GLM是否改协议、加入收入分成。如果智谱云端毛利率继续停在20%–30%，而云厂托管收入保持高增，本文的判断就得到进一步验证；反过来，如果智谱通过协议或订阅制把调用量转化成了收入，独立模型厂的估值逻辑就需要重新评估。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569492_86f51f9d3a72072d.webp" alt="" loading="lazy"></p>
+<p><b>以上内容不构成任何投资建议，请风险自担。</b></p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

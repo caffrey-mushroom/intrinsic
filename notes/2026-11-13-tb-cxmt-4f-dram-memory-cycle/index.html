@@ -1,0 +1,225 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.13 | TB | Memory | CXMT 4F² DRAM &amp; Memory Cycle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.13 | TB | Memory | CXMT 4F² DRAM &amp; Memory Cycle</h1>
+<p class="orig">原标题：China's Memory Chip Market – Former Senior R&amp;D Executive at Wuhan Chuxing Technology Co Ltd (Conducted in Mandarin)</p>
+<p class="tags">#memory #semis #china</p>
+<p class="meta">Third Bridge · 2026-11-13</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>这位前武汉存储芯片研发高管表示，长鑫存储（CXMT）的4F²技术采用垂直环栅晶体管，将CMOS外围电路和存储阵列分别做在两片晶圆上，再通过混合键合互连；今年才开始流片，最早要到2027年才会有外部可见的出货，真正量产预计在2028年。</li>
+<li>三星和SK海力士同样走4F²路线（三星引入IGZO材料抑制漏电），三星计划约在2028年量产；美光因电容间距瓶颈以及ALD、外延工艺成本高，选择从6F²直接跳到3D DRAM，时间预计在2028年之后；长鑫因拿不到EUV、在3D DRAM材料上没有优势，只能走4F²路线。</li>
+<li>从6F²到4F²，理论上单元面积缩小可带来约50%的产出提升，但受电容尺寸极限、双晶圆键合的良率损失以及键合材料的限制，实际提升可能只有20-30%。</li>
+<li>这20-30%的产出增量叠加各大厂的激进扩产，若2028年后AI需求降温，行业可能在2028-2030年由上行周期转为供过于求；专家认为供需明显转向最早可能出现在2029年。</li>
+<li>长鑫的第五代DDR5平台已实现量产，但量不大，有源区半间距11.95nm（约12nm节点），引入了高K金属栅，相当于三大厂的1b/1c代；由于DUV需要四重曝光，成本更高，但延迟和读写带宽与SK海力士差距不大，6F²路线已接近极限。</li>
+<li>对于英伟达在Rubin Ultra上从12Hi降到8Hi HBM的传闻，专家认为在3D DRAM成熟之前，没有能替代HBM或DRAM的产品，AI硬件对带宽和容量的需求只会继续上升，根本解决之道是技术突破或扩产。</li>
+<li>预计四季度DRAM合约价环比涨幅将从约40%放缓至约20%，原因包括季节性、长约锁定产能以及渠道库存偏高；2027年现有晶圆厂已接近满产，新产能要到2028年才会放量，长鑫新产线主要满足国内需求。</li>
+<li>专家认为在2028年前国内长约违约的可能性很小，除非出现战争等黑天鹅事件，DRAM价格难以回落到2025年水平；地缘冲突的主要风险在于设备、材料和化学品供应中断，以及终端产品销往中东和东南亚受阻。</li>
+</ol></section>
+<div class="body">
+<p>Client-led • 27 Oct 2026</p>
+<p>Companies: 688825 CN, A005930 KR, MU US, A000660 KR</p>
+<p><b>Expert</b> Former Senior R&amp;D Executive at Wuhan Chuxing Technology Co Ltd</p>
+<h3>Agenda</h3>
+<ul><li>Around 10 years' experience in the memory chip industry, with expertise in DRAM (dynamic random-access memory) memory device architecture design and advanced manufacturing processes</li><li>Familiar with the impact of domestic memory technology breakthroughs on global supply, demand and pricing, DDR5 (double data rate 5) yield ramp-up progress, the technology gap between domestic and foreign memory manufacturers, plus HBM (high bandwidth memory) and high-end memory production capacity</li><li>Can discuss CXMT's 4F Square technology, the technical feasibility of downstream GPU manufacturers reducing their dependence on memory, domestic DRAM price trends and execution of long-term orders, as well as the impact of geopolitical conflicts on the memory supply chain</li></ul>
+<h3>Questions</h3>
+<h3>00:00:11] Today, I would like to ask you about recent developments in China's memory market. First, I would like to understand the technological breakthrough behind CXMT's [ChangXin Memory Technologies] 4F Square DRAM [dynamic random-access memory].</h3>
+<p><b>Expert</b> [00:00:11]: What you mentioned should mainly be about the recent progress regarding 4F Square. Its newly unveiled technology represents progress on its latest generation node, primarily involving 4F Square architecture and hybrid bonding to manufacture its latest server-grade products. That should be the main point.</p>
+<h3>00:02:10] What impact does the progress of Chinese memory companies have on the technological lead of US peers? Do these technological developments have a substantial impact on capacity expansion and manufacturing efficiency? In addition, how will domestic pricing trends affect global memory pricing? For example, Micron Technology is not adopting 4F Square technology, even though this technology can increase wafer output capacity.</h3>
+<p><b>Expert</b> [00:02:10]: 4F Square, which was only disclosed this year, mainly uses its own vertical surrounding-gate transistors. In addition, it fabricates CMOS logic and memory cell arrays on two separate wafers and interconnects them through hybrid bonding. From a global perspective, the other three companies have long had some research in this area. In terms of progress and the technology gap, CXMT will basically carry out tape-out this year and it has not yet reached the mass production stage. If it wants to reach mass production, it must pass customer verification and improve yield before it can officially start mass production and then ramp up. Therefore, there is still a long way to go before its true commercialisation. Samsung, SK Hynix and Micron started researching this a long time ago. There are some differences in the design of memory cells. For example, in SGT, the channel was originally on the same plane as the gate but it is now made into a three-dimensional vertical structure, with the gate wrapping around it from the periphery to control the short-channel effect and leakage current.</p>
+<p>For Samsung, it will also make the transistor channels vertical but its approach will not use the surrounding structure adopted by CXMT. Instead, the channel and gate will be arranged vertically on two planes. Of course, it will later also adopt the approach of splitting memory cells and peripheral circuits across two wafers and then interconnecting them by bonding. It is just that the materials used for bonding and the bonding dimensions will also be somewhat different. In this regard, Samsung will introduce the replacement of some traditional silicon-based materials with IGZO, possibly drawing more on advanced materials in 3D DRAM to suppress leakage current. SK Hynix is also not much different. It essentially transitions the conventional planar structure into a three-dimensional vertical architecture to shrink its memory cell footprint.</p>
+<p>However, Micron has made it public that it will not take this route. The main reason is that, for 4F Square, there is a relatively large bottleneck in truly increasing its density: the spacing between capacitor plates cannot be reduced indefinitely. This bottleneck will still weaken the density advantage gained from moving from 6F Square to 4F Square. In addition, it has also been noticed that, in terms of processes such as ALD and epitaxy, these processes have high process requirements and relatively high costs in size miniaturisation, which will also weaken the benefits brought by the area reduction from 6F Square to 4F Square. Therefore, Micron intends to move directly from 6F Square to 3D DRAM.</p>
+<p>Therefore, the three companies have made different choices. For Samsung and SK Hynix, when choosing between 4F Square and 3D DRAM, they still want to continue with 4F Square, mainly because 3D DRAM is not particularly mature yet. Secondly, they still have their unique advantages in 4F Square. For example, on the materials front, they can introduce IGZO to mitigate process challenges. Micron Technology gave up this path mainly because, from its perspective, the gap between cost and benefit was not as large as advertised and the process had some stringent requirements. As a result, the yield could not easily ramp up to mass production as traditional DRAM could, so it abandoned this path based on cost and benefit considerations. In fact, this is also a result of different strategic choices made by each company.</p>
+<p>The biggest reason why CXMT chooses this path is that it has no advantage in 3D DRAM materials. In addition, it is unable to obtain advanced EUV lithography machines. Therefore, it is bound to continue to move to advanced nodes by converting from 6F Square to 4F Square, which may also bring some cost increase. However, if it can narrow the technology gap with the top three and capture market share by doing so, it regards this as an acceptable cost. As a result, all four companies will make different choices.</p>
+<p>Rationally speaking, the approach of Samsung and SK Hynix should be the safest. Micron's approach is relatively aggressive, as it aims to leapfrog directly into 3D DRAM to capture early market leadership. For CXMT, it is similarly forced to choose this path due to some restrictions. Looking at all four companies as a whole, this is the case for 4F Square technology. There are subtle differences in technology among them. In terms of mass production pace, CXMT will not achieve meaningful shipment volume until 2027 at the earliest that is visible to the external market.</p>
+<p>For Samsung, its current plan is to mass-produce 4F Square technology around 2028. It is expected that CXMT will actually launch products in 2028. Therefore, in 2028, it will be possible to observe how much the performance of the products made by these three companies will differ and which one will have a relatively greater commercial advantage. For Micron, if it goes directly to 3D DRAM, the timing will also be after 2028 based on current estimates. Broadly speaking, for these four companies, these are the main points regarding 4F Square. Each company has its own different considerations in making its choice.</p>
+<h3>00:15:36] Regarding the 4F Square and 6F Square cell architectures, is the primary goal to increase die output per wafer by reducing the memory cell area by 33%? If this technology is realised by 2028, will it significantly expand industry capacity?</h3>
+<p><b>Expert</b> [00:15:36]: Yes, transitioning from 6F Square to 4F Square shrinks the footprint per memory cell. In theory, this miniaturisation can indeed have a relatively noticeable effect but in actual practice, it will be affected by many factors. As just mentioned, if capacitors are used for memory, capacitor devices are definitely required. The size of this device cannot be infinitely reduced. Its area determines its memory capacity and the spacing affects its memory stability. Normally, the capacitor dielectric must remain non-conductive; however, if the spacing is reduced indefinitely, issues such as quantum electron tunnelling, unintended leakage conduction or dielectric breakdown will occur. Therefore, this is the limiting condition for its size reduction.</p>
+<p>The second factor is that under the conventional horizontal 6F Square structure, peripheral CMOS circuits and memory cells could be fabricated on the same wafer. Now that it has been changed to this vertical structure, it can no longer be manufactured on the same wafer, because there will be some leakage problems as just mentioned. Therefore, this solution can only fabricate the peripheral CMOS circuits and the memory cell array (transistors and capacitors) on two separate wafers for production. This will lead to a problem: when manufactured on a single wafer, its main circuit is directly conductive, so there is no need to couple the two wafers together through hybrid bonding.</p>
+<p>Once there are two wafers, a problem arises. Previously, it was relatively easy to improve the yield on a single wafer but now, with two wafers, you need to improve the yield of each wafer separately and then couple them together. In this coupling process, the individual yields of the two wafers will be reduced to some extent, meaning there is a yield penalty. Therefore, the yield improvement will differ from that of the previous single wafer and the yield will also affect the actual number of known good memory dies that can ultimately be yielded.</p>
+<p>In addition, hybrid bonding itself is subject to many constraints. The choice of bonding materials and bonding dimensions is limited by the technology and these constraints also restrict the electrical performance of the device, as well as its heat dissipation and energy consumption. Therefore, theoretically speaking, switching from 6F Square to 4F Square will indeed reduce the area by about 50%. Theoretically, production output should increase by 50%. However, due to the factors just mentioned, the expected increase may only reach 20-30%.</p>
+<p>Whether this increase is sufficient to offset the cost concerns introduced by this technology is also a key consideration for Micron. It abandoned this technology because, after calculating the costs and benefits, it concluded that it would be better to move directly to 3D DRAM. To answer your earlier question, size reduction does indeed bring about an increase in output. However, due to the factors just mentioned, this increase will be somewhat discounted, so it will not be as large as 50%, and it may only be 20% or 30%.</p>
+<p><b>Client</b> [00:21:56]: 20-30% is quite a lot. For supply and demand in the same industry, without taking new manufacturers into account, if all players in the industry can increase capacity by 20-30%, is this similar to the capacity increases of previous technology generations or is it a fairly large leap?</p>
+<p><b>Expert</b> [00:21:56]: This is indeed quite large, especially in relation to industry demand, because in the current upward cycle supply falls short of demand. If this 20-30% can really be achieved in 2028 and because these plants are also now expanding production capacity on a large scale, it will affect the supply-demand relationship of the whole industry. If, at the 2028 juncture, AI demand is no longer as intense as it is now, the industry may gradually shift from the current upward cycle to a downward one; supply may then exceed demand and this could change the trajectory of the whole industry. Therefore, this is indeed a relatively big change. However, it still has to satisfy the requirements of many intermediate steps. From the implementation of the technology itself just mentioned, making it work in theory, to passing customer validation and then achieving a sizeable volume, the industry may not be affected until at least 2028 or even 2029 or 2030. Therefore, if viewed from this perspective alone, it may affect the supply-demand relationship of the industry in 2028-29.</p>
+<h3>00:24:45] Do you think this technology is just a matter of time, for example, that it will be resolved in 2028 or 2030 or is it possible that it will not be achieved at all?</h3>
+<p><b>Expert</b> [00:24:45]: Judging from the solutions proposed by various companies so far, the difficulty is not as great as that of 3D DRAM and implementation should be feasible. However, because each company's R&amp;D capabilities and yield improvement efforts differ, the different solutions they adopt may lead to differences in the timing of realising 4F Square technology. Some may realise it as early as 2028, while others may not do so until 2030. Therefore, I do not think the realisation of this technology will end in total failure. The three companies may just achieve it at different times. The question is who can be the first to develop it and bring it into commercial application.</p>
+<p>However, there is a problem here. If Samsung and SK Hynix encounter new technical problems in the process and are unable to make breakthroughs for a long time or believe that they have invested enough but have not yet achieved satisfactory returns, it cannot be ruled out that they will simply abandon this route and, like Micron, continue to focus on 3D DRAM. For CXMT, it will be relatively weaker in this regard. As it does not have EUV lithography machines, if it wants to continue technological miniaturisation, it must take this route. Therefore, this route has a relatively large impact on it and it will definitely invest heavily in R&amp;D and commit substantial funds to achieving mass production and commercialisation in this area.</p>
+<p>At the same time, it will also have some backup plans. It will also try to continue scaling down from the original 6F Square through methods such as multiple exposure and will start developing 3D DRAM. This is because, after future process miniaturisation, such work relies on advanced equipment and places high demands on advanced materials. Therefore, every company may move in this direction but the timing will differ.</p>
+<h3>00:28:37] Regarding the DDR5 [double data rate 5] breakthrough, it seems that CXMT has achieved a 90% yield. How would you characterise the nature of this DDR5 breakthrough?</h3>
+<p><b>Expert</b> [00:28:37]: The fifth-generation G5 platform you mentioned has achieved mass production but the current output is not very large. Relatively speaking, it can be regarded as a technological breakthrough. However, it is the latest generation of mass-produced products made by building on its previous generations of technology and following the process miniaturisation approach, using the same traditional DUV equipment at 6F Square. Basically, this is also the fourth company globally, apart from the three just mentioned, to enter the DDR5 camp.</p>
+<p>It has already achieved an active-area half-pitch of 11.95nm, which is effectively the 12nm node and has introduced new technologies such as high-k metal gates. Compared with the other three, it is roughly at their 1b and 1c generation nodes and is therefore already quite close to their mass-produced products. However, its cost is also relatively high because it requires quadruple exposure using DUV. This makes the process more complex and its cost higher than that of the other three.</p>
+<p>In this way, it can advance its next-generation products as quickly as possible and narrow the gap with the other three. At least on the latest node, particularly with general-purpose DDR5 products, it can gradually narrow the gap with the other three. In terms of performance, the gap is not particularly large. For example, its latency is not much different from that of SK Hynix. The gap in read and write bandwidth is also relatively small. There are also other aspects, such as frequency and response, where the gaps are not particularly large.</p>
+<p>In terms of power consumption, since its products have not yet been directly applied to client terminals, relatively speaking, the data in this regard cannot be directly shown on actual devices at present. In terms of density, as just mentioned, compared with the previous generation, its wafer output will be higher and the cell footprint will be smaller. Basically, this approach has almost reached its limit on relatively outdated equipment such as the current DUV. Therefore, in the next generation, it will switch from 6F Square to 4F Square, as just mentioned. As for the conventional 6F Square, at least for now, it has almost reached its limit in its fifth-generation products.</p>
+<p><b>Client</b> [00:37:38]: The other three companies have EUV but CXMT does not have EUV and instead uses DUV, so people may find this relatively impressive.</p>
+<p><b>Expert</b> [00:37:38]: Yes, this is also one. However, as everyone knows, this is how multiple patterning is done. The cost and manufacturing efficiency of multiple patterning are not as favourable as using EUV lithography directly and many problems need to be solved. It is just that CXMT may move at a relatively faster pace.</p>
+<h3>00:40:56] Following sharp memory price increases, many GPU manufacturers, such as Nvidia, have said that they need to find ways to reduce their demand for memory. Some say Nvidia is moving from 12Hi to 8Hi HBM [high bandwidth memory] on Rubin Ultra, reducing demand for HBM and DRAM without affecting the overall RPS [requests per second] efficiency of GPUs too much. Do you think a breakthrough in this area can be achieved in practice? Can it really reduce the demand for memory?</h3>
+<p><b>Expert</b> [00:40:56]: Before 3D DRAM is truly mature and commercialised, I have not seen any good memory products that can deliver stable high-speed memory and replace HBM or even DRAM. So that point is indeed due to the recent upward cycle and the explosive demand driven by AI. As a result, the entire industry is in a state where demand far exceeds supply and prices are rising every quarter or even every month. This situation indeed creates significant cost pressure for GPU manufacturers. However, at present, as AI continues to develop and as these AI hardware products evolve towards next-generation product cycles and process nodes, their memory bandwidth and capacity requirements will only continue to rise.</p>
+<p>Therefore, to fundamentally solve this problem, rather than downgrading to these memory devices, what is needed is to achieve technological breakthroughs in memory devices as soon as possible, such as moving from traditional DRAM to 3D DRAM and achieving a major qualitative leap. Alternatively, it is necessary to change the supply and demand relationship and aggressively expand capacity to bridge the supply gap in commodity DRAM, while the demand from AI can... Because AI is currently experiencing exponential, unchecked growth, whether it will really reach a point where regulatory measures must be introduced to restrict certain directions of its development is also a point of contention in the current geopolitical environment. Therefore, in my current view, there may be a fairly notable weakening of demand relative to supply around 2029-30. In terms of process technology, as just mentioned, after the conversion from 6F Square to 4F Square, output will increase to a certain extent and all manufacturers are currently expanding capacity aggressively.</p>
+<p>Furthermore, if 3D DRAM also produces some favourable results by 2029-30, the supply-demand relationship may change. Even black swan events such as COVID-19 could occur, potentially causing major problems in the global supply chain and even changing the direction of the whole industry. Therefore, in my understanding, technological breakthroughs are a direction the whole industry is bound to take and are also the best solution to this problem. In addition, changes in the supply-demand relationship and in the industry are also a specific direction for changing the current high prices. From the perspective of healthy development, these two approaches are the more reasonable ones. Therefore, as things stand, I think both directions offer hope for solving the current upward price trend and this may occur as early as 2029.</p>
+<p><b>Client</b> [00:48:25]: Will many other new factories also be able to start production in 2028?</p>
+<p><b>Expert</b> [00:48:25]: Right.</p>
+<p><b>Client</b> [00:48:33]: So will this one also be released soon?</p>
+<p><b>Expert</b> [00:48:33]: Right. For Samsung and SK Hynix, their new fabs could deliver a considerable volume as early as 2028, whether by converting some HBM capacity to meet the demand for commodity DRAM or by increasing the total volume through newly expanded fabs. Some new production lines of CXMT will also start to contribute volume around 2028. However, for now, at least within this cycle, CXMT is likely to focus mainly on meeting domestic demand, as the domestic demand gap is also very large. Samsung, SK Hynix and Micron may mainly allocate production capacity to meet demand in the US, Europe and other regions.</p>
+<h3>00:49:58] What do you think of the domestic DRAM price trend? Prices are now rising every quarter but at a slower pace. The QoQ DRAM contract price increase in Q4 may slow to around 20%, down from 40%, largely due to widespread signing of long-term agreements.</h3>
+<p><b>Expert</b> [00:49:58]: In the first two quarters, prices did rise quite sharply. By traditional seasonal patterns, Q3 and Q4 will see some moderation, which is broadly consistent with the usual quarterly cycle. In addition, there is quite a lot of news in the market at present, often about things such as 4F Square, which to a certain extent also influences market and industry expectations. In addition, although the price increase has slowed, the overall trend is still upward. After all, this product is ultimately produced for consumers. When the price rises, it does to some extent suppress the desire to consume.</p>
+<p>For example, many of those who were previously in a wait-and-see position might delay their consumption if they saw prices continuing to rise. So basically, at the start of each new year, people tend to have relatively optimistic expectations for the whole year. Generally, by the end of the year or in the second half, many consumption trends and market conditions have already taken shape. As a result, people often remain cautious and wait to see how next year goes, especially on the consumption side. In addition, given the market conditions over the past year, many manufacturers anticipated this and signed long-term contracts in advance. As a result, much of the production capacity of these plants has been locked in by long-term contract customers.</p>
+<p>Memory component die inventory held by channel distributors and intermediaries is still relatively high. However, the inventory held by the manufacturers themselves is currently very low and the inventory of end consumer goods is relatively reasonable. However, inventory remains relatively high in the intermediate distribution link. To some extent, this will also affect the overall market response and will ultimately be reflected in prices. Prices cannot increase as dramatically as they did in the previous two quarters. It may depend on whether the whole market sees different changes after the start of the new year. That is roughly the situation.</p>
+<p><b>Client</b> [00:55:03]: At the beginning of next year, the key factor will be demand, right? If demand is still strong and clients still want to sign long-term orders, there will still be room for price increases, because production volume will not change much. Is that right?</p>
+<p><b>Expert</b> [00:55:03]: That is right. By 2027, the capacity of existing operational fabs is already running at near-full utilisation. New fabs generally will not achieve meaningful volume ramp-up until 2028, so the volume that can be newly released next year, 2027, is not particularly large.</p>
+<h3>00:56:03] It seems demand for long-term orders was still quite strong last quarter. Large buyers want to lock in more and sign even longer contracts. It seems this remains a seller's market with further upside. If end-market demand weakens subsequently, do you think these long-term agreements can be strictly enforced?</h3>
+<p><b>Expert</b> [00:56:03]: That's right. This will really test whether such long-term orders can be enforced under different legal systems. Given the two roles in such long-term orders, one is the DRAM vendor and the other is the consumer electronics manufacturer, whether it acts as a distributor or as an end purchaser. When supply is far less than demand, the DRAM vendor is generally the relatively stronger party. In this situation, DRAM vendors generally hold a stronger position when some long-term contracts are signed. Terminal consumer goods manufacturers, when fulfilling long-term contracts, will also consider, at the time of signing, how much price fluctuation is acceptable to them. Therefore, looking at the current situation in China, if DRAM vendors sign long-term contracts with them, they generally consider the company's overall scale and the probability of such a situation occurring.</p>
+<p>Because this kind of order locking in China is generally carried out by relatively large enterprises, at present this situation is unlikely to occur, at least before 2028. Because price fluctuations of this kind, such as a sudden collapse in prices caused by some black swan event, will not occur, this situation is unlikely to arise in China before 2028. At most, the price may fall back to the 2025 level but it is unlikely to completely reverse the current shortage situation. Therefore, this situation is unlikely to occur in China before 2028.</p>
+<h3>00:59:54] Under what circumstances do you think the price of DRAM will start to decline next year and fall to the 2025 level?</h3>
+<p><b>Expert</b> [00:59:54]: At present, it is difficult for prices to fall unless some unexpected situations, such as wars or black swan events, cause the entire supply chain to break down. Only then will prices collapse. Given the current situation, it is quite unlikely that prices will fall again to the 2025 level. This should not occur.</p>
+<h3>01:00:55] You mentioned black swan events. Does the current international war have an impact on the memory supply chain?</h3>
+<p><b>Expert</b> [01:00:55]: The main impact is on the supply chain. As you know, to achieve technological breakthroughs and expand production on a large scale, it must have stable manufacturers and supply sources. These include everything from equipment and materials to bulk wafers and electronic chemicals. If, for example, the entire supply is cut off, the whole plant may be unable to operate. In addition, such a situation may also occur. For example, if the electronic products produced by terminal enterprises are mainly sold to the Middle East and some Southeast Asian countries and the supply chain is disrupted, even if you have made consumer electronics, servers and so on, you may be unable to sell them and end up saddled with excess inventory. In this case, terminal enterprises will be under great pressure. They may also be unable to continue to maintain the purchase volumes agreed in previous contracts and pricing problems may also arise. In fact, it mainly comes down to the supply chain. If the entire supply chain is stable, such problems will basically not occur.</p>
+<p><b>Client</b> [01:02:43]: So unstable supply may also produce other adverse effects, right?</p>
+<p><b>Expert</b> [01:02:43]: Right.</p>
+<p><b>Client</b> [01:02:48]: Maybe the production volume will also be affected. That is, you do not know which way it will go or what will be affected?</p>
+<p><b>Expert</b> [01:02:48]: Right.</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

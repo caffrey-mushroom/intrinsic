@@ -1,0 +1,268 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.18 | Substack | ASIC | RSI in Chip Design &amp; Custom ASICs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.18 | Substack | ASIC | RSI in Chip Design &amp; Custom ASICs</h1>
+<p class="orig">原标题：Deep|LLM: RSI and Chip Design: AI Lowers the Barrier to Custom ASICs, Redistributing Profit Across Accelerators, E…</p>
+<p class="tags">#asic #semis #llm</p>
+<p class="meta">Substack · 2026-11-18</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>FUNDA认为递归自我改进正从软件延伸到硬件，AI降低了芯片设计和软件移植门槛，使定制ASIC成为实验室和云厂商的核心战略。</li>
+<li>OpenAI的Jalapeño推理芯片从设计到流片仅用9个月，AI优化的矩阵与SIMD单元面积分别比人工设计小10%和8%，博通预计其部署2027年达1.3GW、2028年超5GW。</li>
+<li>Anthropic的15人芯片团队已用Claude进行定制芯片设计；业内称Codex完成了第一代Jalapeño约80%的设计工作，芯片迭代周期从2-3年一代缩短到约一年一代。</li>
+<li>端到端设计仍受工具速度和实物验证制约：Build-A-Chip-Bench上最强的Claude Fable 5.1总分仅23.5%，2024年仅14%的ASIC/SoC项目一次流片成功。</li>
+<li>AI编写kernel降低了跨硬件移植成本并削弱CUDA锁定，TrendForce预计2026年ASIC服务器占出货约28%，ASIC出货增速约45%而GPU约16%。</li>
+<li>英伟达Vera Rubin每GW收入机会约400亿美元，约占每GW投资600亿美元的三分之二，按75%毛利率估算约300亿美元为毛利，是客户最有动力压缩的一层。</li>
+<li>博通称其定制加速器每GW价值200-300亿美元，FUNDA估计其在每颗Jalapeño上加价约1万美元；OpenAI称Jalapeño单位功耗吞吐是GB200/GB300的1.5-1.9倍。</li>
+<li>对EDA持谨慎态度：智能体可使工具调用增加5-10倍，但按人头和时长定价的许可模式将被重新谈判，OpenAI与Synopsys的GPT-Synopsys合作显示模型公司开始分享设计费用。</li>
+<li>设计服务公司在大型成熟客户现有项目上的turnkey加价将持续下降，客户转向COT；卖方预计博通在谷歌定制芯片中的份额将从2026年约95%降至2028年约65%。</li>
+<li>拥有硅验证IP、先进封装平台和量产执行能力的公司（如博通、Marvell、世芯）最能守住利润；GUC第三季度毛利率降至约20.6%，但毛利增长约85%。</li>
+</ol></section>
+<div class="body">
+<h3>Executive Summary</h3>
+<ol><li>AI-assisted chip design is moving from an internal tool at frontier labs to an increasingly visible point of</li></ol>
+<p>competition. According to a November 3 report in The Information, Anthropic told investors at pre-IPO meetings that its newly formed 15-person chip design team is already using Claude for custom-chip engineering and design. OpenAI’s Jalapeño inference chip, unveiled in June, went from initial design to tape-out in nine months, with the company’s own models accelerating parts of the design and optimization process. On the October 29 Cheeky Pint podcast, OpenAI CEO Sam Altman also said that taking a chip from design through to tape-out files is “a problem AI is very good at.”</p>
+<ol><li>Our earlier reports in the recursive self-improvement (RSI) series focused mainly on software: in September, Claude</li></ol>
+<p>wrote more than 90% of Anthropic’s new code, and frontier labs had largely handed kernel and performance optimization to models. The market’s questions about AI chip design center on two issues: how far AI can go in chip design, given that EDA tools are slow and tape-out cycles are long, making the task very different from software development; and what this means for the cost of compute.</p>
+<ol><li>Our view is that RSI is beginning to extend from software into hardware, with three implications. First, AI lowers</li></ol>
+<p>the barriers to both chip design and software porting, making custom ASICs a core strategy for labs and CSPs rather than an option available only to a few companies. Second, accelerators are the most profitable layer in a gigawatt of compute and the layer customers can most readily squeeze through in-house design and alternative sourcing. For the Vera Rubin generation, NVIDIA’s revenue opportunity is about $40 billion per GW, or roughly two-thirds of the investment per GW. The cost advantage ultimately depends on output per watt, and lower costs are likely to translate into more deployment. Third, we are more cautious on EDA and design houses. More design activity means more tool calls and projects, but EDA pricing models are changing, while model companies are competing for the design interface and beginning to share in chip-design fees. The value of design services is being reassessed: turnkey markups and undifferentiated fees on existing programs for large, mature customers are likely to keep falling. Companies that can defend their profits will need IP, packaging platforms and the ability to execute at production scale.</p>
+<h2>Research|LLM: Gemini 4 Carbon Puts Google Back in the Lead as RSI Accelerates Model Development</h2>
+<p>Oct 29</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1794982347692-6.png" alt="" loading="lazy"></p>
+<p>Executive Summary</p>
+<p>Read full story</p>
+<h2>Deep|LLM: RSI Is the Most Important Variable, and Compute Is the Deepest Moat</h2>
+<p>Aug 6</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1794982348597-7.jpg" alt="" loading="lazy"></p>
+<p>Executive Summary</p>
+<p>Read full story</p>
+<h3>AI-Assisted Chip Design is Already Taking Hold at Frontier Labs, with Some Projects Reaching Tape-Out in Under a Year</h3>
+<p>OpenAI’s Jalapeño is the clearest example so far. When OpenAI unveiled the inference chip on June 24, it said the chip had gone from initial design to tape-out in just nine months, with its own models accelerating parts of the design and optimization process, while Broadcom handled chip implementation and networking. At Hot Chips in August, OpenAI disclosed that AI had optimized the chip’s arithmetic circuits; according to Tom’s Hardware, the matrix and SIMD units were 10% and 8% smaller in area, respectively, than human-designed versions. Hardware lead Richard Ho told Forbes in October that the entire hardware team had about 100 people, with the chip-design group at least two orders of magnitude smaller than a typical chip team. Broadcom’s implementation experience and IP reuse also contributed to the nine-month schedule, with AI one of several important factors in shortening the cycle. Jalapeño is expected to begin small-volume deployment by year-end. Ho said the internal goal is to put it into production use in the first half of 2027, while acknowledging that the target will be difficult. Broadcom expects deployment to reach 1.3 GW in 2027 and exceed 5 GW in 2028, including the next generation.</p>
+<p>Public information points to two chip teams at OpenAI. One is the hardware team led by Ho, which is responsible for in-house chips such as Jalapeño. The other focuses on AI for chip design in partnership with Arm and is led by a former Google employee. OpenAI’s careers page describes an “AI for Chips” team that builds training environments and tests for RTL, verification and physical design, with the aim of shortening design cycles. The company posted 36 chip-design and manufacturing roles this year, covering architecture, RTL, packaging, bring-up and firmware (see figure). Before Jalapeño was unveiled, hiring in April was concentrated in performance modeling and chip implementation; after the launch, postings shifted toward bring-up and runtime roles in August (see figure).</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1794982349166-8.png" alt="" loading="lazy">Subscribed</p>
+<p>Other companies are following a similar path. Google’s AlphaChip has been used for layout design across several generations of TPUs, and Google said in May that AlphaEvolve had become a routine tool in designing its next-generation TPU. Marvell said in October that one of its chips reached tape-out in less than nine months with help from an in-house design assistant.</p>
+<p>Anthropic confirmed in August that it was forming an in-house chip team, recruiting key personnel first from OpenAI’s chip group and then from Google. In July and August, Anthropic posted only three chip-related roles. One posting for a Silicon Engineer covered eight areas, including front-end design, verification, physical design and packaging (see figure). According to The Information, Anthropic told investors that the 15-person team was already using Claude for custom-chip engineering and design. Its engineers found that Claude shortened design time compared with their estimates for traditional workflows at large chip companies such as NVIDIA and AMD. Anthropic has also approached EDA companies about buying or using their chip-design data. In a job posting for a chip-design reinforcement-learning role, it described hardware design as “difficult and unforgiving”—precisely the kind of domain in which it wants Claude to excel.</p>
+<p><i>Figure: OpenAI and Anthropic Chip Roles by Stage, 2026</i></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1794982351501-9.jpg" alt="" loading="lazy"></p>
+<p><i>Sources: Company career pages; The Information; FUNDA.</i></p>
+<p><i>Figure: Chip Roles by Month Posted, 2026</i></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1794982352654-10.jpg" alt="" loading="lazy"></p>
+<p><i>Sources: Company career pages (as of November 8, 2026); OpenAI; Synopsys; The Information; FUNDA.</i></p>
+<p>Based on public information, the first tasks chip teams are handing to AI are repetitive work such as writing RTL, writing tests and initial debugging. Chip experts say verification engineers are already no longer writing their own code, although debugging complex failures still requires people working with purpose-built agents. The chip release cycle has also shifted from one generation every two to three years to roughly one generation a year. As a result, the bottleneck is moving from writing code to verification closure, complex debugging and expert judgment. Industry discussion suggests that Codex completed about 80% of the design work on the first-generation Jalapeño.</p>
+<p>We see two implications for in-house chip development. First, it can narrow the time gap with same-generation GPUs. ASICs have often lagged NVIDIA by a generation. Although they were cheaper per GW, the generation gap eroded their advantage in cost per unit of compute. Compressing the design-to-tape-out cycle to less than a year can narrow that gap, though the ability to compete head-on will still depend on production timing and actual performance. Second, it lowers the barrier to entry. A hardware team of about 100 people, together with a partner such as Broadcom, can now build a frontier inference chip. More labs and CSPs can therefore afford to develop their own silicon and tailor it to their models to increase tokens per watt. Hardware RSI remains at an early stage; the full multi-generation feedback loop will take several chip generations to validate.</p>
+<h3>AI Enters RTL and Verification First, While End-to-End Design Still Faces Bottlenecks</h3>
+<p>Taking a digital chip from concept to tape-out involves several stages: architecture and specification, RTL design, functional verification, logic synthesis, physical design and sign-off. Each stage relies on EDA tools to check the work, with designs sent back for revision when they miss their targets. After silicon returns, the chip still needs to be tested and its software optimized (see table). The order in which AI enters each stage depends on how clearly the task is defined and how quickly feedback is available.</p>
+<p>We believe chip-design subtasks with clear specifications and automatable feedback are easier to hand to AI than parts of ordinary software development where requirements are less defined. RTL must meet a specification; functional correctness can be checked through simulation and formal verification; and power, performance and area are measurable. This is also why kernels were among the first tasks taken on by AI: the goals are clear and the results can be verified. However, passing simulation does not guarantee that a design is fully correct. People still need to judge whether the specification itself is sound and whether verification coverage is sufficient. Nor do clear constraints imply a small search space: a large chip can contain tens of billions of transistors. AI’s advantage is its ability to search repeatedly against well-defined feedback.</p>
+<p>End-to-end design still faces two constraints. The first is tool speed. Build-A-Chip-Bench, released by ChipAgents and NVIDIA in October, asks agents to move from a workload specification all the way to a layout that passes sign-off. Only designs that pass functional verification and have no layout violations receive a PPA score; all others score zero. On the leaderboard updated by Fireworks on October 28, which covered 20 problems with a 72-hour limit for each, the top model, Claude Fable 5.1, achieved an overall score of just 23.5%. The sample problem is a small chip of no more than 6 mm², yet a single place-and-route run takes more than four hours. Agents often underestimate these slow steps and only return to revise RTL after physical design fails. The second constraint is the need to validate designs on real silicon. In a 2024 survey by Siemens and Wilson Research Group, only 14% of the ASIC/SoC projects surveyed achieved first-silicon success, the lowest rate in more than 20 years. Data is also scarce: real designs and IP remain inside chip companies, which may prefer to run open-weight models on their own hardware for confidentiality reasons.</p>
+<p><i>Table: The Chip Design Flow and Where AI Enters</i></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1794982354782-11.jpg" alt="" loading="lazy"></p>
+<p><i>Sources: OpenAI (June and August 2026); Tom’s Hardware; Siemens (March 2026 and September 2025); Google; EE Times; Siemens and Wilson Research Group, 2024 Functional Verification Study; TSMC OIP.</i></p>
+<p>The back end is the slowest stage. A single place-and-route run on a large chip can take days or weeks, while a set of EDA licenses can cost several million to more than $10 million. This makes repeated AI-driven iteration both too slow and too expensive. Progress at the back end will therefore require either new EDA technology, such as GPU-accelerated place-and-route and simulation, or the direct use of AI to accelerate these steps. Ricursive is starting with physical design and verification without the standard EDA toolchain in an effort to solve the slow-feedback problem. Companies designing their own chips have another advantage: they control their workloads, and data from each tape-out stays in-house and can be used to train the next generation of models.</p>
+<h3>AI-Written Kernels Lower the Cost of Porting Across Hardware and Weaken CUDA Lock-In</h3>
+<p>Software used to be the biggest obstacle to switching chips, but AI is bringing porting costs down. On July 29, OpenAI said GPT-5.6 Sol had autonomously rewritten and optimized production kernels through Codex. Together with other kernel optimizations, this reduced end-to-end inference-serving costs by 20%. Meta disclosed in April that KernelEvolve uses a single framework to generate kernels for NVIDIA GPUs, AMD GPUs and its in-house MTIA, raising training throughput on MTIA by more than 25% for one advertising model. Anthropic’s kernel and performance optimization across GPUs, TPUs and Trainium is now largely handled by Claude. When Anthropic signed an agreement with AMD in July for up to 2 GW of MI450 capacity, the companies said Anthropic would use Claude to optimize workloads on AMD GPUs and accelerate ROCm development. Engineers at frontier labs and chip companies say models now write most kernels, while people set direction and review the results. CUDA has the largest training corpus, and models still write CUDA best; their ability to write TPU kernels also appears to have been specifically trained.</p>
+<p>AI-written kernels benefit both GPUs and ASICs, and NVIDIA itself makes extensive use of AI to write kernels. What is being weakened is vendor lock-in. In our April deep dive on NVIDIA, we argued that CUDA’s moat may not disappear, but the switching costs that support it are being repriced. Over the past six months, labs have begun splitting purchases across vendors: Anthropic uses TPUs, Trainium and NVIDIA GPUs, with AMD to be added from 2027. In addition to NVIDIA, OpenAI has a multiyear agreement to deploy 6 GW of AMD GPUs and its own Jalapeño chip. The Information reported on October 27 that OpenAI also plans to buy Google TPUs directly. TrendForce forecasts that ASIC-based AI servers will account for about 28% of shipments in 2026, with ASIC shipments growing about 45%, compared with about 16% for GPUs.</p>
+<h2>Deep|NVDA: Rethinking NVIDIA's Moat in the AI Stack</h2>
+<p>FUNDA</p>
+<p>·</p>
+<p>Apr 23</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1794982355679-12.png" alt="" loading="lazy"></p>
+<p>NVIDIA — The Bellwether of the AI Era</p>
+<p>Read full story</p>
+<p>NVIDIA’s advantage is shifting toward systems and supply. In August, NVIDIA CEO Jensen Huang said many XPUs are inference-specific chips designed for a single cloud or service, whereas NVIDIA offers a platform. Verification remains a bottleneck: more rigorous reviews suggest that some of the speedups claimed for model-written kernels on public benchmarks do not hold up. Vera Rubin remains highly competitive. Blackwell code can run on Vera Rubin with about 2x the performance without modification and about 3x after optimization, at a price premium of only 30%–40%. Some teams training on TPUs also say that TPUs offer no clear cost advantage, pointing to the software ecosystem as a weakness. Both approaches will have users. The key change is that customers now have viable alternative suppliers, strengthening their bargaining power with GPU vendors.</p>
+<h3>Custom ASICs Lower Costs at the Accelerator Layer, but the Advantage Still Depends on Output per Watt</h3>
+<p>On October 29, Altman used five-year total cost of ownership (TCO)—the full cost of building 1 GW of compute capacity and operating it for five years—to frame the cost of compute. He cited $70 billion as an example and said he would be much happier if the figure were $20 billion, while still expecting smarter models to deliver 10x more performance each year from the same compute. Reaching $20 billion would require cheaper energy and a sharp reduction in the layers of gross margin accumulated between melting sand and producing tokens. Altman said that even if materials were free and no one made a profit, the target would only just be within reach at current energy costs. The $20 billion figure is a long-term goal that custom ASICs cannot achieve on their own. Their role is to reduce the premium at the accelerator layer and give customers more sourcing options.</p>
+<p>The value of the accelerator layer is still increasing. On the August 26 earnings call, Jensen Huang said NVIDIA’s revenue opportunity per GW would rise from about $18 billion for Hopper and $25 billion for Grace Blackwell to about $40 billion for Vera Rubin, covering platform products such as GPUs, CPUs, NVLink and networking, with further increases expected in later generations. He also said investment per GW of data-center capacity had risen from about $30 billion five years ago to about $60 billion today. On that basis, NVIDIA’s platform accounts for roughly two-thirds of investment per GW. NVIDIA’s GAAP and non-GAAP gross margins were both 75% for the quarter, with guidance of 74% for the following quarter. If the Vera Rubin platform were to earn the company’s average gross margin, about $30 billion of the roughly $40 billion in revenue per GW would be gross profit. This is only an order-of-magnitude estimate; NVIDIA has not disclosed the platform’s gross margin. Gross profit must also cover R&amp;D and other expenses, while customers moving to ASICs take on in-house development and software-porting costs and still pay margins to other suppliers. The figure therefore cannot be treated as cash customers could simply save. It does, however, illustrate that accelerators are the most profitable layer in a gigawatt of compute and the one customers can most readily squeeze through in-house design and alternative sourcing.</p>
+<p>Custom ASICs target this layer. Broadcom CEO Hock Tan said on the September 2 earnings call that Broadcom’s custom-accelerator content is worth $20–30 billion per GW and remains broadly unchanged as per-chip power increases. He also said an XPU costs less than half as much as a GPU for the same workload. A Vera Rubin GPU costs around $10,000, with a selling price several times higher; we estimate Broadcom’s markup on each Jalapeño chip at about $10,000. Building in-house does not eliminate supplier margins, as partners still need to earn a return. The difference is that the absolute markup per chip is much lower and can be reduced further with each generation once customers move to customer-owned tooling (COT). The system-level savings still depend on the number of chips per GW, the accompanying configuration and actual throughput. Comparisons must also use a consistent basis: NVIDIA’s roughly $40 billion includes GPUs, CPUs and networking, while an ASIC system still needs CPUs, networking and HBM.</p>
+<p>The larger difference is output per watt. OpenAI disclosed in August that, in inference tests on three open-weight models, Jalapeño’s peak throughput normalized by rated chip power was 1.5–1.9x that of GB200/GB300. These were company-run tests against the Blackwell generation. OpenAI’s benchmark results for Jalapeño can be compared with Vera Rubin, although the software is harder to write. According to Bloomberg, Hock Tan said in June that Jalapeño’s cost per inference token was about half that of current-generation GPUs. These are all vendor figures; the relevant comparison is cost per token for the same model at the same precision and latency.</p>
+<p>Customers have stronger incentives to push down platform premiums. According to Broadcom in September, Anthropic, OpenAI and Meta together planned to deploy more than 20 GW of custom chips by 2028. We expect labs and CSPs to have growing incentives to develop their own chips. The savings will not mean lower spending: labs are still raising their compute plans, so lower costs are likely to translate into more deployment and more tokens. Demand for HBM, optical interconnect and power will rise alongside deployment, with prices determined by supply and demand in each market.</p>
+<h3>EDA: Tool Usage Is Rising, Pricing Models Are Changing, and Model Companies Are Competing for the Design Interface</h3>
+<p>EDA’s moat lies in sign-off, foundry flows and IP. Only three EDA vendors—Synopsys, Cadence and Siemens—are certified by TSMC for complete flows at advanced nodes such as A14, A16 and N2P. Today’s AI agents call these tools, so advanced-node sign-off cannot be bypassed in the near term. In July, Moonshot AI’s Kimi K3 used only open-source tools to complete a 45 nm, 4 mm² chip design in 48 hours. This remains far from leading-edge processes, but it shows that open-source tools combined with a model can already complete the flow for small chips on mature nodes. AI affects different parts of EDA in different ways (see table).</p>
+<p><i>Table: How AI Affects Each Part of EDA</i></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1794982358386-13.jpg" alt="" loading="lazy"></p>
+<p><i>Sources: Synopsys Investor Day (September 2026); Cadence 26Q3 earnings call; Cadence and NVIDIA (March 16, 2026); ESD Alliance (26Q2); OpenAI and Synopsys (September 30, 2026); The Information; Siemens (March 2026); FUNDA.</i></p>
+<p>EDA pricing models are likely to be renegotiated. Time-based EDA licenses are priced by the number of concurrent licenses and the license term, so fewer engineers do not necessarily mean fewer licenses. An engineer running several agents may in fact need more concurrent licenses. Synopsys said at its September investor day that agents can sometimes drive 5–10x tool usage, and Cadence has also said that agents are increasing use of its core tools. However, license counts and prices were originally negotiated around human usage patterns. Agents multiply both the number of tool calls and the time licenses are occupied, prompting customers to seek pricing based on usage, agents or outcomes. Synopsys already offers cloud billing based on license count and usage minutes. In February, Cadence’s head of R&amp;D said that by the end of the decade the company would move from selling tool licenses to “renting virtual engineers.” How much incremental revenue EDA vendors can capture from higher usage will depend on how difficult their tools are to replace and on competition; pricing and terms in the next few renewal cycles will provide the answer. Cadence’s revenue grew 22% in its latest quarter. Synopsys grew 42%, but that figure includes the consolidation of Ansys and therefore cannot be used directly to gauge demand for its existing EDA business. Design activity itself continues to increase: in July, TSMC said the number of N2 tape-outs in the node’s second year was four times the number of N3 tape-outs at the same stage.</p>
+<p>The back end has the deepest moat and is also where new approaches are entering first (as discussed above). EDA vendors are developing GPU acceleration themselves. In March, Cadence and NVIDIA announced GPU-accelerated solutions that include Innovus place-and-route. In December 2025, NVIDIA invested $2 billion in Synopsys as part of a partnership to move engineering software onto GPUs. Under license-count and time-based pricing, faster tools mean customers occupy licenses for less time. The question is whether vendors can retain the value created by acceleration through new pricing models. AI-native companies are targeting this stage as well: Ricursive is starting with physical design and verification without using the standard EDA toolchain. Chip experts believe it will take time to overhaul the back end with AI, which provides EDA vendors with some near-term protection. Once place-and-route feedback can be reduced from days to hours, however, the division of work across the process before sign-off could be reshaped.</p>
+<p>Control of the design interface is harder to predict. Under GPT-Synopsys, announced by OpenAI and Synopsys on September 30, OpenAI licenses Synopsys tools to develop a chip-design model that runs on OpenAI’s infrastructure. The model, compute and licenses are sold as a package, with the two companies sharing revenue. The announcement did not disclose the revenue split or any minimum guarantee, nor did it say whether the arrangement would replace existing license revenue. We believe this shows that model companies are beginning to participate in fees for chip-design services, although it remains unclear how much of the incremental value EDA vendors will retain. If engineers use models as their primary day-to-day interface, EDA tools will increasingly be called in the background. According to The Information, Anthropic has approached EDA companies about purchasing chip-design data. If Anthropic offers chip-design capabilities to external customers, it would compete with Cadence and Synopsys. EDA vendors are also developing their own models and agents: Cadence has launched ChipStack AI Super Agent and Maestro domain models that can be deployed on customers’ premises. Specialized post-training requires access to customers’ designs and IP, and customer data can only be used to train models for that individual customer. This constrains both model companies and EDA vendors. EDA vendors have the tools and customer relationships; model companies have compute and general-purpose capabilities. Ownership of the design interface remains unsettled.</p>
+<p>IP is the most stable part of the EDA business, although per-chip royalties only begin once designs reach volume production. Synopsys signed a multiyear IP agreement with Amazon covering multiple generations of Graviton, Trainium and Nitro. License fees alone exceed $1 billion, with customization fees charged separately and per-chip royalties payable once designs enter production. Management expects royalty revenue eventually to exceed license revenue. We believe the impact of fewer seats on EDA revenue will be smaller than the market had previously feared. Demand for verification, sign-off, IP and package simulation is rising. Our greater concern is the change in pricing models and control of the design interface, which will determine how much EDA vendors capture from increased design activity. Key indicators to watch include net license revenue on comparable projects, renewal pricing and customers’ ability to switch suppliers.</p>
+<h3>Design Houses: The Value of Design Services Is Being Reassessed, with Profits Supported by IP and Production Capabilities</h3>
+<p>Design houses’ high markups are based on customers lacking three things: an in-house chip team, silicon-proven IP and access to TSMC capacity. The roughly $10,000 per-chip markup on Jalapeño estimated earlier in this report reflects these constraints. AI weakens the first. COT changes how design, procurement and risk are allocated, but customers still need to buy external IP and outsource back-end implementation. Whether they can access capacity directly depends on their scale. The number of programs is increasing: on October 30, MediaTek said it expected 2027 AI-accelerator ASIC revenue to reach the high end of its target range, or about $16 billion—roughly one-fifth of the market. Marvell has more than 35 custom-chip programs with the four largest US cloud providers. Our view is that, on existing programs for large, mature customers, turnkey markups and undifferentiated design fees will continue to decline. These customers will retain control of architecture and bring RTL and an increasing share of verification in-house. The design house’s role will shift from design partner to implementation and production partner. Whether profits can continue to grow will depend on whether new customers, new chip categories and production scale can offset pricing pressure from large customers (see table).</p>
+<p>Pressure is coming first from large customers. Architecture is determined by the customer’s workload, and customers have generally preferred to control it themselves. As AI lowers the cost of RTL development and verification, more implementation work may also move in-house. OpenAI led the design of Jalapeño, with Broadcom responsible for implementation and networking; Google designed some of the TPU 8i compute dies itself. In August, Alchip’s chairman said that all CSPs, including Google, would eventually move toward COT. Under a turnkey model, Broadcom sets the unit price; under COT, customers calculate costs item by item and then pay a reasonable margin. Alchip’s main customer uses COT and is itself a major TSMC customer for both wafer fabrication and advanced packaging, receiving TSMC support for capacity at both stages. For customers of this scale, the design house’s role as a channel to foundry capacity is materially reduced. Second sources are also putting pressure on pricing. According to The Information, Google brought MediaTek into its TPU program because of lower per-chip fees, better TSMC terms and greater control over the design. Sell-side analysts expect Broadcom’s share of Google’s custom chips to fall from about 95% in 2026 to about 65% in 2028. However, being able to do the work in-house and choosing to do so are two different things. To maintain an annual product cadence, Microsoft outsourced the back end and physical design of Maia 300 to Marvell while retaining the compute units and scale-up network in-house. We expect customers such as OpenAI to bring verification and part of the back end in-house after another two or three chip generations, while continuing to rely on partners for packaging, testing and production management.</p>
+<p>The back end and turnkey services are likely to be the most competitive segments. MediaTek has entered the TPU supply chain, Marvell has taken on Maia’s back end, and more design-services companies beyond Alchip and Global Unichip (GUC) are competing for the same customers. AI-native companies such as Ricursive are also entering through back-end design and verification. EDA agents will initially improve the delivery capabilities of existing design houses; they become substitutes only when customers use these tools to complete back-end work themselves. Alchip’s chairman has said that taking a customer’s completed layout and providing manufacturing services only will be an extremely competitive business. In the near term, a faster product cadence benefits experienced back-end teams. GUC said in its annual report that technically demanding, high-end NRE projects command higher fees and gross margins. Alchip said gross margins on its 2 nm projects could be no lower than those on 3 nm projects. Under project-based pricing, suppliers can retain the efficiency gains from AI only while customers and competitors lack similar capabilities. Reworking the entire chip-design process with AI will still take time.</p>
+<p>A higher share of volume production lowers the blended gross margin, while profit growth still depends on scale and per-chip markups. Wafer products accounted for about 90% of GUC’s revenue in the third quarter. Its overall gross margin was about 20.6%, down from about 24.2% a year earlier, but gross profit grew about 85% and operating profit about 142%. Alchip’s blended gross margin was above 50% in the first quarter, when NRE projects accounted for most of its business; its full-year guidance was in the low-20% to 25% range. A declining NRE share and rising production share mechanically lower the blended gross margin and do not, by themselves, indicate that pricing for the same service is falling. Under a turnkey model, suppliers purchase wafers, CoWoS capacity, HBM and substrates on behalf of customers and assume yield and delivery risk. Inventory and working-capital requirements therefore rise with shipments, although customer prepayments offset part of the burden. GUC had contract liabilities of about NT$15.5 billion at the end of the third quarter. The key metric is the per-chip markup: the larger the customer and the more directly it can work with TSMC, the thinner the markup left for the design house. A faster product cadence may add NRE projects, but it does not necessarily increase total shipments, which still depend on actual deployment scale and hardware configuration. A faster cadence also shortens the amortization period for each generation.</p>
+<p><i>Table: How AI Affects Each Part of the Design House Business</i></p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1794982361391-14.jpg" alt="" loading="lazy"></p>
+<p><i>Sources: Company announcements, financial reports and earnings calls; FUNDA.</i></p>
+<p>The companies best positioned to defend profits have three capabilities: silicon-proven IP, packaging and multi-die platforms, and the ability to execute at production scale. Broadcom is in the strongest position. Beyond design services, it offers SerDes, Ethernet switching and optical interconnect, its 3.5D XDSiP packaging platform, and full-rack delivery. The company has said that four of its six XPU customers will be very large. Hock Tan said in March that COT competition would not emerge for many years, but would eventually arrive. Marvell’s proprietary technology spans advanced packaging, high-speed SerDes, die-to-die interconnect and custom HBM. Alchip has introduced a 3DIC platform that combines multiple compute chiplets, HBM and I/O dies with TSMC’s CoWoS and SoIC packaging. Companies with these capabilities can retain bargaining power after customers bring front-end work in-house. Design outsourcers that mainly charge by the hour and lack IP or platforms face the greatest pressure on large-customer programs.</p>
+<p>A similar shift took place in the 1990s. After foundries emerged and physical-design know-how was embedded in EDA tools, large customers stopped paying turnkey ASIC vendors such as LSI Logic and VLSI Technology a premium for high-volume designs and moved to COT. The turnkey business contracted, but the overall volume of chip design increased substantially. The design-services companies that survived shifted toward physical design and foundry management; GUC and Alchip are examples. This time, the shift is being driven not only by the foundry model but also by AI and customers’ in-house teams.</p>
+<h3>What to Watch</h3>
+<ol><li>Volume production: Jalapeño’s year-end deployment and the 1.3 GW target for 2027, as well as the timeline for</li></ol>
+<p>Anthropic’s first-generation chip</p>
+<ol><li>Cost per token for Jalapeño, TPU and Vera Rubin under the same model, precision and latency requirements</li><li>The share of next-generation chip-design work handled by AI, and which stages large customers bring back in-house</li><li>EDA pricing models, renewal prices and revenue-sharing arrangements; progress in accelerating back-end tools; and</li></ol>
+<p>whether chip-design capabilities from Claude, GPT-Synopsys and others are offered as paid services</p>
+<ol><li>Design houses’ gross profit, per-chip markups and operating cash flow; whether NRE programs convert into volume</li></ol>
+<p>production; and how Google allocates TPU work between Broadcom and MediaTek</p>
+<p><b><i>Analyst Independence Statement</i></b></p>
+<p><i>The views expressed in this report accurately reflect the personal and independent views of the analyst(s) regarding the securities and issuers discussed herein. No part of the analyst’s compensation was, is, or will be directly or indirectly related to the specific recommendations or views expressed in this report. The Company adheres to strict compliance procedures to ensure the integrity, security, and legality of the data sources and information utilized.</i></p>
+<p><b><i>About FUNDA</i></b></p>
+<p><i>Consensus AI Technology Pte. Ltd. (the “Company” or “FUNDA”) is an independent research firm incorporated in Singapore. The Company is not affiliated with any securities dealer, investment bank, or asset management firm, nor is it registered as an investment advisor or broker-dealer in any jurisdiction. The Company does not have any investment banking or underwriting relationship with the companies covered in this report, and does not accept sponsorship or funding from publicly listed companies.</i></p>
+<p><b><i>No Investment Advice and Report Neutrality</i></b></p>
+<p><i>The contents of this report and the information contained herein are for informational purposes only and do not constitute investment advice or a basis for business decisions. The views expressed herein represent solely the personal opinions of the respective authors at a specific point in time and do not reflect the position of FUNDA. As an independently operated platform, FUNDA maintains a neutral third-party status and makes no express or implied warranties regarding the accuracy, completeness, or applicability of such views.</i></p>
+<p><i>No Offer or Solicitation: This report does not constitute an offer, solicitation, recommendation, or advice to buy, sell, or hold any securities or financial instruments, nor does it provide any legal, tax, or accounting advice.</i></p>
+<p><i>Third-Party Data: All third-party data cited in this report is derived from public or authorized sources. The Company makes no representations or warranties, express or implied, as to the accuracy or completeness thereof.</i></p>
+<p><i>Non-Participation in Decision-Making: The Company does not participate, directly or indirectly, in the investment decision-making process of its clients or readers. Readers should make independent investment decisions based on their own investment objectives and financial circumstances, and consult professional financial or legal advisors prior to executing any transactions.</i></p>
+<p><b><i>Timeliness Statement</i></b></p>
+<p><i>Given the rapid changes in market environments and technological trends, this report reflects market conditions as of the date prior to its publication. Relevant information may become outdated over time. FUNDA has no obligation to update the contents of this report in real-time.</i></p>
+<p><b><i>Intellectual Property, Confidentiality, and Restrictions on Commercial Use</i></b></p>
+<p><i>All reports, data, models, and content provided by the Company constitute its exclusive proprietary intellectual property and are protected by copyright and intellectual property laws.</i></p>
+<p><i>Ownership of Rights: Unless otherwise expressly stipulated in a written agreement, all intellectual property rights (including copyrights) arising from or relating to this report are exclusively owned by the Company.</i></p>
+<p><i>Authorized Use: Institutional clients may use this report internally within the scope permitted by their internal compliance policies; however, disclosure or sharing with any third party is strictly prohibited.</i></p>
+<p><i>Prohibition on Commercial Use: Without the prior express written consent of the Company, no individual or entity may reproduce, republish, distribute, resell, repackage, or otherwise use this report or any part thereof for any commercial or profit-making purpose.</i></p>
+<p><i>Legal Recourse: The Company reserves the right to pursue all available legal remedies and claims against any unauthorized commercial use, redistribution, or infringement of its intellectual property rights.</i></p>
+<p><b><i>Forward-Looking Statements and Disclaimer</i></b></p>
+<p><i>This report may contain forward-looking statements, including forecasts, estimates, and analyses of industry trends. Such statements are subject to risks and uncertainties that may cause actual results to differ materially from those anticipated. The Company shall not be liable for any direct, indirect, or consequential losses arising from the use of or reliance on the contents of this report.</i></p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

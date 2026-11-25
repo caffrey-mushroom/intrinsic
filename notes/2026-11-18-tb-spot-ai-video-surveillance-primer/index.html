@@ -1,0 +1,358 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.18 | TB | Software | Spot AI Video Surveillance Primer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.18 | TB | Software | Spot AI Video Surveillance Primer</h1>
+<p class="orig">原标题：Spot AI</p>
+<p class="tags">#software #security #agents</p>
+<p class="meta">Third Bridge · 2026-11-18</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>Spot AI提供AI驱动的视频监控软硬件，聚焦北美（几乎100%收入来自美国，东西海岸各半），用例覆盖安防、安全与运营三大类。</li>
+<li>专家估计其收入约61-70%来自AI视频智能体，31-40%来自视频管理系统（VMS），两者均为按每路摄像头每月计费的订阅，合同期3-5年，硬件摄像头基本免费赠送。</li>
+<li>目标客户为中大型企业，主要行业为工业制造、汽车服务和零售，三者占比大致相当；小企业因价格过高并非重点。</li>
+<li>专家认为其净收入留存率超过120%，增长来自新增门店和摄像头数量，安装痛苦带来高粘性，行业年流失率约11-15%。</li>
+<li>视频监控行业过去三年增速约6-10%至11-20%，未来三年预计保持11-20%，安防仍是首要驱动，安全和运营用例将逐步扩展，行业整体较抗周期。</li>
+<li>主要竞争对手为Rhombus、Ambient和Coram，市场份额排序为Rhombus、Ambient、Spot、Coram；Rhombus和Ambient收入约5000万-1亿美元，Spot与Coram低于5000万美元，各家增速均超20%。</li>
+<li>客户首要购买标准是渠道/经销商推荐，其次是易用性和AI功能，最后是价格，这使得Milestone、Axis、Genetec、Avigilon等产品较差的传统厂商仍保有大量份额。</li>
+<li>专家预计Spot AI未来三年年增速约20%以上，最大风险是行业碎片化与商品化，基础模型进步使所有厂商都能获得近乎零误报的能力。</li>
+</ol></section>
+<div class="body">
+<p>Primer • 23 Oct 2026</p>
+<p><b>Expert</b> Former C-level Executive</p>
+<p><b>Sammeta Kini (Analyst)</b> — Third Bridge Sector Analyst</p>
+<h3>Agenda</h3>
+<ul><li>Over 14 years' experience in the software development space</li><li>Over seven years' experience at SpotAI (left within the last two years)</li></ul>
+<h3>Introduction</h3>
+<p><b>Analyst</b>: Please could you state I agree or I disagree to the following statement: You understand the definition of material non-public information and agree not to disclose any such information, or any other information which is confidential, during the Primer Interview today.</p>
+<p><b>Expert</b>: Agree.</p>
+<h3>Questions</h3>
+<h3>Could you describe what Spot AI does and its products or services?</h3>
+<p><b>Expert</b>: Spot AI provides video surveillance software and hardware that's AI-powered. The main markets it focuses on are in North America and the use cases that Spot AI helps enterprises to span security, safety and operations.</p>
+<h3>What is the value proposition of Spot AI's products or services?</h3>
+<p><b>Expert</b>: The product is easy to install. It's easy to use. They're video AI agents that provide automation of workflows on top of incidents that are detected. It's able to help businesses operate more safely, operate more efficiently and save people on the ground a lot of time.</p>
+<p><b>Analyst</b>: Do Spot AI's products or services fulfil any specific gap in the market?</p>
+<p><b>Expert</b>: A lot of the incumbents in the market, like, when you look at market share, they're pretty old, large, mega video surveillance companies that have been around for a few decades. Those solutions are not fully AI-powered. They market that they have AI, but the AI doesn't work really well. The gap Spot AI fills in the market is with its AI-powered solutions, it's able to actually be able to fully automate workflows. It can perform better detection of anomalous events and then it can complete the workflows after an anomaly or incident is detected. It could even improve searching, being able to search for instances retrospectively. That's the main gap vs incumbents. You do have new entrants that are also providing AI-powered solutions in the market, but the market's so big that there's room for there to be many players.</p>
+<h3>What is the full range of industries and business sizes that could use Spot AI's products or services? What might be the company's TAM? Might there be any specific industry that could use its products or services but is not currently using them?</h3>
+<p><b>Expert</b>: The website is going to be pretty good for this. You can look at the case studies. You can look at where the impact is. Generally, medium and large businesses are a good fit. Spot is sold into many industry verticals across the economy, industrials, auto services, state and local education, retail. Typically, you see medium and large businesses adopt a solution like this. Small businesses might use more consumer products sometimes that are a bit lighter weight in features. Medium, large enterprise. The industries, it spans, state and local education, retail, auto services, industrials. The key takeaway you should get is small, medium business or small businesses aren't like a target support. The price point is just too high.</p>
+<p><b>Analyst</b>: Could the company serve small customers?</p>
+<p><b>Expert</b>: Yes. It's up to the management team. Obviously, I don't know their current plans or any sort of non-public stuff. I mean, they could. Right now, with public information, it's not a focus.</p>
+<h3>Could you profile Spot AI's typical target customers across industries and business sizes? What might be the company's ICP [ideal customer profile] and customer sweet spot?</h3>
+<p><b>Expert</b>: These can be 1,000-employee manufacturers in Kentucky. That would be a pretty good fit. They're an industrial company. They have manufacturing workflows. They have issues around operational efficiency. They have issues around safety and industrial safety and then they have issues around security with theft and shrinkage and break-ins. I think the customer names, I would say just refer to the latest case studies on the website to be able to get the current accounts.</p>
+<p><b>Analyst</b>: What are the top three industries that are Spot AI's target customers? You mentioned industrial manufacturing.</p>
+<p><b>Expert</b>: Yes. Auto services and then I'd say retail.</p>
+<p><b>Analyst</b>: What retail companies are you referring to?</p>
+<p><b>Expert</b>: I mean, stores, so physical stores, department chains, that kind of thing, malls.</p>
+<p><b>Analyst</b>: What is the revenue split across industrial manufacturing, auto services and retail industries in percentage ranges?</p>
+<p><b>Expert</b>: This is a tough one for me to say because I don't know if they have publicly disclosed that information. The high-level thing I'll tell you is you should assume each is some double-digit percent market share and about equivalent.</p>
+<p><b>Analyst</b>: What might the revenue split be between medium- and large-sized customers in percentage ranges?</p>
+<p><b>Expert</b>: Again, I don't have non-public information to answer this, but I think most will come from medium, with most of the growth coming from large.</p>
+<h3>What are the key regions that Spot AI derives its revenue from?</h3>
+<p><b>Expert</b>: Only North America.</p>
+<h3>Would you say that Spot AI generates 91-100% of revenue from North America?</h3>
+<p><b>Expert</b>: That's my gut. Yes.</p>
+<p><b>Analyst</b>: What would you say are the top three revenue-generating North American regions for the company?</p>
+<p><b>Expert</b>: My instinct is it should be pretty evenly distributed.</p>
+<p><b>Analyst</b>: Could you provide examples of the regions?</p>
+<p><b>Expert</b>: The United States. North America includes Canada and Mexico. I would just say the United States.</p>
+<p><b>Analyst</b>: Would you say that the key region for the company is the US instead of North America?</p>
+<p><b>Expert</b>: Yes. Actually, that's a good point. Once you go on their website, you look at the logos, you look at the case studies, you'll see these are all US-based locations.</p>
+<p><b>Analyst</b>: Could you mention the key US regions for the company?</p>
+<p><b>Expert</b>: East and West. Half and half across East and West. That's my point. It's pretty even.</p>
+<h3>What are Spot AI's core revenue-generating product or service segments?</h3>
+<p><b>Expert</b>: Because it's 100% a guess, that's the right framing because I don't have a routing that I can share. Let's think about maybe two buckets, where one bucket would be agents, like, agentic revenue. The other would be VMS, video management system. The way to think about it is, VMS is old school. It's like your viewer, the player. It's the base bones of what you need in a video surveillance system. You need a place to go, watch a video, all of that. Agents would be the AI workflows on top.</p>
+<h3>What might be the relative revenue size for each segment – 0-10%, 11-20%, 21-30%, 31-40% or higher?</h3>
+<p><b>Expert</b>: Again, maybe 61-70%, agents. [Video management system], 31-40%.</p>
+<h3>What might be the typical revenue model for each segment?</h3>
+<p><b>Expert</b>: Each one is 100% subscription.</p>
+<p><b>Analyst</b>: Might the revenue model be recurring [fixed subscription revenue] or reoccurring [usage-based revenue]?</p>
+<p><b>Expert</b>: I think they're both recurring, and this should be public.</p>
+<p><b>Analyst</b>: Are there any contracts in place for both segments? If so, what might be the average contract length?</p>
+<p><b>Expert</b>: Three to five years [for both].</p>
+<p><b>Analyst</b>: What are the payment terms based on for the recurring contracts? Might there be any MOV [minimum order value]?</p>
+<p><b>Expert</b>: It's per camera feed per month. That's one way to think about it. There's a certain dollar amount per camera feed per month and depending on how many agents you're getting or how many camera feeds you're getting in the VMS. It's based on the days of storage.</p>
+<p><b>Analyst</b>: Might there be any MOV or minimum number of cameras or agents that customers need to buy?</p>
+<p><b>Expert</b>: There are public examples where we sold to a school for a government and there's an RFI process and a formal quote was published, for example. We also have a pricing page and a pricing calculator on the website that's also public. Actually, that might be useful for you in the study because you'll actually be able to see the latest. There should be a pricing calculator that you can read on the website. If you use Claude or ChatGPT, you should be able to pull up the Spot AI pricing calculator, which is an HTML page which basically lets a customer input what they want and it spits out a price. It gives all the parameters. That's where you'll get the days of storage. You'll get the number of camera feeds. You'll get whether they want a security agent or a safety agent or an operations agent put on top. Those become the main vectors that drive the pricing model, as I remember. I don't know if they're necessarily minimums. What ends up happening is, as you can imagine, because of the pricing, base pricing, small businesses tend to not buy a lot of Spot because it's so expensive. That doesn't mean that we're putting a contractual minimum. They can go on the calculator, see a really big number and say, I'm going to go to Costco or Best Buy or Amazon or whatever and I'm just going to buy my own cameras. Do you see what I mean? It's not that we're contractually putting that. They see the price and they decide not to do business with us.</p>
+<h3>Could you provide a use case for each core segment? What might be the end-to-end process for customers? What are the features of the segments?</h3>
+<p><b>Expert</b>: By the way, this breakdown of segments connected to use case, I would say this structure is the wrong way to link it. For agents, they're going to be different agents based on the use case bucket. You're either going to have security agents, you're going to have safety agents or you have operations agents, for example. Each one comes with a different dollar-per-camera-feed price. For example, an operations agent, there might be an alert sent if there's a downtime or if there's a station without an operator present or if a car is moving through a car wash and then the car is dwelling and just sitting there and not continuing to flow through the car wash. That'd be an example of a use case for operations. A use case for safety could be, like, a slip and fall. It could be a forklift near miss. A use case for security could be a fence breach or perimeter breach past a certain number of hours. Those are some very basic examples, but those would be three buckets of use cases for the agents' segment.</p>
+<p><b>Analyst</b>: Are there any other buckets similar to security, safety and operations for agents or are they the only three types of agents?</p>
+<p><b>Expert</b>: I would say focus on those three. It's the cleanest public representation.</p>
+<p><b>Analyst</b>: What are the other types of agents?</p>
+<p><b>Expert</b>: No. Those are the ones that I know publicly.</p>
+<p><b>Analyst</b>: What might be a use case for video management systems?</p>
+<p><b>Expert</b>: That's the basic player. It's basically the system of record for all the video. That, I believe, is priced per camera feed, so per camera feed and days of storage.</p>
+<p><b>Analyst</b>: How do customers access video management systems?</p>
+<p><b>Expert</b>: They log in through a website. It's the exact same login as agents.</p>
+<p><b>Analyst</b>: Might everything be done on Spot AI's website or might there be a different platform for customers to use and view recordings?</p>
+<p><b>Expert</b>: My understanding is there's a dashboard that you log in to, like single sign on usual G-Suite, Microsoft, whatever and then you're either running AI workflows or you're running basic video viewing, searching, sharing workflows or user management. User management goes in the video management system. Detecting cameras that have gone down goes in the video management system. Think of one of these as the base viewer just to be able to see and access video, forget about AI and then the agent's bucket captures the AI-powered workflow part of the business. I have one tricky thing to tell you about the business, which is that there's also hardware. The company is also providing cameras. The customer might have their own cameras or we might provide them with cameras. There are even licences where the customer has their own hardware and we're deploying our software onto their hardware. Now, my understanding is the company doesn't charge for hardware. The hardware is actually a giveaway. It's not tied to the revenue model but it's included in the offering, if that makes sense.</p>
+<p><b>Analyst</b>: Which of the offerings is hardware included in – agents or video management systems?</p>
+<p><b>Expert</b>: I think VMS.</p>
+<p><b>Analyst</b>: Does Spot AI provide training to the agents for security, safety and operations or do customers take care of that?</p>
+<p><b>Expert</b>: I think it's a bit of a blend. The customer can tune costs. They can tune Spot AI to the use cases and workflows that they want, but then Spot AI will provide out-of-the-box functionality so customers can get value very quickly. For example, in a car wash, with the idle time detector, you are not training the idle time detector from scratch, but you're defining the regions where you want it to work. You're giving it thumbs-up, thumbs-down feedback based on the quality of the performance. We'll provide something that works out-of-the-box like Spot AI would, but the customer is still giving feedback, if that makes sense.</p>
+<p><b>Analyst</b>: Does the company provide standardised products or does it customise the product as per customers' needs, given that you mentioned the products can be used at car washes or in forklifts?</p>
+<p><b>Expert</b>: It works out-of-the-box and then the customer can use the platform to do further refinement, basically.</p>
+<p><b>Analyst</b>: What are the features of the company's video management systems?</p>
+<p><b>Expert</b>: A video player, live view, a livestream, video on demand, searching, video search, sharing, link sharing, case management, camera health, user management. Those are a few. API is another one, like, if customers want to use our API.</p>
+<p><b>Analyst</b>: Could you provide examples for the API [application programming interface] feature?</p>
+<p><b>Expert</b>: It would be that maybe they want to pull specific clips into a different system of record, for example. Those are examples.</p>
+<p><b>Analyst</b>: Does Spot AI produce and do everything in-house for both segments or does the company outsource any process in the entire journey?</p>
+<p><b>Expert</b>: I think from a product perspective, it's the company. However, from a sales perspective, you do have value-added resellers and third parties that sell the product on the company's behalf.</p>
+<p><b>Analyst</b>: Does Spot AI partner with VARs [value-added sellers] and third parties for sales?</p>
+<p><b>Expert</b>: Of course. Yes.</p>
+<p><b>Analyst</b>: Are the two segments offered or purchased together?</p>
+<p><b>Expert</b>: It depends. This, I'm not going to know the most recent, but it depends. It depends on what the customer wants. In cases where the customer already has a VMS that they like, maybe they're only getting the agents. In a case where they also need the VMS, they're getting it together. In a case where they don't have a need for AI, they're only getting the VMS. It really depends. However, AI is where the pull of the market is, which is why what you're seeing with agents is a big driver. Even the segment split, it's so hard for me to give you a percentage because it's not public and I don't have access to it. What I can tell you with confidence is that most of the growth is in agents. Most of the growth is going to be in AI.</p>
+<h3>Which of Spot AI's segments do you anticipate growing the fastest and potentially driving the largest share of revenue in future? Why do you think so?</h3>
+<p><b>Expert</b>: It's agents because the VMS has commoditised. Everyone has a VMS. Every vendor has a VMS. It's more or less the same now among the different providers. Where there's the most consumption, the most new use cases, the most customer pull does happen on the AI side.</p>
+<h3>What do you estimate Spot AI's NRR [net revenue retention] rate to be – less than 80%, 80-90% or higher?</h3>
+<p><b>Expert</b>: It should be super high. It should be the max, [greater than 120%]. It is very sticky. It's new locations. It's the pain of installation. NRR expansion happens with more camera feeds, more locations. It's so painful to do an installation of these systems. They tend to be sticky and then the workflow's on top.</p>
+<h3>Are there any NRR drivers for Spot AI, apart from the ones discussed?</h3>
+<p><b>Expert</b>: No. I mean, it's customer love. They love the product. Otherwise, customers won't keep buying more. It's adding more locations, adding more camera feeds. Those are the three.</p>
+<h3>Could you specify the industry that best describes Spot AI's core operations?</h3>
+<p><b>Expert</b>: Video surveillance.</p>
+<h3>What has the video surveillance industry's AAGR been over the past three years – less than 0%, 0-5%, 6-10%, 11-20% or greater than 20%?</h3>
+<p><b>Expert</b>: Maybe 6-10%.</p>
+<h3>What do you think have been the key drivers of the market's historical growth?</h3>
+<p><b>Expert</b>: It's going to be right up. I mean, 6-10%, by the way, is the border. I don't like 6-10% because [the lower end of] 6-10% is way too small, 11-20% might actually be better.</p>
+<p><b>Analyst</b>: What might be the key growth drivers for the industry?</p>
+<p><b>Expert</b>: The world is getting less safe. People are not feeling safe. Buyers are not feeling safe. Think about what happened with COVID. In a place like the US, everyone has a gun. That, to me, is a massive driver of historical growth and then this is key security. Remember I mentioned their security, safety, operations as three different buckets. Security has been the core growth driver as a use case. Not so much safety, not so much operations. I'm speaking industry-wide.</p>
+<h3>What do you think the industry's AAGR will be over the next three years – less than 0%, 0-5%, 6-10%, 11-20% or greater than 20%?</h3>
+<p><b>Expert</b>: Sustained, 11-20%.</p>
+<h3>What do you think will be the key drivers of the market's future growth?</h3>
+<p><b>Expert</b>: I wouldn't put a change, is my honest answer. I think security, but you'll start to see expansion of safety and operations use cases.</p>
+<p><b>Analyst</b>: What do you mean by expansion of safety and operation use cases?</p>
+<p><b>Expert</b>: Meaning that customers will start using these systems more to automate their operations. Not just catching the bad guy or investigating a break-in, but to keep their plants running without downtime to prevent accidents. Those kinds of things, I think that'll be a growth driver. Number one, I would say security will still drive growth. I would actually rank that high and the second is there will be use case expansion.</p>
+<h3>What would you estimate the adoption rate for video surveillance solutions to be across the addressable market – 0-10%, 10-20%, 20-30%, 30-40% or higher?</h3>
+<p><b>Expert</b>: It's so hard for me to give one percentage because it depends on the use case, whether it's security, safety or operations and then it depends on if they're using agents, the AI stuff or if they're using basic video.</p>
+<p><b>Analyst</b>: What would you say the average adoption rate is for the video surveillance industry?</p>
+<p><b>Expert</b>: So, hard. I think the industry as a whole, using some form of AI, any form of AI, 70-80%.</p>
+<p><b>Analyst</b>: What do you think the company might have a high adoption rate, given that you mentioned its NRR rate is greater than 120%?</p>
+<p><b>Expert</b>: Because they're expanding locations. They're adding more locations. They're adding more camera feeds. That's what drives expansion. It doesn't mean those other locations don't have adoption. They might be on a different solution. The NRR point, by the way, is industry-wide. All the providers have high NRR because these solutions tend to be sticky once the customer picks one.</p>
+<h3>To what degree do you think the industry is correlated to the economic cyclicality? Is it counter-cyclical, very cyclical, somewhat cyclical, somewhat resilient or resilient? Why do you think so?</h3>
+<p><b>Expert</b>: Resilient because security is always a problem whether the economy is good or bad. Once you have a bad event, think of 9/11, you now take off your shoes at an airport every single time in the US, it's very difficult to go back once people have been burned by negative incidents.</p>
+<h3>Based on public information, what impactful technological evolutions should we anticipate in the industry over the next 3-5 years?</h3>
+<p><b>Expert</b>: Obviously, foundation models, so super-intelligence. Not even artificial intelligence, but super-intelligence in the next 3-5 years is the number one evolution, which means that AI is going to be better than you and me combined. It's actually going to demonstrably be better than what any human being could possibly do. Its ability to have detections, like false alarms, for example. I do think that's going to become a thing. Now, this is where it gets interesting. The technologies sit at a layer below the vendors. Now, I'm speaking industry-wide. Any vendor could have access to an open-source model that could produce a zero false alarm solution in a few years.</p>
+<p><b>Analyst</b>: Are there any players in the market that have the innovations and technologies in play currently?</p>
+<p><b>Expert</b>: Yes. The three that I mentioned. Coram, Rhombus, Ambient. All of them are using this. Any new entrant that you see that has venture capital is going to have these technologies in play.</p>
+<h3>Are there any downside risks that you believe might materially impact market growth over the next three years?</h3>
+<p><b>Expert</b>: Good question because it's industry-wide. Not that I know of.</p>
+<p><b>Analyst</b>: Why do you think there might not be any downside risks?</p>
+<p><b>Expert</b>: Remember what I mentioned? There are two drivers of market growth. First is security. That's, like, most of the market growth. The second is these safety operations, kind of these alternative use cases for cameras. You see what I'm saying? So, then the question is, materially impact market growth, I don't know if all of a sudden society will get safer. America is not going to repeal its Second Amendment and basically say you can't have guns anymore. You see what I'm saying? I think it's so low likelihood that the slope of security pull goes down and market growth materially changes because of that.</p>
+<h3>How fragmented do you consider the video surveillance industry to be?</h3>
+<p><b>Expert</b>: Highly.</p>
+<h3>Who are Spot AI's top three competitors?</h3>
+<p><b>Expert</b>: Rhombus and Coram and Ambient.</p>
+<h3>What are Spot AI, Rhombus, Coram and Ambient's market shares in percentage ranges? Alternatively, how would you rank the players relative to each other?</h3>
+<p><b>Expert</b>: I think maybe Rhombus is one. Ambient is two. Spot is three. Coram is four.</p>
+<h3>What might be each player's revenue – USD 0-50m, USD 50m-100m, USD 100m-200m or more?</h3>
+<p><b>Expert</b>: I think Rhombus and Ambient, USD 50m-100m. [Spot AI and Coram each], maybe USD 0-50m.</p>
+<h3>What might be each player's revenue growth rate – less than 0%, 0%, 0-5% or higher?</h3>
+<p><b>Expert</b>: Greater than 20%, all of them.</p>
+<h3>What has been the growth driver for each player? Has the growth been organic, acquisition-based or mixed?</h3>
+<p><b>Expert</b>: They're all organic.</p>
+<h3>In your opinion, what is the industry average EBITDA margin for the players discussed?</h3>
+<p><b>Expert</b>: Big question. Maybe 0-10% because you're taking an average. The reason I'm saying this is because they're venture capital-backed. In venture capital models, the idea is to get growth and not to chase profitability. It's not a priority for companies of similar size.</p>
+<h3>Might each player's EBITDA be above, on or below industry? Alternatively, are the players loss-making, breakeven or profitable?</h3>
+<p><b>Expert</b>: What's profit, though? Gross profit or operating profit? Because gross profit, all of them have gross profit, for example. Operating profit, it's so hard to say. Rhombus, for example, if you look at them, their headcount has been relatively steady on LinkedIn. They have not announced in a very long time. Ambient has been pretty steady. Coram's in growth mode. Spot AI's been pretty steady. You can look at those things.</p>
+<p><b>Analyst</b>: How would you classify the players based on operating profit?</p>
+<p><b>Expert</b>: Maybe on industry [for Spot AI, Coram and Ambient]. Maybe Rhombus is above industry.</p>
+<h3>How do you think the players differentiate themselves?</h3>
+<p><b>Expert</b>: Spot differentiates on multiple use cases, the fact that it does safety and security, operations. Use case, breadth is a core differentiator for Spot.</p>
+<p><b>Analyst</b>: What might be Rhombus's differentiator?</p>
+<p><b>Expert</b>: It's security-focused and reliable, affordable.</p>
+<p><b>Analyst</b>: What might be Coram's differentiator?</p>
+<p><b>Expert</b>: AI security.</p>
+<p><b>Analyst</b>: What do you mean by AI security?</p>
+<p><b>Expert</b>: It's security. They focus heavily on security workflows and then they focus on all-in-one hardware. They do door readers and they offer an integrated solution for security with multiple sensor types, not just cameras.</p>
+<p><b>Analyst</b>: What might be Ambient's differentiator?</p>
+<p><b>Expert</b>: They have big differentiators. They sell to big companies. They target the biggest of the big. They're security-focused. Their focus is security and they're targeting mega large enterprises vs Coram does more mid-market.</p>
+<p><b>Analyst</b>: Do the players have similar target customers?</p>
+<p><b>Expert</b>: No.</p>
+<p><b>Analyst</b>: Could you elaborate on the differentiation among the players based on target customers?</p>
+<p><b>Expert</b>: Ambient targets mega large. Coram targets the mid-market. Rhombus targets a lot of schools. They're pretty heavy in schools. Spot is pretty diversified.</p>
+<p><b>Analyst</b>: Do all the players operate in the same geographies and regions?</p>
+<p><b>Expert</b>: My understanding is yes. Although Rhombus, I don't know, may have international now.</p>
+<h3>What do you think are customers' top three KPC [key purchasing criteria]? How would you rank the KPC by importance?</h3>
+<p><b>Expert</b>: Number one is actually the channel source. What I mean by that is what partner recommended them. This is really important because the market, like, customers take recommendations from people they trust. Which reseller they trust and have a good relationship with recommended the solution? That is the number one purchasing criterion. It's like, this partner I work with says they're good. It's one of the largest drivers of sales, and it actually means the superior products don't always win in this market structure. We haven't talked about the incumbents, Milestone, Access, Genentech, Avigilon and Motorola. These big companies have inferior products vs these new guys, you know, that we're looking at now. Those worst products tend to continue to have a lot of market share. It's driven by this first criterion, that the reseller is a trusted source for the customer.</p>
+<p><b>Analyst</b>: What might be the second and third KPC?</p>
+<p><b>Expert</b>: Second is ease of use. It's easy to install, easy to use. Third would be the AI-powered features. Then, price.</p>
+<p><b>Analyst</b>: Would you club any KPC together?</p>
+<p><b>Expert</b>: In this market structure, price is already there. Price is also a consideration. [I'd combine] ease of use with AI features maybe and then number three is price.</p>
+<h3>How important do you think price is to customers in the market? Is the segment commoditised, somewhat commoditised or not commoditised? Why do you think so?</h3>
+<p><b>Expert</b>: We already had it. Commoditised because it's a fragmented market and technology is available to every vendor.</p>
+<h3>What is the industry average annual churn rate for video surveillance solutions – 0-5%, 6-10%, 11-15%, 16-20%, 21-25%, 26-30% or greater than 30%?</h3>
+<p><b>Expert</b>: It's low. 11-15%.</p>
+<h3>How do you think Spot AI's churn rate compares to the industry average? Is it above, in line with or below the industry average?</h3>
+<p><b>Expert</b>: I'd say in line.</p>
+<h3>What do you think has been the key driver of Spot AI's historical growth?</h3>
+<p><b>Expert</b>: Same drivers as the industry. Businesses want to feel safer. I think that's been a key driver of growth.</p>
+<h3>How fast do you think Spot AI could grow annually over the next three years?</h3>
+<p><b>Expert</b>: Maybe 20%-plus.</p>
+<p><b>Analyst</b>: Why do you think Spot AI might grow faster than the industry, which you mentioned might grow at 11-20% over the next few years?</p>
+<p><b>Expert</b>: That's the right question, by the way, because the way to think of this market structure. Because relative to the market is the right way to evaluate the players. Are you growing faster than the market, in line with the market or slower than the market? The reason is because so much of the drivers are driven by the security use case and so much of the market's so fragmented. Customers trust their local partner to recommend a camera system for them. Those factors, really, are what dominate growth. One of the reasons that it's growing faster than the market is because of the AI-powered features and the ease of use. It's because of that second bucket. Remember we had those three criteria? That second criterion is why these companies are growing faster than the market.</p>
+<p><b>Analyst</b>: Might the same criteria apply to Spot AI?</p>
+<p><b>Expert</b>: Yes.</p>
+<h3>In your opinion, what could be some of the most interesting ways to grow Spot AI? How would you look at improving its growth profile organically if you were to run the company today?</h3>
+<p><b>Expert</b>: I would do new geographies.</p>
+<p><b>Analyst</b>: What geographies would you look at for the company?</p>
+<p><b>Expert</b>: You could never sell in China. Look at the malls. I mean, there's so much camera penetration in India right now. I would even think the India market, in many ways, is more advanced than the US market. I don't think Asia-Pacific is a good market for some of these American-based video surveillance companies because they have chopped past the US. North America and Europe are two very good markets and then maybe South America, although I don't know much about it. But certainly, broader North America, Canada, Mexico and then Europe, I would say, are good markets.</p>
+<h3>How would you improve Spot AI's margins?</h3>
+<p><b>Expert</b>: Really hard. I don't even have a suggestion. Hard to the point of being impossible.</p>
+<p><b>Analyst</b>: Why do you think so?</p>
+<p><b>Expert</b>: If you look on LinkedIn and if you look at the headcount of these companies, the headcount has been relatively flat, but the company has greater than 20% growth. You're using AI. You're using agents. You're using your own stuff to get more efficient, but there's no secret stone to enter. Another framework I'll give you is that in the venture capital model, you have to be growing greater than 100% to get venture capital investment. Look at OpenAI, Anthropic, these companies. The moment you're sub-100% growth but greater than 20% growth, it's now in the private equity world vs the venture capital world.</p>
+<p>In the private equity world, all these companies are balancing growth and profitability. Rhombus, for example, is very aggressive. You look at their headcount, you look at when they were founded. You look at the size of their sales team. You look at the tenor of their executives. All public info. What you'll see looking at that data is they're pretty stable. They haven't had to go and raise a lot more capital. Coram just raised a round. Spot just raised around. I don't know if Ambient has raised a round in a while. Public info.</p>
+<p>You look at those heuristics to then understand that all these companies are trying to get profitable. They're all pushing margin improvement. It's not like some of them are choosing not to do it, if that makes sense, which is why it's super hard to have some secret operational efficiency improvement. Now, let's say we were talking about a market structure which has really bad operators or is mismanaged or whatever. In those markets, you can come and acquire something and turn it around. I don't think video surveillance is that kind of market.</p>
+<h3>Based on publicly announced acquisitions, how would you describe Spot AI's M&amp;A strategy? Has the company carried out any M&amp;A? If so, has it been opportunistic or growth-related M&amp;A?</h3>
+<p><b>Expert</b>: I have no answer, no comment, no knowledge. Nothing public.</p>
+<h3>In your opinion, could it make sense for Spot AI to acquire, merge with or be acquired by any other players in or outside the space?</h3>
+<p><b>Expert</b>: Maybe you go to one of the incumbents that doesn't have a good AI product offering.</p>
+<p><b>Analyst</b>: Could you share any player names as examples?</p>
+<p><b>Expert</b>: Genetec, Milestone, Avigilon, Axis.</p>
+<h3>What would you say are the 1-2 biggest risks faced by Spot AI?</h3>
+<p><b>Expert</b>: Continued commoditisation in the market. It's fragmented and commoditised. I would make that risk number one. Also, risk number two, it's that big of an issue because it impacts everybody. It impacts Coram. It impacts Rhombus. It impacts Ambient. All these other players, it's the exact same forces. The reason it's a big risk is that it's a risk that none of the companies or management teams control. It's not like the management team can wake up and make a decision to go do something else. It's a personal opinion. That's why I think it's such a big risk. It's a fragmented commoditised market structure.</p>
+<h3>In your opinion, is there anything that the market does not properly understand about Spot AI?</h3>
+<p><b>Expert</b>: The company has really good marketing, so I don't have any misconceptions that I'm aware of.</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

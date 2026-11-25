@@ -1,0 +1,288 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.21 | GP | Datacenter | Switch on Speed-to-Power &amp; Delays</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.21 | GP | Datacenter | Switch on Speed-to-Power &amp; Delays</h1>
+<p class="orig">原标题：Data Centers: Switch VP of Portfolio &amp; Strategy on Speed-to-Power — GPU Capacity Delays, Neocloud Execution Risk, and the 1H27 Capex Slide</p>
+<p class="tags">#datacenter #power #ai-demand</p>
+<p class="meta">GuidePoint · 2026-11-21</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>Switch战略副总裁认为，电力仍是数据中心供需失衡的主因，但中期选举后地方反对和许可阻力正成为同等重要甚至最大的延迟风险。</li>
+<li>多数延迟是成熟开发商约3个月的小幅推迟，但缺乏土地、设备、合同和设计的新晋开发商，18个月计划可能拉长到36个月。</li>
+<li>专家估计2028年计划交付的项目中约30%可能被推迟或迁址，2027年项目因电力、设备订单和许可已基本落实，受影响较小。</li>
+<li>约20MW的小型数据中心更易获批和接入现有电网，也更适合推理负载；先建50MW再评估扩建的分期方式更容易被社区接受。</li>
+<li>300MW园区通常由4到6栋楼组成，可按每季度交付一栋75MW楼的节奏爬坡；表后供电方案如Bloom Energy、燃气轮机和光储正获更多关注，但开发商不愿自担发电风险。</li>
+<li>AI需求依旧强劲，资本开支总额不变但会摊薄到2029年及以后，2028年支出预期可能下修而2030年后更乐观，稀缺产能利好有交付记录的开发商定价。</li>
+<li>超大规模云厂商对NeoCloud依赖下降，转向自研TPU和Trainium及AMD方案，并向成熟开发商租赁设施以保留硬件控制权、减轻资产负担。</li>
+<li>内存、中压变压器、施工人工等各环节成本全面上涨；H100等旧卡已完全折旧但租价坚挺，数据中心按15年折旧、合同12到15年，GPU财务寿命假设3到5年但实际在延长。</li>
+<li>专家认为供给短期内不会追上需求，2027年前的重要产能已全部售出，买家正在洽谈2028年上半年的产能。</li>
+</ol></section>
+<div class="body">
+<p>Associated:</p>
+<p>AMZN</p>
+<p>MSFT</p>
+<p>GOOGL</p>
+<p>ORCL</p>
+<p>IBM</p>
+<p>NBIS</p>
+<p>CRWV</p>
+<p>2454:TT</p>
+<p>EQIX</p>
+<p>QCOM</p>
+<p>CBRS</p>
+<p>DLR</p>
+<p>SPCX</p>
+<p>INTC</p>
+<p>AMD</p>
+<p>Anthropic, PBC</p>
+<p>OpenAI, L.L.C.</p>
+<p>VRT</p>
+<p>AVGO</p>
+<p>NVDA</p>
+<p>Viewpoint:</p>
+<p>Industry Consultant</p>
+<p>Moderator: David Guo (DG)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Nov 20, 2026</td><td>27 Min Read</td></tr></tbody></table></div>
+<p>Skyler B Holloway (SBH), Vice President of Portfolio and Strategy - Switch</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The expert, a data center strategy executive with experience in construction and hyperscale development, discussed constraints on AI infrastructure growth. Power availability remains a major challenge, but local opposition and permitting hurdles are emerging as equally significant risks. Construction labor, equipment costs, and project execution also affect delivery timelines.</p>
+<p>The expert expects strong AI demand to continue, while capacity additions and related capital spending may be spread over a longer period. Smaller facilities could gain traction because they are easier to permit and may better serve AI inference workloads.</p>
+<p>Key Insights</p>
+<p>Local opposition may become a leading cause of delays, especially for projects still in permitting. The expert believes established projects already under construction are less exposed. Delays vary widely: experienced developers may face modest schedule slips, while newer developers without secured land, equipment, contracts, or designs may underestimate delivery timelines substantially. The expert remains positive on longer-term AI infrastructure demand, despite expecting some later projects to be delayed or relocated. Scarcer available capacity could benefit developers with proven delivery records. Hyperscalers are becoming less reliant on NeoClouds, while leasing facilities from established developers can let them retain control of their hardware and reduce asset ownership. The expert does not expect near-term supply to catch up with demand, citing continued requests for capacity extending into 2028.</p>
+<p>Competitive Landscape</p>
+<p>11/22/2026 at 16:15 PM UTC</p>
+<p>Market participant or approach</p>
+<p>Positioning and considerations</p>
+<p>Hyperscalers</p>
+<p>NeoClouds</p>
+<p>Established data center developers</p>
+<p>Stronger balance sheets and more rigorous procurement and technical review. They can build, lease facilities, or obtain compute from NeoClouds.</p>
+<p>Often contract and move faster, but capabilities vary. Some have strong GPU expertise; others may lack development and operational experience.</p>
+<p>Proven delivery capabilities may become more valuable as capacity remains scarce.</p>
+<p>Behind-the-meter energy providers</p>
+<p>Options include Bloom Energy, gas turbines, and renewable generation paired with batteries. These solutions are gaining attention, though developers may prefer not to own the power-generation risk.</p>
+<p>Chip suppliers</p>
+<p>NVIDIA allocations helped drive initial NeoCloud demand. Hyperscalers are also adopting their own chips, including TPU and Trainium, and exploring AMD offerings.</p>
+<p>Quantitative Insights</p>
+<p>Metric</p>
+<p>Expert’s assessment</p>
+<p>Typical small facility</p>
+<p>Around 20 MW; potentially easier to permit and connect to existing power infrastructure.</p>
+<p>Example campus scale</p>
+<p>A 300 MW campus could comprise four to six buildings; a phased example delivers one 75 MW building per quarter.</p>
+<p>Construction timelines</p>
+<p>A routine slip may be about 3 months; an inexperienced developer’s 18-month plan could extend to 36 months.</p>
+<p>Delivery exposure</p>
+<p>The expert estimated roughly 30% of projects scheduled for 2028 could be delayed or relocated. 2027 projects appear less exposed if key approvals and orders are already secured.</p>
+<p>Build-out planning</p>
+<p>A 50 MW initial phase, followed by reassessment before expansion, may be more acceptable to communities than presenting a full gigawatt-scale campus.</p>
+<p>Asset life assumptions</p>
+<p>Data centers are commonly modeled over 15 years, with 12–15-year contracts; GPUs may have a 3–5-year assumed financial life, though older chips are remaining useful longer.</p>
+<p>DG: Hello everyone, this is David from Guidepoint. I will be your moderator today. On the phone with us today is Skyler Holloway, and our discussion today will be around where GPU deployments get stuck in the speed and the constraint to power and annual cost execution risk versus CapEx or self-build and then the shift of CapEx in the late 26 into the first half of 27. Thanks Skyler for joining us. Why don't you give us a brief introduction to your background?</p>
+<p>Skyler Holloway: Happy to be here, David. I'm Skyler Holloway. I'm currently the vice president of strategy and portfolio at Switch. We build both historical co-location data centers with, you know, multi-tenant occupancy. And then we also build large-</p>
+<p>11/22/2026 at 16:15 PM UTC</p>
+<p>scale single-tenant campuses that are more AI factory-centric for both hyperscalers and NeoClouds. My current role, I'm very much on the strategy side thinking, you know, where the industry is going, new technology adoption, data center design evolution, things of that nature. Over the past, I guess, 14 years now, I've worked on data center development, first as a general contractor, then for 6 years at Meta, and those were my roles before Switch. So excited to be here.</p>
+<p>DG: Awesome. Just a quick disclaimer, this is a limited discussion to your own observation in the industry. Don't share any material non-public information about any public companies, including R&amp;D product roadmaps and other areas for confidential customer contract terms.</p>
+<p>Skyler Holloway: That makes perfect sense.</p>
+<p>DG: Awesome. And then for the audience, if you have anything you want to add to the conversation, please send them to ask@guidepoint.com and we will get your question. So, Skyler, especially after the midterms, we have seen the power permitting has been the sort of bottleneck for data center build out here. Can you help us sort of clarify or quantify across the power, permitting, cooling, construction, labor, et cetera, the constraints situation for data centers? How has that been evolving over the past month or so?</p>
+<p>Skyler Holloway: Yeah. Well, it's kind of everything. I think the past couple of years, power has been sort of the main driver of the supply-demand imbalance being sustained for data center capacity. I think really the last 6 months and then the midterms were certainly kind of a reminder or maybe even a concrete example of the impact that NIMBYism and anti- development movements will have on data center construction and development. I forget the stat exactly, but data center questions were on, I think, 25 or 45 different ballots and 44 of them came back kind of anti-data center. There was 1 place in North Dakota that was excited about it. And so I think that has become the NIMBYism or frankly, the right to operate, I see as being probably the biggest forward-going challenge to data center capacity in either getting it canceled and pushing it out and delaying the size of its growth. Power is certainly a challenge and will be there as well, but now we have an additional risk of perhaps cities not wanting data centers at all and getting the ability to halt them via moratorium or public input sessions or permitting avoidance. There's quite a few ways in which the public can do that. And I think that is likely what will be the biggest reason for delays coming up in the next year, at least a year, but likely much longer until the industry can really advocate for itself and describe some of the benefits that we provide.</p>
+<p>DG: Understood. So I think the industry is tracking an estimate of 30% or even half of the large 26 projects have been delayed. From what you see across the market, what share of capacity that's announced in this year would actually be energized by mid 27?</p>
+<p>Skyler Holloway: That's a good question. This is, of course, just a feeling of industry-wide things. Projects aren't really going away, right? The demand for AI is still very large. I think that was also kind of emphasized by Anthropic's IPO just this week, right? The growth of the technology and adoption of the technology is still very high. So I don't think about projects getting canceled as much as maybe shifting between companies or, to your point, just ultimately delayed because of the difficulty of bringing them to a ready-for-service date. Although the nature of the delay is also worth considering, meaning I think there are plenty of delays across the industry that, you know, "Hey, it's a bit harder to build than we expected." These are ones that are coming from, you know, established data center providers. Or it's like, "Oh, this is going to be..." We thought it was a 12 to 15 month construction schedule. We didn't quite get the construction labor that we wanted. We now expect, you know, maybe it's a 3 month slip. I think that's the most common type of delay: that it means it will just push out a little bit. But there's another type that we're talking about is... and it's not quite so</p>
+<p>11/22/2026 at 16:15 PM UTC</p>
+<p>easy to categorize these in a binary fashion, but I've heard of and seen the other side of this, which is, you know, a relatively young NeoCloud or a data center developer that's been around for, you know, 3 years thinks they can build a data center in 18 months, but they don't have the land, they don't have the equipment, they don't have existing contracting schedules. They don't have a solid design. And in that case, that 18 months can become 36 months rather easily just due to a total lack of understanding of the difficulty and the steps that are required to bring a large scale data center to market. So I think there's kind of both of those types of delays going on. The majority are certainly a smaller scale slip, but I've also seen projects that are just grossly estimated incorrectly that will drive longer term delays.</p>
+<p>DG: Understood. Does it push into like smaller data centers? And then, because of the local moratoriums are sort of fighting against the large data centers. So like, what any alternatives that is a dynamic change that you have seen? What has the change, which regions for the developed have been prioritized for the next 2 years? And then, which markets are becoming harder, easier to build in? And then, how has the size of this data center been changing?</p>
+<p>Skyler Holloway: Yeah, there's a couple questions in there. I mean, the first thing you brought up is, you know, smaller data centers. I think that smaller data centers are kind of gaining favor for 2 reasons. One is, like you said, yeah, it is much easier to work with a municipality and bring a 20 megawatt data center online than it is, you know, if you're talking about gigawatt scale, right? And that actually makes me think, I think it's a bit of a folly of the data center industry that everyone talks about, you know, oh, this is a gigawatt campus when they go and talk to cities. Like no gigawatt campus gets built at once, right? And when you start a data center, you don't have to build to a gigawatt. I think the framing could be much more successful to say, look, this is a 50 megawatt data center, and if you still like us in 18 months then we'll add 50 megawatts, right? Like the framing conversations with communities of saying, you know, oh, it's huge, and that it doesn't, and there isn't going to be significant chances to reassess that along the way doesn't help the industry. But where I was kind of starting that is, you know, smaller data centers, I think, are gaining some level of attention that they haven't had in a number of years because they are easier to permit. They are easier to bring online. You know, it is also easier to find reasonable amounts of available power at 20 megawatts. Like, that's the type of power that, you know, may already exist in an interconnect, right? The transmission, distribution is already there and perhaps even like the firm rights to power are as well. That's not, you know, particularly rare. When the industry over the past 2 years was only talking about, you know, if it's not 300 megawatts or more, I'm not interested, you know, some of these sites got overlooked. So I think small data centers may kind of fill in those opportunities. And then secondly, you know, as artificial intelligence moves from a training phase into a much broader adoption of inference. You know, you don't need the economies of scale of a massive site. And in some cases, some level of distribution actually helps, right? Helps serve your purpose, which is inference, right? And so I think both of those will perhaps mean that a growth in more smaller data centers than we've seen in the past few years.</p>
+<p>DG: Got it. That makes sense. Any thoughts around the behind-the-meter solutions like Bloom Energy?</p>
+<p>Skyler Holloway: I think behind the meter is growing as a consideration across the industry, right, especially for the larger projects. And frankly, it's going to continue. These are concepts everyone seems to be familiar with now, but ultimately the US power grid has really struggled to meet the needs and timeline requirements of the artificial intelligence growth we see, and that's pushed a lot more behind the meter to be happening. You can go behind the meter in a lot of different ways, intermittent solar or wind with batteries. You can look at something like Bloom Energy, you can just do natural gas turbines of different variations. There are lots of options there, and so the technologies and companies are competing for that, but I do think behind the meter energy is certainly here to stay.</p>
+<p>DG: Understood. So I guess some developers now say that they will fund their own power infrastructure. How does the self-funding substations and transmission change the delivery speed or the upfront cost or negotiating leverage</p>
+<p>11/22/2026 at 16:15 PM UTC</p>
+<p>with utility and the tenants?</p>
+<p>Skyler Holloway: Well, I mean, to sell data center space, you have to have power, right? That... I guess, kind of obvious, but that has caused many companies that sell data center space... if they can't acquire the power to sell their key product... it has them look at, well, maybe we need to remove this bottleneck and do it ourselves. That's a big leap though, right? Being an energy developer or an independent power producer, even if you're owning the generation assets and selling the power, there's levels of federal regulation that occur there. There's a different risk profile of the capital deployed to build energy infrastructure, particularly in an islanded case when you only have a single offtaker and a single technology underneath it. It's not the same as a utility building out base load power for tens of thousands of clients. So it is a big leap to fully be a power producer. I mean, you can work closely with companies that do that and provide them the ability to grow by signing long-term stable PPAs. But I think most data center developers are seeing behind the meter as a solution, but not necessarily one that they are trying to own, but rather just support and help happen, but not ultimately being their responsibility and a risk of being a power broker.</p>
+<p>DG: Got it. That makes sense. I guess, when a utility cannot deliver the full power on day one, how are the developers and tenants facing the capacity? For example, partial energization or temporary generation, or how do the tenants react in general?</p>
+<p>Skyler Holloway: If you don't have full power day one, I DG: Correct.</p>
+<p>Skyler Holloway: I mean, it depends, right? No tenant can turn up 100 megawatts or 200 megawatts in a single day anyways, right? So typically there's going to be some type of a load ramp, both for individual percentages of power being used but also for larger campus-wide. And what I mean by that is, if you're building, let's just say like a 300 megawatt campus, ballparking here, that's probably distributed across 6 buildings, 4 or 6 buildings. So that ramping might take the shape of doing something like 1 building every quarter for a year, right? A 75 megawatt building, Q1 through Q4 would get you 300 megawatts deliverable. I think that type of a ramp actually is kind of comfortable for everybody, right? The teams that are doing rolling the racks, that are doing server provisioning, that are doing burn-in, that's not something that's probably best done all at once anyways. So if I'm thinking about, that's kind of an ideal load ramp. If you're thinking like a delay of power in terms of, oh, you get 10% of your power and then 3 years later you get the rest. I mean, those to me are sort of separate projects, right? But somewhere in between there is how you can design intelligent load ramping and power delivery that allows the client time to grow into it, into their footprint without a significant delay in what that power looks like.</p>
+<p>DG: Understood. So I guess even with that in mind, how would you think about the overall services? How do you see the hyperscalers and your customers accelerating or decelerating their budget for CapEx intention going into next year? And then if any change, especially for over the past month, around the midterms, etc., if anything changed your opinion, what was the cause for that?</p>
+<p>Skyler Holloway: Yeah, I mean, how I'm seeing that happen broadly across the industry is the investment cycle is getting stretched longer. Then the investment, the capital expenditures into data centers could change at any time. But the demand that we were seeing in 2026, 2027, 2028, and the spend that's supporting that demand, just because of the challenges we've discussed, it's not going anywhere, but it might mean that that's actually happening through 2029 now. And so the natural reaction is, it's just kind of getting peanut butter spread into future data center development if we can't get it now. And the CapEx kind of follows that. It just takes, frankly, essentially the same amount, but</p>
+<p>11/22/2026 at 16:15 PM UTC</p>
+<p>spreading it out over a longer time period because of the time to build.</p>
+<p>DG: Got it. So, I guess over the past month, have you revised up or down your expectation for 2027 to 2028 data center constructions and CapEx?</p>
+<p>Skyler Holloway: Yeah, over the last month, not personally or company-based, but I think the industry as a whole has started to digest the impact of the midterm results. And it's very project specific, right? There are projects in certain states that will go, you know, unaffected. And frankly, most of the construction that is being done right now, I think will largely continue in its current form. So, deliveries that were coming in 2027 anyways, those are kind of beyond the point of public pushback. But data centers that are in permitting currently or will be in permitting beginning of next year, they were set to deliver end of 2027 or into 2028, those are the ones that are most subject to some type of a delay or based on a lot of things. And I think ultimately, it's hard to really assess it because maybe 70% of them will still go as planned, but maybe 30% of them won't. And frankly, they all carry more risk than they used to, but sometimes the risk will, you know, get executed against and sometimes it will not. So, to summarize that, I guess, there certainly will be delays. It's very project specific. I would guess that something like, 30% of them that are set to deliver in 2028 will actually have to be pushed out or relocated to a place that's willing to build.</p>
+<p>DG: Oh, got it. Okay, so that's like 2028 pushing it to 2029. Any sense that you can give us for 2027 that pushed me into 2028?</p>
+<p>Skyler Holloway: Yeah, 2027, I feel like is not as subject to change, right? Because if I'm thinking about what levers need to happen for a data center to get built, obviously, upstream power commitment needs to be in place. Equipment orders need to be completed. You need emissions permitting for any diesel gensets for backup that are on site. You need zoning to be completed, building permits for mechanical electrical civil disciplines. Frankly, if you're planning on bringing anything online in 2027 that's, you know, bigger than 100 megawatts, many of those need to be done. Right, if not all of those... you've kind of moved through the level of risk associated with that project delivery that now it's sort of you could still have construction delays, you still have weather events, things like that. But the biggest delay sources, you will have already de-risked due to the nature of it.</p>
+<p>DG: Right, got it. So I guess with all those discussions so far, a broader question is, what is your overall sense of being incremental, more bullish or bearish on the outlook of AI CapEx infrastructure, the super cycle that we have seen today, versus where you were a month ago? Just want to understand, get a sense of your incremental change on this topic over the past month, given so much going on.</p>
+<p>Skyler Holloway: Yeah. Well, I think it depends on what time frame you're talking in. If you're talking about 2028 spend, then I'm bullish. Those numbers are likely to be corrected down in time. If you're asking about 2030 spend and beyond, to some degree, I think I'm a little bit more optimistic that's going to go up because all of the delays on data center capacity are fundamentally different than the demand for data center capacity. We haven't seen signals that Anthropic's revenue is dropping, that there's been a breakthrough in terms of the training of models and the capacity required for it, or that businesses are deciding not to adopt AI; these are things that are still happening. So the total spend in the capital cycle, I think, remains unchanged. How quickly that spend happens might naturally get pushed out over a longer timeframe due to the challenge of doing it. But I'll also say that for good developers and for those who have existing capacity and who have a proven track record of delivering, the complexities and challenges of delivering in the midterm timeframe that we've discussed actually may create some pricing opportunity for those companies. So I think there's perhaps even a bit of a good side to all of the pushback: it creates more of a scarcity on data center capacity that is existing.</p>
+<p>11/22/2026 at 16:15 PM UTC</p>
+<p>DG: All right. So I guess delve into more about the differences between the tenant or the provider of the data centers. How does the NeoCloud delivery risk compare with the hyperscalers today? Anything that you think makes them more or less difficult for NeoCloud players to deliver capacity versus hyperscalers?</p>
+<p>Skyler Holloway: Yeah, if I think about NeoCloud versus hyperscalers, obviously hyperscalers bring stronger balance sheets. That's really been their differentiating ability that is quite sustained. You know, the entire NVIDIA NeoCloud market and parental guarantees coming from AMD and NVIDIA has tried to bridge the gap between those. Right. Hyperscalers also have much more sophisticated procurement and design, right? You know, so if you're working with a hyperscaler, it would be not surprising if they, you know, want to understand your pricing for generators or if they have a very intensive, you know, technical review process for your data center single line diagrams. Right. I mean, being able to work with them over a 6 to 9 month period on, you know, the sales cycle and due diligence efforts is quite, you know, normal. Whereas a NeoCloud, they can move a lot quicker, right? They don't have legacy design decisions. They don't have to plan around, you know, multi-purpose use of a data center for something like cloud services. And they're willing to move a lot quicker on contracts. But at the same time, they also will be a lot less intense in terms of the technical conversation. They may push pricing more. And then when it comes to, like, the handover or the site readiness, you know, NeoClouds generally, and this is quite general, NeoClouds, there's quite a breadth or a spectrum from the good ones that really understand, you know, GPU cluster build outs and operations better than the hyperscalers to, you know, the trailing end of NeoCloud companies that don't, that I would say are much less GPU knowledgeable than hyperscalers even. You know, I think, yeah, I would say that those are the main differences between the two of those. You could work with both, but hyperscalers sometimes will provide a bit more support along the way than a NeoCloud would.</p>
+<p>DG: Understood. I guess, you know, hyperscalers are also contracting with NeoCloud as well. So I guess I also want to understand what the choices of how the hyperscalers have been changing over the past few months, given the financing situation that NeoCloud's players are facing. How are hyperscalers splitting the new AI capacity between their self-views, the co-location, and then new product contracts going into the next year?</p>
+<p>Skyler Holloway: Yeah.</p>
+<p>DG: Any thoughts on that?</p>
+<p>Skyler Holloway: I think that hyperscalers have, you know, there's really 3 main ways that hyperscalers get AI compute, right? There is... we're going to start with this one... there is the NeoCloud model we've talked about taking a large scale GPU cluster, leasing it... bare metal from a NeoCloud, right? We saw lots of this happen really in 2024, 2025. So the first way is via a NeoCloud. The second way is taking a large data center from a third party developer or co-locator. In that case, they're providing their own hardware, and then in the final cases, they can build it themselves. The way I see it evolving right now is a bit less reliance on the NeoCloud market as a hyperscaler. I think that's driven by 1... maybe they're... and frankly, what drove that initially was allocations coming from NVIDIA, right? If hyperscalers could not get large-scale clusters and/or significant quantities of the latest chips, then they figured out they could lease them, and that sort of drove the NeoCloud market growth. But to some degree, I think that that is becoming less preferred by hyperscalers for a couple reasons. 1 is, I think NeoClouds have... maybe this is a generalization, but your average NeoCloud has struggled to really build out and operate data centers fast enough. And then I also, obviously, the hyperscalers are leaning in more and more on their own chipsets, be it TPUs or Trainium or even... excuse me, even AMD's ASIC. And also I think that there has been some growth between hyperscalers and data center developers just because it's a proven ability to deliver data center capacity. And it also shifts some of the risk from hyperscalers' balance sheets of owning all of the assets to being able to lease the data centers and still put in their custom silicon if</p>
+<p>11/22/2026 at 16:15 PM UTC</p>
+<p>that's how they want to approach it.</p>
+<p>DG: Right. Understood. So I guess, you know, talking about the pricing that you just mentioned, the costs as well, which costs are rising the fastest in the data center build out today? Is it still memory or optics, transformers, switchgear, or liquid cooling gears? Who... and also who is absorbing those type of increases? Yeah. Where is all of the price escalation coming from?</p>
+<p>Skyler Holloway: Memory has been the one that's made the most headlines over the past few months, I would say. And if we're looking at the TCO of AI specific data center, I can't think of anything that's not increasing in price, which is part of the challenge to it is that it's very much not one issue to solve. We see it from medium voltage transformers, which have always been sort of a challenge timeline wise anyways. We see construction labor costs escalating quite high across the entire industry, and that comes from a couple things in particular. One is that there's just a shortage of skilled construction workers, which drives some types of bidding wars between companies in terms to attract and retain that talent that results in higher stipends, higher per diems, higher hourly wages for the workers. Also, due to the push right now to expedite construction, you might be working 6 days a week rather than 5. You might be working longer shifts. And frankly, all of these contribute to lower productivity on a construction site. So 1, you're paying more per hour. 2, because you're working longer shifts where human nature is naturally that you are not as productive in the hours 9 and 10 in your day shift as you are in the first 8. You have more hours on your construction project for the same project as you would have previously. That's an example of why construction labor has escalated so much. But we also just see across the equipment markets, really all parts of the data center seem to be getting more expensive at the moment and pushing to a durable price increase for the final product.</p>
+<p>DG: Understood. So I think, you know, the spot of GPU enterprise for H100, H200, and B200 are also rising in recent months. Like what are the drivers behind that and how do you expect the tight pricing to last as the delayed capacity also comes into play in 2027?</p>
+<p>Skyler Holloway: Yeah, I mean, that's, I think, something that was sort of unpredicted in our market, but has been quite a good outcome for a lot of companies in the space. The H100s that were deployed 4 or 5 years ago at this point are fully depreciated. And the fact that the pricing has not been dropping precipitously with next-generation hardware really means that they've become fantastic financial assets to the companies that own them and that lease them, particularly the markets for those types of chips. At this point, most companies were taking shorter-term contracts, so the price is even higher. So frankly, I think that's going to stick around. And the delays for more data centers will likely mean that the financial lifetime of older gear is extended, and I think that will just continue based upon everything we're seeing in the market.</p>
+<p>DG: Hmm. That makes sense. So I guess, you know, how do developers intend this model to payback on a new AI company today? How did that change over the past few months? How do they model the payback on new hardware? I guess, in general, when you're trying to model the payback of a new data center today, how have the delay, the higher cost, and then the 3 to 4 years GPU or beyond that, the depreciation time... how do you measure the payback has been changed over the past few months?</p>
+<p>Skyler Holloway: Yeah, I mean, I guess it depends what we're talking about. If we're talking about the GPUs, like in the previous question, then perhaps you're modeling a longer lifetime on them. If you're talking about the data center in particular, which is I think where this question went, it's modeled quite differently, right? This is something that's depreciated over a 15-year timeframe. Likely has a 12 to 15-year contract that includes an escalator in it so the modeling of a data center asset doesn't largely change. Perhaps future data center assets you can demand a higher price due to the</p>
+<p>11/22/2026 at 16:15 PM UTC</p>
+<p>supply demand imbalance, but the market in some regards is a lot more stable than the GPU market because that's an asset that has, I guess, historically and theoretically, a 3 to 5-year useful financial life. We've extended beyond that, which is fantastic, but you'd still need to model it based upon an assumption or an expectation that that's not going to happen.</p>
+<p>DG: Hmm. Right. Got it. So I guess looking into the first half of 27, which signals would tell you that energized capacity is finally catching up or announced capacity and then, which would tell you that delays is actually getting worse.</p>
+<p>Skyler Holloway: Yeah, I don't think that supply is going to catch up. If I were to think what would do that, you would have dropping prices in the market, you would likely have some level of reservation around future investments. We might see land purchasing slowing down, we might see companies working more to offload data center capacity, and we'd also probably see the buying appetite starting to shift, meaning right now, really all significant data center capacity through 2027 is spoken for. The buyers in market are talking about 2028. And so if we were to get ahead on supply, that timeline would decrease where they wouldn't be trying to buy so far into the future anymore. They'd be burning through reserved capacity in the meantime. I guess to the other side of your question, what signals would reaffirm in 2027 that supply has not caught up? And I think it's a lot of what we're seeing currently. Companies are going out broadly asking for more capacity; the amount of inbound requests from model makers and NeoClouds and hyperscalers is still very high across the industry. There's lots of continued conversations around, "Hey, is there available capacity you can give me into the first half of 2028?" And to me, that just means that I don't see any immediate change happening yet to any of that.</p>
+<p>DG: Got it. So, and then I guess just which part of the chains of data center look most constrained over the next 12 to 18 months, and then where do you see that we probably could have an oversupply risk, if there's any?</p>
+<p>Skyler Holloway: Yeah. I guess the highest constraint in data center capacity... we've talked through all of the reasoning behind it, but there's just no easy solve. The only solve that I could really think of is a shift away from building data centers domestically, because due to all the challenges we discussed, it's not like we're going to say, oh, we found an extra 7 gigawatts of 2027 power in our back pocket, right? That just doesn't exist. But maybe there will be some renewed interest in taking available capacity in different countries, right? If it's a country that has the power grid in place and has significant, frankly, it seems like coal resource available, those could be markets that could perhaps take away some of the data center supply from the US and would then bring demand and supply closer in the US. So it'd be less of a gap. Those are the ways I think of things that could change that would perhaps make supply catch up to demand.</p>
+<p>DG: Got it. Okay. I think those are all the questions that I have for you today. Thanks so much, Skyler, for this discussion. And then we'll have more follow-up calls for data centers for sure in the future. So let's stay in touch, okay? Great.</p>
+<p>Skyler Holloway: Thanks, David. I hope this was helpful, and I'm always happy to chat more on what's changing in the industry.</p>
+<p>DG: Sounds good. Thank you. Have a good weekend.</p>
+<p>Skyler Holloway: Thanks. You too.</p>
+<p>11/22/2026 at 16:15 PM UTC</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>11/22/2026 at 16:15 PM UTC</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
