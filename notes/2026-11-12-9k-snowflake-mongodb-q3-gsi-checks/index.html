@@ -1,0 +1,554 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.12 | 9K | Software | Snowflake &amp; MongoDB Q3 GSI Checks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.12 | 9K | Software | Snowflake &amp; MongoDB Q3 GSI Checks</h1>
+<p class="orig">原标题：Merit Snowflake、MongoDB Q3业绩调研(2026-11-12 20:00:00)</p>
+<p class="tags">#software #cloud</p>
+<p class="meta">Meritco 久谦 · 2026-11-12</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>一位GSI专家称，其负责的Snowflake实施业务2026年Q1/Q2/Q3同比分别增长26.8%/28.2%/29.6-29.7%，逐季加速，Q3已超过下半年27-29%的计划区间上限，预计Q4增速为30.2-31%。</li>
+<li>专家估计Snowflake客户Q3消费同比增长约35-37%，产品收入增速超过35%，RPO增速预计在36%以上，消费增速略快于RPO。</li>
+<li>Snowflake的增长结构是：传统核心数据云约占收入65-68%；现有客户扩张贡献约52-56%的增长，AI工作负载贡献约14-18%，数据工程（Snowpark、Dynamic Tables）贡献超过20%，新客户仅贡献5-7%。</li>
+<li>美国企业中约12-15%已进入成熟的AI生产部署，35-40%处于部署与评估并行阶段；专家预计Snowflake的AI消费拐点将在2027年Q1末出现，届时AI贡献将稳定超过20%。</li>
+<li>Cortex Code的直接消费占比为2.5-3.5%，间接带动7-12%；新推出的AI Gateway直接贡献不超过0.5-0.7%；专家认为Snowpark是被低估的产品，已在过去1.5-2个季度进入拐点。</li>
+<li>专家认为Snowflake与Databricks目前以共存互补为主，预计到2027年Q2竞争会明显加剧。</li>
+<li>MongoDB GSI业务Q1/Q2/Q3同比增长约21.5%/22.8%/24.2-24.5%，对应客户消费约26-32%/27.5-33%/29-35%，Q3 RPO增长32-36%；预计Q4接近25%，2027年上半年26-28%，Atlas部署业务增速超过35%。</li>
+<li>Voyage AI整合后，Atlas Vector Search等相关产品增速达到35-40%以上；MongoDB的AI消费拐点预计在2027年6-7月；专家认为CJ Desai离职转投Meta（负责企业AI业务）对MongoDB长期影响有限。</li>
+</ol></section>
+<div class="body">
+<h2>音频信息</h2>
+<p>音频标题: 261112 - Merit Snowflake、MongoDB Q3业绩调研</p>
+<p>相关标的：undefined</p>
+<p>议题：</p>
+<p>完整音频链接：http://mw-meeting.oss-cn-shanghai.aliyuncs.com/audio/1794488526192-261112%2520-%2520Merit%2520Snowflake%25E3%2580%2581MongoDB%2520Q3%25E4%25B8%259A%25E7%25BB%25A9%25E8%25B0%2583%25E7%25A0%2594_20261112_210149.mp3</p>
+<h2>音频纪要总结</h2>
+<h2>专家访谈纪要</h2>
+<h2>1. Snowflake业务增速与Q4展望</h2>
+<h3>a) Snowflake客户消费增速与GSI业务增速有什么区别？</h3>
+<ul><li>专家的GSI业务收入主要来自Snowflake相关的实施、集成和定制服务，具体包括：</li></ul>
+<ol><li>传统数据仓库建设与迁移；</li><li>数据转换项目；</li><li>Snowpark、Snowpipe等新产品的实施。</li></ol>
+<ul><li>GSI业务增速并不等同于客户在Snowflake平台上的实际消费增速。根据专家经验，客户消费增速通常高于GSI业务增速。</li><li>专家提出客户消费与GSI业务之间通常存在约1.3倍至1.9倍的关系，但本次访谈中仅对Q3客户消费增速给出了较明确的判断，未直接给出Q1、Q2的精确消费增速。</li></ul>
+<h3>b) 2026年Q1至Q3，专家负责的Snowflake GSI业务增速如何？</h3>
+<ul><li>2026年Q1同比增长约26.8%。</li><li>2026年Q2同比增长约28.2%。</li><li>2026年Q3同比增长约29.6%至29.7%。</li><li>整体呈现逐季度加速趋势，Q3增速已接近30%。</li></ul>
+<h3>c) Q3客户在Snowflake上的消费增速是多少？</h3>
+<ul><li>专家估计，Q3客户在Snowflake上的消费同比增长约35%至37%，实际水平可能更高。</li><li>该增速明显高于专家自身约29.6%至29.7%的GSI业务增速，反映客户工作负载和平台使用量增长快于实施服务收入。</li><li>目前客户消费增速略高于RPO增速，但两者均保持较快增长。</li></ul>
+<h3>d) Q4 Snowflake业务增速预计达到什么水平？</h3>
+<ul><li>专家预计2026年Q4其Snowflake GSI业务增速将突破30%。</li><li>初步预测区间为30.2%至31%。</li><li>从10月数据看，业务增速已经非常接近30%，因此实现上述目标的信心较强。</li></ul>
+<h3>e) Q3表现是否超出此前预期？</h3>
+<ul><li>专家通常按照半年周期制定业务计划：</li></ul>
+<ol><li>2026年上半年计划增速为25%至27%；</li><li>2026年下半年计划增速为27%至29%。</li></ol>
+<ul><li>Q3作为2026年下半年的第一个季度，实际增速达到29.6%至29.7%，已经超过原计划区间上限。</li><li>这表明传统数据云业务保持韧性，同时AI和数据工程相关工作负载开始带来增量。</li></ul>
+<h3>f) Snowflake的RPO增速是否进一步加速？</h3>
+<ul><li>专家判断，Snowflake产品收入增速至少超过35%。</li><li>RPO增速与产品收入增速大致相关，预计达到36%以上，可能略高于产品收入增速。</li><li>RPO增长表现稳健，但当前实际消费增长略微领先于RPO增长。</li></ul>
+<h2>2. Snowflake消费增长的主要驱动因素</h2>
+<h3>a) Snowflake业务收入主要由哪些产品构成？</h3>
+<ul><li>传统核心数据云业务仍是收入基本盘，约贡献65%至68%的收入。</li><li>传统业务主要包括：</li></ul>
+<ol><li>Core Data Cloud；</li><li>Gen 2 Warehouse；</li><li>Data Sharing。</li></ol>
+<ul><li>其余约30%、即接近总收入三分之一，来自较新的产品和功能，包括：</li></ul>
+<ol><li>Snowpark；</li><li>Unistore；</li><li>Iceberg；</li><li>SnowConvert；</li><li>Snowpipe；</li><li>Cortex产品家族。</li></ol>
+<ul><li>Snowpipe已经开始形成增长势头，随着流式数据处理需求增加，未来数月有望进一步加速。</li><li>Cortex产品家族，包括Coco、Cortex Analyst、Cortex Search等，是核心数据仓库之外的重要增长来源。</li></ul>
+<h3>b) 消费增长主要来自现有客户还是新客户？</h3>
+<ul><li>现有客户扩张是Snowflake消费增长的核心来源。</li><li>专家估计，现有客户扩张贡献约52%至56%，部分情况下可能达到58%左右。</li><li>相比之下，新客户和净新增客户贡献约5%至7%，并不是当前增长的主要驱动力。</li><li>Snowflake的特点是客户进入平台后，会持续增加数据、计算及AI工作负载，形成较强的存量扩张效应。</li></ul>
+<h3>c) AI工作负载对消费增长贡献多大？</h3>
+<ul><li>AI相关工作负载目前贡献约14%至18%的消费增长。</li><li>更保守的估计区间为12%至18%。</li><li>相关产品和场景包括：</li></ul>
+<ol><li>Cortex产品套件；</li><li>Co-work；</li><li>Cortex Analyst和Cortex Search；</li><li>AI应用开发与部署；</li><li>RAG、推理和智能体相关工作负载。</li></ol>
+<ul><li>AI已经成为重要增量来源，但当前并非唯一或最大的增长引擎。</li></ul>
+<h3>d) 数据工程对消费增长的贡献如何？</h3>
+<ul><li>数据工程在短期内可能比AI产品拥有更大的消费增长潜力。</li><li>相关产品主要包括Snowpark和Dynamic Tables。</li><li>在专家负责的业务中，数据工程对增长的贡献明确超过20%，处于20%以上的区间。</li><li>随着AI从实验转向生产，数据准备、工作流、推理管道和检索管道需求增加，数据工程与AI消费将形成相互促进。</li></ul>
+<h2>3. 企业AI部署阶段与Snowflake消费拐点</h2>
+<h3>a) 当前美国企业AI部署处于什么阶段？</h3>
+<ul><li>AI生产部署目前主要由超大型企业、全球2000强以及《财富》300强、400强企业引领。</li><li>按客户数量计算，已进入较成熟AI生产部署阶段的企业低于15%，更准确地说约为12%至15%。</li><li>约35%至40%的企业处于积极评估、扩展和部署并行阶段，尚未完全进入成熟生产环境。</li><li>其余约40%至50%的企业仍处于试点、工具评估和探索阶段，尚未形成正式生产项目。</li><li>整体来看，约三分之二的客户已经进入生产部署或积极部署、评估阶段，市场成熟度正在快速提升。</li></ul>
+<h3>b) Snowflake上的AI消费拐点预计何时出现？</h3>
+<ul><li>专家预计，Snowflake AI消费拐点将在2027年第一季度末前后出现。</li><li>到该时间点，AI驱动的消费增长贡献预计将超过20%，并以20%作为后续下限，不再回落至当前水平。</li><li>这里的“20%”是指AI工作负载对Snowflake消费增长的贡献占比，而不是同比增速或企业IT预算占比。</li></ul>
+<h3>c) 为什么判断拐点会在2027年第一季度末出现？</h3>
+<ul><li>当前约12%至15%的客户已经进入积极AI生产部署阶段。</li><li>到2027年第一季度末，这一比例预计提升至16%至19%。</li><li>目前处于部署和评估并行阶段的35%至40%客户，也将进一步从评估转向正式部署。</li><li>客户成熟度和AI部署规模同步提升，将直接带动：</li></ul>
+<ol><li>Cortex相关消费；</li><li>Snowpark计算消费；</li><li>RAG及推理工作负载；</li><li>数据治理和Token管理需求；</li><li>智能体应用及关联数据工作负载。</li></ol>
+<h2>4. Snowflake重点产品表现</h2>
+<h3>a) Cortex Code对Snowflake消费的直接和间接贡献分别是多少？</h3>
+<ul><li>Cortex Code本质上是一款开发工具，同时也是Snowflake其他产品能力的入口。</li><li>Cortex Code的直接消费占比约为2.5%至3.5%，主要来自：</li></ul>
+<ol><li>应用开发过程；</li><li>已部署应用产生的计算消耗。</li></ol>
+<ul><li>其间接影响明显高于直接消费，预计带来的关联增长贡献约为7%至12%。</li><li>间接贡献主要体现为带动客户采用Snowpark、Cortex Search、Cortex Analyst等其他产品。</li></ul>
+<h3>b) Cortex AI Gateway短期会带来多大消费贡献？</h3>
+<ul><li>Cortex AI Gateway刚刚推出，目前尚未在专家的业务实践中产生实质性影响。</li><li>预计本季度将逐步起量，并在下一季度进一步展现潜力。</li><li>产品本身的直接消费贡献预计较低，不会超过0.5%至0.7%。</li><li>真正价值在于带动周边AI工作负载部署，通过更强的可见性、访问控制和治理能力，间接提升Snowflake使用量。</li></ul>
+<h3>c) AI Gateway解决了企业哪些核心需求？</h3>
+<ul><li>AI Gateway为企业提供统一的中央治理层或中央控制层。</li><li>主要解决以下问题：</li></ul>
+<ol><li>在多云、多模型和多AI产品环境中进行统一管理；</li><li>根据查询类型选择闭源或开源模型；</li><li>分配、监控和优化Token；</li><li>控制企业数据向不同模型开放的范围；</li><li>统一观察API、身份层和数据层交互；</li><li>实现AI FinOps及成本治理。</li></ol>
+<ul><li>AI Gateway受到众多厂商重视，核心原因是企业在规模化部署AI后，迫切需要统一的治理、成本控制和安全管理能力。</li></ul>
+<h3>d) Snowpark为何被认为是被低估的产品？</h3>
+<ul><li>专家认为，Snowpark近期的商业潜力甚至高于Snowflake整套AI产品。</li><li>Snowpark从根本上将Snowflake计算能力从SQL扩展至Python、Java和Scala等非SQL环境。</li><li>过去1.5至2个季度，Snowpark已经进入增长拐点，主要由AI工作负载从实验转向生产推动。</li><li>AI工作流、推理、检索管道和RAG用例通常以Python为主，而非运行在传统SQL环境中，因此需要Snowpark承载。</li><li>当客户在Snowflake上部署并扩展AI工作负载时，Snowpark的部署和消费会同步提升。</li><li>Cortex与Snowpark联系紧密，Cortex应用增长将进一步放大Snowpark计算需求。</li></ul>
+<h3>e) Snowflake为什么进入可观测性领域？</h3>
+<ul><li>Snowflake并不希望成为Datadog或Dynatrace式的专业可观测性龙头。</li><li>其进入可观测性领域的核心目的是保护现有平台业务，避免客户因基础监控需求被迫采购外部解决方案。</li><li>随着客户使用Cortex Analyst、Document AI、Snowpark、Snowflake Intelligence和Co-work，需要了解：</li></ul>
+<ol><li>调用了哪些模型；</li><li>消耗了多少Token；</li><li>不同工作负载的运行情况；</li><li>基础访问与治理状态。</li></ol>
+<ul><li>Snowflake希望满足客户的基础可观测性需求；只有在需求超出平台能力时，客户才需要Datadog、Arize、Fiddler.ai等专业产品。</li><li>因此，可观测性更多是产品完整性和客户留存工具，而不是独立的大规模消费增长引擎。</li></ul>
+<h2>5. Snowflake与Databricks的竞争格局</h2>
+<h3>a) 当前Snowflake与Databricks是竞争还是互补？</h3>
+<ul><li>现阶段两者更多是共存和互补，而非完全正面竞争。</li><li>Snowflake的传统优势包括：</li></ul>
+<ol><li>数据治理；</li><li>可管理性；</li><li>分析和BI；</li><li>降低普通业务用户访问数据的技术门槛。</li></ol>
+<ul><li>Databricks的传统优势包括：</li></ul>
+<ol><li>机器学习工程；</li><li>MLOps；</li><li>数据科学；</li><li>基于Spark和Delta Lake的数据工程。</li></ol>
+<ul><li>大量客户同时采用两套平台：</li></ul>
+<ol><li>使用Snowflake进行治理和分析；</li><li>使用Databricks开展数据科学实验和机器学习工程。</li></ol>
+<h3>b) 双方竞争何时会明显加剧？</h3>
+<ul><li>专家预计到2027年第二季度、即2027年年中，竞争态势将更加清晰和激烈。</li><li>届时企业会开始重新评估，是否有必要长期同时保留两套平台。</li><li>Databricks正在积极拓展SQL和数据仓库业务，而Snowflake通过Iceberg、Snowpark和Cortex向开放数据、数据工程及AI领域延伸。</li><li>双方业务边界持续重叠，将推动客户在治理、AI工程、成本和平台整合之间作出选择。</li></ul>
+<h3>c) 双方在AI工作负载方面有何差异？</h3>
+<ul><li>当前企业AI部署主要集中于智能体应用，包括支持、财务和采购智能体。</li><li>Snowflake的架构天然适合承载与企业数据紧密结合的智能体工作负载。</li><li>Databricks更偏向模型训练、迁移、机器学习工程及整体AI应用开发。</li><li>短期内双方仍会共同受益于AI生产部署，长期则可能围绕统一数据与AI平台展开更直接竞争。</li></ul>
+<h2>6. MongoDB业务增速与未来展望</h2>
+<h3>a) 2026年Q1至Q3，MongoDB GSI业务和客户消费增速如何？</h3>
+<ul><li>专家负责的MongoDB GSI业务增速为：</li></ul>
+<ol><li>Q1同比增长约21.5%，可能略高；</li><li>Q2同比增长约22.8%；</li><li>Q3同比增长约24.2%至24.5%。</li></ol>
+<ul><li>专家估计，对应客户消费增速为：</li></ul>
+<ol><li>Q1约26%至31%，最高可能接近32%；</li><li>Q2约27.5%至32.5%，最高可能接近33%；</li><li>Q3约29%至34%，最高可能接近35%。</li></ol>
+<ul><li>MongoDB业务和客户消费均呈现逐季度加速趋势。</li></ul>
+<h3>b) Q3 MongoDB业务表现是否符合预期？</h3>
+<ul><li>专家对2026年下半年的计划增速为23.5%至25%。</li><li>Q3实际增速约24.2%至24.5%，处于计划区间内。</li><li>2026年上半年的计划区间为21%至23%，随着生态系统活动增强，公司上调了下半年增长预期。</li><li>如果延续上半年计划标准，Q3实际表现将明显超出原有预期。</li></ul>
+<h3>c) MongoDB Q4及2027年上半年增速如何展望？</h3>
+<ul><li>专家预计2026年Q4增速将非常接近25%，并有望突破25%。</li><li>若超过25.5%，则可视为超额完成计划，但专家认为达到这一水平的可能性不高。</li><li>2027年上半年尚未正式制定目标，初步预计增长区间为26%至28%。</li></ul>
+<h3>d) MongoDB的RPO增速如何？</h3>
+<ul><li>Q2客户RPO增速预计约为29%至33%。</li><li>Q3客户RPO增速预计约为32%至36%。</li><li>RPO增速较Q2进一步提升，反映客户签约和未来履约需求持续增强。</li></ul>
+<h2>7. MongoDB业务增长驱动与Voyage AI整合</h2>
+<h3>a) MongoDB增长的主要驱动因素是什么？</h3>
+<ul><li>Atlas核心业务的消费和部署增长是最重要的贡献来源。</li><li>Q3 Atlas部署相关子业务增速超过35%，Q2仅低几个百分点。</li><li>其他核心驱动因素包括：</li></ul>
+<ol><li>Voyage AI收购后的快速产品整合；</li><li>向量搜索部署量显著增长；</li><li>MongoDB从数据库平台向开发者及AI应用平台升级；</li><li>持久化内存和快速检索能力适配AI应用；</li><li>多智能体及智能体工作流对应用计算的需求增长。</li></ol>
+<h3>b) Voyage AI全面商用后，使用量是否显著增长？</h3>
+<ul><li>Voyage AI商用整合后，客户使用量出现明显增长。</li><li>Voyage AI能力已经整合至：</li></ul>
+<ol><li>Atlas Vector Search；</li><li>流处理产品；</li><li>部分Atlas Data API。</li></ol>
+<ul><li>过去两个季度，上述三类产品同比增速均达到35%至40%以上，显示商业化进展较快。</li></ul>
+<h3>c) Voyage AI为MongoDB带来什么竞争优势？</h3>
+<ul><li>过去客户往往需要分别采购：</li></ul>
+<ol><li>Pinecone或Weaviate等向量数据库；</li><li>第三方重排序器；</li><li>另一家操作型数据库厂商。</li></ol>
+<ul><li>MongoDB目前能够统一提供：</li></ul>
+<ol><li>Atlas Vector Search；</li><li>Voyage AI嵌入模型；</li><li>Voyage AI重排序能力；</li><li>操作型数据库；</li><li>流式数据处理能力。</li></ol>
+<ul><li>一体化产品组合可以减少客户的多厂商整合成本，并强化MongoDB在AI开发平台中的地位。</li></ul>
+<h3>d) MongoDB的消费增长拐点预计何时出现？</h3>
+<ul><li>专家预计MongoDB的消费增长拐点晚于Snowflake。</li><li>Snowflake预计在2027年第一季度末出现拐点，MongoDB则更可能在2027年上半年、约6月至7月出现。</li><li>MongoDB将受益于更广泛的AI生产部署，尤其是：</li></ul>
+<ol><li>智能体持久化记忆；</li><li>智能体之间的交互；</li><li>多智能体工作流；</li><li>AI应用计算；</li><li>快速检索与实时数据访问。</li></ol>
+<ul><li>MongoDB正从传统数据库进一步升级为AI开发和应用计算的核心组成部分。</li></ul>
+<h2>8. MongoDB管理层变化及CJ Desai离职影响</h2>
+<h3>a) CJ Desai离职是否会影响MongoDB客户签约？</h3>
+<ul><li>专家认为不会对MongoDB产生实质性长期影响。</li><li>CJ加入MongoDB后的主要任务，是推动公司从数据库供应商升级为企业应用和开发平台。</li><li>这一战略方向已经得到市场推广，并非完全依赖CJ个人。</li><li>MongoDB从数据库走向开发层和应用计算层的战略，在CJ加入前就已经由CEO Dev Ittycheria推动。</li></ul>
+<h3>b) CJ离职可能带来哪些短期影响？</h3>
+<ul><li>董事会引入CJ的重要原因之一，是看中其企业客户资源和行业人脉。</li><li>CJ已经在快速消费品和部分高科技客户中取得进展，管理层变动可能使相关企业客户拓展暂时放缓。</li><li>不过，Dev Ittycheria对MongoDB具体业务和技术潜力拥有更直接的理解。</li><li>如果管理层能够妥善承接CJ此前推进的企业客户战略，长期影响预计有限，甚至可能提升战略执行的一致性。</li></ul>
+<h2>9. Meta企业级AI业务规划</h2>
+<h3>a) Meta为什么招募CJ Desai？</h3>
+<ul><li>Meta希望将Muse在消费端的初步成功复制到企业市场。</li><li>CJ拥有ServiceNow时期的企业应用和客户拓展经验，这比其Cloudflare经历更符合Meta当前需求。</li><li>初期工作重点可能包括：</li></ul>
+<ol><li>Meta Business Agent；</li><li>Muse Code；</li><li>企业AI产品市场定位；</li><li>企业客户及合作生态拓展。</li></ol>
+<h3>b) Meta企业级AI业务的长期目标是什么？</h3>
+<ul><li>Meta最终希望构建工业化的企业智能体平台。</li><li>该平台可能直接与以下产品或公司竞争：</li></ul>
+<ol><li>Microsoft Copilot及Copilot Studio；</li><li>ServiceNow；</li><li>Google Vertex AI；</li><li>SAP企业应用生态。</li></ol>
+<ul><li>Meta希望从消费级AI能力延伸至企业智能体、开发工具和企业工作流执行。</li></ul>
+<h3>c) Meta进入企业市场面临哪些挑战？</h3>
+<ul><li>微软在企业IT和云计算领域覆盖广泛，拥有Azure、Microsoft 365及Copilot生态。</li><li>ServiceNow和SAP已经掌握大量企业工作流与核心业务数据。</li><li>企业客户是否愿意向Meta开放内部平台、数据和任务执行权限，仍存在较大不确定性。</li><li>Meta需要重点解决：</li></ul>
+<ol><li>企业级安全与治理；</li><li>数据访问权限；</li><li>与现有企业系统的集成；</li><li>客户信任；</li><li>智能体执行结果的可控性。</li></ol>
+<h2>结构化总结表格</h2>
+<div class="tbl"><table class="t wrap"><thead><tr><th>业务板块</th><th>核心指标/事项</th><th>当前状态</th><th>趋势判断</th><th>后续展望</th></tr></thead><tbody><tr><td><b>Snowflake GSI业务</b></td><td>Q1增速</td><td>26.8%</td><td>逐季度加速</td><td>Q4有望突破30%</td></tr><tr><td></td><td>Q2增速</td><td>28.2%</td><td>高于上半年计划中枢</td><td>—</td></tr><tr><td></td><td>Q3增速</td><td>29.6%-29.7%</td><td>超过下半年27%-29%的计划区间</td><td>Q4预计30.2%-31%</td></tr><tr><td><b>Snowflake客户消费</b></td><td>Q3消费增速</td><td>约35%-37%，可能更高</td><td>略高于RPO增速</td><td>AI与数据工程继续驱动</td></tr><tr><td><b>Snowflake RPO</b></td><td>Q3增速</td><td>预计36%以上</td><td>稳健加速</td><td>与产品收入保持相近增长</td></tr><tr><td><b>Snowflake增长结构</b></td><td>传统核心业务占比</td><td>约65%-68%</td><td>仍是收入基本盘</td><td>保持稳定增长</td></tr><tr><td></td><td>现有客户扩张贡献</td><td>约52%-56%，可能接近58%</td><td>最大增长来源</td><td>存量客户持续扩展工作负载</td></tr><tr><td></td><td>AI增长贡献</td><td>约14%-18%</td><td>快速提升</td><td>2027年Q1末预计超过20%</td></tr><tr><td></td><td>数据工程贡献</td><td>超过20%</td><td>短期潜力可能高于AI</td><td>Snowpark、Dynamic Tables受益</td></tr><tr><td></td><td>新客户贡献</td><td>约5%-7%</td><td>非主要驱动力</td><td>持续提供增量</td></tr><tr><td><b>Snowflake产品</b></td><td>Cortex Code</td><td>直接消费2.5%-3.5%</td><td>间接贡献约7%-12%</td><td>带动Snowpark及Cortex产品</td></tr><tr><td></td><td>Cortex AI Gateway</td><td>直接贡献预计不超过0.5%-0.7%</td><td>当前尚无实质影响</td><td>下季度潜力进一步显现</td></tr><tr><td></td><td>Snowpark</td><td>过去1.5-2个季度进入拐点</td><td>AI生产部署推动采用</td><td>成为重要计算增长引擎</td></tr><tr><td></td><td>可观测性</td><td>满足基础平台需求</td><td>以防御和产品完整性为主</td><td>不以直接竞争Datadog为目标</td></tr><tr><td><b>平台竞争</b></td><td>Snowflake vs. Databricks</td><td>当前以共存互补为主</td><td>业务边界持续重叠</td><td>2027年Q2竞争或明显加剧</td></tr><tr><td><b>MongoDB GSI业务</b></td><td>Q1增速</td><td>约21.5%</td><td>逐季度加速</td><td>—</td></tr><tr><td></td><td>Q2增速</td><td>约22.8%</td><td>符合计划</td><td>—</td></tr><tr><td></td><td>Q3增速</td><td>约24.2%-24.5%</td><td>处于23.5%-25%计划区间</td><td>Q4有望突破25%</td></tr><tr><td><b>MongoDB客户消费</b></td><td>Q1/Q2/Q3估算</td><td>26%-32% / 27.5%-33% / 29%-35%</td><td>持续加速</td><td>2027年上半年进一步提升</td></tr><tr><td><b>MongoDB RPO</b></td><td>Q2/Q3增速</td><td>29%-33% / 32%-36%</td><td>Q3进一步加速</td><td>签约需求保持强劲</td></tr><tr><td><b>MongoDB增长驱动</b></td><td>Atlas部署业务</td><td>Q3增速超过35%</td><td>最大增长来源</td><td>核心业务继续扩张</td></tr><tr><td></td><td>Voyage AI相关产品</td><td>过去两季度增长35%-40%以上</td><td>商业化整合效果明显</td><td>强化向量搜索和AI开发能力</td></tr><tr><td></td><td>AI消费拐点</td><td>尚未完全出现</td><td>晚于Snowflake</td><td>预计2027年6-7月前后出现</td></tr><tr><td><b>管理层变化</b></td><td>CJ Desai离职</td><td>企业客户拓展可能短期放缓</td><td>长期实质影响有限</td><td>Dev继续推动平台化战略</td></tr><tr><td><b>Meta企业AI</b></td><td>企业业务方向</td><td>推进MBA、Muse Code</td><td>目标是企业智能体平台</td><td>将与微软、ServiceNow等竞争</td></tr></tbody></table></div>
+<h2>新版prompt提炼之后的转译</h2>
+<p><b>提问者：在访谈开始前，请您确认已了解保密信息的定义，并同意不会在访谈中透露任何此类信息及其他保密信息。</b></p>
+<p>回　答　者：我确认已了解相关定义，并且不会披露此类信息，因为我不掌握任何此类重大非公开信息（MNPI）。</p>
+<p><b>提问者：今年Q1、Q2和Q3，您的客户在Snowflake上的消费同比增速分别是多少？</b></p>
+<p>回　答　者：您指的是客户在Snowflake上的消费增速，而不是我的全球系统集成商（GSI）业务增速，对吗？</p>
+<p><b>提问者：是的。两者之间有什么区别？请您解释一下。</b></p>
+<p>回　答　者：我的Snowflake业务收入主要来自实施、集成和定制，包括常规的数据仓库、数据转换项目，以及Snowpark和Snowpipe等新功能的实施。</p>
+<p><b>提问者：我想了解客户在Snowflake上的消费情况，具体是Q1、Q2和Q3的同比增速。</b></p>
+<p>回　答　者：我的GSI业务增速处于20%区间高位，其中GSI业务增速为29%。根据我的经验，客户消费增速通常是GSI业务增速的1.3倍至1.9倍。Q3，即第3个自然季度，我的业务增长约为29.6%至29.7%，相应的客户消费增速可以达到35%至37%，甚至更高。</p>
+<p>回　答　者：Q2，我负责的 Snowflake 业务实现了 28.2% 的同比增长，这是我的 GSI 业务。因此，按比例计算，这就是相应的差值。</p>
+<p><b>提问者：Q1 的增长率是多少？</b></p>
+<p>回　答　者：Q1，我负责的 Snowflake 业务实现了 26.8% 的同比增长。以上均为3个季度的同比增长率。</p>
+<p><b>提问者：您对 Q4 有什么预期？</b></p>
+<p>回　答　者：对于2026年日历年 Q4，鉴于目前已经非常接近30%，我们很有信心突破30%的门槛。事实上，从10月的数据来看，我认为我们已经非常接近30%。对于 Q4，我目前的初步判断是，增长率将达到30.2%至31%。</p>
+<p><b>提问者：Q3 的增长率高于还是低于您的预期？您此前对 Q3 的预期是多少？原因是什么？</b></p>
+<p>回　答　者：我们通常以6个月为周期制定计划和预期。2026年上半年的增长预期为25%至27%，2026年下半年的增长预期为27%至29%。可以看到，2026年 Q3，也就是2026年下半年的前半段，实际增长已经超过计划。</p>
+<p>推动 Snowflake 业务增长的主要因素，我认为也与整个行业的情况一致。持续进行的数据转型和迁移，以及传统核心数据仓库业务，仍在保持增长。传统核心数据仓库业务在我的业务中贡献了约65%的收入。</p>
+<p>具体来看，在 Snowflake 业务数据中，我们所称的 CDC，即 Core Data Cloud，与 Gen 2 Warehouse 合计，再加上 Data Sharing，这3项相对传统的业务合计贡献了约65%至68%的收入。</p>
+<p>其余30%的收入，简单来说约占总收入的1/3，主要由相对较新的产品贡献，包括 Snowpark、Unistore、Iceberg、SnowConvert，以及在一定程度上的 Snowpipe。Snowpipe 已开始展现出一定增长势头，我预计未来几个月这一趋势还会进一步增强，因为它对于流式数据处理非常重要。</p>
+<p>回　答　者：Cortex 产品家族或 Cortex 产品套件，包括 Coco、Analyst Search 等，是除核心数据仓库业务以外的主要驱动因素。</p>
+<p><b>提问者：Q3 客户在 Snowflake 上的 RPO 增速与 Q2 相比是否进一步加速？这里的 RPO 是指剩余履约义务。</b></p>
+<p>回　答　者：是的，RPO 整体增速正在提升，目前已有充分证据。从 Snowflake 的产品收入增速来看，据我了解，至少超过35%。RPO 与产品收入增速大致相关，其增速也处于相近区间，可能略高，达到36%以上。因此，RPO 增长表现稳健。</p>
+<p>不过，从我作为 GSI 所观察到的情况来看，目前消费增速略高于 RPO 增速。两者都在增长，但消费增长略微领先。</p>
+<p><b>提问者：消费增长的主要驱动因素是什么？是现有客户增加了 Snowflake 上的工作负载，开始使用 Snowflake 的新产品，还是有更多新客户开始使用 Snowflake 的产品？</b></p>
+<p>回　答　者：这些都是关键因素，但还需要进一步分析。虽然新客户及净新增客户数量确实在上升，但这并不是消费增长的主要贡献来源。Snowflake 是整个科技行业中少数主要由现有客户推动消费增长的公司之一。</p>
+<p>在我看来，目前略低于2/3的消费增长由现有客户扩张驱动。具体估算约为52%至56%，也可能达到58%左右，整体处于这一范围，即略低于2/3。</p>
+<p>更值得关注的是这种增长是否具有持续性。其增长具有持续性，因为除了常规的自然扩张之外，还有其他增长来源。</p>
+<p>回　答　者：目前，市场持续关注与AI相关的工作负载，包括Cortex、Co-work及Cortex的其他产品套件。从消耗贡献来看，我认为这部分带来的增长约为15%至18%；更保守地说，约为12%至18%，或14%至18%。因此，这部分合计贡献已非常接近并略高于整体增长的3/4。</p>
+<p>其次是数据工程。与AI相比，我认为数据工程在短期内具有更大潜力，相关工具和产品包括Snowpark以及DT，即Dynamic Tables。在我的业务中，这部分贡献明确超过20%，大致处于20%的区间。此外，新客户获取或新增客户贡献约为5%至7%。</p>
+<p><b>提问者：目前美国企业部署AI整体处于什么阶段？您认为AI消耗或Snowflake上的消耗何时会到达拐点，并进一步加速增长？</b></p>
+<p>回　答　者：目前，AI带来的增长约为12%至14%，乃至18%。从AI生产部署的基准来看，在我的客户群体中，目前主要是超大型企业、全球2000强企业，以及《财富》300强和《财富》400强企业处于领先位置。这些企业在AI应用和AI部署方面最为成熟。按客户数量计算，这类企业占比低于15%，更准确地说低于12%。</p>
+<p>另有约35%至40%的企业正在积极评估、扩展和部署AI。这些企业尚未达到成熟部署阶段。综合来看，这部分客户大约占整体客户群体的2/3。其余企业基本仍处于试点阶段，尚未有任何项目进入生产环境。</p>
+<p>回　答　者：他们仍在评估工具，VSGSI也是如此，我们正在协助他们进行评估。从Snowflake的角度看，我预计拐点将在27年日历年第1季度末前后出现。也就是说，从现在起约4.5个月后，到27年日历年第1季度末，AI驱动的消费占比将确定超过20%，此后不会回落。因此，可以将20%视为下限。这是我根据整体客户群中的AI部署情况作出的估计。</p>
+<p><b>提问者：您提到的20%具体代表什么？是同比增速、IT预算占比，还是其他指标？此外，为什么认为这一时间点大约会出现在27年，也就是2027年第1季度末？</b></p>
+<p>回　答　者：关于20%，需要回到上一个问题。上一个问题是哪些因素在驱动消费增长。我当时解释过，现有客户扩张贡献了约55%的增长，AI贡献了约14%至18%，数据工程业务，包括Snowpark和动态表，贡献略高。因此，目前AI驱动的消费占比处于14%至18%的区间，我预计到27年第1季度末将超过20%。</p>
+<p>至于为什么认为这一情况会在27年第1季度末出现，主要是基于我今年观察到的情况。从AI发展来看，今年大多数大型组织基本已经成功地从AI实验阶段转向AI生产部署阶段。这与我此前提到的12%相对应。在我的客户群中，约12%至15%的组织正在积极部署AI，暂且按12%计算；约35%至40%的组织处于AI部署与AI评估并行的阶段；其余40%至50%则处于AI试点和AI探索阶段。</p>
+<p>到27年第1季度，这一12%至15%的客户群体可能会增加至16%至19%。这意味着其成熟度和AI部署规模都将提升，并直接推动Snowflake中的AI消费占比超过20%。此外，还包括目前处于35%至40%区间的其他中型企业。</p>
+<p>回　答　者：同时处于部署和评估阶段的AI项目，也将进一步向部署倾斜。</p>
+<p><b>提问者：本季度Snowflake的整体消耗中，Cortex Code贡献的消耗占比是多少？此外，Cortex Code带动了多少Snowflake数据仓库的消耗？</b></p>
+<p>回　答　者：Cortex Code的应用已经相当广泛。需要理解的是，Cortex Code本质上是一款开发工具，同时也有助于向普通客户展示Snowflake产品组合中更广泛的能力，例如Snowpark、Cortex Search和Cortex Analyst。</p>
+<p>Cortex Code的直接消耗占比约为2.5%至3.5%，主要来自应用开发以及已部署应用产生的消耗。不过，在我看来，Cortex Code带来的影响性或间接增长贡献超过7%，目前约为7%至12%。</p>
+<p><b>提问者：本季度，Snowflake还发布了新产品Cortex AI Gateway。该产品可能会对客户在Snowflake上的消耗产生怎样的影响？</b></p>
+<p>回　答　者：Cortex AI Gateway是近期刚推出的产品。目前，在我的业务实践中，尚未看到Cortex AI Gateway带来任何实质性影响。不过，我认为该产品将在本季度逐步增长，并在下季度进一步显现潜力。</p>
+<p>回　答　者：Cortex AI Gateway 的优势在于，它填补了当前的市场空白。此前，这一需求主要由规模相对较小的专业 AI 可观测性厂商满足，例如现已成为 Dynatrace 一部分的 Arize、现已成为 Palo Alto 一部分的 Portkey，以及 LiteLLM 和 Langfuse。</p>
+<p>AI Gateway 将从可观测性、整体治理等方面满足相关需求，并可根据最终部署方式，帮助企业进行 Token 监控和 Token 优化。</p>
+<p>关于使用量，与 Coco 类似，该产品本身对使用量的直接贡献较小。Gateway 服务或能力本质上已经商品化，因此预计产品本身的贡献不会超过 0.5%至0.7%。不过，其周边或关联工作负载会推动使用量增长，具体表现为更多 AI 工作负载得到部署，因为企业将拥有更强的可见性、更广泛的访问能力和更有效的控制能力。</p>
+<p><b>提问者：目前，Snowflake、Databricks、云服务提供商和 SaaS 公司等众多企业都在开发 AI Gateway 产品。为什么这么多公司都希望布局这类产品？</b></p>
+<p>回　答　者：还有一家名为 TrueFoundry 的公司也在满足这一需求。AI Gateway 之所以具有吸引力，是因为从其定义来看，它能够提供企业当前缺少的核心能力。当然，这一产品和平台类别仍在发展，因此目前并没有严格、固定的定义。</p>
+<p>如果一家大型企业已经部署了各种 AI 应用和工具，采用多云部署方式与多家超大规模云服务商合作，同时还使用数据管理产品和前沿模型，那么它所缺少的就是一个中央治理层，也可以称为中央控制层。</p>
+<p>这是因为，一般企业在使用前沿模型、超大规模云服务商以及专业第三方 AI 产品时，越来越需要根据查询类型和具体需求，决定应当访问哪种模型，是闭源模型还是开源模型；同时还需要决定分配多少 Token。这基本上也可以称为 AI FinOps，类似于 FinOps。</p>
+<p>回　答　者：面向云的相关能力可以称为AI FinOps。第3，公司数据需要开放到什么程度，才能实现所需结果？这正是AI网关所要解决的广泛需求。AI网关处于所有交易的中心，可以看到全部API，以及身份层和数据层的所有交互，因此能够持续观察和学习。FinOps是其中一个驱动因素，第2个驱动因素是治理。</p>
+<p><b>提问者：本季度Snowpark是否取得了新的进展，并加速了客户在Snowflake上的消耗？</b></p>
+<p>回　答　者：Snowpark是一个被严重低估的产品类别。作为Snowflake的顶级合作伙伴，我们认为，与整套AI产品相比，Snowpark，或者说动态表，尤其是Snowpark，在近期具有更大的潜力。这并不是说AI产品在能力或质量方面有所欠缺，而是因为Snowpark从根本上开放了Snowflake的计算能力。</p>
+<p>客户使用Snowflake，最终是为了通过易于操作的界面和后端能力获取其计算能力。Snowpark将这种能力扩展至Java、Python和Scala等非SQL领域。需要注意的是，Snowflake诞生于SQL体系，而从Snowpark的角度来看，过去1个半至2个季度已经到达一个拐点，因为AI工作负载正在逐步从实验阶段转向生产阶段。</p>
+<p>随着工作流、推理、检索管道以及RAG用例得到更广泛部署，这些工作负载通常运行在Python上，因此需要使用Snowpark。此类工作负载并不运行在传统SQL上，而是运行在Python上，有时也会运行在Scala上，但总体以Python为主。</p>
+<p>当客户部署AI，并希望利用Snowflake的计算能力进行管理和进一步扩展时，就会提高对Snowpark的消耗、部署和采用。Cortex与Snowpark之间也存在紧密关系。</p>
+<p><b>提问者：1季度，您是否观察到 Databricks 和 Snowflake 之间的竞争变得更加激烈？您如何看待 Databricks 长期对 Snowflake 产生的竞争影响？</b></p>
+<p>回　答　者：从整体来看，Databricks 和 Snowflake 与其说是在竞争，不如说更多是在相互补充。</p>
+<p>Snowflake 最初是一个数据仓库平台，Databricks 则起步于 MLOps 工程和数据工程平台，之后双方都拓展了业务边界。如今，当客户需要治理、可管理性、分析和 BI 能力时，Snowflake 更具优势。Snowflake 的目标是让普通用户无需技术介入即可访问底层数据。另一方面，Databricks 在机器学习工程、MLOps 和数据科学方面仍然占据优势，这些领域也是其核心受众所在。</p>
+<p>Snowflake 大约在 2 年前采用了 Iceberg，这意味着 Snowflake 不再局限于闭源系统。但 Databricks 略微领先于 Snowflake，因为 Databricks 从 Apache Spark 起步，随后扩展到 Delta Lake。</p>
+<p>目前，Snowflake 与 Databricks 之间的竞争格局仍在形成，现阶段主要是共存，因为客户希望兼得两者的优势：使用 Snowflake 进行治理，使用 Databricks 开展数据科学实验等工作。</p>
+<p>我预计，到 27 年年中，双方的竞争将更加激烈。到 27 年第 2 季度，客户企业将开始思考，是否真的需要同时拥有 2 个平台。虽然他们对 Snowflake 的治理能力以及 Databricks 在机器学习工程和 MLOps 方面的能力都感到满意，但未来如何选择仍有待观察，因为 Databricks 也在积极拓展 SQL 和更广泛的数据仓库业务。截至目前，双方更多仍是共存关系。</p>
+<p>短期来看，目前大多数企业的 AI 部署主要集中在智能体层面的应用。包括我们公司在内，企业内部正在部署大量智能体，例如支持智能体、财务智能体和采购智能体。Snowflake 在设计和工程架构上天然适合承载此类工作负载。另一方面，Databricks 更关注整体层面的应用。例如，他们在今年早些时候推出了 Meta Harness。如果企业使用某个特定的前沿模型对自身数据进行训练，就可以将其迁移到另一个模型。</p>
+<p>回　答　者：该模型使用Meta Harness。与此同时，Genie AI等领域也在发生很多变化，但目前大多数情况下仍以共存和互补为主。到27年年中，竞争态势将更加明朗，届时可以进一步观察其演变。</p>
+<p><b>提问者：您如何看待Snowflake进入可观测性领域？此前已有许多安全公司以及Datadog等厂商涉足该领域。Snowflake进入这一领域后，可能会对其消费量带来多大程度的实质性贡献？</b></p>
+<p>回　答　者：这是一个非常重要的后续问题。根据我的判断，Snowflake并不想成为可观测性业务领域的重要参与者。可观测性是一个完全不同的领域，目前由Datadog领先；Dynatrace在收购Rookout后，也在逐步完善相关能力。</p>
+<p>Snowflake进入可观测性领域，是为了确保客户不会因为基本的可观测性需求而被迫寻求外部解决方案。如今，普通客户越来越多地使用Cortex Analyst、Document AI，以及我们讨论过的Snowpark；在某些场景下，客户甚至会使用Snowflake Intelligence或Co-work。因此，作为平台方，Snowflake有义务让客户了解调用了哪些模型、消耗了多少Token。这些都是相对基础的需求。</p>
+<p>与此同时，传统可观测性厂商并未真正解决这类问题。Datadog可以提供相关能力，但这意味着另一笔规模较大的投入。根据我的判断，Snowflake布局可观测性领域，主要是为了保护自身业务。只有当客户存在超出Snowflake现有能力范围的特定可观测性需求时，才会考虑Datadog、Arize或Fiddler.ai等平台。Snowflake希望保持产品组合的完整性，但我认为其并不一定想与Datadog或Dynatrace竞争。</p>
+<p><b>提问者：接下来想了解MongoDB的情况。您的客户在MongoDB上的消费量，从Q1、Q2到Q3的同比增速分别是多少？</b></p>
+<p>回　答　者：如果关注客户消费量的百分比增长，我负责的MongoDB业务在Q3增长超过24%，约为24.2%至24.5%。</p>
+<p>回　答　者：相应的消费增速遵循类似逻辑。正如我们讨论 Snowflake 时提到的，我负责实施、集成等工作，因此需要在业务增长与消费增长之间建立联系。考虑到我在Q3的GSI增速为24.2%、24.3%，客户群体相应的消费增速应在29%至34%、35%之间。我会采用这样的倍数关系。您是否也想了解26年Q2和Q1的情况？</p>
+<p><b>提问者：是的。</b></p>
+<p>回　答　者：根据我的MongoDB数据，Q2的增速非常接近23%，约为22.8%。相应的客户消费增速应在27.5%至32.5%、33%之间。Q1从GSI增速来看约为21.5%，可能略高一些，因此相应的消费增速应在26%至31%、32%之间。</p>
+<p><b>提问者：Q3的MongoDB消费增速高于还是低于您此前的预期？背后的原因是什么？</b></p>
+<p>回　答　者：对于MongoDB，我在26年下半年的计划增速为23.5%至25%，因此Q3增速处于计划范围内。26年上半年的计划增速为21%至23%。鉴于我们在MongoDB生态系统内观察到的各项活动，我们决定上调增速区间。因此，虽然目前仍处于计划范围内，但如果将1H的增速区间延续至2H，实际增速将大幅超出计划。</p>
+<p>MongoDB业务的主要增长贡献因素与Snowflake类似。Atlas核心业务的消费和部署增长是重要贡献来源。Q3，我的Atlas部署子业务增速超过35%；Q2的增速也仅低几个百分点，因此这是最大的增长贡献因素。</p>
+<p>其次是MongoDB收购Voyage AI后的进展。在整个科技行业中，我认为MongoDB在将收购产品的能力成功融入现有产品方面表现最为敏捷。MongoDB对Voyage AI的整合正是如此，因为我们看到向量搜索部署量显著增长。同时，MongoDB在这方面也取得了成功。</p>
+<p>回　答　者：第3，MongoDB将进一步巩固其作为开发者平台的地位。过去，它主要面向传统数据库领域，即横向数据库领域；如今，它正日益成为AI开发平台。第4，针对AI部署和AI开发，MongoDB的架构提供了一些独特能力，例如持久化内存以及快速检索。这些是推动MongoDB业务增长的3至4个主要因素。</p>
+<p><b>提问者：您对今年Q4以及明年MongoDB的使用量增速有何预期？</b></p>
+<p>回　答　者：对于今年Q4，我预计全年增速将非常接近25%，甚至可能超过25%。目前增速已经处于24.2%至24.4%的区间，因此我认为会突破25%。如果超过25.5%，从技术上讲，我们就超额完成了计划。我认为不太可能达到这一水平，但会非常接近计划区间的上限。对于1H27，虽然我们尚未正式确定目标，但增长目标最有可能落在26%至28%的区间。</p>
+<p><b>提问者：MongoDB本季度的RPO增速与上季度相比是否明显加速？您认为这一结果好于还是差于此前预期？</b></p>
+<p>回　答　者：我们之前讨论过这一点。第3季度的使用量增速为24.2，第2季度为22.8。您问的是这个问题吗，还是我理解有误？</p>
+<p><b>提问者：我想了解的不是使用量增速，而是RPO增速。</b></p>
+<p>回　答　者：抱歉，您指的是什么增速？请再说明一下。</p>
+<p><b>提问者：我想了解RPO增速，而不是使用量增速。</b></p>
+<p>回　答　者：您的意思是我的业务增速吗？</p>
+<p><b>提问者：不是，我想了解RPO增速。您是否了解MongoDB在Q3的RPO增速？</b></p>
+<p>回　答　者：抱歉，您所说的实际增速，是指MongoDB公司的增速，还是我的GSI业务增速？</p>
+<p><b>提问者：我想了解的是剩余履约义务增速。</b></p>
+<p>回　答　者：明白，您想了解MongoDB在Q3 26的客户RPO增速，并结合我的GSI业务增速进行判断。</p>
+<p><b>提问者：您预计Q3客户剩余履约义务（RPO）的增长率是多少？</b></p>
+<p>回　答　者：我预计Q3客户剩余履约义务（RPO）的增长率约为32%至36%。</p>
+<p><b>提问者：您对Q2客户剩余履约义务（RPO）增长率的估计是多少？</b></p>
+<p>回　答　者：我预计Q2客户剩余履约义务（RPO）的增长率约为29%至33%。</p>
+<p><b>提问者：MongoDB的CEO CJ Desai离职后，可能会对MongoDB产生什么影响？尤其是在客户签约方面，短期或长期是否会产生负面影响？</b></p>
+<p>回　答　者：我认为不会产生实质性影响。据我了解，CJ加入MongoDB后，重点是推动公司成为企业应用层，而不再仅仅被定位为数据库。我认为这一理念已经得到成功推广。如今，我越来越倾向于将MongoDB视为开发层和应用计算层，而不只是数据库。当然，它仍然是数据库，但这一发展方向已经确立。</p>
+<p>事实上，这一方向在CJ加入之前就已经基本形成，是由前任CEO、现任CEO Dev Ittycheria推动的。不过，CJ离职带来的影响在于，董事会当初招募他，主要是看中他在企业客户领域的人脉，希望借此推动MongoDB突破数据库的定位，而他也在积极推进这项工作。据我了解，他已经在快速消费品行业和部分高科技客户中取得了重要进展。由于此次管理层变动，这项工作显然有所暂停。</p>
+<p>目前，我认为Dev Ittycheria希望继续沿着这一路径发展，也已经展现出明确意愿。另一方面，CJ虽然对市场、生态系统以及MongoDB的定位有广泛理解，但据我了解，他对MongoDB具体业务及其潜力的理解并不是特别深入。相比之下，Dev对此拥有更直接的洞察。因此，如果能够妥善处理，这可能反而更具优势。</p>
+<p><b>提问者：CJ后来加入Meta，可能会负责Meta面向企业客户的业务。您认为Meta未来在B端业务方面的发展规划和路线可能是什么？CJ可能会在其中扮演什么角色？</b></p>
+<p><b>提问者：CJ加入Meta后还负责企业客户。您如何看待Meta的B2B业务发展、规划和路线图？Meta希望在市场中扮演怎样的角色？</b></p>
+<p>回　答　者：Meta可能是目前AI领域唯一一家成功推出Muse这类产品的公司。Muse在消费端取得了较大成功，Meta也迅速完成了相关集成和基础设施建设。这一点非常重要，因为产品不能孤立推出后就期待其自然取得成功，还需要梳理、验证并完善具体用例，而Meta正是这样做的。</p>
+<p>据我了解，Meta招募CJ，是希望将Muse在消费端取得的初步成功拓展或复制到企业端。Meta已经推出了Meta Business Agent，即MBA，以及Muse Code。Meta希望CJ在初期重点推动这些产品的市场定位。</p>
+<p>但这并非最终目标。Meta最终希望构建一个工业化的企业智能体平台，直接与Copilot等产品以及ServiceNow竞争。Copilot虽然已经推出，但并未成为微软取得成功的主要驱动力，微软的成功更多来自其他业务。Meta希望借鉴CJ在ServiceNow的经验，重点是其企业应用方面的经验，而非其在Cloudflare的经历。</p>
+<p>Meta在企业市场也会面临阻力。微软在企业端无处不在，ServiceNow和SAP也都拥有各自的生态系统。客户是否愿意向Meta这样的第3方智能体开放其企业平台，并允许其执行相关任务，仍然存在疑问，因为这正是微软Azure AI Foundry中的Copilot Studio以及谷歌Vertex AI所要实现的功能。这是CJ在Meta企业业务框架下的整体路线图。</p>
+<p><b>提问者：8月份，Voyage AI的产品整合已经进入全面商用阶段。此后，客户在Voyage AI上的使用量是否出现了显著增长？</b></p>
+<p>回　答　者：是的，确实出现了显著增长。具体情况需要结合MongoDB的数据表进一步查看。</p>
+<p>回　答　者：Voyage AI的产品已被整合到Atlas Vector Search和流处理产品中，并在一定程度上被整合到Atlas Data API中。过去2个季度，这3款产品的同比增长率均达到35%、40%以上。这是Voyage AI产品和能力实现商业化最直接的证据。</p>
+<p>从客户实际决策的角度看，Voyage AI的价值尤为突出。此前，也就是去年同期，客户通常会选择Pinecone或Weaviate等专业厂商的向量数据库，再选择另一家厂商的重排序器，以及其他厂商的ODB，即操作型数据库。这些正是MongoDB目前覆盖的细分市场。MongoDB现已拥有Atlas Vector Search、同样来自Voyage AI的嵌入模型，以及Voyage AI的重排序能力。因此，MongoDB能够覆盖这些细分市场，形成极具吸引力的产品方案。</p>
+<p><b>提问者：您认为企业客户在MongoDB这类数据库上的消费增长拐点可能出现在什么时候？是否会像Snowflake一样，出现在明年第1季度末？</b></p>
+<p>回　答　者：对于Snowflake，我认为拐点更可能出现在2027年第1季度末。对于MongoDB，我认为拐点更可能出现在27年上半年，也就是27年6月、7月左右。最终，更广泛的生产环境部署浪潮将使Snowflake、MongoDB及其他众多公司受益。</p>
+<p>回　答　者：在持久化智能体记忆、智能体之间的交互、多智能体及智能体间工作流方面，MongoDB正在应用计算中发挥越来越重要的作用，并成为AI开发的核心组成部分。MongoDB能够为持久化记忆用例及多智能体工作流提供支持。</p>
+<p><b>提问者：目前，Databricks和Snowflake正在进一步与PostgreSQL等开源数据库融合。您如何看待MongoDB与它们之间的竞争？MongoDB是否会面临来自这些数据库的更大竞争压力？</b></p>
+<p>回　答　者：抱歉打断一下，访谈时间已经超出1分钟，我还需要参加另一个会议。我们可以另约时间，或者您也可以发送问题，后续再沟通。</p>
+<h2>原文转译</h2>
+<p>本电话会议仅服务于久期咨询客户及受邀客户，仅供研究交流，不构成投资建议。相关人员应自主做出投资决策并自行承担投资风险。久期咨询不因使用本次内容所导致的任何损失承担任何责任。专家发言内容仅代表专家个人观点，不代表本公司观点。本次会议内容不得涉及国家保密信息、内幕信息、未公开重大信息、商业秘密、个人隐私，不得涉及可能引发不当炒作或股价异常波动的敏感信息，不得涉及有损社会或资本市场稳定的言论。未经久期咨询事前书面许可，任何机构或个人不得以任何形式复制、录音、刊载、转载、转发、引用本次会议内容。否则由此造成的一切后果及法律责任由该机构或个人承担。本公司保留追究其法律责任的权利。感谢您的理解和支持。</p>
+<p>好的专家，在咱们开始今天的访谈前，请您下陈述表明您同意或不同意，您清楚保密信息的定义，并同意您不会在访谈中透露任何此类信息及其他的保密信息。</p>
+<p>Hi expert, before our interview, please confirm that you are aware of the definition of confidential information and will not disclose such information in the interview.</p>
+<p>I am confirming the same and I will not disclose it as I do not have any such MNPI information.</p>
+<p>Okay, 好的，然后专家我们想首先问您一下，就是今年从Q1到Q2到Q3的话，就是我们这边的客户在Snowflake上面的一个consumption，它的一个同比增速的话，它大概分别多少呢？对，大概是这三个季度。</p>
+<p>Uh, the first question is for your customers, uh, their consumption on Snowflake, what is their year-on-year growth in this year Q1, Q2, and Q3?</p>
+<p>Uh, you mean the consumption, not my GSI, uh, practice growth?</p>
+<p>Mhm. Uh, and what's, and what's the difference? And could you explain it?</p>
+<p>Well, so from a GSI, so since I, I mean most of my revenue for the Snowflake practice comes from implementation, integration, customization of, as in, you know, the, the regular data warehousing, uh, data transformation projects or implementation of new features like Snowpark and Snowpipe, yeah.</p>
+<p>Yeah, I understand. And, and, and I just want to know the, the customer's consumption on Snowflake. Yeah.</p>
+<p>Uh, for, and you would like to know this for, uh, the, the last calendar, uh, quarter?</p>
+<p>Mhm. Yeah, yeah, yes. Yeah, in Q1, Q2, and, and, and Q3.</p>
+<p>Okay, sure. So, uh, considering my, uh, GSI growth, which has been in the, you know, uh, high, uh, uh, 20s. So I would say that the, the, the consumption, uh, uh, percentage, uh, well, considering that 29% has been my, uh, my, my GSI, uh, growth, the, uh, the, the consumption is usually 1.3x to 1.9x of the GSI practice growth in my, uh, experience.</p>
+<p>Okay.</p>
+<p>So, so considering that, uh, my practice has grown, I mean in Q3, that is the third calendar quarter, has grown at about 29.6, 29.7%, so the corresponding consumption growth would easily be upwards of 35, 37%.</p>
+<p>Mhm. Yeah. Okay. And what's the number in Q1 and, and, and Q2?</p>
+<p>Uh, right. Right, uh, the number in Q2, so in Q2 my practice, my Snowflake practice registered a growth of, uh, 28.2%. That's my GSI practice. So proportionally, yeah, that would be the, the delta.</p>
+<p>Mm-hmm. Okay. Yeah, and what's the number in Q1?</p>
+<p>Uh, for Q1, uh, my, uh, Snowflake practice registered a growth of, uh, 26.8%.</p>
+<p>Mm-hmm.</p>
+<p>This is YoY growth for all the three quarters.</p>
+<p>Yeah. Okay. And what's your expectation for Q4?</p>
+<p>Right. Uh, for calendar Q4, uh, uh, 2026, we, excuse me, uh, uh, we are very confident of breaching the 30% threshold now that we are very close to it. In fact, if I look at the October numbers, I believe that we are very close to 30%. But yeah, to your question about Q4, my expectation is that we will land somewhere in the, in the 30.2% to 31% range. That is the tentative, uh, assessment I have right now.</p>
+<p>Okay. Okay, I, I want to know if the, uh, if the number in Q3, in Q3 is higher than your expectation or lower than your expectation, and what's your expectation for, for, for, for Q3? Yeah, and I want to know the, the reason, yeah.</p>
+<p>Uh, sure. So, I mean, we typically establish the plan, the expectation by a six-month, over a six-monthly period. So, for the first half of '26, the growth expectation was 25% to 27%. For the second half of '26, the growth expectation, the plan is 27 to 29%. And as you can see that we have basically exceeded, uh, the plan for, uh, the third quarter of 2026, which is the first half of the second, uh, half of 2026. Um, and, and I'm sorry, your second part of the question was, what are the main drivers behind this?</p>
+<p>Yeah, yeah, yeah, yes.</p>
+<p>Of course. So the main drivers behind, uh, I mean, my Snowflake practice growth, uh, which I'm pretty certain is, is also consistent with the broader industry, is that there is, um, there is, while there is ongoing data transformation, migration, as in the traditional core data warehousing business continues to grow, because that within my practice generates about 65% of the revenue. I'm talking about sub-practice, as in, I mean, if I look at my Snowflake, uh, data sheet, then, um, the, what we call as the CDC or the Core Data Cloud, along with Gen 2 warehouse. So that together, and then if you add maybe data sharing on top of that, so these three items together, uh, more on the traditional side, are generating or contributing about 65 to 68% of the revenue. The remainder, 30%, or just for simplicity, a third of the revenue, is where it gets interesting, because this is contributed by newer products, well, relatively newer products. So starting with Snowpark, then you have Unistore. Iceberg is also coming into its own. Uh, then you have, uh, Snowconvert. Uh, to some extent, Snowpipe. Snowpipe is, is increasing, has started to show some traction. I expect this to pick up in the coming, uh, months as well, because from the streaming perspective, it's very important. And then, of course, you have the Cortex family or the Cortex suite of products including Coco, including analyst search, so forth and so on. So these are the main, you know, drivers other than the core data warehousing practice. I'll just take a pause.</p>
+<p>Okay, 好的，然后我想问一下就是，那么，那么想问一下就是Q3的话，客户在Snowflake上面的一个RPO的一个增速的话，它相较于二季度的话是加速了，是有进一步的加加速增长吗？对。</p>
+<p>And my next question is that in Q3, the customers' RPO growth on Snowflake, is it accelerating compared with the Q2 growth?</p>
+<p>And just to be clear by RPO you mean the remaining performance obligation, right?</p>
+<p>Yeah, yeah, yes.</p>
+<p>Yeah, yeah, of course. So your question is whether it is increasing compared to the previous quarters. Yes, the RPO growth on the whole, it is increasing. There is, you know, enough evidence. I mean, look, today if you look at the RPO growth, it is, or if you look at the product revenue growth for Snowflake, right, that is in my understanding that's upwards of 35% at a minimum. The proportionate, you know, the correlation with RPO is that RPO is also growing broadly in the same ballpark, maybe slightly higher. So maybe it's 36% plus. So RPO growth is, is, is, is certainly healthy. But at this point, the consumption growth, in my understanding, from my GSI perspective, whatever I can see, consumption growth is slightly ahead of the RPO growth. So both are growing, but consumption growth is slightly ahead of RPO growth. If that makes sense.</p>
+<p>Okay. 明白，OK，然后我想问一下就是，那么整个的一个consumption的增长，它更多的是来源于老用户，他们的话在Snowflake上面的工作负载增加了，还是说有更多的那种新的产品的话进入使用了，还是说有更多的新用户他们进入了Snowflake，然后的话开始使用Snowflake的产品了。主要的驱动因素可能是哪一方面呢？对。</p>
+<p>And for this consumption growth, what are the drivers or the reasons behind it? Is it the existing customers having more workload on Snowflake or they start to use some new Snowflake products or is it because more new customers begin to use Snowflake products?</p>
+<p>I think that's a very relevant question and you have effectively articulated, excuse me, most of the key points, but let me add some more nuance to what you just said. Look, while new logos, net new customer additions are certainly on the rise, but that is not the key contributor to the consumption growth. Because, so see, Snowflake is one of those few companies in the broader technology spectrum where consumption growth fortunately is being driven mainly by the existing customer span. So in my view, in my view, I would think that just a shade under two-thirds of the growth of the consumption growth today is being driven by existing customer expansions. So let's, let's peg the number at something like, you know, 52 to 56, 58%, something like that in that range, just a shade under two-thirds. Now, where it gets more interesting or well, interesting from the perspective that how is this growth durable? So it is durable because outside of this regular organic expansion if Well, there is sustained focus on workloads pertaining to AI, which is, you're talking about Cortex, Co-work, the other Cortex suite of products. So that, in my view, from a consumption perspective, is driving about anywhere from 15 to 18% or just to be a little bit conservative there, let's say 12 to 18% or 14 to 18%, something like that. So that takes us to, you know, very close to something like, I mean, just over three quarters of the growth. Then you come to the data engineering aspect. This is where I think there is more potential imminently than the AI side of the house. I'm talking about tools and products like Snowpark, DT, that's Dynamic Tables. This, for my practice, is definitely upwards of, as in, in the region of 20%. So, so that's how you get there. And new customer acquisition or new logos are contributing about maybe something like 5 to 7%, give or take.</p>
+<p>明白，明白。然后想问一下，就是目前的话，就是专家认为，就是在美国的企业的话，他们的话部署AI的话，现在的话可能到了哪一个阶段？就是然后专家认为的话，什么时候的话可能他们在AI，整个AI上的consumption也好，在Snowflake上面的一个consumption也好，他们可能会到了一个拐点，然后会进一步加速增长。我想问一下专家认为这个拐点可能在什么时候？对。</p>
+<p>And currently, do you think for the US companies' AI deployment, what stage are they in? And in your opinion, at what time point, like when do you think there will be a turning point that is their AI consumption or their consumption on Snowflake will accelerate much more? Like this time point, when will that happen?</p>
+<p>Just to understand your question, so is your question that when will consumption driven by AI reach an inflection point? Is that the main question?</p>
+<p>Yeah, yeah. Yes.</p>
+<p>Okay. Okay. So at what point will AI-driven consumption reach an inflection point? Well, so I mean, look, today, like we discussed in the previous question, about 12 to 14 to 18% growth is coming from, you know, AI. Look, today, from an AI production benchmarking standpoint, across my client base, it's mostly the very large enterprises or global, the global 2000s or Fortune 300s, Fortune 400s. So these are obviously ahead of the curve, or they have, they are the most mature in terms of AI adoption, AI deployment. So that's about, in terms of the quantity, the quantum of customers, that's about less than, you know, 15%, less than 12%. Then you look at the organizations that are actively evaluating, scaling, deploying, meaning that they have not, they have not yet reached a point of mature deployments, but so that's the balance, like 35 to 40%. So that takes us to something like, let's just say, you know, two-thirds of the overall customer landscape. And the remainder of the customer enterprises, they are basically in the pilot phase, meaning that nothing is in production. they are still evaluating tools, VSGSI is, we are helping them, you know, uh, do that. So when does this, you know, uh, inflect? Well, I would say that from a Snowflake uh uh perspective, the inflection I would expect to occur somewhere to sometime towards the end of calendar Q1 27. Meaning that by the end of calendar Q1 27, roughly in about like four and a half months from today, something like that, is when the consumption from AI would have crossed uh 20% as as a as a as a certainty. Meaning that there will be no looking back. So 20% would be, you can consider that to be the floor. Uh, so that would be my estimate considering the uh the state of AI deployments across the the broader customer base if that if that makes sense.</p>
+<p>嗯，然后想问一下就是这个20%它，它，它这个，它这个代表的是什么呢？是同比增速还是说它是，它是IT预算的比例，还是说一个什么样的一个数字是20%呢？然后专家为什么认为时间点大概是在27年一季度末呢？对。</p>
+<p>Um, the 20% you mentioned, uh, what does that mean? Is is that the year-on-year growth or the percentage of IT budget? And also why do you think it will happen at the end of 2027 Q1?</p>
+<p>Well, no, the 20%, so, excuse me. Going back to the previous question, my response to the previous question where I explained that, as in the question was that what are the key consumption drivers, right? I explained that from the existing customer expansions, we are, you know, deriving some 55% of growth. Then about 14 to 18% is coming from AI. Then the data engineering side of the house, the Snowpark and dynamic tables, that's generating slightly higher. So it is that 14 to 18% range which is today the consumption driven by AI is what I expect to cross 20% by the end of quarter 1 27. I'll just take a pause if there are any more questions before I answer your second question.</p>
+<p>Okay. Yeah.</p>
+<p>Okay, good. So to answer your second question, why do I believe that uh we will uh see this by the end of 27? Well, that is based upon what we have seen, I mean based upon what I have seen in the course of this year. So in the course of this year, from the AI perspective, most large organizations have more or less successfully graduated from AI experimentation to AI production deployment. And that ties to that that 12% number of the overall, you know, when I was explaining that across my client base, how many organizations are into active AI deployments, that's about 12 to 15%, let's just say 12%. About 35 to 40% are in the uh stage of, you know, active as in a mix of AI deployment and AI evaluation. And then you have the AI pilots and AI exploratory uh, you know, category, which is which is basically the balance 40 to 50%. So by Q1 27, this this 12 to 15% number or that particular um uh uh swath of of customers will will likely increase to 16 to 19%. Meaning that their maturity will scale up, their deployment um their deployments will will scale up, AI deployments, and that will directly lead to AI consumption in Snowflake exceeding 20% along with the other mid-sized enterprises who are today in the 35 to 40% bracket who are AI who are in the mix of deployment plus evaluation, they will also uh move into the as in tilt more towards deployment if if that if that makes sense.</p>
+<p>Mhm. Okay.</p>
+<p>好的，OK，然后想问一下就是，那么在，那么在本季度的整个的一个Snowflake的一个consumption当中的话，像那个，像那个，像那个Cortex Code的话，它的consumption的话可能会占到百分之多少呢？然后Cortex Code可能拉动了多少Snowflake上面它自己的数据仓库的一个consumption呢？对。</p>
+<p>Um in this quarter among the Snowflake total consumption, how much proportion is contributed by Cortex Code consumption? And also I want to ask that Cortex Code has contributed to how much uh percentage of Snowflake's data uh warehouse consumption?</p>
+<p>Okay, yeah, first question is that within within the Snowflake, the broader Snowflake consumption, what is the excuse me, the percentage contribution from Cortex Code, right? That's your first question?</p>
+<p>Yeah, yeah.</p>
+<p>Yep, okay. Uh look, Cortex Code is being adopted pretty, I would say, um widely. In terms of direct, I mean look, with Cortex Code what you need to understand is that what it does. So Cortex Code enables a lot of these these these, you know, uh it's it's basically a dev tool end of the day. And in doing so, it is also playing a role in introducing uh to the average customer the the wider capabilities that Snowflake uh has within its product portfolio. Like for example, Snowpark, like for example, uh Cortex Search, Cortex Analyst. So with that established, direct consumption from CoCo or or um Cortex uh Code is in the range of like I would say two and a half to three and a half percent. This is the direct consumption from CoCo, meaning based upon based upon your uh your your development of the applications and the the the ones that are deployed. But however, the the the the influential or the indirect growth contribution from CoCo in my view is upwards of 7%. So 7 to I would put it at something like 7 to 12% right now.</p>
+<p>Mhm.</p>
+<p>明白。OK。了解。OK，然后的话想问一下就是说，本季度的话那个Snowflake的话也发布了一个新的产品叫Cortex AI Gateway，然后想问，想问一下就是说，呃，想问一下这这个产品的话对于客户的话可能在Snowflake上面的消耗可能会产生一个什么样的一个影响？对。</p>
+<p>In this quarter, Snowflake also released a new product called Cortex AI Gateway. So for this product, it uh what is the impact on customers' consumption on Snowflake?</p>
+<p>Uh well, excuse me. Well, uh AI Gateway um you know, I mean as you said, it's it's a very uh recently introduced uh uh product. Uh at this point, uh frankly within my practice, I have not seen any uh uh tangible uh impact or or influence from Cortex uh AI uh Gateway. But I I do believe, I do believe that it will pick up um gradually within this quarter, more so in the next quarter uh the the potential shield that Cortex AI gateway uh has is that it basically addresses the current vacuum which is currently being fulfilled by relatively smaller players like those you know special uh specialized AI observability players like for example Arize which is now a part of Dynatrace by the way or Portkey which is now a part of Palo Alto or uh LiteLLM or or I think there's another company called uh Langfuse. So AI gateway will address you know those aspects from the perspective of observability, the broader governance aspect and I think it will also help in token monitoring, token um optimization depending on how you ultimately uh deploy it. To your question about the the the consumption, again uh just like Coco, its direct contribution to consumption would be fairly minimal. Because gateway service or a gateway capability is basically a commodity. I mean that that is a commoditized uh you know category. So you wouldn't expect more than 0.5 to 0.7% of contribution from the product itself. However uh the the the peripheral or the attached you know sort of you know workloads which is in the form of AI as in more AI workloads being deployed, why because now you have greater visibility, greater access, greater control. So that will drive up consumption.</p>
+<p>Mhm, mhm. 明白，明白。然后的话想问一下就是，因为现在的话其实很多公司都在做AI gateway这个产品，包括像Snow，包括像那个Databricks，对，然后还有很多的hyper，还有一些云服务厂，还有一些云服务厂商，当然还有一些其他的一些软件公司，对，然后想问一下为什么其实大家都其实都想做这个AI gateway这个产品呢，对。</p>
+<p>And now actually many companies are uh working on some AI gateway products including Snowflake, Databricks and some cloud service providers and SaaS companies. So I want to ask why so many companies want to uh have this kind of AI gateway products.</p>
+<p>Uh absolutely in fact there's another company called TrueFoundry which also sort of you know you know is is addressing that need. Uh well so your question is that why is AI gateway uh so lucrative? Well because AI gateway you know by the very definition and of course please keep in mind that that particular product category, platform category is evolving so there is no hard and fast definition uh uh per se. But um it's because that you know I mean look if you are a large enterprise, you have deployed all these AI applications, tools, you have engaged with multiple hyperscalers because you follow the multi-cloud deployment approach and then you have these you know data management uh products as well in addition to frontiers. What you are missing is a central governance uh layer. Call it a control layer as well, a central uh control layer. Why because across the frontier models, across the hyperscalers and across those specialized you know third-party products that an that an average enterprise uses within AI, what's what's increasingly coming up uh what's increasingly surfacing as a requirement is okay based upon the query type, based upon the requirement um which model is to be accessed? Should it be front uh should it be closed source, should it be open source? Uh second is how many tokens to allot? Uh which which basically is you know I mean you might also call it as FinOps for AI just how you have FinOps for for cloud. So call it as FinOps for AI. Uh, thirdly, to what extent should your company data need to be exposed in order to drive the required results? So that is the broad requirement uh, sphere that is supposedly being addressed by the AI gateway because the AI gateway sits at the center of all the transactions, meaning that it is seeing all the, you know, APIs, it is seeing all the interactions across the identity layer and of course the the data layer. So it it it is it is it is seeing, it is learning. And like I said, I think FinOps is one driver. The second driver is is is governance. So I'll just take a pause there.</p>
+<p>Mhm.</p>
+<p>Okay, 明白。</p>
+<p>Yeah.</p>
+<p>And</p>
+<p>Okay, 好的,然后想问一下就是本季度的话,像Snowpark的话,它有没有一些新新的进展,然后的话加速了客户在Snowflake上那个消耗呢?对。</p>
+<p>And in this quarter, is there any new progress of Snowpark and which accelerates customers' consumption on Snowflake?</p>
+<p>Snowpark is one of the very, very underrated and underestimated uh, you know, product categories. Well, the the reason why Snowpark, I mean, we as I mean, being a top tier partner of Snowflake, I will tell you that uh, and I did maybe, you know, indicate this before, but I believe that Snowpark, dynamic tables or specifically Snowpark has much more potential imminently than the the whole AI suite. Not to say that the AI suite lacks anything in terms of capability or quality. It's just that Snowpark opens up, fundamentally what it does is that it opens up Snowflake's compute capability. I mean, ultimately, why do customers use Snowflake? It is to access the compute capability, right? In the in the easy to navigate uh, sort of interface and then the the the backend capabilities. So that is what Snowpark extends across your your your Java, your Python, your Scala, meaning the the non-SQL world. Because keep in mind that Snowpark, excuse me, Snowflake was born in the SQL uh, hierarchy. And and now, now at we have reached an inflection point from a Snowpark perspective in the in the last like one and a half to two quarters because of the fact that AI workloads are gradually moving from experimentation to uh, production. So because, I mean, as and when uh, there is a broader deployment, a deployment of workflows, deployment of inferencing, deployment of, you know, uh, retrieval pipelines, your RAG, RAG use cases. So these workloads typically run on Python and then that is where uh, Snowpark is used. So these workloads don't work don't run on traditional SQL. They run on Python, they run uh, sometimes they also run on Scala, but generally it is Python. So this is where AI deployment that a customer is is running and wants to avail Snowflake's, you know, compute to to basically manage it, right? And and grow further. So so that is where it is it is leading to higher consumption and uh deployment or adoption of uh uh Snowpark. I'll just take a pause before I go to the Cortex side because Cortex also has a close relationship with Snowpark.</p>
+<p>Mhm.</p>
+<p>Okay, 明白,明白。然后的话,OK,然后想再问一下就是在本 一季度的话就是专家有关注到像Databricks和Snowflake的竞争有变得更加激烈吗？对，然后专家怎么看就是Databricks对于Snowflake它长期的一个竞争的一个的一个影响，对。</p>
+<p>In this quarter, do you see a more fierce competition between Databricks and Snowflake? And what's your view on this competition impact from Databricks to Snowflake?</p>
+<p>Um, right. Well, I still believe that, you know, holistically speaking, both Databricks and Snowflake are not necessarily competing as much as they are sort of, you know, complementing each other.</p>
+<p>Mhm.</p>
+<p>Because, look, it's no longer about, look, Snowflake started as a warehousing platform. Databricks started as an MLOps engineering, data engineering platform. Then they both sort of, you know, expanded their horizon and we know all that, right? So, Snowflake today wins where the customer needs governance, the manageability, and then you have these analytics and BI capabilities. Snowflake, Snowflake's mission is to make the data, their underlying data accessible to the average user without any technical intervention. Databricks, on the other hand, continues to win when it comes to ML engineering, MLOps, so data science and and and those, I mean, that is the core audience. Uh, Snowflake having embraced Iceberg now about two years ago, that has meant that Snowflake is no longer working in the closed source system. So, but Databricks is ahead of of Snowflake slightly because Databricks started with Apache Spark and then expanded into Delta Lake.</p>
+<p>Um, so the current competitive sort of, you know, picture between Snowflake and and Databricks is is is emerging. So today it is mostly coexistence because a customer wants the best of both worlds. Snowflake for governance, Databricks for data scientist, data science experimentation, so forth and so on.</p>
+<p>Mhm.</p>
+<p>Now, in '27, uh, by the middle of '27, I expect the competition to become sharper.</p>
+<p>Mhm.</p>
+<p>Because by the time we are in quarter two of '27, companies, customer companies are going to ask, okay, do I really need to have two platforms? I'm, while they are happy with Snowflake for governance, while they are happy with Databricks for, uh, you know, the ML engineering and and MLOps, uh, aspect.</p>
+<p>So I think that remains to be, uh, uh, seen because Databricks is also aggressively pushing into SQL. Databricks is pushing into the broader warehousing aspect. But as of today, it's more about, you know, uh, uh, coexistence.</p>
+<p>Now, for the immediate term, given the, given that most, uh, AI deployments today across enterprises are focused on, broadly speaking, the agent-level, uh, adoption.</p>
+<p>Mhm.</p>
+<p>Right? So meaning that companies, including like mine, even internally, we are deploying a host of agents, you know, support agents, finance agents, procurement agents. So Snowflake by design is inherently engineered to, to cater to, to these, uh, uh, workloads. Databricks, on the other hand, um, you know, is, is focused more onto the, the bigger picture, meaning that, like for example, there is this Meta harness that they launched, I think earlier this year, wherein you can basically, you know, port your, for example, if you have trained, uh, your data or you have used one particular frontier model and trained it on your data, you can probably move it to another model using the using their meta harness. And then you know with Genie AI so lots of things happening but right now it is coexistence for the most part complementary. Like I said by the middle of 27 is when it will get sharper and we will see how it evolves at that point.</p>
+<p>明白明白。然后想问一下就是专家如何看待就是Snowflake进入可观测性的这个领域？不对，然后的话它因为很多原来的很多做安全的公司也好，包括像Datadog也好，它原来就是做可观测性的领域的，然后专家认为这个的话，Snowflake进入这个领域可能会对它的consumption可能会带来多少有意义的一个共的一个贡献呢？对。</p>
+<p>And and what's your view on Snowflake entering the field of observability? Because we know uh previously many security companies and also like Datadog they are already in this observ- observability field. And for Snowflake also entering this field, how much meaningful impact will it make to Snowflake's consumption?</p>
+<p>Right. Um I think that's a very very relevant follow-up uh question. Look I don't think that Snowflake in my reading wants to be a serious player in the observability business per se. Observability is a different sphere altogether where Datadog is currently leading, Dynatrace especially after Rookout's acquisition is is slowly you know getting its nuts and bolts uh together. Um Snowflake's observability I mean the the the reason that they have entered that space is to make sure that their customers don't have a you know a forced reason as in they are not compelled to look outside for the the basic observability requirements. Because today when the average customer is is increasingly using a Cortex analyst, Document AI, of course Snowpark as we discussed, in some scenarios even Snowflake Intelligence stroke Co-work. So Snowflake is obviously as a as a as as the platform you know is obligated to provide its customers with a view into okay which model was called, how many tokens were consumed, so it's fairly fairly uh uh basic. Now at the same time you know the traditional observability vendors don't really address this. Datadog does that but then that's another sizable investment. So what Snowflake I mean Snowflake's interest in my uh assessment in observability is to make sure that their own turf is protected. Meaning that a customer is only would only be interested in considering a platform like Datadog or for that matter Arize or Fiddler, Fiddler.ai, only if the customer has specific observability needs that go beyond what Snowflake is providing. So Snowflake wants to keep their um their their product portfolio whole. But I don't think that they necessarily want to compete with the likes of Datadog or Dynatrace.</p>
+<p>好的，然后我想问一下MongoDB这边的一个情况。想问一下就是从今年Q1到Q2再到Q3的话，专家在MongoDB就是MongoDB的客户就是在它这边的一个消耗的一个同比增速大概是是什么样的？对。</p>
+<p>And then I want to move on to MongoDB. So for your customers' consumption on MongoDB, what is the Q1, Q2 and Q3's year-on-year growth respectively?</p>
+<p>Uh so again you're looking at the customers' uh consumption uh growth in percentage. Um right. So well um let's see. My MongoDB practice for Q3 grew upwards of 24 in the region of 24.2, 24.5 The corresponding consumption, because it's a similar logic, right? I mean, the way we discussed in the Snowflake piece that I do implementations, integrations, and those aspects. Consumption growth, I need to establish a sort of a linkage. So considering my GSI growth for quarter three of 24.2, 24.3%, I would say that the corresponding consumption growth across my customer base has been in the range of 29% to 34, 35%. I would apply that sort of, you know, multiple. Would you also be interested for Q2 and Q1 for 26?</p>
+<p>Yeah, yeah, yeah. Okay. Yes.</p>
+<p>Sure. So for just looking at my data sheet for MongoDB for Q2. Right. Q2 MongoDB was about very close to 23%, about 22.8% or thereabouts. So the proportionate customer consumption would be in the region of 27 and a half to 32 and a half, 33%, something like that. Q1 was in the region of 21 and a half percent, maybe a little bit higher than that from the from my GSI growth perspective. So the proportionate consumption growth would be in the region of something like 26% to 31, 32%.</p>
+<p>Mhm. Okay. 那然後想問一下就是,那Q,那Q3的一個MongoDB的consumption的一個增速,是比專家之前的預期的話高了還是低了,然後背後的原因是什麼?</p>
+<p>And the Q3 MongoDB growth, is it higher or lower than your expectation and why?</p>
+<p>Yes, the Q3 MongoDB growth, well, so in terms of my plan, okay, my plan for the second half of of of 26 for MongoDB is 23.5% to 25%. So it is within the plan. For quarter two, it as in for the first half of 26, my plan was 21% to 23%. As you can see, we took a decision to up the the growth range considering all the activities we saw within the MongoDB ecosystem. So by definition, while we are within the plan, had we continued the same growth range for 1H into 2H, then we would have been above plan by a pretty wide margin. Now in terms of, you know, which are the the key growth, excuse me, the key growth contributors for the MongoDB practice. So that basically remains again, so much like Snowflake for MongoDB, Atlas core, you know, consumption and of course the deployment growth is a major contributor. Atlas deployment for me, I mean, my sub-practice grows has grown upwards of 35% for Q3. And for Q2 also it was just like a couple of percentage points lower than that. So that is the biggest contributor, followed by, I don't remember if we discussed this in the previous call, but look, MongoDB after the acquisition of Voyage AI, I think across all the companies in the in the broader technology spectrum, I think MongoDB has been the most agile in terms of making sure that the capabilities of the products from their acquisition are successfully ingrained and embedded into their existing products. That is exactly what they have done with Voyage AI because we are seeing significant uptake with vector search deployments. And MongoDB at the same time has also been able to successfully extend its position as the developer, you know, uh, platform, what used to be, you know, on on the on the traditional database side, you know, the horizontal database side, now it is increasingly becoming your AI dev uh uh platform. That that is number three. And number four is that again, specific to AI deployments, AI development, MongoDB's architecture offers some some some real uh niche capabilities like persistent memory and uh quick and fast retrieval. So these are the three to four top contributors for the MongoDB uh practice growth.</p>
+<p>嗯，明白，明白。好的，然后想问一下，那么专家的话对于今年四季度和明年在MongoDB上面consumption增速这个预期是什么呢？对。</p>
+<p>And what's what's your expectation for the MongoDB growth in this year Q4 and also next year?</p>
+<p>Um, right. Uh, my expectation for 1H27, well, for this year, let's just say Q4, Q4 is that we will finish the year very close to 25% if not above 25%. Considering that we are already in the 24.2 to 24.4% range. So I believe we will cross that and if we cross 25, well, if we cross 25.5 then we would have technically exceeded the plan. I don't think we'll do that but we'll be very close to that, a higher end of the plan. For 1H27, while we haven't yet formalized the target, I think where we will most likely land is that our growth target will be essentially in the range of 26 to 28%.</p>
+<p>嗯，OK，明白。好的，然后的话想问一下专家，就是MongoDB上的话，这个季度的一个RPO的一个增速的话，专家，它比上个季度的话有明显的加，有明显的一个加，有明显的加速吗？对，然后专家认为可能这个情况的话比之前的预期要好还是差？对。</p>
+<p>And for MongoDB RPO growth in this quarter, uh is it accelerated compared with last quarter's growth? And uh do you think the situation or the result is better or worse compared with expectation?</p>
+<p>Uh, yes, we discussed that, right? I mean, for this for the calendar quarter three the growth was 24.2. Uh quarter two was 22.8. Was was that your question or did I misunderstand it?</p>
+<p>Yeah, I want to know not the consumption, uh that's the the RPO growth. Yeah.</p>
+<p>I'm sorry, what growth? Please repeat.</p>
+<p>Uh, yeah, I I want to know the RPO growth, not the consumption growth.</p>
+<p>Right, right. So you mean, so you mean how my practice has grown, right?</p>
+<p>Yeah, yeah, yeah. Uh, no, uh that's RPO growth. Yeah.</p>
+<p>Uh, yeah, please go on. Mm-hmm.</p>
+<p>Yeah, and do you know, and do you know the RPO growth uh uh in in Q3 of the MongoDB? Yeah.</p>
+<p>I'm sorry, by actual growth, do you mean the growth of the of MongoDB as a company or of my GSI practice?</p>
+<p>Uh, uh, I yeah, no, no, no, no. I want to know the remaining performance obligation growth. Yeah.</p>
+<p>Oh, okay, okay, okay. Uh, so what's the the customer RPO uh growth for MongoDB uh in uh Q3 uh 26, um considering uh my my GSI um you know uh uh percentage uh growth. Okay. So uh... Uh, for the the the RPO growth, the customer RPO growth, uh, the remaining performance obligation, I want to say that for Q3 it is in the region of 32% to 36%.</p>
+<p>Mhm.</p>
+<p>Okay.</p>
+<p>Uh, for Q2, would you like to know for Q2 as well in my estimation?</p>
+<p>Mhm. Yeah, yeah, yeah, I want to know.</p>
+<p>Uh, sure, sure. So for Q2, I would peg that number at something like, you know, 29% to 33%.</p>
+<p>Okay. Okay. Well, okay. 然后我想了解一下就是说MongoDB的CEO就是CJ Desai他离开之后的话，他对于MongoDB的一个影响可能是什么样的，对，尤其是对于客户的签约啊等等，这会有这会从短期或者长期会有一些负面影响吗？对。</p>
+<p>And I want to ask about MongoDB's CEO CJ Desai left the company. What can be the impact on MongoDB, especially on the customer contract signing? Will there be some short-term or long-term negative impact?</p>
+<p>Um, right. Um, I don't uh see any reason for uh a a a material impact per se. Look, what I understood, what is in my visibility, CJ, since he came on board, his focus was to increasingly position MongoDB as your enterprise application layer, meaning no longer the DB. And I think I think that philosophy has been successfully propagated. Like, I am increasingly looking at MongoDB not just as a database today, it is it has emerged more as a development layer, it has emerged more as an application, you know, compute layer in in many ways. While it is still a database, no doubt, but I think that that that trajectory has been established. I think that pretty much was established even before CJ, you know, came on board. So that was done by the previous CEO, who's now the current CEO, Dev Ittycheria. Right? So, but but yeah, where we will feel the impact for CJ is that look, CJ was specifically recruited by the board to essentially, you know, for for for his rolodex of enterprise customers, you know, to basically embrace and expand MongoDB beyond the database construct. And he was doing that pretty actively. Uh, to my knowledge, he had made some serious inroads into the FMCG industry, into some high-tech uh clients as well. Uh, of course, that particular agenda has uh obviously been been paused a little because of the the changeover. Um, at this point, I believe that Dev Ittycheria wants to and has shown a strong indication to continue down that path. Because look, here's the flip side of it. You know, while CJ had this broad understanding of the of the market, the ecosystem, and the positioning of MongoDB, to my knowledge, he didn't have a very high degree of an understanding of what MongoDB does and what's the potential. So that is actually where Dev, you know, has a more direct insight in. So I think that is arguably more advantageous if of course it is if it is handled well. But that's how I would summarize it.</p>
+<p>Mhm. 明白。好的，然后我想问一下就是CJ的话后来加入了Meta，然后的话可能会负责Meta对于企业客户这块的业务。想问一下就是专家的话对于Meta在B端这块业务的一个它未来的一个发展的一个规划还有路线可能是什么样的？对，然后的话他可能想扮演一个什么样的一个什么样的一个角色呢？对，然后专家怎么看？</p>
+<p>And we know that... CJ joined Meta and also responsible for Meta's enterprise customers. So I want to ask you for Meta's B2B business, what is their development or plan or roadmap or what kind of role they may want to play in the market? What's your view?</p>
+<p>Right, I think that I think that is a great, you know, follow-on question. Look, I mean, Meta has quietly is probably the only company, the only AI company in the spectrum today that has been able to successfully roll out a product like Muse. I mean, Muse is a product, as we know, fairly successful on the consumer side. They did not waste time in in terms of, you know, building up the integrations, building up the plumbing. That's very important because you cannot just launch a product in isolation and then expect it to work. You've got to, you know, go over the use cases, you know, practice them and make sure that they are worked through. So that's what Meta did. Now, in my understanding, what Meta wants to do by by recruiting CJ is that they want to expand or replicate this success, this this sort of, you know, early success that Meta has seen with Muse onto the enterprise side. Meaning, I think Meta has come up with this business agent, the MBA or the Meta Business Agent, and then there is Muse code. I think that is what Meta wants CJ to basically start positioning initially. While that is not the the end goal, because ultimately Meta wants to build an industrialized, you know, enterprise agent platform to directly compete with the likes of, I mean, Copilot. As we know very well that, you know, Copilot is there, but it's there and it's not there. It's not been a major success factor for Microsoft. Microsoft is driving its success from multiple other sources, but not Copilot. Similarly, you know, ServiceNow as well. So I think Meta wants to draw upon CJ's experience specifically in ServiceNow. Not so much so in Cloudflare, but specifically in ServiceNow from the enterprise app standpoint. Now, I think that Meta will obviously face hurdles in that arena because on the enterprise side, Microsoft is omnipresent, ServiceNow is there, there is SAP, as in within their own ecosystems. Will customers be willing to open up, you know, the floodgates to their enterprise platform for a third-party agent like Meta to to come in and and and perform their tasks? Because that's exactly what, you know, Azure AI Foundry is supposed to do in terms of, you know, your Copilot Studio, or for that matter, Vertex AI on Google. So that's I think the overall roadmap for CJ within the Meta enterprise framework.</p>
+<p>Mhm.</p>
+<p>Okay, 好的。然後想問一下就是說,在在8月份的時候的話,Voyage AI的話,它整個的產品整合已經進入了全面商用的階段。那想問一下就是客戶在Voyage上的一個consumption的話,在此之後的話有一個顯著的一個增長嗎?對。</p>
+<p>In August, Voyage AI's product integration already entered this fully commercialization stage. So I want to ask for customers' consumption on Voyage AI, has there been a significant growth ever since?</p>
+<p>Uh, yes, it has. It it certainly has. In fact, what what I would like to, you know, in fact, let me look at my my data sheet for MongoDB.</p>
+<p>Mhm.</p>
+<p>So specifically in the area of Well, so Voyage AI's products have been incorporated into Atlas Vector Search, into stream processing, and to some extent your, you know, Atlas Data API. And these three products are basically showing year-over-year growth rates for the last two quarters of upwards of 35, 40%. So that is the most tangible evidence of Voyage AI's products and capabilities being, you know, commercialized.</p>
+<p>明白，明白。</p>
+<p>And, and the...</p>
+<p>Yeah, I'm sorry, go ahead.</p>
+<p>Yeah, please go, go ahead. Yeah.</p>
+<p>I was just going to, I was just going to quickly add that, I mean, look, where Voyage AI is particularly useful from the customer, as in the on-ground decisioning perspective, is that, see, previously, as in the, like last year at this time, right, a customer would say, okay, I need a vector database, I will go for a Pinecone, I'll go for a Weaviate, you know, those sort of specialist vendors. And then they will go for a reranker from another vendor, ODB, operational database from another vendor. This is exactly what MongoDB, I mean, these are the, the, the market, you know, segments which MongoDB is, is, is addressing. Because now MongoDB has Atlas Vector Search, they have the embeddings, which is also Voyage AI, then they have Voyage AI reranking. So MongoDB is able to corner all these segments of the market, making it a very attractive proposition.</p>
+<p>Okay, 明白，明白。然后我想问一下，专家的话就认为就是企业客户在MongoDB这一类的数据库上的consumption的一个增长的一个拐点可能会出现在什么时候？和Snowflake一样是在明年的一季度末吗？对。</p>
+<p>Did we lose anyone? Hello? Are you still there?</p>
+<p>Hello, translator, could you hear me?</p>
+<p>I can hear you, yes.</p>
+<p>翻译老师，您那边麦克风好像有点断断续续的，有点听不清楚。</p>
+<p>Hello?</p>
+<p>对，翻译老师，您那边好像，好像信号有点问题。对。</p>
+<p>Uh, actually...</p>
+<p>I'm, I'm not able to hear the lady. Are you able to hear me?</p>
+<p>Yeah, I can hear you, but I also cannot hear, hear the lady, yeah.</p>
+<p>Okay, okay. Maybe she has a connection...</p>
+<p>Hello, hello, 现在能听到吗？</p>
+<p>行行行，现在可以了，现在可以了，yeah.</p>
+<p>Okay, uh, actually our question is that what's your view on the, uh, turning point of customers' consumption growth on MongoDB? Is it same as Snowflake, like at the, uh, also next year's Q, next year's Q, end of Q1?</p>
+<p>Uh, right. Uh, well, uh, for MongoDB consumption growth, um, I would say, so for Snowflake, like I mentioned, I am looking at it more as an end Q1 2027 inflection. MongoDB, I am looking at it more like an H1 27, meaning round about the, the June, July 27, uh, timeframe. And, and let me quickly explain why. So, you know, again, this has to, I mean, ultimately it is the broader deployment into production wave which will, you know, uh, which will benefit all, all, Snowflake, MongoDB, a host of other, uh, companies. Uh, specific to MongoDB, the, the, the use cases that will drive... the consumption or you know persistent agent memory. Uh and then the the sort of the agent to agent workflows, those interactions, multi-agent and agent to agent workflows. See this is where I think MongoDB is playing an increasing role in terms of the application compute, meaning that it's becoming a core part of AI development. That is how it can contribute to the persistent memory use cases and these multi-agent, you know, uh workflows.</p>
+<p>明白。OK。然后想问一下就是，现在就是，呃，Databricks和Snowflake的话正在进一步和PostgreSQL这一类开源型的数据库融合，然后的话专家怎么看待MongoDB和他们的一个竞争呢？它是不是会面临更大的来自于这些数据库的竞争的压力呢？对。</p>
+<p>And now Databricks and Snowflake are further integrating with open source databases like Postgres and uh...</p>
+<p>I'm sorry for interrupting. I'm I'm I'm very sorry for interrupting, but we are one minute over. I have another meeting to go to. So I'm sorry, but can we schedule some other time, or do you want to send it and follow up or something? I'm sorry, but I have another meeting.</p>
+<p>Yeah, yeah, yeah, yeah. Okay, okay, okay. Yeah, okay, that's all. Thank you for your time today.</p>
+<p>Yes, yes, I appreciate it. Thank you so much. Have a good evening. Bye-bye. Sorry for this. Thank you. Bye-bye.</p>
+<p>Yeah, have a good... Yeah, bye-bye.</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

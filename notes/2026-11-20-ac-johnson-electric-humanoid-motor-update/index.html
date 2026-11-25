@@ -1,0 +1,194 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.20 | AC | Robotics | Johnson Electric Humanoid Motor Update</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.20 | AC | Robotics | Johnson Electric Humanoid Motor Update</h1>
+<p class="orig">原标题：电机龙头机器人业务更新—北美项目进展、国内客户等</p>
+<p class="tags">#robotics #china</p>
+<p class="meta">AceCamp · 2026-11-20 14:01 · article 70569457</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>德昌电机人形机器人业务国内与动界智控合作研发关节模组，并为小米（B样件阶段）和小鹏（A样件基本完成）提供空心杯电机及关节模组。</li>
+<li>海外主要为特斯拉V3人形机器人供应空心杯电机，目前处于样机和小批量验证阶段，定位为二级或三级供应商，Maxon等是主要供应商。</li>
+<li>1,000个小批量电机已于2026年10月交付等待PV测试，若通过预计2027年一季度开始生产100台机器人所需的约1,700个电机，2026年底前不可能批量供货。</li>
+<li>公司投入数百万元建设专用产线，特斯拉承诺确保一年内收回投资，后续订单可能从1,000个逐步爬坡到3,000、5,000个。</li>
+<li>德昌目前仅供应一只手上的17个电机（四指各3个、拇指2个、手掌3个14毫米电机），特斯拉还有成本低30%-40%的有齿槽电机方案。</li>
+<li>向特斯拉送样的旋转和直线关节模组因扭矩密度、背隙和NVH未达标而未通过测试，向Figure送样半年未获反馈，北美初创公司更倾向日德供应商。</li>
+<li>国内为优必选月供几百个旋转关节总成，灵巧手趋势转向十几个自由度的直驱方案，腱绳驱动寿命通常不超过10-20万次。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>以下观点来自行业专家：1.目前，北美项目仍处于样机和小批量验证阶段，尚未正式供货。在此合作中定位为二级或三级供应商。2.除了无框力矩电机，还向北美客户送样过包含旋转和直线关节的关节模组，这些模组配套了无框力矩电机和谐波减速器。</p>
+<p>1.请介绍一下德昌电机在人形机器人领域的业务进展？</p>
+<p>德昌电机在人形机器人领域的业务可以分为国内和国外两个板块。</p>
+<p>国内业务主要涵盖两方面：首先是与动界智控机器人有限公司，专注于旋转关节和直线关节等关节模组的研发。目前，该项目仍处于关节模组的配套送样阶段。德昌电机负责研发，而动界智控负责机器人应用的拓展。当前尚未找到明确的商业化落地场景，无论是工业领域还是服务陪伴型机器人领域，更多是在进行前期场景探索，为消费者提供体验，以期找到合适的应用方向。</p>
+<p>其次，德昌电机自身也在独立拓展国内客户，例如为小米提供空心杯电机及旋转关节模组（无框力矩电机加减速器的组合方案），目前处于B样件阶段；为小鹏汽车提供旋转关节和直线关节模组，已基本完成A样件测试。</p>
+<p>国外业务主要聚焦于与特斯拉的合作，具体涉及两个方面：一是为其V3版本的人形机器人提供空心杯单电机。该项目的前期验证工作在深圳进行，后续的生产和交付将在德昌电机位于北美密歇根的工厂完成，以实现本土化交付。目前，项目仍处于样机和小批量验证阶段，尚未正式供货。在此合作中，德昌电机定位为二级或三级供应商，因为特斯拉V3版本前期的主要需求由Maxon等供应商满足。二是在灵巧手方面，德昌电机为其提供V2版本的灵巧手，目前处于小批量验证阶段，尚未进入量产。</p>
+<p>2.鉴于特斯拉人形机器人已有一定产量，其对德昌电机的需求指引是怎样的？预计何时能够实现批量供货？</p>
+<p>目前，特斯拉给出的需求指引相对谨慎。在具体执行层面，德昌电机首先会进行1,000个电机的小批量验证，此阶段主要目的在于验证生产能力和工艺稳定性。只有在生产一致性（如CPK、PPK指标）得到认可后，特斯拉才会考虑增加订单量。由于双方在人形机器人领域是首次合作，对方对德昌电机的生产质量和稳定性仍持审慎态度，需要一个磨合过程。</p>
+<p>短期内预计不会有大规模放量。根据双方签订的采购协议，在2026年年底前基本不可能实现批量供货。小批量验证完成后，还需进行为期约两个月的PV（Production Validation）实验。因此，预计在2027年第一季度（圣诞节后）开始交付首批订单，该订单旨在满足100台机器人的装配需求。按照此前每台机器人配置17个电机的方案，首批交付量约为1,700个电机。</p>
+<p>为了支持该项目，德昌电机已投入数百万人民币建设专用产线，其中绕线、动平衡等前端工序为共用，而后端的编码器装配及性能功能测试则为专线。特斯拉方面已承诺，这部分投资的收益可以得到保证，确保德昌电机在一年内收回产线投资成本。</p>
+<p>未来的订单量增长将取决于首次小批量交付的表现。如果此次交付顺利，能够增强客户信心，后续订单量可能会逐步爬坡，例如从1,000个增加到3,000个、5,000个。根据以往在汽车业务（如EPP和EPS产品）上的合作经验，特斯拉的订单释放节奏是渐进式的，他们会从产品品质、交付能力等多个维度进行综合考评，不会一次性下达数千乃至上万台的大额订单。</p>
+<p>3.关于为特斯拉机器人项目供应的电机，1,000个小批量电机与后续100台机器人（对应1,700个空心杯电机）的生产交付计划是怎样的？PV测试（生产前验证）将在何时进行，其关键验证内容是什么？</p>
+<p>1,000个小批量电机与后续用于100台机器人的1,700个电机是两回事。这1,000个小批量电机已经于2026年10月份交付给客户，目前等待客户进行PV测试。PV测试是生产前的最后一次验证，主要检验电机在温升、发热、NVH（噪音、振动）等方面的一致性。测试通过后，客户的SQE团队将对工厂的每一道工序进行最终审核（Buy off），检查生产参数、压力、视觉扫描等，并对生产过程进行留痕，用于后续的质量追溯。如果PV测试顺利，预计将在圣诞节后，即2027年第一季度，开始生产用于100台机器人的1,700个空心杯电机。</p>
+<p>4.既然出货前已对小批量电机进行了全检，为何仍对PV测试的结果存在担忧？主要的风险点是什么，以及客户的测试标准与常规规格书有何不同？</p>
+<p>尽管出货前已进行全检，但PV测试中客户可能会采用一些恶劣工况或超出常规规格的严苛测试，这是主要的担忧来源。例如，生产过程中打胶的均匀性，或霍尔传感器磁环磁通量的波动，在正常负载下风险可控，但在客户增加负载后可能会产生影响。客户的测试有时不按常规进行，可能会进行破坏性测试，如跌落测试、过载测试和堵转测试，以模拟极端用户使用场景。如果测试中发现问题，客户可能会将其定义为新增场景并要求满足，届时就需要进行大量优化工作。虽然产品完全符合设计规格书的要求，但无法完全确定能否满足客户所有非标准的严苛测试要求。</p>
+<p>5.与其他供应商（如鸣志、Maxon）相比，在与特斯拉的合作进程和信任度方面存在哪些差异？特斯拉是否还有除空心杯电机之外的其他电机方案？</p>
+<p>鸣志和Maxon等供应商与特斯拉的合作已有一到两年，在验证进度上领先，并且已经与客户建立了较高的信任度。由于德昌电机是新晋合作方，双方尚处在磨合了解阶段，因此客户会以最严苛的标准进行检验。除了空心杯电机，特斯拉手上还有其他电机方案，例如有齿槽的低成本方案。该方案虽然会牺牲部分性能，扭矩密度不及空心杯电机，但成本可节约30%至40%。预计特斯拉前期发布的产品会采用性能最好的方案，后续随着产品放量，可能会根据不同的用户场景和成本组合，推出采用不同配置（包括低成本方案）的机型。</p>
+<p>6.市场信息显示恒帅股份也为特斯拉机器人供货，且其方案为每台机器人44个电机，这与德昌电机每个机器人手部供应17个电机的情况存在差异，原因是什么？</p>
+<p>关于恒帅股份的具体供货情况并不完全清楚，之前与他们的销售人员交流时，对方表示仍在送样阶段，可能存在信息保留。至于电机数量的差异，是因为特斯拉在分配任务时非常谨慎，只会提供供应商所负责部分的图纸。德昌电机目前仅供应一只手上的17个电机，具体构成为：食指、中指、无名指、小指各有3个（共12个），拇指有2个，手掌部有3个尺寸为14毫米的较大电机。我不清楚手部或其他部位是否还有其他电机，因为特斯拉不会提供完整的整体图纸或轮廓图，以控制技术风险。</p>
+<p>7.除了无框力矩电机，德昌电机还向特斯拉供应哪些其他产品？在合作过程中遇到了哪些具体的技术挑战？</p>
+<p>除了无框力矩电机，德昌电机还向特斯拉送样过包含旋转和直线关节的关节模组，这些模组配套了无框力矩电机和谐波减速器。不过，之前的测试未能通过。主要的技术挑战在于，特斯拉对产品的扭矩密度、背隙以及NVH（噪音、振动与声振粗糙度）等方面的要求非常严苛，目前公司的产品水平尚未达到其标准。公司正在根据特斯拉提出的要求进行针对性的优化和持续改进。由于这是德昌电机首次涉足此类产品的研发，与之前主营的汽车电机在需求上存在差异，因此需要一个学习和成长的过程。</p>
+<p>8.德昌电机与特斯拉之外的其他北美知名机器人或AI公司，例如Figure、Generalist AI、Agility Robotics、OpenAI等，是否有合作关系？</p>
+<p>德昌电机曾向Figure送样过旋转和直线关节模组，但其测试流程非常缓慢，送样半年后仍未收到反馈，这与国内快速的测试反馈周期形成对比。目前在海外渠道中，主要的合作方是特斯拉。德昌电机曾尝试与一些北美初创公司接洽，但发现他们对国产产品存在一定的排斥，更倾向于信任和接洽日本或德国的供应商，如尼得科等。此外，受“去中国化”的政治因素影响，特斯拉也在供应链中剔除了许多中国供应商，要求供应商在美国建厂，这对后续的生产和供应构成了重大挑战。</p>
+<p>9.德昌电机与国内机器人公司（如优必选）以及灵巧手领域的初创企业（如Inspire-Robots、灵星巧手等）的合作进展如何？</p>
+<p>目前为优必选供应旋转关节总成，月出货量为几百个，数量不多，主要因为人形机器人的落地场景尚未明确。在国内，人形机器人行业的热度相较之前有所回落。对于国内的灵巧手初创公司，如Inspire-Robots、灵星巧手等，公司在研发自有灵巧手时曾将它们作为对标对象。</p>
+<p>10.当前灵巧手技术方案的主要趋势是什么？公司如何看待腱绳驱动与直驱方案的优劣，以及各自面临的挑战？</p>
+<p>当前国内灵巧手领域的一大趋势是不再追求过高的自由度，而是转向采用直驱方案。2026年，拥有十几个自由度的直驱方案已成为主流，能够满足搬运、物流分拣、快递分拣等简单应用场景的需求。早期行业热衷于讨论的人体27个自由度等高自由度概念已逐渐降温。这种转变的核心原因在于腱绳驱动方案存在寿命瓶颈。无论是采用PEEK材料还是其他材料，腱绳的磨损问题都无法从根本上解决，其使用寿命极限通常不超过20万次，甚至在10万次左右。相比之下，直驱方案将电机全部置于掌心，省去了减速器，直接驱动，效率更高，也更耐用，更能适应有负载要求的场景。</p>
+<p>11.腱绳驱动方案在材料科学上面临哪些具体的寿命问题？金属丝等替代材料是否能解决这些问题？</p>
+<p>腱绳驱动方案的核心寿命问题源于材料的磨损。即使用PEEK材料并在外部包裹胶管，也无法避免磨损，管子磨破后依然会磨损绳索本身。这个问题本质上需要材料科学的突破来解决，但新材料的配方研发和定制生产周期很长。金属丝的效果比PEEK等高分子材料更差，其磨损问题更严重，容易出现断股。腱绳材料主要面临两个问题：一是断裂，这是软件算法无法弥补的硬性故障；二是蠕变拉长，虽然可以通过软件算法在每次复位时检测偏差并收紧绳索来进行一定程度的补偿，但断裂问题是致命的。根据与南山智尚等高分子材料厂商的交流，其工厂方案中的腱绳寿命也仅有两三个月，耐用性较差。因此，从企业角度看，腱绳驱动方案可能作为长期的技术储备，而短期内能够快速放量、有具体落地场景的方案，如直驱或涡轮蜗杆结构，才是追求的重点。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

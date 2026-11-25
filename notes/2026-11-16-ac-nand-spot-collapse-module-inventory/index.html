@@ -1,0 +1,207 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.16 | AC | Memory | NAND Spot Collapse &amp; Module Inventory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.16 | AC | Memory | NAND Spot Collapse &amp; Module Inventory</h1>
+<p class="orig">原标题：NAND现货已跌到合约价一半：江波龙_德明利_佰维背着815亿存货、长存顶着峰值利润上市，谁先扛不住？</p>
+<p class="tags">#memory #china</p>
+<p class="meta">AceCamp · 2026-11-16 13:40 · article 70569274</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>截至11月中旬，512Gb NAND晶圆现货价跌至14.3美元，一周跌12%、一个季度跌32%，仅约为合约价27美元的53%；1Tb晶圆现货一个季度跌19%。</li>
+<li>文章判断NAND跌价已从现货和消费级开始，合约价10月已横盘，本轮涨价依靠需求拉动和原厂控产而非成本推动，下跌时缺乏成本托底，压力将分层释放。</li>
+<li>消费级需求见顶：PC OEM按最低量下单，国产高端手机内存标配从16GB降至12GB；消费级渠道库存接近2个月，企业级约1.2至1.5个月；三星西安、海力士大连新增产能2027年集中落地消费类产品。</li>
+<li>企业级有长协托底，国内云厂商采购已锁到2027年Q3—Q4，但阿里、百度、腾讯已下调企业级SSD订单，三星和SK海力士将相应供应转给美国云厂商。</li>
+<li>江波龙、德明利、佰维三季度末存货合计约815亿元，分别为284.56亿、289.86亿和240.53亿元，前三季度经营现金流均为负，佰维存货跌价准备仅约占0.4%。</li>
+<li>压力测试显示，按存货10%确认损失相当于三家公司单季净利的0.8倍、1.1倍和1.5倍，按20%则为1.5倍、2.1倍和3.0倍。</li>
+<li>长江存储2026年Q1营收470.42亿元、净利333.79亿元、净利率约71%，全年营收或超2000亿元且约95%来自消费类，拟2027年Q1登陆科创板募资330亿元，估值锚定是最大分歧。</li>
+<li>文章认为海外原厂已转向企业级、受冲击较小，联芸科技等独立主控厂反而受益；需跟踪2027年Q1合约价、现货合约价差、模组厂计提与国内企业级长协续签。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>NAND现货与合约价为何背离，跌价从哪里开始；</li><li>消费级与企业级需求、供给如何分化，中国云厂商减单意味着什么；</li><li>模组厂高位库存与长江存储上市面临哪些价格风险，应跟踪哪些信号。</li></ol>
+<p class="qq">NAND现货价已跌到合约价的一半左右，跌价先从消费级开始。企业级有长协托底，原厂利润一时无忧；真正暴露在跌价之下的，是江波龙、德明利、佰维三家合计约815亿元的高位库存，以及即将带着峰值利润上市的长江存储。</p>
+<p>今年以来，存储股的叙事几乎只有一个词：涨价。但最近一份NAND报价单上，同一片512Gb晶圆出现了两个价格，一个约27美元，一个14.3美元。哪个才是真实价格？差出来的这一半，最后又会落到谁的账上？</p>
+<h2>一、现货已跌到合约价的一半，跌价先从消费级开始</h2>
+<p><b>只看合约价，存储超级周期还在继续。</b>TrendForce在9月30日预测，四季度NAND合约价环比再涨15%至20%，企业级SSD甚至涨幅还在扩大。<b>而现货市场的走势却正好相反。</b>DRAMeXchange的现货报价显示，截至11月中旬，512Gb晶圆现货价为14.3美元，一周跌12%，一个季度跌32%；1Tb晶圆一个季度跌19%。</p>
+<p>合约价和现货价走向相反，说明的不是哪个数据有错，而是两个市场的定价逻辑不一样。合约价是原厂和大客户按季度谈出来的，反映的是上一轮谈判时的供需；现货价是模组厂、贸易商每天实际成交的价格，反映的是眼下的供需。所以，<b>现货价往往先于合约价拐头</b>。现货跌到合约价以下以后，模组厂会少拿合约货、多从现货补货，原厂的合约出货量随之缩水，到下一轮谈判时只能在保量和保价之间选一个。这条传导链已经走出了第一步：TrendForce的数据显示，10月1Tb TLC晶圆合约价环比基本持平，延续了二、三季度的横盘。合约价停涨，现货价快速下跌，这正是拐点前通常会出现的组合。</p>
+<p><b>再看合约价本身有多高。</b>TrendForce数据显示，512Gb合约价约27美元，大约是2025年2月低点2.5美元的十倍。从渠道了解到，晶圆的实际制造成本和去年相比没有明显变化。也就是说，这一轮涨价靠的是需求拉动加上原厂控产，不是成本推动。价格既然不是成本撑起来的，跌的时候也就没有成本托底，能跌到哪里，要看产业链上谁先扛不住。</p>
+<p>因此，本文的核心判断是：<b>NAND跌价已经开始，只是先从现货和消费级开始，还没有传到合约价</b>。这次和以往周期不同，大概率不会全线同时闪崩，而是分层释放压力：最先承压的，是没有长协保护、按现货逻辑定价的那部分货。谁手上这部分库存最多，谁就最先受损。下文的论证都围绕这个问题展开：跌价从哪里开始，传到哪里，最后由谁来承担。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569274_739133dc4e36d84a.webp" alt="" loading="lazy"></p>
+<h2>二、消费级撑不住：需求见顶、渠道出货，新增产能又集中在这里</h2>
+<p>判断消费级价格会不会继续往下走，要看需求、渠道库存、供给三件事。三件事现在都指向同一个方向。</p>
+<p><b>第一，需求已经见顶。</b>TrendForce称，四季度PC OEM主要靠上半年建好的整机库存出货，只补零星缺料；面对原厂全面调价，OEM只按维持供应关系所需的最低量下单，价格谈判实际上只是对少量订单的确认。手机端则在降配：今年国产高端手机的内存标配已普遍从16GB降到12GB。整机厂宁可降配、宁可少买，说明终端已经消化不了更高的存储成本。晶圆端也是一样，TrendForce指出，晶圆价格处在历史高点，零售通路消化不了，模组厂的采购已经转向保守。模组厂恰恰是晶圆现货的主要买家，它们一收手，现货价首先承压。</p>
+<p><b>第二，渠道库存在变重。</b>调研显示目前消费级渠道库存已接近2个月，企业级约1.2至1.5个月；四季度香港、韩国和内地都有大量囤货在往外出。MLCC可以作为参照：它的价格在二季度见顶，三季度持续下跌，到四季度基本回到谷底。MLCC同样是成本没变、靠囤货和控产把价格推上去的元器件，它已经先走完了一轮。消费级NAND的价格结构和它相似，很可能走同一条路，只是晚一两个季度。</p>
+<p><b>第三，新增供给会集中在2027年落地，而且正好落在消费级。</b>TrendForce在7月30日判断，2027年NAND位元供给增幅将超过2026年，下半年供需转松，价格面临修正；该机构还预计，2027年中国厂商在全球NAND位元产出中的份额将升至约19%。从原厂产线节奏看，三星西安工厂的V9工艺四季度小批量试产，2027年二季度开始爬坡；海力士大连新厂2027年二、三季度小批量生产，四季度放量，而且新增产能以消费类和低端产品为主。<b>新增供给正好落在需求最弱的那一段</b>，这是消费级价格最绕不开的压力。</p>
+<p>市场上当然也有相反的看法。Gartner预计，2026年NAND价格上涨293%，2027年再涨30%，供给紧张会延续到2027年。两种看法其实并不矛盾，分歧在于看的口径不同：Gartner看的是全市场均价，而全市场均价越来越由企业级决定；本文看的是消费级和现货这一段。两种判断可以同时成立，这本身就说明，NAND已经不能当作一个统一的价格来看了。</p>
+<h2>三、企业级还在涨，但中国客户已经开始减单</h2>
+<p><b>企业级价格之所以稳，是因为它被合同锁住了。</b>国内大型云厂商的企业级采购普遍已锁到2027年三、四季度，大客户会先付约30%的定金锁定全年额度。TrendForce预计，服务器在NAND需求中的占比将从44.2%升至2027年的51.1%。6月29日报告中分析，推理侧的KV cache正在为企业级SSD打开一条独立于HBM的需求曲线。这条曲线在北美仍然很强，也正是这次回落是分层而非全线的原因。</p>
+<p><b>但企业级内部也在分化，而且分化发生在中国。</b>ZDNet Korea 11月12日报道，阿里巴巴、百度、腾讯已把企业级SSD订单下调到低于原先预期的水平，三星、SK海力士正把原本和中国客户洽谈的这部分供应转给美国云厂商。原因不在存储本身，而在算力：美国对高端AI芯片和HBM的出口管制收紧后，中国云厂商的GPU到不了位，配套的存储采购自然跟着推迟。对海外原厂来说，这部分需求有北美客户接手，影响不大；但对以国内客户为主的企业级供应商来说，<b>原本被视为最稳的企业级订单，在国内并没有看上去那么稳</b>。这一点直接关系到下文对模组厂的判断。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569274_d34da0574c20dd42.webp" alt="" loading="lazy"></p>
+<h2>四、模组厂首当其冲：815亿元高位库存怎么消化</h2>
+<p>笔者在9月3日报告中判断，本轮红利主要被颗粒原厂和模组厂拿走，模组厂的利润来自库存时点：低价囤货，高价出货。这个逻辑倒过来同样成立：<b>价格往下走时，库存时点也决定了谁先亏</b>。原厂可以减产、调结构，模组厂手里的库存却已经按高价买进，只能等着被市场重新定价。</p>
+<p>三家头部模组厂三季度末的存货合计约815亿元。江波龙存货284.56亿元，较年初增长143.67%，约占总资产的一半，前三季度经营现金流为-22.74亿元。德明利存货289.86亿元，年初只有70.58亿元，前三季度经营现金流净流出136. 91亿元。佰维存储存货240.53亿元，另有预付款73.75亿元，前三季度经营现金流为-100.41亿元。整体来看，<b>模组厂在价格涨幅已经收窄的三季度仍在加速备货</b>，佰维单季就新增存货58.85亿元。存货越堆越高、现金流持续为负，说明这些钱已经押在了“价格还会涨”这个判断上。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569274_b62133a7d9c76199.webp" alt="" loading="lazy"></p>
+<p><b>利润表已经先给出信号。</b>佰维三季度归母净利16.02亿元，环比下降约62%，营收环比下降约30%。德明利三季度净利27.29亿元，环比只增长约2%。江波龙也在三季报中承认，晶圆涨价对盈利的边际贡献在减弱。利润增速掉得比存货增速快，说明高价库存还没有完全进入成本，真正的考验在后面。佰维前三季度只计提了9679万元存货跌价准备，约占存货的0.4%，缓冲很薄。</p>
+<p><b>对冲因素也需要看到。</b>江波龙三季度末合同负债较年初增长544.74%，主要是预收货款增加，说明部分库存已经有客户买单，不会全部暴露在现货价格之下。但在前三季度经营现金流为负的情况下，它仍宣布了年内第二次中期分红，拟派发9.97亿元，说明管理层对高价库存顺利去化相当有信心。这份信心能否兑现，要等四季度的成本结转来检验。</p>
+<p><b>可以用一个简化的压力测试衡量敞口。</b>假设按期末存货账面金额的10%确认损失，损失额分别相当于江波龙、德明利、佰维三季度单季净利的0.8倍、1.1倍和1.5倍；按20%确认，则分别是1.5倍、2.1倍和3.0倍。需要说明，实际减值取决于存货成本与可变现净值之差，存货里还有DRAM、企业级产品和已签单的部分，不会整体按现货价重估，这个测试只用来比较三家公司的相对弹性。</p>
+<p><b>真正拉开差距的是库存结构。</b>德明利称存货增加主要是为企业级业务备货。如果这些货对应在手订单，受消费级跌价的冲击会小得多；但上一章提到，国内云厂商正在下调企业级SSD订单，如果德明利的企业级客户以国内为主，这层保护就要打折扣。佰维的收入更依赖手机、平板和AI端侧（前三季度AI端侧收入48.23亿元，约占营收的22%），消费敞口更直接。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569274_8b3df6a55006c071.webp" alt="" loading="lazy"></p>
+<h2>五、长江存储将带着峰值利润上市，估值该锚定哪里</h2>
+<p>第二个容易被忽视的风险点是长江存储。根据母公司长存控股的招股书，其2026年一季度营收470.42亿元，归母净利333.79亿元，净利率约71%。从渠道估算，长江存储全年营收可能超过2000亿元，其中约95%来自消费类。彭博社11月11日报道，长江存储争取最早在2027年一季度登陆科创板，长存控股拟募资330亿元。</p>
+<p>把这几组数字放在一起，可以看到：<b>长江存储将带着消费级NAND的峰值利润上市，而它的业绩最依赖的，恰恰是最先松动的那一段价格</b>。上市窗口与消费级价格可能修正的2027年下半年只隔两三个季度。同时，长江存储本身也是2027年新增供给的一部分。据公开报道，其武汉两座晶圆厂合计月产能约20万片，三期预计2026年底投产，远期目标月产能50万片。中国厂商份额提升的那部分位元，很大一部分要在国内消费市场消化，等于长江存储自己也在给消费级价格加压。</p>
+<p><b>长江存储能对冲的方向是企业级，但进度慢于预期。</b>目前国内云厂商对长江存储企业级产品仍在小批量验证，阿里巴巴2027年的NAND采购中长江存储约占15%；300层的X5-9080四季度小批量流片，良率仍是瓶颈。再加上国内云厂商本身正在减单，企业级短期内难以接住消费级回落留下的缺口。上市定价时，估值是锚定一季度单季利润年化，还是锚定周期中枢，将是最大的分歧。对二级市场来说，2027年上半年还要承接一笔330亿元的大额融资，这对存量存储股的资金面也是一层压力。</p>
+<p><b>相比之下，海外原厂的处境要好得多。</b>它们已经主动把产能转向企业级，国内减掉的订单也有北美客户接手，消费级跌价对利润的冲击会被产品结构稀释。这也是本文和“存储周期见顶”说法的区别：见顶的是消费级NAND的价格，不是整个存储行业的利润。</p>
+<p><b>产业链里还有一个会反向受益的环节。</b>前述SSD主控报告中分析，主控在SSD成本中的占比从约10%被压到2%至3%，主要是NAND涨价把分母做大了，而不是主控本身降价。消费级NAND一旦跌价，这个分母效应就会反转，联芸科技这类独立主控厂的成本占比和议价空间会自然修复。对它们来说，NAND跌价反而不是坏消息。</p>
+<h2>六、怎么判断跌价是否从现货传到合约</h2>
+<p>这个判断能否成立，关键看现货的跌势会不会传到合约价。第一个观察点是2027年一季度的NAND合约价：如果TrendForce对消费级晶圆和client SSD给出持平或下跌的报价，说明跌价已经从现货扩散到合约。</p>
+<p>第二是现货与合约的价差，但不应只看价差大小，还要看价差是怎么变化的。512Gb现货价目前只有合约价的约53%。价差继续拉大，说明模组厂宁可去现货补货，原厂合约迟早要让价。价差收窄则有两种完全不同的情形：如果是现货回升、合约不动，说明这只是一轮渠道去库存，本文的判断就要修正；如果是现货不动、合约下调，恰恰说明跌价已经传到了合约。比如现货维持14.3美元，合约从27美元降到20美元，现货与合约的比值会从53%升到约72%，价差看起来收窄了，实际却是合约在降价。</p>
+<p>第三是模组厂年报里的存货跌价计提和经营现金流。四季度是高价库存第一次大规模结转成本的季度，计提比例能否维持在0.4%左右，是检验管理层信心的直接指标。第四是国内云厂商2027年企业级SSD长协的续签情况，它决定德明利等公司的企业级备货能否顺利出货。第五是三星西安、海力士大连的爬坡节奏，以及长江存储三期的投产时点。</p>
+<p>反向风险：TrendForce提示，如果Agentic AI带动高速SSD需求超预期，供需可能重新趋于平衡；国内云厂商一旦拿到足够的算力芯片，企业级订单也可能快速恢复。这两点是本文判断最主要的反向变量。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569274_538abe34cbfdb267.webp" alt="" loading="lazy"></p>
+<p><b>以上内容不构成任何投资建议，请风险自担。</b></p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

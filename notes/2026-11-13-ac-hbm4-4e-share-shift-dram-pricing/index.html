@@ -1,0 +1,242 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.13 | AC | Memory | HBM4/4E Share Shift &amp; DRAM Pricing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.13 | AC | Memory | HBM4/4E Share Shift &amp; DRAM Pricing</h1>
+<p class="orig">原标题：存储调研_HBM4_4E量产进展及市场份额变化,HBM供需缺口及长协价格上涨预期,服务器DRAM价格走势及扩产风险-聚焦SK海力士_美光_英伟达_台积电_博通_谷歌等</p>
+<p class="tags">#memory #semis</p>
+<p class="meta">AceCamp · 2026-11-13 17:45 · article 70569210</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>HBM份额在2026年二季度为海力士60%、美光和该公司（三星）各约20%，三季度因其HBM4更早通过验证并放量，份额变为海力士50%、三星33%、美光约17%，两家HBM4综合良率均可达70%以上。</li>
+<li>美光HBM4出货少主要因自研Base Die性能不足，三星HBM4/4E采用自家4nm Base Die，而海力士HBM4 Base Die由台积电从12nm转6nm，HBM4E将用台积电3nm。</li>
+<li>三星HBM4E进度领先，计划2027年元旦后正式验证、二季度通过并于5月底或6月出货，以配合英伟达Rubin Ultra，海力士预计慢一到两个月；海力士以较低HBM4价格换取英伟达优先供应GPU。</li>
+<li>2027年HBM总供给预计约600亿Gb、市场规模翻倍至约2100亿美元（按每Gb至少3.5美元），2028年供给可能达900多亿Gb，但键合等设备瓶颈存在不确定性。</li>
+<li>服务器DRAM长协以2026年二季度合约价为下限约17.6美元/GB，预计2027年价格维持在17.6-20美元/GB、基本持平；2026年四季度服务器DRAM涨价0%-5%，整体Blended ASP约涨10%-12%。</li>
+<li>HBM毛利率已与服务器DRAM倒挂，因HBM价格年度锁定在2.3美元，而服务器DRAM从年初约0.7美元涨至2.6美元；2027年HBM涨价幅度将非常大。</li>
+<li>服务器NAND因三大厂无大规模扩产至2027-2028年仍供不应求，铠侠交付延迟属自身验证问题；厂商自2026年一季度起转向积极扩产，2028年下半年设备迁入决策将于2027年一季度左右做出。</li>
+<li>专家担忧2027年全球数据中心资本支出从1万亿美元上调至1.4万亿美元后，谷歌、Meta等现金流下降、依赖Neocloud和金融机构融资，2028年下半年增长持续性存疑；英伟达推动Base Die统一在台积电生产的NVHBM方案。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>1、HBM4/4E量产进展及市场份额变化, 2、HBM供需缺口及长协价格上涨预期, 3、服务器DRAM价格走势及扩产风险。</p>
+<p><b>以下为专家观点：</b></p>
+<p><b>如何看待铠侠最新季度指引中仅有个位数的环比增长，以及其提及的数据中心客户出现交付延迟的状况？这是否反映了北美数据中心或Tier 3云服务客户普遍存在的需求延迟，还是铠侠自身的特定问题？</b></p>
+<p>公司、海力士和美光目前并未出现类似铠侠所说的显著交付延迟情况。铠侠遇到的问题可能源于其内部，例如其服务器SSD产品在客户验证等环节的进度慢于预期，从而影响了出货。这种情况在公司、海力士或美光有时也会发生，但当前这三家公司并未面临此问题。此外，闪迪的市场定位与前述四家公司有所不同。公司、海力士、美光和铠侠主要服务于数据中心及苹果等大型客户，而闪迪则更多地面向小型客户。闪迪通过与这些小客户签订长期供货协议，其产品价格通常高于其他几家主要厂商，这可能是其财务指引表现较好的原因之一。</p>
+<p><b>从2026年第四季度到2027年，服务器NAND市场的供需状况将如何演变？考虑到美光和海力士对NAND出货量的指引仅为个位数环比增长，市场是否会在2027年面临供过于求的风险？</b></p>
+<p>目前NAND市场，尤其是服务器领域，仍然处于供不应求的状态。这主要是因为公司、海力士、美光这三家主要供应商当前没有进行产能扩张，导致其每年的比特增长率（Bit Growth）相对有限，这种增长主要依赖于技术迭代，如从TLC到QLC的转换以及设备升级，而非物理上的产能增加。预计到2027年甚至2028年，这三家公司都不会有大规模的NAND扩产计划。服务器市场是这几家公司的主要业务重心。因此，面向服务器市场的NAND供应将持续紧张，需求依然强劲，基本不存在过剩担忧，生产出的产品都能售出。不过，对于消费级市场，特别是与长江存储相关的中国服务器NAND市场，存在一定的过剩担忧。</p>
+<p><b>目前HBM市场的竞争格局如何，特别是在公司和海力士之间？考虑到公司HBM4自2026年第三季度开始出货，其与海力士在市场份额和良率方面有何差异？</b></p>
+<p>在2026年第二季度，HBM市场的份额格局大致为海力士占60%，美光和公司各占约20%。从第三季度开始，随着公司的HBM4产品比海力士更早通过客户验证并实现更大规模出货，市场份额发生了变化。第三季度，海力士的份额下降至50%，公司则上升至3 3%，而美光因HBM4出货量极少且持续存在问题，份额降至约17%。进入第四季度，尽管有传闻称海力士遇到问题，但据了解问题不大，对出货量的影响有限。然而，海力士的出货量仍将少于公司，部分原因在于其制程从台积电的12纳米转向6纳米过程中遇到了一些供应问题。在良率方面，公司和海力士的HBM4产品，包括前段和后段的综合良率，正常情况下均能达到70%以上。</p>
+<p><b>关于2027年的HBM4价格，目前主要供应商的定价策略是怎样的？公司、海力士和美光在每GB价格上是否存在差异？</b></p>
+<p>2027年HBM4的价格已经基本确定。通常在服务器DRAM市场，价格排序为公司最高，海力士其次，美光最低。但此次在HBM4上，海力士的定价较低，这源于其与英伟达的特殊合作关系。海力士以更优惠的价格向英伟达供应HBM4，作为交换，英伟达则优先向SK集团供应其GPU产品，这种合作使得海力士能够提供具有竞争力的特价。</p>
+<p><b>关于HBM4E的研发和量产进展，公司、海力士和美光目前处于什么阶段，公司进度领先的原因是什么？</b></p>
+<p>公司在HBM4E的进展上相对领先。目前，公司已向客户发送了初级测试样品，并计划在2027年元旦后立即开始正式验证，目标是在第二季度通过验证，并于同年5月底或6月开始出货。海力士在HBM4E的进度上预计比公司慢一到两个月，量产时间可能更晚。主要原因是工艺转换的复杂性。公司从HBM4到HBM4E均采用1c工艺，产品迭代速度较快。而海力士需要从1b工艺转换到1c工艺，美光则需要从1β（1-beta）工艺转换到1γ（1-gamma）工艺，同时进行产品和工艺的双重转换，导致进度较慢。此外，公司在Base Die方面具备内部供应链优势，其HBM4的Base Die由自家晶圆代工部门提供，而海力士的HBM4及美光的HBM4E则采用台积电代工的Base Die。这种内部整合使得公司的开发速度更快。</p>
+<p><b>HBM4和HBM4E的Base Die分别采用了什么制程工艺，以及美光在HBM4上出货量较少的原因是什么？</b></p>
+<p>在Base Die制程方面，公司的HBM4和HBM4E均采用自家的4纳米工艺。台积电为客户提供的方案中，HBM4的Base Die原计划使用10纳米，后转换为6纳米，而HBM4E则计划使用3纳米。美光在HBM4上使用了自研工艺，但在HBM4E上将转向台积电的3纳米工艺。 美光在HBM4上出货量较少的主要原因在于其自研Base Die的性能不足。从HBM4开始，Base Die的重要性显著提升，公司选择由其晶圆代工部门制造，而美光自研的Base Die未能达到性能要求，影响了其HBM4产品的市场供应。</p>
+<p><b>预计明年（2027年）全球HBM市场增长率如何？</b></p>
+<p>2027年的市场规模预计将实现翻倍增长。</p>
+<p><b>HBM4E产品最早的出货时间点预计在何时？</b></p>
+<p>HBM4E的目标是在2027年5月底或6月开始出货。这一时间点是为了配合英伟达Rubin Ultra芯片的出货计划，该芯片预计在2027年第二季度末（6月底或7月初）发布，因此HBM供应商需要至少提前一个月开始供货。</p>
+<p><b>CXMT在HBM3领域的进展如何，其产品是否会对全球HBM供应格局产生显著影响？</b></p>
+<p>CXMT目前正在进行HBM3的生产。不过，HBM3的主要客户已基本转向HBM3E或HBM4，尤其是在北美市场，因此CXMT的HBM3产品预计主要在中国国内市场消化。该公司计划在2026年底开始生产HBM3E，但预计良率较低，初期出货量将十分有限。在对2027年市场份额的预测中，CXMT可能主要挤占美光原有的市场空间。</p>
+<p><b>预计2027年HBM的总供给量为600亿Gb，这一预测是否已将良率、验证及设备扩产瓶颈等因素纳入考量？此外，2028年的供给量预计将达到何种水平？</b></p>
+<p>2027年600亿Gb的预测是基于三家主要存储器供应商在正常生产情况下的总供给能力。虽然生产过程中可能出现工艺等突发问题，但该预测是在正常运营前提下得出的。对于2028年，预计供给量可能达到900多亿Gb。然而，能否实现这一目标存在不确定性，主要受限于设备瓶颈等因素。2027年的产能扩张相对明确，因为相关订单在2024至2025年已经下达并准备就绪。相比之下，当前（2026年）下的订单主要对应2027年及以后的产能，而目前市场扩产意愿强烈，例如美光和长鑫存储都表现出积极的扩产态势，这种竞争格局可能会加剧HBM键合等环节的设备瓶颈。</p>
+<p><b>HBM与服务器DRAM的长期供货协议在架构上有何不同，尤其是在锁定量和价格机制方面？</b></p>
+<p>HBM与服务器DRAM的LTA在机制上存在显著差异。HBM的LTA核心目标是锁定供应量，价格谈判则相对独立和敏感。截至2026年，HBM的价格通常每年谈判一次，并且价格逐年上涨。价格谈判过程可能耗时较长，例如2026年为2027年签订LTA时，由于公司与英伟达在期望价格上存在较大分歧，谈判持续了两个多月，直至第三季度末才最终敲定。这凸显了HBM价格谈判的敏感性和重要性。相比之下，服务器DRAM的LTA价格机制更为灵活。其价格是按季度进行谈判和调整的。因此，LTA中通常只设定一个较为保守的价格下限，而每个季度的最终成交价会在此基础上另行商议。所以，LTA中写入的价格对服务器DRAM的实际交易影响不大，谈判重点也并非围绕此展开。</p>
+<p><b>HBM4E在2027年的预期价格水平如何？</b></p>
+<p>HBM4E在2026年基本没有出货，因此尚无正式市场价格。</p>
+<p><b>目前服务器DRAM市场的LTA签订进展如何？其价格和量的谈判机制是怎样的？</b></p>
+<p>在服务器DRAM市场，与北美主要客户如谷歌、Meta、微软、亚马逊及Oracle的LTA已经签订完成。与中国主要厂商如字节跳动、阿里巴巴和腾讯的谈判则正在进行中。通常，在这八家主要客户完成签约后，LTA的签订工作便可视为基本完成。关于价格机制，目前主要存在两种模式。第一种是传统模式，即在LTA中设定一个保守的价格下限，该下限通常参考今年（2026年）第二季度的合约价，然后每季度再根据市场情况具体谈判当季价格。第二种是近年来出现的新模式，适用于三至五年的长期协议。该模式会在协议中设定一个较宽的价格范围，包含价格上限和下限。签约双方在此价格区间内，按季度协商具体执行价格。</p>
+<p><b>基于当前的LTA价格机制，如何展望2027年服务器DRAM的价格走势？价格大幅下跌的可能性和时间点是什么？</b></p>
+<p>根据LTA中设定的价格下限（约17.6美元/GB），预计2027年的服务器DRAM价格至少会维持在17.6至20美元/GB的区间，不会跌破17.6美元的水平，并且很有可能达到20美元/GB。对于价格大幅下跌的风险，这主要取决于供需关系的变化。从供给端来看，预计到2028年下半年之后，市场供给量将显著增加。如果届时需求的增长速度未能跟上供给的扩张速度，市场可能会开始出现降价。不过，存储器市场价格波动迅速且难以预测，同样也可能在一年内快速下跌。</p>
+<p><b>对于服务器DRAM，2026年第四季度的价格增长预期是多少？2027年的价格走势又将如何？</b></p>
+<p>2026年第四季度服务器DRAM的价格增长预计在0%至5%之间，这低于市场对整体DRAM双位数增长的普遍预期。整体DRAM的平均销售价格（Blended ASP）可能达到10%至12%的增长，主要是受消费级产品约20%的价格上涨所驱动。展望2027年，服务器DRAM的价格预计将保持稳定，既不上涨也不下跌。</p>
+<p><b>2027年公司、海力士和美光在DRAM Blended ASP方面将有何差异？公司的ASP是否会优于海力士？</b></p>
+<p>预计2027年公司的Blended ASP将略高于海力士。这主要得益于公司更高的生产效率，以及其HBM产品在2027年预计将有更高的涨价幅度。从绝对价格来看，公司的DRAM产品本身定价就比海力士更高。若不考虑HBM产品的影响，公司DRAM的Blended ASP增长率可能不及海力士。</p>
+<p><b>2027年全球HBM市场的规模预计将达到多少？</b></p>
+<p>预计2027年全球HBM市场的总规模将达到2,100亿美元。这一估算是基于约600亿Gb的市场需求，以及每Gb至少3.5美元的价格推算得出的。</p>
+<p><b>对于服务器DRAM市场，2028年是否存在价格下行的风险？</b></p>
+<p>远期价格存在不确定性，正如2025年时无法预见到2026年的价格大幅上涨一样，对两年后的市场进行准确预测十分困难。不过，从供给端的角度分析，2028年以后市场有可能达到供需平衡的状态。但最终价格走势仍取决于届时的需求情况，如果2028年市场需求依然强劲，价格未必会下跌。</p>
+<p><b>当前公司和海力士在DRAM扩产方面各自面临的主要瓶颈是什么？</b></p>
+<p>各个时间点的瓶颈会有所不同。对于公司而言，由于P4工厂的洁净室已经建成，当前的瓶颈主要在于设备的迁入（move-in）。在P4扩产完成后，下一个瓶颈将是P5工厂的洁净室建设。公司的策略是先行建设洁净室，然后通过控制设备迁入的速度来调节扩产节奏。海力士的情况类似，但由于其自主建设洁净室的经验相对不足，建设速度可能没有那么快，因此洁净室建设在未来可能成为其持续的瓶颈。</p>
+<p><b>存储厂商的扩产计划在2027至2028年是否会放缓？</b></p>
+<p>预计到2028年，公司、美光等主要厂商仍将维持非常积极的扩产态势，因为市场普遍预期届时HBM（高带宽内存）能够以高价售出，从而获得可观的商业回报。长鑫存储的积极扩产策略预计将持续至2030年。</p>
+<p><b>存储厂商转向积极扩产态度的原因和具体时间点是什么？</b></p>
+<p>市场态度的转变始于2026年第一季度，该季度产品价格出现了超预期的显著上涨。这一变化促使各大厂商普遍希望加速扩产。受此影响，公司平泽第四工厂（P4）的扩产进度实际上比原计划推迟了约两个季度，海力士也推迟了约一个季度。厂商普遍认为，至少到20 27年的需求是确定的，而对于2028年可能出现的风险，则选择先行扩产以承担这部分风险。</p>
+<p><b>面对2028年可能出现的需求不及预期的风险，厂商有哪些应对措施？这些措施对财务报表有何影响？</b></p>
+<p>若2028年市场需求未能跟上供给增长，主要的应对措施是放缓设备的迁入（Move-in）速度。已经进入工厂的设备无法控制，但可以通过调整后续设备订单来调节产能。放缓设备迁入将直接影响收入确认，导致收入减少。此外，如果市场状况恶化，例如价格大幅下跌至0.3美元，导致生产即亏损，那么停止扩产甚至减产将是比持续亏损生产更有利的选择。因此，最终的扩产决策将依据当时的市场情况而定。</p>
+<p><b>扩产决策的具体流程和时间周期是怎样的？目前针对2028年的扩产决策进展如何？</b></p>
+<p>扩产决策分为两个主要阶段：厂房建设和设备迁入。厂房建设（洁净室等）周期较长，需要提前3至4年决定，因为从零基础开始建设到可以扩产需要4到5年时间。不过，厂房建设在总资本开支中占比较低，因此可以先行建设。设备迁入的决策周期相对较短，通常为12至18个月。基于此时间表，针对2028年上半年的设备采购等决策已基本完成，但2028年下半年的决策尚未最终确定，厂商对此表现出一定的犹豫，相关决定将在2027年第一季度左右做出。</p>
+<p><b>在客户需求尚未完全明确的情况下，为何厂商仍要提前决定2028年的扩产计划？</b></p>
+<p>尽管存在风险，但公司、美光等厂商在行业下行周期中通常会选择自行承担风险进行扩产。虽然2028年上半年的客户需求尚未得到完全确认——例如大型数据中心客户通常在2027年第二或第三季度才会确定其2028年的需求——但如果等到需求明确后再进行扩产，届时的扩产速度将无法满足客户的交付时间要求。因此，为了匹配未来的需求交付节点，厂商必须提前做出扩产决策。</p>
+<p><b>为什么当前HBM的毛利率相对低于服务器DRAM？</b></p>
+<p>HBM的毛利率相对较低，主要源于其定价机制。HBM的价格通常每年协商一次并固定下来。2026年初，服务器DRAM的价格约为0.7美元，而当时HBM的定价为2.3美元，毛利率相比当时服务器DRAM的毛利率具有优势。然而，2026年服务器DRA M价格经历了数倍的疯狂上涨，目前已达到2.6美元，而HBM的价格仍维持在2.3美元，未能享受此轮涨价红利，导致其毛利率与服务器DRAM出现了倒挂。</p>
+<p><b>HBM的成本构成是怎样的？未来HBM4和HBM4E的成本预计会有何变化？</b></p>
+<p>以当前的毛利率估算，HBM的成本主要来自HBM的生产环节。对于未来的HBM4和HBM4E，预计成本不会有大幅增加，因为其芯片面积等物理参数没有显著差异，主要的升级在于速度的提升。</p>
+<p><b>传统DRAM的毛利率未来将呈现怎样的变化趋势？</b></p>
+<p>传统DRAM的毛利率预计至少在2027年将保持相对稳定，不会出现大幅变化，因为上游材料等成本的上涨速度远慢于产品价格的上涨。然而，如果市场从2028年开始进入降价周期，那么毛利率也将随之开始下降。</p>
+<p><b>关于服务器产品，2026年第四季度的ASP增长预期为0-5%，而其他产品为20%。请问2027年服务器及其他产品的ASP增长预期？</b></p>
+<p>2027年服务器产品没有涨价空间。但HBM在2027年的涨价幅度会非常大。</p>
+<p><b>2027年整体DRAM行业的net bit增长率预计是多少？</b></p>
+<p>从bit数来看，2027年整体DRAM行业的增长率预计不高，不同应用领域的增长率差异会很大，有些领域可能出现负增长，而另一些则增长强劲。</p>
+<p><b>当前一片DRAM晶圆能够生产多少GB的HBM3和HBM3E？</b></p>
+<p>评估一片晶圆能生产多少个芯片并不划算，因为不同产品的容量和Die尺寸都不同。例如，HBM3的Die尺寸是HBM2的两倍，容量也是其两倍（3GB或4GB）。以GB容量来计算更为方便。对于4GB Die的HBM3，一片晶圆大约能产出400到500个Die，总容量约为1,600到2000GB。对于HBM3E，虽然Die的数量更多，但单Die容量较小，因此一片晶圆产出的总容量也差不多，预计在1,600到1,700GB左右。</p>
+<p><b>目前公司、SK海力士等主要厂商在HBM后段TSV等工艺上的良率是否存在显著差异？海力士之前遇到的良率问题具体是什么情况？</b></p>
+<p>HBM已经生产了数年，因此公司和SK海力士在良率方面应该没有特别大的问题。海力士近期遇到的问题并非永久性的良率下降，而是偶尔发生的失误，这可能是两个月前的原因所致。</p>
+<p><b>目前公司HBM业务的主要客户是哪些？AMD的采购情况如何？</b></p>
+<p>公司HBM的主要客户是谷歌和英伟达，这两家公司占据了全球约70%至80%的市场份额。其中，谷歌的TPU是最大的采购方。AMD的出货量不大，因此其HBM采购量也很少。其他CSP自研芯片的HBM用量也不多。</p>
+<p><b>公司在4纳米和3纳米的逻辑制程上是否已经成熟？未来HBM5等产品是否会采用自家的先进逻辑制程？</b></p>
+<p>4纳米工艺已经比较成熟，3纳米工艺现在也已成熟，2纳米则是更先进的制程。原计划在HBM5上使用自家的2纳米工艺，但近期英伟达提出了NVHBM方案，要求所有base die都在台积电生产，这给原计划带来了不确定性，需要视情况而定。目前的计划仍然是采用自家工艺生产。</p>
+<p><b>您认为客户会普遍接受英伟达主导的NVHBM模式吗？对于CSP自研芯片，其HBM base die的代工选择是否会更加灵活？</b></p>
+<p>客户可能会接受。英伟达主导的NVHBM采用统一的定制化HBM实现方案。如果公司坚决反对，也并非没有回旋余地。对于CSP自研芯片，它们更倾向于采用定制化的HBM（Customized HBM），这意味着它们可以自己设计base die，并在选择代工厂方面拥有更大的灵活性，可以选择台积电、公司晶圆代工部门或英特尔。下一代HBM可能会有更多定制化的空间，以适应这种需求。</p>
+<p><b>英伟达推动NVHBM方案，要求所有HBM供应商的base die统一在台积电生产，其背后的主要动机是什么？这是否会影响与公司的合作关系？</b></p>
+<p>英伟达认为，将所有供应商（如公司、SK海力士、美光）的base die统一在台积电生产，可以简化管理。目前各家HBM供应商的base die设计各不相同，虽然功能上遵循统一标准，但内部设计存在差异。统一设计和生产地点对英伟达而言更为方便。然而，公司与台积电的合作关系并不融洽，公司过去曾希望在台积电生产逻辑芯片但遭到拒绝，因此公司也不太愿意与台积电在此方面进行合作。</p>
+<p><b>对于数据中心建设可能因电力或融资问题而延迟，您是否有较大担忧？这是否会给英伟达、博通等公司的需求带来风险？</b></p>
+<p>对2028年之后的情况存在担忧。到2027年，全球数据中心的资本支出规模预计将从原先的1万亿美元上调至1.4万亿美元。如此巨大的投资规模导致谷歌、Meta等公司的现金流持续下降。它们正通过与GPU云服务商（neocloud）、金融机构（如摩根士丹利、贝莱德）合作等方式进行融资。这种模式能持续多久尚不确定，如果一直这样下去，到2028年这些公司可能会面临资金短缺。业界已开始担忧此问题，公司也在关注2028年下半年这种增长节奏能否持续。</p>
+<p><b>考虑到对2028年下半年市场需求的担忧，公司将在何时决定是否调整相关的设备采购计划？目前的EUV设备采购是否能满足到2028上半年的需求？</b></p>
+<p>关于调整2028年下半年设备采购的决策，最快可能在2027年第一季度，最晚则在2027年下半年做出。不同设备的交付周期不同，例如EUV设备需要提前一年半决定，而其他一些设备提前一年即可。目前EUV的产能非常有限，即使公司想多采购也无法获得。按照现有的采购计划，满足到2028年上半年的需求应该没有问题。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

@@ -1,0 +1,202 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.19 | AC | ASIC | AI ASIC Pt.2: CoWoS, EMIB &amp; Custom Chips</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.19 | AC | ASIC | AI ASIC Pt.2: CoWoS, EMIB &amp; Custom Chips</h1>
+<p class="orig">原标题：AI ASIC调研（2）｜CoWoS产能偏紧，EMIB验证与大厂自研芯片进展</p>
+<p class="tags">#asic #packaging</p>
+<p class="meta">AceCamp · 2026-11-19 23:16 · article 70569442</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>供给瓶颈在先进封装，英伟达已预订台积电近六成CoWoS产能，2027年供给可覆盖大部分TPU需求但可能有小幅缺口，第二供应商最快2028年初导入。</li>
+<li>联发科较早启动英特尔EMIB验证，最早2027年二季度导入，2027年EMIB封装规划200-300万颗而可获CoWoS仅30-50万颗；博通最快2027年底至2028年初导入。</li>
+<li>有机基板良率约70%，两套封装方案整体良率差约5-10个百分点，若验证顺利2028年EMIB需求可超过500万颗。</li>
+<li>Meta MTIA 2026年出货约50万颗、2027年有望超100万颗；OpenAI与博通的Jalapeño 2026年不超过20万颗、2027年部署有望超100万颗；字节海外ASIC预计2027Q1推出、全年30-50万颗。</li>
+<li>亚马逊Trainium4出货预计100万颗以上，自研芯片每年200-300万颗量级；微软Maia 300年出货可能接近100万颗。</li>
+<li>目前未见GPU与ASIC明显砍单，2027-2028年排期多已锁定甚至延伸至2029年，但客户预算、融资和数据中心审批仍可能影响部署节奏。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>CoWoS产能偏紧，联发科较早启动EMIB验证，公司也在评估封装和制程的第二供应来源。EMIB能承接多少新增需求，取决于TPU项目的良率和量产验证。</p>
+<p>Meta、OpenAI、亚马逊和微软的自研ASIC继续推进。短期未见明显砍单，后续部署还要看封装产能、电力和客户预算。</p>
+<p>以下为专家观点：</p>
+<p><b>1，2027至2028年，哪些供给瓶颈可能影响TPU出货？</b></p>
+<p>供给压力主要在先进封装。按目前的估算，英伟达已预订台积电接近六成的CoWoS产能。台积电仍在扩产，2027年的供给预计能覆盖大部分TPU需求，仍可能有小幅缺口。</p>
+<p>博通过去在先进制程和CoWoS上高度依赖台积电，短期切换的难度较大。英特尔、三星和日月光等都是可能的封装备选。按目前的进度，第二供应商最快有望在2028年初导入。</p>
+<p><b>2，除先进封装外，前端制程是否也在考虑第二供应商？</b></p>
+<p>前端制程也在评估第二供应来源，英特尔是备选之一。</p>
+<p><b>3，联发科和博通验证英特尔EMIB的进度有何不同？预计何时能导入？</b></p>
+<p>联发科启动得较早，预计最早可能在2027年第二季度开始导入。博通目前仍处于评估阶段，最快可能在2027年底至2028年初导入。</p>
+<p>英特尔在自有CPU上已有EMIB应用经验。TPU需要通过硅桥等结构集成多颗HBM，封装设计不同，量产前要经过多轮验证。如果后续改用玻璃基板，还可能延长验证时间。</p>
+<p><b>4，博通会考虑英特尔18A或14A等先进制程吗？</b></p>
+<p>18A等先进节点在评估范围内，目前还很早。随着3纳米和2纳米产能趋紧，英特尔和三星都有机会成为备选。能否量产主要看良率、性能和成本是否达到要求。</p>
+<p>台积电有多代产品的验证基础。英特尔过去主要服务自己的产品，适配不同外部客户仍需要时间。长期也有可能在同一节点引入两个供应商，降低单一供应来源带来的产能和良率风险。</p>
+<p><b>5，联发科采用EMIB是否存在良率或交付延迟的风险？</b></p>
+<p>存在风险。EMIB在英特尔自有CPU上的经验可以参考，TPU的良率和性能仍要用实物验证。按目前的估算，2026年还不会有产出，2027年第二季度有望开始少量交付。整体风险预计可控，后续关注良率和交付节奏。</p>
+<p><b>6，联发科的EMIB封装规模预计有多大？如果进展慢，能切回CoWoS吗？</b></p>
+<p>按目前的调研估算，联发科2027年EMIB封装规划约200万至300万颗，覆盖大部分新增需求。其可获得的CoWoS产能预计只有约30万至50万颗。若2027年良率和交付符合预期，2028年的EMIB需求可能达到500万颗以上，博通也可能跟进。</p>
+<p>如果EMIB良率或交付不及预期，联发科可能降低EMIB的比重，转回台积电或考虑三星。TPU的封装结构与台积电已有验证经验的方案较为接近，技术切换相对快，实际能转多少还要看CoWoS产能。</p>
+<p><b>7，有机基板良率是否会制约EMIB放量？</b></p>
+<p>目前有机基板环节的良率估计在70%左右。两套封装方案的整体良率差距估计约5至10个百分点，具体还要看TPU项目的量产验证。若2027年验证和爬坡顺利，2028年EMIB封装需求有望超过500万颗。</p>
+<p><b>8，Meta、OpenAI和字节跳动的ASIC项目进展如何？</b></p>
+<p>Meta的第二、第三代MTIA在2026年预计合计出货约50万颗。随着MTIA 400推进，2027年全年MTIA总出货有望超过100万颗。</p>
+<p>OpenAI与博通合作的Jalapeño于2026年6月24日首次公开亮相。从初步设计到流片约九个月，目前仍在爬坡。预计2026年出货不超过20万颗，2027年的部署规模有望超过100万颗。</p>
+<p>字节跳动的海外ASIC项目在暂停后继续推进。按调研估算，该项目有望在2027年第一季度推出，全年出货约30万至50万颗。</p>
+<p><b>9，美国代工限制可能怎样影响字节跳动的海外ASIC项目？</b></p>
+<p>海外项目面向TikTok的海外部署，字节跳动在国内另有芯片项目，两边的团队和设计要求不同。按目前的观察，海外项目仍在推进，后续要看具体审查和部署安排。</p>
+<p><b>10，亚马逊Trainium4的出货体量如何？博通承担什么工作？</b></p>
+<p>Trainium4的出货规模预计在100万颗以上。Marvell和世芯参与主要设计，博通侧重部分3D设计服务。</p>
+<p>亚马逊自研芯片的整体部署规模估计在每年200万至300万颗量级。Anthropic是Trainium的重要客户，公开披露的Trainium2使用规模已超过100万颗。</p>
+<p><b>11，微软Maia 300的出货规模如何？</b></p>
+<p>微软Maia由Marvell协助设计。按调研估算，Maia 300的年出货量可能接近100万颗，更详细的出货数据还不清楚。</p>
+<p><b>12，近期GPU和ASIC订单有明显下调吗？</b></p>
+<p>训练端可能有一些调整，目前没有看到明显砍单。大规模采购训练算力的需求更集中在少数头部厂商，更多公司将资源转向推理应用，或直接使用现有模型。训练投入很高，推理需求预计会增长得更快。</p>
+<p>芯片订单通常提前规划，短期事件对已排定订单的影响有限。到目前为止，美国市场没有出现大范围削减订单的情况。</p>
+<p><b>13，2027至2028年的芯片排期锁定后，哪些因素仍可能改变部署节奏？</b></p>
+<p>从台积电的产能到英伟达的芯片供应，2027年和2028年的排期大多已提前锁定，部分排期已延伸至2029年。短期出现大幅变动的可能性较低。</p>
+<p>客户预算、融资进度和数据中心审批仍可能影响实际部署。如果美国本土项目的审批、供电或成本压力上升，部分客户也可能把更多项目放到海外。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

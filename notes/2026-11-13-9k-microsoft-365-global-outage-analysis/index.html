@@ -1,0 +1,271 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.13 | 9K | MSFT | Microsoft 365 Global Outage Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.13 | 9K | MSFT | Microsoft 365 Global Outage Analysis</h1>
+<p class="orig">原标题：微软离职安全专家|北京时间今天凌晨2点左右Microsoft Exchange前端代理CAFÉ容量异常并经Substrate扩散为全球宕机，Outlook、Copilot及部分安全服务受影响而Azure绝大多数基础设施正常，24小时成为缓存与安全风险关键节点，多地区部署难以规避单点失效，混合身份架构、自建Agent工作流及多云备份需求可能上升</p>
+<p class="tags">#security #cloud #software</p>
+<p class="meta">Meritco 久谦 · 2026-11-13</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>微软前安全专家称，北京时间凌晨2点左右Microsoft Exchange前端代理CAFÉ出现资源和容量异常，机器下线后动态补充又被压爆，叠加可能的误摘除导致集群持续容量不足，并经Substrate数据中间层扩散为全球连锁故障。</li>
+<li>根因尚未确认，专家推测可能是小更新叠加自动运维系统出错的纯软件问题，官方表示目前未发现恶意攻击迹象，影响范围与此前Entra ID全球更新事故类似但恢复更慢。</li>
+<li>受影响的核心是Outlook、邮件搜索、日历、Microsoft 365 Copilot、Azure Communication Services及Defender、Purview的部分能力，而Word、Excel、PowerPoint、Teams聊天通话和Azure绝大多数计算存储网络数据库服务基本正常。</li>
+<li>Defender和Purview的仪表盘与人工干预不可用，但保护策略、本地规则库和数据写入仍在生效，Copilot无法读取安全标签后直接停止输入输出，专家认为这种类似保险丝跳闸的处理是正确的。</li>
+<li>故障超过12小时后，24小时成为关键节点，若本地缓存写满日志可能溢出或被覆盖，零日漏洞攻击可能无法事后追查，部分高压力安全服务也可能出问题。</li>
+<li>全球多地区部署基本无法规避此次故障，真正有效的是保留本地Exchange Server和Active Directory的混合架构，但受本地容量限制只能迁回部分核心业务。</li>
+<li>仅在AWS或GCP做基础设施备份无法解决共用身份认证的单点失效，企业可能考虑独立身份系统、第三方安全组件和基于底层云自建Agent工作流，身份服务通常按席位收费约每人个位数美元。</li>
+<li>SLA抵扣将确定性影响微软账目和现金流，处于采购谈判期的Microsoft 365丢单风险高于Azure；三年合同使安全业务即时冲击有限，但续约周期内部分工作负载可能转移，多云趋势下Google Cloud相对受益。</li>
+<li>专家认为AI正在提升攻击者效率，Agent可低成本同时攻击多个目标，短期攻击方占优，安全投入将带动终端安全、设备管理和网络访问产品收入，但更多是缓慢上升。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>Microsoft Exchange前端代理异常经Substrate扩散，导致Outlook、Copilot及部分安全服务全球宕机，根因仍未确认。Azure多数基础设施未受影响，24小时是缓存风险关键节点；多地区部署失效凸显身份与SaaS单点风险，企业或转向混合部署、独立身份备份和底层云自建应用。</p>
+<h2>要点</h2>
+<ol><li>北京时间今天凌晨2点左右，Microsoft Exchange 前端代理 CAFÉ 出现资源和容量异常，机器下线、动态补充后再次被压爆及可能的误摘除令集群持续容量不足，并经 Substrate</li></ol>
+<p>数据中间层形成全球连锁故障；根因尚未确认，可能与小更新叠加自动运维系统出错有关，但仍属推测</p>
+<ol><li>此次宕机核心影响集中于 Outlook、邮件搜索、日历、Microsoft 365 Copilot、Azure Communication Services，以及 Microsoft Defender、Microsoft</li></ol>
+<p>Purview 的部分能力；Word、Excel、PowerPoint、Teams 聊天与通话及 Azure 绝大多数计算、存储、网络和数据库服务基本未受影响</p>
+<ol><li>Microsoft Defender、Microsoft Purview 等仪表盘和人工干预能力虽不可用，但现有证据显示保护策略、本地规则库及数据写入仍在生效，Copilot</li></ol>
+<p>在无法读取安全标签后直接停止输入输出；故障超过12小时后，24小时成为关键节点，若缓存写满，日志可能溢出或被覆盖，部分高压力安全服务也许会出现问题</p>
+<ol><li>全球多地区部署基本无法规避此次故障，因为自动化运维持续向同一相关集群补充机器并将故障扩散至全球；更有效的恢复路径是保留本地 Microsoft Exchange Server、Active Directory</li></ol>
+<p>等混合架构，但受本地容量限制，通常只能迁回部分核心业务</p>
+<ol><li>仅在 AWS 或 GCP 备份基础设施无法解决 Microsoft 365 办公体系及共用身份认证的单点失效，企业可能考虑独立身份系统、第三方安全组件和底层云服务自建 Agent</li></ol>
+<p>工作流；身份服务通常按席位收费，微软同类服务价格大致为每人个位数美元，国际主流产品基本可实现互通</p>
+<ol><li>SLA 抵扣账单或返还点数将确定性影响微软账目、会计和现金流，采购谈判期的 Microsoft 365 丢单风险高于</li></ol>
+<p>Azure；三年合同使安全业务即时冲击有限，但在3年、4年或5年续约周期内，客户可能将部分工作负载转向其他厂商，多云趋势下 Google Cloud 作为第二朵或第三朵云可能相对受益</p>
+<h2>Q:能否先用一两分钟回溯一下这次宕机事件的关键节点，以便建立共同的背景？</h2>
+<p>A:截至目前，整体事件全貌仍不清晰，各方仍在持续同步信息和排查问题，服务本身也尚未完全恢复。因此，当前排查出的很多情况仍只是对故障状态的描述，是否属于真正的根本原因，目前还无法作出绝对判断。</p>
+<p>大约在北京时间今天凌晨2点，首先观察到以 Microsoft Exchange为代表的邮件服务及一系列相关服务开始出现故障。最初的影响应该仍局限于局部范围，随后逐渐蔓延，所有与身份认证相关的一系列服务也陆续出现问题。目前基本排查到，Microsoft Exchange的前端代理出现了一些问题，导致其资源和容量需求增加，支撑它的一系列相关组件集群整体被打爆。</p>
+<p>此后不断有机器下线，下线后动态补充的机器再次被压爆；操作过程中还有一些机器可能被误摘除，导致整个集群始终处于容量不足的水平，进而产生连锁反应。处理压力持续积累，后续流量洪峰又不断冲击集群。至于前端代理层为何会出现内核锁死、端口堆积、内存耗尽等问题，目前仍未看到结论，修复工作也处于边推进、边观察的状态。</p>
+<p>相关依赖组件被打爆后，尤其是整体数据层的一系列组件，进一步引发了连锁反应。该数据层支撑邮件、日历以及 Azure 上的少部分服务，例如 Azure Communication Services，还包括 Microsoft 365 Copilot 等近期服务。调用其中身份信息的关联服务，甚至 Microsoft Defender、Microsoft Purview 等安全组件，也出现了部分服务不可用的情况。</p>
+<p>这次故障蔓延得比较快。官方提到会优先恢复当时处于业务峰值的部分区域。亚太和欧洲地区逐渐进入工作日高峰，但当时能够观察到的亚太地区，包括日本、澳大利亚、中国、东南亚，以及中东和刚进入工作时段的欧洲，绝大部分服务仍未恢复，整体仍处于宕机状态；美国东海岸也将很快进入工作时段。</p>
+<h2>Q:目前还没有排查出原因。微软今年此前应该也发生过两次较大规模的宕机，之前的原因是什么？</h2>
+<p>A:之前的具体情况记得不太清楚，其中有一些是线路故障等原因。这一次看起来应该是纯软件故障。根据技术层面的理解，问题可能与自动运维和更新系统有关。推测可能是某个小更新引发问题，再叠加自动运维系统出错，最终导致整个系统宕机。这次看起来较明确地属于纯软件问题，但上述原因仍只是推测。</p>
+<h2>Q:从传播机制看，最初只是局部问题，后来为何会蔓延到全球？不同地区和产品共用了什么功能或产品？是身份认证功能导致的吗？</h2>
+<p>A:不是，身份认证等服务是被波及的。真正的核心点是前面提到的、姑且称为 CAFÉ 的前端代理层。该层被带崩以后，真正扩大影响范围的是 Substrate 层。Substrate 是支撑整体数据的中间层，大量服务横向依赖这一层，因此Microsoft Purview、Microsoft Defender 等服务都受到了影响。</p>
+<p>客户普遍关心的是:Microsoft Defender、Microsoft Purview等服务出现问题，无法查看状态，是否意味着保护也已失效？根据现有证据，保护策略仍在生效。发生问题的数据会写入本地，相关功能本身仍然有效。当前无法完成的是人工干预，例如收到报警推送后的操作，以及是否人工批准例外放行等。这些动作目前无法执行，系统更多是将所有内容暂时按住。Safe Links 等服务也类似于一键锁死，如同金库发生故障后先将大门锁住。</p>
+<p>这类影响最快可能要到24小时以后，才会出现本地缓存等系统写满的情况。当时故障已持续超过12小时，下一个重要里程碑是能否在24小时节点内完整恢复。如果24小时内仍无法完整恢复，一些压力较大的安全服务也许会出现问题。</p>
+<h2>Q:官方表示目前没有看到攻击迹象。一般需要检查哪些证据，才能判断这次宕机并非攻击所致？目前一些安全平台本身也不可用，“没有攻击”这一结论是如何判断的？</h2>
+<p>A:Microsoft Purview 等是对外商用的安全工具，目前无法查看的是其仪表盘等内容，但这并不意味着微软侧完全无法直接读取相关信息。工程团队对外表示，根据进入系统后排查到的情况，没有发现外部信息导致本次过载，也没有发现类似DDoS 攻击或在某处投毒的情况。其他独立安全系统同样没有发现告警或渗透迹象。</p>
+<p>工程团队进行了相应取证，包括检查网络路由等环节，因为攻击不可能完全绕过这些环节且不留下任何痕迹。在审批工作流、流水线、异常特权登录等一系列环节中，也没有发现相应迹象。这是目前作出“没有恶意行为”这一判断的依据。</p>
+<h2>Q:目前可能仍然没有人看到事件全貌，只是根据现有迹象判断没有恶意攻击，对吗？</h2>
+<p>A:对，因此官方措辞是“到目前为止，我们没有发现任何恶意攻击”。工程团队不会第一时间对外公布所有检查动作，因为公布得越详细，攻击方越可能采取更具针对性的行动，对外通常只会发布概括性的通用信息。微软持续面临较大的攻击压力，相关团队第一时间必然会检查是否由外部攻击导致，但至少目前工程团队还没有给出任何这方面的迹象。</p>
+<h2>Q:应该如何理解如此大范围的宕机？这是系统运行中偶尔会发生的意外，还是非常罕见的事件？</h2>
+<p>A:系统运行中确实可能发生意外，但这次如此大范围的宕机比较罕见。印象中，上一次影响范围如此之大的是 Microsoft Entra ID的一次更新。当时可能没有进行灰度发布，而是直接向全球推送更新，导致所有用户都无法登录。业务本身仍在运行，但用户无法进入账户。今天这次事故的影响范围与上次类似，持续时间凭印象看可能更长，而且发现问题似乎也更慢。</p>
+<p>上一次很快就定位到更新，找到推送问题后迅速回滚并重新部署。这一次目前获得的都是描述性信息，只说明前端发生了什么，却没有正式披露原因，甚至没有作出推测或暗示。根据经验，这类情况看起来像是某次更新导致的，但目前并没有信息表明确实发生过相关更新，还需要检查更新日志。如果当时根本没有推送过更新，就不能把责任归因于更新，也可能是其他原因造成的。</p>
+<h2>Q:这次事故对企业的实际影响是什么？普通办公人员是否无法使用 Outlook、部分 Office 功能和 Copilot？如果企业数据库或业务部署在 Azure 上，业务本身是否也会瘫痪？</h2>
+<p>A:这次宕机的核心影响是 Outlook。先看没有受到明显影响的部分:Azure 上绝大多数服务目前没有受到影响。少数受到影响的是与此次宕机相关的服务，例如 Azure Communication Services。该服务可用于发送营销邮件、广告邮件等群发邮件，目前已经明确受到影响，多数受影响的项目都与邮件有关。</p>
+<p>在 Microsoft 365 套装中，Microsoft Defender、Microsoft Purview 等安全服务受到部分影响；Outlook 无法使用，但 Word、Excel、PowerPoint本身没有受到影响。SharePoint 这类单纯提供存储功能的服务，如果没有附加相关加密或安全标签，也没有受到影响。受到影响的是需要调取全局数据的服务，例如 Copilot、邮件及邮件搜索等。</p>
+<p>Teams 的正常聊天、通话、频道和电话等服务独立于邮件，目前几乎没有受到影响；受影响的是日历，即会议预订功能，因为它与 Outlook 绑定。如果企业的大量业务系统架设在 Azure的计算、存储、网络和数据库等基础设施上，基本没有受到太多影响。但如果日常办公强依赖邮件以及 Microsoft 365 Copilot 类能力，就会受到影响。纯手工制作 PPT、编写文件，基本不受影响。</p>
+<h2>Q:是否看到采用多地区部署的客户出现一个地区照常运行、另一个地区不可用的情况？以 Outlook 或 Copilot 为例，能否依靠部署地区差异规避故障，还是基本会在全球范围内宕机？</h2>
+<p>A:今天凌晨较早时，部分区域似乎仍在正常运行，而其他区域已经宕机。但随着事件发展，自动化运维系统不断将其他机器加入集群，整个相关服务集群都受到挤压并被打爆，故障逐渐向全球蔓延。根据目前的情况，基本无法依靠全球多地区部署来规避此次故障。</p>
+<h2>Q:也就是说，即使客户布局了两个地区，此次架构也无法为其提供额外的恢复路径，对吗？</h2>
+<p>A:对。真正可能成功实现备份切换的是混合部署。有些客户仍在本地数据中心部署 Microsoft Exchange Server，通常是因为部分服务无法上云而历史性地保留在本地。故障发生后，他们将一部分核心流量迁移回本地，似乎恢复了部分服务。由于本地服务不足以支撑整个集团，因此只能迁移部分核心业务。</p>
+<h2>Q:此次事故后，是否会有更多企业采用混合部署或多云部署，例如同时在 AWS 和 Azure 上部署备份？还是说很多混合部署仍主要源于权限限制、数据不能上云等原因？这对云部署的长期影响是什么？</h2>
+<p>A:如果从长期角度规避此次问题，较正确的路径看起来应该是混合部署，多云部署未必有效。就事论事，这次是 Microsoft 365 出现问题；有人可能进一步认为，既然 Microsoft 365 会宕机，Azure也可能宕机，因此考虑多云，但这是由此次事件进一步推导出的另一层影响。</p>
+<p>单纯针对办公体系，如果不同时部署 Microsoft 365、Google Workspace、Slack 等两套办公系统，仅在 AWS 或 GCP上再部署一套基础设施，很难解决此次邮件和办公系统故障。企业办公数据通常具有归一性，很少同时运行一套 Gmail 和一套 Microsoft Exchange。少部分中国客户因信创等要求，可能在中国内地使用本地系统、海外使用Microsoft Exchange，并要求两套系统打通；但多数跨国企业仍统一使用一整套办公体系，因此此次故障相对难以防范。</p>
+<p>如果不计成本，可以在 AWS 上备份邮件相关依赖，但此次身份验证依赖也在云端发生故障。即使在 AWS部署了备份，如果仍使用同一套身份验证，单点失效问题依然存在。能够正常运行的混合部署，本质上是在身份等一系列环节也保留了混合架构，例如保留本地 Active Directory。微软已经广泛推广云端身份服务，并将云端目录服务更名为Microsoft Entra ID，但部分中国客户因特殊情况仍保留本地 Active Directory。因此，从总体架构设计看，过度集中确实引入了单点失效问题，可选择的备份手段也相对有限。</p>
+<h2>Q:宕机过程中，Microsoft Defender 等基础能力可能仍在运行，只是人工无法介入。随着时间延长，是否会越来越危险，因为人员不能处理风险提示和相关问题？外部攻击者会不会抓住这一时机发起更多攻击？</h2>
+<p>A:可能会。首先出现的问题未必是攻击突然增加，而可能是攻击原本就在发生，但事后无法追查。假设存在一个尚未暴露的零日漏洞，黑客开始利用该漏洞发起攻击。以往即使攻击没有成功，也会留下感知信息或日志，便于事后追查、分析并快速采取措施。但随着本地缓存写满，这些记录可能溢出或被覆盖，最终也许永远无法被发现。</p>
+<p>终端引擎、行为检测等能力仍依赖本地规则库。不能认为服务中断12小时，规则库就一定会落后很多；但如果恰好出现零日漏洞，又无法紧急推送更新，该漏洞就更可能被用于发起大规模攻击。攻击者先令整个同步体系瘫痪，再立即利用漏洞发起攻击，这听起来需要非常深远且庞大的计划，发生概率不高，但确实不为零。</p>
+<h2>Q:过去将身份、办公和安全整合在一起，被认为既方便又有优势。发生这类事故后，客户会更重视整合，还是会保留独立供应商，以切断连锁反应？</h2>
+<p>A:此次事故也许会促使客户考虑独立供应商，因为故障确实蔓延到了安全产品。办公套件本身具有一定的天然垄断性和黏性，企业最多可能将整套 Microsoft 365 更换为 Google的产品。但安全产品可以在保留办公系统的前提下采用其他厂商的方案，再叠加一层服务。从长期高可用的角度看，身份认证是否仍要百分之百绑定在微软 Active Directory 上，也值得重新考虑。</p>
+<p>将办公数据存储两份、维护两套办公系统比较困难，但维护另一套身份认证系统在技术上应该可行。身份变化并没有那么频繁，不一定需要每日同步，甚至按周或按月同步，也可能保证备份切换后可用。本地与云端之间本来就存在同步周期。企业可以建立一套独立身份系统，与Active Directory 进行身份同步，再将另一套身份系统绑定到其他安全组件。此前可能只是出于成本和效率考虑而没有这样做。</p>
+<h2>Q:能否列举一些可能因这次事件受益的具体安全供应商？</h2>
+<p>A:目前很难立即列举出很多具体厂商，因为此次微软的单点失效比较特殊:故障并非发生在安全产品本身，而是发生在身份认证环节。因此，应关注能够提供类似身份认证能力的厂商，但受益者不一定是安全厂商。各大云厂商也能提供身份鉴权系统，例如 GCP 和AWS。多云环境下，企业可能将身份认证服务在其他云上备份一份，因此受益者未必是某一家安全厂商。</p>
+<h2>Q:同时运行两套身份认证系统，会增加很多成本吗？</h2>
+<p>A:成本其实没有那么高，但 AWS 等厂商的具体价格体系尚不明确，因为企业通常只会采用一套身份认证系统。微软这类服务一般按席位出售，价格大致为每人个位数美元。</p>
+<h2>Q:微软是否允许接入第二套身份认证体系？两套认证系统是同时存在，另一套作为备份，还是采用其他运行方式？</h2>
+<p>A:两套系统通常并不是以主备方式存在。很多集团会涉及兼并收购，例如被收购的新公司原本使用另一套身份认证体系，收购完成后需要进行整合；企业也可能在使用微软服务数年后迁出。因此，系统必须支持数据迁入、迁出和同步，也可能允许两家公司保持数据同步但暂不合并。这项能力原本是为了支持系统兼容并存，而不是为了实现主备。</p>
+<p>国际主流厂商与微软之间基本可以实现互通。国内部分安全厂商提供的零信任认证服务在与微软打通时可能遇到问题，因为采用的认证标准可能存在差异；国际范围内的主流产品基本都支持互通。</p>
+<h2>Q:对于准备部署 Copilot，或者将 Agent 用于关键流程的客户，此次事故会增加哪些上线门槛？</h2>
+<p>A:这不完全是上线门槛问题，而是客户可能需要重新确认，是否要将关键业务流程全部放在一套 SaaS 系统上。SaaS 系统的可用性完全依赖厂商提供保障，一旦 SaaS 厂商出现问题，就会带来一系列连锁影响。</p>
+<p>从这个角度看，更好的方式可能是在云上自行架设。没有任何方法能够百分之百规避故障，线下数据中心同样无法做到。企业可以在云上建设系统，并进行跨区域备份和高可用配置，包括数据备份和服务备份。云原生应用由一系列服务组件构成，某个相对独立的服务，例如Azure Communication Services 宕机，不一定会导致 Microsoft AI Foundry 的大模型服务或 Agent Framework 下线；某个框架出现问题后，也可能在其他区域快速部署替代服务。</p>
+<p>客户可以在内部开展灾难恢复工作，而不是像此次事故中一样只能等待微软恢复服务。更多依赖底层云服务自行搭建应用流程，可靠性可能明显提升，也可以实现真正意义上的跨云备份。同一套工作流或部署模板可以在 AWS上部署，必要时替换其中部分组件；当一个云出现故障后，可以将流量路由到另一个云，例如在 GCP 故障时切换到 Azure，或在 Azure 故障时切换到 AWS。</p>
+<p>这可能使客户的偏好从 Copilot Studio、Microsoft 365 Copilot 等 SaaS 产品，转向基于底层云服务自行建设。</p>
+<h2>Q:改成这种架构后，客户会增加哪些支出？哪些属于一次性改造支出，哪些会成为长期费用？</h2>
+<p>A:从支出角度看，不能断定这种架构一定更贵。购买 Microsoft 365 Copilot 等产品，除 token 消耗外，还要支付相应的许可证费用。按照使用人数和整体 AI 使用情况计算，SaaS未必一定更省钱。它主要节省的是单独配置的人工和运维成本，相当于将运维委托给微软，但微软的运维也可能出现问题，本质上是一种交换关系。</p>
+<p>如果企业大量自行建设，就需要配置运维团队来管理 Agent 工作流，包括升级和迭代。这个团队不一定由企业内部人员组成，也可能由埃森哲等外部服务商承担，但无论如何，都需要一部分人员长期从事这项工作。</p>
+<h2>Q:此次服务中断会产生哪些商业后果？例如客户索赔、丢单等，哪些结果比较确定，哪些属于潜在负面影响？</h2>
+<p>A:商业后果肯定存在。SLA设有索赔原则，很多索赔不一定直接退款，而是返还点数或抵扣账单。但无论采用哪种方式，都意味着原本应在某个月支付的费用会被抵扣，微软在账目、会计和现金流上都会遭受损失，这一点百分之百确定。由于当时服务尚未恢复，因此还无法确定 SLA会下降到什么程度。</p>
+<p>在丢单方面，如果客户采购恰好处于这一时间节点，就可能面临较大压力。此次宕机导致部分客户无法发送邮件，也无法通过原有办公体系向全员发布通知；如果企业同时运行另一套办公系统，就可能临时切换到替代方案进行内外部沟通。这会直接削弱客户对原有办公产品可靠性的信心。</p>
+<p>如果客户原本就在不同方案之间摇摆，竞争对手又是 Google，且合同正处于采购谈判阶段，就很可能丢单。如果客户正在考虑是否迁移，这类事故确实会产生较大影响。</p>
+<h2>Q:更可能丢单的是 Microsoft 365 等办公产品，还是 Azure 云业务也会受到影响？两者受到影响的程度分别有多大？</h2>
+<p>A:对 Azure 的影响相对较小，对办公业务的影响更大。客户会质疑 SaaS 软件的可靠性，但至少目前 Azure 并未表现得比其他云更脆弱。Azure、AWS、Google Cloud都有过全球级别的大规模宕机记录。大型集团更可能选择多云战略，而不是完全弃用某一家云。单云向多云切换本来就是一个大趋势，也是较为确定的方向。</p>
+<h2>Q:抛开事故是否由攻击引起，长期来看，此次事件会对微软安全业务产生怎样的影响？</h2>
+<p>A:微软相关安全产品大多与办公套件捆绑销售，Microsoft 365 E5 相比 E3增加的很多内容都是安全套件。合同通常按三年续约。在相对成熟的商业市场中，客户大概率不会在合同中途要求退还未使用部分的费用并强制切换，可能会出现少量案例，但对整体业务的即时影响有限。</p>
+<p>从长期看，在3年、4年或5年的续约周期中，部分客户可能会将一部分工作负载切换到其他厂商，作为备份。但微软仍有办法阻止这一趋势扩大，例如调整安全产品架构，将此次发生单点失效的两个环节拆开，提高可用性。即使在未来1年内完成架构调整，也仍有机会保住客户或重新赢回客户。事故不会立即产生全部商业结果，关键在于后续能否解决相关隐患；在此期间，难免会有少量丢单。</p>
+<h2>Q:E5 升级到 E7 主要增加 Copilot 和更高级的安全能力。此次事件会影响客户从 E5 升级到 E7 的节奏吗？还是说客户本来就计划采用 Copilot，再叠加较好的商务政策，因此不会明显影响升级进程？</h2>
+<p>A:可能不会产生太大影响。情绪上，这次事故会影响客户对微软产品可靠性的看法；但从技术上拆分，此次 Copilot 的处理方式看起来可以接受。数据和安全环节发生故障后，AI无法正确读取不同的企业级数据标签，因此系统直接锁死，停止处理所有输入和输出请求。这看起来是面对危机时较为正确的应急状态。</p>
+<p>如果 Microsoft Purview 等数据标签不可用后，Copilot 仍继续输出，反而可能带来真正的企业 AI 安全风险。从用户体验和易用性看，微软 Copilot 类应用可能不如 Claude Code、ChatGPT网页版等面向消费者的应用顺手，但企业继续采用 Copilot 的核心价值，在于它能够无缝兼容企业数据及其权限验证和安全体系，从而节省大量人工处理工作。</p>
+<p>此次故障发生后，系统直接智能锁死，像跳闸或保险丝烧断一样停止所有人使用。这是较为正确的应对方式，并非特别明显的扣分项。相反，如果其他应用在安全标签失效后仍然运行，才会产生风险。此处的不可用意味着立即阻断，因此反而可以被理解为正向处理。</p>
+<h2>Q:如果安全套件能够保证事故期间数据仍然安全，客户是否可能为了避免下次发生类似情况、确保故障时仍受保护，而进行更多安全升级？</h2>
+<p>A:如果企业接入第三方 AI，使其能够读取办公数据，而事故发生后第三方 AI 仍然运行，就可能产生风险。微软整套体系在发生故障时像保险丝一样直接跳闸，以硬停止方式切断应用，是一种更果断的策略。从 AI 角度看，这至少证明 AI与数据之间的安全防线被牢牢守住了。</p>
+<p>事故本身在所难免，理性的 IT 从业者都知道系统可能发生事故，关键在于事故后的措施和策略是否有效。这次可以作为一个有效案例。真正的问题是 SaaS体系单点失效带来的影响，尤其需要考虑核心身份认证是否应当备份，或者是否应从完全云端转为购买部分本地部署产品、采用混合部署。</p>
+<p>混合部署会对微软的商业利益产生影响。微软推动完全云端部署，从财务角度看更有利；如果客户维护第二套身份备份，两套体系长期并存，未来开展成本削减时就可能砍掉其中一套。如果被砍掉的是微软这一套，就会对微软造成实质性伤害。</p>
+<h2>Q:从混合应用和混合部署的发展趋势看，对现有几家大型云厂商而言，谁会受益，谁会受损？</h2>
+<p>A:目前很难得出非常明确的统一结论，不同行业会有差异。从多云角度看，对 AWS 的影响取决于客户类型。对于 AWS 擅长服务的数字原生企业，如果这些客户引入 Azure 等其他云作为备份，对 AWS可能是利空；但对于沃尔玛、梅赛德斯-奔驰等与微软合作较深的传统大型企业，如果它们转向多云，则可能利空微软、利好 AWS。</p>
+<p>相对更明确的受益者可能是 Google Cloud。作为后来者，它可以以第二朵云或第三朵云的身份加入客户架构，获取一定份额。Google 近年的高速增长除了受 AI 领域发展推动外，也与这一趋势有关，其收入规模也在迅速接近微软。虽然Google Cloud 的服务丰富程度相比前两朵云仍有一定差距，但至少在大中华区，其商业策略比较激进，作为备份云显得较为划算，因此多云趋势对它可能构成明显利好。</p>
+<h2>Q:近期币安也遭到黑客攻击。虽然此次微软事故尚未被定性为攻击事件，但随着 AI 发展，高级别安全事件是否会越来越多？</h2>
+<p>A:会。AI 发现零日漏洞的速度会越来越快，对传统系统中的问题也会更加敏感。攻击者会使用多 Agent反复扫描和尝试，寻找漏洞并发起攻击，这将加剧黑客攻击的程度。币安事件之所以能够被公开观察到，一方面是因为规模和影响较大，另一方面是链上能够清晰看到资产异动；但很多企业受到攻击后并不会公开相关情况。</p>
+<p>币安事件还使用了社会工程手段，例如伪造公司面试等。另一些攻击则是纯粹寻找系统漏洞的技术攻击。近期上海一家企业遭到勒索，内部系统被锁死，黑客索要数亿元人民币等值的比特币作为赎金。即使相关机关介入，也很难通过技术手段迅速解决。</p>
+<p>此类攻击明显比过去更加频繁。由于很多事件并不公开，无法进行完整统计，但从整体脉络上可以感知到发生频率正在上升。AI提升了黑客的攻击能力，尤其是传统企业往往依赖固定模式开展安全防护，现有漏洞会被不断发现。部分企业还天然认为线下数据中心比云端更安全，这类固有认知在新型攻击下会显得更加脆弱。</p>
+<p>过去，黑客个人或组织需要投入大量精力才能完成一次攻击；现在，Agent 可以在成本较低的情况下同时攻击多个目标。黑客的投入产出比，即 ROI，明显提升，因此攻击行为会变得更加普遍和广泛。</p>
+<h2>Q:从防守方角度看，企业应当如何应对？第一，将系统放在云端是否比本地部署更安全？第二，企业是否只能增加安全预算、部署更多安全软件来防御攻击？短期看，攻击方是否会因攻击成本降低、攻击数量指数级提升而强于防守方？</h2>
+<p>A:短期内确实是攻击方占优，但防守方也在快速迭代。硅谷有很多 AI 原生安全公司开始崛起，传统安全企业能否迅速跟上将成为新的挑战；传统企业也在快速尝试相关方案。不同厂商的进展有快有慢，因此当前攻击方在一定程度上仍占优势。</p>
+<p>在正确使用的前提下，云端部署比线下部署更安全。云端在更新迭代和技术简化方面更加敏捷，能够更好地帮助企业。但前提是正确使用云环境，因为云最终仍要向物理世界和线下环境延伸，网络通信等环节不能出现漏洞。币安也是一家高度云原生的公司，但仍可能因线下人员管控和操作疏忽而导致整体失守。</p>
+<p>安全边界必须有效扩展到非常细微的环节。很多企业天然认为服务器放在物理机房中就足够安全，这种认知并不正确，反而可能使企业在策略上有所疏忽，只依赖硬件防火墙等手段。硬件的迭代速度本就没有那么快，再叠加认知上的疏忽，可能使风险进一步上升。历史上一些政府端的大规模数据泄露，也发生在纯线下、甚至具有物理隔离的环境中。</p>
+<p>因此，云端可能比线下具有一定优势，但必须正确管理安全边界。对于高价值目标，安全管控要求已经非常高，防护边界必须延伸到具体工程师的个人电脑等终端，而不能只关注少数服务器。</p>
+<h2>Q:高价值目标增加安全投入，会直接转化为安全软件或云服务收入，还是更多体现为人员安全意识提升？这种全方位投入能否直接转化为云服务商和安全软件供应商的收入？</h2>
+<p>A:至少短期内，这可能会转化为安全供应商的收入，因为人的安全意识很难迅速提升。很多公司每月或每年都会开展钓鱼邮件培训，但有多少人真正重视，很难判断。这与社会上的反诈类似，不能单纯依靠提高人的安全意识，本质上仍要通过技术手段让系统实现有效防护。</p>
+<p>安全边界扩展到个人终端、手机和平板电脑等设备，可能带动终端安全软件收入。过去企业可能只购买 Microsoft Defender for Endpoint，用于本地电脑防护；现在发现人员可能主动执行危险操作后，就可能进一步部署Microsoft Intune 等设备管理工具，对所安装的软件和涉及的文件进行扫描、管理和查找。虽然仍不可能做到百密无一疏，但企业会投入更多资源，将细微环节的安全边界收得更紧。</p>
+<p>网络访问方面也可能增加 Microsoft Entra Global Secure Access等能力，对终端访问网络过程中的流量进行加密和管理。过去很多企业可能只部署了一部分能力，今后可能需要进行全方位强化，因为每一个终端设备都可能成为内部攻击的发起点。如果币安及同类机构此前没有完整部署，这次事件可能在短期内大幅提高其安全投入。</p>
+<p>这些理论并不是新概念。安全采购的大幅增加通常由事件或合规审计触发:要么发生安全事故，要么审计发现问题。过去没有实施，是因为企业权衡后认为可以暂缓；现在同类型机构受到触动，除了加强人员培训，也会通过技术手段进行强化，或者要求已经采购的软件达到更高的安装率和使用率。现实中确实有不少公司购买了软件，却没有安装或充分使用。</p>
+<p>同类型机构会加强日常监察，但传统企业未必会因为币安事件就立即认为与自身有关，可能仍要等到自身遭到勒索后，才意识到安全投入不足并紧急追加。因此，安全投入会增加，但未必在短期内迅速拉高，更多会在 AI推动下缓慢上升。与此同时，厂商的产品形态可能发生变化，旧产品可能失效，产品迭代也可能使价格更低、性价比更高，从而使整体安全预算重新回到相对平稳的状态。</p>
+<p>以上仅供交流探讨，不构成投资建议</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

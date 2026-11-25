@@ -1,0 +1,248 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.19 | TB | Software | Dynatrace vs Datadog AI Observability</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.19 | TB | Software | Dynatrace vs Datadog AI Observability</h1>
+<p class="orig">原标题：AI Observability Space – Dynatrace &amp; Datadog – Senior Role at IPM Medical Group Inc</p>
+<p class="tags">#software #agents</p>
+<p class="meta">Third Bridge · 2026-11-19</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>一家医疗集团的IT高管表示，其IT预算中增长最快的类别是AI和网络安全，其次是云、分析和应用，硬件基础设施增长最慢。</li>
+<li>该公司多年使用Dynatrace，评估过Datadog后决定继续留用，原因是希望统一到单一企业级可观测平台、切换成本高，且Dynatrace在根因分析和AI可观测方面表现出色。</li>
+<li>Dynatrace合同为按使用量计费加较低的最低承诺，每季度对账结算；由于AI智能体工作负载增长，实际使用量比签约时的计划高出约20-25%。</li>
+<li>Dynatrace正在讨论对超出承诺部分收取更高费率，专家听说加价约8-10%，并认为把最低承诺设在预期总支出的80%左右可能是较好的平衡点。</li>
+<li>同等部署下Datadog价格比Dynatrace贵约15-20%，专家倾向用次一级供应商并把省下的钱投入其他项目；LLM只能略微降低切换成本，历史数据迁移仍然痛苦。</li>
+<li>专家计划将日志管理从Splunk迁到Dynatrace以获得捆绑折扣，例如10万美元的Splunk支出转到Dynatrace后可能只需6万美元，日志管理已商品化。</li>
+<li>不含日志管理时预计2027年Dynatrace支出增长4-5%，加入日志管理和超额费率调整后约增长7-8%。</li>
+<li>在自主SRE方面，专家认为技术正在成熟，但涉及患者健康的高风险应用仍需人工审核和变更控制，目前只适合在低风险应用中启用；此外正在评估Okta面向非人类身份的AI身份管理产品。</li>
+</ol></section>
+<div class="body">
+<p>Client-led • 6 Nov 2026</p>
+<p>Companies: DT US, DDOG US, NOW US, ESTC US</p>
+<p><b>Expert</b> Senior Role at IPM Medical Group Inc</p>
+<h3>Agenda</h3>
+<ul><li>Over 20 years' experience in the healthcare industry, focusing on IT infrastructure, digital transformation and data analytics for operational efficiency</li><li>Strong knowledge of AI workloads and products from vendors such as Dynatrace, Datadog and Splunk, noting evaluation processes, budget spend, usage trends, switching costs and contract renewals</li><li>Keen insights into Dynatrace's overage increases, minimum commitments, autonomous SRE (site reliability engineering) and the competitive landscape between end-to-end platforms</li></ul>
+<h3>Questions</h3>
+<h3>We're looking at the observability space. Is there a lot of uncertainty for budget growth? I imagine there are many moving pieces. How much of that is headcount vs spend? In which areas are you spending more next year?</h3>
+<p><b>Expert</b> [00:09:19]: Yes. We are really revamping our analytics to be more real-time, expanding to a lot more use cases, adding predictive analytics, things like that.</p>
+<h3>00:10:05] How would you break total IT budget across different verticals? What are the other main buckets?</h3>
+<p><b>Expert</b> [00:10:29]: A big chunk, obviously, is labour. If you take the labour portion out, the remaining is on applications, EHR, ERP, disease registry or RIS/PACS system. [Then, there is] on cloud infrastructure. We are multi-cloud. We still have some on-prem hardware. Hardware includes endpoint devices, printer, server switches, all that. Then on analytics and BI [there is] AI. AI [is also] part of the infrastructure monitoring. That includes Dynatrace for our observability, network performance monitoring, all that.</p>
+<p><b>Client</b> [00:12:20]: Where is the infra monitoring? Is it a subset of analytics?</p>
+<p><b>Expert</b> [00:12:43]: No. Actually, it's part of our infrastructure. That is on hardware infrastructure. Let me check real quick. Yes, hardware and infrastructure is all bundled together.</p>
+<p><b>Client</b> [00:13:00]: Roughly, how much do you think each bucket is growing YoY next year?</p>
+<p><b>Expert</b> [00:13:27]: I'll start with the category that is growing the fastest and the largest actually. That is AI and cybersecurity. Those are the top two categories that are growing the fastest, followed by cloud, then followed by analytics and then applications and hardware infrastructure is the slowest-growing category.</p>
+<h3>00:16:47] Did you evaluate Datadog? Why did you decide not to go with it?</h3>
+<p><b>Expert</b> [00:16:59]: We've been a customer of Dynatrace for years. We looked at Datadog just to make sure that, (a) we still are having the right solution, (b) just for sanity check to see what else is available in the market, a lot because of AI observability as well. First, we thought that maybe we didn't want to have too many different observability platforms, one for application, one for cloud. We like to standardise across a single enterprise observability platform. For that reason, we just evaluated different vendors. There's a huge switching cost in terms of transitioning and all that</p>
+<p>Besides switching cost, the product is working well for us. Yes, no regrets there. As an enterprise-level observability, excellent for APM, infrastructure monitoring, AI-driven, which is something recently we added at our contract renewal, we were not using their AI observability, but now that we have a bunch of agentic AI workloads, we wanted some observability around AI workload as well, but Dynatrace is excellent for root cause analysis when we have any issues identifying where there may be a bottleneck, Dynatrace works very well.</p>
+<h3>00:19:13] Dynatrace has a logs product, which I think has been growing well. Do you expect to receive some discount from Dynatrace to move over?</h3>
+<p><b>Expert</b> [00:21:00]: Yes. That's also one of the advantages besides having on a single platform, but as an existing Dynatrace customer, we get some bundled discount offering. Obviously, that savings can help fund many of the other IT projects. Log management has become a commodity. Splunk obviously was the leader when they first introduced this a few years back, but now most of the leading observability platforms offer this as bundled services.</p>
+<h3>00:22:04] How is your contract with Dynatrace? What is the minimum commitment? Is it monthly or annual? Are you spending in line with your expectations? As AI usage this year has accelerated, are you ahead of the commitment? What do you think about the right time for renewals?</h3>
+<p><b>Expert</b> [00:22:36]: The way it's structured, it's a usage consumption-based with a minimum commitment. There is a minimum commitment that if, let's say, our usage drops significantly down, we still have to make that minimum commitment, but the minimum commitment is so low that we don't have any issue meeting the minimum commitment. The other observability is based on the amount of data that is ingested for infrastructure monitoring, all that based on that. Every quarter, we reconcile it and the true-up is done every quarter and then the next three-month payment is based on that. Then again, we repeat the process at the end of the next quarter.</p>
+<p><b>Client</b> [00:23:35]: Every quarter, do you assess your usage vs the rates and then pay that amount and move forward?</p>
+<p><b>Expert</b> [00:23:43]: Yes. We have visibility into the usage throughout and on a daily basis, I can log in and see, but the true-up calculations are done on a quarterly basis.</p>
+<p><b>Client</b> [00:23:55]: You pay the minimum commitment in advance and then pay the true-up at the end?</p>
+<p><b>Expert</b> [00:23:59]: Correct.</p>
+<p><b>Client</b> [00:24:25]: I know it doesn't charge you extra if you go over. The per unit or per-volume charge is the same. However, in its most recent earnings call, it seemed the business is thinking of changing that to a higher rate for overages. Has this come up in your sales rep talks? Would you be unhappy with this? I think that's standard in the industry, but what do you think?</p>
+<p><b>Expert</b> [00:25:00]: That discussions are happening. I'm not very happy about it, obviously, because that will increase the spend or it could be reshifting, but then we'll also renegotiate some of the annual spend based on the current volume. Now obviously, if our volume increases, we open up new centres, and grow, then appropriately, that spend will grow as well, but let's say, if the business remains the same. With this new proposal, if the spend increases, not very happy about it. Again, these are the discussions we will have when that contract comes up for renewal, but I think for now, we are locked in.</p>
+<h3>00:26:41] How do you think the overages will work? It seems that the business wants to avoid situations where customers have minimum commitments which are below their total spend. Recently, there haven't been huge incentives for customers to sign a large minimum commitment, as there is no penalty for going over. I think it is trying to introduce some penalty. Would you then sign a minimum commitment of 80-90% of what you think your total spend will be to minimise overage? How do you plan to handle this?</h3>
+<p><b>Expert</b> [00:27:20]: I think 80% may be a good sweet spot that gives us the flexibility for not getting penalised. Again, we haven't done that math yet because we just have had initial discussion, but we need to look at the scenarios if then using our prior history that, okay, based on this, considering maybe 5-10% growth over the next one year or two, what would that model look like, the new model?</p>
+<h3>00:27:57] If you're spending about USD 10 per GB of data ingested, how much would that go to in the overage? It's USD 10 for the whole contract now. Is it suggesting that goes to USD 11-12? How big of an overage increase is it suggesting?</h3>
+<p><b>Expert</b> [00:28:21]: I think from what I have heard, and again, we haven't crunched the numbers. This is all up to negotiation, it's an 8-10% increase. No, I was just going to say that all these software contracts previously were all perpetual licence. Everything is now going towards subscription and usage-based.</p>
+<p><b>Client</b> [00:28:52]: Does that make it hard to plan in a world where usage is increasing rapidly?</p>
+<p><b>Expert</b> [00:28:57]: Exactly, yes. It's unpredictable. You get a surprise and then cloud spend is a single click, you can increase your compute and storage, but wait until you get the bill.</p>
+<h3>00:29:12] How flexible does the business sound? I understand this is up to negotiation, but is it thinking that, as the overages are coming, the negotiations will be part of the next contract or is it collecting feedback on how receptive people are to it today?</h3>
+<p><b>Expert</b> [00:29:33]: I think from what I'm hearing, again, like you said, they had announced in their press release and conference call or earnings call, I think they are serious about collecting on overage in terms of how flexibility. Obviously, keeping in mind existing customers, if you're adding additional products like we are, there is some flexibility in manoeuvring some numbers, but I don't think that we can get away with paying for overage. I think that's probably going to be the fact.</p>
+<h3>00:30:17] I know the minimum commitment is pretty low, but as you're deploying more AI in your tech stack and planning to use the platform for Dynatrace, which may be generating more telemetry, is your usage tracking with the plan when you signed the contract or are you consuming ahead of plan? You would have had some usage of the platform in mind. Are you consuming because AI is far ahead of what you planned earlier?</h3>
+<p><b>Expert</b> [00:31:06]: Correct, yes. With the use of AI and the growth in AI workload, that has increased the usage. I think it will continue to increase the usage. It does make sense to reevaluate and then plan accordingly, but yes, I think AI is the biggest catalyst for the growth.</p>
+<p><b>Client</b> [00:31:31]: How much more do you think you're using it vs what you'd planned?</p>
+<p><b>Expert</b> [00:31:41]: I would say probably about a 20-25% increase.</p>
+<h3>00:32:36] On AI observability, I think you mentioned using some Dynatrace products. Which ones are you using? How have they performed vs others in the market that you may have tested?</h3>
+<p><b>Expert</b> [00:32:50]: You mean all products or just specifically AI?</p>
+<p><b>Client</b> [00:32:55]: Specifically for AI.</p>
+<p><b>Expert</b> [00:32:58]: They have AI-driven monitoring products. They call it AI observability. It basically allows to monitor all gen AI applications, any LLMs, primarily AI agents. It can also help us with token consumptions, any latency issue. Every observability platform does that. I know Datadog, New Relic, those are the vendors. They all have the functionality. We find that the Dynatrace AI-driven monitoring is far superior because it identifies easier to set up those guardrails. It has a great platform on giving us visibility into those AI agents. Just setting up the guardrails, governance and all that, it just finds more easier, plus there are specialised AI observability platforms. It doesn't make sense for us to go out and get one of those and still manage Dynatrace for all the other observability.</p>
+<p><b>Client</b> [00:34:25]: Dynatrace recently acquired Arize. Have you had discussions on this?</p>
+<p><b>Expert</b> [00:34:34]: I heard about it, but I don't know much about what products there are. I don't know whether it's about the AI observability, but I think I had read some press release somewhere.</p>
+<h3>00:34:51] What about autonomous SRE [site reliability engineering]? How far do you think these platforms are from replacing site reliability engineers with AI agents?</h3>
+<p><b>Expert</b> [00:35:05]: We're not quite there yet. I think that it's great in finding all your vulnerabilities, but it still needs to be reviewed by a SOC analyst or data engineers to review it. Maybe the technology is there yet, but I don't know whether we fully trust it. I think it's coming, just like Tesla's FSD. I think it's just a matter of building that trust and slowly. we just need to make sure that we have all our T's crossed, I's dotted, have a change control review process just in case.</p>
+<p><b>Expert</b> [00:36:04]: Part of the Dynatrace agent, AI agent that identifies and then autonomously updates the database or applications or if there is any latency issue.</p>
+<p><b>Client</b> [00:36:18]: What are the shortfalls?</p>
+<p><b>Expert</b> [00:36:28]: Again, I don't know whether there are specifically any shortfalls. I think it's more like our comfort level in updating. We're dealing with patients' health applications, even a small downtime can create disruption in patient care. Low-risk applications, yes, we can probably turn this on, but high-risk, high-visibility applications that still require review, change control and all that.</p>
+<h3>00:37:15] It seems very common in the industry to consolidate off Splunk and try moving to some other platform, whether it's Dynatrace or something else. Why is that? What's so bad about the product?</h3>
+<p><b>Expert</b> [00:37:31]: Like I mentioned earlier, Splunk, for example, great for log management. They obviously have expanded beyond log management now they're part of Cisco. The old days, the legacy for AppDynamics. AppDynamics was known for application performance monitoring. It was great, but it only did APM, but now there's a lot more than APM. You got infrastructure monitoring, cloud, cloud growth. Rather than getting a best-of-breed observability platform, then you have five different vendors. A lot of this overlaps, right? If I have a latency issue on an application, it could be because of our cloud infrastructure or it could be because of application, could be because of our database. Rather than crossing over different observability, it makes sense to have a single end-to-end platform that monitors your applications, infrastructure, cloud, network performance. Everything could be fine. It could be that the network has some choking point, where there are some bandwidth concerns. There is some large file that is being transferred that is creating latency. There's so much overlap nowadays and having a single enterprise solution helps you remediate these issues fairly easily and quickly.</p>
+<h3>00:39:11] Which vendors do you think provide that end-to-end platform? Is it just Dynatrace and Datadog or are there others?</h3>
+<p><b>Expert</b> [00:39:23]: New Relic. New Relic also has APM infrastructure, log, AI monitoring. I would say Dynatrace, Datadog, New Relic, Chronosphere, it's only cloud-native. It's only in the cloud environment, but I would say, yes, New Relic and Datadog are the two closest.</p>
+<p><b>Client</b> [00:39:50]: What are their relative strengths and weaknesses? Datadog seems to be the product leader, but it's very expensive. Why didn't you move to Datadog?</p>
+<p><b>Expert</b> [00:40:04]: Yes, you just answered my question, too, it's expensive. For a Fortune 500 type of company, there are organisations that have a policy to always pick the leader in this space. Datadog is a leader in observability, but you're paying a price premium. I would rather take the next-tier solution and use the difference for some of the projects, but again, we are not sacrificing on any features and functionalities. We still think that Dynatrace is great for all the product monitoring, but yes, it's just biggest thing is price.</p>
+<h3>00:40:51] Roughly, how much more expensive do you think Datadog is for an equivalent deployment?</h3>
+<p><b>Expert</b> [00:40:58]: I would say like-to-like, if we use the same products compared side by side from initial, probably about 20% more, 15-20%. Now obviously, all this is up to negotiation. If we were serious and then Datadog would see is they could be flexible, but we will still end up paying more than what we are paying on Dynatrace. Again, remember, there's also a switching cost for moving from Dynatrace to a Datadog platform.</p>
+<p><b>Client</b> [00:41:35]: Are LLMs [large language models] reducing the switching cost, which makes it easier to switch vendors?</p>
+<p><b>Expert</b> [00:41:42]: Not really. Yes, it makes it easier a little bit, but we have all the history of the data. It's not a plug-and-play. Yes, there are LLMs that can speed up the process, make it a bit easier, but it's still a painful process.</p>
+<h3>00:43:17] How much do you expect your spend on Dynatrace to grow in 2027?</h3>
+<p><b>Expert</b> [00:43:39]: Not putting the contract renewal log management, I would probably expect another 4-5% increase YoY, but considering that we may add log management and renegotiate for penalising the penalty over usage for the minimum spend, all that that may lead to maybe 7-8% spend. Yes, about 7-8% increase spend in 2027.</p>
+<p><b>Client</b> [00:44:07]: Was the total double-digit?</p>
+<p><b>Expert</b> [00:44:07]: Yes. If you get about 10% savings on log management, that justifies paying that to Dynatrace.</p>
+<p><b>Client</b> [00:44:50]: Do you mean instead of 20% in observability spend, it could be 10%? Then, will your growth at Dynatrace be, call it, 15% or something? Is that the right way to think about that?</p>
+<p><b>Expert</b> [00:45:06]: No. One way to spend is, let's say, hypothetically, I don't have the numbers specifically, but let's say, if you are spending USD 100,000 on log management with Splunk, and we decided to move away from Splunk. Now we're not going to spend USD 100,000, but we're going to spend some amount with Dynatrace to add log management. If that amount turns out to be USD 60,000, I have saved 40%. That can be funded for other projects or even getting the new Dynatrace contract. Net-net increase will be with Dynatrace. Plus, we as organisations are planning on doing a few acquisitions or growth. There will be volume increase as well.</p>
+<h3>00:47:22] How much do you think AI is growing? Is that mostly AI tokens or is that going to existing SaaS vendors?</h3>
+<p><b>Expert</b> [00:47:51]: Combination of both. Token spend increase, new workload. There are so many new areas of workload that we haven't touched yet. As we deploy those, again, that will increase the token cost. Again, still some on consulting services. We still have some legacy data, the data from the legacy applications are not used in any of the AI workload, but to use those, we need to do some data cleansing as well. A combination of both, some third-party services, mostly token cost expense increase and data cleaning expenses as well.</p>
+<h3>00:50:21] Do you use Okta?</h3>
+<p><b>Expert</b> [00:50:29]: Yes, we use Okta's IAM solution, the single sign-on.</p>
+<p><b>Client</b> [00:50:36]: Would you consider buying its AI SKU for identity or agentic identity?</p>
+<p><b>Expert</b> [00:50:40]: Identity and access management, not yet. That's, again, something that we are evaluating, their identity and access management. Authenticating, I think that's where their AI capabilities seem very appealing.</p>
+<p><b>Client</b> [00:51:07]: Does it already offer that or would that be something new?</p>
+<p><b>Expert</b> [00:51:11]: They offer it now. We don't have it now for machine identity, but just like for a human, this is a non-human identity.</p>
+<h3>00:51:19] What do you think about Elastic? If you evaluated it, what does it do well vs what does it do poorly?</h3>
+<p><b>Expert</b> [00:51:33]: For Elasticsearch?</p>
+<p><b>Client</b> [00:51:35]: Yes.</p>
+<p><b>Expert</b> [00:51:36]: We are not a customer of Elastic product that I'm familiar with. We did evaluate them, but the search is something we are currently thinking about it.</p>
+<p><b>Expert</b> [00:52:28]: For search, again, observability vendors are one. Datadog has it. There are OpenText and Laserfiche. Those are mostly on content. All the content that we have, searching, OpenText and Laserfiche, they have good search tool. Yes, that's the ones that I can think of.</p>
+<p><b>Client</b> [00:53:01]: Do you use JFrog?</p>
+<p><b>Expert</b> [00:53:08]: JFrog? No.</p>
+<h3>00:54:49] Is there anything I didn't ask you about which is important to know?</h3>
+<p><b>Expert</b> [00:54:57]: I think we touched on most relevant topics. I often get asked about, obviously, switching. If you were to switch from one platform to a different vendor, what that switching is going to look like, disruption, at what price point it makes sense to switch. One unknown variable at contract renewal is price increase. Without Dynatrace, let's say, if I have a vendor that contract is coming up for renewal, I'm not adding new product. Vendor may come and raise prices. One question comes up at what price point you are willing to pay without switching. At what price point you said this is enough, something we cannot digest it, we will switch. Typical threshold I use, and again, it varies vendor by vendor. [For] any switch, there's a soft switching cost, [along with] business disruption, resources that are needed for doing this transition.</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

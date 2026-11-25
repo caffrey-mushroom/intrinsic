@@ -1,0 +1,570 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.13 | 9K | MSFT | Microsoft Outlook Global Outage Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.13 | 9K | MSFT | Microsoft Outlook Global Outage Analysis</h1>
+<p class="orig">原标题：Merit 网络安全调研-微软outlook全球大规模宕机解读(2026-11-13 17:30:00)</p>
+<p class="tags">#security #software #cloud</p>
+<p class="meta">Meritco 久谦 · 2026-11-13</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>专家介绍，此次微软宕机始于北京时间凌晨2点左右的Exchange邮件服务故障；自动化运维不断补充的机器又被流量压垮，使故障从区域问题演变成全球问题，访谈时只恢复了约10%的容量。</li>
+<li>故障链路是Exchange前端代理层异常，进而冲击Substrate数据中间层，导致Outlook、Calendar、M365 Copilot、Defender、Purview、Azure Communication Service等依赖该层的服务受影响；目前观察到内核锁死、端口堆积、内存耗尽等现象，但根因尚未确定。</li>
+<li>Word/Excel/PPT、Teams基础通信和Azure基础计算、存储服务基本未受影响；专家指出，微软体系内的多地区部署无法规避共享组件的全局单点失效。</li>
+<li>微软官方称暂未发现恶意攻击迹象（无DDoS、异常登录或渗透告警），倾向判断为纯软件故障，但不能完全排除攻击；本地安全规则仍在运行，若宕机超过24小时，可能出现日志溢出、0-day规则无法及时推送等风险。</li>
+<li>保留本地Exchange和本地AD的混合部署企业实现了部分恢复；专家认为第二套独立身份认证系统技术可行、成本可控（微软按席位收费，每用户个位数美元），这一事件可能推动混合部署。</li>
+<li>Copilot在数据标签不可用时主动Hard Stop，体现了安全防线有效；专家认为对E5向E7升级影响有限，但可能促使企业把关键Agent流程改为云原生、跨区、跨云的自建架构。</li>
+<li>对微软的确定性损失是SLA补偿；存量大客户短期较稳定，但竞争中的订单可能流向Google Workspace、Lark等，M365受到的冲击大于Azure，GCP有望作为第二朵云成为多云趋势的最大受益者。</li>
+<li>专家认为AI正在提升攻击方的漏洞发现效率，短期内攻击方占优，企业将加强终端、零信任身份和网络安全投入，但安全预算更可能渐进增长，而非全面爆发。</li>
+</ol></section>
+<div class="body">
+<h2>音频信息</h2>
+<p>音频标题: 261113 - Merit 网络安全调研-微软outlook全球大规模宕机解读</p>
+<p>相关标的：undefined</p>
+<p>议题：</p>
+<p>完整音频链接：http://mw-meeting.oss-cn-shanghai.aliyuncs.com/audio/1794566345658-261113%2520-%2520Merit%2520%25E7%25BD%2591%25E7%25BB%259C%25E5%25AE%2589%25E5%2585%25A8%25E8%25B0%2583%25E7%25A0%2594-%25E5%25BE%25AE%25E8%25BD%25AFoutlook%25E5%2585%25A8%25E7%2590%2583%25E5%25A4%25A7%25E8%25A7%2584%25E6%25A8%25A1%25E5%25AE%2595%25E6%259C%25BA%25E8%25A7%25A3%25E8%25AF%25BB_20261113_183843.mp3</p>
+<h2>音频纪要总结</h2>
+<h2>专家访谈纪要</h2>
+<h2>1. 宕机事件进展与技术原因</h2>
+<h3>a) 此次宕机事件的关键时间线和故障演化路径是什么？</h3>
+<ul><li><b>事件仍处于持续修复阶段</b></li></ul>
+<ol><li>截至访谈时，相关服务尚未完全恢复，工程团队仍在 Teams 频道持续同步修复和排查进展。</li><li>当前信息仅反映现阶段排查结果，尚未形成完整事件全貌，也不能将已观察到的现象直接认定为根本原因。</li></ol>
+<ul><li><b>故障由局部邮件服务逐步扩散</b></li></ul>
+<ol><li>北京时间凌晨2点左右，首先观察到以 Exchange 为代表的邮件服务出现故障。</li><li>初期影响可能集中于局部区域，随后逐渐扩散至身份认证相关服务及其他依赖组件。</li><li>随着自动化运维系统持续向集群补充机器，新增机器又被流量和任务迅速压垮，故障最终由区域性问题演变为全球性问题。</li></ol>
+<ul><li><b>当前已知的技术传播链条</b></li></ul>
+<ol><li>Exchange 前端代理层出现异常，资源容量需求快速上升。</li><li>支撑该服务的组件集群被打满，大量机器持续下线。</li><li>下线机器重新补入动态集群后再次被压垮，操作过程中还可能存在机器被误摘除的情况。</li><li>集群长期处于容量下限，任务持续积压并产生后续流量洪峰，引发连锁反应。</li><li>前端代理层异常进一步冲击 Substrate 数据中间层，而大量微软办公、安全和AI服务均依赖该层，因此故障迅速扩散。</li></ol>
+<h3>b) 前端代理层为什么会发生异常，是否已经找到根因？</h3>
+<ul><li>目前尚未找到确定根因。</li><li>已观察到的核心技术现象包括：</li></ul>
+<ol><li>内核锁死。</li><li>端口堆积。</li><li>Out of Memory，即内存耗尽。</li><li>集群容量持续不足和任务积压。</li></ol>
+<ul><li>这些现象可能是根因，也可能只是故障发生后的结果，目前无法下结论。</li><li>从技术判断看，此次事件更可能是纯软件故障，潜在原因可能包括：</li></ul>
+<ol><li>自动化运维系统异常。</li><li>某个小规模软件更新引发问题。</li><li>软件变更与自动运维异常叠加，最终形成大范围故障。</li></ol>
+<ul><li>目前没有证据证明事故由软件更新引起。是否与更新有关，需要进一步核查事发前24小时内的更新日志。</li></ul>
+<h3>c) 哪一层导致故障从单一产品扩散到多个产品？</h3>
+<ul><li>Purview 并非故障传播核心，只是受到波及。</li><li>真正造成大范围扩散的是前端代理层之后的 <b>Substrate 数据中间层</b>。</li><li>Substrate 是横向贯穿多个微软服务的数据支撑层，邮件、日历、安全、AI等大量产品依赖该层。</li><li>因此，前端代理和数据中间层发生问题后，影响扩散至：</li></ul>
+<ol><li>Exchange与Outlook。</li><li>Calendar。</li><li>M365 Copilot。</li><li>Defender。</li><li>Purview。</li><li>Azure Communication Service。</li><li>其他依赖身份认证或全局数据调用的服务。</li></ol>
+<h2>2. 服务恢复状态与全球影响范围</h2>
+<h3>a) 当前服务恢复到什么程度？</h3>
+<ul><li>根据内部官方通报，约有 <b>10%的capacity已经恢复</b>。</li><li>目前尚不清楚恢复的是哪些地区、哪些服务或哪些具体容量。</li><li>官方表示将优先恢复正处于业务高峰的区域，但实际恢复范围仍不透明。</li></ul>
+<h3>b) 各区域的服务恢复情况如何？</h3>
+<ul><li>截至访谈时，以下区域大部分相关服务仍未恢复：</li></ul>
+<ol><li>APAC地区，包括日本、澳洲、中国和东南亚。</li><li>EMEA地区。</li><li>MEA中东区域。</li><li>正进入工作时间的欧洲区域。</li></ol>
+<ul><li>北美也即将进入工作高峰，可能进一步承受服务压力。</li><li>事件早期曾出现部分区域可用、其他区域不可用的情况，但随着自动化集群调度和资源挤压，影响逐渐扩散至全球。</li></ul>
+<h3>c) 此次事件属于常见事故还是极端罕见事件？</h3>
+<ul><li>软件服务出现局部故障并非完全不可避免，但此次全球性、大范围、长时间宕机仍较为罕见。</li><li>上一次类似规模的事件是 Azure AD 身份认证服务更新故障：</li></ul>
+<ol><li>当时可能未进行灰度发布，更新被直接推向全球。</li><li>业务本身仍在运行，但用户因身份认证故障无法登录。</li><li>当时很快定位到更新问题，并通过回滚和重新部署恢复。</li></ol>
+<ul><li>相比之下，此次事件：</li></ul>
+<ol><li>持续时间可能更长。</li><li>根因定位速度更慢。</li><li>当前披露信息主要集中于前端技术现象，尚未指向明确根因。</li></ol>
+<h3>d) 24小时是否是重要风险节点？</h3>
+<ul><li>当前故障持续时间已经超过12小时，24小时是下一重要观察节点。</li><li>如果能在24小时内完整恢复，安全策略和本地缓存大概率仍能维持。</li><li>如果超过24小时仍未完全恢复，部分压力较大的安全服务可能出现进一步风险：</li></ul>
+<ol><li>本地缓存和日志存储空间被写满。</li><li>新日志被覆盖。</li><li>告警和事件追踪能力下降。</li><li>事后取证难度上升。</li></ol>
+<h2>3. 产品影响与企业业务中断情况</h2>
+<h3>a) 哪些微软产品受到的影响最大？</h3>
+<ul><li><b>Outlook是本次受影响最严重的产品。</b></li><li>明确受到影响或部分受影响的服务包括：</li></ul>
+<ol><li>Exchange和Outlook邮件。</li><li>Calendar会议预订。</li><li>M365 Copilot。</li><li>邮件搜索等全局数据调用服务。</li><li>Defender和Purview的部分管理功能。</li><li>Azure Communication Service，尤其是营销邮件、群发邮件等场景。</li><li>依赖邮件、身份和数据标签的相关服务。</li></ol>
+<h3>b) 哪些办公服务基本未受影响？</h3>
+<ul><li>Word、Excel、PowerPoint等基础编辑能力仍可正常使用。</li><li>Teams的日常聊天、通话、Channel和电话等功能基本未受影响，因为这些功能独立于邮件服务。</li><li>但 Teams 中与 Outlook Calendar 绑定的会议预订能力受到影响。</li><li>SharePoint单纯存储功能基本未受影响，但带有Confidential等加密标签、需要调用全局安全和权限数据的内容可能受影响。</li></ul>
+<h3>c) Azure上的企业系统是否会全面瘫痪？</h3>
+<ul><li>Azure整体并未发生全面宕机。</li><li>部署在Azure上的数据、计算、存储、网络和数据库等基础服务，绝大部分未受到明显影响。</li><li>受到影响的Azure服务主要与此次邮件和数据层故障直接相关，例如Azure Communication Service。</li><li>因此，企业核心业务如果主要基于Azure基础设施运行，通常不会整体瘫痪；但如果高度依赖M365邮件、Copilot或相关身份和数据服务，办公效率会受到较大冲击。</li></ul>
+<h3>d) 全球多地区部署能否规避此次故障？</h3>
+<ul><li>此次事故中，单纯采用微软体系内的多地区部署基本无法完全规避。</li><li>原因在于：</li></ul>
+<ol><li>相关服务共享同一套数据中间层和自动化集群体系。</li><li>故障会随着资源调度和集群扩容逐步向其他区域传播。</li><li>身份认证和数据服务仍可能形成共同依赖。</li></ol>
+<ul><li>多地区部署能够应对区域性故障，但难以应对跨区域共享组件的全局性单点失效。</li></ul>
+<h2>4. 是否存在网络攻击及安全风险</h2>
+<h3>a) 微软为什么初步判断此次事件并非恶意攻击？</h3>
+<ul><li>官方采用的表述是：<b>“截至目前，没有发现任何恶意攻击。”</b></li><li>工程团队现阶段未发现以下攻击迹象：</li></ul>
+<ol><li>DDoS攻击。</li><li>外部投毒行为。</li><li>异常特权登录。</li><li>审批流程异常。</li><li>网络路由异常。</li><li>内部独立安全系统发出的渗透告警。</li></ol>
+<ul><li>虽然Purview等商业安全产品的Dashboard无法使用，但微软内部工程团队仍能通过其他路径进入系统并开展取证。</li><li>攻击通常难以完全绕过网络路由、权限审批、登录和安全审计等环节而不留下痕迹，因此现有证据更支持纯软件故障判断。</li></ul>
+<h3>b) 是否已经可以完全排除攻击可能？</h3>
+<ul><li>不能完全排除。</li><li>目前没有人掌握事件全貌，现阶段结论只是没有发现恶意攻击迹象，并非证明攻击绝对不存在。</li><li>微软长期面临较高攻击风险，也不能排除某种集中性攻击或间接攻击，但当前没有证据支持这一判断。</li><li>官方不会在事件初期披露全部取证和防御细节，以避免攻击者据此采取更有针对性的行动。</li></ul>
+<h3>c) Defender和Purview不可见，是否意味着企业失去安全保护？</h3>
+<ul><li>不意味着安全保护完全失效。</li><li>目前的状态更接近：</li></ul>
+<ol><li>既有保护策略仍然存在。</li><li>本地规则库仍在运行。</li><li>MDE终端引擎、ASR和行为检测仍可基于本地规则执行。</li><li>相关安全数据仍会优先写入本地。</li></ol>
+<ul><li>当前主要受影响的是人工干预能力，包括：</li></ul>
+<ol><li>无法查看部分Dashboard和状态。</li><li>无法及时处理告警。</li><li>无法人工审批例外情况。</li><li>无法及时放行被拦截内容。</li></ol>
+<ul><li>系统目前更接近“金库全部锁死”或“保险丝跳闸”的状态，即优先阻止数据继续流动，以避免更严重的数据泄露。</li></ul>
+<h3>d) 宕机时间延长会带来哪些新增安全风险？</h3>
+<ul><li><b>日志丢失和事后追查能力下降</b></li></ul>
+<ol><li>如果本地缓存和日志空间写满，旧记录可能被新记录覆盖。</li><li>攻击即使被阻止，也可能因日志丢失而无法在事后发现和复盘。</li></ol>
+<ul><li><b>0-day漏洞响应受到影响</b></li></ul>
+<ol><li>既有规则库短期内仍可正常运行。</li><li>但如果期间出现需要紧急推送规则的0-day漏洞，安全系统无法及时同步，攻击者可能利用这一窗口。</li></ol>
+<ul><li><b>人工处置能力不足</b></li></ul>
+<ol><li>安全告警无法正常集中查看。</li><li>例外审批和应急处置无法及时进行。</li><li>故障持续时间越长，人工缺位带来的风险越高。</li></ol>
+<ul><li><b>遭受协同攻击的概率较低但不为零</b></li></ul>
+<ol><li>若攻击者事先策划先破坏同步和安全管理系统，再利用漏洞发起攻击，可能形成更严重后果。</li><li>该类攻击需要较强的组织和协调能力，发生概率较低，但理论上存在。</li></ol>
+<h2>5. 高可用架构、混合部署与身份认证备份</h2>
+<h3>a) 什么样的部署方式能够在此次事故中实现部分恢复？</h3>
+<ul><li>实际证明较有效的是 <b>混合部署</b>。</li><li>部分企业因历史原因仍保留本地Exchange Server和本地AD：</li></ul>
+<ol><li>在云端服务故障后，将部分核心邮件流量迁移至本地。</li><li>本地服务器无法支撑整个集团，但能够优先恢复部分核心业务。</li><li>据了解，已有一家跨国企业通过该方式实现部分服务恢复。</li></ol>
+<ul><li>这种恢复能力的关键不仅是本地邮件服务器，还包括保留本地身份认证系统。</li></ul>
+<h3>b) 多云部署为什么未必能解决此次问题？</h3>
+<ul><li>单纯在AWS、GCP或其他云上增加基础设施，无法直接解决M365邮件体系故障。</li><li>如果备份系统仍读取微软同一套身份认证服务，则单点失效依然存在。</li><li>真正有效的跨云备份需要同时覆盖：</li></ul>
+<ol><li>应用和数据。</li><li>身份认证。</li><li>权限体系。</li><li>安全策略。</li><li>网络和流量切换。</li></ol>
+<ul><li>如果仅备份计算和存储，却未备份身份认证，仍无法形成完整恢复路径。</li></ul>
+<h3>c) 企业是否有必要建设第二套身份认证系统？</h3>
+<ul><li>从长期高可用角度看，建设第二套身份认证系统具有可行性。</li><li>可采取的方式包括：</li></ul>
+<ol><li>保留本地AD。</li><li>在其他云上部署独立身份认证系统。</li><li>将第二套系统与微软AD或Entra ID同步。</li><li>将部分安全组件绑定至独立身份系统。</li></ol>
+<ul><li>身份数据变化频率通常不高，可按每日、每周或每月进行同步。</li><li>第二套身份系统并不一定是传统意义上的冷备，也可以长期兼容并存。</li></ul>
+<h3>d) 两套身份认证系统是否能够互通，成本是否很高？</h3>
+<ul><li>国际主流身份认证厂商之间通常支持身份数据迁移、同步和互通。</li><li>企业并购、系统迁移和集团间协同，本身就要求不同身份系统能够兼容。</li><li>国内部分零信任认证厂商与微软之间可能存在标准差异和打通问题，但国际主流厂商之间的兼容性相对较好。</li><li>建设第二套身份认证系统的直接成本并非特别高：</li></ul>
+<ol><li>微软身份认证服务通常按席位收费。</li><li>单个用户价格大致为个位数美元。</li><li>更主要的成本在系统集成、维护和切换流程建设。</li></ol>
+<h3>e) 此次事件是否会推动企业采用混合部署？</h3>
+<ul><li>可能会推动企业重新评估纯云端架构，尤其是身份认证等核心组件。</li><li>部分客户可能从全部采用云订阅产品，转向：</li></ul>
+<ol><li>保留部分On-Premise产品。</li><li>采用云端与本地混合部署。</li><li>增加独立身份认证系统。</li><li>引入第三方安全厂商形成额外防护。</li></ol>
+<ul><li>对微软而言，混合部署可能带来一定商业压力，因为On-Premise授权和第二套身份系统可能削弱微软订阅产品的绑定度。</li></ul>
+<h2>6. Copilot、Agent与关键业务流程架构</h2>
+<h3>a) 此次事故会提高Copilot和Agent的上线门槛吗？</h3>
+<ul><li>核心问题不是单纯提高上线门槛，而是企业需要重新评估：是否应将关键业务流程完全架设在单一SaaS系统上。</li><li>如果关键流程完全依赖SaaS：</li></ul>
+<ol><li>系统可用性完全由SaaS厂商决定。</li><li>客户自身缺乏灾难恢复和切换能力。</li><li>服务中断后只能等待厂商恢复。</li></ol>
+<h3>b) 企业关键Agent应该采用什么架构？</h3>
+<ul><li>更可靠的方式是基于云端底层服务自行搭建：</li></ul>
+<ol><li>采用云原生组件开发。</li><li>对不同服务进行解耦。</li><li>建立跨区域高可用架构。</li><li>同时建设数据备份和服务备份。</li><li>保留内部Disaster Recovery能力。</li></ol>
+<ul><li>如果某个独立服务出现故障，例如ACS邮件服务下线，不应导致AI Foundry、Agent Framework及整个业务流程同步失效。</li><li>客户可以预先准备部署模板，并在其他区域或其他云平台快速重建系统。</li></ul>
+<h3>c) 怎样才能实现真正的跨云备份？</h3>
+<ul><li>真正的跨云备份应允许：</li></ul>
+<ol><li>同一套Workflow在Azure、AWS或GCP上分别部署。</li><li>对不同云之间不兼容的组件进行替换。</li><li>在某一云发生故障时，将全部流量快速切换到另一朵云。</li></ol>
+<ul><li>这种方式比单纯依赖Copilot Studio或M365 Copilot更具控制力，也能降低单一SaaS厂商失效的风险。</li></ul>
+<h3>d) 自建Agent系统是否一定比购买M365 Copilot更贵？</h3>
+<ul><li>不一定。</li><li>M365 Copilot等SaaS方案除Token成本外，还包括：</li></ul>
+<ol><li>按用户计算的席位许可费。</li><li>相关软件授权费用。</li><li>企业安全和数据功能费用。</li></ol>
+<ul><li>自建方案主要增加的支出包括：</li></ul>
+<ol><li>自有或外包运维团队。</li><li>Agent流程日常管理。</li><li>系统升级和迭代。</li><li>跨云和灾备架构建设。</li></ol>
+<ul><li>SaaS方案的核心价值是将运维工作交给微软，自建方案的核心价值是提高控制力和灾难恢复能力，二者本质上是成本与可控性的交换。</li></ul>
+<h3>e) Copilot在此次事故中停止运行是否属于严重扣分项？</h3>
+<ul><li>从用户体验看，Copilot不可用会造成明显负面影响。</li><li>但从安全机制看，系统停止处理数据属于合理的应急响应：</li></ul>
+<ol><li>Purview等数据标签和权限服务异常后，Copilot无法准确识别不同企业数据的权限。</li><li>如果Copilot继续输出内容，可能造成真实的数据泄露和AI安全事故。</li><li>系统采取Hard Stop，相当于保险丝熔断，优先保证企业数据不被错误读取或输出。</li></ol>
+<ul><li>因此，此次事件一方面暴露了SaaS单点失效问题，另一方面也证明了Copilot与企业数据之间的安全防线能够在异常情况下执行硬性阻断。</li></ul>
+<h2>7. 对微软业务的短期与长期影响</h2>
+<h3>a) 此次事故将产生哪些确定性的商业损失？</h3>
+<ul><li><b>SLA赔偿和收入冲减是确定性影响</b></li></ul>
+<ol><li>微软需要按照SLA向客户提供补偿。</li><li>补偿可能不是直接退款，而是返还点数或冲抵后续账单。</li><li>客户续约时需要支付的金额减少，将影响收入和现金流。</li></ol>
+<ul><li>具体影响金额取决于最终服务中断时间和SLA可用性等级，目前尚无法测算。</li></ul>
+<h3>b) 此次事故是否会导致客户丢单？</h3>
+<ul><li>现有大型客户通常不会因单次事件立即中止合同。</li><li>但以下场景存在较高丢单风险：</li></ul>
+<ol><li>客户正处于采购谈判阶段。</li><li>客户正在M365与Google Workspace之间进行选择。</li><li>客户原本就在评估是否迁移。</li><li>客户已有Lark、飞书等第二套办公系统。</li></ol>
+<ul><li>访谈中提到，一家欧洲企业在Outlook宕机后转而通过Lark和飞书发布全员通知，这类事件可能强化替代产品在客户内部的存在感。</li><li>因此，大型存量订单大概率不会立即流失，但竞争性订单和摇摆客户可能出现部分丢单。</li></ul>
+<h3>c) M365与Azure哪个业务受到的影响更大？</h3>
+<ul><li><b>M365等办公SaaS产品受到的影响更大。</b></li><li>客户可能对微软办公SaaS的稳定性、单点失效和灾备能力产生疑虑。</li><li>Azure受到的影响相对较小：</li></ul>
+<ol><li>Azure主要基础服务未出现全面故障。</li><li>AWS、Google等云厂商历史上也出现过大规模宕机。</li><li>大型集团更可能由单云转向多云，而不是彻底停止使用Azure。</li></ol>
+<ul><li>因此，此次事件更可能改变企业的部署结构，而非导致Azure被全面替换。</li></ul>
+<h3>d) 对微软安全业务会产生什么影响？</h3>
+<ul><li>微软安全产品大量与M365捆绑销售，E5相对E3增加的功能中，安全套件占比较高。</li><li>合同通常以3年为周期，客户大概率不会在合同中途强制退出。</li><li>中长期影响主要会在续约时体现：</li></ul>
+<ol><li>部分客户可能将部分安全Workload切换至其他厂商。</li><li>企业可能引入SentinelOne、CrowdStrike等独立供应商增加防护层。</li><li>身份认证可能转向双系统或多系统并存。</li></ol>
+<ul><li>如果微软能在未来一年内完成架构拆分、消除单点失效并提升可用性，仍有机会保住客户或重新赢回客户。</li><li>整体安全业务大盘短期内不会出现剧烈变化，但可能发生部分小规模丢单。</li></ul>
+<h3>e) 此次事件会影响E5向E7升级及Copilot销售吗？</h3>
+<ul><li>预计整体影响有限。</li><li>客户情绪上可能对可靠性产生疑虑，但Copilot此次停止服务符合安全逻辑。</li><li>企业选择Copilot的核心价值并不是C端体验，而是：</li></ul>
+<ol><li>与企业数据无缝兼容。</li><li>继承完整权限体系。</li><li>继承身份认证体系。</li><li>继承数据标签和安全策略。</li></ol>
+<ul><li>当安全和数据标签不可用时，Copilot主动停止运行，反而避免了潜在的数据泄露。</li><li>因此，此次事件不一定明显放缓E5向E7升级，但可能推动客户要求更高的灾备能力和架构说明。</li></ul>
+<h2>8. 多云趋势及主要云厂商受益情况</h2>
+<h3>a) 此次事故是否会推动多云战略？</h3>
+<ul><li>多云本身已是明确趋势，此次事件可能进一步强化该趋势。</li><li>原来采用单云的企业可能增加第二朵云，降低单一云厂商的集中风险。</li><li>但多云必须同步解决身份、权限和安全策略问题，否则仍存在共享身份系统造成的单点失效。</li></ul>
+<h3>b) 多云趋势对AWS、Azure和GCP分别意味着什么？</h3>
+<ul><li><b>AWS</b></li></ul>
+<ol><li>在数字原生和互联网行业占据优势。</li><li>如果现有AWS客户增加Azure或GCP作为备份，多云趋势可能对AWS形成部分分流。</li><li>如果传统微软客户增加AWS作为第二朵云，则AWS将获得新增机会。</li></ol>
+<ul><li><b>Azure</b></li></ul>
+<ol><li>在大型传统企业、零售和汽车等行业拥有较强客户基础。</li><li>传统企业采用多云后，Azure的独占份额可能下降。</li><li>但客户大概率不会完全放弃Azure，而是将其从唯一云调整为主云之一。</li></ol>
+<ul><li><b>Google Cloud</b></li></ul>
+<ol><li>可能是多云趋势中最明确的受益者。</li><li>作为后来者，GCP更容易以第二朵云或第三朵云的角色进入客户体系。</li><li>GCP在AI领域具备优势，且部分区域商务策略较为激进。</li><li>虽然产品丰富程度与AWS、Azure相比仍有差距，但作为备份云具有较高性价比。</li></ol>
+<h2>9. AI时代的攻击趋势与企业安全投入</h2>
+<h3>a) 随着AI发展，高级安全事件是否会越来越频繁？</h3>
+<ul><li>AI将明显提升攻击者发现漏洞和实施攻击的效率。</li><li>主要变化包括：</li></ul>
+<ol><li>0-day漏洞发现速度加快。</li><li>多Agent可持续扫描和反复尝试攻击。</li><li>单个黑客或组织能够同时攻击更多目标。</li><li>攻击成本下降，攻击ROI显著提升。</li><li>社会工程攻击与技术攻击结合得更加紧密。</li></ol>
+<ul><li>许多攻击事件并未公开，因此公开案例可能低估了实际发生频率。</li><li>近期勒索、数据锁死和高额赎金事件明显增多，传统企业和国有企业同样面临较高风险。</li></ul>
+<h3>b) 短期内攻击方和防守方谁更占优势？</h3>
+<ul><li>短期内攻击方相对占优。</li><li>AI Native安全公司正在快速发展，传统安全厂商也在加速迭代，但跟进速度存在差异。</li><li>防守方需要同时保护服务器、网络、身份、人员和终端，而攻击方只需要找到一个薄弱点即可进入系统。</li></ul>
+<h3>c) 云端部署是否比本地数据中心更安全？</h3>
+<ul><li>在正确使用的前提下，云端通常比线下部署更安全：</li></ul>
+<ol><li>更新和补丁速度更快。</li><li>技术迭代更加敏捷。</li><li>安全工具和能力更加丰富。</li><li>更容易构建跨区备份和高可用架构。</li></ol>
+<ul><li>但云端并非天然安全，仍需管理好：</li></ul>
+<ol><li>网络通信。</li><li>身份权限。</li><li>终端设备。</li><li>人员操作。</li><li>云端与线下物理环境之间的连接。</li></ol>
+<ul><li>即使是Cloud Native企业，也可能因人员管控或终端疏忽导致整体安全失守。</li><li>线下物理机房并不等于安全，政府和大型机构的线下系统同样发生过攻击和数据泄露事件。</li></ul>
+<h3>d) 企业未来需要重点加强哪些安全投入？</h3>
+<ul><li>安全边界需要从服务器扩展到所有“毛细环节”：</li></ul>
+<ol><li>工程师个人电脑。</li><li>手机和平板。</li><li>笔记本电脑。</li><li>软件安装和文件扫描。</li><li>网络接入和流量加密。</li><li>身份认证和零信任体系。</li></ol>
+<ul><li>潜在受益产品和领域包括：</li></ul>
+<ol><li>终端检测与响应产品。</li><li>移动设备管理产品，如Intune。</li><li>零信任身份认证服务。</li><li>网络访问和流量加密产品。</li><li>Palo Alto GlobalProtect等安全接入工具。</li><li>AI Native安全产品。</li></ol>
+<h3>e) 安全事件是否会直接推动企业增加安全预算？</h3>
+<ul><li>短期内，重大事件和合规审计通常会直接推动安全软件采购。</li><li>人员安全意识难以仅通过培训实现显著提升，企业最终仍需依靠技术手段防护。</li><li>典型预算触发因素包括：</li></ul>
+<ol><li>企业自身遭遇攻击。</li><li>同行业发生重大安全事件。</li><li>合规审计发现缺口。</li><li>已购买产品的安装率、覆盖率和使用率不足。</li></ol>
+<ul><li>对已采购产品，企业会加强安装和使用监督；对尚未采购的产品，可能启动紧急采购。</li><li>长期来看，安全预算可能随AI攻击风险逐步上升，但不一定出现短期全面激增，因为产品迭代和性价比提升也可能抵消部分预算增长。</li></ul>
+<h2>结构化总结表格</h2>
+<div class="tbl"><table class="t wrap"><thead><tr><th>维度</th><th>核心事项</th><th>当前状态</th><th>主要风险</th><th>后续影响与建议</th></tr></thead><tbody><tr><td><b>事件状态</b></td><td>全球性M365服务宕机</td><td>约10%容量恢复，具体地区不明；服务尚未完全恢复</td><td>故障持续时间较长，根因未明</td><td>重点关注24小时恢复节点及最终RCA报告</td></tr><tr><td><b>故障链路</b></td><td>Exchange前端代理→集群容量不足→Substrate层受冲击</td><td>已观察到内核锁死、端口堆积、内存耗尽等现象</td><td>自动运维可能放大故障，形成全球连锁反应</td><td>需核查更新日志、自动扩缩容和机器摘除机制</td></tr><tr><td><b>根因判断</b></td><td>初步判断为纯软件故障</td><td>尚无确定根因，也无证据证明由更新引发</td><td>当前现象可能并非真正根因</td><td>等待完整技术复盘，不宜过早定性</td></tr><tr><td><b>安全攻击判断</b></td><td>暂未发现恶意攻击迹象</td><td>未发现DDoS、投毒、异常登录或渗透告警</td><td>不能完全排除未知攻击</td><td>持续开展网络、权限、日志及独立安全系统取证</td></tr><tr><td><b>主要受影响产品</b></td><td>Outlook、Exchange、Calendar、Copilot、Defender、Purview、ACS</td><td>Outlook影响最大，安全和AI服务部分不可用</td><td>邮件中断、会议预订失败、人工安全处置受限</td><td>企业需准备邮件和协作工具替代方案</td></tr><tr><td><b>基本未受影响产品</b></td><td>Azure基础服务、Word、Excel、PPT、Teams基础通信</td><td>绝大部分正常运行</td><td>与邮件、身份或全局数据绑定的功能仍可能受影响</td><td>区分基础云服务与M365 SaaS故障，不宜将两者等同</td></tr><tr><td><b>安全保护状态</b></td><td>本地规则与既有策略继续运行</td><td>Defender等前端状态不可见，但保护策略仍有效</td><td>超过24小时后可能出现缓存和日志溢出</td><td>加强日志留存、离线审计和外部安全监控</td></tr><tr><td><b>灾备能力</b></td><td>多地区部署难以规避共享组件故障</td><td>单纯全球部署无法形成有效备份</td><td>身份认证和数据层构成单点失效</td><td>评估本地Exchange、本地AD及混合部署</td></tr><tr><td><b>身份认证</b></td><td>第二套身份系统</td><td>技术上可行，成本相对可控</td><td>若仍统一依赖微软身份服务，多云也无法恢复</td><td>建设独立身份系统并定期同步身份数据</td></tr><tr><td><b>Copilot与Agent</b></td><td>关键流程是否应依赖单一SaaS</td><td>Copilot因安全标签不可用而Hard Stop</td><td>SaaS不可用时客户缺乏自主恢复能力</td><td>核心Agent采用云原生、自建、跨区和跨云架构</td></tr><tr><td><b>微软商业影响</b></td><td>SLA补偿、续约和丢单</td><td>SLA赔偿确定发生；存量合同短期较稳定</td><td>竞争性订单、续约和安全Workload可能流失</td><td>微软需尽快消除架构单点并提升可用性</td></tr><tr><td><b>M365影响</b></td><td>办公SaaS可靠性承压</td><td>客户疑虑上升</td><td>Google Workspace、Lark等替代方案获得机会</td><td>提升办公系统备份、替代通信和应急通知能力</td></tr><tr><td><b>Azure影响</b></td><td>基础云业务影响较小</td><td>未体现出比AWS、GCP更弱</td><td>单云客户可能转向多云</td><td>Azure仍会保留，但独占份额可能下降</td></tr><tr><td><b>多云受益者</b></td><td>GCP作为第二或第三朵云</td><td>AI能力和商务策略具有吸引力</td><td>服务丰富度仍弱于AWS、Azure</td><td>多云趋势对GCP相对利好</td></tr><tr><td><b>AI安全趋势</b></td><td>AI提升漏洞发现和攻击自动化能力</td><td>攻击频率和攻击ROI持续上升</td><td>短期内攻击方相对占优</td><td>加强AI Native安全、终端防护和零信任体系</td></tr><tr><td><b>安全预算</b></td><td>事件和合规驱动投入</td><td>企业将强化终端、身份和网络安全</td><td>预算增长可能呈渐进式而非全面爆发</td><td>安全软件收入短期受益，长期取决于产品迭代与性价比</td></tr></tbody></table></div>
+<h2>新版prompt提炼之后的转译</h2>
+<p><b>提问者：在开始今天的访谈前，请您就以下陈述表明同意或不同意：您知道保密信息的定义，并同意不会在访谈中透露任何此类信息或其他保密信息。</b></p>
+<p>回　答　者：是的，没问题。</p>
+<p><b>提问者：能否先用1、2分钟，简要回溯此次宕机事件的关键节点，以便我们在共同背景下继续讨论？</b></p>
+<p>回　答　者：首先需要说明的是，截至目前，我们仍无法看到整个事件的全貌。在我目前能够触达的所有渠道中，包括正在同步修复进展的 Teams 频道，相关人员仍在持续同步信息并排查问题，服务本身也尚未完全恢复。因此，现有信息仅代表截至目前能够排查出的情况，很多内容仍是基于当前状态的描述，是否属于真正的根本原因，目前还无法作出绝对判断。</p>
+<p>北京时间今天凌晨2点左右，我们首先观察到以 Exchange 为代表的邮件服务开始出现一系列故障。最初的影响应该还处于局部范围，随后逐渐蔓延，所有与身份认证相关的服务也陆续出现问题。</p>
+<p>目前基本排查出的情况是，Exchange 前端代理出现了一些问题，导致其资源容量诉求增加，支撑该服务的相关组件集群整体被打爆，机器不断下线。下线后重新补入动态集群的机器再次被压爆，操作过程中还有一些机器可能被误摘除，导致整个集群始终维持在整体容量的下限水平，进而引发连锁反应。随着任务不断积压，相应的处理压力带来了更多后续流量洪峰，持续冲击整套集群，导致一系列问题。</p>
+<p>但前端代理层为何会出现这一系列问题，包括观察到的内核锁死、端口堆积以及 out of memory，即内存耗尽等核心问题，截至目前仍未得出结论。我认为这一问题目前可能还无法形成结论，因为修复工作本身仍处于边推进、边观察的状态。</p>
+<p>相关依赖组件被打爆后，尤其是整体数据层的一系列组件，进一步引发了连锁反应。数据层支撑的服务包括邮件、Calendar，以及 Azure 上的少部分服务，如 ACS，即 Azure Communication Service 等。此外，M365 Copilot 等服务也发生了宕机。关联调用其中身份服务的相关服务，甚至包括 Defender 和 Purview 等安全组件，也出现了部分服务无法使用的不可用状态。</p>
+<p><b>提问者：目前整体处于什么状态，服务恢复情况如何？</b></p>
+<p>回　答　者：目前整体进展较快。根据官方内部通报，大概10%的capacity已经恢复，但全球前端仍有很多人在追问具体是哪10%。目前尚无法确认哪些地区的服务已经恢复。</p>
+<p>官方提到会优先服务目前处于峰值的部分区域。最初发布时大约是下午3点，APAC地区和欧洲地区正逐渐进入工作日高峰期。但截至目前，包括APAC地区的日本、澳洲、中国、东南亚等一系列区域，EMEA及MEA中东区域，以及刚刚开始进入工作时间的欧洲区域，绝大部分服务仍未恢复，整体仍处于宕机状态。北美也将很快进入这一状态。</p>
+<p><b>提问者：目前还没有排查出原因。今年微软应该也发生过2次较大规模的宕机，之前的原因是什么？</b></p>
+<p>回　答　者：我也记不清此前的具体原因，部分事件是由确定性故障等问题导致的。此次看起来是纯软件故障。根据我对技术的理解，问题可能出在自动运维系统，也可能是某个小更新引发问题，再叠加自动运维系统出现异常，最终导致整体宕机。此次应该是比较明确的纯软件问题。</p>
+<p><b>提问者：在传播机制上，最初只是局部问题，后来却蔓延至全球范围。不同地区和产品之间共用了哪些功能或产品，导致问题从某个地区扩散至多个地区和多种产品？是Purview或身份认证功能吗？</b></p>
+<p>回　答　者：不是。Purview只是受到波及。真正的核心点是在刚才提到的、姑且称为Cafe的前端代理层之后，造成大范围扩散和影响的是Substrate层。该层是支撑整个数据相关服务的中间层，许多服务都依赖这一层。它相当于横向贯穿的一层薄层，包括Purview和Defender在内的大量服务都依赖这一层。</p>
+<p>目前客户普遍关注的是，Defender、Purview等服务都出现了问题，无法查看状态，是否意味着无法继续获得保护。根据现有证据和机制，保护政策仍然存在，保护策略也依然生效。系统会将许多发生问题的数据写入本地，相关功能本身仍然有效。</p>
+<p>目前无法进行的是人工干预。例如，涉及报警推送和一系列规则时，如果出现例外情况，需要人工approve并放行，这些操作目前都无法执行。</p>
+<p>回　答　者：更多的是将所有内容集中在这里，包括通常所说的 Safe Links 链接内的所有内容。一旦发生故障，系统会一键锁死，类似于金库不论具体情况先将门全部锁住，基本上就是这种状态。</p>
+<p>目前来看，这一机制带来的影响，最快也要在24小时后才可能显现，例如本地缓存等既有存储被写满。目前故障持续时间已经超过12个小时，接下来的重要里程碑是能否在24小时这一时间节点内实现完整恢复。如果24小时内无法完整恢复，部分压力较大的安全服务可能会出现问题。</p>
+<p><b>提问者：明白。我看到管理层和官方均表示，目前没有发现攻击迹象，导致故障的原因是纯软件问题。我想了解，通常需要看到哪些证据，才能判断此次宕机并非由攻击导致？目前部分安全平台也无法使用，那么“没有攻击”这一结论是如何得出的？这个问题可能比较技术，请您解释一下。</b></p>
+<p>回　答　者：首先，Purview 是对外商用的安全工具。目前无法查看的是其自身的 Dashboard 等内容，但从微软内部来看，并不是通过硬编码直接切入后也完全无法读取。</p>
+<p>目前，只有一线实际操作人员能够看到具体情况。工程团队对外表示，根据其进入系统后获取的信息，没有发现此次过载或配置、软件变化是由外部因素导致的，也没有发现类似 DDoS 攻击或在某处投毒的情况。此外，根据内部部分独立运行的安全系统，也没有发现告警或渗透迹象。</p>
+<p>这是工程团队在完成相应取证后得出的判断。取证范围包括网络路由及其他相关部分，因为攻击不可能完全绕过这些环节而不留下任何痕迹。在审批流程的流水记录、异常特权登录等一系列环节中，目前也没有发现相应迹象。这是他们现阶段得出“没有恶意行为”结论的原因。</p>
+<p><b>提问者：明白。但目前可能还没有人看到全貌，只是根据现有迹象判断没有恶意攻击，是这样吗？</b></p>
+<p>回　答　者：是的，所以官方的措辞是：“到目前为止，我们没有发现任何恶意攻击。”</p>
+<p>我相信，工程团队不会在第一时间对外公布所有行动细节，因为公布得越详细，攻击方就越有机会采取更有针对性的行动。因此，官方公布的更多是概括性的常规信息。不过，我相信公司内部团队在第一时间肯定会首先进行检查。</p>
+<p>回　答　者：是否因意外遭受攻击而导致这一系列问题，目前尚不明确。微软始终面临较大的攻击风险，也不排除遭遇某种集中性攻击的可能性，但截至目前，工程团队尚未给出任何与此相关的迹象。</p>
+<p><b>提问者：像这样大范围的宕机，应该如何理解？这是偶尔会发生的意外，还是非常罕见的事件？</b></p>
+<p>回　答　者：从逻辑上看，确实可能出现一些意外，但此次导致大范围宕机的情况仍然比较罕见。</p>
+<p>上一次造成如此大范围影响的宕机，据我所知是 Azure AD 身份认证服务的一次更新。当时应该没有进行灰度发布，而是直接向全球推送了相应更新，导致所有用户都无法登录。那次事件同样没有影响业务本身的运行，但由于身份认证出现问题，所有用户都无法进入自己的账户，也就无法查看相关业务。</p>
+<p>从影响范围来看，此次事件应该与上次类似。根据我的印象，此次持续时间似乎更长，而且发现问题的速度似乎也更慢。上次很快便将问题定位到一次更新，随后查明推送情况，快速进行回滚并重新部署。</p>
+<p>此次披露的信息更多是描述前端发生了什么，并未对问题原因作出任何推测或暗示。根据我的经验，这类情况通常可能由某次更新引发，但目前并没有信息表明此次事件与更新有关，仍需查看相应的更新日志。如果事发前24小时内根本没有推送过更新，就不能将原因归结为更新。是否由其他原因导致，目前还不清楚。</p>
+<p><b>提问者：此次事件对企业的实际影响是什么？对于普通办公人员而言，Office、Outlook 等服务是否都无法使用，Copilot 是否也受到部分影响？如果企业的数据库或其他系统部署在微软 Azure 上，其业务是否也会陷入瘫痪？</b></p>
+<p>回　答　者：此次宕机的核心影响是 Outlook，这也是受影响最大的服务。Azure 上的服务基本没有受到影响，截至目前，绝大部分服务均未受影响。少部分受到影响的服务，主要与此次宕机涉及的相关服务有关。</p>
+<p>目前可以明确确认受到影响的是 ACS，即 Azure Communication Service。该服务可用于发送营销邮件，例如用户以往收到的亚马逊等平台推送的广告邮件。微软也会推送此类广告邮件，这类群发邮件服务即 Azure Communication Service。目前明确受到影响的服务多数都与邮件相关。</p>
+<p>回　答　者：M365套装，即通常所说的Office组件中，安全服务受到部分影响，包括刚才提到的Defender、Purview等。其他日常使用的组件中，Outlook无法使用，但Word、Excel、PPT未受影响，仍可正常制作PPT。SharePoint等单纯用于存储的服务，如果内容没有添加Confidential等加密标签，也未受影响。</p>
+<p>受到影响的主要是需要调取全局数据的服务，例如Copilot、邮件搜索等。通信类服务中，Teams几乎未受影响。Teams中的正常聊天、通话、Channel、电话等服务均独立于邮件，目前未受影响。但Calendar中的会议预订功能与Outlook绑定，目前已受到影响。</p>
+<p>总体而言，如果企业的大量业务系统架设在Azure上，使用数据、计算、存储、网络、数据库等服务，基本没有受到太大影响。但如果日常办公高度依赖邮件及各类M365 Copilot，无论是PPT、Word还是Chat中的Copilot，基本都会受到影响。如果仍采用纯手工方式制作PPT、撰写文件，1个字1个字手动输入，基本不受影响。</p>
+<p><b>提问者：是否有客户采用多地区部署，某1个地区可以正常运行，另1个地区无法运行？以Outlook或Copilot为例，是否会因部署地区不同而出现部分地区可用、部分地区不可用的情况，还是基本会在全球范围内宕机？</b></p>
+<p>回　答　者：今天凌晨较早时有这种情况。这不是官方信息，而是我在Teams中看到有人提到，部分区域仍可正常运行，其他区域已经宕机。但随着事态发展，其计算资源和集群采用自动化运维，会不断将其他机器加入集群，导致整个相关服务集群受到挤压，最终冲击全球服务。影响会逐渐蔓延。根据我目前了解到的情况，基本无法通过全球部署来规避。</p>
+<p><b>提问者：如果客户在2个地区进行部署，是否可能多1条恢复路径？但在这次事件中，由于相关架构原因，无法实现多1条恢复路径的选项，是这样吗？</b></p>
+<p>回　答　者：是的。目前来看，真正可能成功实现Backup的是混合部署。有人在On-Premise环境，即自己的数据中心内，同时部署了Exchange Server。这是历史遗留原因，因为仍有1部分无法上云的服务保留在本地。通过将1部分流量迁移至本地，似乎能够部分恢复相应服务。</p>
+<p>回　答　者：由于本地服务器无法支撑整个集团，因此将1部分核心服务迁到了这里，从而恢复了部分服务。据我了解，有1家MNC企业采取了这种方式。</p>
+<p><b>提问者：这次事故以后，是否会有更多企业采用混合部署或多云部署，例如在AWS或Azure上进行部署和备份？目前很多企业采用混合部署，是出于权限方面的原因，不希望将部分数据放到云端。您认为此次事故对云部署的长期影响是什么？</b></p>
+<p>回　答　者：如果长期来看，希望规避类似问题，正确的路径确实更可能是通过混合部署来规避，多云部署可能无法解决。仅就此次事故而言，有人会认为，既然M365会发生故障，Azure也可能发生故障，因此会进一步考虑多云部署，但这是衍生出来的第2层问题。</p>
+<p>如果不对办公体系进行备份，例如1方面使用M365，另1方面部署Google Workspace、Slack、飞书或Lark，建立2个同等的办公系统，那么仅仅再部署AWS或GCP，实际上很难解决问题，因为此次故障的核心在于办公相关的整套邮件系统。</p>
+<p>通常而言，企业办公数据具有归一性，不太会设置多套冗余系统。例如，同时部署1套以Gmail为基础的服务和1套以微软Exchange为基础的服务，并让2套系统并行运行。目前这种情况仍然非常罕见，多数企业还是采用整套统一部署。只有国内少部分客户因为存在信创要求，可能在国内使用国内服务器，出海业务使用Exchange，并将2套系统打通。只有少数企业采用这种方式，正常的MNC跨国企业多数仍然采用统一部署。因此，从这个角度来看，此次事故确实相对防不胜防。</p>
+<p>如果确实要对邮件服务进行跨云部署，将相关依赖服务在AWS上进行备份，或者相对不计成本地实施，也可以做到。但此次故障的麻烦之处在于，身份验证所依赖的云端服务出现了故障。即使在AWS上也部署1套系统，如果2套系统读取相同的身份验证服务，仍可能出现问题，单点失效依然存在。</p>
+<p>能够正常运行的混合部署，本质上要求身份验证等一系列环节也具备混合部署能力。该企业保留了线下AD，这也与历史原因有关。在更多区域，线下AD服务绝大部分已经下线。微软已经全面推广云端AD，AAD也已更名为Entra ID。由于国内的特殊情况，很多企业仍在使用线下AD。</p>
+<p>回　答　者：保留了线下的本地AD服务。一定程度上，微软将其集中在单点上，导致总架构设计中存在单点失效问题，这次确实因此引发了一系列问题。相对而言，如果仅讨论这次事件，可选择的备份手段比较有限。</p>
+<p><b>提问者：首先，部分数据可能会丢失。其次，在宕机过程中，您刚刚提到Defender等基础功能可能仍会运行，只是人工无法介入。随着时间不断延长，理论上风险是否会越来越高？因为人工无法处理风险提示或相应问题。暂且不讨论事故是否由攻击引起，如果系统一直未修复，外部攻击者是否会利用这一时机发起更多攻击？</b></p>
+<p>回　答　者：有可能。首先出现的问题可能不是外部攻击本身，而是攻击原本就可能发生，但事后无法追查。假设当前隐藏着一个0-day漏洞，黑客利用该漏洞发起攻击。以往，攻击可能会在很多地方留下日志；即使没有攻破，只是进行了一些尝试并被防住，也可以通过感知或日志等找到相应记录，从而在事后进行有效的追查和分析，并快速采取措施。</p>
+<p>但是，随着本地缓存等空间爆满，相关记录可能会溢出并被覆盖，导致这次攻击可能永远不会被发现。这种情况是有可能发生的。</p>
+<p>其次，前沿设定等不会受到影响。MD终端引擎依赖本地规则库，ASR等一系列检测和行为检测也基于本地规则库运行。不能认为系统中断12小时，规则库就一定会在这12小时内出现如此大的差异。但如果此时确实存在一个0-day漏洞，原本可能需要紧急推送，攻击者就有可能利用这一时间窗口发起大规模攻击。</p>
+<p>当然，这意味着攻击者进行了非常长远的策划：先使整个系统瘫痪，令其无法同步，再立刻利用这一时机发起攻击。这需要非常庞大的组织能力。虽然概率不高，但确实不为0。</p>
+<p><b>提问者：我还想了解，过去可能会认为，将身份、办公云和安全整合在一起是微软的优势，平时使用也更加方便。但发生这类事故后，客户会更加重视整合，还是会倾向于保留一些独立供应商，以切断此类连锁反应？</b></p>
+<p>回　答　者：这次事件后，客户也许会考虑独立供应商，因为此次事故确实蔓延到了安全产品。单纯从办公产品来看，正如刚才所说，它仍然具有一定的天然垄断黏性。客户最多可能认为M365整套产品不好，转而使用Google。</p>
+<p>但对于安全产品，客户确实可以在保留办公产品的前提下使用其他产品，例如SentinelOne、CS等，增加一层防护并依赖其他服务。这种情况确实有可能，甚至包括身份认证。</p>
+<p><b>提问者：我们的鉴权是否还要100%绑定在微软的AD上？</b></p>
+<p>回　答　者：从长期、高可用性的角度来看，确实存在这一问题。办公数据存储2份、建设2套主备系统比较困难，但从技术角度来看，身份认证可以采用类似方式。</p>
+<p>企业可以维护另一套认证系统，并与AD进行身份数据同步。由于身份信息变化并不频繁，每日同步已经属于较高频率，甚至每周或每月同步，也能够保证备份系统切换后可用。本地与云端之间也是如此，通常存在同步周期，一般不会进行每日同步。</p>
+<p>因此，可以建设1套独立系统，与AD同步身份信息，再将另一套身份系统与其他安全相关组件绑定，因为身份认证也是安全体系的核心。这个方案在技术上可行。此前可能只是出于节约成本、提高效率等原因，没有采用这种方式。</p>
+<p><b>提问者：通过这次事件，哪些具体的安全供应商会更加受益？您能想到哪些公司吗？</b></p>
+<p>回　答　者：暂时想不到太多。这次微软单点失效比较特殊，并不是安全应用本身失效，而是身份认证出现问题。因此，需要关注能够提供类似身份认证服务的厂商，但这些厂商不一定是安全厂商，各大云厂商也能够提供类似的身份鉴权系统，例如GCP、AWS等。</p>
+<p>对于多云部署，即使现有架构已经采用多云，如果身份认证绑定在微软，也可能需要在其他云上备份身份认证服务，因此受益者不一定是安全厂商。</p>
+<p><b>提问者：核心还是身份认证问题。您提到的方案是一种可行思路吗？</b></p>
+<p>回　答　者：对，这是一种思路。</p>
+<p><b>提问者：建设2套身份认证系统会增加很多成本吗？</b></p>
+<p>回　答　者：成本并没有那么高。AWS的价格体系我没有具体研究过，因为一般情况下，企业只会采用其中1套。微软的身份认证服务按席位销售，每人价格为1位数美元。</p>
+<p><b>提问者：对于微软而言，是否允许接入第2套身份认证体系？这2套认证系统如何同时存在，第2套是作为备份吗？</b></p>
+<p>回　答　者：一般不是作为备份。很多集团会涉及兼并等业务，例如收购1家新公司，而这家公司原来使用其他身份认证系统。完成收购后，通常需要进行相应整合。</p>
+<p>企业也可能在使用微软服务数年后决定停止使用，因此会涉及身份数据的迁入和迁出。不同系统之间必须能够保持数据同步，也可能出现2家公司保持身份数据同步但不合并的情况。因此，这种机制本身并不是为了主备。</p>
+<p>回　答　者：系统可以兼容并存，与国际主流厂商之间基本能够实现互通。据我了解，国内安全厂商也提供零信任安全认证服务，但与微软之间的打通可能存在一些问题，因为国内很多厂商采用国内认证标准，标准层面可能存在差异。不过，在国际范围内基本都是支持的。</p>
+<p><b>提问者：对于准备部署 Copilot 和 Agent，并计划将 Agent 用于关键流程的客户，这次事故会增加哪些上线门槛？</b></p>
+<p>回　答　者：这次事故涉及的并不是上线门槛，而是客户可能需要考虑，是否要将关键业务流程架设在1套 SaaS 系统上。这意味着整套系统的可用性，即 availability，完全依赖 SaaS 厂商提供支撑。一旦 SaaS 厂商出现问题，就可能引发一系列问题，这是比较核心的一点。</p>
+<p>从这个角度来看，更好的方式其实是将系统架设在云上。首先，没有任何方法能够实现 100% 的风险规避，即使在线下建设数据中心，也无法实现 100% 的风险规避。在云上建设系统后，可以通过跨区备份和高可用架构，同时实现数据备份与服务备份，以应对相应情况。</p>
+<p>目前，云上系统基本由一系列服务组件构成，并采用云原生方式进行开发。即使某个相对独立的服务出现问题，例如这次邮件的 ACS 宕机，也不会导致 AI Foundry 的大模型服务下线，也不会导致 Agent Framework 框架出现问题。即使 Framework 出现问题，也可以在其他区域快速找到替代方案，并迅速完成整套系统的部署和启动。</p>
+<p>至少客户可以在内部开展 Disaster Recovery，即 DR 工作，而不是像现在这样，只能等待微软完成相应的服务恢复。客户可能会更倾向于依赖底层服务搭建整套流程，从而明显提升系统的可靠性。</p>
+<p>此外，在 Azure 上搭建系统后，可以真正实现跨云备份。例如，同1套 workflow 或整套部署 template 也可以在 AWS 上进行相应部署，当然其中部分组件需要替换。这样就能实现真正意义上的跨云备份。届时，可以将流量全部路由至 AWS；如果 GCP 出现故障，也可以将流量路由至 Azure。这种不同云平台之间的相互备份才是真正有效的，而不是像现在这样因单点失效造成单1厂商失效。</p>
+<p>因此，云上建设可能会在1定程度上推动客户的偏好发生变化，使其不再倾向于基于 Copilot Studio、M365 Copilot 等产品进行搭建。我认为公司做得不太好的1点是，今天其实有1些内部邮件涉及未必会直接向客户声明的情况。</p>
+<p>回　答　者：对于这类问题，官方的回答略带酸意，即企业的核心业务不应架设在这类SaaS上，而应基于微软的AI方阵进行建设。官方最终也是这一态度。</p>
+<p><b>提问者：明白。调整为这样的架构后，客户会增加哪些支出？哪些支出可能是一次性的，哪些支出需要客户为新架构长期支付？</b></p>
+<p>回　答　者：从支出角度看，不一定会更贵。购买M365 Copilot等产品时，除了Token消耗外，还会产生相应的坐席等一系列许可费用。如果按照使用人数和AI的整体使用情况来看，基于SaaS的方案其实不一定省钱，但可能节省相应的人工和运维费用，即将运维工作委托给微软，不过微软的运维也可能出现问题，这实际上是一种交换关系。</p>
+<p>如果企业在这里进行大规模建设，可能需要自己的运维团队，日常管理整套Agent的相应Flow，并负责升级和迭代。这个团队未必由公司内部人员组成，也可能由埃森哲等外部机构提供支持，但无论如何，都需要一部分人员承担相关工作。</p>
+<p><b>提问者：明白。这次服务中断后续会产生哪些商业后果？例如客户索赔或丢单等。您认为哪些商业结果是确定会发生的，哪些可能是潜在的负面影响？</b></p>
+<p>回　答　者：确定性的商业结果肯定存在。SLA有相应的索赔原则，很多索赔并非直接退款，而是返还点数或冲抵账单。无论如何，这都会影响收入。例如，客户原本需要在12月份付费续约，但由于获得了相应点数，续约时需要支付的金额就会减少。这肯定会在账目和会计层面带来现金流损失，是100%确定的。</p>
+<p>目前还无法确定其SLA会下降到什么程度，因为截至现在，这个群里仍在不断发送消息，服务应该还没有恢复。</p>
+<p>从丢单角度看，如果恰好处于当前时间节点，大概率会面临相应压力，情况比较棘手。我实际接触过一个欧洲客户，这家欧洲企业被中国企业收购，原本使用M365和Teams。今天服务宕机后，由于Teams无法发送消息，企业无法向全员发布通知，邮件也无法发送全员通知。</p>
+<p>由于该企业当时在国内外采用双轨模式，确实有2套办公系统，国外员工也使用Lark。因此，企业通过各种方式通知员工转到Lark和飞书，并在飞书上发布全员通知，说明目前Outlook邮件服务暂时不可用，请大家使用飞书相关替代方案与内部和外部进行沟通。最终形成了这样的情况，对我们在这个项目上的影响非常不利。</p>
+<p>回　答　者：对于微软的这一套产品，这个订单大概率不会丢。但在相对摇摆的场景下，或者竞争对手是 Google，如果订单正处于采购合同谈判阶段，我们很有可能会丢单。这种可能性确实存在，尤其是客户正处于考虑是否迁移的节点。</p>
+<p><b>提问者：更有可能丢单的是 M365 等办公产品，还是 Azure 云业务？两者受到影响的程度分别有多大？</b></p>
+<p>回　答　者：我认为，对云业务的影响相对较小，对办公产品的影响可能较大。客户可能会对微软的 SaaS 软件产生疑虑，但至少 Azure 并未表现出比其他云服务商更弱。全球性的大规模宕机不仅发生在 Azure，AWS、Google 等也有过类似记录。</p>
+<p>大型集团更可能选择多云战略，不太可能完全停止使用 Azure。原来采用单云的客户可能会转向多云。事实上，即使没有发生此次事故，多云战略也已是明确的大趋势。</p>
+<p><b>提问者：抛开此次事件是否由安全攻击引起，您认为后续应如何解读其对微软安全业务的整体影响？从长期来看，这一事件会对微软安全业务本身产生什么影响？</b></p>
+<p>回　答　者：微软安全产品中，刚才提到的部分产品都与办公套件捆绑。M365 的 E5 与 E3 相比，增加的大部分都是安全相关套件，因此在一定程度上属于捆绑销售。</p>
+<p>从这个角度看，由于合同通常是3年一 renew，在相对成熟的商业社会中，客户大概率不会中途停止使用，要求退还这1年尚未使用部分的费用，再强制切换到其他产品。可能会有少量案例，但整体业务大盘可能不会受到影响。</p>
+<p>从长期来看，合同周期通常是3年一签，当然也可以采用其他年限，3年、5年都可以，3年、4年、5年都可以。在一般采用3年合同的情况下，更多客户可能会在 renew 过程中，考虑是否将部分 workload 切换到其他厂商，以形成备份。</p>
+<p>阻止这种情况发生的一个办法，是调整安全产品架构。此次问题的严重性在于单点失效，因此需要考虑能否将相关部分拆分，并进行1次相对较大的产品升级和迭代。</p>
+<p>考虑到3年合同周期的滚动，以及并非所有客户都会进行切换，即使微软在未来1年内完成架构切换，或从架构层面提升可用性，仍有机会保住客户或进行 win back。此次事件发生后并不会立刻产生实际结果，更重要的是后续调整能否解决目前可能存在的隐患。如果微软能够从架构上进行有效调整，仍有一定概率稳住客户。</p>
+<p>回　答　者：会出现部分小的丢单。</p>
+<p><b>提问者：E5 升级到 E7，主要是增加 Copilot 和更高级的安全功能。您认为这次事件会影响部分客户从 E5 升级到 E7 的节奏吗？还是说，由于客户原本就考虑使用 Copilot，加之升级时可能有较好的商务政策，因此不会对升级过程产生太大影响？</b></p>
+<p>回　答　者：我认为可能不会产生太大影响。情绪层面上，客户可能会对微软相关产品的可靠性产生一定疑虑，但从技术角度分析，这次事件对 Copilot 的影响看起来是可接受的。</p>
+<p>此次故障恰好发生在数据和安全层面，进而影响了 AI 的运行。由于 AI 无法甄别不同企业级数据的标签，因此系统直接锁死，不再处理所有数据的进出。这类似于面对危机时采取的应急状态，应当属于正确的应急响应。</p>
+<p>如果 Copilot 仍在运行，而 Purview 等一系列数据标签已经不可用，Copilot 继续输出内容，反而可能真正影响企业数据和 AI 安全。就用户体验和易用性而言，微软 Copilot 相关应用肯定不如面向 C 端的应用，例如常用的 Claude 或 ChatGPT 网页版，在易用性、操作顺手程度和流畅度方面均存在差距。</p>
+<p>客户之所以仍然使用 Copilot，核心原因是它能够无缝兼容企业数据，以及企业数据相关的全部权限、认证和安全体系，从而节省大量人工操作和处理复杂事项的成本，这是其较大的价值。如果这套体系发生故障后，Copilot 确实履行了锁死职能，我认为这是正确的响应，而不是特别明显的扣分项。</p>
+<p>相反，如果其他相关功能此时仍能继续运行，才可能是风险的开始。Copilot 无法使用，实际上相当于进行了一次安全阻断，就像跳闸或保险丝彻底熔断一样，所有人都无法继续使用，反而具有正面意义。</p>
+<p><b>提问者：这件事可能同时带来正面和负面影响。假设事件发生后，安全套件仍能保证数据在此期间更加安全，那么为了避免下次出现同样的情况，或者在类似情况发生后确保安全得到保护，客户是否可能进行相应的安全升级？</b></p>
+<p>回　答　者：如果安全套件接入 AI，情况可能确实如此。假设客户使用了第三方 AI，并允许其读取一系列办公数据，当相关系统出现问题后，第三方 AI 仍然能够运行，就可能产生风险。相比之下，微软这整套体系在发生故障时，会像保险丝跳闸一样直接执行 hard stop，进行硬性切断。</p>
+<p>回　答　者：从AI的角度来看，这是一种更果断的策略，在一定程度上具有正向意义。至少证明AI与数据之间的安全防线被牢牢守住了，确实发挥了阻挡作用。我甚至认为，这可以作为一个正向案例进行分享。发生相应的事故在所难免，理性的IT从业者都清楚，事故确实可能发生，但事故发生后的措施和策略能够切实生效，这就是其正向意义。</p>
+<p>真正的问题在于SaaS系统单点失效所带来的影响。对于身份认证这类非常核心的环节，是否需要进行备份，或者从全部购买纯云端产品，转向购买部分on-premise的OP产品，进行混合部署，这可能会对微软造成真正的伤害。</p>
+<p>从商业角度来看，混合部署肯定会对微软产生影响。微软之所以将产品转向订阅制，是因为订阅制从财务角度来看更优。采用OP产品肯定对微软不利。如果第2套身份认证备份与微软的系统同时存在，那么在未来进行成本节约时，企业可能会砍掉其中1套；如果被砍掉的是微软这一套，就会对微软产生影响。</p>
+<p><b>提问者：混合云或混合部署是一个较大的发展趋势。总体而言，这对现有的几个大型云服务厂商分别会产生什么影响？对谁是利好，对谁是利空？</b></p>
+<p>回　答　者：目前可能很难得出明确结论。从多云的角度来看，不同行业会存在差异。对于AWS相对擅长的digital native行业，即数字原生互联网等新时代企业，多云趋势可能对AWS构成利空，因为可能会有更多企业选择Azure等其他云服务进行备份。</p>
+<p>对于传统企业，例如微软在大型零售等领域的传统强势合作伙伴沃尔玛、梅赛德斯-奔驰，如果这些企业选择多云，实际上会利空微软、利好AWS。</p>
+<p>相对而言，可能获得100%利好的是Google GCP。Google GCP这几年的高速增长，除了来自其在AI相关领域的显著优势外，还因为它作为后来者，在多云架构中可以作为第2朵云或第3朵云加入，从中获取一定份额。对于后来的追赶者而言，这相对有利。当然，Google现在的规模也已经很大，其revenue很快就要追上微软。多云趋势对Google相对利好，可能使其保持较好的增速。</p>
+<p>Google服务的丰富程度与前2朵云相比仍有一定差距，但至少在我所了解的GCR大中华区范围内，Google的商务策略比较激进。从这个角度来看，Google作为备份云显得格外划算，也是较优选择，因此多云趋势对其具有明显利好。</p>
+<p><b>提问者：前一段时间，币安也遭到黑客攻破。虽然这次事件尚未被定性为攻击事件，但随着AI的发展，这种高级别的安全事件是否会越来越多？</b></p>
+<p>回　答　者：会，因为现在AI对于……</p>
+<p>回　答　者：0day漏洞的发现等一系列情况会变得越来越快，传统系统也会因此变得更加敏感。我之前分享时提到过，有人会利用多Agent反复进行尝试。美国此前也曝光过相关事件，并指责攻击来自中国，即利用多个Agent反复扫描、寻找漏洞并开展攻击。这些情况确实会加剧黑客攻击的程度。</p>
+<p>币安此次事件受到广泛关注，一方面是因为币安规模特别大，另一方面是因为此次攻击事件影响较大，而且可以在链上清晰地看到比特币的移动，因此公众能够直接了解相关情况。但事实上，尤其是在中国企业“家丑不可外扬”的文化影响下，很多攻击事件并未公开。最近，安全攻击形势明显变得更加严峻。</p>
+<p>币安事件还使用了很多社会工程手段，例如虚构公司、安排面试等。但也有很多纯粹的技术攻击，即直接寻找系统漏洞并实施攻击。例如，上海一家知名国有企业，这是我今天刚刚听说的，在最近2天遭到勒索，目前其内部系统均被锁死。黑客索要数亿人民币的比特币作为赎金。即便相关行政机关已经介入，依然很难通过技术手段快速处理这些问题。</p>
+<p>据我了解，这类攻击事件明显比以往更加频繁。由于很多受害者不会公开相关情况，我们可能无法进行完整统计，但可以从多起重大事件的发展脉络中感知到，也可以通过一些内部渠道了解到，攻击事件确实变得更加频繁。</p>
+<p>AI提升了黑客的攻击能力，特别是相对传统的企业，往往依赖固定模式开展安全防护，现有漏洞会被不断发现和利用。很多企业会天然认为，线下数据中心比云端更安全，但这些固有认知在新的攻击方式下会变得更加脆弱。攻击者能够找到更多漏洞并实施攻击。</p>
+<p>随着AI不断发展，攻击范围明显扩大。以往黑客个人或组织需要投入巨大的精力才能完成1次攻击，而现在，Agent可能在自身成本较低的情况下对多个目标实施攻击。在这种情况下，黑客的投入产出比，即ROI明显提升，攻击行为肯定会变得更加普遍和广泛。</p>
+<p><b>提问者：从防守方的角度应当如何看待这一问题？对于企业而言，首先，将系统放在云上是否会比本地部署更安全？其次，企业应当如何应对？是只能投入更多安全预算、部署更多安全软件来防御攻击，还是短期内攻击方会比防守方更具优势，因为攻击成本或攻击数量可以实现指数级提升？</b></p>
+<p>回　答　者：我认为短期内确实是攻击方占优，但防守方也在快速迭代。</p>
+<p>回　答　者：目前，硅谷有很多纯 AI Native 安全公司开始崛起。传统安全企业能否快速跟上，可能会带来新的挑战。当然，传统企业也在快速想办法尝试，但进展有快有慢。因此，我个人认为，攻击方在一定程度上占优。</p>
+<p>在正确使用的前提下，我认为将系统部署在云端比部署在线下更安全。至少从企业的商业策略来看，云端在更新迭代和技术简化方面更加敏捷，能够在一定程度上提供更好的帮助。</p>
+<p>但前提是正确使用云端环境。云端最终需要向线下的物理世界延展，在此过程中，包括网络通信等一系列环节都不能出现问题。如果其中某个环节存在漏洞，即使云端本身再安全，攻击者也可以顺着网络侵入，整体安全体系就会失效。</p>
+<p>币安也是一家非常 Cloud Native 的云原生公司，但依然由于线下人员管控和疏忽，导致整体安全失守。因此，安全边界必须有效拓展到更加细微的环节。如果无法实现，无论云端还是线下，实际上都不安全。</p>
+<p>之所以认为线下存在问题，可能也与我接触的中国企业较多有关。很多人天然认为，只要将数据放在线下的物理数据中心，拥有实体机房，就能够确保安全，但这种认识显然不正确。这种观念反而可能导致企业在策略上疏忽安全投入。企业原本可能依赖硬件防火墙等设施，而这些设施的迭代和演化速度并不快，再加上认知层面的疏忽，很可能导致安全问题。</p>
+<p>历史上一些规模较大的政府端安全攻击和数据脱库事件，也发生在纯线下物理机房中。即使采用了一些物理隔断方式，依然可能被攻破。基于这一原因，我认为云端相较于线下可能具备一定优势，但云端同样依赖对安全边界的有效管理。</p>
+<p>尤其对于高价值目标，整体安全管控要求已经变得非常高。安全边界必须延伸到非常细微的环节，包括具体工程师的个人电脑等。对这一系列环节的管控都非常重要，而不能认为只要保护好几台服务器就足够了。</p>
+<p><b>提问者：对于高价值目标，您提到其安全投入会很高。这些投入会直接转化为安全软件或云服务收入，还是更多体现在业务人员安全意识的提升？应如何理解安全投入的提升？它主要是金钱层面的投入，还是全方位的投入，不一定能够直接转化为相关收入？</b></p>
+<p><b>提问者：这是否会转化为一些安全软件提供商的收入？</b></p>
+<p>回　答　者：我认为至少在短期内，可能会转化为安全软件供应商的收入，因为人的安全意识很难提升。以钓鱼邮件为例，很多公司每天或每个月都会开展培训，包括我们自己每年也有培训，但真正重视这些培训的人有多少，很难确定。</p>
+<p>从技术角度看，这与社会反诈类似，不能单纯依靠提高人们的安全意识，本质上还是要通过技术手段真正实现防护。因此，这可能会在一定程度上转化为安全软件的收入。例如，将安全边界扩展至个人终端设备，包括手机、平板、笔记本电脑等移动终端，可能会带动一系列终端安全软件的需求。</p>
+<p>以微软产品为例，以往可能只需要购买MDE，用于本地电脑防护即可。但在币安这类事件发生后，企业可能需要对电脑进行主动管控。在这种情况下，是否需要使用Intune及其他产品，对安装的软件和涉及的文件进行扫描、管理和查找？当然，这些措施依然可能百密一疏，但无论如何，企业可能需要投入更多资源，进一步收紧毛细安全边界。</p>
+<p>在网络安全方面，企业也可能需要使用Palo Alto的Global Access等一系列产品，对终端访问网络过程中的流量进行加密。这些措施看似细微，许多公司可能也已经实施，但以往可能只覆盖了部分场景，现在则可能需要全方位强化，因为每一台终端设备都可能成为内部攻击的发起点。</p>
+<p>不过，这件事存在一定复杂性。相关投入是否会在短期内大幅增加？对于币安及同类型机构而言，如果此前没有实施类似措施，投入可能会增加。相关逻辑和理论并不是新概念，安全边界和终端安全长期以来都受到关注。实际上，安全投入和大幅增加采购，多数由事件或合规审计触发：要么发生了安全事故，要么在合规审计中发现了问题。</p>
+<p>既然这些理论并不新颖，相关机构以往没有实施，说明其权衡后认为可以暂缓。但币安这类事件对于同类型机构和组织的触动一定非常大。除了追责相关人员并重新开展安全培训之外，这些机构一定会开始强化技术手段。对于已经采购的产品，也要确保安装率和使用率达到规定要求，因为确实有很多公司购买后并未安装。企业还需要持续监督使用率等指标；对于尚未采购的产品，则可能进行紧急采购。</p>
+<p>回　答　者：这种情况非常普遍。比如我刚才提到的那家从事传统业务的国有企业，可能不会因为滴滴的事件而认为与自身有关。企业的安全投入往往是单点事件驱动的，只有遭遇黑客勒索后，才会意识到此前安全投入不足，需要紧急追加预算。这类事件与过去驱动企业增加安全投入的力量类似。</p>
+<p>回　答　者：安全预算可能不会在短期内迅速反弹，更多会在AI发展的影响下逐步上升。当然，这也可能带来另一种情况，即安全厂商的组件和产品形态发生变化，既有产品失效。随着产品迭代，厂商也需要持续优化产品，使其价格更低、性价比更高，从而使企业整体安全预算再次回到平稳状态，这种情况也有可能发生。</p>
+<p><b>提问者：最后总结一下，随着公开的安全事件越来越多，这对于企业提高安全预算是有帮助的。也就是说，这些事件发生后，会触发企业提升安全预算，对吗？</b></p>
+<p>回　答　者：是的。</p>
+<h2>原文转译</h2>
+<p>稍等。</p>
+<p>呃，这样，您好。在我们开始今天的访谈前，请您就以下陈述表明我同意或不同意。您知道保密信息的定义，并同意不会在访谈中透露任何此类信息或任何其他的保密信息。</p>
+<p>呃，是的，没问题。</p>
+<p>嗯，好好好。呃，OK，那我们开始吧。就是，咱能不能先首先简短地花个一两分钟吧，就是您把这个整个这这这次的这个宕机的事件再再把关键节点再回溯一下。呃，那这样就是我们有一个共同的这个背景，然后我们再继续来问这个问题。</p>
+<p>呃，好的。就是首先是这样的，就这件事情我首先介绍一下，就目前为止其实我们还看不到整体的事件全貌。因为我目前为止在我能够触达到的所有渠道当中，包括他们正在修复的这个同步同步的这种 Teams 的这种 channel 当中，大家还在不停地在去同步信息和排查问题的关键。服务本身目前为止也没有完成恢复。所以目前为止已知的信息只能是说截至到目前为止我们现在能够排查出来的情况。很多还是基于这个状态的描述，是不是真正的 root cause，根本原因，目前为止其实做不了绝对意义上的判断。大概是这样的。好，我们回溯一下，大概是在那个北京时间的今天凌晨两点左右的时间，然后我们首先观察到 Exchange 为代表的这个就是邮件服务的这个一系列的服务开始出现故障。最初的影响应该还是在局部范围内，然后随后呢这个逐渐发生了蔓延。所有和身份认证相关的一系列的服务逐渐开始出现了这个相应的问题。目前为止我们已经能够基本排查是由 Exchange 的前端代理出现了一些问题，然后导致了它的这个对于资源的诉求 capacity 增加，然后以及支撑对应支撑它的一系列的这个相关组件的集群，然后那个整体被打爆。然后不断地有机器下线，然后但是下线后的机器以及重新补上来的动态的集群当中补上来的机器呢再次被压爆。然后以及这个机器的过程操作的过程当中还有一些机器应该是被误摘除出去。然后整个集群始终维持在一个整个容量的下限水平，进而导致了连锁反应。因为他越积压这个相应的处理的压力，会带来更多的这个后续的这个流量洪峰不断地去冲击，反而导致了整套集群的这个一系列的问题。但究竟是为什么会导致的前端代理层这个这个发生这一系列的问题，就是所谓的看到的什么内核这个锁死啊，还有包括一些这个端口堆积等等这一系列的问题，还有包括这个所谓的这个 out of memory，就是内存耗尽等等这些的核心问题，至少到目前为止我们现在还没有看到结论。我相信可能这个问题就是没有结论的，因为目前为止包括修复的进度也是边走边看的一个状态。然后被它打爆之后的我们的这个一系列的相关依赖的组件，尤其是在这个整体的数据层的一系列的组件，带来了一系列的连锁的反应。数据层支撑的包括邮件在内，邮件、calendar 以及包括 Azure 上的少部分服务啊，就 ACS，Azure Communication Service 等等一系列的相关的情况。还有包括那个 M365 Copilot 等等在内的这一系列的服务都发生了这个宕机。以及关联的会调取其中的这个身份的相应的服务，甚至包括 Defender 和 Purview 等一些安全相应的组件都出现了部分的服务无法无法使用的不可用的状态。 这是目前为止现在的处在的一个状态当中。这个基本上在，这个的发展速度还是比较快的。然后目前为止的情况是到目前为止，官方在内，应该叫内部的通报当中说有大概10%的capacity已经得到了恢复。但目前为止我们从前端，global前端，现在还很多人都在追问到底是哪10%？现在目前为止还看不到到底是哪里的服务进行恢复。他提到了会优先服务目前处在这个峰值的部分区域。比如像那个此前啊，就这个最开始发布的时候是下午的3点左右，APAC地区以及包括像这个欧洲地区都开始逐渐进入工作日的工作时间的这个高峰期。但是目前为止这几个区域，包括我现在能看到的，就APAC包括日本、澳洲、中国以及东南亚等一系列区域，以及中间的像那个EMEA，对，MEA的中东区域，还有包括目前刚刚开始进入这个工作时间的欧洲区域，其实还是绝大部分的服务都没有得到恢复，现在对，还是处在一个整体宕机的状态。对，然后而且北美会很快的加入到这个行列当中来。对。</p>
+<p>嗯，哎，目前其实还没排查出原因，但是今年其实微软应该是也还有两次比较大规模的一些宕机，之前原因是是是什么来着？我有点忘了。</p>
+<p>之前，我也有点记不清了，就之前有一些是有一些这个确定性的故障啊等等。这一次呢看起来像是某，这这应该是一次纯软的故障，它的软件的，就是根据我对技术的认知理解，应该是这是它的自动运维，它的那个更新和自动运维的系统，它是不是由更新引起的，我我推测可能是某一个小的更新导致了这个问题啊，然后加上它的自动运维系统出了一些问题，然后导致的这个整个的宕掉，这次应该是一个比较明确的纯软的一个问题。对。</p>
+<p>嗯嗯，明白明白。然后这个传播机制上也想了解一下，就是它最初其实还是个局部的一个问题嘛，但是后来就是蔓延到一个全球的范围内，就是说它实际上共用的是那个功能还是说呃哪哪共用了一些什么样的这个产品导致它就可以从某个地区就扩散到多地区多产品呢？是是这个Purview这个这个功能吗？身份认证的功能？</p>
+<p>不是。其实不是Purview，Purview是被波及到的。它真正的核心点是刚才提到的那个就姑且称之为Cafe的那个前端的那个代理那一层之后，带崩的真正扩散和影响大的是这个叫Substrate的这一层，这一层是目前为止它是做支撑于整个数据的相关的一个中间层，这一个服务依赖。这一层其实它是横着切了薄薄的一层，有大量的服务是依赖于这个来进行的。所以包括Purview，包括Defender其实都依赖于这一层。所以目前为止呢就是大家目前为止我们收到客户的一个广泛关注是说你们现在的Defender、Purview等等这些服务都出现了问题，我现在查看不了状态，那是不是我们无法得到保护了？根据现有的证据看到的机制是保护的政策还在，保护的策略依然是都在生效的。现有的这种就是它会把很多的这种数据，就是发生问题的数据写入本地。而且这些东西都有一些这种，就是这个这个功能本身是生效的。现在不能处理的是一，人工不能进入干预，比如你涉及到的一些这种报警推送和这个一系列的规则，比如说我出现了一个例外，要不要人工进行approve把它放行，这些动作都不能做了。它 更多的是把一切东西都按在这里了，还有包括一些这个我们通常讲的safelink这些链接内的所有东西，它是一键锁死，类似于发生了故障，金库咔嚓干脆把所有人不论青红皂白先把这个门锁死了再说。基本上是这个状态。所以呢现在目前看起来这一类所带来的影响应该最快也得要24小时之后才可能会出现本地的这个这个这个这个既有的类似于像本地缓存这种东西写满的情况才会出现。所以现在他们的核心目标这次已经超过12个小时了，所以现在的目前的下一个重要的里程碑就是能不能在24小时的时间节点内进行完整恢复。如果24小时不能够完整恢复的话，可能有一些压力比较大的安全服务会也许会出现一些问题。对。</p>
+<p>明白明白。呃就挺有趣的，就是，然后就是管理层，我看就是这个官方也说目前没有看到攻击的迹象啊，就是说导致原因就是您刚也说是纯软。我其实想问就是说咱们没有看到这个迹象一般是要看到哪些证据就是说才能去判断说没有因为这个被攻击导致这个宕机的？因为你现在就是咱们就是刚说的一些安全平台也不可用了嘛，就是说这这是这个没有攻击的这个结论是怎么才能判断出来，这可能比较技术啊，您帮忙解释一下。</p>
+<p>呃，它是这样的，就是首先呢这个应该叫应该叫这么讲，就是这个Purview的呢这个是对外商用的这个安全的手段，然后它其实现在不能看的呢是它本身的那个比如说像dashboard等等这些东西不能看。从微软侧并不是说我hardcode的直接切进去就完全读不了了，这个也不是这样的。然后目前为止到，当然这个是这个这个其实只有一线直实操的人能够看到，但目前为止工程团队对外是说根据他们进去找到的情况没有看到是外部的信息这个原因导致它的这次过载，或者说是配置以及软件的变化。也没有发现这个类似于像DDoS攻击或者是在这个这个某一处投毒的这个这个情况。然后呢另外呢就是根据内部的还有一些单独的standalone的这个安全系统的情况，也没有发现告警或者说是渗透的迹象。然后，对，大概是这样的一个情况。这是这是这是工程团队给出来的，他们做了一些这个相应的取证，包括在网络路由等其他的这种相关的这个这个部分上，因为因为你不可能完全不经过这个部分嘛，没有任何痕迹留下。在这些部分的过程当中还有这个审批的流水workflow流水线，还有包括这个异常的特权登录等等这一系列当中都还没有看到相应的迹象。这是他们目前做出说没有恶意行为的这个的结论的原因。对。</p>
+<p>嗯嗯明白明白。但怎么说就是说目前可能也没有人看到全貌是吧，就是目前只是根据这些迹象来证明说没有这个恶意的一些攻击。</p>
+<p>对，所以那个，所以它的那个官方的措辞就是到目前为止，我们没有发现任何恶意攻击的。就我相信啊，第一时间点，就是工程团队肯定没有把所有的这个动作对外进行公布，因为我们知道就是你公布的越详细，那么攻击方可能就有机会去采取更更针对性的动作，它肯定没有公布所有的动作，更多是基于梗概性的把这种通常的general的信息对外进行公布。然后，对，然后但我相信公司内部的团队第一时间肯定首先会去检查 是不是有意外被攻击导致的这一系列的问题，因为这微软面临这样一个状态嘛，他肯定会时时刻刻面临非常大的这种攻击，是不是某一个这种集中性的攻击啊等等，但目前为止现在至少工程团队还没有给出过任何这方面的迹象，对。</p>
+<p>嗯嗯嗯，了解了解。呃，明白了，嗯。嗯，明白明白，让我想一想。但但就是，因为其实，或者我这么问吧，就是像这么大范围的一个宕机在以往过程中是，呃，我应该怎么理解这种事件，就是说，哎，有时候就是会有一些意外出现的，还是，呃，还是很很罕见的？</p>
+<p>呃，就逻辑上确实是会有一些意外，但这次导致的宕机还是比较罕见的。呃，上一次这么大范围影响的宕机，我印象当中还是那个身份认证的那个Azure AD，呃，一次更新，然后当时没有做，应该是没有做灰度，直接向全球推了这个相应的更新，然后导致所有人都上不去，它主要是身份认证上不去嘛，等于所有人都进不了自己账户了。那个同样是导致就是业务本身没有受到影响，它该转还在转，只是你人都看不到了。呃，今天这一次的情况呢，呃，影响范围来讲应该是跟那次是类似的。呃，这个，呃，影响范围是类似的，持续时间我凭印象当中好像是这次更长一些，而且这次对于问题的发现，呃，似乎也更慢。因为那次很快就把他定位到了一次更新上，然后把那个就是推送的这个情况就找到了，然后快速进行回滚，然后重新部署等等，大概是这样的一个情况。这一次好像更多的，就刚才我对于问题的描述听起来都是描述性质的，它前端发生了什么，而没有对它的原因做任何的推测或者说是，就咱们不说正式的披露了，就是原因的推测或者暗示都没有做，它更多是基于前端的描述。我是说基于我的经验感觉像一般这种情况发生像是某一个更新导致的，但是现在也没有说出这样的更新，这当然这个要去查他们的这个相应的更新日志了，那个时候到底有没有推过更新，比如说24小时之内压根就没推过更新，那肯定不能把锅甩在更新上。呃，是不是某一个其他的原因导致的，这就不知道了，对。</p>
+<p>嗯嗯嗯，了解了解。哎，其实对于企业来说，就是它实际的影响是什么？就是，是，呃，像，就就如果对于这种正常的这个办公人员来说，就是像Office这些都用不了了对吧，Outlook这些用不了了，然后Copilot应该也也受到部分的影响。然后对于公司实际的业务上来讲的话，呃，如果说它是有一些这个数据库啊或者什么呀都是搭载在那个微软的Azure上面的话，是不是说它的业务也也就瘫痪掉了呢？</p>
+<p>呃，是这样的，就这次瘫的核心点是，呃，就是Outlook，这个是最大影响的。我们先说没有受到影响的，Azure上的那些服务基本上没有受到影响，so far是绝大部分是没有受到影响的，少部分受到影响的是跟我们现在为止宕机的相关的一些服务，就比如说那个，就是，就ACS，我们现在能看到确定受到影响的ACS，Azure Communication Service，它是一个就比如说大家如果发营销的邮件，呃，就是大家可能都收到过以前什么亚马逊啊之类的那个推推送的广告邮件，就这一类，微软也推广告邮件，就这类推邮件的服务，群发邮件的服务叫Azure Communication Service，这个已经明确受到了影响，多数都是跟这个，呃，这个这个这个这个邮件相关的。 然后M365的套装就我们通常讲的Office大组件当中，安全服务刚才提到了像Defender、Purview等等受到了一部分的影响。然后其他的像我们中日常讲的这种几件套当中，Outlook不能用了，但Word、Excel、PPT就我们正常去做PPT本身应该是没有受到影响的。包括像SharePoint这种单纯的纯粹的存储性质的，如果又没有加加密标签的，就是那个没有打这种什么confidential之类的这些加密标签的内容，也没有受到影响。受到影响的是需要调取全局数据的一些服务，比如说像Copilot，比如说像邮件你搜索邮件啊之类的这些全局都会受到影响。然后通讯类的服务没有受到影响的应该就是Teams，几乎没有受到影响。Teams当中的正常的聊天、通话、channel、电话等等这些服务都是独立于邮件的，目前为止没有受到影响。它受到影响的是那个calendar，就是大家开会的那个预定会议的那部分，它跟Outlook是绑定在一起的，这个目前为止受到了影响。对，大体上是这样的，也就是说如果说大家日常开展业务，你的大量的业务系统是架设在这个Azure上面的，你是这个数据计算存储网络数据库这一套东西的话，基本上应该没有受到太多的影响。但日常办公强依赖于邮件，以及强依赖于一切Copilot，一切M365的Copilot，无论是PPT的、Word的还是那个Chat的，基本上这部分都会受到影响。对，如果大家还是纯手工的，这个什么这个画PPT，写写写文件，一个字手打，基本不受到影响。</p>
+<p>嗯嗯，明白明白，了解。呃，但就就那我我我想问就是说，有没有看到说一些客户是做多地区部署的，然后某一个地区是可以正常运行的，另外一个，就假设以Outlook或者是Copilot为例啊，在某一个地区部署的原因就就可以用，另外一个地区部署的就就不行，还是说基本上就是全球范围内都会宕掉？</p>
+<p>早期，呃，就今天凌晨非常早的时候，有，就是就是这我这不是官方的信息信息啊，这是我我听到的在Teams当中看到有人说是的，部分区域还是正常运行的，但其他的区域都宕机了。但后来随着这个发展，我们看到说它的计算资源，因为它那个集群它自动化的运维，它会不停地把其他机器加进来等等，它就把整个相关联的服务的集群都受到挤压，直接打爆了全球的这个服务，就它会就是逐渐蔓延，然后导致了目前为止我所了解到的基本不能靠全球部署来回避。</p>
+<p>OK，OK，因为本来我想问一个这个follow up的question，就是说，呃，是否说客户如果是这个两个地区去去部署的话，它就可能会多一条这个恢复的路径，但这一次上面可能说这个这个架构可能就，就就就怎么说，不能实现这个这个怎么说呢，多一条恢复路径的一个一个一个一个选项了是吧？</p>
+<p>对的，我们目前看到的可能真正出现能够成功backup的是混合部署。就是有人在on-premise，对，就是OP，就是自己的数据中心内又布了Exchange的server，就是当然它这是个历史遗留原因啊，因为它有一部分它不能上云的服务仍然留在下端，然后它把一部分的那个流量向向向等于向本地迁移，似乎部分恢复了这个相应的服务，就应该 能恢复了一部分的服务，因为它的那个本地的服务器是支撑不起来整个集团的，然后就把一部分核心的迁到这里来了。大体上是这样的一个情况，就是我知道的一个这个这个MNC的一个企业是这样做的，恢复了部分的服务。</p>
+<p>嗯嗯嗯，明白明白。那这次事故以后，你觉得这种混合部署或多云部署，就是可能在AWS或者在那个Azure上都部署，就是会会有更多的这个企业会会去做这样一个backup吗？</p>
+<p>还是说这种</p>
+<p>你说</p>
+<p>您说，不好意思打断您了。</p>
+<p>啊对，就是我就是还想问就是说，会不会驱动说会有更多的混合部署或者是多云部署，还是说就是像您刚刚说的，很多混合部署是因为权限的一些原因，他很多数据他不想放到云上面去。就我想想了解一下以后这对于云部署的一个长期的影响是什么？</p>
+<p>就是假设这次事情的蔓延，如果长期来看，想要规避类似问题的话，确实正确的路径看起来应该是通过混合部署来规避。多云部署可能不行，因为这次的话，就我们就就是论事啊，当然有人会认为你的那个M365能挂，为什么Azure不能挂，Azure肯定也能挂，所以他会考虑多云，那是衍生的了，又又一层了，这个二阶导数了。</p>
+<p>就是这个的话，单纯这件事情的话，就是如果办公体系本身我们不做办公的backup，一方面在M365，另外一方面切一个什么这个Google的Workspace或者说什么Slack或者甚至于飞书、Lark之类的，如果不是建两个同等的办公系统的话，那这一套其实很难说我在起一个AWS，再起一个GCP就能解决的，因为这次核心的是在办公相关的这一整套的邮件系统当中。</p>
+<p>但是呢，因为大家的办公的数据一般来讲还是讲的是归一性质的，不太会搞多套说冗余，比如说我既搞一套Gmail的那个为为为基座的服务，再搞一套微软的Exchange作为那个服务，这两套同时并行。那这个目前为止我还是很罕见到的，基本上多数还是这个一整套的来部署，只有国内的少部分客户，因为他有这种信创的要求，可能是国内用了国内的这个服务器出海企业用了Exchange，然后这两套要打通。只有少数的是这种情况，但正常的MNC跨国企业多数还是在统一上这个来来来做的。所以在这种角度上来讲，这次真的是相对防不胜防。那么假设他的就是邮件服务说我真的就做跨云，我把我的这种这个相关依赖的这些服务我在AWS上做了做了备份，就是硬要说我或者说我相对不计成本的来做，是否可以？也可以，但是有个麻烦的点是这次他的身份验证的依赖一定程度上是在了云端出现了故障。那他其实假设你在AWS上也部署一个东西，如果大家都读取同样的身份验证，可能也会出现问题，就单点失效还是存在的。对，然后他的那个能够做混合部署其实是本质上是在他的这个包括身份啊等一系列的问题都是有混合部署的部分的，才能够导致他的混合部署是能够work能够跑起来的。他有线下的AD，当然这个也是历史原因，因为在海在在更多的区域，线下的AD的这个服务已经已经都绝大部分都下线了，微软已经全面推广那个云的AD都改名叫那个都不叫AAD了，改名叫Entra ID了。就已经是在这个状态下，这个是因为国内的特殊情况很多还 保留了这个线下的本地AD的服务在这里。就是其实一定程度上确实微软好像把它集中在单点上了，这个出现了一个失效。从它的总的架构设计上就引入了一个单点失效的问题。这次确实会会会引发的这一系列的问题。这个而且相对来讲我们用这种backup的手段选择会比较有限，如果说就是论事就讨论这一次的项目的话。</p>
+<p>嗯嗯，明白明白。首先就是说有些数据可能会会丢失，那第二个就是我想问就是这个宕机的过程中，您您您刚刚提到就是说一些基本的这个defender之类可能还是会工作了，只是说人工不能介入进去，但是这个随着时间拖得越来越长，理论上是不是就是还是会变得越来越危险的，因为人工不能去处理一些这个这个风险的提示或者对应的这个问题。然后外部的攻击上面会不会说会抓住这样一个时机去，就我们就先不说是不是因为攻击引起了，就是在这个过程中，一直没修好的话会不会有更多的外部攻击进来？</p>
+<p>可能会，它可能第一首先出现的不是外部攻击，是出现了一些，就假设这个攻击本身就是可能发生的，但是事后我们没法追查。就假设我们现在隐藏着一个这个零day的这个漏洞。然后这个漏洞呢现在有黑客采用这个利用了这个漏洞开始发起攻击。以往呢它可能会在很多地方留下日志或者或者说它现在就没攻破，它做了一些尝试，但是呢虽然被防住了，但以往会通过感知啊或者说留下日志啊等等找到这个相应的记录。能够把这些问题能够事后进行有效的追查分析并且快速采取措施。但是今天随着这个本地的这个缓存啊等等的这个爆满，有可能这件事情就被溢出了，就覆盖掉，后来也许这这次攻击就永远的不会被感被发现。这是可能的。第二呢就是因为像很多的像这个像前沿设定这些当然就不会受涉及到了，像MD终端的引擎呢，它是依赖于本地的这个规则库，然后呢那个还有像什么ASR等等这一系列的这个检测行为检测等等，它都是这些还是基于它有这种库的存在。我们不能说它断掉12小时，它这个库就就真的差这么多，就一定说这12小时，但是如果现在你确实有一个零day的漏洞，那你可能紧急推送就是有可能利用这个来采取大规模的攻击，这个是有可能的。当然这个那听起来这个就计划就非常的深远了，他先把整个这个东西搞瘫痪，没办法做同步，然后同时再立刻利用这个来进行发难。这个听起来这个组织会非常的庞大，对，这个虽然概率不高，但是这个确实不为零。</p>
+<p>嗯嗯，明白明白，对，这就是我想问的另外一个问题，就是之前的话我会觉得把身份办公云跟安全都整合在一起，对吧，这是微软的一个优势，平时也更方便。但是发生这类事故以后，那客户会不是会更重视整合还是说更想保留一些独立供应商呢，来斩断这些连锁反应？</p>
+<p>这次呢也许会去考虑独立供应商，因为这次确实蔓延到了安全产品。单存办公上来讲其实就刚才讲的还是有一定的这个天然垄断的粘性，它最多说我觉得对，我我M365这一整套的这个套装不好，我换到Google上去。但是安全产品确实我可以在保留办公的前提下我再去用其他的，我用SentinelOne，我我我加CS啊等等这些东西去去加一层这个，我用其他的依赖其他的服务。然后这个确实是有可能的。就甚至于我的身份认证 我们的鉴权是不是还要百分百绑定在微软的这个AD上面，就如果是从大的长期非常强的高可用的角度上来讲，这个确实存在这个情况。因为我们说办公数据存两份，这个事情有点困难，就是搞两套系统主备。但是身份认证，技术角度应该是可以做的。我维持另外一套认证的系统，然后和AD，因为我们的身份变化其实并不是很大，它其实daily的一个日同步就已经是个比较高频的情况了，甚至weekly或者说monthly的这种同步就能够保证它的备份的切上来之后就是可用的。所以在这种角度上来讲，其实本地和云端也是这样的，它其实也是有同步周期的，一般来讲也不会做daily的同步，也不会做每天的同步。所以用这种方式其实我要再建一套独立的系统和它做这种身份的同步，然后我另外一套身份系统绑定其他的安全相关的组件，因为身份也是安全的核心点嘛。这个来做，是不是可以，听起来是能跑得通的。之前可能只是由于比如说成本更节约啊，效率更高啊等等的原因，从而从而没这么做吧。对。</p>
+<p>嗯，嗯，明白明白。但你觉得就是说，能不能点一下就是具体的安全供应商，就是说在通过这次事件以后，谁会更加受益，就是你脑海中有有这样一些这个这个能想到一些名字吗？</p>
+<p>我其实一下子是想不到太多的，因为这次微软的单点失效就比较tricky的是它不是失效在安全应用本身上了，它是失效在身份认证上了。这个可能是要比较要关注到就是能够提供类似的身份认证的，但是其实我们说就是这个不一定是安全厂商，这个其实你像各大云厂商它也能够提供类似的这种身份鉴权系统。比如说像GCP、AWS之类的也可以提供。所以说就刚才说多云的问题，就多云部署其实如果身份绑在这，未必它现有就是多云的情况下，它可能会把身份认证的服务在其他云上备份一份，这个倒不必须是安全厂商。对。</p>
+<p>啊，明白明白，就核心还是身份认证的这个问题。然后您说的就是说，</p>
+<p>这是一个思路的话，对。</p>
+<p>嗯，嗯，嗯，明白。这个两套身份认证的这个系统，这个本身它会增加的成本多吗？</p>
+<p>呃，其实也没有那么多，它是，AWS的话还真没去研究过它的价格体系啊，那个因为两者其实一般来讲大家都只会采取一个。像微软的话这个就是就是个位数的美元一个人，它是按seats来卖的嘛。</p>
+<p>嗯，对对，其实我想问就是说，对于微软来说它是允许这个第二套这个身份认证的这个体系接进来的吗？还是呃就我其实不太不太清楚就是说这两套这个认证系统怎么是同时去存在的，它另外一套是作为backup还是说什么样的一个情况？</p>
+<p>它一般来讲讲的不是backup，它一般讲的来说是这样的，因为有很多集团比如说涉及到这种兼并啊等等的那个业务，比如说我收购一家新公司，原来那家新公司在别的身份认证集团上，我们完成收购之后，它总归要做相应的整合。无论是，就包括我也可以选买微软的服务用了几年之后说我不用了，所以它都会涉及到有一个数据同步进来，迁入和迁出的问题。所以它就会存在一个数据必须能够保持同步，或者说我两套两个公司我就是要保持一个这个这个这个数据同步但不合并的状态。所以它其实本身不是为了主备，它本身是 系统的兼容并存，然后这个本身是存在的，对。然后它像国际上的主流的厂商之间和它之间的这种互通之类的基本上是可以的。我所知道的是国内的安全厂商或者也提供这种零信任的这种安全这个认证的服务，和微软之间的打通可能会有一些问题，因为国内很多都是采用的是国内的认证标准或者怎么样，就标准上会有一些问题。但是国际范围内的基本上都是支持的。</p>
+<p>嗯嗯嗯，明白明白，了解。OK，另外我想问一下就是，对于准备去部署Copilot和Agent这种，部署Agent用于关键流程的这些客户啊，那这次的事故对他们来说会增加哪些上线门槛？</p>
+<p>这次其实不是上线门槛，这次是它一定程度上可能要concern它是不是要把就是就是关键业务的这个流程架在一套SaaS系统上。对，这个这个可能是一个点，这个可能是一个点。这个意味着这套SaaS系统它全部是依赖于你的SaaS系统的厂商提供它的这个可用性和availability的这个这个支撑嘛。然后那如果这个SaaS厂商出了问题，可能就会带来这一系列的问题，这个其实可是比较核心的。然后现在呢，这个就是就是如果从这个角度上来讲，那么更好的方式其实是向云上去做架设。就首先我们不能说有一个方法能够百分百回避啊，百分百回避是不能的，你在线下建数据中心也不能百分百回避。就是我在云上去建设，云上的建设之后呢，做这种跨区备份和高可用，就既包括我的数据备份，也包括我的服务备份，来去做这个相应的情况。就是比如说我在那个，就现在云上基本上都是，咱们不讲说是微服务吧，它也是一系列的这个服务的组件，然后来进行这个云原生的开发。那我们某一个相对孤立的这个服务的这个这个比如说像这次的邮件的ACS宕机了，它并不会导致你的这个AI Foundry这个大模型的相应的服务下线，或者它也不会导致你的这个Agent Framework框架导致出现问题。Framework出现问题之后，我们在其他区域也可能快速的找到这个替代的这个整个的这个这个这一系列的可能会快速的就部署拉起来了。至少在客户内部它有一些这种Disaster Recovery的这个DR的工作它可以做，而不是像今天这样只能坐着等这个微软厂商去做相应的这个服务。这个可能会变得就是说你更依赖于更偏向于底层的这个服务去搭建自己的这个一整套流程，会变得相对可靠性会有明显的提升，大概是这样的。而且你在Azure上搭建的真正意义上可以做跨云的备份，比如这套workflow或者整个的这个这个部署的template，我可以同样在AWS上进行相应的部署，然后对当然这个其中组件会有一些替换啊，这个在AWS上做相应的部署，这样的话我就能做到真正意义上的跨云和备份。我到时候我的流量到时候全部路由到我的AWS上，或者GCP挂了之后我路由到Azure上，这种互相之间的备份就是真正有效的，而不是像今天这样子就是说就彻底彻底单点失效了，就单厂单厂商的失效。建云的建设可能会变成一定程度上会让大家影响会向这个偏好来移动，而不是基于像Copilot Studio啊，M365 Copilot这种来做。其实就是说一句我觉得公司做的不太好的一点是，今天其实有一些内部的这种未必会向客户直接声明的情况的内部的邮件。 对这类问题的回答就是有点酸溜溜的说你的核心业务就不应该架设在这个SaaS上，应该基于微软的这个AI方阵来进行建设。其实官方也是这个态度最后。</p>
+<p>嗯明白明白，但是你说就是改这样架构以后就是客户对客户来说他会多出哪些支出呢？就是哪些支出可能是一次性改完就行了，还是说哪哪些支出可能是长期就是会得得他得为了新的架构他会长期去去去去支付费用。</p>
+<p>从支出的角度上来讲，它这个说不上它一定会贵，因为那个你去买这边的M365的Copilot之类的，除了token的消耗之外，它也有相应的这个坐席啊等等一系列的这个license的费用。其实这部分费用如果我们按照使用人的次数和这个AI的整体的情况来看，其实不一定是省钱的基于SaaS，但它可能省的是相应的这个人工和运维的费用，就是省了运维，这个运维委托给微软，微软运维就可能会掉链子。这个这个事情其实就是这样的一个交换的关系。它真正如果企业大量建设在这里，它可能就要有自己的一个运维团队平常去管它这一套的这个agent的这个这个这个相应的这个flow，去运维它，包括升级和迭代它。对，它会它会需要这样一个团队，这个团队未必是公司内部自己，它可能是外部的什么埃森哲之类的帮它做，但不管怎么样它会有它会得有一部分人去去干这个活。对，大概是这样的。</p>
+<p>嗯，明白，然后这次就是这个服务中断，后后面有什么商业的一个后果吗？就是说客户得索赔啊，或者是丢单啊这些，就是您您觉得就是说哪些是比较确定性的，就是肯定会承担一些商业结果的，哪些可能是潜在的一些负面的影响呢？</p>
+<p>确定性的商业结果肯定是有的，SLA是有索赔的原则的。就是这个索赔无论是就可能很多索赔都不是refund的钱啊，都不是退钱，它是返你的点数或者冲抵你的账单。但anyway这就意味着就你的商业明明它比如说它12月份得得得花钱续了，那你可能它的那部分点数在续的时候的那个钱你就变得你就得少收一部分，这个这个肯定是它在这个账目上会计上它肯定会带来它现金流的损失，这个是百分之百确定的。因为这个今天我们现在都不能确定它的SLA会掉到什么程度啊，因为到现在为止这个群里还在不停的敲消息，应该还还没有恢复。然后然后但是另外一部分呢，说从丢单的角度上来讲，如果恰巧是在这个时间节点的情况下，那么大概率可能会面临这样的压力啊，比较tricky。我自己实际面对的就有这样的一个一个一个在欧洲的客户，他们其实是原有的欧洲欧洲被中国企业收购了，欧洲那个本身那个企业它原有的用的都是M365的Teams，今天这个一宕机之后，已经没办法，因为Teams上不能发就它没办法就是通知到全员，它邮件的没办法发全员通知了，最后全员通知是使用的他们的，它当时因为是国内和国外双轨，它真的有两套办公系统，国外人有Lark，是用各种方法通知大家上Lark，上飞书，然后在飞书上给大家发的全员通知，说目前为止的Outlook的邮件服务暂时不可用，请大家使用什么什么就是飞书相关的这个替代方案与这个内外部进行相关的沟通。最后就变成了这样的一个情况，在这个单子上其实对我们的影响是非常不利的。虽然我们知道就是德国人就因为这个这个现实当中就具体到个人或者具体到这个decision maker就会遇到这个情况，德国人是比较倾向于 微软的这一套套装的，但这件事这个单子我们大概率不会丢，但是如果相对比较摇摆的场景下，或者说今天的竞争对手假设是Google，那大概率这单就是马上正在采购合同这个谈判当中的这一单，我们很有可能会丢掉。这是绝对有这样的可能性的，如果它确实就处在这个节点上来考虑是不是我做迁移或者怎么样，对。</p>
+<p>嗯嗯嗯，了解。</p>
+<p>对，但但这个更有可能丢单是说，更有可能是出现办公这个就是这个M365这些还是说这个云方Azure这个云上面也是受会受影响呢？就是对两者的这个影响程度分别有多大？</p>
+<p>我觉得对云上的影响相对会比较小。因为对对那个办公的影响可能会比较大。对办公的影响比较大，它会认为你的SaaS软件，因为云端其实至少Azure它没有表现出比其他的云好像更弱。因为如果说这种全球级别的大宕机，Azure发生过，其实AWS啊Google啊之类的其实都有过类似的记录。无非是大集团更多的选择我多云战略，不太可能说我就完全不用了。对，可能单云的会切到多云，这件当然这件事不发生这个事故其实这个趋势就是一个大趋势，就是一个确定性的情况。</p>
+<p>嗯嗯嗯。</p>
+<p>明白明白，了解。然后咱们再抛开说是否是由安全攻击去引起的，就是你觉得后续对于微软这个安全业务来说的话，整体上这事件是一个怎么去解读这个影响呢？就是我也不想说这种利空或利多，但是就是你觉得从长期来看会会是个什么对安全这一个本身啊，会会会有什么样的影响？</p>
+<p>因为微软的安全产品当中刚才提到的那部分产品其实都跟那个办公套件是捆绑的。就是它M365的E5和E3之间大部分增加都是安全相关的套件嘛。这个一定程度上是捆绑销售。从这个角度上来讲确实，就是因为它是三年一renew，对于在相对成熟的商业社会大概率不会说我中途去出宕，就是我我不用了，我中途你就是说我这一年的钱你给我把没用掉的给我退掉，然后你我我就要硬性地切换到其他的当中来。可能会有少量的案例，但是对于整体大盘子可能不会受到影响，但是从长期角度，也就是一般来讲的合同周期是三年一签，当然也可以有其他年份，三年五年都可三年四年五年都可以。但是一般来讲的三年情况下，更多会随着renew的过程当中可能会有人选择我把部分的workload是不是切换到其他厂商来做一个备份。当然这个事情有一个办法能够阻挡这个事情的发生。就是现在目前为止是把所有的东西，就是这次出现了一个问题，单点失效引发的问题比较严重嘛。现在就是说是不是我的安全产品的架构把这两个能摘开？就是我做一次相对大的产品升级迭代升级和那个什么，因为我说的三三三年的这个合同周期的滚动，以及也并不是所有人都会去做切换，所以在这个角度上来讲，它哪怕相对长的时间内，未来一年的时间内完成这种架构切换或者说是它从架构角度的可用性的提升，其实一定程度上还是有机会去做做做做这个就是保住客户或者做win back之类的，还是有有机会去来做这件事情的，并不是说今天发生完了就立刻会引发实际结果。更多的是要看后续的调整，能不能够从这个问题解决掉就是它现在可能存在的隐患的问题。就是如果它从架构上确实能够调整，一定程度上还是有概率能够稳住客户的这个这个状态的。当然这个时间周期当中难免会有 部分小的丢单啊，对。</p>
+<p>对，然后就是，呃，就是E5升级到E7嘛，因为E5升级到E7主要就是Copilot加一些这个更高级的安全嘛。那那那你觉得这个事件，嗯，会影响就是一些客户从E5升级到E7的一个一个节奏嘛，还是说因为他本来就是要考虑用Copilot，然后加上有一些升级的时候有一些比较好的商务政策，呃，也不太会影响这个这样一个升级的过程。</p>
+<p>呃，我觉得可能不会太影响。因为如果我们就是，它可能会从情绪上影响，觉得微软的相关产品的这个靠谱程度，可靠程度，可靠性有一定的影，但如果从技术上拆分，这两者其实今天的这个影响Copilot的看起来是可接受的。因为恰巧是在数据和安全的角度上出了故障，然后所以影响了AI的运作，AI无法甄别它的这种不同的企业级的数据的标签，所以它索性进行了锁死。逻，然后所有的进出我都不做处理了。看起来像是一种在面对危机情况的时候的一个，呃，应急状态，好像是一个正确的应急状态。相反它如果今天Copilot还在运行，然后因为像Purview等等一系列的数据标签不可用了之后，它还在乱吐这个这个这个输出，反而可能会带来真正的这种企业数，这个这个AI的安全的影响。因为我们都知道，从，从用户体验的体感角度，用户友好的角度，微软的这套Copilot相关的应用，肯定不如外面的这种C端的应用，比如说大家常用这个Claude啊或者ChatGPT的网页啊这些，它的用户的友好程度肯定是不如那边的，不如那个好用，来的顺手，用的丝滑的程度肯定是不如的。那之所以还在Copilot上，核心点就是它第一，它能够无缝兼容企业数据，而且能够兼容企业数据的所有的权限、认证、安全这一整套东西。这个事情不需要，节约了大量的人工工，这个这个需要花费的麻烦的事情。这件事情是它的一个比较大的价值。那如果这件事情发生了故障，然后它又真的行使了它的职能锁死了，我感觉听起来好像是一个正确的这个这个回应，这个feedback，一个正确的response，而不是说一个特别明显的扣分项。相反可以讲，就是如果你要是针对一些其他的，它现在还在能再运作，反而才是风险的开始。它不能用了，其实是一个绿色的阻断，就像跳闸了一样，保险丝彻底烧断，大家都不要用，的一个状态，这个这个反而是一个正向的。</p>
+<p>对，其实我也想问，就是说，因为有正面和反面的，就是假设说发生这件事情以后，呃，如果你的安全软，呃，这个套件可以保证就是数据上面还是在这个期间还是能更安全的，那理论上是不是客户为了说避免下次发生同样情况的，那最好不发生啊，之后，呃，你的安全能够得到保护，它可能会去做一些这样的这个安全的升级。</p>
+<p>呃，就是如果它接入到AI当中的话，那这个好像，就假设它接了第三方的AI啊，我们假设它有第三方的AI也能读取它的一系列的办公数据，然后这一系列发生问题之后，然后那边还能运作或者怎么样，就是它一定程度上确实，就是这一整套东西看起来像是发生故障的时候，它就，就刚才像保险丝直接跳闸，我hard stop把你这个硬性切断。 像是一个更果断的策略，从AI的角度上来讲，我是觉得这个一定程度上是一个正向的，至少证明AI它和数据之间的安全的这一道防线是牢牢的守住了，它绝对是挡住了。然后这个这个我甚至觉得这可以作为一个正向的案例去分享，就是发生相应的事故是在所难免的，如果大家是一个理性的这个IT人的话都知道，肯定会有相应的事故，但事故之后的这个措施和策略是绝对生效的，那这个其实就是一个正向的案例，这个我觉得是正向的。真正的问题是SaaS这一套系统的单点失效的问题所带来的，它要不要在比如说像这个非常核心的这种身份认证的角度上，它是不是要做一些备份，或者说它从全买纯云端，我买一些这个这个这个这个这个on-premise的OP的产品，我做混合部署，这部分的影响可能会变成对微软真正的伤害啊。因为混合部署的情况下对微软的这个商业角度肯定是有影响的，微软之所以把它都向那个订阅制推，原因就是因为订阅制它的这个这个这个经济就快就是从财务的角度上来讲看起来是更优的嘛。那个对，它你都OP了肯定是对我不好的，而且你的第二套身份备份如果两套并存，那你就存在着一定概率某一天你可能在节约成本的cost saving的时候砍掉一套，万一砍掉的是微软这一套，那那将发生什么？对，大概是这样的一个。</p>
+<p>对，其实我也想问就是这种混合云或者混合部署的这个大的发展趋势，您说就是这个趋势啊，但是总体来说它对于现有的几个大的云端玩家来说，对谁来说是对谁是一个利好，对谁是个利空呢？</p>
+<p>呃，我这个我可能现在想不出明确的结论，可能如果说是多云的角度上来讲，其实对AWS可能是一定程度的，就是在不同的行业是有这样的区别的啊。对于AWS相对比较擅长的digital native的行这个角度，就是数字原生互联网这种比较呃就是就是更新时代的企业来讲，那么它是利空，因为它可能会有更多的企业向Azure之类的其他的去做备份。然后对于传统企业，就微软大的零售什么沃尔玛呀、梅赛德斯奔驰啊这种传统的非常强的合作伙伴而言，它选择多云，那么其实会利空微软，利好AWS，它会在这一面。这里面相对而言会百分百利好的其实可能是Google GCP。就是它这几年的高速增长，除了它在AI相应领域的极大的情况，第二是它作为一个后来者，它一定程度上多云它都可以作为那第二朵云或者第三朵云的身份加入到其中去切一定的相应的份额。对，可能对于这个后来的追赶者，当然Google现在也很大了，Google的这个这个revenue很快就要追上微软了。这个可能对Google还是一个相对比较利好，它可能会保持一个相对好的增速，大概是这样的。尤其Google它的服务的丰富程度其实比前两朵云还是有差一点的，但是它的这种呃至少我能看到的在在在这个GCR大中华区的范围内，Google的这个商务策略还是比较激进的，那从这个角度上来讲，它作为一个备份的云，那就显得格外的划算和优选，那这个可能对它来讲是明显的利好的，对。</p>
+<p>嗯嗯，明白明白，了解，非常清楚。然后再讲一个宏观的问题，就是呃就前一阵可能币安也被这个黑客攻破了，就是咱们这次虽然还没有定性成一个攻击事件啊，就是呃就您有感觉到就是随着AI的发展的话，呃就是这种高级别的安全事件会会越来越多吗？</p>
+<p>呃会，因为那个现在AI对于 这个就是零day的这个这个漏洞的发现，零日漏洞的发现等等这一系列的情况都会变得越来越快，而且它对于传统系统的这些一系列的这个情况会变得更加敏感。就我之前的分享当中也讲过，就是说会有人用多agent反复去做一系列的尝试，之前也曝光过，就是美国曝光，就当然它指责是中国了，就一系列的这个agent多次去尝试反复去扫描去找它一些漏洞进行相互的反复攻击等等。这一系列的情况确实会加剧它的一系列的这个黑客攻击的这个这个这个程度。事实上除了像币安这次呢，一定一方面是因为币安的这个这个这个规模特别大，而且这个攻击的事件闹得太大，以及在链上能够清晰地看到这个比特币的移动，所以大家还能够非常公开地看到。但事实上在很多，尤其是中国企业啊，这种家丑不可外扬的文化的情况下，很多攻击都没有被拿出来说。事实上最近的这个安全攻击的形式是明显的变得严峻。币安那个其实还用了很多社会工程手段的，比如说我用造一个假的公司啊，面试啊之类的这些事来干。然后但很多就是纯粹的硬攻击的，就是我纯粹找你的系统漏洞，来去找相应的情况。比如说上海那家知名的国有企业，这是我今天刚刚听说的，就在最近的两天被勒索，现在它的一系列的内部系统都被锁死。如果当时的那个黑客现在索要这个数亿人民币的这个比特币作为赎金，然后现在的情况下即便我们的这个一系列的这种行政机关都进行介入，但它依然就是很难从技术手段上快速地处理掉这些事情。就这一类型的，我听说的类这一类型的攻击事件明显是比以往是要频繁了。因为这一类型的攻击事件的受害人其实都存在我刚才说的这种，很多人他不去曝光，所以我们可能没办法完整地去统计。但是我们能从很多大的事件上能够脉络上能够感知到，或者说从一些内部的渠道得知的，这个确实变得更加频繁了。AI提升了黑客的攻击能力，而且对于特别是对于相对比较传统的企业，往往依赖于一些固定的模式去做的，而且它的这种情况下会被不断地去找到它现有的漏洞来做。而且有很多企业会天然地认为我做这种线下的数据中心会比云端更安全等等，这一系列的固有认知会在新的这个攻击之下会变得更加的脆弱。然后它会找到更多的这一系列的这个这个这个漏洞，然后去并且实现攻击。而且现在的攻击手段在AI的这个不断地会发现之下，它它攻击的面明显这个它的投入的以往黑客他得自己或者说他组织，这个组织得投入巨大的effort才能去完成一次攻击，而今天的agent它可能自身付出的成本比较低的情况下就能对多个目标实现攻击。那这个情况下它的投入产出比ROI，对于黑客的ROI明显提升，那肯定会把这个攻击行为变得更加的普遍和广泛，对。</p>
+<p>嗯嗯，那从防守方的角度怎么去看呢？就是说对于这些企业，那它怎么办呢？就是首先两个问题啊，就是它放在云上会不会比本地部署反而会更安全？那第二个就是说它怎么办呢？它是是是会用它只能去花更多的安全预算去部署更多的安全软件去去去防御这些攻击，还是说实际上目前这个短期来看就是攻击可能攻击方就是比这个防守方可能会更更厉害一点，因为他们这个可以这个攻击的成本或者是这个这个数量可以得到一些指数级的提升。</p>
+<p>我是觉得短期内确实是攻方占优，但是这件事情呢防守方也在快速地迭代嘛。 就是，也现在硅谷也会有很多这种纯的，就AI native的安全公司开始崛起，就是这个这个这个传统企业，老登，老登安全企业们能不能够快速跟上，这可能会带来一个新的新的新的挑战啊。这个当然老的老的传统企业也在快速的去想办法去尝试这件事情。</p>
+<p>来去做，但是可能有些</p>
+<p>就存在有快有慢，所以确实攻防在一定程度上我个人认为是占优的。</p>
+<p>但是今天，我是觉得正确使用的前提下，放在云端其实是比放在线下更安全。</p>
+<p>因为云端你的很多东西它还是毕竟能够，就是至少现在从企业的商业策略上来讲，云端的它无论是更新迭代技术的简化都是更敏捷的，它能够一定程度上更好的帮助你。</p>
+<p>但前提是云端环境的</p>
+<p>这个这个正确使用，因为云端总归要向物理世界在线下进行延展，在这个过程当中，包括你的网络通信啊等等这一系列的过程当中不能发生问题。</p>
+<p>如果这一部分发生问题，那你云端再安全，你有一个漏洞，那么顺着就所谓顺着网线就上去了，那这个其实等于没有。这一系列的安全其实，就币安也是一个非常cloud native的云原生的公司。</p>
+<p>它依然是由于这个这个线下的这个人员的这个管控和疏忽导致了它的这个</p>
+<p>整体的失手。所以这一系列其实它的安全边界要能够有效的拓展到更毛细的位置上，如果扩展不到，其实我觉得哪个也不，大家其实都不安全。然后为什么说线下的问题是这样的，当然这个可能是因为我是中国人啊，见中国企业比较多，会会觉得比较头大，说这个线下并不安全，因为有很多人会天然的认为</p>
+<p>我在放在了物理的线下的数据中心，那我就</p>
+<p>我就安全了，我物理的机房在那，我就安全了。但这件事情其实是显然是不对的。</p>
+<p>它反而会从策略上疏忽它对于安全的投入，本来它可能依赖于硬的那种硬件的防火墙啊等等，这一系列的迭代和演化就没有那么快的前提下，那怎么办？就是这个这个本来就有点慢，然后你再加上这种情绪上的疏忽，很可能会反而导致这样的一个情况，就包括我们甚至于历史上比较大的这种政府端的这种被安全攻击的脱库的这种情况。</p>
+<p>都也是发生在这种纯的线下物理机房，甚至于它都有一些物理隔断的这种这种方式下依然会被攻破。所以面面面临这样的情况下呢，其实其实我就是我是基于这个原因啊，认为其实云端可能会比线下有一定的优势，但同样云端必须依赖于对于安全边界的有效使用。就就现在其实真的变得，尤其是有高价值目标本身。</p>
+<p>它的整体的安全管控的这个要求提得非常高，它必须得把安全边界伸到非常毛细的地方，它的具体的工程师的个人电脑啊等等一系列，这一系列的管控都会变得非常重要，而不只是说我只要防住我那几台服务器就OK了。对。</p>
+<p>喂，你好。</p>
+<p>喂，能听到吗？不好意思，不好意思，刚刚mute了，对。我我想要就是对于这种高价值的目标的话，就是说您对是说它的安全投入会很高，它它是会直接转化为安全软件或者说是一些云的收入，还是说它更多的是说对于一些这个它这个业务里面的人员的安全意识要提高，就是就是就是怎么理解这个它对安全的投入会会提升？是金钱上的还是说它全方位的，它不一定是转化可以直觉转化为... 一些语音的这个，呃，一些这个安全软件提供商的一些收入。</p>
+<p>我觉得会，至少在短期内可能会转化到安全的供应商的这个收入，因为人的意识上很难去做提升。就我们知道钓鱼软件这件事情，啊钓鱼邮件这件事情，这个其实就很多公司都做天天培训，就每个月都有培训，就包括我们自己每年都有培训。但是这个培训到底有多少人去真正去去去去去上心了或者怎么样，回去真的从技术角度上去讲，这跟我们社会上反诈一样，并不能够单纯的靠提高人人们的安全意识，大家还是本质呃要去就是通过技术手段让他真正去防住。然后从这个角度上来讲，可能会从一定程度上转化成呃安全软件的收入。比如说他在，就我刚才说安全边界进行扩展，呃扩展到比如说个人的终端设备啊等等这一系列方面，呃从移动端的手机、平板、笔记本电脑等等，它可能会带带动一系列的这种终端安全软件。就以往我可能只能只买一个这个这个这个打比方就还是微软产品，我以前只买一个MDE，那我买一个MDE就做一个这个本地电脑的这个防护就OK了。但我发现你现在有的时候人会主动的去，就像币安这种情况下，那我是不是要对这电脑做主动的管控？那假设在这种情况下，那我是不是要上Intune？我要上这个其他的东西，我去对他的所安装的软件、所涉及到的文件进行扫描，进行管理，进行查找。当然这个依然白密还有一疏啊，就but anyway，我我是不是要投入更多的东西把我的这个呃在毛细的这个这个安全边界上做得更更紧？那可能是要的。然后比如说甚至大家网络上，我是不是要用那个那个啥叫什么来着，Palo，这个Palo Alto那个那个Palo Alto那个安全，对对对，去做这个这个这个这个这个什么，就是他那个最近叫什么Global Access啊之类的这一系列的东西，我在终端所有访问网络的过程当中，我的网络的流量都要做加密等等。这些看起来都很小啊，这个可能有很多公司也做了，但以往呢可能是说我只是说做了一部分，但是今天我可能就面临着我要全方位的去强化这一系列的这个这个这些东西，因为我的毛细毛细的这个每一个终端设备可能都会变成了我的一个发起的攻击的内部的一个攻击点。对，这个这个可能是会这样。但是这件事情呢，有一点tricky，是不是会在短期内大幅度拉高？呃，对于像币安以及同等类型的这个机构，他们如果在之前没有做这类似的话，那可能是会的。因为这个逻辑和理论其实都不是新东西，并不是说今天大家知道这个安全边界和这些终端，其实很大程度上安全的投入都是由于事，多数是由于事件触发，就真正的实际的采购啊，就是大幅增加采购，都是由于事件触发或者合规审计触发的，总归是有点事，要么发生了安全事故，要么是某个合规审计发现了问题。那么今天这个理论都不是新的理论，他既往没做，那就是因为他权衡了认为这件事情可以先放一放。今天呢像币安这样的情况，对于他同类型的这种机构和组织的触动一定是非常大的。他除了说把人员抓起来再做这种安全培训之外，一定会从技术手段上开始强化，或者说我已经买了的，我要保证我的所有的安装率，我的这个这个这个使用率，你必须是到什么程度。因为有确实有很多公司啊，他买了没装，这这是真的有这样的很多这样的情况的。然后那我使用率啊等等这些都得顶下去，每天我要不停的有人去做监察，以及或者我没有的，那我紧急去做采购。但是，呃，你说是不是受 非常广大的这种情况，比如说我刚才提到的那家传统业务的这种国有企业，他可能不会因为滴滴的这个事情而觉得这事跟他有关系。他可能还是单点式的，他被黑客勒索了，才会去想到，OK，哦，操，我这个安全投入之前不够，我要紧急去追加。大概都是由于这种事情，可能跟过去的这种呃这个这个驱动的力量是类似的。</p>
+<p>嗯，嗯，明白，但但但反正就是去，嗯。</p>
+<p>你说你说。</p>
+<p>但可能不会反弹一下子拉起来，更多的是因为AI的情况下会缓缓地向上去驱动这件事情。当然会带来另一个情况是安全厂商他的会不会就是比如说他的组件你的形态发生变化，既往老的失效，等等因为产品迭代，你也要去把你的产品优化变得更便宜，性价比更高，从而让他的整体的那个安全预算再次回到一个平稳的状态，这个这个也是有可能的，对，结束了。</p>
+<p>嗯，嗯嗯，明白明白。但就是我最后总结一下，就是说，但这种公开的安全事件越来越多的话，反正就是对于呃企业去提它的安全预算是有帮助的嘛，就是说发生了这些事件以后，就是会触发一些这个安全预算的提升。</p>
+<p>是的。</p>
+<p>嗯，OK，OK，好呀好呀。那那那我今天就没有更多问题了，感谢专家今天的解读，呃，感谢。</p>
+<p>好好，谢谢谢谢谢谢。</p>
+<p>嗯，好好，再见。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

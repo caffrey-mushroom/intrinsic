@@ -1,0 +1,299 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.12 | TB | Networking | Infoblox Cloud DDI Playbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.12 | TB | Networking | Infoblox Cloud DDI Playbook</h1>
+<p class="orig">原标题：Infoblox – The Cloud DDI Playbook</p>
+<p class="tags">#networking #security #software</p>
+<p class="meta">Third Bridge · 2026-11-12</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>Infoblox的核心业务是DDI（DNS、DHCP与IP地址管理），第二大产品是基于DNS的安全产品Threat Defense，近年新增Universal Asset Insights，并于2026年8月收购网络可观测性公司Kentik。</li>
+<li>前亚太及日本区收入赋能负责人表示，约70%的业务来自现有客户扩展，新客户获取占比不足30%；企业级销售周期长达数月、获客成本高，因此交叉销售是核心策略。</li>
+<li>公司正推动客户从传统NIOS设备迁移到云托管订阅制的Universal DDI，通过停止支持旧版本软件迫使客户升级；专家任职期间大多数客户尚未迁移，按三年测算订阅总成本高于一次性硬件采购。</li>
+<li>Universal DDI的核心价值在于统一管理多云和混合环境；单一云客户更可能使用云厂商原生方案（如Google Cloud DNS本身就是Infoblox白标产品）或几乎免费的微软DNS，这是主要风险。</li>
+<li>BlueCat和EfficientIP价格更低，但DDI属于关键任务系统，迁移风险高、客户流失少，大型企业更看重品牌、可扩展性、企业级支持和安全交叉销售，Infoblox不打价格战。</li>
+<li>Threat Defense在亚太及日本区同比增长超过30%，而DDI增速仅在10%左右；销售配额中约70%为DDI、30%为Threat Defense，但网络团队与安全团队采购分离，限制了交叉销售。</li>
+<li>DNS安全是防火墙的补充而非替代，可把漏洞拦截率从约95%提升到约99%；安全和Asset Insights等新产品开始按token消耗计费。</li>
+<li>在亚洲，渠道和SI伙伴至关重要，但部分伙伴只卖约3万美元的基础方案，而非10-20万美元的高价值组合；产品线扩张使销售培训和知识规模化面临挑战。</li>
+</ol></section>
+<div class="body">
+<p>Analyst-led • 6 Nov 2026</p>
+<p>Companies: MSFT US</p>
+<p><b>Kok-Hiang Ho (KH)</b> Independent Consultant</p>
+<p><b>Colin Duncan (CD)</b> — Third Bridge Sector Analyst</p>
+<h3>Agenda</h3>
+<ul><li>Infoblox's cloud migration and subscription revenue transition</li><li>Competitive positioning vs BlueCat, EfficientIP and hyperscaler-native solutions</li><li>Threat Defense growth, customer retention and cross-selling opportunities</li><li>Go-to-market strategy, sales productivity and growth outlook</li></ul>
+<h3>Key Insights</h3>
+<ul><li>c70% of Infoblox's business comes from existing customers, with high new-customer acquisition costs reinforcing the importance of cross-selling security and observability solutions into its installed base</li><li>Infoblox's migration from legacy Universal DDI subscriptions could increase recurring revenue and customer lifetime value, with legacy software support deadlines encouraging adoption and subscription costs exceeding traditional hardware purchases over three years</li><li>Infoblox's Threat Defense business grew more than 30% annually in APAC and Japan, outpacing traditional DDI from a smaller base, although cross-selling remains constrained by separate networking and security purchasing teams within enterprise customers</li><li>Infoblox's multi-cloud DDI capabilities support premium pricing and customer retention despite cheaper alternatives from BlueCat and EfficientIP, although single-cloud adoption could increase competition from hyperscaler-native solutions</li></ul>
+<h3>Introduction</h3>
+<p><b>CD</b> [00:00:03]: Welcome to Third Bridge's Interview entitled Infoblox – The Cloud DDI Playbook. I'm Colin Duncan, and I'll be facilitating today's Interview with Mr Kok-Hiang Ho, former Revenue Enablement Leader, APAC and Japan at Infoblox.</p>
+<p>Kok-Hiang, before we start today's Interview, please state I agree or I disagree to the following statement: You understand the definition of material non-public information and agree not to disclose any such information, or any other information which is confidential, during this Interview.</p>
+<p><b>KH</b> [00:00:33]: I agree.</p>
+<p><b>CD</b> [00:00:36]: Could you start us out with a brief introduction to your background?</p>
+<p><b>KH</b> [00:00:43]: During my time at Infoblox, I am actually responsible for sales enablement across Asia Pacific and Japan, working very much closely with the regional sales leaders and the sellers in the region. My perspective on Infoblox is very much in the commercial area, in the go-to-market side rather than financial reporting or product engineering. What I find particularly interesting about Infoblox is basically how it actually evolved in the enterprise DDI sector. When I say DDI, it actually refers to DNS, DHCP, and IP address management. This is something that Infoblox actually coined the word DDI for it. This is basically introduction of myself.</p>
+<h3>Questions</h3>
+<h3>00:01:49] Could you provide an overview of Infoblox's business model, including the core product offerings, primary revenue streams and how the company generates revenue across its DDI [DNS, DHCP and IPAM] and security solutions?</h3>
+<p><b>KH</b> [00:02:15]: Sure. Infoblox basically is a software company and the network infrastructure provider. Basically, they have two main products, one, which I mentioned is the DDI, which is the DNS, DHCP, and IP address management. The other is actually in security, the security software solution called Threat Defense. These are the two main revenue streams that Infoblox is actually focused on. Recently, they have added a few more, like the Universal Asset Interface [sic] as well as they acquired a new company, which allows them to do observability. This is some of the new stream that they are actually evolving, but mainly their business is in DDI infrastructure.</p>
+<h3>00:03:22] Infoblox has historically been a leading provider of DNS [domain name system], DHCP [dynamic host configuration protocol] and IPAM [IP address management]. However, the company has increasingly positioned itself as a broader networking and security platform. What have been the primary growth drivers during your time at the company? What did you observe in terms of customer demand evolving?</h3>
+<p><b>KH</b> [00:03:45]: I would say that the majority of the business actually come from the DDI business. This is the bread-and-butter business of Infoblox. They are actually slowly moving from actually installed-base solutions like NIOS-based DNS, DHCP towards very much more cloud- and subscription-based solution, which they call Universal DDI. This is actually something that they are actually trying to move most of the customers towards, the Universal DDI. The Universal DDI basically allows the customers to be able to have environments that are distributed on-prem, off-prem, public cloud, and hybrid cloud. This is actually one of the advantage of the Universal DDI solution. They are trying to move a lot of the customers towards this because of the fact that they want to have more recurring revenue than one-time purchase in the past, the kind of business model. The other thing that I mentioned to you is that they also do Threat Defense. This is the second most important product in Infoblox. It's involved with cybersecurity, and that is actually DNS-based threat intelligence. It provides protective DNS capabilities into the portfolios within the Infoblox offering.</p>
+<h3>00:05:35] Infoblox serves a large enterprise installed base, including a significant portion of the Fortune 500. How much of the company's growth opportunity comes from expanding relationships with existing customers vs acquiring new accounts?</h3>
+<p><b>KH</b> [00:05:53]: I would say that a large majority would be existing customers, whereby probably only a very small percentage of less than 30% would be into new acquisition like Threat Defense or the other ways of subscription revenue. The traditional bread and butter, the DDI business, would have constituted at least 70% of the business.</p>
+<p><b>CD</b> [00:06:32]: 70% of the business comes through expanding within existing accounts.</p>
+<p><b>KH</b> [00:06:37]: Yes, correct.</p>
+<p><b>CD</b> [00:06:40]: Which specific customer segments or industries offer the greatest potential for incremental spending?</p>
+<p><b>KH</b> [00:06:45]: I would say that generally, large enterprise companies are the target group that Infoblox target. The enterprise companies would be things like the financials, the manufacturing, basically large companies that operate across on-premise and across different cloud infrastructure. These are the companies that typically Infoblox actually would be the main customers.</p>
+<h3>00:07:23] You mentioned Infoblox has been transitioning customers from traditional on-premise DDI appliances towards cloud-managed and subscription-based solutions. How effectively has the company been able to navigate that transition? What proportion of the installed base has migrated or has been actively considering migration?</h3>
+<p><b>KH</b> [00:07:51]: I don't have the latest numbers because I have left the organisation already, but during the time that I was there, there was actually a deadline whereby they are slowly actually trying to move most of those customers who are on the traditional DDI solutions to actually move towards cloud-managed and subscription-based networking. It's like they no longer allow certain versions to be able to upgrade anymore. If you were to fall below certain versions, like in a legacy version, they no longer support those software. Because of that, most of the customers who are no longer in the support, they have no choice but to actually consider moving to the subscription-based offer.</p>
+<p><b>CD</b> [00:09:03]: Essentially, it forces a refresh on the customer.</p>
+<p><b>KH</b> [00:09:10]: In a way, yes, because if they were using a lower version of the software, they will stop supporting after a certain period of time. That means they may have given a date, like by end of 2026, say, version 5 of the software is no longer supported. We only support anything above that.</p>
+<p><b>CD</b> [00:09:36]: Could you give a rough percentage of Infoblox's installed base that has already migrated to subscription-based offerings and how much of the remaining base you'd expect to convert over the next few years?</p>
+<p><b>KH</b> [00:09:52]: I don't have the numbers because I believe the numbers are constantly moving. Even if I were to give you a number, it's probably quite dated and not the most updated. I shouldn't give you a number in terms of how many has been moved over.</p>
+<p><b>CD</b> [00:10:12]: Even during your tenure, you didn't have an idea of a rough percentage.</p>
+<p><b>KH</b> [00:10:17]: I would say that the majority has not moved over at that time, but I do not know whether they have passed the 50% mark currently.</p>
+<h3>00:10:44] Infoblox's Universal DDI platform is designed to provide centralised management across on-premise infrastructure, public clouds and hybrid environments. How compelling is that as a value proposition for enterprise customers? What are the primary factors driving the adoption of Universal vs traditional DDI solutions?</h3>
+<p><b>KH</b> [00:11:14]: I would say that for most of the large enterprise customers, it is something whereby once they are customers of this solution, they would not likely to move out of it because of the fear of migration in terms of the breakage, because DNS, DHCP is actually quite mission-critical in terms of being up. If for some reason that they move over to another player and it does not work, it is actually very detrimental for day-to-day operations. You are talking about systems not being available, which is very bad for large companies like banks or manufacturing companies, which needed this uptime of 99.99%.</p>
+<p><b>CD</b> [00:12:17]: Why is it so critical for it to be continually up?</p>
+<p><b>KH</b> [00:12:21]: Because these are the IP addresses of the website. Can you imagine if it is not available? People cannot access the website. It's totally not… Yes, it's that critical.</p>
+<p><b>CD</b> [00:12:41]: Given the mission-critical infrastructure of DDI, customers perceive switching operators as operationally risky. There are a lot of barriers to competitive displacement. Is that fair to say?</p>
+<p><b>KH</b> [00:12:54]: Correct. That's right.</p>
+<p><b>CD</b> [00:13:00]: What about Universal vs traditional DDI?</p>
+<p><b>KH</b> [00:13:06]: The difference is that the Universal DDI is usually cloud-hosted. You don't really have an appliance on-premise, but it's basically the same… It could potentially have the same features as on-premise DDI solution as in the past. Now the only difference is that there is no hardware and or virtual appliances that is hosting this DDI infrastructure. It is hosted in the cloud. The advantage of going to this Universal DDI is that for companies that may have put DNS across different cloud infrastructure like Azure or Google Cloud or AWS, it is very good because it actually consolidates from different cloud players. That's actually the advantage of going towards Universal DDI.</p>
+<p><b>CD</b> [00:14:17]: It consolidates from different cloud players. Does that allow for cost savings or…</p>
+<p><b>KH</b> [00:14:26]: It's not so much of cost saving, but imagine that if you were to go with a hyperscaler like AWS, that DDI or that DNS management is only within that hyperscaler, right? If you were to go with Google, they would have their own DNS, DHCP management software. That would not be able to interact and communicate with each other. If you are going to put your data across different cloud players, then you need to have the enterprise DDI software to be able to interface with the various hyperscalers. However, if your information is put on-premise and is hosted, then it is actually much easier, and then you don't need a very sophisticated Universal DDI to support it actually. Then the so-called advantage to migrate from the core DDI infrastructure, the NIOS infrastructure, towards a Universal DDI is less compelling.</p>
+<h3>00:15:48] As customers migrate from legacy NIOS [Network Identity Operating System] deployments towards newer subscription offerings, how does that transition typically affect Infoblox's revenue per customer? What magnitude of uplift could the company realistically achieve?</h3>
+<p><b>KH</b> [00:16:10]: I believe the most important thing is actually to move the revenue actually from a one-off recognition. That means you buy the hardware, you buy the software as a one-off CAPEX towards annual recurring revenue because once you are on subscription base, it's annual recurring revenue that you can recognise. Most organisations want to move towards this in order to ensure that the revenue do not become lumpy. Because if you were to buy the traditional CAPEX model, you pay once and then you don't need to pay for the next 2-3 years, while the annual recurring revenue, if you were going on a subscription base, you get to continue to recognise the revenue and that you can constantly make improvement to the software and then charge higher subscription costs.</p>
+<p><b>CD</b> [00:17:15]: When an existing customer transitions from a traditional hardware-based DDI deployment to a subscription model, does Infoblox typically generate more revenue from that customer on an annualised basis?</p>
+<p><b>KH</b> [00:17:30]: If you were to look at it, the total cost of ownership, that means compared to, say, a three-year CAPEX vs a three-year annual recurring revenue, the three-year annual recurring revenue will be more than the CAPEX.</p>
+<p><b>CD</b> [00:18:02]: What percentage of uplift would you expect?</p>
+<p><b>KH</b> [00:18:09]: Usually it's discounted. It's hard to say, but generally, I would say that the three-year annual recurring revenue would be more expensive than the CAPEX for it for three years.</p>
+<p><b>CD</b> [00:00:49]: How much uplift would you expect in lifetime value for the subscription model vs traditional model? Are we talking about 10-20%, 30-50% or potentially more than that?</p>
+<p><b>KH</b> [00:18:51]: Again, I mentioned to you, it's still subject to a discount factor. It may be a higher amount, but then once the discount kicks in, the difference is not as great as it is, but generally, the annual recurring revenue is much more attractive to Infoblox because it generates more money.</p>
+<p>From the customer point of view, it's also the fact that they do not need to come out with a large sum of money compared to spreading it out annually. To some customers, that is itself an attractive offer.</p>
+<h3>00:19:51] Beyond the initial migration, how much incremental revenue can Infoblox generate through additional functionality, broader deployments or increased product adoption in an existing customer account?</h3>
+<p><b>KH</b> [00:20:09]: Now they have gone into token usage. If you were to use more, there is also a possibility that you have to pay more. It's the same like how gen AI is being charged in the sense that they actually have a token. Then once you consume finish the token, you have to buy more tokens. Now they are actually introducing some of the product features, which are actually charged by token. These are additional ways that there is new revenue as a result of going towards the consumption model.</p>
+<p><b>CD</b> [00:21:05]: Which specific Infoblox products or capabilities are being monetised through tokens?</p>
+<p><b>KH</b> [00:21:16]: Usually, the ones that are newer, like the security and the Asset Insights, they are actually on token base.</p>
+<p><b>CD</b> [00:21:29]: Do these newer products generate enough usage for consumption-based pricing to be a real driver of incremental revenue from these existing customers? Does it actually make a meaningful difference, or is it a smaller thing?</p>
+<p><b>KH</b> [00:21:51]: I would say that for Infoblox, what they want to do right now is to ensure that they have other revenue streams besides the DDI business. Things like Threat Defense, Universal Asset Insights, they are relatively new products compared to the DDI solution. These are things that they want to actively cross-sell and upsell to their customers. They are starting from a lower base in the sense that the customer is an existing customer, and then they would want to try to sell more solutions to them. This is the reason why they have actually adopted such a model.</p>
+<p><b>CD</b> [00:22:47]: Are you observing a material uplift on existing accounts, or is it not making as much of a difference as it should?</p>
+<p><b>KH</b> [00:23:09]: Threat Defense has been quite a significant growth in APJ. The reason why it is a significant growth is because they started off with a very low base. They actually became customers because of Universal DDI or DDI. Threat Defense is something new, and because it started off at a low base, it has a very high YoY growth.</p>
+<p><b>CD</b> [00:23:53]: Is that the primary revenue uplift from some of these additional functionalities or different products for the company? Just to clarify.</p>
+<p><b>KH</b> [00:24:11]: That's right. The other one that they are also trying to push hard is the Universal Asset Insights, which is an add-on to the solution itself.</p>
+<h3>00:24:32] AWS [Amazon Web Services], Microsoft Azure and Google Cloud offer native DNS and network management capabilities. Infoblox has emphasised partnerships with some of those providers. How significant is the competitive threat, though, from hyperscaler-native offerings?</h3>
+<p><b>KH</b> [00:24:49]: This is something interesting. It's both a threat, as well as they are partners. Because the fact is that Infoblox actually white-label and actually work with AWS and Google Cloud to introduce the same solution within the hyperscalers itself. It's like if a customer puts most of its data within a particular cloud, then there is no reason to actually buy Infoblox DDI solution. They are better off, if they were to put in Google Cloud, to actually buy the Google Cloud DNS solution, which is actually white-label from Infoblox.</p>
+<p><b>CD</b> [00:25:53]: The Google Cloud solution itself is white-label from Infoblox.</p>
+<p><b>KH</b> [00:25:59]: Yes. In a way, Google Cloud has become a channel partner of selling Infoblox DDI solution.</p>
+<p><b>CD</b> [00:26:12]: Where does Infoblox itself provide enough incremental value to justify the additional cost if somebody wants to go straight to Infoblox?</p>
+<p><b>KH</b> [00:26:21]: If the customer were to put the data across different hyperscalers, then they can't go directly to Google Cloud because Google Cloud would only be managing for their hyperscaler itself. If a large company, in order to diversify and not have too much risk, they put 50% of their data information in one hyperscaler and the other 50%, then how do they actually talk within it? They need to then work using enterprise DDI solution that Infoblox operates.</p>
+<p><b>CD</b> [00:27:04]: It really depends on single-cloud customers vs multi-cloud customers.</p>
+<p><b>KH</b> [00:27:10]: Whether they are private or public cloud or on-premise, because that is the complexity.</p>
+<p><b>CD</b> [00:27:20]: So the multi-cloud customers have a stronger incentive to purchase Infoblox directly because it provides centralised DDI management across different environments, correct?</p>
+<p><b>KH</b> [00:27:31]: Yes, that is correct.</p>
+<p><b>CD</b> [00:27:33]: The single-cloud customers have less of a need for standalone Infoblox DDI and prefer cloud-native offerings.</p>
+<p><b>KH</b> [00:27:40]: Yes. Then there are those that are very comfortable using the Microsoft solution because the Microsoft DNS, DHCP is actually almost free of charge. If the companies do not have a very complicated set-up, they could also use the free Microsoft software.</p>
+<h3>00:28:11] When Infoblox sells through hyperscalers rather than D2C, how do the revenue economics compare? Does the company capture a similar amount of revenue, or does the hyperscaler take a meaningful share of it?</h3>
+<p><b>KH</b> [00:28:29]: That's a good question. I don't have the breakdown of this revenue amount because, like I mentioned, I'm not involved in the sales. I am only just equipping the salespeople to be trained to be able to sell, the partners to be able to sell. I'm not sure what's the breakdown in terms of revenue share between the hyperscaler and Infoblox.</p>
+<p><b>CD</b> [00:29:00]: Would you assume that the hyperscaler is capturing a share of the revenue when it's being sold through there?</p>
+<p><b>KH</b> [00:29:09]: I would imagine that it would be somewhat like they're operating like a partner, like SI partner or value-added reseller kind of. I really do not know what is the share of the revenue, but I would imagine that Infoblox will probably take more of the revenue because they are the principal in terms of these IPs.</p>
+<p><b>CD</b> [00:29:51]: Infoblox competes primarily vs BlueCat Networks and EfficientIP in enterprise DDI.</p>
+<p><b>KH</b> [00:29:58]: Yes. These are the two major competitors.</p>
+<h3>00:30:05] How would you characterise Infobox's competitive landscape? Where does the company have the advantage or disadvantage relative to the providers we mentioned?</h3>
+<p><b>KH</b> [00:30:13]: Most of those people who choose BlueCat or EfficientIP, there are three reasons that they actually chose them. Either they are on the existing architecture. That means they already have been… Either one of their subsidiaries have been using it, or that they acquire a company that has already been using it, so they are comfortable with the existing architecture. The other will be the operational preference. Maybe they like the features and so forth. The third one, the most important probably, is the commercial consideration, which include pricing because generally, BlueCat and EfficientIP is priced cheaper than Infoblox.</p>
+<p><b>CD</b> [00:31:05]: Infoblox is the premium offering in the market.</p>
+<p><b>KH</b> [00:31:09]: Yes. Let's say a company would want to have plain vanilla DDI solution, price-wise and features, BlueCat and EfficientIP would definitely be cheaper.</p>
+<p><b>CD</b> [00:31:29]: How much cheaper? Is it 10-20% or 30-40% discount?</p>
+<p><b>KH</b> [00:31:35]: Again, you see, it really depends on the discount factor because if you are planning for it, obviously, you would want to compete and give a good pricing, but generally, I would say that Infoblox does not want to compete with BlueCat and EfficientIP in terms of pricing. They would rather want to compete in other areas like branding, in terms of the enterprise support, in terms of scalability, in terms of the other cross-sell solutions like security, the assets observability kind of thing. It's definitely not going to be competing on price. In terms of price, definitely price feature-wise, EfficientIP and BlueCat is cheaper.</p>
+<h3>00:32:43] When customers evaluate Infoblox against cheaper alternatives, what would typically convince them that Infoblox is worth paying a premium for?</h3>
+<p><b>KH</b> [00:32:52]: Like I mentioned to you earlier, they look at in terms of the branding because most of the enterprise companies actually go with Infoblox. The ability to look into things like security, operational efficiency, automation, these are things that, as the company becomes larger and larger, it becomes much more complicated, and then they would feel that Infoblox solution would be much more suitable, but for companies that are much smaller and looking for a simple DDI solution, they would feel that EfficientIP and BlueCat would be much more cost-effective.</p>
+<p><b>CD</b> [00:33:51]: It sounds as if most of the enterprise customers end up going with Infoblox. You're saying branding, but is it the quality of the products compared to the other players?</p>
+<p><b>KH</b> [00:34:08]: I would say that, like I expressed, this is actually quite something very mission-critical. If the DNS, DHCP were to fail, it means that the website is not able to access. It means that certain of the services would be totally not accessible. Given the fact that this is so important, a lot of the companies do not then see pricing as that critical.</p>
+<p><b>CD</b> [00:34:47]: Despite BlueCat and EfficientIP's pricing moat, given their mission-critical nature of the software, quality still wins out in most competitive situations for Infoblox.</p>
+<p><b>KH</b> [00:35:02]: Yes. I mentioned to you about the cloud. If the enterprise is across multiple clouds, it becomes even much more complex. I'm not sure whether BlueCat and EfficientIP would be able to adapt to the hybrid- and multi-cloud complexity and decentralised management and governance.</p>
+<p><b>CD</b> [00:35:37]: Are there any circumstances in which customers consider replacing Infoblox with BlueCat, EfficientIP or another provider?</p>
+<p><b>KH</b> [00:35:53]: Usually, when they feel that they are not using the features or that they felt that they are coming to a renewal and that they feel that it's just not worth paying for it, then they may want to consider, or their infrastructure, there's a great change in the architecture. It's like it could be that they have acquired another company and the company is using BlueCat. They may then now consider, "I need to harmonise it. Should I consider a cheaper solution vs a more expensive solution?"</p>
+<p><b>CD</b> [00:36:40]: How often did you see a customer churn from Infoblox to one of these other providers?</p>
+<p><b>KH</b> [00:36:54]: I would say not that often, again, because of the criticalness of this. Typically, once they are comfortable and it does not break, they may not want to consider. It's quite sticky, I would say.</p>
+<p><b>CD</b> [00:37:13]: Do some of the win rates differ between the large enterprise customers, Fortune 500 and the smaller customers such as SMB, who potentially would be more price-sensitive?</p>
+<p><b>KH</b> [00:37:27]: It is very much like for SMBs, they may would have gone for a cheaper option in the first place because once most companies choose a vendor, they tend not to switch. The SMB may potentially have chosen BlueCat or EfficientIP at the start rather than Infoblox, but if they were to choose Infoblox, then they may not want to switch because the risk is there. They may not have chosen it in the first place, but once they choose it, then they would have to take into account migration risk as a result of it.</p>
+<p><b>CD</b> [00:38:21]: With the expansion into security, automation and network observability, has that also led to customers prioritising these integrated platforms over best-of-breed, just like DDI solutions? Is it changing enterprise purchasing criteria with this transition?</p>
+<p><b>KH</b> [00:38:46]: I would say that for large enterprise, they do look into this because they also want to streamline the number of vendors. If a vendor would be able to do a few more than just only DDI, it would definitely be useful, but for small companies that are not looking into complex solution, then that would not be a very big advantage.</p>
+<p><b>CD</b> [00:39:24]: Is this something larger enterprises are looking into?</p>
+<p><b>KH</b> [00:39:27]: Large enterprises, yes, especially for security because DNS security is something that is very effective in terms of cybersecurity.</p>
+<h3>00:39:39] Infoblox has increasingly emphasised its Threat Defense offering, which integrates the DNS-based threat intelligence and the security capabilities with its existing DDI infrastructure. How meaningful is the opportunity to cross-sell security solutions into the company's installed base? What proportion of DDI customers typically adopt additional security products?</h3>
+<p><b>KH</b> [00:40:11]: I would say, and this is something that we always train into the field salespeople, that besides DDI, they should also try to push Threat Defense to the customers. It's more of that every field sales has to be trained to be able to cross-sell both, and they will try to make an attempt to sell to the customers. It's only a matter of whether the customers are willing to buy. One of the issue is that the purchaser for DDI may not be the purchaser for Threat Defense because one is security, one is network management. Sometimes, if the company is a big company, they may have different teams of people looking at it. The difficulty is actually looking for the security team to get them interested in it because the salesperson may have been always talking to the network management team.</p>
+<p><b>CD</b> [00:41:34]: What proportion of customers typically adopt those additional security products?</p>
+<p><b>KH</b> [00:41:48]: The thing is that we looked at it more of the rate of growth of Threat Defense. Because it started off in a very small base, the rate of growth for Threat Defense is actually very much higher than DDI. You're talking about YoY growth of at least 30%, while in DDI, you don't get that kind of numbers.</p>
+<p><b>CD</b> [00:42:22]: How much higher was it growing than DDI?</p>
+<p><b>KH</b> [00:42:28]: Threat Defense, easily YoY growth is definitely more than 30%.</p>
+<p><b>CD</b> [00:42:37]: Vs DDI?</p>
+<p><b>KH</b> [00:42:40]: Probably in the tens. The reason is that it's because of a lower base. One of Infoblox's strategy is they are trying to have more and more products so that they can do more cross-selling and upselling. I believe recently, they had acquired a company in the observability area. That actually gives them one more new product that they can potentially go into.</p>
+<p><b>CD</b> [00:43:41]: What percentage of Infoblox's total revenue comes from Threat Defense today?</p>
+<p><b>KH</b> [00:43:54]: I don't have, but I would say that from the sales point of view, that means from the salesperson quota point of view, it would be more of like 30/70. That means 70% of his quota would be to sell DDI and 30% would be on Threat Defense.</p>
+<h3>00:44:30] How effectively does Infoblox compete for enterprise security budgets against larger cybersecurity vendors?</h3>
+<p><b>KH</b> [00:44:40]: The thing is that DNS security is still only one aspect of security, and typically, it is seen as a complement rather than standalone. Most of the cybersecurity is still in the firewalls kind of… Other types of cybersecurity. This DNS security is like an additional prevention to the company being hacked. It's not like that's the only protection that the company is purchasing. I would say that it is a complement rather than Infoblox is a big player in cybersecurity.</p>
+<h3>00:45:47] To what extent do customers view DNS security as a differentiated standalone capability vs a functionality that should be included within broader security platforms?</h3>
+<p><b>KH</b> [00:46:00]: I would say that, let's say, if they were to implement the DNS security on top of the firewall, the amount of security risk would be very much reduced. Maybe, say, previously, it was able to capture 95% of the vulnerability, with Threat Defense, it will be able to capture 99% of the vulnerability. What it does is that it captures the additional 4% or 5% that the firewall is not able to capture, but it doesn't work on its own. That means people usually would have two security products, one on top of each other.</p>
+<h3>00:46:59] Infoblox completed its acquisition of Kentik in August 2026, expanding into network observability, which you said is a newer opportunity for the company. How complementary are Kentik's capabilities to the company's existing DDI and security portfolio? How could the combination strengthen its competitive positioning against BlueCat and other network management providers?</h3>
+<p><b>KH</b> [00:47:42]: This one, I have to qualify that because it's very new. I wasn't in the organisation when they acquired. This is something new, but, to my knowledge, I can probably explain a little bit. Like I mentioned, Infoblox has currently only three solutions. Kentik allows them to add one more solution to their product offering. Now they have four product offering solutions. With that, the salespeople can actually have more opportunity to cross-sell and upsell. Similarly, Kentik probably also has their own installed base that Infoblox can try to sell DDI solutions to it. All in all, by having more of this product offering, it is able to better differentiate itself from BlueCat and EfficientIP because BlueCat and EfficientIP are very much only in the DDI space. They do not offer the other kinds of solutions that Infoblox offers. By having all this, you are able to show that you have a bigger set of solutions besides just DDI solutions. The thing is that network observability and real-time traffic intelligence also help to build up in terms of security by being able to see where the traffic is. This itself is complementary to Threat Defense.</p>
+<p><b>CD</b> [00:49:47]: Do you think the revenue synergies from Kentik are pretty legitimate? Would you expect significant cross-selling opportunities, or are there differences in customer needs and purchasing decision-makers that could limit adoption?</p>
+<p><b>KH</b> [00:50:02]: Because I'm not in that position in the company to be able to know how effective it is, but I would think of it more for the fact that by having more of the similar solutions, you can actually look into the customers' pain points and value much better as compared when you are selling only a point solution. When you sell a host of solutions, you can then give the customer a better offering that addresses the customer pain point. I see that as everything good, nothing bad about it.</p>
+<h3>00:50:47] Given your experience leading revenue enablement, how would you assess Infoblox's go-to-market effectiveness, particularly sales productivity, competitive execution and ability to penetrate large enterprise accounts?</h3>
+<p><b>KH</b> [00:51:05]: I think the issue with Infoblox is that DDI is actually enterprise solutions. The sales process is actually very, very long. From the time you get the customers to be interested, they do a proof of concept, they get the budget, and then they decide to buy. It's a few months. For most of these enterprise accounts, because of the long gestation period, it's actually very, very costly to acquire new customers. Because the cost of acquisition of new customers is pretty expensive, there is no choice but for the company to have additional product offering that they can cross-sell and upsell, so that the cost of selling the second solution is so much cheaper because they are already an acquired customer. That is also the reason why they have Threat Defense and they acquired Kentik, is to increase the number of product offer, which allow the salesperson to be able to prospect the same customer multiple times. Imagine, after they sell the DDI and then they have to look for a new customer, and the gestation period for the new customer is so long, it's actually very, very expensive in terms of marketing. That is the reason why the company adopts this strategy of trying to increase the number of product offers.</p>
+<h3>00:53:01] How effectively has Infoblox adapted its sales approach to support a broader portfolio of cloud DDI and security solutions? Are there any opportunities to improve sales productivity and cross-selling execution?</h3>
+<p><b>KH</b> [00:53:17]: This would mean that the sales enablement would be much more important because there is a need to train the salespeople to be able to cross-sell different kinds of solutions, especially if you were to look at it, the original salespeople who are in Infoblox, they tend to sell only DDI solutions. Security solution is something very new to them and that a lot of them are actually not comfortable. There is a need to train them. There's a need to have some kind of change management to ensure that the salespeople are motivated, they are equipped to be able to sell a different kind of solutions compared to what they are selling in the past.</p>
+<p><b>CD</b> [00:54:20]: How does that happen? How are they equipped for that?</p>
+<p><b>KH</b> [00:54:25]: The salespeople are being given sales playbooks that they have to learn. Then after that, they would have to do a pitch on how do they actually sell to their customers through an AI tool. The AI tool actually measures the effectiveness of their pitch and then give them feedback in terms of how they can improve better.</p>
+<h3>00:55:04] How important are channel partners, resellers and system integrators to Infoblox's sales strategy? Does the company rely on these relationships to affect customer acquisition and competitiveness?</h3>
+<p><b>KH</b> [00:55:19]: Yes, it's very important, especially in Asia for the very fact that in many parts of Asia, the partners do actually hold very strong relationship to the customer. They actually help the customer to do evaluation and then do technical implementation. Because they are so close to the customer, there is a need to work with these partners to sell them this technical knowledge, this information, so that they would then recommend to their customers. Also, the other thing is that a lot of the countries in Asia, they are actually sold through SI partners. The SI partners help to actually implement the solutions into the customer. Without the SI partners, you may not have the knowledge and ability to implement the solution. The only thing about going with partners is that some of the partners may not have the deep domain knowledge. They are only comfortable with selling the base solution. In that sense is that instead of having a large revenue of, say, USD 100,000-200,000, they may only be selling the base solution of USD 30,000 to get the customers and get the implementation done very fast. There is the need to actually go down to the partners and educate them so that they would sell higher value-add solutions of Infoblox instead of just only the base solution.</p>
+<p><b>CD</b> [00:57:43]: Is that being done actively?</p>
+<p><b>KH</b> [00:57:47]: This is actively being done. The only thing is that it takes time because the partners are actually quite a large number.</p>
+<h3>00:58:02] What do you think are the greatest opportunities and risks to Infoblox in sustaining its double-digit revenue growth over the next 2-3 years?</h3>
+<p><b>KH</b> [00:58:25]: One thing is that we talked about the Universal DDI as able to work in hybrid- and multi-cloud environments. There is always that fear that companies may go towards one hyperscaler, one cloud vendor, and then the cloud vendor that is holding the data would have a much bigger power than Infoblox. It's like they could just sell their own native DDI solution. This is something that potentially could happen if a lot of the customers actually go with a single cloud vendor. The other thing is that while Infoblox wants to increase the product portfolio for itself, like going into Threat Defense, going into Universal Asset Insights, and Kentik, these are still not Infoblox strength. They are not market leaders in those areas. They may not be able to win the market over besides just the DDI itself. I see that these are potentially… Also, like what you mentioned, as the salespeople have to learn more and more different products, it becomes much more difficult for them in terms of scaling of the knowledge. Whether the company can operate in that fashion to be able to train the salespeople to be able to sell a number of product offerings, that is still a question mark, especially when they start to have more and more product offers.</p>
+<p><b>CD</b> [01:00:45]: Let me close by saying thank you so much for your input. Really appreciate it. Thanks, as always, to our Third Bridge clients as well.</p>
+<p>Transcription ends at 01:00:53 of the recorded material</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

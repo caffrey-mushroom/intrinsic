@@ -1,0 +1,210 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.17 | AC | Robotics | Dexterous Hands &amp; Tactile: Reliability Race</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.17 | AC | Robotics | Dexterous Hands &amp; Tactile: Reliability Race</h1>
+<p class="orig">原标题：触觉传感器与灵巧手：正从参数竞赛转入可靠性竞赛</p>
+<p class="tags">#robotics #china</p>
+<p class="meta">AceCamp · 2026-11-17 20:06 · article 70569351</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>作者认为灵巧手与触觉需求真实，但2026年增长质量被稀释：灵巧手理想状态下寿命不到三周，触觉数据可用率仅约八分之一。</li>
+<li>某厂商二代手2026年出货约3000-4000只、海外占比约50%，客户包括英伟达、OpenAI、亚马逊、Google DeepMind，均为几百只一单的项目制采购，且近期出现阶段性停采。</li>
+<li>按三周寿命和7×24运行推算，一只手年替换约17次，寿命若提升至3个月替换需求将下降约77%，表观出货中含大量自损坏复购。</li>
+<li>高工口径预测2026年灵巧手出货7.02万只（同比+265.63%）、2027年11.37万只，作者认为2027年需要海外批次接续，是最先需要下修的一档。</li>
+<li>行业竞争焦点从自由度与精度转向“少坏”，行星减速加反驱已成为事实标准，易损部位集中在MCP弯曲轴，散热在现有结构下基本无解。</li>
+<li>触觉正从选配变为标配，野村测算2026年约一半灵巧手带触觉（2025年为20%-30%），路线将按部位分层：薄膜压阻赢出货量，磁电与视触觉守指尖。</li>
+<li>薄膜式传感器量产后单颗将降至几元，触觉占BOM 25.27%的静态比例会下降，价值量向标定、阵列设计与信号归一化迁移。</li>
+<li>同样采集8小时数据，视觉可用超一半、力控约2-3小时、触觉仅约1小时，跨路线数据不可迁移，数采手套被描述为供不应求、景气度高于本体触觉。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>灵巧手与触觉的需求是真实的，2026 年的增长质量被两件事稀释：灵巧手在理想状态下寿命只有三周量级，触觉数据的可用率只有约八分之一。硬件出货速度跑在了可靠性与数据基础设施前面</p>
+<p>注：以下内容的数字部分，均来自个人搜集整理和行业专家调研，图表为笔者自制，可能存在不准确、不完整的情况，请自担风险</p>
+<p><b>一、核心结论</b></p>
+<p><b>一句话总结：</b>灵巧手与触觉的需求是真实的，2026 年的增长质量被两件事稀释：灵巧手在理想状态下寿命只有三周量级，触觉数据的可用率只有约八分之一。硬件出货速度跑在了可靠性与数据基础设施前面。</p>
+<p><b>行业正在发生的五件事</b></p>
+<p><b>1.</b> 需求侧从卖样机转向卖数据采集工时，海外 AI 大厂按项目采购、几百只一单拼起来，并且出现了阶段性停采。</p>
+<p><b>2.</b> 竞争焦点从自由度与精度转向“少坏”，行星减速加反驱已经成为事实标准，实质是降低碰撞损坏率。</p>
+<p><b>3.</b> 寿命成为硬约束，理想状态不到三周，易损部位集中在 MCP 弯曲轴，散热在现有手部结构下无解。</p>
+<p><b>4.</b> 触觉从选配走向标配，路线之争将以“按部位分层”收场，薄膜压阻赢出货量，磁电与视触觉守指尖。</p>
+<p><b>5.</b> 触觉真正卡在数据可用率与跨路线不可迁移，硬件不收敛会反过来压制装机节奏。</p>
+<p><b>三个最重要的判断</b></p>
+<p><b>判断一：</b>灵巧手表观出货量里含相当比例的自损坏复购。按专家所述三周寿命、7×24 连续运行推算，一只手的年替换次数约 17 次；寿命若提升到三个月，替换需求下降约七成。这既解释了“出货高增”与“本体厂营收仅几千万元”并存，也意味着寿命改善会成为零部件需求的负向变量。</p>
+<p><b>判断二：</b>2026 年行业高增预测最脆弱的一环是海外数据工厂的预算节奏，冲击落在 2027 年。专家披露头部厂商一代手两年出货持平、海外客户“最近反而不买了”；同期高工口径预测 2026 年 7.02 万只（同比 +265.63%）、2027 年 11.37 万只（同比 +62%）（财通证券 2026-10-10 引用）。2026 年的交付已在停采背景下完成，全年口径基本定型；2027 年需要新的海外批次接续，是最先需要下修的一档。</p>
+<p><b>判断三：</b>触觉的传感器单价会快速下探，价值量向标定、阵列设计与信号归一化迁移。薄膜式量产后单颗预计降至几元，而“触觉占灵巧手 BOM 25.27%”是当前价格下的静态测算（深圳市产业转移促进中心口径，财通证券 2026-10-10 引用）。按件计价的空间会被压缩，按系统与数据计价的空间才会打开。</p>
+<p><b>二、需求的性质变了：从卖设备到卖采集工时</b></p>
+<p><b>发生了什么：某厂商</b>二代手 2026 年出货约 3000 至 4000 只，海外占比约 50%，一代手 2025 年与 2026 年均约 1000 只。客户包括英伟达、OpenAI、亚马逊、Google DeepMind，均为项目制采购，单家几百只，“没有单一客户能吃下这么大的量”。</p>
+<p><b>为什么是变化：</b>需求的驱动已经从“实验室验证算法”切到“AI 大厂建数据工厂”。专家判断具身智能的突破口在数据质量，行业约 80% 的工作集中在数据采集环节，灵巧手作为采集工具同时具备耗材属性。公开侧的时间线与此吻合：MIR 数据显示 2025 年中国灵巧手出货中科研教育与数据采集合计占 74%（东吴证券 2026-11-14 引用）；国金证券测算 2026 年初全球高质量真实物理交互数据存量约 50 万小时，通用具身模型训练至少需要 1000 万小时级，存量不足需求的 5%（2026-10-29）。需求的性质确实换了，从一次性设备采购换成按采集任务付费的产能采购。</p>
+<p><b>认知差在哪：</b>市场对灵巧手的量按行业口径线性外推。高工产业研究院口径为 2025 年 1.92 万只（同比 +236.84%）、2026 年 7.02 万只（同比 +265.63%）、2030 年 43.52 万只（财通证券 2026-10-10 引用）；MIR 口径为 2026 年突破 3 万台（东吴证券 2026-11-14 引用），两家差异已超过一倍。按专家口径推算，该厂商 2026 年合计 4000 至 5000 只，约占 7.02 万只预测的 6% 至 7%。焉知汽车统计国内已有 42 家灵巧手供应商（申万宏源 2026-10-28 引用），行业集中度低于市场印象。华泰证券 2026-11-10 的判断是业内普遍预计 2027 年以后才迎来规模化拐点。海外采购的项目制特征意味着年度内的出货集中在少数几个交付窗口，季度之间的波动不足以判断趋势，跨年度的批次接续才是有效信号。</p>
+<p><b>三、可靠性接替精度成为主战场</b></p>
+<p><b>发生了什么：</b>二代手把减速器从涡轮蜗杆换成行星减速方案，指尖峰值力提升到 25 牛，人手静态抓握力保持 15 公斤，控制从仅支持位控升级为位控加力控，并新增反驱功能：受外力触碰时可反向退让，碰到坚硬物品自动后退。一代手采用涡轮蜗杆自锁结构，电机未开启时锁死，外力带不动，碰撞硬物容易滑脱断裂。专家同时提到，模块化设计已细化到单关节更换，全手损坏则直接报废。</p>
+<p><b>为什么是变化：</b>行星减速加反驱的实质，是把“碰撞即损坏”改造成“碰撞可退让”。它的价值落在降低损坏率与维修成本上，与提升精度、提升力控平滑度属于两个不同的收益口径。行业已经把它当成共识动作：天风证券 2026-11-03 的专家纪要明确“此前行业采用蜗轮蜗杆加直齿的自锁结构，今年已形成改用行星减速方案的行业共识”，反驱“目前已成为主流灵巧手标配”；华福证券 2026-11-06 的纪要提到模块化设计替代了过去更换整根手指约 1 万元的成本。</p>
+<p><b>认知差在哪：</b>市场把反驱、力控精度当作性能参数，用于比较产品档位；产业把它当作可靠性手段，用于压低耗材成本与售后负担。同一个功能在两套评价体系里的权重完全不同。按性能口径看，反驱是加分项；按可靠性口径看，反驱是进入 7×24 数据采集场景的准入门槛。这决定了它的渗透速度会快于其他性能升级，因为它直接对应客户的停机损失。</p>
+<p><b>补充：</b>传动路线仍未分出胜负。专家站在直驱一侧，理由是腱绳易磨损、需定期校准张力、力传递路径长导致精度低、无法承受重载。公开侧的分歧同样存在：财通证券 2026-10-10 认为全直驱、绳驱、连杆三条路线短期无统一收敛趋势；野村 2026-11-12 判断高自由度手正转向直驱；特斯拉 V3 采用行星齿轮箱加微型丝杠加腱绳的三级传动链，属混驱方案（国金证券 2026-11-03）。对腱绳的批评与公开信息一致，对直驱的偏好带有立场，采信时需要打折。</p>
+<p><b>四、三周寿命：灵巧手是耗材，出货量要拆成装机与替换</b></p>
+<p><b>发生了什么：</b>专家给出的寿命是“理想状态下不到三周”，并明确否认市场传言的 2 至 3 个月。易损部位集中在 MCP 弯曲轴，表现为滑脱、断裂与背隙变大，背隙被描述为世界性难题，手指用一段时间会变松、精度丢失，无法拧紧只能更换。散热方面，手部空间狭小，无法加装风扇、液冷、均热板或金刚石散热，微型风扇与微泵的可行性同样很低，现有手段只有壳体挖空、加金属散热鳍片、抓握形变时降电流三条。温升过高会导致停机、零部件加速老化。</p>
+<p><b>为什么是变化：</b>行业评价标准正从“能不能做出 20 个自由度”变成“能不能连续跑”。专家提到几乎所有本体厂都自研灵巧手，但资源集中在模型研发，自研硬件质量一般、更容易损坏，会拖慢 7×24 小时不间断采集，“行业最怕掉队”，因此必须外采。华福证券 2026-11-06 的专家纪要给出同向判断：未来 3 年整机厂核心聚焦机器人落地，优先外采更具优势的供应链产品，自研达到可用标准的可能性极低。可靠性在这里直接转化成了采购决策，灵巧手从“可选项”变成“保障采集进度的耗材”。</p>
+<p><b>量化与佐证：</b>按三周寿命、7×24 连续运行推算，一只手的年替换次数约 17 次（52 周 ÷ 3 周）；若寿命提升到 3 个月，年替换约 4 次，替换需求下降约 77%（据此推算，未考虑实际工况利用率与维修替代）。这意味着表观出货量里含相当比例的自身复购。公开侧有同向佐证：天风证券 2026-11-03 的纪要称国内灵巧手厂商因“产品货值高、质量差、寿命低，需不断采购维修或重买，每月几十只左右”，与海外 AI 大厂的数据工厂需求各占一半；财通证券 2026-10-10 提到触觉传感器胶皮约 10 万次抓握后即需更换，电机持续发热限制整机使用年限；华泰证券 2026-11-10 援引 The Information 报道，特斯拉 Optimus 的触觉传感器曾出现可靠性问题。</p>
+<p><b>认知差在哪：</b>市场用设备框架看灵巧手：一次性装机、按整机寿命折旧、按台数算市场空间。产业用耗材框架看：三周更换，按复购算真实需求。两套框架下的 TCO 与市场规模差一个量级。更关键的是方向相反：寿命提升对使用者是降本，对供应商会压缩替换需求，因此“可靠性改善”在短期是利好渗透、在中长期是利空出货量增速，两者存在明确的时间差。</p>
+<p><b>阅读提示：</b>专家同时提到，灵巧手的有效工作时长暂无明确统计口径，建议向本体厂商核实。三周是基于理想状态的描述，实际工况下的连续运行时长可能更短，用于测算时应作为下限参考。</p>
+<p><b>五、触觉：从选配到标配，路线将以分层收场</b></p>
+<p><b>表 1 触觉传感器各技术路线价格（专家口径，单颗）</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569351_1fad2396e1a54c6c.webp" alt="" loading="lazy"></p>
+<p><b>表 2 触觉传感器用量配置（专家口径）</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569351_5785905c52b8e189.webp" alt="" loading="lazy"></p>
+<p><b>为什么是变化：</b>触觉正从选配进入标配。野村 2026-11-12 测算 2026 年约一半出货的灵巧手带触觉传感器，2025 年这一比例为 20% 至 30%；华泰证券 2026-11-10 援引数智前线数据，华威科触觉出货量预计由 2025 年的 1 万套增至 2026 年的 5 万套，主因是触觉在灵巧手上由选配变为标配。订单层面，福莱新材 2026 年 2 月获灵心巧手 10 万套触觉传感器采购，8 月末累计交付超 3 万套，8 月又与中科硅纪签署 20 万套战略协议（西部证券 2026-09-03、国金证券 2026-10-29）；帕西尼称触觉芯片累计出货突破 100 万颗、基础型号售价低至 199 元，已完成 IPO 辅导备案（华泰证券 2026-11-10）。一级市场 2026 年 1 至 10 月国内触觉相关领域披露约 30 起融资、已披露金额合计超 50 亿元（盖世具身智能口径，华泰证券引用）。</p>
+<p><b>认知差与分歧：</b>专家认为技术路线不会收敛，多种路线将并行存在，同一台机器人不同部位搭配不同方案。国金证券 2026-11-03 的判断相反，预计主流基本锁定电阻式与电容式两大方向。两种说法可以在“分层”这一层上调和：收敛的对象是场景分工，低精度、大面积的身体与非指尖部位走薄膜压阻，指尖的高精度三维力需求走磁电、视触觉或电容；争夺的对象是同一部位内的份额。单一路线通吃的概率低，份额分层会很明显。专家对分层的描述更具体：薄膜式适合身体部位安全防护与情感交互，指尖需要三维力做滑移检测，脚底需要切向力以替代脚踝六维力传感器。</p>
+<p><b>增量判断：</b>薄膜式量产后单颗降至几元，意味着传感器本体的 BOM 价值会快速塌陷。触觉占灵巧手 BOM 25.27% 是当前价格下的静态结构，价格下探后这一比例必然下降，价值量向阵列设计、标定工艺、算法与一致性控制迁移。判断触觉环节的长期价值，需要看厂商能否从“卖传感器”升级到“卖触觉系统与数据”，继续按颗数线性外推会高估这一环节的收入弹性。专家给出的另一条线索是脚底柔性触觉对六维力传感器的替代：六维力单颗数千元、寿命短、易过载，鞋垫式柔性方案成本低、可缓冲、更换便捷。这条替代关系会同时压缩六维力的用量并扩大柔性触觉的场景，方向清楚，节奏取决于双足机器人的步态算法是否接受。</p>
+<p><b>六、触觉的卡点是数据可用率，硬件不收敛会反压装机</b></p>
+<p><b>发生了什么：</b>专家给出三个判断：带触觉的训练数据稀缺；视触觉融合需要在时间、空间、因果三个维度对齐，融合不佳会把触觉数据变成模型噪音；触觉手套与灵巧手触觉传感器最好在尺寸、触点数量、技术路线、阵列分布上完全一致，以降低数据迁移开销。专家还提到，蚂蚁灵波已开源模型，用于将不同路线、不同规格的触觉信号做格式归一化。</p>
+<p><b>公开印证：</b>公开信息把这个问题的量级补齐了。国泰海通 2026-11-15 的专家纪要给出可用率：同样采集 8 小时数据，视觉可用占比超过一半，力控可用约 2 至 3 小时，触觉仅约 1 小时；头部厂商的触觉数据采集规模仅约 1000 小时，视觉数据已达数十万小时。国金证券 2026-10-29 测算全球高质量真实物理交互数据存量约 50 万小时，通用具身模型至少需要 1000 万小时级。野村 2026-11-12 指出，把一个模型适配到另一家厂商的灵巧手需要 2 至 3 周，主要工作就是数据采集与传感器适配，这是路线碎片化的隐性成本。华泰证券 2026-11-10 的测评汇总显示，加入触觉输入后接触密集任务的成功率多有提升，称重分类、空罐挑选等任务反而下降。</p>
+<p><b>为什么是变化：</b>瓶颈从“缺数据”转成“缺可用数据”。可用率约八分之一（按 8 小时对应 1 小时推算），叠加跨路线信号不可迁移，形成一条闭环：传感器规格不统一，数据无法复用，模型效果不确定，本体厂采购谨慎，装机量上不去，数据量更难积累。这条闭环解释了触觉“全行业都认为是方向、装机却偏慢”的原因。硬件侧的每一次路线分化，都会在数据侧产生一次重复投入。</p>
+<p><b>认知差在哪：</b>市场按“触觉渗透率”给这一环节估值，渗透率的上限实际由数据可用率与归一化进度决定。2026 年约一半出货带触觉，已经接近当前数据条件下的合理水位；再往上走，取决于单机用量从 5 颗升到 14 颗、15 颗的速度，而这取决于触觉数据能否支撑更细的接触任务。触觉叙事里最容易被忽略的一点：买传感器的人不只为感知付费，也为采集数据付费，两种需求的节奏并不一致。</p>
+<p><b>商业含义：</b>触觉手套与本体触觉的同源要求，会形成“数据手套先行、本体触觉跟随”的配套关系。采购方为了压低迁移成本，倾向于在同一供应商、同一路线上同时采购手套与本体传感器，数采端因此锁定本体端。公开侧的进展与此相符：墨现科技在 IROS 2026 发布 6 款数据采集手套，最高 860 个触觉点、2 毫米分辨率、25 自由度姿态重建，预计 2026 年出货数千副（秦安股份相关点评 2026-11-09）；福莱新材 2026 年 8 月与灏存科技围绕触觉传感技术与数采手套整机结构开展合作（浙商证券 2026-11-05）。数采手套被专家描述为“供不应求”，这条产品线的景气度高于本体触觉。</p>
+<p>风险提示：以上内容仅为个人学习总结，不构成任何投资建议。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

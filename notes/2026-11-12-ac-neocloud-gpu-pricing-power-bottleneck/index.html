@@ -1,0 +1,211 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.12 | AC | Cloud | NeoCloud GPU Pricing &amp; Power Bottleneck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.12 | AC | Cloud | NeoCloud GPU Pricing &amp; Power Bottleneck</h1>
+<p class="orig">原标题：NeoCloud调研：美国中期选举对算力中心建设节奏影响，B200、B300及H100供需紧张度差异，电力交付周期与GPU到货周期对比 – 英伟达_AMD_GEV_Bloom Energy</p>
+<p class="tags">#cloud #datacenter #power</p>
+<p class="meta">AceCamp · 2026-11-12 07:39 · article 70569079</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>NeoCloud市场从盲目囤卡转向场景化采购，B200/B300极度紧缺、现货溢价约15%，H200溢价约20%，而H100供给充足、库存率已超30%。</li>
+<li>当前租赁价格方面，B200/B300约每小时8-9元，H200约4元，H100已跌破4元，A100不到2元；签1-2年长约的B系列底价可降至约7元。</li>
+<li>客户需求从训练转向推理，更关注通信损耗、首Token时延和冷启动延迟，并倾向于用API调用应对突发流量而非锁定一年常备流量。</li>
+<li>美国中期选举导致数十个选区通过限制或暂停数据中心决议，新签电力合同审批预计延迟6-12个月甚至更久，推动厂商转向表后发电及北欧、中东、东南亚。</li>
+<li>Nebius规划包括芬兰310MW超大型项目（2027年起交付）、法国240MW、爱沙尼亚首期22MW及英国超10亿英镑扩建，2027年起每年全球新增约1GW活跃容量。</li>
+<li>从签约电力到并网电力转化率约25%-40%、周期3-5年，并网到活跃电力再乘70%-80%，100MW签约项目最终约产生30MW可营收算力。</li>
+<li>电力交付周期在欧美通常需24-48个月，远长于GPU 3-6个月的到货周期，行业普遍先锁电再在落地前3-4个月订卡；专家预计2027年全球电力缺口约15GW，Nebius自身缺口1-2GW。</li>
+<li>每MW可承载约700-740块H100、约600块GB200或450-480块Rubin，单卡分摊功耗从1.35kW升至2.1kW；中期因供给增长快于需求，GPU租赁价格整体将下行。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>本文核心要点包括：1，GPU供需分化：B200/B300 现货溢价 15%-20% 且极度紧缺；H100 供应充足，库存率超 30%。2，电力约束成核心瓶颈：电力交付周期（24-48个月）远长于 GPU 到货周期（3-6个月），电力紧缺度显著高于算力芯片。3，算力中心建设延迟：受美国中期选举政治博弈影响，新电力合同审批预计延迟 6-12 个月，促使厂商转向表后发电及海外市场（如北欧、中东）。</p>
+<p>以下为专家观点：</p>
+<p><b>1，当前AI云服务（NeoCloud）市场的发展现状如何，特别是美国中期选举对市场后续发展可能产生哪些影响？</b></p>
+<p>当前AI云服务市场已出现结构性分化，从以往盲目囤积显卡转变为以场景化和精细化采购为主。具体来看，Blackwell架构的B200、B300以及H200系列GPU的紧缺度较高，其中B200的现货溢价率达到15%左右，H200约为20%。这类产品因其高显存特性，能满足大模型训练和超大并发推理的需求，因此需求旺盛但供给有限。相比之下，H100的供给较为充足，库存率已超过30%。</p>
+<p>市场采购模式也发生了变化。客户的租赁需求从训练为主转向推理为主，对单纯租赁裸卡的意愿正在下降，转而更关注全栈通信损耗率、Time to First Token的优化能力以及冷启动延迟等性能指标。在采购模式上，客户从过去锁定一年的常备流量，变为更倾向于通过API调用来满足突发流量需求，以降低整体成本。</p>
+<p>从市场价格来看，B200和B300的GPU租赁价格平均约为每小时8至9元，而H200（141GB版本）约为4元左右，H100已跌破4元，A100则不到2元。市场需求量最高的仍是B200和B300，处于极度紧缺状态；H200相对紧俏，而H10 0和A100的供应则较为充足。</p>
+<p>关于美国中期选举的影响，主要体现在三个方面：首先，地方对算力基础设施建设的阻力增强，美国已有数十个选区通过了限制或暂停数据中心的决议，国会和州政府也在加速推行相关保护法案或增加费用。这预计将导致大型数据中心配套的电网改造成本上升，园区建设上限受限，项目进度可能延迟6到12个月。其次，存量电力和现货GPU的溢价预计将持续走高，尤其是B200、B300和H200等紧缺型号。最后，技术路线布局将更倾向于自建发电和海外市场拓展。行业可能会将目光投向欧洲（如芬兰、挪威）、中东和东南亚等地区，这些地区监管相对宽松，且电力冗余较高。</p>
+<p><b>2，您提到项目进度可能延迟6到12个月，这是否主要指新签约电力合同的审批流程会比预期延长？</b></p>
+<p>是的，主要是指新签约的电力合同。由于中期选举结果尚未完全确定，政治博弈导致相关审批流程暂时处于搁置状态。预计要等到选举完全结束后，审批工作才会重新启动。这个过程预计将导致至少6个月的延迟，甚至可能长达一年以上。</p>
+<p><b>3，当前B200和B300系列GPU的价格最为坚挺，而H200和H100的价格有所走弱？</b></p>
+<p>B200和B300价格坚挺主要是因为其本身供应稀少且算力更强，市场供不应求导致了高溢价。相比之下，H100的供应较为充足，库存率已恢复至30%以上，供给增加导致其市场平均售价下降。H200虽然也相对紧缺，因为它是大显存推理应用的主要选择，但其紧缺程度不及B系列。A100则主要用于中小型模型的调用、微调和推理，价格最为便宜。因此，市场紧缺的焦点集中在用于大规模训练和推理首选的H200、B200和B300上。</p>
+<p>判断中远期GPU租赁价格将下降，主要基于以下四点原因：</p>
+<p>第一，尽管中期选举后电网扩容和新算力中心的审批受阻，但新增的电力和机房供应仍在增加，这将在一定程度上缓解供需紧张，促使价格下行。</p>
+<p>第二，电网改造成本正在转移。通过新的保护法案，电网附加费的成本正从厂商的店面建设成本转变为电站和输电网的改造成本。单个兆瓦的资本支出在提升，同时表后发电等替代方案的出现也为降低成本提供了可能，从而影响整体租赁价格。</p>
+<p>第三，AI云服务商普遍依赖GPU抵押融资，目前债务覆盖率较高。为了锁定现金流以偿还债务，厂商倾向于提供一至两年不可撤销的租赁合同，并通过降低价格来吸引客户。</p>
+<p>第四，随着B200、B300和H200等新一代GPU的部署增多，它们将主要服务于高端推理市场。这将分流一部分需求，导致H100等上一代GPU的价格面临进一步下行压力。</p>
+<p><b>4，B200、B300以及H200等后续产品的租赁价格是否会呈现下降趋势？其背后的驱动因素是什么，以及价格下降的预期时间范围是多久？</b></p>
+<p>B200和B300的租赁价格在中期内会下降，这一下降趋势主要由三个因素驱动：首先，供给端产能正在逐步释放，从2026年下半年到2027年，台积电在GB200上的良率提升将带来整体货量的增加。其次，到2027年，随着新一代产品批量交付，现有技术将下沉至终端主力市场，各厂商为保证现金流会主动降价，类似于H100在新产品推出后的价格调整。最后，与大客户签订的一至两年长期合同将锁定更低的价格。例如，B200和B300目前的小时租用价格约为8至9元，但若签订一至两年的长期合同，底价可降至7元左右。这个中期时间范围预计为一到两年，整体来看，供给的增长速度将快于需求，从而导致GPU租赁价格的整体下行。</p>
+<p><b>5，在美国中期选举之后，数据中心的建设地点可能会有哪些新的变化？特别是在欧洲、中东和东南亚地区，预计将在哪些具体地点进行建设，以及这些项目有无明确的时间表？</b></p>
+<p>在美国中期选举之后，Nebius数据中心建设将逐步向北欧、西欧和中东地区扩展。具体规划如下：在欧洲，芬兰正被打造为主要的欧洲枢纽，一个310兆瓦的超大型AI项目正在建设中，预计从2027年开始逐步交付。同时，在法国的波罗的海区域及爱沙尼亚也在进行部署，其中爱沙尼亚首期项目规模约为22兆瓦。法国另有一个240兆瓦的数据中心在建。在西欧，英国有超过十亿英镑的扩建项目正在进行。在中东地区，已在以色列与当地合作伙伴签订了80千瓦的租赁协议，并在沙特算力园区及海湾地区开展业务。</p>
+<p>总体规划是从2027年起，以每年1吉瓦的速度在全球扩张新增电力。欧洲的扩张将以自建为主，而中东则通过租赁模式来缩短交付周期，以对冲在美国单一市场可能面临的政策瓶颈。</p>
+<p><b>6，从全球范围来看，哪些地区的数据中心建设主要受监管政策影响，哪些地区则更多地受到电力供应短缺的制约？</b></p>
+<p>监管影响较大的地区首先是美国，特别是弗吉尼亚州和马里兰州，此外加州也因审批流程缓慢而受到影响。欧洲的爱尔兰、德国的柏林、阿姆斯特丹和法兰克福等地监管同样严格。</p>
+<p>而物理性的电力短缺问题则主要体现在美国的德州以及中西部地区，如俄亥俄州、堪萨斯州和印第安纳州，这些地区的整体电力供应不足。此外，欧洲的西班牙和意大利目前也面临电力短缺的挑战。</p>
+<p><b>7，针对2027年开始每年扩张1吉瓦的计划，这里的“1吉瓦”具体是哪个维度的概念？</b></p>
+<p>每年1吉瓦的扩张计划指的是全球范围内实际投入并交付算力的活跃容量。</p>
+<p><b>8，从签约电力到并网电力，再到最终的活跃电力，这个转化过程中的效率分别是多少？各阶段的损耗主要由哪些因素造成，以及通常需要多长时间？</b></p>
+<p>从签约电力到最终可转化为营收的活跃算力，存在显著的转化损耗：</p>
+<p>首先，从签约电力（即电网互联申请、供电协议或意向合同中体现的纸面容量）到实际落地的并网电力，转化率大约在25%至40%之间，这个过程的周期通常需要3到5年。</p>
+<p>其次，从并网电力（指变电站和外市电施工完成）到活跃电力，转化率约为70%至80%，周期大约为6到12个月。</p>
+<p>最后，活跃电力（指服务器上架通电并开始执行计算任务）是在并网电力的基础上再乘以70%至80%的系数。</p>
+<p>综合来看，一个初期规划为100兆瓦的签约电力项目，最终能够转化为可产生营收的活跃算力大约在20至35兆瓦之间，通常能达到30兆瓦左右。</p>
+<p><b>9，当前行业所面临的电力约束，主要是指没有足够的电力容量可供签约，还是签约后电力交付速度过慢？</b></p>
+<p>当前主要的电力约束在于交付速度缓慢，而非缺乏可签约的电力容量。签约本身相对容易，但将签约电力真正落地并投入使用需要相当长的时间。因此，行业正在快速推进表后发电等解决方案以应对交付延迟的问题。</p>
+<p><b>10，从H系列到B系列再到Rubin系列，每兆瓦电力大约能承载的GPU有效算力情况是怎样的？</b></p>
+<p>以1兆瓦电力为例，大约可以承载700到740块H100 GPU，或者约600块GB200 GPU，而对于Rubin系列GPU，则预计可承载450到480块。</p>
+<p>单卡分摊的功耗呈上升趋势。H100的单卡功耗约为1.35千瓦，GB200上升至约1.67千瓦，而Rubin预计将达到2.1千瓦。</p>
+<p><b>11，H系列GPU的使用周期是多久，预计何时会被新卡替代？</b></p>
+<p>H100等H系列GPU的物理使用寿命可达5到8年，但在财务折旧上通常按3到4年计算，实践中多采用4年周期。预计从2027年后，会开始逐步将这批GPU退役或降级使用。</p>
+<p><b>12，当前GPU的到货节奏与电力供应的匹配情况如何，中短期内电力和GPU哪个更为紧缺，是否存在GPU已到货但电力未解决的情况？</b></p>
+<p>目前GB200、B200等GPU的到货周期相对较短，大约为3到6个月。相比之下，电力供应的排队现象更为严重，在欧美地区通常需要等待24到48个月，交付周期远长于GPU。</p>
+<p>为应对此种情况，现在的普遍模式是先确保电力供应，在电力落地前的3到4个月再订购相应的GPU，而不是先采购GPU等待电力，以避免资本闲置。另一种策略是先租用已有供电设施的场所，而非等待自建数据中心供电。</p>
+<p>总体来看，电力的紧缺程度显著大于GPU。GPU的交付周期最长可能在12个月左右，而电力则需要3到4年。</p>
+<p><b>13，预计到2027年电力市场是否会面临短缺，缺口规模有多大？</b></p>
+<p>2027年电力市场肯定会面临短缺。从全球范围看，预计缺口约为15吉瓦。就Nebius自身而言，届时预计将面临1到2 G瓦的电力缺口，这个估算已经考虑了通过表后发电方式进行补充的部分。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

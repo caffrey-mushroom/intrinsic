@@ -1,0 +1,291 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.12 | GP | Software | Bechtle Order Book &amp; AI Services</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.12 | GP | Software | Bechtle Order Book &amp; AI Services</h1>
+<p class="orig">原标题：Bechtle: Record Order Book and Thinner Margins — Could AI Services Change the Equation?</p>
+<p class="tags">#software #hardware</p>
+<p class="meta">GuidePoint · 2026-11-12</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>一位Nagarro业务拓展总监（Bechtle的客户和项目伙伴）认为，Bechtle收购52人的英国Microsoft AI与Power Platform专家Bespoke XYZ，补上了大模型、数据工程和业务用例方面的能力，与自身的硬件、IT架构、工作场所和托管服务能力形成互补。</li>
+<li>德国约90%的企业在笔记本上使用微软软件，Copilot的技术部署已经基本完成，但中小企业缺少能梳理业务流程、找到ROI的顾问，目前仍处在小规模POC阶段，专家预计明年全年都是这种状态，效果好之后才会扩大采购。</li>
+<li>要赢下AI项目，需要主数据管理和数据科学能力，以及能与业务部门深入沟通的业务/技术架构师；Bechtle在后者上明显不足，可能需要继续并购。</li>
+<li>上半年官方披露的订单积压约35亿欧元，专家估计其中60%以上来自托管服务，IT架构和基础设施增长超过10%；多云、数字化转型和AI目前对积压的贡献还不大。</li>
+<li>德国5,000亿欧元基础设施基金和50亿欧元学校数字化资金带来公共部门机会：Bechtle联合Google和Thales中标政府主权云数字化转型项目，项目周期可能长达2-3年，瓶颈在于客户方人员和变革管理，而不是预算；收购英国学校IT服务商Savvy IT有助于拓展学校托管服务。</li>
+<li>内存和芯片涨价及短缺导致不少项目暂停、缩减范围或延期；Bechtle与芯片和硬件厂商签有长期协议，暂时可以维持价格和交付，反而可能借此抢到更多项目，但德国中小企业（Mittelstand）预算仍在收缩。</li>
+<li>与Computacenter、CANCOM相比，Bechtle在基础设施、托管服务、全行业安全资质和中型客户方面更强，但在C-level咨询、绿地转型和SAP顾问（竞争对手有100-2,000名SAP顾问）方面落后。</li>
+<li>对增长的三个假设，专家认为最稳妥的是公共部门订单（已签约），其次是积压订单转化，最不确定的是AI服务改善业务结构和利润率。</li>
+</ol></section>
+<div class="body">
+<p>Primary:</p>
+<p>BC8:GR</p>
+<p>Associated:</p>
+<p>NA9:XTRA</p>
+<p>CCC:LSE</p>
+<p>ATO:ENXTPA</p>
+<p>CAP:ENXTPA</p>
+<p>ACN:NYSE</p>
+<p>COK:XTRA</p>
+<p>SWON:SWX</p>
+<p>Viewpoint:</p>
+<p>Competitor</p>
+<p>Moderator: Sahaj Singh Saluja (SSS)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Nov 12, 2026</td><td>35 Min Read</td></tr></tbody></table></div>
+<p>Udo Bungert (UB), Director of Business Development - Nagarro</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The expert discussed Bechtle’s acquisition of a UK Microsoft AI specialist, its opportunity to expand AI services, and the factors affecting demand and delivery. Bechtle’s established strengths are hardware, IT infrastructure, workplaces and managed services. The acquired specialist adds expertise in data engineering, large language models and business use cases.</p>
+<p>The expert sees AI adoption as early-stage: many companies are testing small projects while assessing returns. Converting pilots into larger deployments will depend on consultants who can identify valuable business processes, as well as sound data management and technical delivery. Public-sector transformation and school digitization offer further opportunities, while weak business investment, chip shortages and rising hardware costs could delay projects.</p>
+<p>Key Insights</p>
+<p>The acquisition brings complementary capabilities under one organization, potentially simplifying customer relationships and improving coordination. Bechtle’s existing customer and Microsoft relationships may help it access AI opportunities, but technical credentials alone are insufficient. Business architects and data specialists are essential to winning projects. Public-sector work was the expert’s safest growth assumption because opportunities were already signed; execution and staffing remain important. Backlog conversion ranked next, with AI-driven growth viewed as least certain. Bechtle is stronger in technical infrastructure, managed services, security and mid-sized customers than in senior business consulting, greenfield transformation and SAP. Expert follow-up emphasized that talent shortages, regulation and customer-side readiness may constrain delivery as much as funding does.</p>
+<p>Competitive Landscape</p>
+<p>11/14/2026 at 08:16 AM UTC</p>
+<p>Company or group</p>
+<p>Positioning and assessment</p>
+<p>Bechtle</p>
+<p>Strong in hardware, managed services, infrastructure, security and mid-sized customers. Broad supplier relationships and procurement arrangements may help it deliver amid chip constraints. Needs more business architects, senior project leaders and process consultants.</p>
+<p>Computacenter and CANCOM</p>
+<p>Competitors in the German-speaking market. The expert viewed Bechtle as stronger in breadth, infrastructure and regulated-sector security; CANCOM was seen as stronger in SAP consulting.</p>
+<p>Large consultancies</p>
+<p>Better positioned for executive-level advice, business-process redesign and greenfield transformations. Bechtle may be more suited to technical migrations and mid-market work.</p>
+<p>Microsoft and Google</p>
+<p>Microsoft is Bechtle’s preferred AI partner, while Google is part of a sovereign-cloud initiative. Multiple partners can help address customer concerns about neutrality and data sovereignty.</p>
+<p>Hardware vendors</p>
+<p>Partnerships with Dell, HP, Lenovo and NVIDIA may support project delivery when supply is tight, but customers may still reduce scope or postpone work.</p>
+<p>Quantitative Insights</p>
+<p>Figure or metric</p>
+<p>Context</p>
+<p>52 employees</p>
+<p>Size of the acquired AI specialist.</p>
+<p>About 90%</p>
+<p>Expert’s estimate of German companies using Microsoft software on notebooks.</p>
+<p>More than 60%</p>
+<p>Expert’s estimate of Bechtle’s backlog attributable to managed services.</p>
+<p>About €3.5 billion</p>
+<p>Backlog figure the expert cited from official materials for the first half.</p>
+<p>More than 10% growth</p>
+<p>Mentioned for IT architecture and infrastructure activity.</p>
+<p>€500 billion; €5 billion</p>
+<p>German public infrastructure and school digitization funding, respectively, as raised in the discussion.</p>
+<p>Two to three years</p>
+<p>Possible duration of complex public-sector projects, according to the expert.</p>
+<p>The expert also cited a roughly 70,000-person global workforce when discussing scale; the transcript does not clarify the basis for that figure.</p>
+<p>SSS: So good morning and thank you for joining this call. My name is Sahaj Singh Saluja and I am a moderator at Guidepoint Insights covering EMEA software, IT and media sector. Today's hour will focus on Bechtle, its acquisition of Microsoft AI specialist Bespoke XYZ and whether AI projects could turn into ongoing service work and what may be filling its record order backlog after quarter 3 and how hardware costs, partners and business mix could shape the margins from here.</p>
+<p>11/14/2026 at 08:16 AM UTC</p>
+<p>With me for this call is Mr. Udo Bungert. He is the director of business development at Nagarro. Since October 2021, he works with Bechtle both as a customer and project partner. So Udo, is there anything else that you would like to add on here?</p>
+<p>UB: Yes, thank you very much. I have worked in the IT market for more than 20 years and in the last years there was a big change in the IT market as a result of artificial intelligence and digital transformation and so I have a great overview about the trends, the strategies and I have collaborated with the big players in the market; one of them is a specialist in a lot of projects and also in-house projects and so on. So I think I can give you a lot of information and maybe some insights about the actual situation and I'm happy to do this call with you.</p>
+<p>SSS: Great. Now just before we begin, a quick reminder, please base all your answers on public information, industry observation and your professional experience. Please do not share anything confidential, including something which is related to your current employer, or any material non-public information, we won't be discussing any trading or security price or investment recommendation here. With that, let's get started with our topic. First of all, I'd like to start off with the acquisition. Bechtle bought Bespoke XYZ, a 52-person Microsoft AI and Power Platform specialist to form the base of a new AI practice. In joint AI projects, you must have seen Bechtle or worked with them. Which AI skills did Bechtle bring itself and where did it rely on partners or outside specialists?</p>
+<p>UB: Thank you very much for the introduction. I would say that the deal with Bespoke fits to the actual strategy of Bechtle to increase 3 practices of Bechtle. 1 is the AI practice you mentioned. The next is the increasing revenues in the more middle-sized companies and in the critical infrastructure. And last but not least, it's the location. It's a company in the UK. So everything fits to the strategy, the new strategy we announced, the strategy of Bechtle. And the AI, Bechtle comes from the heart of a hardware seller and the goal is to get one of the leading AI integrators. So Bechtle has to spend money on knowledge about data centers and knowledge about AI functionality. That means the large language models, the behavior of large language models and the running of AI models on hyperscaler software. So this was the reason to spend money to invest in a partner, in a company who is one of the players, Microsoft partner.</p>
+<p>So this was the reason to spend money in this deal and to combine the experience of Bechtle coming from the hardware, coming from the workplace, from the IT architecture and IT infrastructure. And with the deal of Bespoke, we get the experience in large language models, the data engineering know-how, the prompting of large language models and last but not least, a partner which grows up in an environment of one of the leading hyperscalers in the world.</p>
+<p>SSS: And which AI skills did Bechtle bring in itself and where did it rely on partners? Can you just highlight that part as well?</p>
+<p>UB: Yes, the skills from Bechtle are the knowledge about IT architecture. Bechtle comes from the hardware and then the knowledge about IT infrastructure. Bechtle is one of the leading managed service companies in Europe, and the knowledge about workplaces... that means the combination of hardware and software for the digital workplace... this comes from the Bechtle side. And from the Bespoke side comes the know-how about hyperscalers, the know-how about large language models and AI, and the knowledge about business cases, use cases, what do I make with data in the business processes. So that's the differentiation between Bechtle and Bespoke, and together you can fill all areas, all spaces.</p>
+<p>SSS: Got it. Now, Bespoke has already worked with Bechtle on some customer projects for over 2 years as a partner. So in joint AI projects, what does an IT service company gain by owning an AI specialist instead of bringing it as a partner? So what's the difference between owning and partnering with them? For example, will that help it in winning bids, keeping the customer relationships or earning margins on that work, earning more or better margins on that</p>
+<p>11/14/2026 at 08:16 AM UTC</p>
+<p>work?</p>
+<p>UB: I think that is a very good history for us, the 2 years to collaborate in the partner-partner model so you can learn about the company, about the people, about the culture of the company. But the disadvantage is we are 2 companies with 2 accountings and not matching. And now with Bespoke as a legal entity of Bechtle, we have 1 company and 1 accounting and we have a stronger culture, I would say. So from the business administration side, it's better to work, to act as 1 company. In the first projects, it's better to act as 2 partners with both strengths. But it's the normal way if it fits when the 2 partners go together and build up 1 company. So it's better for the company, for the customer. He has 1 contact person, he has 1 invoice and so on. On the one side, and on the other side, it's a good possibility for Bechtle to increase their knowledge and their connectivity in the AI sector. So it was a win-win situation for both partners.</p>
+<p>SSS: Now there's also a point that Bespoke works mainly with UK customers and so and Bechtle is more focused on the German market. So what would Bechtle need in order to offer this Microsoft AI work to its customers in Germany and how hard that would be for Bespoke to.</p>
+<p>UB: I would say that the Microsoft Copilot or Microsoft software is the leading software, the computer software in Germany. So approximately 90% of the companies have Microsoft software on their notebook and actually there's a rollout of Copilot, which is one of the leading large language models, AI agents in the market. So Germany is ready for using the Copilot in Germany. Bechtle is a German company, so most of the companies use Bechtle as a hardware seller or use infrastructure services from Bechtle or are in the managed service of Bechtle but now Bechtle has the service offering to create AI services, to create business cases, use cases with the help of Bespoke. And I think that's a good start to increase the business of Bechtle and a new practice AI for Bechtle in Germany as the result that they are leading here. And on the other side in the UK, where Bespoke comes from, Bechtle tries to increase also the revenues. It fits to another strategy of Bechtle to increase the revenues in other parts of Europe, for example in the Netherlands and now also in the United Kingdom, of course, Bespoke and Microsoft are very familiar here in this country, so that's also a second strategy which fits excellently to the deal of Bechtle.</p>
+<p>SSS: And how widely are German mid-sized companies using Microsoft Copilot today, and what is stopping them from using them more?</p>
+<p>UB: The technical issues were finished, I would say. The new Copilot release is running on a lot of hardware in Germany. The technical aspects are finished, but an AI agent has to solve problems, has to solve issues, has to solve business cases. The problem is the functionality is there, the AI agent is there, but you have to find use cases where you can show that you can do the process better, you can save costs, you can create more revenues. The next step is that we have to look for consultants and architects who discuss with the customer their problems, to discuss with the line of businesses where can we find more advantages with the help of AI? It is a discussion about the typical processes like purchasing or sales or accounting or warehouse management or logistics or so. Especially the German small and medium-sized companies have not the experts on board to discuss, to help, to solve, to create new concepts. That will be the task for the business consultants. Bechtle has some business consultants, but also other bigger companies have more business consultants. Bechtle, they have a unit with excellent business consultants, help specialists to increase this skill of consultants, not only in technical consultants, but in business consultants who can discuss business processes in the line of business.</p>
+<p>SSS: Microsoft is moving parts of Copilot to usage-based billing where customers pay for what they use and pushing partners to offer ongoing services. Once Copilot is live at a customer, what ongoing work would an IT service company like Bechtle earn? And is it usually sold as a monthly contract or as a one-off project to manage their services?</p>
+<p>11/14/2026 at 08:16 AM UTC</p>
+<p>UB: That's right. If you buy the Copilot license, there are several levels of Copilot license. You have to pay 1 fee and if you use Copilot in a better way to use a lot of business cases and so on, you pay more for this. So Microsoft is interested to increase the usage of Microsoft Copilots. If a lot of companies will solve their problems with the AI agent, they will pay more money. On the other side, you can say there's a change management in the head of the middle- sized companies, especially in Germany. They want to see the return on investment.</p>
+<p>If I spend money for AI agents or for the Copilot license, what does this mean? And actually the companies do smaller pilots, smaller proofs of concept to see these are the costs, what is the benefit and this is the actual phase here in Germany since last year and I think the whole next year and if the results are good, I think that they will spend a lot of money on more licenses of Copilot and so on. So I can answer, they will start small with small proofs of concept, with small pilots and so on, with small use cases and after discussion and the examination of the results, they will start bigger projects. Actually, they are smaller projects, but I believe that after these phases, we will start bigger projects with the Microsoft Copilot and especially in the Bechtle infrastructure then.</p>
+<p>SSS: I'm talking about Microsoft AI work in Germany. So it is contested by various IT resellers, Microsoft specialist firms and large consultancies. What does an IT reseller like Bechtle need to have to win Copilot and AI agent projects against other IT services companies?</p>
+<p>UB: There are 2 skills which are necessary to win against large consultancies and the Bechtle Microsoft specialized firms. One is the knowledge about the IT infrastructure and especially the master data management. That means an excellent skill about how I can share master data, how I can improve the quality of the master data, such things like matching or mapping of master data, which is very necessary that the AI agents deliver the right answer. So these data analysts and data scientists are necessary. And on the other side, the architects for the business, technical and the business architects who can discuss with the customer in a detailed way, the problems, the issues in the daily life and so on. So these 2 skills are very important. I would say the skills from the data scientists, they come strong from Bechtle but with the deal of Bespoke, they have increased the number of data scientists and on the other side the business architects and so. Bechtle has not a lot of, so I think they have to do some more deals in the next year to improve and to increase the number of architects in a technical and in a business way if you have not these 2 skills. You will not win a lot of projects against the competitors in the market, I would say. So these 2 spaces are very necessary and are a must in the market if you want to increase your AI functionalities and your revenues with AI.</p>
+<p>SSS: So when one of the customers starts an AI project, how much does that existing relationship help compared with industry knowledge or past experiences? So Bechtle already has and manages a lot of Microsoft licenses with a lot of its customers. If one of them starts an AI project, how will that relation help?</p>
+<p>UB: This relationship is very, very good and very necessary. Bechtle is a big player in the market. He has a relationship in all industry segments. Of course, they are not the specialists in the chemical industry or in the automotive industry. They are in all industry segments. So we have the connections to the management in these companies and the connections to the IT departments in these companies. So this is, I would say, brilliant in a business way. And Bespoke, they have the connections to the Microsoft company, the Azure platform as a hyperscaler and so on. So we have the connections to the, I would say, especially to the IT departments, to the data centers and so on. So with both relationships, we improve the win rate in a big way here.</p>
+<p>SSS: Now talking about the order book for Bechtle. It reported a record order backlog after quarter 3 2026. In joint projects and tenders you would have been a part of this year, and in general in the German market, what type of work showed up most? Was it device rollout? Was the work more related to data center and infrastructure? Was it cybersecurity, cloud migration, or managed services? If you could tell us some of those which are more prevalent or</p>
+<p>11/14/2026 at 08:16 AM UTC</p>
+<p>rank it based on what kind of work is right now more prevalent in the German market which might have formed the order backlog for Bechtle?</p>
+<p>UB: It's announced that the backlog of Bechtle is huge. The order backlog is about, in official papers, about €3.5bn at H1. But if I analyze the business, the practices, I would say actually the most order backlog and the most revenues come from the managed service. Actually, Bechtle is the leading company in this aspect. So more than 60% of the order backlog comes from the managed service, which is one of the oldest practices in Bechtle.</p>
+<p>When we are leading in IT architecture, that's another practice, or IT infrastructure, more than 10% increases and so on. Multi-cloud, digital transformation, and AI, they deliver not a lot of order backlog, but these are stars. Bechtle believes that these 3 practices will increase the revenues in the next year, for example. And then there are 2 practices. One is security, cybersecurity, the other is modern workplace. Actually, Bechtle has forecasts and they win the order . So they create new projects in the AI practice or multi-cloud practice, so we have a lot of order backlogs but actually we don't win the orders. So that's the difference, and the order backlog comes from all the practices of Bechtle, but the winning weights actually, and I think in the next year also, comes from the mentioned 3 practices: Managed service, security, modern workplace, and a little bit from the digital transformation. So the rest, there's a lot of order backlog, but it's a hard competition to win a new customer also. So that's the differentiation.</p>
+<p>SSS: Now, Germany has a €500 billion infrastructure fund and €5 billion for school digitization. So for public sector customers you work with, has that money already turned into IT tenders this year or is it most of it that is still at the planning stage?</p>
+<p>UB: Yep. That's right. This was official information in the newspapers. It's coming from the Transformation programme of the German government to do digital transformation in the public area. That means the administration of all the countries in Germany and it's signed, and Bechtle won this opportunity. So it's a project, a big project . So Bechtle will start with the digital transformation and the creating of a digital sovereign cloud to do a transformation from the more old-fashioned infrastructure in the government and the countries to a modern IT workplace with a little bit of AI. Bechtle will make an alliance in the area of sovereign cloud with 2 other partners. 1 is Google, not Microsoft, Google, and the other is Thales. Thales is a French company and Bechtle will deliver the modern workplace, will deliver the digital transformation, the IT architecture, the IT infrastructure. And yeah, Google will be the hyperscaler, will deliver the cloud environment and Thales will deliver the cybersecurity aspects because it's one of the leading companies. So the money is safe and the invest is not very riskful and in the next years we will earn a lot of money because it's the first tranche, the first part of a very big order from the German government.</p>
+<p>SSS: What usually slows down these public sector IT projects in Germany? So between budget approval and actual order, what is the gap and has that gap become shorter or longer this year?</p>
+<p>UB: That's not to give you an easy answer. The showstoppers are on the one side not the budget, the budget is there, but on the other side, the staffing of the project organization, I would say. So it's a question of change management. Are the key users on the customer side, are they ready to start with the projects? Or are there some lessons before? How is cloud computing and how is a sovereign cloud to do and so on? So these are aspects, the showstoppers are the skills and the behavior of the customer key users on the one side, the duration, the calculation of the duration of the projects, how long a Bechtle needs with the partners from the beginning, from the kickoff to the implementation of the software. So I think it's a project which is not the duration of 1 year, maybe 2 years or 3 years to come to a successful end. So on the other side, it's the investment or the delivering of all the functionality to build up a test system, to build up a quality system and so on. The speed is not so high.</p>
+<p>11/14/2026 at 08:16 AM UTC</p>
+<p>So we have problems in the organization of the projects, in the creation of the milestones in the projects, and the kind, the culture of the projects will run. So I think these are the points for a longer duration, not a shorter one... situation. In my opinion, projects in the public sector have a longer duration than in other industry segments or so. So that's the reason. But the money is there.</p>
+<p>SSS: Now we spoke of the subsidiary called Savvy IT and it runs IT services for schools in the UK. And if we look at Germany, it has also committed €5 billion to school digitization through its DigitalPakt 2.0. So how are German schools and school authorities buying IT today? And is there room for any IT service company to run school IT as an ongoing service rather than just supplying devices? So is there a scope to do managed service projects there, or is it just supplying devices to these schools for digitization?</p>
+<p>UB: I think this was a clever decision with the Savvy IT, because if you want to do some IT projects in public infrastructure like schools here in Germany, you have to have references, you have to show that you have deep insights in processes in schools. The actual situation in the infrastructure of schools in Germany is horrible. In a lot of schools there are no modern IT systems, there are no hardware products, there is no cloud, and the German government has created a big infrastructure budget for modernizing all the schools.</p>
+<p>And if you have the knowledge how it goes, and Savvy has the knowledge how it goes in the UK and in Germany, it's similar. And Bechtle is a hardware seller and is a managed service infrastructure provider, and it's perfect. And I think that Bechtle will run with the budget too, because they have the fit to the German government about the project we have discussed before. And now they have about their subsidiary, they have the knowledge about schooling processes and IT infrastructure for the classes and so on. So I think it will increase the capacities and the service offering from Bechtle in the next year. So it was a top decision to do this, Yes. There's no other player in the market actually in Germany.</p>
+<p>SSS: Got it. So this gives them a huge advantage over other IT providers.</p>
+<p>UB: Yes, a huge advantage. It's a special market, the schools from the houses to the infrastructure to the modernization of the IT infrastructure and so on. And all the schools want to do the step from the old world to the cloud world to use AI functionality and so on and everything managed by a big player in the market. That's the right way, I think, so it was a good decision to do this, yeah.</p>
+<p>SSS: Now, Bechtle has said that public sector customers drove much of its recent growth while Mittelstand companies held back their IT spending. So what you are currently seeing in the German market right now are these Mittelstand companies starting new IT projects again and which kind of projects if they are doing so? So which kind of projects are they starting now? Do you think there has been a recovery in the spending of the Mittelstand companies?</p>
+<p>UB: I think in Germany it's a crisis actually in the industry, so the budgets are decreasing and the speed of the transformation is not so fast as before. So I think all projects are behind the milestone steps, I would say. So it's a question of the planning of the companies for the next fiscal year and the collaboration with the partners actually. Actually, there's a big discussion about prices and fees and so on and about the efforts and so. So actually, we have not the right speed to be in the right plan, I would say. So that's the reason.</p>
+<p>SSS: Now moving to understand more about hardware costs and how customers are buying. So memory chip costs have risen sharply this year. And in organizations you work with, including on the buyer side, how have device and server orders changed? So are they ordering early just because the price has risen and there's a shortage of chips or are they ordering more at once or they are lowering their specifications or they are just postponing it? So what is their current behavior regarding purchasing these memory chips?</p>
+<p>11/14/2026 at 08:16 AM UTC</p>
+<p>UB: I would say that the current behavior is that the increasing prices or a lack of chips also, that's not calculated in the plans. So in a lot of projects actually we have a break or phases where the project stops. Of course, the company has to calculate a new budget for next year. And in some cases the prices are too high, so we have to reduce maybe the scope of the projects or the content or the duration of the projects. In some cases we have a lack of chips, so we cannot go live, so we have to wait until new chips are available or we have also to postpone the project. So I think these are hard facts and the impact of this situation, increasing prices or lack of chips, it's not good for all these projects in the market actually. The customers are a little bit in the change management, so they cannot find a solution for the situation and they cannot find a better alternative to do.</p>
+<p>So actually everything is waiting if the situation will change or not and after these waiting phases we will see what to do. If we want to change the chips or to create another solution, another possible IT infrastructure also with not so many chips, we will see. Actually I would say it's a black hole. No one has the right answer.</p>
+<p>SSS: But I look at Bechtle's Q3 business volume, it rose by 19%. And as hardware quotes or hardware prices went up this year, are these German buyers just buying the same number of devices at higher cost or they're cutting the number of devices to stay within budget?</p>
+<p>UB: Bechtle is in the situation that they have long-term contracts with all the chip producers. So they have negotiated better prices and there is not the pressure to increase the prices. And so Bechtle can deliver and they can hold the actual prices, but I don't know how long. But on the other side, that's right. If there are increasing prices or a lack of chips or so, then you have to change the projects, to stop the projects or to reduce the volume of the projects or the content, the scope of the projects as another way to find another solution for the situation. That's why it will be a game changer in all the transformation and cloud projects. And the player in the market like Bechtle who have better contracts with their partners or have a better collaboration with the chip producers, they will win more projects and the other will lose the projects. That's the situation. So it's a big impact of the competition in the market actually. SSS: I'm talking about AI partnerships. So Bechtle partners with Microsoft for their AI software and with NVIDIA, Dell, HP and Lenovo for servers and devices that run that AI. And when an IT company bids for an AI project in Germany, how do these vendor partnerships help it win? So, for example, through joint sales lead, through co-funding or certified staff, do you think any of these measures help Bechtle as it's a partner in this particular race to win more AI projects?</p>
+<p>UB: Yes, of course. I think that's also a clever step of Bechtle. I have mentioned in the question before that the companies have this discussion, shall we stop the project or shall we change the provider to another supplier or so? And in the market there's a big pressure to start these projects to use more AI functionality as a lack of specialists in the market or as a result of the increasing costs and so on. And Bechtle says, "Yes, we can," as a result of a good partnership with HP, Lenovo, Dell and so on. So Bechtle will win projects which in other cases would not go to Bechtle, but Bechtle can deliver and has the possibilities to start projects. So I think that Bechtle will win more projects as a result of the lack of chips and so on in the market, if they can deliver the chips as a result of their contracts with the players in the market. Yes, of course. It was a big point for Bechtle to spend money in these partnerships in the past.</p>
+<p>SSS: Now, Bechtle has long presented itself as a vendor-neutral advisor for its customers that works with many technology suppliers and it will be neutral for all its customers. Now as it builds its AI practice just around Microsoft, could customers start to see it as less neutral and would that matter to Bechtle at all?</p>
+<p>UB: That's a cool question. I would say on the one side, it's a disadvantage if I have such a huge collaboration and partnership with one of the players in the market, in this case Microsoft and Azure platform. So the typical German</p>
+<p>11/14/2026 at 08:16 AM UTC</p>
+<p>Mittelstand, medium-sized companies they think not in a positive way. But on the other side, a big advantage is that Microsoft is one of the most accepted players in the market. All the German companies use Microsoft. So Microsoft is okay for them. And on the other side, I've told you that Bechtle does not only collaborate with Microsoft. They also collaborate with Google, which is a competitor of Microsoft, in a big project which is very known in the German market, the Digital Sovereign Cloud Initiative. So I can say we are neutral, we do act with Microsoft, it's our preferred partner, but we have alternatives. And this is also clever. So I think there's no big discussion in Germany about this situation.</p>
+<p>SSS: Now, you have already mentioned, so regarding digital sovereignty, you have mentioned that it might partner with Thales and Google more than Microsoft. So right now, could an IT service company which is closely tied to Microsoft lose some of its work because the customers will obviously focus more on digital sovereignty, which Microsoft might not be able to provide? So how do IT services companies usually combine Microsoft with other European cloud options if they have to?</p>
+<p>UB: This is more a topic for the government risk and compliance area. In the European Union, especially in Germany, there are special regulations like the German word Datenschutz-Grundverordnung (DSGVO) or DORA 2 or NIS2. These are regulations that manage the handling of master data, and an AI project, a digital transformation project, lives from the master data. The question is: Where are the master data managed? In Germany, or in what kind of data center, and so on? What are the cybersecurity rules, incident access management, and so on? Some products, some players are not allowed to be used in European sovereign cloud systems. Bechtle has no alternatives with players who are not acting in the European Union or in Germany. So they have to be politically correct to find the right IT architecture. And if the companies who are on this platform, if they do not obey the rules, they will be outlisted; they will have no new business in this market. It's GRC rules and you can't change it. I think in the next year we will see more and more regulations in the market as a result of cyberattacks and as a result of how safe my master data are. There's another regulation, it's called ILM. That's a regulation about archiving of master data and deletion of master data and so on. We get more and more regulations, and Bechtle, if they want to build up services in AI infrastructure and if they want to get an AI integrator, they have to obey all the regulations and they have to develop their own strategy for the next year. Collaboration with the governance is very good, and with all the other stakeholders in this market, and to choose out the right partners for the future IT landscape and situations.</p>
+<p>This is the most important task to do in the next year, if you want to make money in this extremely increasing industry in the next year. The problem of this space is not the money, it's the regulations and the political rules to obey in the market.</p>
+<p>SSS: Now talking about Bechtle's headcount growth in 2025, it came entirely from acquisitions which suggested that skilled IT staff is hard to hire in Germany. So which roles are hardest for IT service companies to hire today and are customers willing to pay more for those roles or do companies have to absorb these higher salaries? Since in these AI projects, we need a specialist who can implement these AI projects, who can automate a lot of these workflows for those companies. So do you think there's a lack or is it getting hard to hire these skilled professionals?</p>
+<p>UB: That's a difficult answer. Let me say, there's a change in the skills in digital transformation and AI projects; you need other skills than in the old-fashioned projects or the older solutions. Actually, we have an increasing need for... I've mentioned... architecture, business architects or technical architects on the one side, and data scientists and data engineers on the other side. And these persons are not available in Germany, so we have to develop such people from your own organization, from your own employees with a lot of spent money, or you have to take over other companies.</p>
+<p>The companies try to increase, especially Bechtle, not in Germany only but in the neighbor countries, like we speak</p>
+<p>11/14/2026 at 08:16 AM UTC</p>
+<p>about the UK, or I think last year Bechtle took over a big company in the Netherlands to increase the number of employees. There were a lot of data engineers there and architects, and we have increased the number of consultants they can use. I think that's a very important situation. And if I compare Bechtle with the competitors, the situation is that Bechtle has more technically oriented guys from the platform side, from the AI side, from the managed service side, from the workplace side, but not from the business side. And AI means you spend money for workshops to find out the right business concept, the right user story and so on. So you have to spend money for experienced consultants with architects I've mentioned. And these guys are expensive. They get a high salary and so on. And on the other side, we have an increasing need for developers, for development people, for young starters, I would say. So actually, it's a very big battle about the experienced people who can develop to architects or to data scientists, and Bechtle is one of the players in the market. And the big players, the big 4 or so, they are well-known, they are well-standing in the market, so they win more of the talents in the market, and Bechtle has the pressure to hire these consultants with a higher salary or to take over competitors in other countries to fill this space with good consultants and so on. The war of talents, the war of experts is one of the biggest showstoppers for the next year behind the technique we have discussed. And Bechtle has the strategy to go on the universities to change the brand of Bechtle and to get more experts. The company, so that's a very, very important and one of the most riskful activities in the next years.</p>
+<p>SSS: Now talking more about the competitive positioning of Bechtle, so compared with Computacenter, CANCOM and other large consultancies, where is Bechtle stronger today and where is it falling behind and what can it do in the next few years to set it apart from the others?</p>
+<p>UB: If I compare Bechtle with the companies you mentioned, then I would say Bechtle is local. It's a typical German company based in Neckarsulm near Heilbronn. But Bechtle is also global. So a lot of the business of Bechtle comes not only from Germany but from the other European Union countries. If I compare it with Computacenter or CANCOM, they are more focused on the DACH region, I would say. So Bechtle has global processes and a global organization, so that's a point which becomes more important in the next year. I would say Bechtle is the leading company in hardware selling and managed service. That means Bechtle has two segments. The big companies they come from, and on the other side, the small and medium-sized companies. And in the space of the small and medium-sized companies, the big business will be created in the next year. Of course, they have more pressure to implement digital transformation solutions or AI agents and so on. So we are in a good situation. They are leading also in... If I compare it with other players, they have a very good IT architecture and IT infrastructure team. So we have more people, more experienced people in this field. The next I would say is the Computacenter. And the security practice of Bechtle is also one of the biggest and is certified for all kinds of security. Security means that the solutions of Bechtle you can use in every industry segment. If I compare it with Computacenter or CANCOM, they have a very small one and it's not allowed to act in all industry segments. That means you can use Bechtle services in the aerospace, defense industries, or in the critical infrastructure industries where we have another level of GRC regulations. So they have an advantage in this area if I compare it with Computacenter or CANCOM. And if I compare Bechtle with Accenture, for example, or Deloitte, Bechtle has more fit in the smaller and medium-sized companies than the Big Four. The Big Four would like to act better with the blue chips and so on. So it's also an aspect. The biggest disadvantage of Bechtle, I would say, they come from the hardware seller world. They come from the managed service world, and Bechtle is a big company with I think 70,000 employees all over the world. But if I compare them with the Big Four or with CANCOM, for example, we have not a lot of guys who can consult a company, for example, in a C-level way or in a level with the line of business I discuss with. So we have a lack of experienced project leaders, engagement managers who can collaborate with the management of a customer or can create a future IT landscape with the business. So, this is here the Big Four are much better, and CANCOM has better,</p>
+<p>11/14/2026 at 08:16 AM UTC</p>
+<p>for example, better SAP consultants. SAP is one of the leading ERP systems in Germany, and Computacenter, CANCOM, and the Big Four, they have big departments with between 100 and 2,000 SAP consultants, and Bechtle has a small one. So they have to spend money more in these digital process consultants. It's necessary and actually the other competitors are better.</p>
+<p>So if the scope of the project is more greenfield transformation, that means we have to discuss re-engineering of processes and so on, then I think Bechtle is not on the first place. If we do a brownfield migration, more technical migration, then Bechtle is the better one, I would say. So that's my opinion about the differentiation of Bechtle and the other players in the market.</p>
+<p>SSS: Great. Now just moving towards the end of this consultation. So most commentary on Bechtle's growth rests on 3 assumptions right now. First is the record order backlog that they have gets converted on time. Second is the public sector spending, which is a big chunk, that keeps on flowing. And third is AI services improve the business mix and they get more margins through these kinds of services since the reselling business has a lower margin compared to the managed services contract. So Which one out of these 3 assumptions, Which one of these 3 looks safest to you and could you also rank the other 2? UB: I would see the second one, the opportunities and sales pipeline in the public area with the mentioned sovereign cloud way and so... they are signed, so Bechtle has the revenue. Actually it's a question of delivery. So the first point I would say is the typical business. Bechtle has a lot of business practices. One is better than the other, but we have enough practices to balance, to find the right balance. So it's the second and the last. And I would say the space I can plan not in the right way is this thing about the AI. I would say actually all the companies reduce the activities and they say as a result lack of chips, higher prices and so on. They do a new planning of the costs for the next year. So that's my answer. Safe is the second one, then comes the first one and then the third one.</p>
+<p>SSS: Got it. With this, I guess this brings us to the end of this hour. And Udo, thank you so much for your time and insights today. We have covered why Bechtle might buy these AI skills through Bespoke XYZ and whether these AI projects could become an ongoing service work and what may be filling these record order backlogs with how rising hardware costs are shaping customers' buying decisions. So thank you so much for joining; with this, we can close this. Thank you so much.</p>
+<p>UB: It Was a pleasure for me. All right. Okay. Thank you.</p>
+<p>SSS: Bye.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>11/14/2026 at 08:16 AM UTC</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

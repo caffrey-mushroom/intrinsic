@@ -1,0 +1,264 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.12 | TB | Transport | Evans Network Agent Model &amp; Drayage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.12 | TB | Transport | Evans Network Agent Model &amp; Drayage</h1>
+<p class="orig">原标题：The Evans Network – Agent-based Business Models &amp; Multimodal Expansion Challenges</p>
+<p class="tags">#transport</p>
+<p class="meta">Third Bridge · 2026-11-12</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>曾在The Evans Network任职约17年的前中西部副总裁表示，公司从干线运价中抽取的佣金约为15%，而非外界所说的25-35%；附加费用的抽成从2-4%到20-25%不等，规模大的代理商会持续施压要求提高分成比例。</li>
+<li>轻资产代理模式下，每1美元收入中约70%归车主司机，15%归代理商（用于支付其人员和场地费用），15%归Evans；货量下降时Evans每1美元仅损失约0.15美元，85%的成本随之自动浮动。</li>
+<li>专家在职时代理商平均拥有约25-30辆卡车，大量代理商只有12-18辆，5-8%的代理商拥有数百辆，最大的约450辆；年营收超过2000万美元即算大型代理商。</li>
+<li>Evans将100%的燃油附加费返还给车主司机，而竞争对手通常只返还95-97%，这是招募和留住司机的关键武器；当柴油价格超过每加仑6美元时，司机更倾向于短途线路。</li>
+<li>近期运价开始回升，政府加强驾照审查导致运力收缩，最近三四周货量和运价走高，似乎重现了多年未见的节前旺季，但专家预计1月会进入淡季。</li>
+<li>在信用额度内，坏账风险基本由Evans承担；超出额度或被列为“代理商风险客户”时则回扣到代理商，账期超过60天就会明显困难。</li>
+<li>代理商离开时托运人是否跟随基本是“掷硬币”，最终由托运人决定；Evans在多式联运领域口碑极佳，但这反而不利于其拓展平板车和零担业务，且各业务单元彼此割裂，转型为真正的多式联运公司需要很长时间。</li>
+<li>专家认为Evans应在铁路之间尽量保持中立，而非像Schneider绑定诺福克南方、JB Hunt绑定CSX那样站队；代理模式长期面临的最大风险是加州AB5等独立承包商立法，以及保险和执照要求持续收紧带来的车主司机供给压缩。</li>
+</ol></section>
+<div class="body">
+<p>Analyst-led • 5 Nov 2026</p>
+<p>Companies: LSTR US, FDX US, NSC US</p>
+<p><b>Robert Christie (RC)</b> Vice President of Business Development at Freedom 1</p>
+<p><b>Isaiah Rodgers (IR)</b> — Third Bridge Sector Analyst</p>
+<h3>Agenda</h3>
+<ul><li>How the variable cost structure of agent models provides financial resilience in turbulent freight markets</li><li>Role of technology investments in allowing drayage networks to track driver efficiency and maximise fleet utilisation</li><li>Potential headwinds as The Evans Network diversifies from drayage into flatbed and less-than-truckload</li><li>Long-term risks from state and federal regulatory changes in the US for independent contractor operations</li></ul>
+<h3>Key Insights</h3>
+<ul><li>The asset-light model means that when freight volumes drop, Evans only loses cUSD 0.15 per dollar – 85% of costs flex automatically with agent and owner-operator operations</li><li>Expert believes that while Evans' strong intermodal reputation is a competitive advantage, it works against multimodal expansion and makes him unsure whether the company can become a true multimodal competitor</li><li>Expert thinks Evans' true recruiting and retention edge comes from the company passing 100% of fuel surcharges directly to owner-operators, unlike competitors who retain 3-5%</li><li>When agents depart, whether shippers follow them or stay with Evans is essentially "a coin toss", with the shipper ultimately controlling the relationship based on what's best for their supply chain needs</li><li>Despite rising intermodal and rail alliances, such as with Schneider and Norfolk Southern, expert thinks it's in Evans' best interest to stay as neutral as possible</li></ul>
+<h3>Introduction</h3>
+<p><b>IR</b> [00:00:03]: Welcome to Third Bridge's Interview entitled The Evans Network – Agent-based Business Models &amp; Multimodal Expansion Challenges. I am Isaiah Rodgers, and I will be facilitating today's Interview with Mr Robert Christie, former VP of the Midwest at The Evans Network.</p>
+<p>Robert, before we start today's Interview, please state either I agree or I disagree to the following statement: You understand the definition of material non-public information and agree not to disclose any such information, or any other information which is confidential, during this Interview.</p>
+<p><b>RC</b> [00:00:33]: I agree.</p>
+<p><b>IR</b> [00:00:35]: Could you please begin with a brief introduction to your background?</p>
+<p><b>RC</b> [00:00:40]: Yes. My name is Robert Christie, Bob Christie. I was with Evans in several capacities and spent almost 17 years with them. I left there in 2021.</p>
+<h3>Questions</h3>
+<h3>00:01:01] I believe The Evans Network takes about a 25-35% corporate cut off of top-line revenues as a sort of royalty or annuity fee in exchange for centralised back-office administrations. Given how capacity-constrained the market currently is, which end of that scale do you think the corporate cut is going to be closer to?</h3>
+<p><b>RC</b> [00:01:33]: I never knew them to take in my tenure, number that large. It was more in the vicinity of 15%. The industry as a whole pretty much has a blanket cut of 15% of the line haul rate and then varying percentages off of different accessorials. Everybody is a little bit different, but I would tend to think 25-30% is much higher than is actually the case, especially during my tenure, I know it wasn't the case.</p>
+<h3>00:02:16] If we're talking about a blanket of 15% and some varying percentages off of different accessorials, by how much do you think the accessorials can increase that percentage?</h3>
+<p><b>RC</b> [00:02:32]: Several of them are higher percentages. You might get 20-25% on something like a driver detention stuff, but you'll get less percentages on a container storage in the yard or something along those lines. They do jump around. Some might be as low as 2-4%. Some might be as high as 20-22%.</p>
+<p><b>IR</b> [00:03:01]: As I said, given how capacity-constrained the market currently is, is that a means of increasing or decreasing these general rates?</p>
+<p><b>RC</b> [00:03:20]: General rates right now, knowing that I'm still in the industry, general rates right now are on the upswing. They are increasing. We went through COVID where it was picked the price, the rates were going through the roof to post-COVID and return to more normal business levels where the rates plummeted to very low, we're starting to see an increase right now from my personal experience and what I'm seeing where I'm employed today, rates are on a rather nice little uptick. Capacity has been shrinking due to the focus of the government targeting. I'm sure you've heard all about the drivers' licences and, "Just send in the paperwork and we'll give you a driver's licence," that got an awful lot of press probably six months ago. They focused on that, and it's driven a lot of people out of the industry, in particular, some of the people that may not speak the best English has become more of a focal point of the Federal Motor Carriers and the state troopers these days when they stop trucks if they can't communicate properly. It is decreasing capacity, which will fuel continued increase in pricing.</p>
+<h3>00:05:11] Given that we're seeing overall volumes being more or less flat, how does a corporate cut hold up in practice? Are concessions or fee rebates ever extended to keep high-volume agents afloat?</h3>
+<p><b>RC</b> [00:05:31]: Yes. That's a relatively common thing in the industry. That's not just specific to the topic we want to talk about. When an agent gets larger and larger and larger, which is naturally the goal, there will be more and more pressure put on the deal, the commissions that are taken and the pressure to drive more of it to the agent, less of it to the company as the volumes and the business grows because competitors are out there trying to recruit the very same agents, the agent's customer base, the agent's drivers. They, in many cases, the first way to get an agent's attention or to get sit down at the table is to talk about the percentages. If the percentages change, then naturally the agent is going to listen more intently and consider moving.</p>
+<h3>00:06:43] Do you think there's an ideal agent size for Evans? Is there a point where the agent gets too large and the commission it's getting paid just doesn't financially make sense for the company?</h3>
+<p><b>RC</b> [00:06:59]: No, I think that a strong suit is to be able to look at the individual operation, the amount of money, the insurance is costing, the operations, the bad debt or if there is bad debt, the receivables, the tenure of time with the receivables. You start looking at all of that, and you can pretty much put a pencil to it. You know if you're making money or if you're not making money. It is exceptionally rare to have a large agent. When I say large agents, I'll be talking about an agent that probably does in excess of USD 20m business per year. When a large agent, it's very rare to have to make any kind of a rash decision because you've cut too deep and you can't see yourself making money. Not to say it hasn't happened. If you have an agent that doesn't have good drivers, you're involved in accidents, fatalities, increasing liabilities and exposures, you may have to make some of those tough decisions, but it is a rarity, but yes, larger agents can pressure the split, the margins.</p>
+<h3>00:08:23] What do you think is the average agent size range for Evans?</h3>
+<p><b>RC</b> [00:08:30]: I can talk more about when I was there and having left it five years ago now. I would say throw them all in a basket, you'd come up with probably an average truck count of, I'd say, probably 25 or 30. You have an awful lot of 12-truck people, large, large numbers of 12, 15, 18-truck agents. Then you would have 5-8% of the ones that would have hundreds of trucks. I think the largest one I recall was probably in the vicinity of 450 trucks. Over the quote of everybody, it might be 25-28 back in my day.</p>
+<h3>00:09:33] In a pre-Interview conversation, you highlighted how the asset-light model can shed equipment drag when freight dries up. From an overhead perspective, what corporate fixed costs at Evans remain rigid, even when its volumes do fall?</h3>
+<p><b>RC</b> [00:09:52]: When the volumes fall, the first thing naturally is payroll. The way Evans is structured is the agent and all of the dispatchers and clerks and everything that work at the agent operation are all paid by the agent. The corporate office has the receivables, the payables, safety department, marketing department, human resource departments and all of that, and those they are company employees. As the business volumes change, the part that doesn't change or as I would refer to as fixed or semi-fixed is that the headcount, the payroll in the corporate office, buildings and equipment, things of that nature that are required to run the backroom functions.</p>
+<h3>00:10:58] When you say that the dispatchers and clerks are all paid by the agents, do they have any say in what that process looks like or who the dispatchers and clerks are?</h3>
+<p><b>RC</b> [00:11:16]: No. Does Evans have a say in it? No, not in my tenure. No. The agent is solely responsible for the functioning of their individual operation in their marketplace and hiring and firing and staffing and…</p>
+<h3>00:11:40] Landstar System is another major player in the heavy agent model business. Could you discuss the competitive dynamics between Evans and Landstar? Where is Evans winning and losing market share against Landstar?</h3>
+<p><b>RC</b> [00:12:02]: I think that Evans, from my perspective and having been there as many years as I was part of the real expansion and the growth of the company, Evans has probably an exceptionally solid honourable reputation in the industry. To this day, I compete against them and I still hear it, even though people know that I was there for as many years as I was. I think relative to a Landstar that does have a lot of press and does have customer and agent following, I think in particular, in the intermodal world, which is where I spent my time with Evans, I still think that they are probably the most respected large intermodal agency-based company in the country.</p>
+<p><b>IR</b> [00:13:20]: To clarify, are you saying Evans or Landstar is the most respected large intermodal agency-based company?</p>
+<p><b>RC</b> [00:13:23]: Evans. I think they've got the reputation and they've got the credibility.</p>
+<h3>00:13:34] Are there any other major competitors worth noting in the intermodal world?</h3>
+<p><b>RC</b> [00:13:40]: Probably one of the other in the intermodal world and based on an agent-based model would be US 1 Industries, Valparaiso, Indiana, or US 1 Logistics out of Jacksonville, Florida. They're also a larger player in the same space.</p>
+<h3>00:14:09] If Evans' strong foothold is in intermodal, in which areas do you think the company could use the most improvement?</h3>
+<p><b>RC</b> [00:14:22]: Hard to say what their present functioning of their departments is. Back in my day, when I was there, I would experience sometimes frustration with the lack of knowledge that the clerks might have when dealing with an agent base. My understanding is they've done some work trying to correct that. I really don't know what it's like now. I don't deal with any of those people in that organisation any longer, but they used to have people that would talk to agents that, in my opinion, shouldn't have been on the phone with the agent because they really didn't understand what they were talking about, especially from an agent's perspective.</p>
+<h3>00:15:24] How quickly would you say corporate revenues adjust when drayage demand shifts? Does the agency network offer any immediate cushion as drayage fluctuates?</h3>
+<p><b>RC</b> [00:15:42]: Yes. If you look at a dollar bill for every dollar you do, pretty much 85% of it is going to fluctuate based on how much business the agent does. Historically, in the industry, 70% of the dollar would go to the owner-operator, the person that has the truck driving, delivering and picking up, 15% goes to the agent operator to fund their payroll, their building, their equipment, their utilities, their rent, whatever. The remaining 15% would go to Evans. When a dollar disappears, literally 85% of it is disappearing and the only thing that Evans is missing is USD 0.15 on the dollar in rough numbers. I don't know the exact numbers.</p>
+<h3>00:16:53] Based on what you've seen recently, how has drayage demand been shifting since the start of 2026?</h3>
+<p><b>RC</b> [00:17:08]: It's been up and down. I refer to it like the tide of an ocean. We have high tide, we have low tide. A lot of it has been predicated off of the geopolitical factors, the price of diesel fuel. Ironically, right now, as expensive as diesel fuel is, we appear to be in a good upswing in business. When I say recently, I'm talking the last three or four weeks. Freight rates seem to have grown a little bit and volume has grown a little bit. Kind of takes me back 15-20 years ago, we used to have what we call peak season, which ran from Labour Day until the first and second week of December was historically in the intermodal world was very busy and it was stocking all of the stores and distribution centres for the Christmas holidays. We haven't seen much of that in the last at least 15 years, but this year, it almost looks like it's happening again and the timing with the price of diesel fuel being over USD 6 a gallon, a little bit surprising, but it looks like it's getting busier. It could be high tide again, I guess. I guess that could also mean that come January, we go to low tide. It'd be interesting to see what happens.</p>
+<p><b>IR</b> [00:18:54]: You said that, come January, it goes to low tide. Why exactly are you predicting that shift?</p>
+<p><b>RC</b> [00:19:02]: If we are having a peak season right now, demand being driven by consumption for the holiday season once naturally the holidays are over or we get it to the distribution centre and time to be used for the holidays, we'll go through a lull period. We're also adversely affected and we're at the whims of mother nature, whether it be ice storms, snowstorms that are preventing the trucks from going down the highway or in some cases, storms that will affect trains, railroads, all of that can have a significant effect on our business. That's a mother nature thing, and you would always think, well, you'll always get it back when things get better, but history proves that if we have a real bad snowstorm in Chicago, I'll use as a middle of the country, and it affects all the rail yards in Chicago, yes, when it gets cleaned up, we'll be busy, but we won't ever get busy enough to recover what we lost during the storm.</p>
+<h3>00:20:26] If we think about diesel, there's a general understanding that fuel surcharge mechanisms are able to seamlessly pass through that cost of fuel. However, with fuel being as high as it's been and unprecedented prices we've been seeing, has the ability to pass through that cost become more difficult?</h3>
+<p><b>RC</b> [00:20:50]: No, I think that everybody builds what we call fuel surcharge matrix, and it's based off of the Department of Energy's weekly post the average fuel price by a geographic area. All you got to do is get that number and then look at the chart and it will tell you what percentage of the load is going to get… How much fuel money will be returned, but what does change, and this is one of the more difficult things is that fuel surcharges are favourable for shorter delivery and pickup routes because it's based off of a percentage of the total rate, understanding that a shorter run will have a lower rate, but if it's a… We'll use a 50% fuel surcharge, you'd rather have 50% of USD 300 than go and take a trip that goes 600 miles each direction and you might get USD 900 in fuel, but when it's all said and done, you'll look at how much you spend on fuel and you won't make near as much money.</p>
+<p>I think that as the fuel prices creep up, it tightens up the coverage, the amount of owner-operators after a few paycheques will realise, "Hey, I'm not making as much money running these long runs. I'm just throwing it all into the fuel tank. If I do the short runs, I get paid a higher percentage or I get the same percentage, understanding it's not as big a number, but I'm not spending near as much money on fuel either," and the maintenance expenses associated with the amount of miles they operate. If this stays elevated like this, and it'll be interesting to see how much it comes down now, but if it stays elevated like this, I would tend to think it's going to be more and more difficult to get owner-operators to run long distances.</p>
+<p><b>IR</b> [00:23:15]: As far as the agent model goes, what are the requirements of Evans and its agents? Can an agent just deny any load that they want?</p>
+<p><b>RC</b> [00:23:40]: Yes. By definition, yes.</p>
+<h3>00:23:43] Let's say that there's a 700-mile run that no one in the area wants to take, how would Evans ensure that the load does end up getting fulfilled?</h3>
+<p><b>RC</b> [00:24:04]: At that point, what will happen, and used to be my job to deal with stuff like that. I'd be on the phone with the customer explaining to them why we can't get it covered, why we can't get anybody to take it and you got to give me more money. Give me more money, I can give more money to the truck. If I can give more money to the truck, I can get somebody to take it. That's the way it's supposed to go down. Does it always work? No. Does it create difficulties and sometimes hard feelings with customers or problems for people? Sure, sure. Then there's a lot of pressure to make sure you get it covered, make sure you get it covered, do what you got to do, you got to do. A smart agent in some cases might take part of their normal split that they would take and help fund a little more money to the truck to help them take it.</p>
+<p>On a longer run, if an agent says, "All right, look it, I know we're stuck on this. I need it covered. This is a good customer. I don't want to have an upset customer. I don't want to jeopardise all of the business I'm doing with this customer. I need you to cover this, help you, you help me and here, I'm going to give you 8% more instead of you getting your 70%, you're going to get 78% on this load to take it. Will that do it?" Those types of things sometimes have to happen, and that's just the nature of the beast, and that's the way it goes. I always went to the customer first to try to get the money there before I'd affect anybody's operations.</p>
+<h3>00:25:54] What do you think would happen if the representative went to the agent and said, "We'll give you 8% more on this one. Would you mind taking a cut on the next one"?</h3>
+<p><b>RC</b> [00:26:08]: Yes. There is a lot of give and take. A lot of it is… I guess I can say it's never put in writing. Everybody does what they have to do to get through the day and to keep the business growing and moving. There's good deals for people and there's bad deals for people. I've been involved with many conversations with agents. I've been dealing with agent-based trucking for, I don't even quarter of a century, I guess, but there are times where you'll call them up and say, "Look, I know on paper, this looks really bad, and I know you're not going to be happy with this, but I need you to do this because if I can get you to do this and we take care of this problem for the customer, I've got this golden lane over here that I'm working on getting. If I get it, you get it." That's the way… Nothing is perfect all the time.</p>
+<h3>00:27:12] How much of the fuel surcharge goes to Evans vs the agent?</h3>
+<p><b>RC</b> [00:27:21]: Agent gets nothing. The owner of the truck gets it all. That's the individual paying a fuel bill. Evans doesn't take any of that money. They pass all of it back to the truck. It's a significant recruiting weapon. When they hire owner-operators and they tell the owner-operator, we refund you 100% of the fuel surcharge associated with the load you move, it's a very big thing. There are other people that are in the industry that might refund 95-97%. That makes it very difficult in some cases for them to recruit an owner-operator, if you take it from an owner-operator's perspective, if he is the one buying all the fuel and he's running the run and you're collecting 50% of a fuel surcharge, why are you keeping some of the money that should be coming back to me to offset the fuel I just put in the truck? That's the mindset. Like I said, I know people that don't do it, and I know many that do, do it. When I say don't, 95%, 97%, it's much more difficult for them to recruit owner-operators. They usually have to have some other enticement to get the owner-operator's attention. Evans is giving back 100% provided they still do. I don't know if they do. Actually, I do know they do. If they get back 100%, it's a good recruiting tool. Owner-operators feel like they're being treated more fairly.</p>
+<p><b>IR</b> [00:29:22]: Even if Evans takes, say, 1%, 2% or 3%, is that going to cause some owner-operator friction?</p>
+<p><b>RC</b> [00:29:31]: Yes. Owner-operators will start looking at it saying, "Well, you just took that." That might not even be all that much money. I think sometimes you have to sit down with a pencil and show them things, but 1% or 2% turn around and give them their plates to operate for free, and that's a heck of a deal because even with fuel prices where it is today, a plate is worth more money. I think the plate in some place was like USD 3,200 per year. 1% or 2%, you're never going to get that much of 1-2% of your fuel, but it all depends on… It's also the experience level of the agent presenting it to the driver in a lot of cases too, and how much the relationship people have with the driver and how connected the driver feels. All of that stuff comes into play.</p>
+<h3>00:30:31] I believe Evans pays independent contractors and agents weekly while absorbing 60-90-day shipper payment terms. How strictly does the corporate team enforce credit limits on regional shippers before agents are forced to haul any services?</h3>
+<p><b>RC</b> [00:31:00]: Every account is established with a credit limit. At the time the investigation is being done to establish how many dollars you're willing to quote, they… Back in my time, they would pull a Dun &amp; Bradstreet rating. They had several credit bureaus that they could check to see payment terms and all of that stuff is reported. Payment terms of the account. If the account paid its bills between, as I recall, 30 and 45 days, 45 days was a big number, but anything earlier than 45 days, it was considered just go ahead and go with a good account. Some of them even have, "We'll pay you in 15 days. You give me the order, the delivery receipt and you electronically send it to me, and I'll pay you within 15 days. Providing that and you're not having to float the cash, I want a 2% rate reduction." There's some of that that goes on too, but when you start getting to 60 days or anything past 60 days, things become a lot more difficult.</p>
+<p>Personally, I was on the phone with a customer today that fell a little behind on their payments where I'm presently employed and had to work out a deal to get a checque by Monday. That with the threat of, "You can't keep doing this, if you're not going to pay your bills timely, we're going to have to hold off until you get caught up. We're not going to be able to service your account anymore."</p>
+<h3>00:33:01] Where does the real operational risk lie for Evans once it starts getting past the 60-90-day shipper payment terms?</h3>
+<p><b>RC</b> [00:33:27]: As I recall, the policy during my tenure was that if ABC account had a credit limit of USD 10,000… As long as my billing remained below USD 10,000, the responsibility for the collection of all the money was on Evans. If I handled work that got a USD 10,000 credit limit and I'm trying to bill got a USD 10,000 something that is above that, the responsibility could come right back to the agent because they violated the credit limit. Over the course of time as the five years ago, when there was a collection issue, the collection department would notify the corresponding agents who they would try to leverage the agent's relationship with the customer to assist in fixing any delinquent receivables.</p>
+<p><b>IR</b> [00:34:52]: In the cases of non-payment, more or less 100% of the default risk is on Evans.</p>
+<p><b>RC</b> [00:35:00]: Yes, as long as it's within terms, yes. There are some accounts that they would not pass credit on. They refer to as agent risk accounts and the agents willingly accept the business knowing 100% if anything goes wrong, every penny of that will be charged back to them if it doesn't get paid.</p>
+<h3>00:35:23] Are there any cases where smaller agents run into cash flow pinches? In those cases, does Evans' corporate team ever have to step in with operational advances to preserve that capacity?</h3>
+<p><b>RC</b> [00:35:40]: Yes, I would think it's rare, but yes, there may be something… A smaller agent in particular, and I think usually, the greatest extent of that is probably in their initial growth stage, but there may be something as simple as need to get new computers for the agent's operation or there could be something that they've done wrong where they are not current on their rent. They might need a little cash flow because they've been paying payroll. They might need a little cash flow to catch up on the rent so that they still have a building to operate out of. Yes, there's cases of that, but usually, you're right, it's a smaller type operation. My experience says it's usually in the earliest stages of their development.</p>
+<h3>00:36:55] In the case you're describing, would Evans still be paid back for any reimbursements that it gave out?</h3>
+<p><b>RC</b> [00:37:03]: No, sure. They would establish a, whatever the case, a weekly or a monthly repayment plan that it's like a note. "We give you X amount of dollars, you agree to pay it back in the next seven weeks at this amount a week, sign here." That authorises them when the next weekly settlement comes, they take the money, they draw the money right out of the agent's compensation.</p>
+<h3>00:37:41] I've read that roughly 80% of the top-line revenue originates from about the top 20% of the agency base. We spoke about the 100% fuel charge, but is there anything else that keeps the top 20% tied to Evans rather than switching to another agency-based programme or just going out on their own?</h3>
+<p><b>RC</b> [00:38:11]: Yes. Deal with going out on their own first. I think an awful lot of the reason that that doesn't happen, not to say it doesn't happen, it doesn't happen very frequently, I guess, the better way of putting it, is probably (a) the cost of insurance and (b) the amount of insurance nowadays, if there is a bad accident, somebody hits a school bus and something like that, the size of the judgements and everything and the amount of insurance that a person would need to carry scares them away. That's that part. The other part that is the total agent package when Evans is very good at being… I'll refer to them as the gorilla in the room, but they got this large truck base. It gives them negotiating power with vendors. They're able to get tyres for an owner-operator. You can get this tyre that normally costs USD 300 for USD 200, you just got to go in there and show them the Evans door signs and, dah, dah, dah, and take it out of your settlement deductions. They do it with batteries, tyres, PM services, just basic shops, anything you can think of that's important to a driver.</p>
+<p>They offer insurance packages for drivers that might need some kind of medical insurance. I'm not too up on that, but I know they were getting into that. They have a total package. I don't know how much has changed, but that is stuff that keeps the trucks with the agents. When you keep the trucks with the agents, the agent is a lot less likely to leave and communicate. You got to talk a lot to the agents, make it a point to speak to them frequently about their business, about concerns and address their concerns. Don't just give them lip service, do something about it. I think that over the course of the years, they've gotten really good at that.</p>
+<h3>00:40:59] What does the turnover rate look like for the long tail of agents, or 80% of them, running 5-20 trucks?</h3>
+<p><b>RC</b> [00:41:11]: Turnover rates for smaller agents, it would depend to me on the size of the city they're in. If you're in Chicago, you're going to turn over trucks much, much quicker than if you're in Akron, Ohio. Competitive environment, there's hundreds of intermodal dray operations in the city of Chicago. Akron might have 12 kind of a thing. Those types of marketplaces, smaller operations, although they should have more of a touchy-feely operation where everybody knows each other much more intimately than in a larger 150-truck operation. It doesn't always seem to be the case. Never have quite understood that other than a lot of the smaller agents are so focused on trying to grow their business, they forget that they need the drivers to help them grow the business. Larger operations have more staff, more staff allows them to have more time to talk to people, and time being a big thing, they get to know people.</p>
+<h3>00:42:55] For the smaller agents, are competitors the more significant threat, or is it more the risk of the agency being completely shut down?</h3>
+<p><b>RC</b> [00:43:11]: My personal history is that not very many of them shut down. I have never seen… If you do a good job vetting in the conversations, you don't recruit a person to be an agent in a half-hour conversation. It takes weeks, months and tenacity. There's personal experience. If they come real easy, I always say if they come too easy, they leave too easy. I don't think… I don't know. You can usually tell if you spend enough time talking to somebody if they've got it or if they haven't got it, if you've been in this business for a while, you can tell.</p>
+<h3>00:44:07] If an agent leaves, do the shippers that the agent was most closely aligned with follow the agent, or do they stay with Evans?</h3>
+<p><b>RC</b> [00:44:24]: Great question. I would say yes. Some of them will follow the agent. Some of them will stay with Evans. Any of us have been in the business for any length of time like to think that we're the person that's going to always hold everything together. It's not always the case. I see as many times as business follows an agent as it stays with Evans. A lot depends on, in Evans' case, multiple operations in the same city, would you have an immediate capacity to handle the business would be a big thing. If the agent is leaving and going to another carrier, does the carrier have the safety rating, the insurance requirements, the maybe EDI billing or whatever that the customer may need? All of those things come to play, but I really think it's a coin toss. Agents would tell you that they're the ones that control the business, and I think Evans would tell you that they are the ones that control the business.</p>
+<p><b>IR</b> [00:46:01]: It sounds as if it's ultimately the shipper, the one that controls the business.</p>
+<p><b>RC</b> [00:46:06]: The shipper controls the business and they're going to go where they think they're best-served.</p>
+<h3>00:46:15] Across less-than-truckload, truckload and drayage, what are some of the operational roadblocks that Evans faces when cross-selling or attempting to cross-sell its contract logistics or flatbeds to core intermodal customers?</h3>
+<p><b>RC</b> [00:46:35]: I think we'll go back to about half-hour or 40 minutes ago when I said that Evans had a great relationship in the intermodal world. When you take them out of that and you go to flatbeds, there were a couple of flatbed operations when I worked there, and they were very much took care of themselves and did their own thing. The Evans marketing and everything in my tenure was really intermodal, intermodal, intermodal. Everybody knows them as intermodal, intermodal, intermodal. Now turn around and, Evans flatbed, everybody goes, "What?" They're not known. I don't even know how big they are in that space anymore, but we were trying to get into it a little bit back in my day. I think their reputation as strong as it is in intermodal might actually play against them and some of the others because no one even recognises that they do it.</p>
+<h3>00:47:49] How integrated would you say the sales and operational channels are between legacy drayage agents and dedicated assets such as West Motor Freight? Does Evans coordinate on backhauls, or are they largely isolated units?</h3>
+<p><b>RC</b> [00:48:07]: Separate silos. In my tenure, they were very much separate silos.</p>
+<h3>00:48:17] Overall, how would you describe Evans' ability to become a true multimodal company? If the company gives it the time and attention, do you think it can be a successful multimodal player?</h3>
+<p><b>RC</b> [00:48:36]: Yes. I think that… Again, they have to lean on their strength. In my opinion, it's still their reputation. Lean on your reputation, and I think you can turn into whatever you need it to turn into. It isn't going to happen overnight, and you got to get the right people out there banging the drum, but I do think it's a possibility. I like to think of… Change it up on you a little bit. Think of FedEx. FedEx was all… Everything they did was overnight air, two-day air, in some cases, three-day air. Then all of a sudden, you got FedEx Freight, now we're running LTL. Now you got FedEx Intermodal and they're getting involved in the local drayage intermodal world, and using their sales force to sell not just airfreight any longer. They're selling all the different modes of transportation, and they've been successful at it, but that's been going on since probably the late '90s, I want to say before 2000. Here we are almost 30 years later, they're starting to reap the benefit. Their business is strong and they're doing well, but it takes a long time.</p>
+<h3>00:50:09] What does Evans' relationship with the rails look like? Does the company have a strong relationship with Norfolk Southern and CSX, for example?</h3>
+<p><b>RC</b> [00:50:22]: Yes. That wasn't a defined area of responsibility during my tenure. However, towards the end of my time there, I personally went to an NS rail meeting in Chicago. I know some of the other VPs were going to them on the East Coast and things. There was an effort to… As the company was growing and we were getting into more and more rail yard domestic type-work, we realised that we needed a stronger relationship. How they're doing it now or what they've done or what are they doing differently? I couldn't tell you. I don't know.</p>
+<h3>00:51:17] I believe Schneider did a deal to solely rely on Norfolk Southern, and JB Hunt is closely aligned with CSX. Do you think committing to a rail would be the best path forwards for Evans?</h3>
+<p><b>RC</b> [00:51:36]: I think that could theoretically hurt their business a little bit. If you think about… Let's just say they jumped on Norfolk Southern in the East Coast, predominant based drayman, jump on Norfolk Southern, then anywhere that you're doing a great deal of CSX work, you could theoretically hurt that marketplace. I think they'd be very reluctant to do that. I think that it's more of trying to establish relationships with the… Actually, they're surprising a lot of power for the people that are the managers of these rail yards. Those people and the upper echelon when you start getting with the VPs and the presidents and stuff so that when you have an issue, a problem, your drivers can't get in and out of a rail yard, it's causing your service delays and just calling on owner operators, you can pick up the phone, call somebody who can make a call on your behalf to get you that little extra attention you might need to take care of your business. Like I said, we were working on it. I don't know where they are now. I don't travel in those circles any longer.</p>
+<h3>00:53:07] Given the industry's focus on nearshoring, what are your thoughts on Evans' ability to scale the asset-light agency model into border crossings going into Mexico?</h3>
+<p><b>RC</b> [00:53:26]: I don't know if they've delved into it. I had heard that they might be. Again, nothing that was taking place when I was there. At least superficially, as I'm sitting here thinking about it, I don't really see where it would be a problem to get an alliance or even an acquisition, I don't know, but I don't see where it would be a problem, and it could very possibly lead to an opportunity to upsell specific business, which is always a good thing.</p>
+<h3>00:54:22] What is your outlook for the agency model against regular players such as JB Hunt or Hub Group? What does the survival of the agency model look like going forwards?</h3>
+<p><b>RC</b> [00:54:47]: I think survival of the agency model is really two things. First is legal legislation of AB5 in California and the New Jersey Trucking Association a couple of years ago started to make some rumblings about something like that. Then it was… Norfolk, Virginia was making some rumblings and everything settled down. I think the first is… Is there going to be some kind of a significant change in what an owner-operator is, or are we going to… There is no such thing as an owner-operator anymore. I also think that the likelihood of continued changes in the industry as far as regulations for requirements for licences, experience by the insurance companies and all of that are going to continue to compress the owner-operator field. Now if you're fortunate enough to have the trucks, my belief is that the rates will increase appreciably. If you can't get the trucks, then you're not going to be around. I think that those are the things that are happening in this world. I don't know the geopolitical stuff, I guess I'm a believer that eventually everything will settle down and fuel prices will find their way back to some version of normal when that is, I don't know, but those are the things that I watch is requirements, insurance companies and the legislature, are they going to change what an owner-operator is? If so, to what? What does it become?</p>
+<p><b>IR</b> [00:57:00]: I think that's a great place to conclude our Interview today. Thank you for joining Third Bridge's Interview today and for sharing your insights on Evans and the agency model in general.</p>
+<p><b>RC</b> [00:57:14]: Thank you very much for your time. I appreciate it.</p>
+<p><b>IR</b> [00:57:16]: All right. Thank you. Enjoy the rest of your day.</p>
+<p>Transcription ends at 00:57:20 of the recorded material</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

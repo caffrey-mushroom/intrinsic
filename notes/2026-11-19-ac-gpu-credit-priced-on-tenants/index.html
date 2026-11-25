@@ -1,0 +1,206 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.19 | AC | Cloud | GPU Credit Priced on Tenants</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.19 | AC | Cloud | GPU Credit Priced on Tenants</h1>
+<p class="orig">原标题：GPU信贷只认租客不认卡：二线新云或成云大厂“表外代持”</p>
+<p class="tags">#cloud #financials #datacenter</p>
+<p class="meta">AceCamp · 2026-11-19 18:23 · article 70569325</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>文章核心观点是GPU抵押贷款按租客信用而非硬件定价，硬件只决定违约后回收，租客评级决定利率。</li>
+<li>CoreWeave DDTL 2.0中投资级合同对应贷款为SOFR+6.00%至6.50%，非投资级为SOFR+13%，利差达650至700个基点；DDTL 4.0绑定单一大厂长约获A3评级，利率约SOFR+2.25%。</li>
+<li>单卡模型测算显示，Blackwell基准打平价约2.07美元/卡时，利率升至16.6%仅加0.32美元，三年还本再加0.41美元，计费率降至60%则跳升至4.66美元，空置才是最大负担。</li>
+<li>B200最低现货报价3.69美元、按需中位数6.82美元，4.66美元打平价夹在两者之间；H100指数一年由2.00美元涨至3.13美元，但在高息三年还本假设下DSCR仍达不到1.35倍锁定线。</li>
+<li>二线厂商为拿低息被迫绑定大厂长约，Nscale的微软合同规定延误每日100%抵扣、续约由微软单方决定、破产时微软可接管GPU，TeraWulf为获谷歌担保发行约14%股权认股权证。</li>
+<li>CoreWeave三季度营业利润2.07亿美元仅覆盖8.46亿美元净利息约四分之一，468.7亿美元债务中约89%带追索权，母公司9.75%票据收益率达15.97%。</li>
+<li>作者认为二线新云价值取决于投资级签名与电力机房，而非卡的数量，微软已签未起租租约达3,646亿美元，相当于把第4年后的残值风险放到表外。</li>
+<li>需跟踪H100指数是否跌破2.75美元、投资级利差、云大厂撤约、未起租租约增量及母公司债收益率等信号，CME算力期货最早2027年初上线。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>GPU抵押贷款为何按租客信用而非硬件定价；</li><li>高利率、三年还本与散租空置如何影响二线算力云的现金流；</li><li>绑定云大厂长约后溢价、残值与折旧风险如何分配，以及如何跟踪验证。</li></ol>
+<p class="qq">GPU贷款按租客信用定价，硬件只用于回收。高利率、三年还本和散租空置叠加，把二线厂商的打平价推到市场低端报价之上，只好用大厂长约换低息。换来的低息，代价是让出溢价、自担残值。真正值钱的是投资级签名和电力，不是卡。</p>
+<p>同样一批英伟达服务器，放进同一份贷款协议，只因为租用它们的客户不同，利率就能差出650个基点。按常理，抵押贷款应该看抵押物值多少钱，可GPU信贷市场偏偏不这么算。这条看上去有点反常的规则，正在决定哪些算力云公司能活下去、谁在为AI基础设施的折旧买单。本文要回答的就是这个问题：<b>GPU贷款只认租客，二线算力云最后会落到什么位置？</b></p>
+<h2>一、GPU贷款的利率由租客决定，不由显卡决定</h2>
+<p><b>先看最直接的证据。</b>按CoreWeave 2025年10月2日的8-K，DDTL 2.0信贷协议修订前的定价是：投资级合同对应的贷款按SOFR加6.00%到6.50%计息，非投资级合同对应的贷款按SOFR加13.00%计息。借款人一样，硬件一样，协议也是同一份，唯一的变量是底层客户的评级，利差就拉开了<b>650到700个基点</b>。以3.6%的SOFR计，相当于10.1%对16.6%。</p>
+<p><b>这条分界线在2026年被评级机构进一步固定下来。</b>3月交割的85亿美元DDTL 4.0绑定单一投资级大厂长约，拿到穆迪A3和DBRS A(low)评级，浮息档SOFR加2.25%，固息档约5.9%，并且是无追索结构，只对特定不当行为保留有限追索（公司公告）。8月签署的26亿美元DDTL 5.5对应的是平均期限约3年的较短合同，利率回到SOFR加5.50%，需要母公司无条件担保，还要求偿债覆盖率（DSCR）不低于1.35倍。</p>
+<p><b>其他公司也一样。</b>Nebius在7月拿到的7.75亿美元资产支持贷款定价SOFR加2.50%，Lambda在10月发行的10.08亿美元贷款为6.78%固定利率、全额分期摊销，评级Baa1和A(low)。两笔低价融资背后都是投资级云大厂的合同。放贷平台USD.AI在11月4日公开的核保框架里，把终端客户信用和照付不议条款的权重定为约七成，运营商和硬件合计约三成。这是单一机构的标准，不能当作全行业的统一规则，但它和上面几笔交易的定价方向完全一致。</p>
+<p><b>为什么硬件撑不起定价？</b>可以从三个方面理解。第一，技术迭代太快。CoreWeave三季度披露，Vera Rubin NVL72在客户Cognition首批生产负载中的token吞吐量是GB200 NVL72的4.8倍，同样耗电的老卡几年内就会被新卡挤出市场。第二，整机柜里交换机、光模块、液冷管路等非GPU部件占比不低，拆机后基本没有转售价值。第三，全行业集中持有同一供应商的同代芯片，一旦多家机构同时处置，二手价格很难有支撑。</p>
+<p>从风控视角来看，硬件并非完全无关，但其作用与传统信贷截然不同。贷款人依然持有服务器和SPV股权的第一顺位留置权，硬件仍然是违约后的回收来源。更准确的描述是：<b>硬件决定能收回多少，租客决定利率多高</b>。两者分开定价，这正是GPU信贷与飞机、船舶融资最大的区别。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569325_9b69953de4608d94.webp" alt="" loading="lazy"></p>
+<h2>二、真正压垮散租的是空置和三年还本，不是利息</h2>
+<p>既然高低评级之间有650个基点，很自然会认为利息是二线厂商最大的负担。但放进单卡现金流模型一看，结论并非如此。</p>
+<p>本文以Blackwell单卡全包成本5.2万美元、托管加电力0.65美元/日历卡时、贷款成数85%为假设，按月等额本息测算。基准情形参照DDTL 4.0：利率5.85%，四年还清，照付不议合同按100%日历小时计费，现金打平价约2.07美元/卡时。然后逐项换成二线散租的条件。第一步，利率从5.85%升到16.6%（DDTL 2.0非投资级档的水平，比DDTL 4.0高出约1,075个基点），其余不变，打平价升到2.38美元，只增加约0.32美元。第二步，还本期从四年压到三年，打平价升到2.80美元，又增加约0.41美元。第三步，计费率从100%降到散租常见的60%，打平价一下跳到<b>4.66美元</b>，增加约1.86美元。如果还要满足1.35倍DSCR的现金锁定线，就需要5.91美元。</p>
+<p><b>这组拆分说明了一个问题：利率本身贡献最小，计费率贡献最大。</b>原因在于三者是连在一起的。没有大厂签名，贷款人不认第四年以后的残值，所以要求三年内还清本金；没有照付不议合同，机器空着的成本只能由运营商自己承担。高利率只是这一组条件里最显眼的部分。从这个角度看，二线厂商就算谈下几百个基点的利率，也解决不了根本问题。散租计费率上不去有物理原因：散客零碎租用8卡、32卡节点，剩下的卡分布在不同交换机下，拼不成整块训练集群；加上换租客时的清理、烧机测试和故障停机，计费小时自然被压低。</p>
+<p>SOFR取值对结论影响很小。如果按11月中旬约3.9%的SOFR测算，60%计费率下的打平价只从4.66美元升到4.68美元。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569325_8aa8d999e813ea51.webp" alt="" loading="lazy"></p>
+<p><b>那么，散租现在是否已经撑不下去？</b>答案取决于对照哪一档价格。American Compute 10月追踪的31家供应商中，B200最低现货报价为3.69美元，按需报价中位数则是6.82美元。按中位数计算，60%计费率下DSCR约1.60倍，散租还能运转；按最低报价计算，DSCR只有约0.73倍。因此更准确的说法是：<b>4.66美元的打平价夹在市场最低价和中位数之间，二线厂商的生死线在于价格会往哪一端靠拢</b>。</p>
+<p><b>H100给出的信号更直接。</b>Silicon Data的H100指数从2025年12月9日的2.00美元涨到2026年11月14日的3.13美元，涨幅超过五成。本文以单卡全包成本3.8万美元、托管加电力0.45美元/日历卡时、80%成数、16.6%利率、三年还本测算，70%计费率下打平价约2.75美元，60%时约3.21美元。按当前指数，70%计费率下DSCR约1.18倍，60%时约0.97倍，两种情况都够不上1.35倍的锁定线。换句话说，在这组成本、利用率和融资假设下，经营现金流勉强覆盖偿债，但现金会被锁在账户里，股东拿不到分配。按同样假设，不考虑融资时的静态回收期约2.5到3年，这也说明涨价确实让散租“能活”，但离“能赚钱”还有距离。</p>
+<p>推下去就能看到真正的触发点：<b>不是利率继续上升，而是租价回落或计费率下滑</b>。只要H100指数退回2.75美元以下，70%计费率下的现金就不够还本付息。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569325_05c37ca95c1d322e.webp" alt="" loading="lazy"></p>
+<h2>三、为了拿低息，二线厂商把溢价让给大厂、把残值留给自己</h2>
+<p>散租借不到便宜钱，纯靠股权又买不起万卡集群，二线厂商只剩一条路：<b>拿云大厂的长约去换投资级贷款。</b>这个签名确实值钱。按本文的模型，Blackwell单卡年偿债额从非投资级三年期的约1.88万美元，降到投资级四年期的约1.24万美元，降幅约34%。问题在于，签名越稀缺，签名方的议价能力越强。</p>
+<p>Nscale在2026年9月18日提交的S-1中披露的微软合同，是目前能看到最完整的样本。合同规定，除英伟达直接导致等约定豁免情形外，批次交付每延误一天，就按该批次当日全额账单的100%给微软抵扣；第6年期末是否延期、延期多久（最长6个月），由微软单方面决定；Nscale一旦发生破产事件，微软有权替代它成为融资协议或机房协议下的管理人，并按原合同条款继续使用这批GPU，同时继续履行付款等义务。另一个例子是TeraWulf：为换取谷歌对其租约约32亿美元的担保，向谷歌发行了约占14%股权的认股权证。</p>
+<p>把这些条款放在一起看，逻辑很清楚：<b>交付延误的风险、融资违约的风险由运营商承担，大厂即使在运营商破产时也能保住算力使用权，而是否续约的选择权留在大厂手里。</b></p>
+<p><b>这种选择权，大厂是真的会用。</b>Telegraph 10月18日报道，由于电网接入推迟到2030年代，微软退出了Nscale在英国Loughton园区的锚定租户安排。另外，微软决定不行使Nscale德州项目的扩容选择权，不过原有合同继续执行。两件事性质不同：前者是退出一项已签的安排，后者是放弃一项可选的增量。但它们说明了同一件事：对于还没落地或可选择的产能，大厂会按自己的需要挑。</p>
+<p><b>再看期限。</b>客户合同一般3到4年，GPU按6年折旧，机房租约8到15年。DDTL 5.5在2031年9月1日到期，而底层合同平均只有约3年，中间这段时间要靠旧卡续租来还款。CoreWeave三季度报表把这层压力摆得很清楚：GAAP营业利润2.07亿美元，净利息支出8.46亿美元，营业利润只够覆盖约四分之一；468.7亿美元债务中约416亿美元带追索权，占比约89%；另有约187亿美元经营租赁负债（公司三季度业绩公告）。在长约结构下，合同期内的经营现金大部分要用于还本付息，股东回报主要取决于合同结束后的残值再出租。如果五年后的租价只剩原价的两到三成，这部分回报就非常薄。英伟达的支持也覆盖不到这一块：American Compute 10月16日对条款的梳理显示，英伟达的容量回购承诺和机房租约担保，都不覆盖GPU的二手残值。</p>
+<p>10月25日报告中分析，项目与母公司之间的隔离“对风险和对现金的作用是不对称的”。放到二线厂商身上，这种不对称只会更明显：它们连A3档的无追索结构都拿不到，残值缺口最后基本都要由股东承担。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569325_5546287e96ccce67.webp" alt="" loading="lazy"></p>
+<h2>四、投资含义：值钱的是大厂签名和电力，不是算力规模</h2>
+<p>回到“表外代持”这个说法。按美国租赁会计准则，已签约但尚未起租的租约不进资产负债表，起租后承租方要确认租赁负债。所以这不是永久出表，而是两层含义：一是<b>时间上的表外</b>，二是<b>残值风险的表外</b>。微软截至9月30日已签署但尚未起租的租约达3,646亿美元，一年前是1,062亿美元。一年增长了两倍多，但转移出去的主要不是负债本身，而是第4年以后芯片过时的风险。对云大厂来说，这相当于用经营费用换来一项很便宜的选择权：算力好用就续，不好用就到期退出。</p>
+<p>基于这个判断，可以推出三层估值含义。<b>第一，同一家Neocloud要分开看项目层和母公司层。</b>能把项目做成A档无追索结构的平台，项目层资本成本已经接近基础设施类资产，CoreWeave的DDTL 4.0和Nebius的投资级客户项目都是例子。但母公司层面完全不同：CNBC 10月20日报道，CoreWeave 2031年到期、票息9.75%的票据收益率为15.97%。信用市场给母公司定价，定的正是项目层之外的残值和续租风险，而买股票的投资者承担的恰好是这一部分。</p>
+<p><b>第二，二线厂商的价值不取决于卡的数量，而取决于两样东西：能否拿到投资级签名，以及手里有没有可用的电力和机房。</b>两样都没有，就只能在高息散租和低回报长约之间二选一，长期看更像一家资本密集的代工厂。有电力没签名的公司，议价空间来自电力的稀缺性；有签名没电力的公司，则要把相当一部分收益让给机房和电力方。</p>
+<p><b>第三，可能被低估的是长约到期后的二手算力市场。</b>按3到4年的合同期推算，2027到2029年会有第一批GPU长约集中到期。谁能承接旧卡的再出租，比如把训练卡转去做推理，谁就掌握了残值的定价权。这一环目前还没有成熟的玩家，也是这条产业链上少数尚未被大厂锁定的利润来源。</p>
+<p><b>这套核保逻辑也在往亚洲扩散。</b>总部位于台湾的GMI Cloud在9月30日公布的6.68亿美元融资中，有4.45亿美元是中国信托商业银行牵头、以GPU合同现金流支持的银团信贷。11月16日的报告测算过，同样是B300，东南亚无转租权长约与日澳欧节点长约的残值可以相差五倍以上，决定因素是合同条款和机房地址，而不是卡本身。两个结论指向同一件事：<b>GPU贷款的风险定价，本质上是在给合同和交易对手定价</b>。</p>
+<p>也要考虑乐观情形。如果AI需求持续超出预期，旧卡租价像今年的H100一样不跌反涨，残值风险会被时间冲淡，签了长约的二线厂商反而可能在续租期拿到超额收益。反过来，如果云大厂自研ASIC加快落地，旧卡续租的需求就会减弱。两种情形的分水岭，就在第一批长约到期时，旧卡能以什么价格续租。</p>
+<h2>五、跟踪验证：五个信号决定这个判断何时兑现</h2>
+<p>要判断上面的逻辑会不会兑现，可以跟踪五个信号。第一是租价：H100指数如果跌破2.75美元，或者B200按需报价中位数从6.82美元向4.66美元靠拢，散租的现金流就无法覆盖偿债。第二是新发GPU贷款的定价：投资级档利差如果开始走阔，说明贷款人对续租风险的容忍度在下降。第三是云大厂的取舍：如果从放弃可选扩容发展到对已生效合同撤约或到期不续，就说明选择权正在被实际行使。第四是微软等公司未起租租约的季度增量，增速明显放缓意味着这种表外扩张接近顶部。第五是母公司信用：CoreWea ve等公司母公司债收益率与项目层利率的差距如果继续拉大，说明残值风险正在往股东身上集中。</p>
+<p>这五个信号中，最先给出答案的可能是租价。CME正在推进以Silicon Data H100指数结算的算力期货，但CFTC已把审查期延长至少60天，最早要到2027年初才能交易。期货一旦上线，二线厂商第一次有工具对冲散租价格风险，贷款人也可能据此重新评估没有长约的部署能不能融资。到那时，“只认租客”的核保规则才可能松动。在此之前，租客签名的稀缺溢价大概率会继续留在云大厂手里。</p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569325_59c2e489a43070b8.webp" alt="" loading="lazy"></p>
+<p><b>以上内容不构成任何投资建议，请风险自担。</b></p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

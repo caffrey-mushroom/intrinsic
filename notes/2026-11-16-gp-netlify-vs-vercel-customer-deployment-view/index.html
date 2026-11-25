@@ -1,0 +1,249 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.16 | GP | Software | Netlify vs Vercel: Customer Deployment View</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.16 | GP | Software | Netlify vs Vercel: Customer Deployment View</h1>
+<p class="orig">原标题：Netlify: Customer Perspectives on This Web Development and Cloud Deployment Platform</p>
+<p class="tags">#software #cloud #agents</p>
+<p class="meta">GuidePoint · 2026-11-16</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>一家 AI 金融科技公司的 CTO 介绍了公司在 2024 年前从 WordPress 和 Cloudways 迁移到 Netlify，用于快速发布客户页面、金融聊天机器人界面和 MVP。</li>
+<li>选择 Netlify 的核心原因是与 GitHub 的无缝连接，每次推送都会自动构建发布，并支持不可变版本控制、一键回滚和每个 PR 的预览链接。</li>
+<li>托管、HTTPS 和 CDN 分发都由平台处理，无需配置服务器或单独搭建预发布环境，显著降低工程和运维负担，适合大量部署智能体生成的站点。</li>
+<li>专家估计在同类操作下 Netlify 比 Vercel 便宜约 25%-30%，而 WordPress 虽然单位成本更低，但插件维护、安全风险和工程时间推高了总成本。</li>
+<li>Netlify 采用信用点计费，涵盖带宽、智能体计算、网络请求、生产部署和 AI 网关推理；专家认为定价透明，但高流量、大视频或高频部署的应用成本可能快速上升。</li>
+<li>专家指出越来越多的网站流量来自代表人类行事的 AI 智能体，这也会计入基于用量的费用。</li>
+<li>主要短板是基础设施控制能力有限、复杂动态应用和后台任务支持较弱，需要更多控制时可能转向 AWS Amplify 等替代方案。</li>
+<li>专家给 Netlify 产品打 8 分，JavaScript 和 Go 支持打 8-8.5 分，Python 无服务器支持约 7 分，认为它最适合静态站点、原型和不太复杂的应用。</li>
+</ol></section>
+<div class="body">
+<p>Primary:</p>
+<p>Netlify, Inc.</p>
+<p>Associated:</p>
+<p>Vercel Inc.</p>
+<p>NET</p>
+<p>Amazon Web Services, Inc.</p>
+<p>GitHub, Inc.</p>
+<p>Render Services, Inc.</p>
+<p>Fly.io, Inc.</p>
+<p>Railway Corporation</p>
+<p>Viewpoint:</p>
+<p>Customer</p>
+<p>Moderator: Pratiksha Kaval (PK)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Nov 16, 2026</td><td>16 Min Read</td></tr></tbody></table></div>
+<p>Elemi Atigolo (EA), Co-Founder and Chief Technology Officer - Inatigo</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The expert, a technology leader at an AI-focused financial technology company, described using Netlify to quickly publish websites and web applications, including client-facing pages, chat interfaces, and MVPs. The company adopted Netlify before 2024, moving from WordPress and Cloudways to a workflow centered on GitHub-based deployment.</p>
+<p>The expert values Netlify’s automatic builds, preview links for proposed changes, rollback options, and managed hosting features. These capabilities reduce infrastructure work and help teams deploy frequently. The platform is best suited to static sites, prototypes, and less complex applications.</p>
+<p>Key Insights</p>
+<p>Netlify’s main advantage is reducing the time and engineering effort needed to deploy and maintain sites. The expert considered it particularly suitable for teams building and releasing applications quickly. The expert estimated Netlify was less expensive than Vercel for comparable operations, while emphasizing that actual costs depend on usage. Pricing was described as clear, but users need to understand how bandwidth, media, compute, AI inference, and deployment activity contribute to usage-based charges. The main drawbacks are limited infrastructure control, potential cost increases for high-traffic or media-heavy applications, and weaker suitability for complex apps or Python-based serverless workloads.</p>
+<p>Competitive Landscape</p>
+<p>11/17/2026 at 02:08 AM UTC</p>
+<p>Platform</p>
+<p>Positioning and comparison</p>
+<p>Netlify</p>
+<p>Vercel</p>
+<p>Simple Git-connected deployment, managed hosting, previews, and rollbacks. Strong for static sites and MVPs, but offers less infrastructure control and may become costly with heavy usage.</p>
+<p>Similar deployment experience and capabilities. The expert found Netlify cheaper for comparable operations; both may be less suited to Python-heavy workloads.</p>
+<p>WordPress</p>
+<p>Lower apparent infrastructure cost, but plugins, maintenance, security concerns, and engineering effort can raise total costs. The expert also described it as less reliable.</p>
+<p>Cloudways</p>
+<p>Offers hosting flexibility but requires more infrastructure setup and operational work, including staging previews.</p>
+<p>Render</p>
+<p>Can support full-stack applications, but was viewed as requiring more infrastructure management.</p>
+<p>AWS Amplify</p>
+<p>An alternative when an application requires greater control over underlying infrastructure.</p>
+<p>Quantitative Insights</p>
+<p>Metric</p>
+<p>Expert assessment</p>
+<p>Netlify cost versus Vercel</p>
+<p>Estimated to be 25%–30% lower for comparable operations.</p>
+<p>Netlify product rating</p>
+<p>8/10.</p>
+<p>JavaScript and Go support</p>
+<p>8–8.5/10.</p>
+<p>Python support</p>
+<p>About 7/10, reflecting a less central use case.</p>
+<p>The expert did not provide a numerical rating for customer support.</p>
+<p>PK: Good morning, this is Pratiksha Kaur from Guidepoint Insights and welcome to our call on Netlify. Our advisor today is Mr. Elemi Atigolo, co-founder and CTO at Netigo. Hi Elemi, thank you for joining us today. To start, could you briefly walk us through your professional background and your current role with Netigo? Thank you.</p>
+<p>EA: Yes, sure. Thank you firstly for having me. I'm the CTO of Netigo. We are an AI research and financial technology company. We build financial AI agents via an API for fintechs and financial services firms. And we've generally been in this space since 2019 prior to the sort of ChatGPT AI infrastructure aspect and we work in all areas of the cycle.</p>
+<p>PK: Great. So let me just start with our topic of today's call. Could you briefly describe the applications or web projects that run on Netlify at your organization?</p>
+<p>EA: Yeah, of course. How we use and why we use Netlify is essentially we look at how we use it is for quick deployment of web applications and quick websites that are built using our tools. One of the main benefits is because we use a lot of agents and agentic deployment, we need a quick way to deploy pages that our systems use. So</p>
+<p>11/17/2026 at 02:08 AM UTC</p>
+<p>whether that's pages that hold documents, a specific financial chatbot or engagement page for a particular firm that they use as their own front-based, or it's used when we provide and produce MVP systems and so forth, we need a very quick deployment. Why we initially started to use this compared to we used to use other platforms like Cloudways and so forth, why we moved to this is because of the easy way to connect to GitHub. To deploy quickly, so from any build or push position, we get the updated output and build instantly from any code repository. It runs that full build process and it publishes it. And we have the ability, because it has what they call an immutable version control, we can go back to any previous deployment.</p>
+<p>PK: Got it. Could you elaborate on the situation prior to 2024, which is when you adopted Netlify or you spoke about the platforms that you used prior. So what were the different platforms that you used? What mainly prompted you to evaluate Netlify and other alternatives?</p>
+<p>EA: Yes, so prior to using Netlify, we used to actually use a combination of WordPress, which is another deployment system to provide front-end solutions, and these were backed by internal WordPress databases. And then we started to look at a company called Cloudways, which was later on acquired by DigitalOcean. And what we needed is a system that would allow us to quickly deploy via GitHub. So prior to that, it was very difficult to connect your GitHub to a deployment system so you could build via your code, whether that you're using GitHub Copilot or Cursor or even Claude at the time. To deploy that and push that, that was very difficult and it's quite hard to do, a bit more complicated. And then with the use of Netlify, what we then were able to do is from that instant push, it can be deployed and we can have a live website, our own domain names, and we can update that code at any time just from the same push scenarios that we use in our own code management. And what that allows us to then have is essentially that Git-based continuous deployment systems. And also allow us to have that global hosting. So where we were using a combination of static, you know, pre-rendered pages, for example, we could have those deployed to our clients' users. And if we needed to see what the site would look like before, it was quite easy to deploy what they call previews. So each and every individual pull request, for example, we would receive like a preview URL and with that preview URL we could review any changes that we needed to make before full deployment to production.</p>
+<p>PK: Got it. So when you evaluated Netlify, what were the other alternatives that you considered and why did Netlify ultimately make the shortlist?</p>
+<p>EA: Yeah, of course. So, prior to just looking at Netlify, as I mentioned, WordPress was our original kind of base position. So we looked at that. Cloudways was another. And then ones that were similar, we looked at a company called Vercel. And they're the people behind Next.js, which is a coding sort of system. So Vercel and also another company called Render. And the main reason what we decided and why we decided on the Netlify, one was really to do with some of the costs of scaling. And so when we compared it to first, WordPress was very buggy. And then what would happen is the deployment sites, they would require consistent and constant updates because of additional plugins or other issues which would cause an increased engineering load. When we looked at, when we started to look at Cloudways, the ease... it wasn't as easy for that deployment. It wasn't as easy to do deployment from a one- click push. There was still a lot of infrastructure management to do, where with Netlify it's more of a serverless function position. And then when we looked at ones that were more similar, so Vercel, for example, is very similar in some respects. It's very good for the types of those front-face applications and cost. So cost at scale was an overall issue. And then Render was a lot of complexity. So although we could build the full-stack apps, there's a lot more infrastructure to manage in comparison to Netlify or even Vercel. There's a lot more infrastructure on Render, where with Netlify, its appeal is because it's quite simple to deploy and have an up and running application site in moments and minutes.</p>
+<p>PK: Got it. So with Vercel also did you have the same issue or the issue of managing a lot of infrastructure?</p>
+<p>EA: Not with Netlify, no. So that's one of the main benefits is that you're not needing to manage the full infrastructure,</p>
+<p>11/17/2026 at 02:08 AM UTC</p>
+<p>so you know, you don't have to manage all of it. Obviously, that is a pro that can also be a con depending on the circumstance and situation. But the burden is less, so when you compare, as I mentioned, to the likes of a Render or even a WordPress or what have you. Because it manages all of the hosting, it manages all the HTTPS and CDN distribution, all of that is actually done and even the deployment. You're deploying in the same way that you do your standard push requests to GitHub that can be connected to Netlify and then that can also be connected to, in other cases, Supabase for the backend database structure. It just means that you have less operational burden as well. And because the backend is quite lightweight, which has its own benefits... it's obviously some of the cons on that... but you do get a backend that you can actually make use of without having, as I said, the overhead, large overhead.</p>
+<p>PK: Got it. And ultimately, why did Netlify make the cut over Vercel? What did you see as Netlify's strengths or where did Vercel fall short?</p>
+<p>EA: Yep, the first thing was just the ease and speed. You can connect to a repo and you can publish the site or app with no server provisioning, no patching, or any sort of manual uploads, because that's the normal case. You have to download all the files. You then need to upload all the files. You need to provision the server. You need to provision the HTTPS. That's the normal status that you have to do. And you don't have to do that once you connect the repo, all of that is actually handled. So that ability to do fast deployment is very beneficial when you're putting out a lot of different sites for different purposes. Because these aims for, I would say, more of the agentic AI, a native environment. So that type of developer experience. So you get the ease of any forms of Git integration. You can do an easy rollback and that's part of the nature. So you can see deployments, you can see why they fail, you can investigate them. We can do 1-click rollbacks and sometimes we may need to do that, for example. But we can also make any minor iterations because we get, as a default, the preview. And normally in the other instances, when you're deploying, you have to create a staging site as a separate aspect where you don't have to do that. That's all part of that basis I mentioned about, obviously, the low operational burden. So that's really the benefit. You know, when you're putting out these sites and front ends, you don't want to have the engineering burden because that's time, that's additional money. You want to have operations up and running without having the full weight of that overhead. And I think probably the other biggest thing is the, as I mentioned, that serverless capability. You're not having all of the full infrastructure that you have to set up. Now, obviously, there's a lot of benefits. There are obviously some cons on that, which is, although it's cheaper than, say, some other providers, there is still costs involved because of the way the usage aspects work. So when you look at the sort of back end, the prices can go up because of the bandwidth scenario. You're paying for terabytes of data, you're paying for some of the serverless actions, and it's all done on serverless functions. It's all done on usage and base positions. The other side is that when you're building more complex apps, it can, or more dynamic apps, can get a bit complex because you've got a lot of background jobs. Even when you're connecting, there's still some little bits in between you have to take into account as well. And as at times we use other media, so video, we might use large media files, what have you, because when obviously visitors visit those sites, that can be large amounts of traffic that are being downloaded, and then that can then increase the overall price. And in some instances, if you do need the full access to the infrastructure because what you're building, you don't have as much control because the benefit is you don't need all the control, but if you do need it, then that can have a limit in compared to some other providers. So that's really, but overall, for the use cases, it's extremely good.</p>
+<p>PK: Got it. So at what level of usage do bandwidth and build minute costs become a concern?</p>
+<p>EA: I would say that it depends obviously as to your circumstance and obviously the situation of the firm. But if we take into account how the usage breaks down, typically you have a credit system where you pay for bandwidth and you pay for what they call agent compute. That is the overall agent. And also you can pay for what they call web requests. When people actually visit, those requests of the data, and then every time you update, any production deployments. If you're in a situation where you're making, you know, significant amounts of push requests and you're making</p>
+<p>11/17/2026 at 02:08 AM UTC</p>
+<p>updates continuously, and these updates are going to production a lot, that can obviously increase the overall cost if you have a high bandwidth application. The bandwidth may not necessarily have to do with just visitors, but if you have videos, big AI-generated videos or high imagery, that can also increase the overall cost as well. When you have that high traffic and the high medium, you're paying for terabytes or gigabytes of data. Although the gigabytes are quite small, if your outbound bandwidth can be quite high, then the cost can increase. And if you're not fully aware of the makeup of your application, what's involved, that's when the cost can... you may not be fully aware that the agent's cost, the compute is billed, the traffic is billed as well. The service activity is also billed to the usage. If you use any usage of the AI through the gateways that they have, that's also billed, so there's components and if you're fully aware of those components, that's fine. If you're not aware of the components and you don't fully understand that, then those costs can increase.</p>
+<p>PK: And how transparent would you say is the pricing?</p>
+<p>EA: Well, the pricing is very transparent. You're fully aware of what the credits make up. It makes up bandwidth, it makes up AI compute, you understand that. It's just you have to understand your application, what you're building. And if it's a static site where you're not getting much traffic, the cost is very minimal. If it's a high dynamic site, a lot of high media, a lot of high usage, you just have to be aware that that is the application that you have. If you're aware of that, then that's fine. If you're unaware of what you're building, then that can come up as a surprise. So it's not that it's not transparent, it's very transparent. It's more on the developer and the team to understand the nature of what they're building because the unit cost is low. It's just the usage base to be fully aware of how the usage is derived. It's not just deployment. It's also media, it's also AI inference... if you used inference... it's also the request, the bandwidth itself, and so forth. So it's all in one. So if you view it as just the headline price, the headline price is relatively small, but if you just view it as the headline price and you're not fully aware that the credit-based system is made up, and most firms are moving to credit-based systems because of the way the usage aspect is, you've got agents that are also going on sites and interacting on applications. All of that usage may not appear as just humans; a lot of that usage may also appear as agents on behalf of humans or behalf of other companies and so forth.</p>
+<p>PK: Got it. So how did Netlify's overall cost compare with what you were using earlier, WordPress? Or how did it compare with Vercel during your evaluation?</p>
+<p>EA: So when I did the comparison against, say, Vercel, it came up a lot cheaper than Vercel. I think it was probably about 25% to 30% cheaper overall for the same type of operations over a given period. When it came to systems like WordPress and so forth, it's because of a different type of machine. You know, WordPress, the cost may not be in the underlying infrastructure, but the cost is in the time, the engineer's time, the repeat issues ongoing. And so, although the unit cost of, say, WordPress deployment is cheaper, the total cost is more expensive because there's a lot more issues, a lot more maintenance, a lot more engineering overhead that you have to take into account. And in some cases, a lot less control because you don't always... you don't have the control the underlying application that is built on top, and you know what might be involved in any third-party plugins and so forth. You obviously have got third- party risk and security risk, especially now. And so that risk outweighs any potential cost savings overall. And then when you look again at companies like Cloudways, for this instance, again, the time cost, the additional features that have to be set up that for every deployment has to be typically done by the team, and then even previews have to be staged and so forth. It's not a one-click push deployment. And so, where you may save in some instances, you actually pay a lot more in, like I said, those overhead costs overall, because what you have to set up, the time you have to set up, the infrastructure you now have to manage, the additional security aspects you have to take into account, the HTTP structures you have to set up. There's a lot that you have to do in time, and that is per deployment. So that costs.</p>
+<p>PK: What are the biggest product gaps or technical limitations that you have encountered so far with Netlify?</p>
+<p>EA: I'll generally say that the biggest is in instances where you do need more infrastructure control. So in those</p>
+<p>11/17/2026 at 02:08 AM UTC</p>
+<p>instances, you may need to use alternatives, like Amplify by AWS or so forth. If you do need more of the underlying infrastructure piece, then that can be a problem. Sometimes the serverless runtime, some of that support can be a bit limited with some of those functioning languages. When you look at serverless runtime, it's typically structured on JavaScript and Go, that's the kind of base default, and when you're building on Python, there's not as much support in those arenas. That can obviously be an issue. As I mentioned, the other part is if the apps are a bit more complicated, if you're building much bigger apps, bigger applications, then in those times you may need a slightly different infrastructure. But this is very good for when you're building out those static pages, doing MVPs, doing prototypes, doing less dynamic applications. You want speed, but if you need more concentrated infrastructure, you have control over every single piece of your infrastructure, if it needs to be hosting your own types of environment, then that's a bit of a limitation. If you're not dealing in JavaScript, you're not working in the serverless function default style language like Go and so on, but you're using Python, that also can be an issue. It really depends on what you're building, the language backing that you're actually using, and that's not just the same with this, it's the same with Vercel, their Next.js often is JavaScript. When you're building in Python backing code structures, it may not be the best. The same is true with this.</p>
+<p>PK: And let me, if you had to rate Netlify's product and separately its customer support on a scale of 1 to 10, what would you rate it?</p>
+<p>EA: Yep, so for the product, I'd give an 8. For the support for JavaScript and Go, I'd give it an 8 to 8.5. For the support for Python and so forth, I'd probably say about a 7 because that's not its main function. But in terms of everything as a solution, of course, quick, fast deployment, simple infrastructure, Git-based deployment and rollback. That's why it scores highly because it is very good. And for cost control, you do get a lot of cost control. As long as you know what you're building, you do get to manage that cost control. So it's very good, especially in the age we are in now, which is the ability for faster deployment to live sites, to live applications, in a short space of time with minimal amount of infrastructure that even agents themselves can manage, it's very best placed.</p>
+<p>PK: Thank you so much for sharing your insights on Netlify with us today.</p>
+<p>EA: Thank you. Bye.</p>
+<p>PK: Thank you. Have a nice day. Bye-bye.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>11/17/2026 at 02:08 AM UTC</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

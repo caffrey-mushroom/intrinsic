@@ -1,0 +1,204 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.20 | AC | LLM | Fable 5.2: Train Big, Then Distill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.20 | AC | LLM | Fable 5.2: Train Big, Then Distill</h1>
+<p class="orig">原标题：Fable 5.2与头部模型调研_ 头部厂商共同路线转向先训大再蒸馏; 单人coding之外的差距验证场景；数据商近两月开供办公场景反向工程数据；一人报错即可触发的自动纠错闭环</p>
+<p class="tags">#llm #agents</p>
+<p class="meta">AceCamp · 2026-11-20 09:45 · article 70569434</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>作者多轮调研结论：通用基座目前至少在10T以上，各家在训最大模型接近100T仍未见瓶颈，头部厂商共同路线是“先训大、再蒸馏”。</li>
+<li>Gemini的Hydrogen是纯蒸馏产物，仅200B参数却好于最初几T的Argon；Fable 5.2基于Mythos基座、本体为九点几T，对外发布的是精简版。</li>
+<li>蒸馏不意味着基座可以变小，必须先有足够大的模型蒸馏效果才好；有渠道称Opus 5.5已蒸馏至1T，但本次调研未能证实。</li>
+<li>单人coding任务被拆得很小，前沿模型间差距已不明显，但在代理团队等项目级任务以及3D、CAD、CAE、机器人等难垂类中差距明显，Fable 5.2在LMArena agentic榜单排名第一、平均比Opus 5.5 Max高十几个百分点。</li>
+<li>难垂类市场规模不大，但训练CAD和3D能反哺coding等通用能力，统筹的Orchestrator模型越大context管理越好。</li>
+<li>金融法律能力依赖数据合作、实时数据源和harness，有头部厂商采购大量Westlaw实时信息，Scale AI等数据商近两个月开始提供办公场景反向工程数据。</li>
+<li>模型纠错已形成自动闭环，一人报错即可由代理分析完整轨迹并生成训练数据修复，人工只做抽查，当前暴露的缺陷主要集中在context和memory管理。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>1、基座规模上限的调研证据与机理， 蒸馏成为主流发布方式后基座是做大还是做小2、单人coding差距收窄的原因， 以及项目级任务， 3D和CAD等难垂类如何成为新的模型分水岭3、金融法律能力背后的数据合作， 实时数据源与反向工程数据， 以及自动纠错闭环暴露的context管理缺陷</p>
+<p>过去一段时间，笔者围绕前沿大模型的进展做了多轮调研，并与多家国内外大模型公司进行了交流。</p>
+<p>综合来看，四条结论可以串成一条主线：基座规模远未见顶，头部厂商的共同路线是“先训大、再蒸馏”；模型做大的收益不在单人 coding，而在代理团队这样的大任务和 3D、CAD 等难垂类；金融、法律能力的护城河越来越依赖数据合作和harness，而不只是模型本身；与此同时，模型的纠错迭代已经变成自动闭环，当前主攻的缺陷集中在 context 管理——这也是代理团队真正落地前必须跨过的一关。以下分述。</p>
+<p><b>结论 1：规模回报还没到头，头部的共同路线是“先训大、再蒸馏”</b></p>
+<p>这条结论有两层论据：一是基座规模本身仍有空间，模型做到 100T 也未遇到瓶颈；二是发布方式——厂商普遍先训大基座，再蒸馏成小模型对外发布，Fable 5.2 和 Hydrogen 都是例子。</p>
+<p><b>基座规模还有很大空间。</b> 笔者的调研显示，通用基座目前至少在 10T 以上，10T 到 20T 这一区间远未到头；按 next token prediction 准确率等能力指标衡量，至少到 100T 级别仍看不到瓶颈。瓶颈最终会出现，但上限远高于现在 10T 左右的水平。各家在训的最大模型已接近 100T，仍未看到瓶颈，通用基座整体呈越做越大的趋势。</p>
+<p><b>这个空间有机理上的解释：模型越大越强。</b> 问题复杂度越高，需要的神经元就越多，才能表示足够多的可能性。比如一个问题可能有 1 万种解法，模型要有足够的神经元把它们表示出来，才探索得出来——有些问题的可能性还远不止 1 万种。神经元数量不够，相当于对解法空间做了压缩，理论上就不构成一个完备的符号系统。笔者上周还与另一家国内大模型公司交流，对方同样认为：基座越训越大，长程任务的进步空间就越大。</p>
+<p><b>但厂商对外发布的往往不是大基座本身，而是蒸馏出来的模型，自我蒸馏已成为明显趋势。</b> Gemini 这一次也在学 Anthropic，Hydrogen 就是纯蒸馏的产物；Opus 也一直在蒸馏自己的“Fable”。Hydrogen 只有 200B，性能却好于最初几个 T 的 Argon。</p>
+<p>需要强调的是，<b>蒸馏并不意味着基座可以变小。</b> Hydrogen发布后，各家的共识反而更清楚：必须先有一个足够大的模型，蒸馏效果才好，明显优于单独训练小模型。“先把模型训得很大，再慢慢蒸馏变小”基本是现在各家的共同思路——基座做大后即便不直接发布，也会蒸馏出更小的版本，而基座本身仍在持续做大。</p>
+<p><b>Fable 5.2 就是这条路线的例子。</b> 它基于此前的 Mythos 基座开发，本体是九点几 T 的模型，做法是在 Mythos 上做一些后处理；Anthropic 后来对外发布的 Fable 是精简版，体积更小，但各大榜单上用的应该还是九点几 T 的版本。</p>
+<p><b>限制：不是每个环节都需要大模型。</b> debug 不需要特别大的基座，Carbon 这种几 T 的模型基本够用；子任务也可以直接分配给只有几 B 的轻量模型，效果也不错，此时总的组织者是一个很聪明的模型（如 Carbon）。另外，Google 最近要发布的新模型并非更大号，规模与此前相同。</p>
+<p><b>存疑：Opus 5.5 的规模。</b> 笔者从其他渠道了解到，Opus 5.5 已被蒸馏到只有 1T——若属实，蒸馏可节省算力、改善毛利并服务更多用户；但本次调研未能证实这一说法，调研反馈称尚未看到蒸馏后模型的榜单表现，且蒸馏后可能有一定性能下降。不过参照 Hydrogen 的先例，厂商能蒸馏出更小的模型并不奇怪。</p>
+<p><b>结论 2：模型做大，受益的是大任务和难垂类，不是单人 coding</b></p>
+<p>单人 coding 已经拉不开差距，因为任务被拆得很小；差距出现在两类场景：一类是代理团队（agent teams）这样的项目级任务，另一类是 3D、计算机辅助设计（CAD）、计算机辅助工程（CAE）和机器人等难垂类。</p>
+<p><b>单人 coding 已难分高下。</b> 笔者的调研显示，几款前沿（frontier）模型在 coding 上的差距已不太明显：纯比 coding，除了速度和可读性，结果基本没有区别。多数 C 端用户做 vibe coding，自己也感受不到模型之间的差异。笔者自己的体感同样如此——Fable 5.2 和 Opus 5.5 写代码没什么区别，把更强模型的 token 花在写代码上，意义已经不大。</p>
+<p>差距不明显，原因在任务形态：Fable 5.2、Gemini Carbon 和 Hydrogen 目前主要处理单人任务，大 feature 被拆成小 feature 分头完成，自然看不出能力差别。</p>
+<p><b>但任务一变大，差距就出来了。</b> Fable 5.2 整体能力提升明显，体感也有很大提高。在 LMArena 的 agentic 榜单上，Fable 5.2 排名第一，平均提升分数比 Opus 5.5 Max 高百分之十几——相当于在 AB 测试中约有百分之十几的 session，用户更倾向选择 Fable 5.2。</p>
+<p><b>项目级任务更能拉开差距。</b> 代理团队管理的是更大范围的项目执行，而不是小 feature，此时模型能力差距就非常明显。如果 coding、金融、办公白领等场景都走向代理团队——相当于用一个代理自动管理整个部门——就需要更大的模型。</p>
+<p><b>负责统筹的 Orchestrator 模型因此越大越好。</b> 大模型的 context 管理明显更优，因为部门级任务和个人任务的 context 量级差异很大。笔者曾问：coding 体感不变，与代理团队需要聪明模型，是否矛盾？调研的回答是，这是两个不同场景，前者拉不开差距，后者确实需要更聪明的模型。</p>
+<p><b>难垂类同样能看出模型差异，也需要更大的模型。</b> Fable 5.2 在 3D、机器人等多个垂类上有明显提升；在 3D、CAD、CAE、机器人等场景，前沿模型之间仍能分出高下，而这些特殊垂类本身也对模型规模提出了更高要求。</p>
+<p><b>这些垂类市场不大，但练它们能反哺通用能力。</b> 笔者查过 3D、CAD、CAE 和机器人行业的潜在市场规模（TAM），空间都不大，变现潜力有限，调研反馈也一致认为这些行业本身的收入空间不高。但在基准测试和能力提升上，这些场景能明显体现模型差距；而且 CAD 和 3D 练好了，反而能带动模型在 coding 等其他方面的能力。</p>
+<p><b>结论 3：金融、法律能力靠数据和 harness 拉开，不只靠模型</b></p>
+<p>笔者此前调研时了解到，coding 的体感提升已不明显；但法律、金融这类长尾问题还有很大提升空间。笔者自己做金融相关工作，体感 Fable 5.2 在金融方面的表现也相当不错。</p>
+<p>本次调研显示，这类能力来自三个方面：数据提供商的合作、实时数据源和反向工程数据，其中最关键的是 harness 能否实时拿到最新信息。</p>
+<p><b>第一个来源是数据合作，头部厂商都绑定了数据提供商。</b> 笔者从其他渠道了解到，某头部厂商的模型强，一个重要原因是它与多家顶级数据提供商深度合作——既有办公软件巨头开放的核心产品接口，也有顶级金融数据商提供的独家数据库，模型可以直接基于这些数据学习建模。</p>
+<p><b>第二个来源最关键：harness 能否拿到实时信息。</b> 做金融分析时，模型能力固然重要，但最关键的是 harness 能力，即能否实时获取最新信息——例如 NVIDIA 的最新动态和传闻，这类信息搜索引擎根本查不到。</p>
+<p>法律领域同样如此。有头部厂商采购了大量 Westlaw 的实时信息，能查到全球范围内案例和法规的最新变化。因此，实时数据源在 harness 环节至关重要。</p>
+<p><b>第三个来源是反向工程数据，它让模型学会专业人士的拆解方法。</b> 最近两个月，Scale AI 等多家数据提供商开始提供办公场景的反向工程数据，价值很大。例如拿到一份研究报告，数据提供商以报告为输入，反向还原出完整的工作流程：查什么、验证什么、画什么图表、最后怎么处理。</p>
+<p>这类数据正越来越多，不限于金融，其他领域也在跟进。有了这类数据，模型在规划复杂的金融、法律问题时拆解得更精准，更接近专业人士的水平。CAD、工业模拟、金融、法律等方向的反向工程数据都在快速增长，入局的数据提供商也越来越多。</p>
+<p><b>结论 4：模型迭代已变成自动闭环，当前主攻的缺陷是 context 管理</b></p>
+<p>模型的纠错流程已经自动化：一个人报错，系统就能自动分析并生成训练数据完成修复。目前暴露出来的缺陷多数是 context 或 memory 管理问题，这也是代理团队推出之前必须解决的问题。</p>
+<p><b>纠错流程已经闭环。</b> 笔者的调研显示，现在各家基本都是闭环模式：员工使用模型时给出反馈或点踩，系统便自动派出代理，分析全部 trajectory 中的问题；一旦发现某些步骤出错（例如 context 压缩），系统会自动生成相关数据并放入预训练库，整体流程高度自动化。另一家国内大模型公司也认为，这个过程可以形成闭环，实现自我迭代更新。</p>
+<p><b>闭环解决的是长程任务难 debug 的老问题。</b> 过去处理长程任务时，大家都知道最终结果不对，但要在几百上千步里定位具体错在哪一步，是非常枯燥的工作；而且错误点往往不止一个，许多小错误会叠加成大错误。现在系统可以自动分析纯 JSON 的轨迹，长程任务的 debug 效率大幅提升，自动分析通常也比人工更快、更准。</p>
+<p><b>修复也已自动化：靠生成训练数据，一个人报错就够。</b> bug 修复现在相对容易，常规做法就是生成相关训练数据，这件事本身并不难——Gemini 也是靠持续修 bug 提升能力的。员工只需报出错误案例，机器自动完成分析，不需要员工自己排查。</p>
+<p><b>报错也不需要很多人。</b> 不需要十个人点踩，基本上一个人遇到问题，模型就能泛化修复。有些问题非常奇怪，如果员工不报，正常人很难想到模型会有这种 bug；系统发现后生成针对性数据，就能避免类似的奇怪行为再次出现。</p>
+<p><b>人因此只做抽查。</b> 改 bug 的过程基本不需要人力，报错之后全部自动分析，data eval team 只做抽查，确认模型分析结果的正确性。</p>
+<p><b>闭环暴露出的缺陷，集中在 context 和 memory 管理。</b> 大多数 bug 都是 context 或 memory 管理问题，修复后模型能力提升很快。调研中有一个典型实例：模型执行到第 n 步时触发了 context 压缩，压缩后的内容本身没有问题，但模型却丢掉压缩结果，回头去找三步之前的 context，导致中间两步被遗忘，后续 bug 不断。这类 bug 如果不自动分析几千步的完整轨迹，很难被发现。</p>
+<p>回看这四条结论，行业图景比“模型还够不够强”这个问题本身更丰富。规模仍在增长，但红利正在重新分配：单人任务的体感差距趋于消失，大任务和难垂类成为新的分水岭；模型能力之外，数据合作、实时数据源和反向工程数据构成了第二重护城河；而自动化的纠错闭环，让“修bug 的速度”本身成为竞争变量。</p>
+<p>后续值得盯紧的是两笔账：一是蒸馏的成本账，小模型能否在榜单不掉队的前提下兑现毛利改善；二是金融、法律的商业化账，这两个最依赖数据生态的场景能走多深，直接检验“模型＋数据＋harness”这套打法的成色。文中存疑之处，笔者将在后续调研中继续核实。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

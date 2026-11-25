@@ -1,0 +1,212 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.17 | AC | Cloud | Volcano Engine Pt.1: Cloud Demand &amp; H200 Tightness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.17 | AC | Cloud | Volcano Engine Pt.1: Cloud Demand &amp; H200 Tightness</h1>
+<p class="orig">原标题：火山云调研-1：存储芯片提价加度泛互客户上云进程，H200等高端算力租赁需求持续供不应求，英伟达RTX PRO 5500国内订单量估计超过500万 – 英伟达_寒武纪_天数_阿里_腾讯</p>
+<p class="tags">#cloud #china #memory</p>
+<p class="meta">AceCamp · 2026-11-17 07:33 · article 70569297</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>火山引擎2025年总收入约200亿元，其中AI相关收入占65%-70%（约130-140亿元），算力租赁贡献超100亿元，模型API约20多亿元。</li>
+<li>公司2026年目标是收入翻倍，上半年进展整体符合预期，AI业务占比约70%、传统云约30%。</li>
+<li>内存显存大幅涨价带来额外营收增长，但火山提价幅度克制，可能未完全覆盖硬件成本，对利润有轻微负面影响；公司目前主要考核营收而非利润。</li>
+<li>硬件涨价后一台原价10万元的服务器可能需20-25万元，而云服务仅提价50%-60%，促使泛互联网客户减少自建机房、加速上云。</li>
+<li>字节已为2027年向英伟达订购百万张级RTX PRO 5500推理卡，传闻头部互联网公司合计订购数百万张，但产能不足、2027年无法足额交付。</li>
+<li>H200 2026年以来持续供不应求，火山仅能保障头部大客户，二线客户如200台需求无法满足，租赁起租单位至少为月。</li>
+<li>估算租用物理机房做训练的客户不超过20%，多数客户基于开源模型做1-2个月微调，训练卡收入占算力租赁比例可能难超30%。</li>
+<li>对外租赁的国产卡主要是华为昇腾910和950系列且基本仅限华为云，平头哥和寒武纪等主要为自用，未进入云租赁市场。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>本文核心要点包括：1，火山引擎2026年营收目标相比2025年翻倍，当前进展整体符合预期。2，硬件成本上涨驱动营收增长：内存/显存价格飙升带动公司营收额外增长，因云服务提价幅度低于硬件自采成本，反而加速了泛互联网客户“上云”进程。3，算力储备领先：字节跳动为2027年向英伟达订购几百万张5500推理卡，单项投入巨大；目前H200等高端算力持续供不应求，租赁价格年初至今上涨约50%。</p>
+<p>以下为专家观点：</p>
+<p><b>1，火山引擎在2025年的整体收入规模是多少？其中AI相关业务的收入结构是怎样的？</b></p>
+<p>2025年的总收入大约在200亿元左右。其中，与AI相关的收入（包括算力租赁和模型API调用）占比约为65%至70%，规模大约在130亿至140亿元。在这部分AI收入中，算力的租赁和销售是主要的收入来源，贡献了超过100亿元的收入，而模型A PI的收入规模在2025年约为20多亿元。</p>
+<p>公司年初设定的目标是在2025年收入的基础上实现翻番。根据上半年的业绩情况，同比增长整体符合预期。</p>
+<p><b>2，2026年以来，火山引擎的传统云业务与AI业务的收入结构是否发生了变化？硬件价格上涨对业务带来了哪些预期外的影响？</b></p>
+<p>从收入结构来看，2026年至今的业务比例与2025年大致相当，AI相关业务收入占比约70%，传统云业务约占30%。</p>
+<p>一个显著的预期外因素是硬件价格的上涨，特别是内存和显存自2025年以来价格大幅上涨。这一因素为公司带来了大幅营收增长，因为火山将部分上涨的硬件成本转嫁给了客户。这对营收增长有正面影响，但对利润可能产生轻微的负面影响，因为火山的价格上调幅度相对克制，可能未能完全覆盖硬件采购成本的增幅。</p>
+<p><b>3，当前阶段，火山引擎对于云业务，特别是AI业务的战略定位和中短期发展策略是什么？是侧重于拓展市场份额还是追求利润？</b></p>
+<p>在现阶段及可预见的未来，利润并非火山首要关注的指标。公司的战略重点主要有两个方面：一是在技术端，全力打磨产品能力，例如豆包大模型或SeeDance类大模型产品；二是在商务端，积极拓展市场。虽然并非不计成本，但在决策中对成本的考量权重较低。目前公司主要考核营收指标，对利润的要求相对宽松，只要定价不至于过分偏离即可。</p>
+<p><b>4，存储等硬件芯片价格的上涨，对泛互联网行业客户的云服务需求产生了怎样的影响？</b></p>
+<p>硬件价格上涨对客户的云服务需求产生了偏正面的影响。许多有一定规模的泛互联网客户原先采用混合云架构，同时使用公有云和自建IDC机房。在硬件涨价前，部分客户倾向于将业务从云上迁移至成本更低的自建机房。</p>
+<p>然而，硬件价格上涨后，客户自采硬件的成本急剧增加，例如一台原价10万元的服务器现在可能需要20万至25万元。相比之下，云服务价格的涨幅更为温和，火山可能仅在原有基础上提价50%至60%。因此，客户发现继续使用云服务的成本效益更高。这一变化导致许多原计划采购硬件或拥有自建机房的客户，在2026年减少了硬件投入，转而将更多业务迁移到云上，从而加速了上云进程。</p>
+<p><b>5，硬件价格上涨对国内各家云厂商都带来了收入增长，与其他厂商相比，火山引擎在市场份额和增速方面是否表现出差异？</b></p>
+<p>硬件价格上涨确实对国内主流云厂商的收入增长都起到了推动作用。各家厂商的策略差异会影响市场份额的变动：价格涨幅较小的厂商可能会获得更多市场份额，反之则可能减少。从销售额角度看，主流云厂商的收入增长应该都超出了预期。具体到火山引擎，由于火山对利润的要求相对更低，因此在市场份额获取和业务增速上，可能会比其他竞争对手表现得更迅猛。</p>
+<p><b>6，从需求结构来看，当前AI相关需求与传统云服务（如IaaS、PaaS、SaaS）需求是否存在差异？2026年AI云服务的收入结构，例如算力租赁和模型API调用，相较于2025年有何变化？</b></p>
+<p>AI相关的需求比传统云服务更为旺盛，其增速也显著快于传统云业务。在AI收入结构方面，模型API调用的收入增长速度可能略高于算力租赁，其收入占比也略有提升。以2025年为例，算力租赁收入规模约为110亿至120亿元，占AI总收入的80%以上。当前观察到，模型API或模型相关收入的占比有所提高，份额增长估计在5个百分点左右，这一增长趋势是可见的，但并非特别显著。</p>
+<p><b>7，能否详细梳理一下火山引擎在AI领域的产品布局、迭代情况及竞争力？未来这些产品的收入增长潜力如何，以及主要的竞争格局是怎样的？</b></p>
+<p>在产品与竞争力层面，火山引擎在算力储备方面处于国内云厂商中的领先地位，优于包括阿里云在内的竞争对手。一个明显的市场现象是，2026年客户对H200的租赁需求旺盛，无论是云上还是线下部署。火山引擎在此方面的供应相对充足，基本能满足重要客户的需求，而其他云厂商，包括阿里云，在算力储备上有所不及。</p>
+<p>从模型产品来看，豆包和即梦是主要产品。其中，即梦的发展速度和趋势更为迅猛，这得益于当前大量应用正转向文生视频领域，如电商、游戏及AI短剧等，该领域增长迅速。在文生视频赛道，即梦的市场知名度可能略高于阿里的万相（HappyHorse），但根据客户反馈，两款产品的性能表现不相上下，处于并驾齐驱的状态。在传统的文生图和文生文领域，豆包与阿里的千问相比，产品能力上可能存在微小差距。</p>
+<p>展望未来，至少在2027年，公司在AI领域的投入将非常巨大，包括算力和AI模型两方面。公司采购了大量的英伟达GPU，是中国最大的采购方，同时对国产算力卡也有大量采购。这表明公司高层对AI的未来发展高度重视。</p>
+<p>从竞争格局看，国内AI模型市场主要由阿里（千问）和字节（豆包）主导。腾讯的混元模型虽然有一定起色，但考虑到其算力储备不足，且当前获取高端算力供应困难，预计短期内难以缩小与阿里和字节的差距。至于DeepSeek，即便其能够成功上市，也可能仅在特定细分领域或通过适配华为昇腾生态系统发挥作用。在通用模型市场，由于竞争核心在于人才、算力储备和资金投入，DeepSeek类独立模型公司即便上市融资，也难以达到字节、阿里同等规模的投入，因此追赶潜力有限。综合来看，未来在模型和算力储备领域，市场仍将由阿里和字节领跑。</p>
+<p><b>8，关于字节跳动在2027年对AI领域的重大投入规划，是否有更具体的信息？</b></p>
+<p>根据近期了解到的信息，字节跳动已向英伟达为2027年订购了百万张级别新款推理卡RTX PRO 5500。仅此单一型号的显卡订单，不包括服务器等其他硬件，就已显示出巨大的投入规模和公司的决心。尽管由于产能限制，英伟达可能无法全额交付，但下达如此规模的订单本身就是一个明确的战略信号。此订单仅为推理卡，通常采购量会大于单价更高的训练卡（如B300）。</p>
+<p>此外，有未经完全证实的消息称，国内几家头部互联网公司（至少包括字节、阿里和腾讯）合计向英伟达订购了数百万张RTX PRO 5500显卡。其中，据传阿里还订购了大量英特尔或AMD的其他型号显卡。这些采购动向共同表明，至少在2027年，行业头部的投入力度将非常之大。</p>
+<p><b>9，对于英伟达RTX PRO 5500这款产品，其主要应用的推理场景有哪些？</b></p>
+<p>英伟达RTX PRO 5500是一款性能较为全面和均衡的GPU。它既可以支持文生视频、视频类模型，也可以支持文生文等模型，并非专为某一特定场景设计。根据推测，其应用可能更侧重于视频类模型，例如文生视频。</p>
+<p><b>10，从算力租赁供给情况来看，当前GPU市场的供需状态如何？今年以来是否一直处于供不应求的状态，以及紧张程度有无变化？</b></p>
+<p>2026年以来，无论是公司内部使用需求，还是通过火山引擎对外提供算力租赁服务，英伟达的GPU都处于供不应求的状态。以H200为例，今年以来租赁需求旺盛，公司基本能保证头部大客户的供应，但对于二线客户则无法满足，例如当客户提出租用200台H2 00服务器的需求时，若其重要性等级不高，便无法提供。目前市面上可合规采购的5500和之前的6000D供应也同样紧张。对于新推出的5500，已下的订单在2027年肯定无法全额交付。英伟达可能会根据客户等级（如字节跳动在中国市场采购量最大，等级最高）按比例优先供应，但不会将全部产能只分配给单一客户。可以确定的是，公司明年无法按订单量足额获得5500，因为产能不足。总体而言，无论是模型开发方还是模型使用方，GPU市场都呈现供不应求的局面。</p>
+<p>其实从2026年上半年至今，H200的供给紧张状况基本保持不变，既没有进一步加剧，也未见缓解。市场上时常有客户提出租赁需求，但除了核心重要客户外，火山仍无法满足供应。短期内，这一问题预计不会有太大变化。在国内，通过正规途径能采购到的最高端G PU即为H200。若要在海外采购更高级别的产品（如B300），也并非易事。</p>
+<p><b>11，客户租赁H200主要用于哪些场景？其典型的使用方式、租赁规模和租期是怎样的？</b></p>
+<p>客户租赁H200主要有两种使用场景：第一种是实力较强的客户，他们会利用H200训练自己特定领域的模型，例如游戏领域的专用模型。第二种是客户基于现有开源模型（如“千问”系列）进行微调，以适应其自身的应用场景。</p>
+<p>相应的租赁方式也分为两种。一种是租用物理机，客户一次性租用一定数量（例如200台）的H200物理服务器，火山会为其划分一个专用区域，类似于租用一个机房。这种模式通常适用于需要长期使用的场景，租期至少为数月，例如六个月左右。另一种是在云上租用，火山会为特定客户单独开设一个H200机型（例如100台），按月租赁。H200这类高端资源通常不接受短期租赁，起租单位至少是月。</p>
+<p>从使用场景看，进行模型微调的客户租期较短，通常一到两个月即可完成，因此更倾向于在云上租用。而需要从头训练模型的客户则需要更长的周期，大概率会选择租用物理机房的模式。值得注意的是，H200这类机型并未在火山引擎官网公开展示，而是通过点对点的方式向特定客户开放。</p>
+<p><b>12，从个人感知来看，2026年以来客户租赁H200用于模型训练和模型微调的比例有何变化？</b></p>
+<p>没有具体的统计数据来支持比例变化。从数量上看，在云上进行短期租赁（主要用于微调）的客户可能更多，因为长期租用物理机房的投入较大。大部分客户倾向于利用开源模型进行一至两个月的短期微调。根据个人估算，选择租用物理机房进行模型训练的客户比例可能不超过20%，但这并非精确数据。</p>
+<p><b>13，在GPU租赁业务中，H200所带来的收入占比大概是多少？训练卡和推理卡的收入贡献情况如何？</b></p>
+<p>目前没有关于H200具体收入占比的精确数据。作为单一型号，其占比应该较高，但具体数值不清楚。整体来看，算力租赁的收入大头仍然是推理卡。训练卡（如H200）带来的收入个人感觉可能很难超过30%。</p>
+<p><b>14，在当前的算力市场中，训练卡和推理卡的采购情况如何？除了H200，还有哪些热门的GPU型号？</b></p>
+<p>尽管没有精确数据，但按照正常比例，训练卡的采购金额和数量都无法与推理卡相比。除了H200，市场上较为热门的型号还包括较早的H20以及6000D。其中，H20和6000D均为推理卡，可视为L20的升级版本。</p>
+<p><b>15，在算力租赁市场中，哪些厂商或产品具有较强的竞争力？国产卡的市场表现如何？</b></p>
+<p>在国产卡领域，对外提供租赁服务的主要是华为的昇腾系列。其他国产芯片如寒武纪等，目前主要被字节跳动等公司采购用于自用，并未进入对外租赁市场。昇腾系列芯片在国产卡中表现不错，但在整个租赁市场（包括云上租赁和机房租赁）与英伟达的产品相比仍有较大差距。</p>
+<p><b>16，目前在租赁市场中，华为昇腾系列主要提供哪些具体型号？其市场定位和供应情况是怎样的？</b></p>
+<p>租赁市场中可见的昇腾型号包括910系列和950系列。其中，950系列定位相对更高端，通常被用作训推一体卡，而910系列则更多地用于推理。在云租赁市场，昇腾卡的推理服务基本仅限于华为云，其他主流云厂商如阿里、字节、腾讯、百度等，其对外提供的算力租赁服务均采用英伟达的GPU。此外，昇腾卡也面临供应问题，尤其是950系列，并非能够按需足量供应。</p>
+<p><b>17，阿里巴巴旗下的平头哥芯片在算力租赁市场的表现和竞争力如何？</b></p>
+<p>平头哥芯片目前未进入云上租赁市场，即使在阿里云平台也未提供其算力租赁服务。其产品主要是销售给客户自用。这可能与客户接受度以及生态系统有关。英伟达拥有CUDA生态，而华为等国产芯片采用不同的技术路线，这使得互联网行业的客户在云上租赁时，除非有国央企或政府单位等特定要求，否则基本不会选择非英伟达方案。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

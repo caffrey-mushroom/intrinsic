@@ -1,0 +1,247 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.19 | AC | Robotics | OpenAI Robotics Reorg &amp; Embodied Loop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.19 | AC | Robotics | OpenAI Robotics Reorg &amp; Embodied Loop</h1>
+<p class="orig">原标题：从 OpenAI 组织重组看具身智能：大模型降价，真闭环升值</p>
+<p class="tags">#robotics #llm</p>
+<p class="meta">AceCamp · 2026-11-19 10:57 · article 70569408</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>2026年11月OpenAI撤销独立机器人团队，研究并入Mark Chen主研究部门、应用与硬件并入Applied，2027年人形机器人公开演示目标未取消，性质是重组而非2020年式的战略退出。</li>
+<li>调整动因包括通用模型已覆盖认知层能力、公司单季亏损约109亿美元并筹备2027年IPO收缩支线，以及维持横向模型供应商定位避免与OEM竞争。</li>
+<li>AA-Robotics中新版GPT-6.2 Astra综合分从69.4升至79，8项任务6项满分，但倒饮料不洒退步、2毫米精度测盒子仍为零分。</li>
+<li>旧版基线单任务耗时约30分钟、成本1.93-16.36美元、抓取成功率28%-45%，耗时约为人类的90倍、成本为人类的9.2-78倍。</li>
+<li>作者将具身系统分为通用认知、具身策略、实时控制和本体数据四层，认为认知层可外购而闭环需自研，通用模型降价反而抬升闭环价值。</li>
+<li>A股机器人链仍处早期：拓普是唯一单列执行器收入的公司（2026H1收入1404.77万元、毛利率27.03%、占比0.106%），其余多处于送样、订单或合约阶段，以主题定价为主。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>1.OpenAI 撤销独立机器人团队属于组织架构重组，不宜简单外推为“整机厂无需自研大脑”；2.通用认知层可逐步外采，具身闭环仍需自研或深度集成；3.产业链价值由“通用模型叙事”转向“闭环整合能力”，A 股当前以环节供应及主题定价为主。</p>
+<h3>一、复盘两次组织调整：从战略撤退转向主线收编</h3>
+<p><b>OpenAI 两次撤销机器人独立团队相隔六年，底层约束与业务结果存在显著差异。</b>2020 年 OpenAI 解散早期机器人团队，2024 年重建独立团队并与 Figure 签署合作协议，2025 年 2 月 Figure 宣布终止合作，2026 年 11 月 OpenAI 再次撤销独立机器人团队。</p>
+<p>2020 年的解散属于战略退出。早期 OpenAI 主要依托仿真环境与强化学习开展机械手研究，真实示教数据规模受限。据公司联合创始人 Zaremba事后说明，相较于互联网海量的文本数据，机器人真实示教数据的采集成本过高，在当时算力条件下优先投入大语言模型是通往 AGI 效率更高的路径。此后机器人团队整体解散，不再作为公司的产品方向。</p>
+<p>2024 年 OpenAI 重启独立机器人团队并与 Figure 合作开发人形机器人模型，显示公司仍将机器人视为通用智能落地的重要场景。但双方合作于 2025 年 2 月终止，Figure 转向自研端到端机器人AI。该事件暴露了纯模型厂商在具身领域的结构性短板：由于物理本体归属合作方，模型侧难以获取真实工况下的接触感知与操作数据，单纯依靠模型泛化能力无法替代本体侧的物理交互与部署经验。</p>
+<p>2026 年 11 月的调整发生在上述背景之后。据 Fortune 2026 年 11 月 13 日报道，OpenAI 撤销独立机器人团队后，原研究团队并入 Mark Chen 领导的主研究部门，应用机器人与硬件团队并入 Greg Brockman 领导的 Applied 部门。公司明确确认此次调整为内部重组，机器人仍是长期战略愿景的组成部分，Altman 设定的 2027 年首次公开演示人形机器人目标未作取消。</p>
+<p><b>表1.两次解散：同一个动作，两种含义</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569408_0ea5322c783ccad7.webp" alt="" loading="lazy"></p>
+<p>资料来源：Fortune，2026 年 11 月 13 日；本报告整理。</p>
+<p><b>判断调整性质的核心指标在于研究班底、应用与硬件团队、产品时间表三项是否保留。</b>2020 年上述三项均未保留；2026 年三项全部留存，仅汇报架构由独立团队转为并入主研究与 Applied 条线。</p>
+<p><b>OpenAI 的组织边界不能直接等同于机器人本体厂的最优研发边界。</b>从商业模式看，OpenAI 作为横向通用模型供应商，核心收入来自模型 API 调用量，机器人仅为下游应用场景之一，将其并回主线符合资源复用逻辑。而本体厂销售的是能够在现场连续作业的整机产品，收入来源于交付、维保与复购，且需自行承担现场作业失败的违约与安全成本。两类企业在收入结构、数据归属与失败成本上完全不同，研发布局自然分化。若将 OpenAI 的收缩简单视为行业趋势，无法解释 Figure、特斯拉、优必选、宇树、越疆等整机厂商持续加码具身模型自研的现实。</p>
+<h3>二、调整动因拆解：技术迭代、财务约束与生态定位</h3>
+<p>OpenAI 选择撤销而非扩编独立机器人团队，可从技术判断、成本纪律与战略选择三个维度拆解。</p>
+<p><b>技术层面：认知能力瓶颈向通用模型转移。</b>早期专用机器人模型是主要技术短板，设立独立团队具有必要性；当前通用模型已具备较强的场景感知、任务规划、代码生成与工具调用能力，独立小团队开发的专用认知模块易被下一代通用基座模型覆盖。英伟达相关研究显示，Astra 驱动的智能体在仿真操作基准上的成功率达 74.8%，高于榜单中专用机器人模型 51.0% 的最高水平。尽管仿真基准不代表产线表现，但已足够支持 OpenAI 作出判断：机器人认知层的主要能力增量来源于通用大模型迭代，而剩余难点集中在接触控制、硬件可靠性与现场部署。将研究并入主研究、应用与硬件并入 Applied，实质上是按基础模型研发与下游应用落地重新划分职责。</p>
+<p><b>财务层面：IPO 前的成本纪律加速组织收拢。</b>据 Fortune 披露，OpenAI 最近一个季度亏损约 109 亿美元，目前正筹备 2027 年 IPO，Altman 要求收缩非核心支线项目（side quests）。独立机器人团队涉及硬件研发、人员招聘、供应链管理、安全及法务，属于短期难以贡献明确收入的长期成本中心。需要指出的是，单个机器人团队的开支相较于 109 亿美元的单季亏损体量有限，财务压力不足以单独改变公司盈利状况；成本纪律主要决定了调整的时间节点与撤销独立成本中心的必要性，而技术判断决定了团队能力的并入去向。</p>
+<p><b>战略层面：维持横向供应商定位，避免与 OEM 直接竞争。</b>若选择扩大独立机器人团队，意味着 OpenAI 需向硬件本体、执行器、供应链、安全认证及渠道销售延伸，进入垂直整合模式。该路径不仅偏离其在通用模型与算力上的比较优势，也会与下游机器人 OEM 形成正面竞争。2025 年 2 月 Figure 终止合作并转向自研，已反映出头部 OEM 对核心技术外包的谨慎态度。撤销独立团队后，OpenAI 得以继续维持横向通用大脑供应商的生态定位，面向多家 OEM 提供模型服务。</p>
+<p><b>表2.四种组织选项，OpenAI 为什么选第三种</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569408_fb77adddd692a46c.webp" alt="" loading="lazy"></p>
+<p>资料来源：Fortune，2026 年 11 月 13 日；本报告整理。</p>
+<p><b>三个反例界定了“大脑外购”的适用边界。</b>其一，OpenAI 自身并未放弃整机研发，仍保留 2027 年公开演示人形机器人的产品路径；其二，Figure、特斯拉等头部整机厂以及国内优必选、宇树、越疆均坚持自研具身模型与闭环控制，表明行业并未走向纯外购模式；其三，端侧实时性构成物理约束，CMU 学者 Guanya Shi 指出，通用大模型推理速度较慢且高度依赖云端与稳定网络，实体机器人仍需在本体端部署低延迟的小模型。</p>
+<p>从产业价值分配角度看，OpenAI 此次重组的核心含义在于相对价格变化：通用大模型属于标准化通用资产，随竞争与迭代持续降价；具身策略、实时控制与本体现场数据属于难以复制的互补资产。通用资产价格下行，将推动互补资产的稀缺性与议价能力相应提升。</p>
+<h3>三、GPT-6.2 评测分析：认知能力提升，物理闭环仍有差距</h3>
+<p><b>AA-Robotics 综合分提升，但非结构化与不可逆任务仍存短板。</b>Artificial Analysis（AA）2026 年 10 月与 11 月评测数据显示，AA-Robotics 榜单中新版 GPT-6.2 Astra 综合分由旧版 69.4 升至 79（提升 9.6 分），高于 GPT-6.2 Sol（78 分）及 Claude Fable 5.2（75 分）。从任务明细看，旧版在 8 项桌面任务中取得 4 项满分、3 项部分完成、1 项零分；新版取得 6 项满分、1 项部分完成、1 项零分。其中，四块积木收入盒并盖平、形状匹配、搭最高泡沫塔三项由部分完成提升至满分；按红按钮、鳄鱼玩具入矩形、黑框内写 hello world 三项维持满分；但倒饮料入杯不洒不碎由旧版满分退步为部分完成，测量盒子长宽高（误差 ≤2 毫米）继续维持零分。</p>
+<p><b>图1 新版 Astra 综合分79，旧版69.4</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569408_2447274c49e0237a.webp" alt="" loading="lazy"></p>
+<p>资料来源：Artificial Analysis，2026年10月14日、11月17日。单位：分</p>
+<p><b>表3.八项桌面任务：综合分上升，关键任务退步</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569408_89c73bf5d5eaba23.webp" alt="" loading="lazy"></p>
+<p>资料来源：Artificial Analysis，2026 年 10 月 14 日、11 月 17 日；任务级结果来自 AA 官方榜单帖。单位：任务状态。</p>
+<p>拆解任务特征可见，取得进步的三项均属于目标易语言化、场景变量有限、允许试错重试的结构化任务；而表现不佳的倒液体与测盒子则具有场景变化大、操作失败不可逆的特点。综合平均分容易因结构化任务提分而走高，从而掩盖物理作业中的尾部失败风险。在工业采购场景下，单次倾洒或装配失误导致的产线停机及报废损失可能远超多次成功节省的工时成本，因此综合分更适合作为技术演进观测指标，不宜直接作为采购准入标准。</p>
+<p><b>AA-3D 评测反映三维场景生成进步，不代表工业级几何测量能力。</b>在 AA-3D 榜单中，新版 GPT-6.2 Astra 的 Elo 得分由旧版 GPT-6 Astra 的 1165 升至 1318（提升 153 分），领先 Claude Fable 5.2（1271 分）和 GPT-6.2 Sol（1259 分）。另据 Cryptobriefing 转引 AA 数据，在 152 场盲测中人类评委有 139 场选择了 Astra。但需注意测试口径：AA-3D 包含 55 个交互式 3D 场景任务，模型在离线沙箱中编写 three.js 代码，由人类评委基于视觉效果、交互设计与代码完成度进行偏好投票，并不涉及相机标定、物理尺度基准与测量误差评估。</p>
+<p>Claude Fable 5.2 在 AA-Robotics 测盒子任务中首次获得分数，其方法系借助视频画面中的卷尺刻度进行尺寸估算，属于“得分”而非“误差不超过 2毫米的通过标准”。该案例说明通用模型已具备识别视觉尺度线索的能力，但在实际工业产线中，不存在随附卷尺的理想条件，相机内参、工作距离、镜头畸变与夹具定位仍需依托标定完备的计量栈保障可重复的毫米级精度。</p>
+<p><b>图2 3D场景生成的Elo从1165升到1318</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569408_49691633eca547b8.webp" alt="" loading="lazy"></p>
+<p>资料来源：Artificial Analysis，2026年10月12日、11月17日。单位：Elo</p>
+<p><b>作业节拍、单次成本与抓取成功率距商业化门槛仍有较大差距。</b>据 AA 2026 年 10 月 14 日披露的旧版基线数据，模型单任务平均耗时 30 分钟，单次任务成本 1.93 至 16.36 美元，抓取成功率 28% 至 45%（即每 100 次抓取失败 55 至 72 次）。对照人类 20 秒、0.21 美元的作业基线，旧版耗时约为人类的 90 倍，成本约为人类的 9.2 至 78 倍。新版目前仅披露了综合分与任务通过数，耗时、成本及抓取成功率尚未公布。</p>
+<p><b>图3 同一个桌面任务，旧版GPT-6 Astra耗时约为人类的90倍</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569408_c3ef51238f72af01.webp" alt="" loading="lazy"></p>
+<p>资料来源：Artificial Analysis，2026年10月14日。单位：倍</p>
+<p>此外，AA-Robotics 的测试架构为“通用模型+外购机械臂”通过标准开放接口连接，并未纳入本体厂专有现场数据、实时控制参数与可靠性闭环。因此，GPT-6.2的评测结果主要验证了通用认知层在开放接口下驱动基础动作的进步，尚未验证接触控制层与连续闭环的工业可用性。榜单第一属于研发端指标，而 2 毫米测量精度、倒液体零洒漏、耗时由 30 分钟压降至 20 秒、单次成本由 16 美元降至 1美元以内，才是客户采购端的核心指标，二者之间的差距构成当前市场的主要预期差。</p>
+<h3>四、技术栈分层与自研边界：通用认知外采，具身闭环内化</h3>
+<p><b>技术栈外采与自研的划分取决于三项标准：接口标准化程度、失败可恢复性，以及是否直接绑定安全、节拍与精度。</b>按此标准，具身智能系统可划分为四个层级：</p>
+<p><b>1. 通用认知层：</b>负责场景理解、指令解析、任务拆解、代码编写与工具调用，输出高层行动计划。该层接口相对标准，推理出错可低成本重试，适合直接外购通用模型并自建调用框架（harness），自研必要性较低。</p>
+<p><b>2. 具身策略层：</b>负责将高层计划转化为本体可执行的动作序列，处理抓取力度、倾斜角、流量控制、物体滑移及异常恢复等物理交互问题。该层需将通用模型的高层规划与专用动作策略、力觉反馈深度结合，自研要求高。</p>
+<p><b>3. 实时控制层：</b>涵盖伺服驱动、力控、阻抗控制、碰撞检测与安全 PLC，要求毫秒级闭环响应与确定性执行。即便外购部分基础运动控制栈，本体厂仍需掌握底层接口与安全责任，自研及掌控程度高。</p>
+<p><b>4. 本体与数据层：</b>硬件侧包括执行器、减速器、灵巧手、力觉与触觉传感器及结构件；数据侧包括真实工况运行数据、失败案例库与工艺 know-how。该层为系统提供物理反馈与迭代素材，需自研或深度联合开发。</p>
+<p><b>表4.具身闭环的四段：买、混、自研</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569408_2722dac3ed125957.webp" alt="" loading="lazy"></p>
+<p>资料来源：本报告根据 OpenAI、Artificial Analysis 的评测口径和机器人技术栈整理。</p>
+<p>上述四层构成完整的物理反馈闭环：通用模型生成规划，具身策略执行动作转化，实时控制保障确定性与安全，本体传感器回传物理状态并由现场数据反哺策略迭代。闭环壁垒并非来自单一环节，而是来自跨层接口耦合与现场数据积累。由于接口参数、失效模式、工艺数据及客户验收标准均掌握在本体厂内部，通用模型可以外购，但完整闭环难以直接外采。这也解释了Figure（Helix 3 全本体部署）、特斯拉（端到端控制与世界模型策略在环训练）以及优必选、宇树、越疆（在通用模型之上叠加自研 VLA、世界模型与本体数据）持续推进垂直整合的底层原因。</p>
+<p><b>外购与自研的边界受三项成本动态驱动：</b>自研固定投入、外购边际单价及作业失败损失。通用认知层失败成本低且 API 单价持续下探，外购趋势明确；具身策略与实时控制层失败代价高且现场数据跨本体迁移难度大，必然向自研收敛。通用模型能力越强、认知层采购成本越低，掌握具身闭环的相对价值反而越高。</p>
+<p>结合四类典型任务可进一步明确分工边界：</p>
+<p><b>• 纸箱搬运（A 点至 B 点）：</b>通用模型负责路径规划，抓取力控制、碰撞检测、放置精度及作业节拍由本体厂负责；</p>
+<p><b>• 倒液体不洒：</b>通用模型负责杯口识别，倾斜角调整、流速控制与防滑移依赖力觉及视觉伺服兜底；</p>
+<p><b>• 2 毫米盒体测量：</b>通用模型可辅助生成脚本，相机内参标定、畸变校正、尺度基准与误差补偿须由计量栈完成；</p>
+<p><b>• 跨场景切换：</b>通用模型可降低规则重写工作量，但现场标定、光照适配、物体摆放约束、安全围栏配置与回归测试仍需部署团队落地。</p>
+<p><b>此外，现场工程积累形成的“组织记忆”构成隐性壁垒。</b>在机器人跨工位、跨场景迁移过程中，沉淀于现场工程师日志中的失败案例库、工艺参数与客户验收标准，既不存在于通用模型上下文，也无法通过 API 文档获取。随着通用认知层普惠化，数据层与现场工程服务能力对产品落地效率的决定性作用将进一步凸显。</p>
+<h3>五、产业链价值重构与 A 股披露进度梳理</h3>
+<p><b>行业估值溢价正由“自研大模型标签”向“具身闭环整合能力”切换。</b>在通用认知层可低成本外采的背景下，单一通用模型不再构成稀缺壁垒，产业链标的分化为三类：</p>
+<p><b>1. 纯通用大脑及 API 转售商：</b>通用基座模型迭代越快，其可替代性越高，估值溢价面临压缩；</p>
+<p><b>2. 缺乏本体数据与闭环能力的整机厂：</b>仅具备“自研大模型”叙事，既无基座模型规模优势，亦无物理层工程壁垒，竞争处境较为被动；</p>
+<p><b>3. 具身闭环整合者：</b>打通通用模型接口、具身策略、实时控制与本体数据，能够将上游模型进步持续转化为整机性能提升与客户交付能力。</p>
+<p><b>A 股当前缺乏纯正的闭环整机标的，相关上市公司主要集中于上游核心部件及数据环节。</b>本文梳理了 6 家 A 股机器人产业链代表性公司截至 2026 年 11 月的公开披露信息（涵盖 2026 年半年报、三季报及投资者关系活动记录表），按披露证据强度划分梯队：</p>
+<p><b>表5.A股机器人证据阶梯</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569408_ce099c432a4bee37.webp" alt="" loading="lazy"></p>
+<p>资料来源：各公司 2026 年半年报、2026 年第三季度报告、投资者关系活动记录表。对应层为本报告按公司披露业务归类。拓普占比的分母为汽车零部件主营业务收入 132.61 亿元；若用营业总收入 151.37 亿元，比例为 0.093%。</p>
+<p>从财务与业务披露阶段看，各环节兑现进度差异明显：</p>
+<p><b>• 执行器环节已见收入分项，但营收体量仍小。</b>拓普集团是 6 家公司中唯一单列机器人执行器收入的企业，2026 年上半年实现收入 1,404.77 万元，毛利率 27.03%，占汽车零部件主营业务收入（132.61 亿元）的 0.106%（若按营业总收入 151.37 亿元计，占比为 0.093%）。即便该业务收入翻倍，对汽车零部件主营增速的拉动也仅约 0.1 个百分点，现阶段尚难以利润视角给予独立估值，更多体现为业务期权属性。三花智控在 2026 年 10 月 29 日 IR 记录中披露“批量交付与产线爬坡有序开展”，但未单列机器人收入分项。</p>
+<p><b>• 传感器与关节模组处于订单、送样及研发验证阶段。</b>柯力传感于 2026 年 9 月 16 日业绩说明会中，据提问方信息月订单量持续突破 1,000 只、送样客户达 90 余家，公司回应仍在推进小批量至批量过渡，暂无单独收入披露；汉威科技于 2026 年 11 月 13 日 IR 披露，力觉、触觉、电子皮肤等产品部分处于研发验证或小批量交付阶段，对当期业绩不构成重大影响；东华测试 2026 年半年报披露了力矩自适应智能旋转关节模组及 CNAS 机器人多维力/力矩检测能力，无机器人收入分项。</p>
+<p><b>• 真机数据环节处于合约落地期。</b>海天瑞声于 2026 年 4 月 15 日 IR 披露，已与国内某头部具身厂商签署真机数据采集合约，并与多家本体厂、科技大厂及地方政府启动订单对接，同样未单列具身数据收入。</p>
+<p>综合上述披露阶梯可见，当前 A股机器人板块整体处于“执行器初见收入、传感器送样爬坡、数据端合约起步、整机普遍在研”的早期阶段，二级市场仍以主题定价为主，弹性与波动并存。在实际研究中需严格区分“送样”“订单”“框架合约”“交付表述”与“财务收入”之间的距离：送样仅代表进入测试选项，订单与合约属于意向与框架，唯有报表确认的收入占比、毛利率与客户复购三项指标，才能作为切换至基本面定价的依据。目前除拓普集团披露了收入占比与毛利率外，行业复购数据仍属空白。</p>
+<p><b>研究资源排序方面</b>：首位为具备全链条接口掌控力的<b>闭环整合者</b>；其次为在精度、可靠性与使用寿命上具备定价权的<b>闭环瓶颈部件</b>；再次为具备长合同期限、复购属性及跨本体复用能力的<b>数据与工程服务商</b>；末位为易受大模型降价冲击的<b>纯通用大脑叙事者</b>。</p>
+<h3>六、后续跟踪指标与证伪条件</h3>
+<p>为动态检验具身闭环的演进进度，我们从端侧部署、具身策略、实时控制、本体可靠性、作业经济性及 A 股财务兑现六个维度建立跟踪清单：</p>
+<p><b>表6.闭环验证清单</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569408_01359e182004b614.webp" alt="" loading="lazy"></p>
+<p>资料来源：本报告根据公司披露和 Artificial Analysis 评测整理。</p>
+<p><b>跟踪框架需区分三条独立的时间轴：</b>通用大模型能力按月度迭代，评测榜单更新高频；A 股财务表现按季度披露，数据存在最长约三个月的滞后；而本体可靠性（如 MTBF、返修率、良率）与闭环数据积累的兑现周期通常为半年至一年。若混淆三条周期，易出现以月度模型演示透支季度财报估值，或以滞后财报数据否定技术演进方向的误判。</p>
+<p><b>闭环有效性的验证核心在于连续作业统计分布，而非单次演示峰值。</b>单次成功可通过遥操作、后期剪辑或特定布景实现，无法暴露传感器漂移、关节磨损、电机温升、网络中断及物料位姿变化等真实工况问题。下游工业客户采购决策看重的是连续运行的稳定性下限。</p>
+<p><b>核心证伪条件：</b>若“纯 API 调用+外购机械臂”组合在无自研控制栈及现场数据积累的条件下，于 2 毫米盒体测量和倒液体不洒两项任务中实现连续 100 次测试成功率 ≥90%、单任务耗时不超过人类基线、单次成本 ≤1 美元，且至少有两家 A 股本体厂依托该方案披露量产落地与毛利率提升，则说明闭环技术壁垒已被通用路径攻破，本文“具身大脑难以替代”的结论需作出修正。</p>
+<p><b>正向强化与利润分配验证：</b>反之，若 Figure、特斯拉、优必选、宇树等头部整机厂出货量持续增长，闭环数据与控制栈进一步内部化，而纯 API 集成方案长期无法交付达标的连续运行数据，则闭环稀缺性逻辑将获强化。就 A 股映射而言，若整机出货持续放量而本土供应链迟迟未出现独立收入分项，说明闭环超额利润主要沉淀于整机厂内部，A 股供应链更多获取行业 Beta 而非闭环溢价。此外，若后续大模型 API 价格降幅持续快于本体硬件降本节奏，通用认知层在整机 BOM 中的成本占比将不断压缩，模型供应商议价权减弱，整机闭环整合者的长期利润池反而趋于稳固。</p>
+<p>综上，通常以季度为跟踪频率，淡化单次发布会跑分波动，重点核查多场景连续作业稳定性；财务与产业交叉验证上，整机与上市公司紧盯机器人收入分项、毛利率及复购数据，零部件环节跟踪定点、月度出货与营收占比，数据服务商重点考察合同期限、有效采集小时数及跨本体复用率。</p>
+<p>风险提示：以上根据公开资料整理，仅为个人观点，不代表任何投资建议，请自担风险。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

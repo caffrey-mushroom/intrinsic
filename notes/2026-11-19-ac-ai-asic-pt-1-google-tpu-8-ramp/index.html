@@ -1,0 +1,205 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.19 | AC | ASIC | AI ASIC Pt.1: Google TPU 8 Ramp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.19 | AC | ASIC | AI ASIC Pt.1: Google TPU 8 Ramp</h1>
+<p class="orig">原标题：AI ASIC调研（1）｜谷歌 TPU 8 系列放量，外部推理需求与供应商分工</p>
+<p class="tags">#asic #semis</p>
+<p class="meta">AceCamp · 2026-11-19 23:10 · article 70569441</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>预计谷歌TPU出货2026年约400万颗、2027年800-850万颗、2028年1500-2000万颗，英伟达高层变动对已锁定产能的短期出货影响较小。</li>
+<li>2026年以TPU v7为主（近250万颗）；2027年TPU 8系列达700-750万颗，其中博通TPU 8i 450-500万颗、联发科TPU 8t 250-300万颗。</li>
+<li>Marvell MPU通过CXL外接LPDDR内存池将容量从约1TB扩至3-5TB，2027年下半年出货30-50万颗，2028年增至300-400万颗。</li>
+<li>预计2028年一半以上TPU用于外部客户，Anthropic与OpenAI合计占40%-45%，推理场景TPU单位token成本比英伟达低约20%-40%。</li>
+<li>单颗功耗TPU v7约700-800W、TPU 8系列约900W，每100万颗约对应1GW；单颗ASP估算TPU v7约8000-9000美元、TPU 8t约1.2万美元、TPU 8i约1.5万美元。</li>
+<li>博通提供含HBM采购的turnkey服务并获得溢价，联发科偏后端集成且毛利率较低，Marvell MPU毛利率估计高于联发科TPU业务。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>谷歌 TPU 预计从 2027 年起以 8 系列为主。推理成本和模型适配推动外部需求增长，Anthropic 和 OpenAI 是主要增量，2028 年外部部署占比有望过半。</p>
+<p>公司和联发科在 TPU 项目中的分工不同，Marvell 的 MPU 则补充长上下文推理所需的内存。外部客户的异构部署也对 TPU 的互联方式提出了新的要求。</p>
+<p>以下为专家观点：</p>
+<p><b>1，2026至2028年谷歌TPU的年度出货预期如何？近期英伟达高层变动对出货有何影响？</b></p>
+<p>预计2026年TPU整体出货约400万颗，以博通供应的产品为主，联发科只有少量出货。2027年预计达到800万至850万颗，包括博通和联发科供应的TPU 8系列。2028年预计进一步增至1,500万至2,000万颗，Marvell的MPU另计。</p>
+<p>近期英伟达高层变动对短期出货的影响较小。2026年、2027年及部分2028年的产能此前已经锁定。后续部署仍受数据中心审批和电力条件影响。中长期看，客户也可能加快算力供应多元化或增加自研投入。</p>
+<p><b>2，2026至2027年，TPU各版本的出货结构如何变化？</b></p>
+<p>2026年以TPU v7为主，预计接近250万颗。TPU v6还有约60万至70万颗尾单，博通供应的TPU 8i预计出货40万至60万颗。联发科的出货预计最多10万颗左右，大部分会推迟至2027年。</p>
+<p>2027年TPU v6基本停产，TPU v7预计还有约100万颗出货，TPU 8系列预计达到700万至750万颗。其中，联发科供应的TPU 8t预计为250万至300万颗，博通供应的TPU 8i预计为450万至500万颗。</p>
+<p><b>3，TPU 8i Max与TPU 8i有何区别？双芯合封主要解决什么问题？</b></p>
+<p>TPU 8i Max将两颗TPU 8i合封，目的是在有限的机柜空间内提高算力密度。长上下文推理对算力和HBM容量要求更高，扩大超节点也会增加互联难度。双芯合封可以提高单封装的算力与HBM容量，有利于在相同的物理空间内部署更多算力。</p>
+<p><b>4，TPU 8i Max预计何时放量？</b></p>
+<p>TPU 8i Max于2026年发布，预计在2027年下半年开始放量，规模约30万至50万颗，在TPU出货中的占比预计不高。</p>
+<p><b>5，2028年TPU出货预计达到1,500万至2,000万颗，各供应商的出货结构如何？</b></p>
+<p>到2028年，出货仍以TPU 8系列和v9为主。联发科供应的TPU 8系列及v9合计预计出货800万至1,000万颗，其中TPU 8系列接近500万颗，v9约300万至500万颗。同期，博通供应的TPU 8i预计出货500万至800万颗。年底可能会有少量以博通为主的TPU v10出货，规模暂可忽略。</p>
+<p><b>6，Marvell的MPU在谷歌TPU体系中承担什么角色？出货节奏如何？</b></p>
+<p>MPU主要配合联发科供应的TPU，用于长上下文和大参数模型推理。只靠芯片上的SRAM和HBM，内存容量可能不够。MPU通过CXL外接基于LPDDR的内存池，容量可以从约1 TB扩展到3至5 TB，以满足更大的内存需求，并改善相应场景的延迟表现。</p>
+<p>预计2027年下半年开始少量出货，约30万至50万颗，2028年预计增至300万至400万颗。MPU与TPU分别统计。</p>
+<p><b>7，谷歌TPU的外部客户有哪些？外部需求增长主要由什么驱动？</b></p>
+<p>预计到2028年，一半以上TPU出货将用于外部客户。按2027年TPU总量估算，Anthropic约占20%至25%，OpenAI占10%至12%，Meta占5%至8%，苹果占3%至5%，包括Midjourney在内的其他欧美企业合计占3%至5%。</p>
+<p>主要增量来自推理。在所比较的推理场景中，TPU的单位token成本比英伟达方案低约20%至30%。TPU适配的模型也在增加。</p>
+<p><b>8，到2028年，Anthropic和OpenAI合计占TPU出货多少？两家的型号选择有何不同？</b></p>
+<p>预计到2028年，两家合计占谷歌TPU整体出货的40%至45%。Anthropic在2026年以TPU v7为主，预计2027年转向TPU 8i，8i占其采购量的比例约80%至90%。Anthropic此前已经部署不少英伟达GPU和AWS Trainium，新增TPU需求更偏向推理。OpenAI的需求预计同时覆盖TPU 8i和TPU 8t。</p>
+<p><b>9，为什么预计未来两年OpenAI对谷歌TPU的需求会增加？</b></p>
+<p>ChatGPT等应用推动推理需求继续增长，新增训练算力的需求增速预计放缓。推理部署对成本更敏感，按此处比较的方案估算，TPU的单位token成本可能比英伟达GPU低30%至40%。TPU的部署、软件和模型支持也比以前成熟。</p>
+<p>OpenAI此前的算力高度依赖英伟达GPU，近年也在布局自研芯片、AMD GPU及TPU。采用TPU既能补充推理算力，也能增加供应选择。</p>
+<p><b>10，这些TPU出货规划对应多大的电力需求？部署还受哪些因素制约？</b></p>
+<p>TPU v7的单颗功耗估计在700至800 W，TPU 8系列约900 W，双芯合封的TPU 8i Max预计超过1,000 W。按单颗1,000 W估算，每100万颗对应约1 GW，1,000万颗对应约10 GW。这里按芯片功耗计算。</p>
+<p>实际部署还要看电力接入和项目审批，各州要求不同。以Anthropic为例，2027年的部署规模按中性情景估计约3至4 GW，乐观情景约5 GW，取决于融资、数据中心预算及电力到位情况。</p>
+<p><b>11，TPU v9的预计功耗是多少？</b></p>
+<p>TPU v9尚未正式发布，单颗功耗预计超过1,000 W，可能在1,200 W左右。</p>
+<p><b>12，谷歌TPU的互联架构有哪些调整？72颗TPU超节点进展如何？</b></p>
+<p>谷歌过去通过ICI、Torus拓扑和OCS组建大规模集群，兼顾延迟和功耗。随集群规模增大，定制光交换系统的复杂度也会上升。外部客户往往同时部署TPU、英伟达GPU和AWS芯片，这类异构环境对互联兼容性有更高要求。</p>
+<p>谷歌正在探索多种互联方案，包括以72颗TPU构成的超节点。机柜内提高带宽和算力密度也是一个方向，例如增加HBM配置，或在相关技术成熟后评估CXL等互联方案。</p>
+<p><b>13，TPU v7、TPU 8t和TPU 8i的单颗ASP大约是多少？</b></p>
+<p>按调研估算，TPU v7约8,000至9,000美元，TPU 8t约12,000美元，TPU 8i约15,000美元。</p>
+<p><b>14，博通和联发科在谷歌TPU项目中的分工有何不同？</b></p>
+<p>博通提供turnkey服务，承担从IP和布线到流片、测试和封装的多个环节，也负责HBM采购和HBM控制器集成。合并采购有助于降低HBM成本，自有控制器和集成服务也带来溢价。</p>
+<p>联发科更偏后端集成。谷歌负责前端设计及HBM采购，联发科负责后端集成并协调流片、测试、封装和交付。两家公司承担的环节不同，毛利率也有差距。</p>
+<p><b>15，Marvell的MPU毛利率大致如何？</b></p>
+<p>这颗MPU的毛利率没有精确测算。它的复杂度低于TPU，但Marvell参与前端和后端设计，毛利率估计高于联发科TPU相关业务估算区间。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

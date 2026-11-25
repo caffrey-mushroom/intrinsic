@@ -1,0 +1,207 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.18 | AC | LLM | ByteDance Seed: Compute Limits &amp; Model Lag</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.18 | AC | LLM | ByteDance Seed: Compute Limits &amp; Model Lag</h1>
+<p class="orig">原标题：AI大模型Seed调研：模型迭代承压，算力供给天花板与硬约束，国产替代与推理瓶颈</p>
+<p class="tags">#llm #china #semis</p>
+<p class="meta">AceCamp · 2026-11-18 09:06 · article 70569357</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>当前线上豆包2.1为后训练最稳定的版本，编程多步任务有提升，但整体仍处于第二梯队，预训练参数量仅略超1T，一年多来仅增一两百B。</li>
+<li>在研大模型目标参数约2T，原生多模态项目因技术进展慢和推理算力紧张被下调至实验室级，发布可能推迟两到三个月。</li>
+<li>预训练瓶颈在算法与工程而非数据，在工程优化和极致稀疏化方面落后同行约一年；OpenAI、Anthropic的反蒸馏措施对智谱等依赖后训练的公司影响更大。</li>
+<li>2026年国产卡产能严重不足，2027年昇腾950/960面临降配且交付不稳定、寒武纪受产能制约，公司高层已限定未来三年资本开支上限。</li>
+<li>字节海外东南亚算力仅用于研发实验，不做完整训练与跨境推理，合规程度高；新规下Oracle取消了与腾讯的采购合同，Kimi、智谱、MiniMax等受冲击最大。</li>
+<li>2026年12月至2027年将有四次V100、A10、A30等老卡大规模退役潮，字节和腾讯压力最大，阿里因自研芯片稍好。</li>
+<li>国产卡互联性能差，无法用于训练，主要用于推理；美团调试国产万卡超节点训练LongCat耗时约九个月适配周期。</li>
+<li>当前最大瓶颈在研发实验环节算力不足，导致DeepSeek、智谱、Kimi迭代变慢，只有字节和阿里能维持每季度左右一个版本。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<ul><li>大模型演进节奏：2.1版本后训练最稳定，编程多步任务提升明显，但整体仍落后业内领先水平一个档次，处于第二梯队。</li><li>研发瓶颈与架构：预训练受限于算法与工程技术，落后同行约一年；原生多模态因算力紧张优先级下调至实验室级别。</li><li>算力供给约束：外算力以高合规标准运作，无法跨国支持国内模型全量训练与推理；2026-2027年国产卡产能不足且面临降配交付。</li></ul>
+<p><b>以下内容来自资深行业专家：</b></p>
+<p><b>Q&amp;A</b></p>
+<p><b>公司在大语言模型方面的最新进展如何，以及后续的版本发布节奏是怎样的？</b></p>
+<p>当前有一个正在训练的大语言模型版本，设计目标参数量为2T左右，但考虑到收敛情况。该模型的一个特点是，为弥补文本能力的不足，与公司在业内较为领先的视觉理解模型进行了拼接，因此豆包1.6、1.8及2.0之后的版本都具备较强的视觉理解能力，例如读取视频和图片。但这并非原生多模态，而是两段式拼接的架构。在2026年年底的版本预期中，编程能力仅有例行的小幅提升，没有实现质的突破。</p>
+<p>此外，新加坡和美国的团队正在联合尝试原生多模态输入模型，这与现有大语言模型是不同的技术路线。该项目当前优先级已从最高档下调一档至实验室级别，主要受限于两方面因素：一是技术进展偏慢，二是国内推理算力特别紧张。</p>
+<p>关于发布会，由于模型最新的报告尚未提交，时间安排较为紧张，原生多模态版本目前看来无法与大语言模型一同发布，可能会推迟两到三个月。</p>
+<p><b>从研发团队架构来看，原生多模态模型和基础大语言模型是两条并行的研发路线吗？这种架构未来是否会有变化？</b></p>
+<p>是的，这两条是并行的研发路线。基础大语言模型团队内部还细分为两个主要方向：一个是文本方向的核心研究，即Foundation团队，研究MoE等技术；另一个是原生多模态模型，其研发人员主要归属于多模态输入这一研究方向，与大语言模型团队的人员不重叠。尽管国内推理算力不足以大规模支持原生多模态输入，但该技术路线符合国内市场特点，可以通过与手机、电脑等终端厂商合作进行定制化，从而量化压缩其推理消耗。</p>
+<p><b>当前线上版本是否为豆包2.1？其真实水平与竞品相比如何？</b></p>
+<p>当前线上版本是豆包2.1，但其下有更细分的小版本号，且编程和文本的版本号并不统一。</p>
+<p>从模型版本演进来看，1.6、1.8、2.0和2.1这四个版本在预训练阶段的差异非常小，主要区别体现在后训练阶段。2.1版本是目前后训练最稳定的版本，尤其是在编程领域的多步任务上稳定性有所提高。尽管如此，与业内领先模型相比，该模型仍落后一个档次，处于第二梯队。</p>
+<p><b>模型预训练效果不佳的主要瓶颈是什么？是算法、工程还是数据问题？</b></p>
+<p>预训练的瓶颈主要体现在算法和工程技术两个层面，而非数据量不足。在海外，预训练的卡点主要有两层：第一层是纯粹的计算算法，即模型预测下一个Token的准确性，这方面OpenAI等公司实力很强；第二层是工程技术，指模型运行时Python代码的优化能力，例如处理高并发和KV Cache扩展等。</p>
+<p>在国内，由于推理算力的稀缺，增加了第三个层面的挑战，即极致稀疏化，包括专家之间的分配与选择等问题。在这三个方面中，公司在核心算法领域落后较少，但在另外两个领域，根据业内技术交流的普遍认知，大致落后同行一年。过去一年多，公司模型预训练的参数量没有大的变化，增幅仅一两百B，总量勉强超过1T。</p>
+<p><b>公司从2025年起停止蒸馏，未来是否会重启？</b></p>
+<p>展望未来，重启蒸馏面临新的挑战。OpenAI等公司已将蒸馏的成本推得非常高，因此未来进行蒸馏的机会已变得很小。</p>
+<p><b>OpenAI和Anthropic的反蒸馏措施对国内模型公司的普遍影响是什么？</b></p>
+<p>这些反蒸馏措施对所有国内模型公司都有影响，尤其对像智谱这样善于做后训练的公司影响更大。智谱的预训练参数量较小，其版本迭代主要依赖后训练升级。此外，该措施还对一个衍生问题产生影响：一些公司将其他模型产出的数据用作自己的预训练数据，而非购买或标注的标准教科书、论文等可扩展数据。如果未来无法再进行蒸馏，这些公司将面临重新进行预训练的风险，凸显了过度依赖蒸馏的潜在问题。</p>
+<p><b>公司在算力方面的资本开支规划是怎样的？</b></p>
+<p>公司目前对算力资本开支持观望态度。2026年面临的主要问题是国产卡产能严重不足，供货量远低于预期。展望2027年，问题则在于主要供应商的产品性能与宣传不符，例如昇腾的950和960两大系列都将面临明显的降配，且交付不稳定；而寒武纪的主要问题是产能。因此，预计2027年国产卡在满足推理需求方面，供应量仅能算勉强够用，谈不上充足。在此背景下，公司全球董事会高层限定了未来三年的资本开支上限。</p>
+<p><b>字节跳动2026年的算力采购预算为何没有像2024年和2025年那样大幅上调？</b></p>
+<p>字节跳动在2024年和2025年大幅上调采购预算，主要是为了弥补前一年的失误和追赶行业差距，因此能获得较高的预算批准。相比之下，2026年并未出现重大失误，所以缺乏申请同等规模高额预算的充分理由。此外，英伟达的采购限制也导致资金难以有效支出。从资本开支规模来看，进一步增加投入将对公司的现金流构成巨大压力，这也是高层管理必须考虑的因素。</p>
+<p><b>字节跳动在海外的算力投资，特别是东南亚的自建算力，对其大规模模型训练的支持效果是否达到了预期？</b></p>
+<p>业界存在一个误解，认为字节跳动大量使用非合规渠道的GPU（即“水卡”）并在海外进行完整训练。实际情况是，字节跳动的合规程度非常高，正式场景一律不使用此类GPU，也从未在海外进行完整的模型训练。东南亚的自建算力主要用于研发和实验阶段，这一阶段对算力的消耗最大，因此该项投入是合理的。然而，这部分算力既不能用于完整的模型训练，也不能因跨境问题用于推理服务。虽然前期为追赶落后的模型技术，投入研发实验算力回报较高，但未来若仅为维持模型进步速度而持续在海外投入上千亿人民币，公司现金流将无法承受，同时也会面临外汇管理的监管。</p>
+<p><b>美国商务部工业与安全局近期发布的新规，以及英伟达的相关动态，对行业和字节跳动产生了哪些具体影响？</b></p>
+<p>新规对不同类型的公司影响各异。对于字节跳动而言，其一贯的合规策略优势得以显现。字节跳动通过其在东南亚设立的壳公司的海外分公司来访问自建机房，这属于两方操作，不涉及第三方远程访问，因此在表面上是合规的，也是国内公司中合规性做得最好的。公司在界定训练与推理工作方面非常谨慎，遵循了“当地卡服务当地业务”的原则，因此预计新规暂时不会对其造成严重影响。相比之下，其他模式将面临挑战。首先，像阿里巴巴这类全球云服务商在东南亚部署英伟达算力并转租给国内公司的行为，属于三方远程访问，将受到限制。其次，国内算力租赁公司将其海外算力提供给国内模型公司用于训练，这种模式更不合规。实际上，在本次远程访问规则收紧之前，这些行为已处于不同程度的不合规状态。此次受影响最显著的案例是Oracle取消了与腾讯的采购合同。未来，许多中国公司通过海外壳公司跳转访问美国或新加坡算力的模式（即使仅用于实验或推理）将受到较大影响。此外，非合规的英伟达GPU进入国内的渠道在未来很长一段时间内可能会被切断，这将对Kimi、智谱AI、MiniMax等独立模型公司的训练算力获取，以及算力租赁公司的业务增长构成最大冲击。</p>
+<p><b>关于非合规GPU（“水卡”）的供应，未来是否会因英伟达新产品（如Rubin系列）的技术特性而中断？</b></p>
+<p>“水卡”问题可能在一段时间后不再被讨论，因为这类卡主要停留在Blackwell（“B卡”）系列。英伟达的下一代Rubin（“R卡”）系列明确带有定位功能，并且要求必须联网激活定位模块。国内海关此前不查“B卡”，但“R卡”因涉及国家安全问题，必然会进行查验。</p>
+<p><b>从未来一到三年的维度看，算力获取的限制是否会对国内大模型研发的整体进展速度产生明显影响？</b></p>
+<p>是的，会产生明显影响。首先，对于拥有大量英伟达GPU的大公司如字节跳动和阿里巴巴，算力调配受到了严重影响。原计划中，即使统一多模态端到端模型在技术上不完美，也可以凭借充足的算力先行发布。但现在政策收紧，这类技术不成熟的模型推理成本巨大，加之国产GPU在2026年出现交付问题，导致项目因缺乏推理算力而被搁置。国内目前普遍短缺的是推理算力。其次，对于专业的模型公司，其训练过程将严重受阻。例如，DeepSeek因坚持使用昇腾及合规的英伟达GPU，其模型版本迭代周期可能被拉长至一年以上。这些都是已经发生的真实案例。</p>
+<p><b>存量老旧GPU的集中退役是否会加剧算力短缺问题？具体会产生哪些影响？</b></p>
+<p>老旧GPU的集中退役确实会产生影响，问题在2026年就已显现。从2026年12月开始至2027年全年，将有四次大规模的退役潮，主要涉及英伟达的V100、A10和A30等型号。字节跳动和腾讯等公司均面临此问题，因为其云服务出租的主要就是这些卡型。与此同时，国产GPU的交付出现断档，这个问题目前难以解决，甚至字节跳动也需要寻求外部算力租赁。在此情况下，拥有自研芯片的阿里巴巴可能处境稍好。百度的昆仑芯研发周期较长且自身需求量不大。字节跳动和腾讯面临的挑战最为严峻，但字节跳动因已收到部分690交付，情况略好于腾讯。</p>
+<p><b>国产GPU在训练和推理方面的性能与英伟达GPU相比差距如何？能否在推理端实现有效替代？</b></p>
+<p>国产GPU的通用机柜因卡间互联性能太差，无法用于模型训练，其集群利用率较低，经济效益极低。即便是华为降配后的950DT，似乎也无法再使用通用机柜进行训练。因此，国产GPU目前主要定位于推理应用。在推理能力上，不同国产GPU之间存在差异。寒武纪当前的旗舰型号690，其性能与其他厂商的未来款产品对标，如壁仞的BR200、沐曦的C600以及海光深算4。这些GPU的配置目前可以支持基础的图像生成，但无法处理类似GPT-4o Image 2所生成的复杂图文并茂的图像。市场关注度较高的昇腾950 Pro，是一款为迎合国内市场需求、产能相对较高的卡型，但它无法执行图像生成任务。在文本生成方面，其设计激活的参数量约为20多B，并且是基于国内流行的极致稀疏化模型架构，这表明其是针对国内特定需求进行优化的产品。</p>
+<p><b>在国内AI推理卡的背景下，超节点的应用现状、面临的挑战以及对未来推理成本和效率的潜在影响是怎样的？</b></p>
+<p>当前，为提升Flash版大语言模型（如DeepSeek、智谱5.3）的毛利率需要采用生成384的超节点配置。若使用950 Pro通用机柜进行推理，高并发和多用户场景下的毛利极低，因此必须转向超节点以解决卡间互联带宽不足的问题。然而，国产超节点存在交付和调试方面的挑战。尽管昇腾、沐曦、海光等厂商的万卡超节点可以交付，但工程量巨大且交付缓慢。例如，美团在训练LongCat模型时，仅调试工作就耗时三个月，理解和排查模型问题则花费了半年，这意味着任何公司若想使用国产万卡超节点进行预训练，需投入长达九个月的适配周期。DeepSeek正在进行此类尝试，但字节、阿里、腾讯等公司因认为性价比不高而选择继续使用现有的英伟达算力。因此，万卡超节点在训练方面并不划算。</p>
+<p>对于小规模超节点（如2000卡、1,000卡、384卡），理论上可以结合昇腾950DT这类产品进行多节点串联组建集群用于训练。但由于950DT的配置已显不足，市场需等待960DT，这使得相关计划被推迟了一年。因此，当前国产卡的实际应用场景是，使用小规模超节点配合旗舰卡（如950 Pro）进行推理，以提升毛利并支持激活参数量更大的模型（例如30B级别）。如果到2027年，像690、壁仞BR200、深算4等型号的AI卡无法实现大规模交付，国内的推理成本将变得非常昂贵且效率低下，届时可能会依赖存量的英伟达卡，甚至租赁方的B200也可能被用于推理。</p>
+<p><b>在当前算力受限的情况下，算力分配的优先级是如何确定的？主要瓶颈存在于哪个环节？</b></p>
+<p>当前的算力瓶颈并非在训练或推理环节，而是在研发实验环节。在大模型开发中，验证一个想法或测试一段代码，可能就需要处理10亿条数据，但如果工程师无法分到足够的GPU，导致人效极低，模型开发周期被拉长。</p>
+<p>通常，大模型的训练周期约为一个月，国内外均如此。但真正的瓶颈在于，如果工程师没有充足的卡进行实验，模型代码本身就无法完成，也就无法进入训练阶段。当前，由于英伟达芯片进口受限，各方使用时也更为谨慎，这导致DeepSeek、智谱、Kimi等模型的版本迭代速度放缓，因为其代码测试速度变慢了。目前只有字节和阿里能够维持每季度或每两三个月一个版本的迭代节奏。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

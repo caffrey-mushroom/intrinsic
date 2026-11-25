@@ -1,0 +1,256 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.17 | AC | Semis | BIS Remote Compute Access Rule Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.17 | AC | Semis | BIS Remote Compute Access Rule Analysis</h1>
+<p class="orig">原标题：美国BIS《应对先进半导体远程访问》新规全景剖析、技术逻辑与全球AI产业链重塑</p>
+<p class="tags">#semis #china #datacenter</p>
+<p class="meta">AceCamp · 2026-11-17 10:15 · article 70569314</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>美国BIS发布132页临时最终规则《应对先进半导体远程访问》，作者视之为管制范式3.0，首次将算力即服务和跨境远程算力调用纳入EAR长臂管辖。</li>
+<li>核心门槛为1200万聚合TPP，约相当于730-750张H100或约300张B200，精准封堵受限实体租用海外集群进行基础模型预训练。</li>
+<li>新规将通过高速网络、调度软件或分布式训练框架协同运行的多个数据中心算力强制合并计算，使多地拼凑分布式训练的规避路径失效。</li>
+<li>规则采用最终母公司穿透原则，总部或最终母公司在D:5国家及中国澳门的客户无论通过哪地实体签约都触发管制，代训行为的中介也须承担责任。</li>
+<li>新加坡、马来西亚、泰国、印尼、巴西5国被纳入先进计算芯片出口许可管理，而美资母公司企业可依据§743.10豁免单项许可但须按月报告。</li>
+<li>新规对存量集群的用途变更具有追溯力，运营商须在90天内获得许可，否则必须切断对受限实体的服务。</li>
+<li>传统电商和社交推荐系统经备案可获豁免，但任何生成式AI均不得享受豁免，同时新规正式废止拜登时期的AI扩散框架并收紧代工与先进封装推定。</li>
+<li>作者认为新规将倒逼国产算力与软件生态加速，并推动MoE、推理时计算和异构混训等低算力依赖路线，同时东南亚IDC投资面临骤冷与合规洗牌。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>北京时间晚间，美国商务部工业与安全局（以下简称 BIS）发布了一份长达 132 页的临时最终规则（Interim Final Rule, IFR），题为《应对先进半导体远程访问》（Addressing Remote Access to Advanced Semiconductors）。该规则的落地，标志着自 2022 年 10 月 7 日美国开启对华先进半导体出口管制以来，全球半导体与人工智能治理体系经历了第三次历史性范式跃迁：管制范式 1.0（2022 年 10 月）：以物理晶片算力与带宽为锚点，限制先进硬件实体向特定目的地的跨境物理交付；管制范式 2.0（2023 年 10 月）：引入“总处理性能”（TPP）与“性能密度”（Performance Density）二维指标，全面封杀降规芯片，并将晶圆制造设备管控进一步下沉；管制范式 3.0（本次新规）：打破“属地物理边界”的局限，正式将“算力即服务（Compute-as-a-Service, CaaS）”与“跨境远程算力调用”纳入美国《出口管理条例》（Export Administration Regulations, EAR）的直接长臂管辖范围，确立了“公司最终母公司归属判定 + 物理/网络聚合算力门槛（1200 万 TPP）+ 供应链与代训全链条穿透”的三维立体封锁体系。本报告旨在从美国顶层地缘博弈逻辑、具体技术与法理指标拆解、全球数据中心产业生态迁移、中国大模型技术路线抉择以及半导体供应链重组五个维度，提供全面的战略洞察与分析。</p>
+<h2>第一章 规则出台背景与华盛顿决策博弈动向</h2>
+<h2>1.1 决策主导权转移：国安委与财政部的强力干预</h2>
+<p>长期以来，美国对华出口管制由商务部下属的 BIS 主导制定与执行。然而，自 2023 年底以来，美国国会两党鹰派、智库（如CSIS、CNAS）以及白宫国安团队频繁对商务部的监管效率提出质疑，认为传统基于物理报关单的硬件管制已形成严重的“制度漏洞”。大量受限实体通过在第三国设立空壳公司、租赁海外超算中心算力、云端调用未降规算力等方式，事实绕开了实体清单的围堵。</p>
+<p>与以往不同，<b>本项新规在官方声明中罕见且明确地指出：是在美国财政部与总统国家安全委员会（NSC）的直接指导与统筹下起草并出台的</b>。这一表述印证了华盛顿内部在对华高科技封锁主导权上的微妙位移——对华科技遏制已被彻底从“贸易合规议题”升格为“最高级别国家安全与金融级长臂管辖议题”。财政部与国安委的深度介入，带来了更具金融穿透力与穿透式尽调逻辑的执法工具库。</p>
+<h2>1.2 跨党派建制派合流与政治周期驱动</h2>
+<p>在美国当前复杂的内政环境下，无论是参议院民主党领袖舒默积极推动的“切断对华前沿技术流动”立法组合拳，还是众议院共和党领导层对出口管制执法的问责，均表明<b>对华尖端技术脱钩已越过两党内部分歧，成为最具确定性的政治共识</b>。</p>
+<p>白宫高层急于在大国科技博弈关键窗口期关闭所谓“虚拟逃生通道”，旨在确保美国在通用人工智能（AGI）乃至超级智能（Superintelligence, SI）竞赛中拉开绝对技术代差。</p>
+<h2>第二章 核心条款、监管机制与技术参数全景拆解</h2>
+<h2>2.1 算力门槛量化：12,000,000 Aggregate TPP 的物理映射与技术内涵</h2>
+<p>新规中最具杀伤力的核心技术指标，是设立了 <b>1200 万聚合总处理性能（Aggregate Total Processing Performance, TPP）</b> 的许可触发红线。</p>
+<h3>（1）TPP 的计算与硬件折算</h3>
+<ul><li>在先前的管制框架下，单芯片 TPP 达到或超过 4800 即被划入 3A090 限制范畴。而此次新规引入的“Aggregate TPP”，是将<b>同一网络拓扑内、协同执行计算任务的所有芯片算力进行线性加总</b>。以英伟达 <b>H100 SXM (SXM5)</b> 为例，其 FP16的峰值处理能力对应 TPP 换算后，<b>1200 万 Aggregate TPP 仅相当于约 730 至 750 张 H100 芯片的并行算力</b>。</li><li>若折算为英伟达新一代 <b>Blackwell 架构（如 B200）</b>，由于单芯片 TPP 翻倍提升，触发该红线所需的物理芯片数量将进一步骤降至 <b>300 张左右</b>。</li></ul>
+<h3>（2）1200 万 TPP 门槛的技术扼杀意图</h3>
+<p>在现代深度学习体系中，750 张 H100 是一个极具针对性的“分水岭”：</p>
+<ul><li><b>日常微调与推理（Inference / Fine-tuning）</b>：中等参数规模（7B~14B）模型的推理服务或小规模 LoRA 微调，所需卡数通常在数十卡到两百卡之间，理论上可勉强控制在该红线下方；</li><li><b>基础模型预训练（Foundation Pre-training）</b>：现代主流基础大模型（如 70B 及以上参数，或多模态稠密模型）必须依赖数千至数万张高性能 GPU 组成高速互联集群（InfiniBand / RoCE）协同训练数周或数月。1200 万 TPP 的设定，<b>精准扼杀了任何受限实体通过租用海外计算集群开展前沿基础模型训练与大规模强化学习（RLHF/RLAIF）的可能</b>。</li></ul>
+<h2>2.2 反规避网络聚合定义（Distributed &amp; Interconnected Datacenters）</h2>
+<p>针对此前业界设想的“化整为零”对策（例如在不同可用区甚至不同 IDC 分散租用 256 卡集群，通过低延迟光纤进行参数同步），新规在法律文本中作出了极具前瞻性的严密补丁：</p>
+<ul><li><b>物理与逻辑聚合一体化</b>：新规明确界定，“计算能力”涵盖<b>通过内部高速网络连接、计算资源共享调度软件（如 Slurm、Kubernetes 调度器）、RDMA 网络或分布式训练框架协同运行的多个物理数据中心</b>。</li><li><b>联合负载穿透</b>：只要多套硬件在逻辑上服务于同一个模型并行（Model Parallelism）或流水线并行（Pipeline Parallelism）任务，其 TPP 必须强制合并计算。这直接宣告了“多地租用分布式算力拼凑训练”的规避路径在法理上的无效性。</li></ul>
+<h2>2.3 属人管辖与穿透式尽职调查（Ultimate Parent &amp; KYC）</h2>
+<p>新规彻底摆脱了“仅看签约法人主体”的浅层合规，确立了类似于金融反洗钱（AML/CFT）的<b>终极受益人穿透审查原则</b>：</p>
+<ol><li><b>D:5 国家组与中国澳门主体</b>：只要客户的总部（Headquarters）或最终母公司（Ultimate Parent</li></ol>
+<p>Company）注册于受限制目的地，无论其用于签署云服务合同的实体是设立在新加坡、开曼群岛还是特拉华州，均直接触发管制。</p>
+<ol><li><b>中间商与代训行为归责（Indirect Provisioning）</b>：新规不仅制裁直接买家，更将法律责任延伸至“明知或有理由知晓（Know or Reason to</li></ol>
+<p>Know）”的海外第三方服务商。如果一家海外初创公司或独立软件开发商（ISV）租用集群，实质是在为受限制实体代训专有模型、蒸馏数据集或输出基座模型权重，该数据中心和中介均构成对 EAR 的违反。</p>
+<ol><li><b>法定义务倒逼</b>：全球芯片出口商、数据中心运营商及第三方托管商被强制建立严格的KYC尽调档案，必须穿透审查直接控制权、投票权及实际受益人结构。</li></ol>
+<h2>2.4 新增 5 个中转风险国与“美资企业不对称豁免”</h2>
+<h3>（1）转运热点国家的精准锁定</h3>
+<p>新规正式将 <b>新加坡、马来西亚、泰国、印度尼西亚、巴西</b> 5 个国家纳入先进计算半导体的特定出口许可管理清单。</p>
+<ul><li>过去两年间，马来西亚（特别是柔佛州）因充沛的土地和电力供应，承接了大量以超大规模算力为核心的海外数据中心投资；新加坡则长期作为亚太云计算网络中枢。</li><li>此次将这 5 国统一纳管，彻底切断了先进芯片在未经 BIS 许可下大批量进入东南亚和拉美核心算力枢纽的通道。（值得注意的是，此前媒体预测的挪威、南非最终未被纳入）。</li></ul>
+<h3>（2）新增 § 743.10 条款下的“美资不对称豁免”</h3>
+<p>为了保护美国本土云巨头的海外利益，新规设计了一套精密的制度倾斜：</p>
+<ul><li>若硬件的最终收货方或最终母公司<b>总部位于美国</b>（例如亚马逊 AWS、微软 Azure、谷歌 Cloud 位于上述 5 国的全资子公司或基础设施），<b>可免除申请昂贵且耗时的单项出口许可证</b>。</li><li><b>月度合规对账机制（Monthly Reporting）</b>：享受该豁免的美资企业必须依据新增的 § 743.10 条款，按月向 BIS 提交详尽的合规日志，包括交易对手身份、芯片型号、出货数量、总处理性能（TPP）、机架部署拓扑及实际服务流向。</li><li><b>竞争格局意图</b>：该安排在法律层面上赋予了美资跨国云巨头合法合规运营的“绿色通道”，同时极大抬高了非美资（包括中资出海企业、东南亚本土 IDC 运营商）在第三国参与先进算力建设的合规与运营成本。</li></ul>
+<h2>2.5 追溯力与 90 天既有业务清理窗口</h2>
+<p>新规并未采取“既往不咎”的传统缓冲方式，而是表现出强烈的追溯与存量干预色彩：</p>
+<ul><li><b>用途变更（Change of End-Use）追溯</b>：对新规公布前已合法交付并安装在海外机房的 GPU（如存量 H100/H800 集群），一旦其当前用途涉及向受限实体提供超过 1200 万 TPP 的算力，即构成受管制的“用途变更”。</li><li><b>90 天合规出清期</b>：数据中心运营商若计划继续向受限实体提供相关算力，必须在新规生效后的 90 天内向 BIS 提交许可证申请并获批；若 90 天内未能取得许可，则必须立刻切断服务。逾期继续运营的机房，将直接面临未来被剥夺获取美国软硬件支持资格的连带制裁。</li></ul>
+<h2>2.6 “商业推荐” vs “生成式 AI”：精准剥离非敏感场景</h2>
+<p>新规并未实施一刀切的全面脱钩，而是体现出精细的“小院高墙”特征：</p>
+<ul><li><b>豁免范畴：传统商业推荐系统（Recommender Systems）</b></li><li>专门用于电商平台（如商品智能排序、个性化展示）以及社交网络（如信息流推送、广告匹配）等基于历史用户行为和特定商品属性进行过滤、排序的传统算法系统，在满足严格的备案申报后可被豁免。此举意在避免冲击中资跨境电商（如 SHEIN、Temu、TikTok 商业化系统等）的基础商业运营。</li><li><b>严禁范畴：前沿生成式 AI（Generative AI）</b></li><li>新规以穷尽列举的方式明确排除：任何具备“根据用户提示生成新文本、代码、静态/动态图像、音频、3D模型或其他合成内容”的大语言模型与扩散模型，均不得享受任何推荐系统豁免。这表明美国决策层严格将国家安全威胁锁定在通用智能（AGI）的自主认知、代码生成和科学计算推演能力上。</li></ul>
+<h2>2.7 彻底撤销拜登时期“AI扩散规则”（AI Diffusion Framework）</h2>
+<p>2025 年 1 月，拜登政府在卸任前夕紧急出台了一套《人工智能扩散框架》（Framework for AI Diffusion），试图按照国家安全信任等级将全球划分为不同层级，并对模型权重出口及特定数据中心设置全球VEU（验证终端用户）配额管理。</p>
+<p>新规正式宣告<b>在法律意义上永久废止拜登时期的扩散规则框架</b>。撤销原因包括：</p>
+<ol><li><b>盟友反弹与执行困境</b>：旧框架因对欧洲、中东盟友施加了过宽泛的配额和繁复的跨境审核，招致全球多国政府的抵制与美国本土芯片行业协会的强烈游说；</li><li><b>务实管辖转向</b>：取代抽象的“全球模型扩散分级”，当前新规将战略火力重新收敛并聚焦于核心矛盾——<b>卡死中国等关键竞争对手对“海量硬件”与“云端超算”的实际调用权</b>，回归到精准靶向打击的实操路线上。</li></ol>
+<h2>2.8 制造端与先进封装推定的收紧（Foundry &amp; Packaging Presumptions）</h2>
+<p>除算力服务外，新规还在半导体制造前端实施了联动封堵：</p>
+<ul><li>修订了前端晶圆代工厂（Foundry）与先进封装测试厂（OSAT）在处理先进逻辑芯片时的<b>合规推定标准</b>。</li><li>大幅削减了受限地区芯片设计公司（Fabless）利用第三国先进代工与封装节点（如 CoWoS 等 2.5D/3D 封装）生产自研芯片的抗辩通道，使未达标芯片试图通过调整封装配置规避监管的灰色路径被进一步封死。</li></ul>
+<h2>第三章 被封堵的核心规避链条与实操场景还原</h2>
+<p>为了理解新规的实际威力，需还原过去两年在国际 AI 产业链中广泛存在的四类算力租赁与调度模式。新规的出台，精准切断了这四类操作的生存空间：</p>
+<p><b>1、第三国空壳离岸实体代采代管</b></p>
+<ul><li><i>旧操作</i>：受限企业在新加坡、阿联酋等地设立轻资产空壳公司，出具非受限终端用户证明，向系统集成商采购搭载 H100/H800 的整机并托管于东南亚 IDC。</li><li><i>新规穿透</i>：最终母公司条款确立后，只要穿透股权追溯至 D:5 国家，无论中间设立多少层控股架构，均直接适用受限规则。</li></ul>
+<p><b>2、纯算力裸金属（Bare Metal）云端租赁</b></p>
+<ul><li><i>旧操作</i>：不涉及硬件所有权转移，国内主体通过公网 API、专线或跨国 SD-WAN 访问位于北欧、东南亚中立数据中心的高性能计算实例进行分布式训练。</li><li><i>新规穿透</i>：将“提供计算能力”定义为受控出口行为，并以 1200 万 TPP 设卡，直接掐断大规模租算力训练的可能。</li></ul>
+<p><b>3、第三方中介“代理训练”（Proxy Training / Model-as-a-Service）</b></p>
+<ul><li><i>旧操作</i>：受限主体仅提供清洗后的训练数据集与算法架构，委托海外无受限背景的合作实验室或商业实体代为执行前向传播与反向传播计算，最后仅回传权重（Weights）。</li><li><i>新规穿透</i>：新规设立了针对“间接供应（Indirect Provisioning）”的连带责任条款，明确代训生成式大模型同样触发许可要求。</li></ul>
+<p><b>4、多可用区微集群网络分布式协同（Distributed Slicing）</b></p>
+<ul><li><i>旧操作</i>：为了绕过单机房部署审查，在三到四个物理隔离的机房各租用 200~300 张卡，通过专用光纤通道与特定并行通信算法（如 Pipeline Parallelism）进行协同训练。</li><li><i>新规穿透</i>：新规明确将“网络互联以协同运行”的集群纳入 Aggregate TPP 加总，只要总吞吐达到 1200 万，即被判定为同一计算实体。</li></ul>
+<h2>第四章 对中国人工智能产业生态的系统性冲击与重塑</h2>
+<h2>4.1 前沿基础模型 Scaling Laws 的推进阻力加剧</h2>
+<ul><li>大语言模型与多模态模型的演进严重依赖于<b>由参数量（N）、数据集大小（D）与总计算量（C）共同构成的规模定律（Scaling Laws）</b>。<b>千卡/万卡级预训练受阻</b>：在 1200 万 Aggregate TPP 的红线下，依赖海外算力进行万卡级基础模型（Foundation Model）从零预训练的通道被彻底截断。</li><li><b>后训练（Post-Training）成本上升</b>：尽管小规模微调和常规对齐（Alignment）在一定程度上可以通过算力切片勉强维持，但在强化学习（RL）探索机制日益复杂的今天，缺乏充沛且高互联带宽的集群，将严重延缓模型复杂推理能力（Reasoning Capabilities）的迭代进化。</li></ul>
+<h2>4.2 “硬件断供 + 反蒸馏”双重绞杀格局成型</h2>
+<p>当前中国 AI 创新面临的外部环境，正从单纯的算力围堵演进为<b>软硬件全维度的体系化压制</b>：</p>
+<ul><li><b>底层硬件端</b>：先进制程制造设备受控，海外硬件代工通道受限，云端大集群租用途径被全面封堵；</li><li><b>软件与数据端</b>：欧美闭源前沿巨头（OpenAI、Anthropic、Google 等）正加速部署对抗“模型蒸馏”（Anti-Distillation）与防逆向工程技术，从 API 层面严格监测并切断中国 IP 及中资主体的异常调用模式。</li><li><b>双重约束的负向循环</b>：如果既无法低成本蒸馏海外顶级模型的合成数据（Synthetic Data），又受制于本土先进算力密度的物理限制，国内大模型厂商将不得不自行承担从高质量数据标注、清洗到大规模试错训练的全部成本，进一步放大了研发周期的资源消耗。</li></ul>
+<h2>4.3 倒逼国产自主算力与全栈软件生态加速破局</h2>
+<p>外部限制的持续收紧，彻底打破了任何对海外供应链的侥幸心理，将全面倒逼本土算力生态在“阵痛”中加速成熟：</p>
+<ol><li><b>国产 AI 芯片从“能用”向“大规模高可用”迁移</b>：华为昇腾（Ascend）、寒武纪（Cambricon）、海光信息（Hygon）等国产半导体厂商的集群商用落地进程将全面提速。产业关注焦点将从单纯对比单卡理论</li></ol>
+<p>TPP，全面转向集群互联带宽（如 RoCE v2 网络优化）、整机散热、超节点架构以及长时间无故障训练稳定性（MTBF）。</p>
+<ol><li><b>算子库与软件生态（Software Stack）攻坚</b>：破解英伟达 CUDA 护城河成为生死存亡的核心命题。国内企业将加速推进基于 Triton、PyTorch 原生适配以及自研底层算子库（如</li></ol>
+<p>CANN、MUSA）的跨硬件迁移能力，力求最大程度降低算法工程师在不同异构算力间的迁移壁垒。</p>
+<ol><li><b>算法架构层面的“非对称创新”探索</b>：</li></ol>
+<ul><li><b>稀疏激活架构（MoE, Mixture of Experts）</b>：在保持较高总参数量的前提下，通过动态路由大幅降低单 token 前向计算所需的实际激活算力，成为缓解硬件算力不足的主流架构选择；</li><li><b>推理时计算（Test-Time Compute）替代训练算力</b>：借鉴 o1/o3 路线，通过引入思维链搜索（MCTS）、自反思（Self-Correction）等推理端算力投入，在基础模型底座受限的条件下换取更高质量的复杂逻辑输出；</li><li><b>异构分布式混训（Heterogeneous Distributed Training）</b>：研发能够跨越不同厂商芯片架构、混合调度不同互联带宽节点的并行训练框架，成为工业界重点攻关的系统工程。</li></ul>
+<h2>第五章 全球半导体、云厂商与数据中心格局的连带效应</h2>
+<h2>5.1 上游芯片设计与晶圆代工巨头的结构性调整</h2>
+<ul><li><b>英伟达（NVIDIA）与 AMD 的市场再平衡</b>：虽然当前以北美科技巨头（Microsoft、Meta、Google、Amazon）为主导的 AI 资本开支（CapEx）依然高涨，Blackwell 产能处于全面供不应求状态，但长远看，将东南亚 5 国拉入管制名单，大幅增加了其全球合规管理成本。部分以承接转运业务为主的中立机房订单将面临被取消或重签的风险。</li><li><b>台积电（TSMC）与先进封装产能</b>：新规针对芯片代工和先进封装（CoWoS 等）设定的严格推定，将进一步迫使代工厂升级前端客户审查系统，彻底切断所有潜在规避主体借助离岸第三方流片高性能 AI 芯片的途径。</li></ul>
+<h2>5.2 全球云计算巨头的非对称监管红利与分化</h2>
+<p>新规在新增的 5 国管辖中赋予了美国本土跨国云厂商（Hyperscalers）<b>独占性的报告豁免权（Reporting Carve-out）</b>：</p>
+<ul><li><b>竞争壁垒筑高</b>：AWS、微软 Azure、Google Cloud 能够凭借其美国母公司的身份，合法在新加坡、马来西亚、巴西等地持续扩建先进数据中心并服务于其欧美及非受限国际客户；</li><li><b>非美资云服务商承压</b>：亚太本土的电信运营商、中立 IDC 运营商以及中资出海云平台，将面临极其苛刻的单项许可证审批流程，无法在相同周期内获取同等密度的先进算力。这将在客观上固化全球高性能算力市场向少数几家美国超大规模云巨头集中的垄断趋势。</li></ul>
+<h2>5.3 东南亚与新兴枢纽的数据中心投资骤冷与合规洗牌</h2>
+<p>过去两年，马来西亚柔佛州（Johor）、新加坡及泰国等地经历了前所未有的数据中心投资热潮，大量资本正是看重其连接东西方科技生态的“中立枢纽”地位：</p>
+<ul><li><b>资本开支风险重构</b>：新规出台后，凡是此前商业计划中将“服务中资出海企业或承接中国 AI 算力外溢”作为核心盈利模型的 IDC 投资项目，均将面临严峻的资产减值和客户结构调整危机；</li><li><b>合规改造成本剧增</b>：当地数据中心必须部署昂贵且复杂的合规监控系统，以监测其机房内是否存在超出 Aggregate TPP 红线的多租户违规网络拓扑，否则其自身将随时面临被美方制裁的系统性风险。</li></ul>
+<h2>第六章 战略推演与产业突围路径</h2>
+<p>新规的落地，宣告了通过国际全球化算力协作来支撑国内通用人工智能研发的路径已被彻底封死。中国人工智能产业链必须在以下三个核心方向上坚定推进自主化突围：</p>
+<h3>（1）从单点替代走向“超节点网络系统工程”</h3>
+<p>单张国产芯片的算力密度在短期内受限于制造节点可能仍与海外顶级旗舰存在代差，但通过系统级创新（System-level Innovation）可以弥补单点不足。未来三至五年，中国必须集中力量攻克：</p>
+<ul><li>800G / 1.6T 级高速网络交换芯片及无损通信网络协议；</li><li>支持超大规模异构算力无缝拓展的光电共封（CPO）与先进封装技术；</li><li>具备百万卡容错（Fault-Tolerance）调度能力的高可用分布式集群管理软件。</li></ul>
+<h3>（2）深耕前沿算法的“低算力依赖度”范式创新</h3>
+<p>在硬件资源受约束的客观现实下，算法设计必须告别以往粗放式堆砌参数和海量预训练计算的模式：</p>
+<ul><li>探索<b>基于高质量领域知识、小规模合成数据的高效训练方法</b>；</li><li>大力发展端侧轻量化模型（Small Language Models, SLM）与特定垂直场景的高效架构；</li><li>加快推动从通用大语言模型向具身智能（Embodied AI）、智能体（AI Agents）等更看重算法逻辑密度而非纯粹预训练算力密度的方向迁移。</li></ul>
+<h3>（3）构建非美技术闭环的跨国算力共建体系</h3>
+<p>积极拓展与全球非受控国家和地区的科技合作生态，在遵守国际法理与合规原则的前提下，探索构建不依赖美系软硬件标准的开源开放生态，以更加包容、自主的开源体系对冲单边长臂管辖带来的割裂风险。</p>
+<p><i>本报告基于公开产业信息撰写，不涉及未公开重大信息。本文内容主要为作者个人理解，仅供信息参考，不构成任何投资建议，据此操作风险自担。</i></p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

@@ -1,0 +1,252 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.13 | 9K | Software | Snowflake &amp; MongoDB Consumption Q3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.13 | 9K | Software | Snowflake &amp; MongoDB Consumption Q3</h1>
+<p class="orig">原标题：北美软件咨询公司离职专家|Snowflake 第三季度消费增长约 35%，约 80% 的新增增长来自现有客户，Snowflake Cortex 直接贡献 2 个百分点并间接贡献 2 到 3 个百分点，AI 采用可能自 2027 年第二季度加速；MongoDB 消费增长约 32%，预计明年因生产智能体扩展经常性数据库活动而增长 35% 到 40%，但 Databricks 竞争与集成 pgvector 的 PostgreSQL 对两家公司争夺新 AI 与工程工作负载构成威胁</p>
+<p class="tags">#software #cloud #agents</p>
+<p class="meta">Meritco 久谦 · 2026-11-13</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>北美软件咨询公司前专家称，Snowflake第三季度消费增长约35%，略高于33%的预测，约80%的新增增长来自现有客户，第四季度和明年预测分别为34%至36%和30%至35%。</li>
+<li>Snowflake第三季度RPO增速估计为35%至40%，较上季度约30%明显加速；Snowpark相关工作负载消费预计环比增长10%至15%。</li>
+<li>Snowflake Cortex对第三季度消费增长直接贡献约2个百分点（上季度约0.5个百分点），间接贡献约2至3个百分点；可观测性直接贡献不足0.5个百分点。</li>
+<li>大多数美国大型企业正从试点转向选择性生产部署，仅约20%至30%在多项职能上实现规模化，预计2027年第二季度起加速，届时Snowflake AI相关消费可能同比增长约50%。</li>
+<li>Cortex AI Gateway被视为中期消费加速器，智能路由可使每次推理成本降低20%至35%、智能体任务量增长50%至60%；成本降30%而量增50%时支出仍升约5%，量翻倍则支出升约40%。</li>
+<li>Databricks在AI工程、机器学习和开放湖仓方面竞争加剧，主要风险是Snowflake在新AI与工程工作负载中丢失增量份额，而非现有客户流失。</li>
+<li>MongoDB第三季度消费增长约32%，第四季度和明年预测分别为33%至35%和35%至40%，生产智能体所需的持久记忆、会话状态和实时检索可能使AI相关数据库工作负载明年增长50%至70%。</li>
+<li>MongoDB第二季度RPO同比增长超过80%、可能约90%，第三季度预计回落至70%至80%；Voyage AI在活跃客户中消费环比增长30%至50%，MongoDB 9.0性能提升超30%但短期营收影响中性。</li>
+<li>集成pgvector的PostgreSQL正进入Snowflake和Databricks生态，对MongoDB在绿地AI应用上的份额构成更大威胁，CJ Desai离职短期影响有限。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>Snowflake 第三季度的消费增长达到约 35%，由现有客户扩张和生产级 AI 支持，同时 Snowflake Cortex 与 Cortex AI Gateway 可能通过降低路由单价和扩大智能体数量来放大数据处理需求。MongoDB的增长约为 32%，随着生产智能体带来经常性的读取、写入与检索，明年可能达到 35% 到 40%。竞争风险集中在新工作负载上，Databricks 向 Snowflake 发起挑战，而 PostgreSQL 通过 pgvector 针对MongoDB 的绿色 AI 机会进行布局</p>
+<h2>要点</h2>
+<ol><li>Snowflake 第三季度消费增长达到约 35%，略高于 33% 的预期，生产 AI、数据工程、分析及 Snowflake Cortex 服务的增长抵消了成本优化的影响；约 80%</li></ol>
+<p>的新增增长来自现有客户，同时对第四季度与明年的增长预测分别为 34% 到 36% 与 30% 到 35%</p>
+<ol><li>大多数大型美国企业正从 AI 试点转向有选择的生产部署，但只有约 20% 至可能 30% 的企业在多项职能上实现了有意义的规模化；预计自 2027 年第二季度起加速，Snowflake 与 AI 相关的消费可能通过 Snowflake</li></ol>
+<p>Cortex、RAG、智能体工作流和数据处理实现同比约 50% 的增长</p>
+<ol><li>Snowflake Cortex 对第三季度同比消费增长直接贡献约 2 个百分点，而上季度约为 0.5 个百分点，并通过查询、计算与数据工程间接贡献估计 2 到 3 个百分点；Cortex AI Gateway</li></ol>
+<p>被视为中期的消费加速器，而非近期的主要营收驱动因素</p>
+<ol><li>智能 AI 路由能够将每次推理任务的成本降低约 20% 到 35%，同时在随后的 12 个月内使智能体任务量上升约 50% 到 60%；在单位成本下降 30% 且量增长 50% 的情景下，支出仍可能上升约</li></ol>
+<p>5%，而若量翻倍则支出可提高约 40%</p>
+<ol><li>MongoDB 第三季度消费增长约 32%，对第四季度与明年的增长预测分别为 33% 到 35% 与 35% 到 40%；需要持久内存、会话状态、实时检索和频繁更新的生产智能体可能在明年把 AI</li></ol>
+<p>相关的数据库工作负载从相对较小的基数上推升约 50% 到 70%</p>
+<ol><li>与现有客户相比，MongoDB 在争夺绿色场景 AI 工作负载方面面临更大风险，因为集成了 pgvector 的 PostgreSQL 正进入 Snowflake 和 Databricks 生态系统；MongoDB 9.0</li></ol>
+<p>在大实例上提供超过 30% 的性能提升，甚至在吞吐率上可能实现两倍，但其对短期营收的影响可能中性，而中期在工作负载获取方面应有所受益</p>
+<h2>Q:上个季度，您预测本季度 Snowflake 的消费增长率将为同比 33%。实际数字是更高还是更低？原因是什么？</h2>
+<p>A:消费略高于该预测，约为 35%。主要驱动因素是生产级 AI 工作负载更强劲、现有数据工程和分析用例的扩展，以及 Snowflake Cortex 相关服务的消费增加。部署进展也比预期更快，但持续的成本优化在一定程度上对冲了这些增长。</p>
+<h2>Q:您对 Snowflake 在第四季度和明年的消费增长有何预测？</h2>
+<p>A:我预测第四季度同比约为 34% 到 36%，明年为 30% 到 35%。我预期 Snowflake Cortex 在数据工程、分析和生产级 AI 工作负载方面将继续扩张，尤其是 Snowflake Cortex AI和具代理性的应用。成本优化可能在季度层面带来压力，但现有客户扩展和 AI 采用应能维持约 30% 左右的增长。</p>
+<h2>Q:在第三季度，北美企业客户在 Snowflake 上的 AI 部署是否继续加速？现有客户对 Snowflake 的增长贡献是否增多，是否也有更多新客户迁移到 Snowflake？</h2>
+<p>A:是的。我认为北美客户的 AI 部署在第三季度有所增加并加速，生成式 AI 用例开始从试点进入生产。我估计约 80% 的增量增长来自现有客户，涵盖数据工程、分析和 Snowflake Cortex AI工作负载。新客户迁移也在增加，尤其是来自传统数据仓库和本地平台的迁移，但现有客户的扩展仍然是主要增长驱动力。</p>
+<h2>Q:当前美国企业客户处于 AI 部署的什么阶段，他们面临哪些瓶颈？</h2>
+<p>A:大多数大型美国客户正从试点向有选择性的生产部署过渡，约有 20% 至大约 30% 的客户在多个业务职能上实现了有意义的规模化。最大瓶颈是数据质量、治理、安全、与遗留系统的集成、推理成本以及需要证明可衡量的投资回报率。就Snowflake 而言，统一数据的访问以及可靠、生产级的代理工作流程是限制生产级 AI 部署更快增长的关键挑战。</p>
+<h2>Q:您预计美国企业客户何时会显著加速 AI 消费？</h2>
+<p>A:我预计加速将在 2027 年第二季度开始，更广泛的采用很可能出现在明年下半年。届时，更多客户应已超越试点、解决关键的数据治理和集成问题并将代理部署到生产环境。对 Snowflake 来说，我预计 AI 相关消费可能同比增长约50%，主要由 Snowflake Cortex、RAG、具代理性的工作流和增加的数据处理驱动。</p>
+<h2>Q:本季度 Snowflake 的 RPO 增长是多少？</h2>
+<p>A:我估计本季度 RPO 增长为 35% 到 40%，主要由更大的承诺、多年续约以及对 AI 相关工作负载的需求增长驱动。现有客户是主要贡献者，同时新迁移也在扩大市场。上个季度增长约为 30%，因此显然有所加速。</p>
+<h2>Q:Snowpark 本季度是否在产品上有任何进展，从而加速了消费？</h2>
+<p>A:是的。Snowpark 在基于 Python 的数据工程、机器学习和 AI 管道方面取得了良好进展。我预计随着客户将更多处理从外部平台迁移到 Snowflake，相关工作负载的消费环比将增长约 10% 到15%。更大的收益是平台整合度更高、集成复杂性降低以及附加的计算消费。</p>
+<h2>Q:本季度 Snowflake Cortex 对消费增长贡献了多少百分点？比上季度高多少？它在直接消费之外又带来了多少间接的数据库消费增长？</h2>
+<p>A:在我看来，Snowflake Cortex 在第三季度对同比消费增长贡献了约 2 个百分点，而上季度仅约为 0.5 个百分点。除直接消费外，我估计还带来了另外 2 到 3 个百分点的间接增长，来自数据库查询和计算使用增加、数据工程和AI 工作负载。更大的机会在于 Snowflake Cortex 能推动整个 Snowflake Cortex 平台的更广泛采用。</p>
+<h2>Q:Snowflake 本季度推出了 Cortex AI Gateway。您如何评估该产品对 Snowflake 的影响？</h2>
+<p>A:我认为 Cortex AI Gateway 是一个具有战略意义的产品，尽管其近期的直接营收贡献有限。其最大价值在于使客户能够集中管理对多个 AI模型的访问、执行治理、监控消费并优化模型路由，而无需在不同系统之间移动敏感数据。我看到三个好处：提高 AI 工作负载的留存、来自生产代理的增量消费以及更强的平台粘性。</p>
+<p>真正的机会并不仅仅是对 Cortex AI Gateway 的使用收费。关键是将 Snowflake 定位为 AI 的治理控制层，这可以推动更多的 Snowflake Cortex、数据处理和分析消费。我预计起初贡献会很小，但随着客户在明年扩展多模型 AI 部署，其战略影响可能会变得显著。这存在商业权衡：更好的路由可能会降低每次 AI 请求的支出，但也可能使更多生产工作负载在经济上可行。因此，我将Cortex AI Gateway 视为中期的消费加速器，而非近期的主要营收驱动力。</p>
+<h2>Q:为什么 Cortex AI Gateway 能增加 Snowflake Cortex 的数据处理和消费？</h2>
+<p>A:Cortex AI Gateway 通过提供集中模型访问、智能路由、治理和消费监控，降低了部署 AI 应用的复杂性和成本。这鼓励客户将更多 AI 代理投入生产，每个代理都会产生额外的数据库查询、检索操作、数据转换和 Snowflake Cortex 推理工作负载。即便 Cortex AI Gateway 降低了每次 AI 请求的成本，更高的事务量和更多的生产用例也能提高整体的计算和数据处理消费。关键的乘数效应来自于工作负载的扩展，而不是 Cortex AI Gateway本身的费用。</p>
+<h2>Q:除了 Snowflake，许多公司包括 Databricks、云服务提供商和 SaaS 公司都提供 Cortex AI Gateway 产品。为什么 Snowflake 需要自己的 Cortex AI Gateway，而不是使用其他公司开发的产品？</h2>
+<p>A:Snowflake 需要自己的 Cortex AI Gateway，因为 Cortex AI Gateway 正在成为客户 AI 消费的战略控制点，而不仅仅是一个模型路由工具。如果 Snowflake 完全依赖Databricks、超大规模云厂商和第三方网关，那些提供者可能会控制模型选择、路由、可观察性，甚至 AI 工作负载的整体经济模型。这样 Snowflake 就有可能沦为底层数据存储，而竞争对手则掌握更高价值的 AI 编排层。</p>
+<p>拥有 Cortex AI Gateway 有三大战略优势。第一是工作负载留存：Snowflake 可以将 AI 应用紧密地与受治理的数据、Snowflake Cortex服务及其计算基础设施整合在一起。第二是商业可见性与货币化：Snowflake 能更好地洞察 AI 工作负载模式，优化消费、改善客户经济性并捕获更多 AI 价值链。第三是差异化：通过结合受治理的企业数据、模型访问和 AI执行，Snowflake 能比独立的 Cortex AI Gateway 提供更集成的体验。</p>
+<p>与此同时，Snowflake 不需要取代所有外部的 Cortex AI Gateway。大型客户仍将在合适的场景下继续使用 Databricks、Azure 和 AWS 的 gateway。Snowflake 的目标是成为以Snowflake 数据为中心工作负载的首选 AI 控制平面，同时将治理扩展到第三方 agent。战略风险在于 AI gateway 可能成为新的客户关系层，因此 Snowflake 需要在该层提供有说服力的产品，以保护其Snowflake Cortex 消费业务并争取新增的 AI 支出。</p>
+<h2>Q:对于客户的 agent 任务，AI 路由能在多大程度上降低成本，任务量又能提升多少？最终，总体 AI 消耗会增加，还是因为成本下降更快而支出基本保持不变？</h2>
+<p>A:我的基本假设是，智能 AI 路由可以将每次推理的成本降低 20% 到 35%，同时使 agent 任务在接下来一年内在经济上可行地增长 50% 到 60%。更低的单位成本并不必然导致 Snowflake的支出下降。例如，如果每次任务的成本下降 30% 但任务量增加 50%，总支出仍可能上升约 5%。如果任务量翻倍，支出可能增加约 40%。</p>
+<p>我预计会有三个影响：每次任务的推理成本将下降、agent 执行的总量将增加，以及基础数据库消耗将增长，因为 agent 会产生额外的检索操作、查询和数据转换。我的基线判断是直接 AI推理支出在近期会温和增长，但总体平台消耗会有更强劲的增长。最大的上行空间来自客户将效率节省再投资到部署更多 agent 和自动化更多业务流程。</p>
+<h2>Q:在第三季度，Databricks 对 Snowflake 的竞争是否在加剧？两家公司都旨在成为平台公司，但客户最终可能只选择一个平台。你预计他们的竞争将如何发展？</h2>
+<p>A:我认为在第三季度来自 Databricks 的竞争压力有所增加，尤其是在 AI 工程、机器学习、开放数据架构和企业数据平台整合方面。然而，我不同意客户最终只会选择一个平台的观点。Snowflake 和 Databricks在技术上正趋于相似，但它们的竞争优势和客户采购模式不同。Snowflake 在有治理的分析、SQL 工作负载、数据共享和客户消费管理方面更强，而 Databricks 在基于 Spark 的工程、机器学习、AI 开发和开放lakehouse 架构方面更强。</p>
+<p>最大的竞争变化是 Databricks 越来越多地争夺 Snowflake 传统的分析工作负载，而 Snowflake 则正在进入 Databricks 的 AI与工程领域。真正的较量不是要替换整个平台，而是争夺下一美元的增量支出，尤其是在 AI工作负载、数据工程和应用开发方面。对于大型客户，我预计两个平台在未来几年会共存，因为迁移成本、现有工作负载、专业能力和机构性所有权使得全面替换变得不具吸引力。</p>
+<p>我对 Snowflake 最大的担忧不是立刻失去现有客户，而是在新的 AI 和工程工作负载中丧失份额。客户可能会继续增加在 Snowflake 的消费，同时将不成比例的新 AI 投资导向Databricks。在未来一年半内，竞争成败可以通过三个指标衡量：赢得的新工作负载数量、捕获的增量消费份额以及客户的平台整合决策。这不仅仅是客户流失的问题。明年竞争压力会加剧，但在企业环境中两种平台将继续共存。</p>
+<h2>Q:本季度 Snowflake 在可观测性方面取得了哪些进展？可观测性对消费增长贡献了多少百分点？</h2>
+<p>A:Snowflake 在可观测性方面正在取得进展，特别是通过 Observe 产品以及更广泛地整合遥测、数据流水线和 AI工作负载监控。我会将可观测性描述为一个早期的增长机会，而不是一个重要的消费驱动因素。在我看来，它本季度对消费的直接贡献低于 0.5 个百分点。</p>
+<p>这一机会超出了传统的基础设施监控。Snowflake 能将应用层遥测与客户数据相关联，帮助客户监控 AI agent、识别性能问题、调查故障并优化成本。Datadog 已经拥有成熟的可观测性能力并被开发者广泛采用，但 Snowflake的差异化在于能够将运维遥测与受治理的客户数据一同分析。</p>
+<p>如果采纳加速，可观测性在未来一年半内可能对年化消费贡献几个百分点。真正的机会在于争取来自 Datadog、Splunk等平台的高流量、经常性遥测工作负载。与可自由支配的分析不同，可观测性会产生持续的摄取、存储和计算需求，可能创造更可预测的消费流。它可以使 Snowflake 的增长从分析与 AI扩展到关键的运营工作负载，但就目前而言，我并不认为它已成为一个经过验证的增长驱动因素。</p>
+<h2>Q:转到 MongoDB，你之前对第三季度消费增长的预测是 31% 到 33%。实际增长是多少？</h2>
+<p>A:MongoDB 第三季度的消费增长约为 32%，大致符合预测。主要驱动因素是现有 MongoDB Atlas 工作负载的扩展、应用现代化以及日益增多的生产级 AI 用例，尤其是向量检索和检索增强。AI 仍是新兴的贡献因素，而Snowflake Cortex 的事务性工作负载仍推动大部分消费。强劲的客户扩展在一定程度上被云成本优化所抵消。</p>
+<h2>Q:你对 MongoDB 在第四季度和明年的消费增长预测是什么？</h2>
+<p>A:我的预测是第四季度 33% 到 35%，明年 35% 到 40%。有三大增长驱动因素：现有客户中 MongoDB Atlas 的持续扩展、从遗留数据库的迁移，以及对需要向量检索、持久化 agent 记忆和实时检索的 AI应用的更广泛采用。我预计在明年下半年会出现拐点，随着更多 AI 应用进入生产，增速会加快。与实验性 AI 工作负载不同，生产级 agent 会产生经常性的数据库读写和检索操作，从而带来可观的消费量。</p>
+<h2>Q:你为什么预计企业级 AI 应用和 agent 在明年下半年会取得更大进展？</h2>
+<p>A:一个原因是试点和实验将逐步转入生产，这一过程可能在大约六到九个月内成熟。agent 的经济性也在改善：更低的推理成本、更可靠的模型以及更成熟的编排框架将使高并发 agent部署在商业上可行。预算和架构路线图也在对齐，许多客户正把明年的投资分配给将 AI 运营化，而不是进行更多试点。</p>
+<p>这对 MongoDB 很重要，因为生产级 agent 需要持久化记忆、会话状态、实时上下文检索以及频繁的数据库更新。我更新后的预期是，明年与 AI 相关的数据库工作负载可能增长 50% 到70%，尽管基数相对较小。当客户部署数千个持续运行的 agent，而不是几百名用户去试验 AI 应用时，真正的加速才会发生。</p>
+<h2>Q:对于美国公司，除编码外在哪些用例中 AI 的采用相对较快？</h2>
+<p>A:除了代码生成之外，采用速度最快的领域是客户服务、IT 运维、网络安全、财务运营和供应链管理。客户服务尤其先进，因为客服可以解决咨询、检索客户信息并自动化例行交易，从而实现可衡量的成本节省。IT运维和网络安全的采用也在增加，因为代理可以在监督下调查事件、关联告警、识别根本原因并自动化修复。在金融服务方面，采用正在增长的领域包括欺诈调查、合规和风险分析。零售和制造业客户正在部署 AI 以优化库存、需求规划和订单管理。</p>
+<p>常见模式是高频、重复的工作流，且具有可衡量的 ROI 并可访问结构化数据。对于 MongoDB 来说，客户服务和运维类代理尤其有吸引力，因为它们需要实时上下文、持久内存、灵活的数据模型以及频繁的数据库交互。客户服务、IT运维和网络安全目前正在规模化，而供应链和财务运营随着代理变得更自主将具有显著上行空间。MongoDB 的最高价值机会来自有状态、面向事务的代理，而不是简单的聊天机器人，因为这些代理持续读取和更新运营数据，即便推理成本下降，也会创造经常性的MongoDB Atlas 消耗。</p>
+<h2>Q:从行业角度来看，您预计哪些行业在明年会出现明显加速的 AI 采用？</h2>
+<p>A:按行业划分，我认为金融服务、科技、零售、电子商务、医疗保健和电信的活动最为强劲。金融服务正在加速，科技公司正在将 AI 代理扩展到前述用例。零售商正在部署 AI以实现个性化商务和自动化订单管理。在医疗领域，预期的用例包括临床文档和行政自动化。</p>
+<p>对于 MongoDB 来说，金融服务、科技和零售尤其有吸引力，因为它们的 AI 应用需要高频交易、灵活的数据模型、持久内存和实时检索。科技、金融服务和专业服务在各行业中领先 AI采用，而医疗和制造业则是从较小基数上增长最快。零售和电子商务在客户服务和供应链自动化方面也在加速。对 MongoDB 来说，最强的增量消耗机会来自科技、金融服务和零售。</p>
+<h2>Q:MongoDB 的 Voyage AI 已进入全面商业化。Voyage AI 在第三季度的客户消耗是否显著增加？</h2>
+<p>A:我认为在第三季度通用可用后消耗加速了，但基数较小。我估计在积极消费的客户中，环比消耗增长在 30% 到 50% 之间，主要由嵌入、重排序和针对 RAG应用的检索准确性提升所驱动。采用速度快于营收贡献，因为客户最初是在测试检索质量和准确性，然后才承诺生产工作负载。我预计当 Voyage AI 与 MongoDB Atlas 一起被嵌入到生产代理架构中，既产生 AI推理消耗又带来增量数据库活动时，明年货币化将更强。</p>
+<h2>Q:MongoDB 在第三季度的 RPO 增长是多少，与第二季度相比增速是加速还是放缓？</h2>
+<p>A:MongoDB 的 RPO 一直在非常快速地增长。在第二季度，RPO 的同比增长超过 80%，可能约为 90%。对于第三季度，我预计增长将回落到 70% 到80%，表示有所放缓。我不认为这反映了需求疲软。第二季度受强劲的多年期客户承诺推动，造成了更高的可比基数。</p>
+<p>MongoDB Atlas 的扩展、续约和与 AI 相关的工作负载应继续支持强劲的预订，但 RPO 增长往往因合同时间和期限而波动。因此，当前的 RPO 增长应与 MongoDB Atlas 的消耗一起评估，而不是单独评估总 RPO。</p>
+<h2>Q:您如何看待前 CEO CJ Desai 离职对 MongoDB 的短期、中期和长期影响？</h2>
+<p>A:我认为这在短期内对公司和市场信心构成问题，中期存在一定的执行风险，但不会成为 MongoDB 的长期结构性问题。在未来三到六个月内，我预计对 MongoDB Atlas 消耗的影响最小，因为现有工作负载具有粘性且合同仍然有效。Dave的回归也提供了连续性，我不认为此次离职影响已公布的指引。</p>
+<p>在中期，约 12 个月，较大的担忧是围绕 Voyage AI、代理引擎和市场拓展的执行势头。领导层不确定性可能会减缓战略合作、产品路线图优先级和大型客户承诺。在两年时间范围内，影响将取决于常任 CEO 能否执行 MongoDB从运营数据库提供商向 AI 应用基础设施平台的转型。</p>
+<p>我不认为单纯的离职本身会实质性影响数据库的消耗。然而，若 AI 产品商业化延迟六到十二个月，可能会影响 MongoDB 抓住下一波客户 AI 支出的能力。</p>
+<h2>Q:CJ Desai 随后加入了 Meta。您如何评估 Meta 在企业业务方面的进展、其战略和目标？这会对企业服务市场产生什么影响？</h2>
+<p>A:我的观察是，Meta 的招聘策略旨在加强其 AI 基础设施和商业执行能力。CJ Desai 在扩展云平台、企业销售和发展 Adobe 生态方面有经验，这可能帮助 Meta 从消费级 AI 扩展到企业级 AI 基础设施和服务。</p>
+<p>对 MongoDB 来说，直接的业务影响可能有限，因为 MongoDB Atlas 的工作负载具有粘性且公司有领导力连续性。更大的战略问题是竞争定位。MongoDB 正通过 MongoDB Atlas、其代理引擎和 Voyage AI从数据库提供商向 AI 代理基础设施扩展，而 Meta 可能会在 AI 生态的部分环节竞争。然而，目前尚不清楚 CJ Desai 会如何在 Meta 内部被整合，这一过程将需要时间。</p>
+<p>MongoDB 面临的更大风险不是失去前任 CEO，而是未能足够快地将其 AI 平台商业化。如果 MongoDB 能成功执行，它可能会捕获超出传统数据库消耗的更多 AI 支出。</p>
+<h2>Q:MongoDB 在第三季度推出了 MongoDB 9.0。该产品提供了哪些有意义的功能改进，是否加速了客户在 MongoDB 上的消耗？</h2>
+<p>A:MongoDB 9.0 是一次有意义的升级，但我目前不会将显著的增量增长归因于它。主要改进包括性能提升超过 30%、更快的升级、在大型实例上或许实现两倍的吞吐量，以及更强的加密、更智能的工作负载管理和改进的可观测性。</p>
+<p>存在两种相反的消耗效应。更好的性能使客户能够使用现有基础设施处理更多事务，这可能降低每笔事务的消耗。与此同时，它也使 MongoDB 对高吞吐应用、受监管工作负载和 AI代理更具吸引力。在我看来，短期的营收影响可能相对中性，而中期影响应是正面的。</p>
+<p>随着客户在明年升级并部署更多工作负载，MongoDB 9.0 可能改善 MongoDB Atlas 的留存、竞争力和消耗增长。我主要将其视为促进工作负载获取和扩展的催化剂，而不是会立刻产生货币化的产品。</p>
+<h2>Q:Snowflake 和 Databricks 正在积极与开源 PostgreSQL 数据库整合。这会对 MongoDB 构成威胁吗？</h2>
+<p>A:我认为 PostgreSQL 与 MongoDB 的竞争会越来越激烈，特别是在 Databricks 和 Snowflake 的并购之后。真正的威胁不只是 PostgreSQL 本身，而是 PostgreSQL 与完整的客户数据与 AI平台相结合。Databricks 和 Snowflake 现在能够在一个生态中提供事务型数据库、分析、向量检索、治理和 AI 开发。</p>
+<p>对于新的 AI 应用，开发者可能会选择带有 pgvector 的 PostgreSQL，而不是再引入 MongoDB 作为另一种数据库。当客户已经在 Snowflake 或 Databricks上有大量投入时，这种选择尤为有吸引力。然而，我并不认为在短期内会出现大量现有工作负载被替代的情况。MongoDB 在灵活的文档建模、原生 JSON 开发以及应对复杂且不断演进的数据结构的运营型应用方面仍具有差异化优势。</p>
+<p>我最担心的是 MongoDB 在新工作负载上可能会失去市场份额，而不是失去现有客户。在未来一到两年内，PostgreSQL 可能会在绿地 AI 应用中夺得越来越多的份额，从而减少 MongoDB 的增量增长机会。MongoDB 应通过MongoDB Atlas、Voyage AI、Vector Search 和 agent 基础设施等方面实现深度差异化，而不是仅在数据库功能或价格上竞争。</p>
+<p>以上仅供交流探讨，不构成投资建议</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

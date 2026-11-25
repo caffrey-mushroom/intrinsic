@@ -1,0 +1,223 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.13 | AC | ASIC | Cerebras OpenAI Ramp &amp; AMD PD Split</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.13 | AC | ASIC | Cerebras OpenAI Ramp &amp; AMD PD Split</h1>
+<p class="orig">原标题：ASIC大厂向OpenAI交付进展和27年节奏，与AMD在PD分离方案上的合作方式。AWS等头部客户的需求量预期，Ultrafast模型上和LPU的竞争等。</p>
+<p class="tags">#asic #llm #datacenter</p>
+<p class="meta">AceCamp · 2026-11-13 11:13 · article 70569189</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>Cerebras与OpenAI签订为期三年、逐步爬坡至750MW的订单，另含可追加1.25GW的延展条款，属于“锁量不锁价”模式；2026年交付不及预期主要受数据中心电力等交付环节限制。</li>
+<li>向OpenAI的交付Q2为90MW、Q3末累计100MW出头，OpenAI因谨慎灰度测试且仅将其用于部分推理流量而利用率偏低，而G42和美国国防部等买断硬件客户利用率最高可达70%。</li>
+<li>OpenAI客户需选择UltraFast档位请求才会路由至Cerebras，且优先导入企业级Agent、代码生成等高价值长输入场景，GPT-5.6已在Cerebras平台运行，GPT-6阶段价值将最大化。</li>
+<li>2026年总产能约360MW、不超过400MW，其中约110MW用于硬件销售、200多MW用于租赁，CS3单台均价约200万美元、全年预计销售约500台，云租赁与硬件终局比例目标为65:35。</li>
+<li>若良率再提升5个百分点、利用率和数据中心交付正常，预计2027年底对OpenAI爬坡至500MW；2027年总容量乐观目标800MW、现实预期约600MW，AWS合同预计2027年一季度开始交付。</li>
+<li>公司将推行PD分离架构，向AMD采购Helios机架运行Prefill，CS4芯片专注Decode，以Cerebras Cloud形态对外销售；相较Groq每机架256颗LPU互联的方案，整片晶圆在超长Agent链路上低延迟和低抖动优势更明显。</li>
+<li>主要不确定性在于数据中心建设审批以及第四代芯片能否锁定3nm产能，3nm预计可提升性能15%-20%、降低功耗30%；第四代SRAM容量已从第三代44GB提升至60多GB。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>/ 大厂北美大客户需求分布和交付节奏。/ 与AMD的合作，与LPI方案在PD分离上的竞争。</p>
+<p><b>专家观点：</b></p>
+<p><b>﻿关于Cerebras与OpenAI签订的750 megawatts订单是怎样的？</b></p>
+<p>与OpenAI签订的是一个为期三年的订单，计划在此期间将算力规模逐步爬坡至750 megawatts。</p>
+<p>就2026年而言，交付进度未达预期的主要原因并非芯片本身的生产节奏问题，而是受到了数据中心电力供应等交付环节延迟的限制。</p>
+<p>此外，合同中包含一个延展条款，允许OpenAI在未来要求额外增加1.25 GW的算力规模。不过，该部分尚未正式下单，OpenAI将根据后续的实际使用情况来决定是否追加。如果追加，届时可能会进行价格调整，这属于一种“锁量不锁价”的合作模式。</p>
+<p><b>基于当前的执行情况，预计到2027年能够将算力规模爬坡至何种水平？</b></p>
+<p>2027年的爬坡目标取决于几个关键因素的进展。首先是芯片良率的提升，理论上明年良率需要再提升5个百分点。其次是OpenAI对Cerebras算力资源的利用率能否进一步提高。最后，数据中心的交付进度也需保持正常。如果这些条件都能顺利达成，预计到2027年年底，将算力规模爬坡至500 megawatts是很有可能实现的。</p>
+<p><b>公司为何选择提供包括云服务在内的整体解决方案，而不是像其他芯片厂商那样直接销售裸芯片？</b></p>
+<p>公司提供硬件整机交付和云服务两种模式，但与英伟达等厂商不同，Cerebras不直接销售裸片。这主要基于以下几点考虑：首先，Cerebras的产品采用了WSE（Wafer-Scale Engine）架构，这种架构本身不适合以独立芯片的形式销售，因为客户在获得裸片后，仍需自行投入大量技术成本进行PCB、电源、散热等配套系统的开发，使用门槛很高。因此，Cerebras提供封装好的整机方案，相当于为客户提供了一套开箱即用的解决方案，这从客户角度来看更为便捷高效。</p>
+<p><b>在2026年Q3，向OpenAI交付的算力规模达到了多少？他们对这些算力的实际使用率情况如何？</b></p>
+<p>在2026年Q3，OpenAI的算力使用率并不高，从交付规模来看，Q2的交付量为90 megawatts，到Q3结束时，累计爬坡至100 megawatts出头。相较之下，直接采购整机硬件的客户，如中东的G42和美国国防部，其利用率最高可以达到70%。通常情况下，采用云服务模式的客户，其算力利用率都需要一个逐步爬坡的过程。</p>
+<p><b>OpenAI对所提供算力的利用率偏低，其背后的主要原因是什么？</b></p>
+<p>OpenAI的低利用率是其主动选择的结果，并非Cerebras的硬件性能无法满足需求。主要原因有两方面：一方面，OpenAI在采用新技术时表现得非常谨慎，他们进行了长时间的灰度测试，并实施了分流和负载隔离等措施，因此算力是逐步、小规模地引入其系统的。尽管Cerebras自身系统具备负载边界，但承接其全部利用率是绰绰有余的。另一方面，从使用场景来看，OpenAI目前并未将Cerebras的算力用于模型训练，而仅将其用于一部分推理流量，这也限制了分配给Cerebras的算力份额。不过，近期上线的Fast Inference功能确实有助于提升其利用率。</p>
+<p><b>云租赁和硬件销售这两种业务模式的毛利率水平？</b></p>
+<p>目前，云租赁业务的毛利率相对较高，硬件销售的毛利率则较低。受硬件业务的影响，公司整体的毛利率水平被拉低。</p>
+<p><b>未来云租赁和硬件销售的业务结构将如何演变，其终局的比例目标是多少？</b></p>
+<p>未来的趋势是将云租赁业务的占比提高，终局目标是云租赁与硬件销售的比例达到65:35。</p>
+<p><b>2026年硬件销售的产能规划和具体分配是怎样的？</b></p>
+<p>2026年总产能约为360兆瓦，不超过400兆瓦。其中，约110兆瓦用于硬件销售，剩余的200多兆瓦用于租赁业务。云租赁业务的客户不仅包括OpenAI的200兆瓦，还涵盖了一些进行商业测试的客户，例如医疗领域的GSK以及其他小型客户。</p>
+<p><b>硬件销售业务中，单台设备的平均售价是多少？如何将兆瓦数换算为销售台数和相应的营收规模？</b></p>
+<p>在CS3产品时代，每台设备的平均售价约为200万美元，但具体价格因客户而异，例如对OpenAI的售价较低。CS4上线后，价格会有所溢价。2026年预计硬件销售量约为500台。需要注意的是，许多客户同时采购硬件并使用云租赁服务，因此硬件销售收入是一次性的基础收入，而后续还有云租赁服务收入。不能简单地将硬件销售台数与单价相乘得出总营收，因为部分收入会被归类至云服务中。</p>
+<p><b>2027年及未来的客户结构将如何发展以实现客户多元化？</b></p>
+<p>公司正在积极分散客户集中度，与AWS签订的合同是实现客户多元化的关键，预计将于2027年第一季度开始交付，这将构成公司的第二增长曲线。除AWS外，公司在医疗、生命科学、法律、金融和网络安全等领域也拥有客户。2026年已专门拨出至少50兆瓦的资源供这些客户进行商业测试，且测试均已通过，预计相关订单将在2027年陆续签订。</p>
+<p><b>2027年数据中心总容量的规划目标是多少？届时OpenAI与其他客户的业务占比将呈现怎样的结构？</b></p>
+<p>2027年数据中心总容量的乐观目标是800兆瓦，但一个更为现实的预期是600兆瓦左右。届时OpenAI的份额将与其他客户形成更为均衡的结构。除了云租赁客户，公司还有一次性采购硬件的老客户，例如国防部订单和G42（目前正在印度建设）。此外，一些金融等领域的客户会同时采用硬件采购和云租赁两种模式。</p>
+<p><b>对于一次性买断硬件的客户，其采购历史和付款方式是怎样的？</b></p>
+<p>以国防部为例，其早期采购的是公司的二代产品，当时价格较低，目前，这类客户可能不会大规模采购第四代机架，但会进行一些局部升级。付款流程通常分阶段进行：首先支付约25%的预付款，出厂发货时再支付约40%，剩余款项在现场验收后付清。</p>
+<p><b>在推理场景下，与通过调整GPU并行通道数来提升吞吐量的方案（如NVIDIA Rubin平台）相比，公司的核心优势体现在哪些方面？</b></p>
+<p>核心差异在于应用场景。在处理超大参数模型时，公司的方案具备显著优势。基于GPU横向扩展（scale out）的方案依赖显存和互联fabric提速，而公司的架构没有芯片间的边界，从根本上解决了底层瓶颈问题。这使得公司能够将优势集中在逐个token串行生成过程中的低抖动、低延迟以及极低的跨芯片通信开销上。换言之，尽管GPU方案可以提升吞吐量，但在抖动控制、延迟控制和跨芯片通信成本方面无法与公司的方案相比。这些优势在参数规模较小的模型上可能不明显，但在大参数模型上则会充分体现出来。</p>
+<p><b>对于OpenAI的大模型，是否只有在运行像GPT-6的ASTRA MODEL这类参数量巨大、对吞吐速度要求高的模型时，才更适合使用Cerebras的技术，而对于Terra、Luna、Soul等相对低阶的模型则需求不大？</b></p>
+<p>实际上，从GPT-5.6 SOL版本开始，OpenAI就已经在应用Cerebras的技术，并非只有GPT-6才会使用。不过，到了GPT-6阶段，Cerebras技术的价值确实会得到最大程度的彰显。根据实际操作情况来看，GPT-5.6已经在Cerebras的平台上运行。</p>
+<p><b>OpenAI的客户在何种情况下会使用到Cerebras的推理服务，是需要切换到特定模式吗？</b></p>
+<p>OpenAI的客户需要选择UltraFast服务档位，其请求才会被路由至Cerebras这边。如果客户使用的是Standard或Fast等普通模式，请求则会通过GPU集群处理。未来，UltraFast档位不会全部使用Cerebras的方案，只会有一部分流量导入。</p>
+<p><b>鉴于OpenAI同时也是公司的股东之一，且Sam Altman与公司关系密切，为何其在提升利润率方面的进展显得不够积极？</b></p>
+<p>Cerebras认为OpenAI的态度是谨慎，而非消极。一方面，这是一种新模式，他们需要进行充分测试，达到一定水平后才会逐步进行灰度放量。另一方面，Ultra Fast本身是一个相对独立且受限的服务层级，其用户池天然较小，客户必须手动选择该选项，流量才会导入。同时，OpenAI主动控制了客户准入和配额，并非所有用户都能使用，而是优先将企业级Agent、代码生成等高价值、长输入场景的客户导入，而普通的短问答流量则未切分给Cerebras。此外，OpenAI初期可能也出于对Cerebras晶圆硬件负载能力的担忧，因此给定的流量较为谨慎。</p>
+<p><b>除了OpenAI之外，公司目前新增的客户主要涵盖哪些类型？</b></p>
+<p>除OpenAI外，Cerebras的客户可以分为几大类。第一类是类似于AWS的大规模公共云平台。第二类是AI代码Agent原生公司，例如Loveable AI和Cognition，它们专注于自主编程Agent场景。第三类是实时安全领域的公司，如CrowdStrike，该公司正在构建一个全新的实时安全LLM，对Cerebras技术的使用也较多。第四类是垂直行业的企业级Agent，例如从事金融研报的AlphaSense、进行药物研发的GSK，以及Block、Figma等。第五类是新型专用算力平台，例如Cerebras于今年10月签约的Neocloud，它将Cerebras的快速推理能力打包后，以通用计算（General Compute）服务的形式转售给小规模公司和独立开发者。这些是目前比较典型的客户类型。</p>
+<p><b>与同样定位快速推理（Fast Inference）的Groq LPU等芯片相比，Cerebras的技术方案有何优劣势？</b></p>
+<p>在产品形态上，Groq与Cerebras最为相似，比GPU更具可比性。但相比之下，Cerebras仍有优势。Groq的方案待机时间比Cerebras略低，其每个机架由256颗LPU通过片间互联组成，并非像Cerebras这样的一整块完整芯片。只要不是整块芯片，就必然会产生跨芯片通信的成本累积和延迟抖动。因此，在处理超长Agent链路这类场景时，Cerebras与Groq的差距会拉开，Cerebras的优势会更加明显。</p>
+<p><b>您提到的“超长Agent链路”具体是指什么场景，是否与上下文窗口（Context Window）长度有关？</b></p>
+<p>“超长Agent链路”主要指模型进行持续多轮、自调用的闭环推理场景。例如，一次会话可能包含几十甚至几百步的推理串联，而非典型的用户一问一答模式。这类应用场景，例如构建复杂的自主Agent模型，就非常适合使用Cerebras的技术。</p>
+<p><b>公司对2027年有何具体目标？</b></p>
+<p>公司将致力于优化硬件与云租赁的业务结构。此外，客户多元化是另一项重要任务，旨在改善当前客户结构单一的状况，积极开拓新客户。</p>
+<p><b>对于2027年营收主要的挑战或瓶颈是什么？</b></p>
+<p>公司对实现2027年的营收目标抱有信心，目前面临的状况是供不应求，因此需求层面并非主要问题。关键的瓶颈在于数据中心的建设与审批，其挑战性甚至超过了公司自身产能问题。海外数据中心的审批流程耗时较长，例如在美国，除犹他州等少数地区外，新建数据中心难度较大。因此，打通数据中心这一瓶颈是实现2027年目标的关键。目前公司正在芬兰等地拓展数据中心资源。</p>
+<p><b>影响2027年业绩的关键变量有哪些，特别是产能方面是否存在不确定性？</b></p>
+<p>影响2027年业绩的主要瓶颈是数据中心建设。在晶圆产能方面，与台积电锁定的5纳米产能问题不大。但存在一个不确定性：计划于2027年推出的第四代芯片，公司期望采用3纳米制程。如果无法锁定3纳米产能而被迫使用5纳米，芯片性能将会受到影响，进而可能影响部分客户需求。</p>
+<p><b>如果第四代芯片无法使用3纳米制程而改用5纳米，其性能会受到多大影响？</b></p>
+<p>若第四代芯片采用5纳米而非3纳米制程，其性能将有所折扣。基于3纳米制程，预计性能可提升15%至20%，同时功耗降低30%，这对客户极具吸引力。但如果采用5纳米，性能提升和功耗降低这两项关键指标可能都无法达到预期水平，具体影响尚不确定。</p>
+<p><b>展望2027年，公司内部关注的核心发展趋势和战略重点是什么？</b></p>
+<p>公司内部关注几大核心趋势。首先是客户多元化，其中AWS的态度至关重要。如果AWS在2027年第一季度试用后感到满意并扩大采购量，将对客户多元化战略产生关键影响，公司希望能与其签订为期三年的合同以锁定规模。其次，在模型层面，计划将流量结构从问答式转向长链式Agent。第三，在产品架构上，将推行“PD分离”（Prefill/Decode分离）架构。通过向AMD采购机架，整合其GPU用于训练，而公司的CS4芯片则专注于推理，形成异构计算资源池，以Cerebras Cloud的产品形态对外销售，从而拓展至训练型客户。最后，在生产方面，目标是将良率提升5个百分点，这将直接贡献于毛利率的改善。</p>
+<p><b>公司与AMD的具体合作模式是怎样的？</b></p>
+<p>合作模式并非向AMD销售整机芯片，而是公司向AMD采购其Helios机架，用于运行Prefill模块，而公司的CS4芯片则专门承接Decode任务。这套整合了双方硬件的异构计算资源池将部署在公司自有的数据中心，并以Cerebras Cloud的产品形态对外销售，为客户提供端到端的低延迟服务。在此模式下，公司需要向AMD支付相应的成本。</p>
+<p><b>公司的WSE芯片SRAM容量有限（如第三代为44GB），如何支持像GPT-6等参数量巨大的模型？</b></p>
+<p>公司的解决方案是将模型的不同部分部署在不同硬件上。以OpenAI为例，它仅将模型中Decode环节的激活专家（activated experts）部分加载到单片44GB的SRAM上，而完整的Prefill大模型则运行在其他训练硬件上。虽然随着Decode环节的激活专家数量增加，可能会出现单片容量不足的问题，但目前该方案仍能有效运行。</p>
+<p><b>随着模型规模的增长，公司有哪些方法来提升SRAM的有效容量？</b></p>
+<p>公司主要通过三种方式提升容量。第一，通过工艺制程升级，例如从5纳米升级到3纳米，可以带来晶体管密度增益，从而提升SRAM容量。第二，采用3D垂直堆叠技术，该技术预计在第五代或第六代芯片的机架上实现，届时将大幅提升带宽和容量。第三，采用多WS E分片流水线模式，将Decode的权重拆分到多张WSE芯片上，通过流水线接力的方式运行，理论上可以消除容量上限。此外，第四代芯片的SRAM容量已从第三代的44GB提升至60多GB，每一代产品都在持续提升。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

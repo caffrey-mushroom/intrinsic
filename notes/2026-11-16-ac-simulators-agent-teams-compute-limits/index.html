@@ -1,0 +1,217 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.16 | AC | LLM | Simulators, Agent Teams &amp; Compute Limits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.16 | AC | LLM | Simulators, Agent Teams &amp; Compute Limits</h1>
+<p class="orig">原标题：AI产业趋势：模拟器驱动垂直应用，智能体团队与算力约束</p>
+<p class="tags">#llm #agents #ai-demand</p>
+<p class="meta">AceCamp · 2026-11-16 16:22 · article 70569298</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>专家认为编程领域模型能力已接近瓶颈：LMArena长代码榜第一名的平均提升分数仅20%出头，第二至第七名约10%，意味着约70%~90%任务中用户感受不到顶尖模型与中等模型的差异。</li>
+<li>金融、法律、CAD/CAE和机器人等领域模型差距仍达百分之几十；生物医药和半导体属于数据封闭的“封闭世界”，进展受制于实验验证与模拟器，Anthropic已在湾区自建生物实验室。</li>
+<li>大模型在垂直领域突破的前提是成熟的模拟器和验证器，如机器人用MuJoCo、CAD用CADQuery、CAE用Ansys、3D用Blender和3D Gaussian Splatting，DeepMind在2026年收购了3D生成团队。</li>
+<li>编程之后的下一个商业化方向是3D内容生成，3A游戏美术成本占三分之一到一半，预计2027年迎来商业化爆发点；机器人技术可能已越过相当于GPT-3.5的拐点，拾取与放置等基础任务已基本解决。</li>
+<li>智能体团队是各大公司重点项目，DeepMind内部“Project 4K”目标管理约4000个智能体，专家预计企业级全局Agent最晚2027年底落地，可能导致一个部门高达80%的裁员。</li>
+<li>AI广告变现远弱于传统搜索：谷歌AI模型在美国搜索用户中的DAU渗透率20%出头、全球仅5%~6%，具商业意图的会话仅10%出头，而传统搜索约40%的查询展示广告；谷歌传统搜索本季度广告收入增速约4%~5%。</li>
+<li>100美元以上高价订阅普遍亏损，Grok收支压力大；谷歌转而利用脱敏后的聊天记录优化YouTube和搜索的广告投放。</li>
+<li>算力仍然紧张：按需实例租赁价格持续上涨，甚至普通虚拟机也在涨价，谷歌内部非核心团队难以获得计算卡，而CPU目前尚未遇到瓶颈。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>· 编程与专业领域模型能力的差异，模拟器和验证器对3D、CAD、CAE、机器人及生物医药、半导体的影响。· 3D内容生成、设计优化、机器人与智能体团队的商业化路径，以及企业组织与人力配置的变化。· AI模型广告与订阅变现的约束，跨平台数据应用，以及TPU、GPU和CPU的供需与资源分配。</p>
+<h3>专家观点：</h3>
+<h3>Q&amp;A</h3>
+<h3>从模型能力进步和商业化两个维度来看，AI大模型的发展似乎都进入了瓶颈期。具体到模型能力层面，尤其是在需要高度专业知识的领域，例如生物科技或半导体，模型在获取高质量学习资料方面是否遇到了瓶颈，从而限制了其能力的进一步提升？</h3>
+<p>当前大模型在不同领域的发展阶段存在差异。以编程领域为例，该领域在未来一到两年内仍将是核心应用场景。目前，用于评估Coding模型能力的排行榜需要每一到两个月更新一次，否则大部分模型都会获得高分，失去区分度。据专家观察，榜单任务的难度和偏向性也在增加，甚至出现了要求重现nanoGPT这类特定任务的题目。从用户体感数据来看，LMArena竞技场中的一个关键指标——平均提升分数——很有说服力。该百分比指标反映了用户认为一个模型相比中等水平模型的优越程度。据专家观察，长代码任务榜单中排名第一的模型，其平均提升分数仅为20%出头。这意味着在超过70%的任务中，用户感受不到排名第一的模型与一个平庸模型之间的差异。理论上，如果有一个高效的路由，在70%的情况下使用一个普通的开源本地模型，仅在20%多的情况下调用该头部模型，用户的最终体验几乎没有差别。更有甚者，排名第二至第七的模型，其平均提升分数普遍在10%左右。这表明在接近90%的任务中，广大用户无法感知到这些顶尖模型相较于一个中等水平模型的具体提升。因此，无论是从评测榜单还是用户评分来看，Coding领域的大模型发展确实达到了一个瓶颈。这与Coding任务本身的难度上限有关，该领域的从业者通常不需要博士学位，甚至本科学历即可胜任，这决定了其知识复杂度的天花板。据专家观察，包括DeepMind相关人员在内的部分硅谷从业者认为，Coding长代码任务领域的竞争已基本结束。相比之下，在金融、法律、CAD/CAE以及机器人等其他领域，模型之间的能力差距依然显著。在这些领域的评测榜单上，第一名与中等水平模型，乃至第一名与第二名之间的分数差距可能高达百分之几十。这表明，对于后来者而言，在这些专业领域仍有巨大的追赶和提升空间。因此，各个领域的大模型发展阶段并不均衡。</p>
+<h3>您刚才的分析主要集中在Coding领域，并指出其发展已进入瓶颈。那么，在那些对专业知识要求极高、从业者通常需要硕士或博士学历的尖端领域，例如半导体开发、生物医药研发以及前沿的AI for Science应用，大模型的发展是否也遇到了瓶颈？</h3>
+<p>在这些对专业知识要求非常高的领域，模型的发展确实也进入了瓶颈。</p>
+<h3>有观点认为，AI在芯片设计等前沿领域的进展似乎遇到了瓶颈。例如，OpenAI在尝试利用AI进行ASIC芯片设计时，因EDA公司不愿开放其核心技术和数据，导致AI缺乏必要的学习资料而受阻。这是否意味着在生物科技、半导体等数据和知识壁垒极高的“封闭世界”中，由于企业不愿分享其核心数据，大模型将难以通过学习和修正来实现有效进步？</h3>
+<p>在芯片设计领域，确实存在所述的问题。大模型要在这些专业领域取得进步，目前高度依赖模拟器和验证器。即使无法进行完整的模拟，能够对生成结果进行有效验证，也能帮助模型实现迭代。当前，业界较为关注的几个领域包括3D、CAD、CAE以及机器人。在这些领域，大模型公司通常掌握了端到端的闭环模拟器，并已取得一定突破，尤其是在3D和机器人领域。然而，这些突破距离实际应用仍有距离。取得进展的核心原因并非大模型能力本身变强，而是相关的模拟器和验证器技术变得更加强大。目前，模拟器的发展水平是大模型在这些领域取得进一步突破的瓶颈。</p>
+<h3>在生物医药领域，顶尖的模型并非出自通用大模型公司，而是一家拥有完整闭环数据的生物制药公司。这似乎印证了数据的重要性。如果缺乏类似生物科技或半导体设计领域的核心闭环数据，仅依靠模拟器和验证器，大模型是否真的能够实现有效进步？</h3>
+<p>在生物医药领域，情况确实如您所述，数据闭环至关重要。目前该领域的进展相比2025年有所放缓，主要瓶颈在于生物实验室进行物理实验验证的环节。例如，DeepMind的AlphaFold团队以及Isomorphic Labs等都依赖像Twist Bioscience这样的公司进行生物实验。因此，当前生物医药领域的瓶颈不在于模型本身，而在于验证和模拟环节。然而，在机器人、CAD、CAE和3D这四个领域，情况则不同。这些领域的数据获取问题相对较小，大模型公司能够构建端到端的模拟器环境。例如，在机器人领域可以使用MuJoCo；在CAD领域有CADQuery等开源及非开源软件；在CAE模拟方面，DeepMind广泛使用Ansys等成熟的商业模拟器；而在3D领域，则有3D Gaussian Splatting、Blender和OpenSCAD等多种工具。这些领域之所以能取得进展，是因为其模拟器与现实世界的差距非常小、数字孪生精度较高。大模型公司目前的策略是优先在这些模拟器技术成熟、能够与物理世界高度对应的领域寻求突破。</p>
+<h3>为何在CAD、CAE和机器人等领域，模拟器和验证器能够有效推动模型进步，而在生物科技和半导体设计领域却不行？这背后核心的技术或产业差异是什么？</h3>
+<p>核心差异可能在于特定领域是否能够在数字世界中被有效、完整地模拟。并非所有事物都能轻易地被数字化模拟，例如金融投资领域因包含大量复杂的人类行为因素而难以模拟。生物医药领域或许未来能够实现高精度模拟，但目前可能需要科学家尚未发现的新方法。当前大模型公司主要聚焦于那些模拟器与现实世界差距极小、数字孪生技术非常成熟的领域。在机器人、CAD、CAE和3D领域，已经存在大量成熟的工具和软件，如用于机器人模拟的MuJoCo、用于工业设计的CADQuery和Ansys，以及用于3D建模的Blender等。这些领域能够取得进展，是因为它们已经具备了非常成熟的模拟器基础。此外，数据可得性也是一个重要因素。工业设计和机器人领域的数据相对不那么敏感，可以获得大量参照系。例如，硅谷的公司会购买全球电商平台上的大量数据。这些数据包含详尽的产品说明书、规格、材料属性等，为模型理解物理世界提供了至关重要的训练语料。这些领域可以被视为“开放世界”，其知识和数据并非高度稀缺或专有。相比之下，半导体领域一个先进芯片的设计版图、IP和核心技术诀窍是极其宝贵的资产，属于“封闭世界”，外部难以获取，因此也难以进行有效模拟。</p>
+<h3>在AI应用层面，特别是在生物医药、半导体等知识密集型行业，似乎存在一个发展瓶颈：一方面，这些行业因其高昂的人力研发成本而成为AI应用的潜在巨大市场；另一方面，这些行业的核心知识产权是其命脉，企业不愿将其开放给大模型进行学习。这种不开放导致模型在这些专业领域难以取得实质性进步，从而形成了一个“死循环”。请问如何看待这一现象，以及突破这一困境的关键是什么？</h3>
+<p>这一困境的核心在于数据和知识的可及性。要跳出这个循环，关键在于特定领域模拟器的成熟。大模型需要通过与模拟器进行交互才能有效学习，仅仅将知识以文本形式暴露出来是不足够的。当一个领域出现了与现实世界高度一致的、非常成熟的模拟器后，大模型就能迅速在该领域取得突破。目前，硅谷尤其关注模拟器公司的发展，DeepMind在2026年也收购了3D生成方向的团队。当前收购的重点主要集中在CAD和3D设计领域，因为这些领域的模拟器技术已经相当成熟，甚至在某些方面超越了传统的商业软件。例如，3D和CAD领域存在许多高水平的开源工具，如Blender、NeRF、3D Gaussian Splatting以及OpenSCAD等，这些工具降低了技术门槛，其性能与闭源软件的差距很小。这种开源或开放的生态为大模型提供了丰富的学习环境。因此，大模型在特定垂直领域的突破，其先决条件是该领域内开源或商业模拟器的成熟。目前在CAD、CAE、3D等领域，模拟器技术正日趋成熟，足以支持大模型在这些领域取得进展。</p>
+<h3>考虑到生物医药、半导体等行业的专业知识是其核心机密，由谁来创办能够模拟这些复杂专业知识的模拟器公司？如果由行业内部人员创业开发，他们将立即面临知识产权侵权的诉讼风险。如果由外部人员开发，他们又如何能掌握并模拟出行业核心知识？</h3>
+<p>确实，开发这类高度专业的模拟器需要深厚的行业背景。目前在CAD和3D领域，成功的模拟器创业团队核心成员通常是来自相关软件公司或3D打印等行业的资深人士，他们掌握着关键的专业知识。因此，要突破生物医药和半导体等领域的瓶颈，同样需要有掌握核心技术的人员从这些公司内部走出来创业。尽管与生物医药和芯片设计相比，CAD、CAE和3D领域的价值可能相对较低，但它们本身已是足够大的市场，其模拟器的成熟将为大模型提供未来几年的发展空间。</p>
+<h3>从您实际的观察来看，当前大模型技术本身是否仍有较大的进步空间？</h3>
+<p>目前能明确看到模型正在加速进步。尤其是在CAD、CAE、3D以及机器人控制等领域，由于存在大量成熟的开源或商业模拟器，大模型在这些方向的应用落地是确定无疑的。一个重要的趋势是，大模型已经开始被用于辅助模拟器自身的设计和迭代，这使得模拟器技术的发展速度也变得非常快。</p>
+<h3>建筑工程和3D设计等领域拥有大量公开案例，构建模拟器相对容易，但生物科技等领域的知识和数据大多是未公开的，这是否是其模拟器发展缓慢的原因？</h3>
+<p>是的，这正是关键区别。生物科技领域的核心知识和数据都掌握在各个公司内部，属于“水下”信息，外界难以获取。这导致该领域的模拟器开发进展普遍慢于预期。为解决这个问题，一些AI公司，例如Anthropic，已经开始在旧金山湾区自建生物实验室，试图通过自主研发来突破数据和模拟环境的瓶颈。</p>
+<h3>假设AI在编程领域的商业化应用已经趋于成熟，那么接下来AI商业化的下一个重要方向会是什么？</h3>
+<p>在编程领域之后，AI商业化的下一个重要方向是3D内容生成。目前，3D内容生成在游戏、影视以及元宇宙等领域的需求非常明确且巨大。尽管当前的技术，如Sora等视频生成模型，在生成与3D场景相关的内容方面仍存在一些问题，例如物理一致性、物体交互的真实性以及长视频中的逻辑连贯性等，但这些问题正在被逐步解决。具体而言，当前模型在生成单个或少数几个物体的3D模型方面已经做得不错，但对于包含多个物体交互的复杂场景，其效果仍有待提升。例如，在游戏或影视场景中，需要确保角色与环境的交互符合物理规律，这需要模型具备对3D空间和物理世界的深刻理解。目前，通过引入物理引擎或与模拟器结合是解决这些问题的主要技术路径。预计在2027年，随着技术的成熟，3D内容生成领域将迎来商业化的爆发点。</p>
+<h3>在3D内容生成领域，目前主要的商业模式是什么？</h3>
+<p>当前3D内容生成领域主要有两种商业模式。第一种是面向C端用户的订阅制，类似于Midjourney的模式，用户按月付费使用服务。第二种是面向B端企业的API调用模式，即按生成内容的数量或计算资源消耗进行收费。目前来看，这两种模式都在发展，但尚未出现绝对主导的商业模式。</p>
+<h3>您认为AI在3D内容生成领域的商业化潜力有多大？</h3>
+<p>3D内容生成领域的商业化潜力非常巨大，其市场规模可能与AI在编程领域的应用相当。以游戏行业为例，一个3A级游戏的开发成本中，美术相关的费用通常占到三分之一甚至一半，其中3D建模是成本最高的部分之一。如果AI能够将3D建模的效率提升10倍，将极大地降低游戏开发成本，从而颠覆整个行业。目前，包括游戏引擎公司在内的许多企业都在积极布局这一领域，试图抓住这个变革性的机遇。</p>
+<h3>从商业化角度看，人工智能在当前阶段之后，有哪些领域可能成为新的增长点？</h3>
+<p>在未来半年内，目前探讨的几个领域尚无法立即实现商业化落地。不过，这些领域已经度过了类似于GPT-3发布时的技术拐点时刻，预计再经过一到两代的技术迭代，便可能取得实质性进展。当前行业对迭代路径已有清晰认知，即通过不断迭代模拟器来训练大模型。目前已有多种方法在推进模拟器的迭代，例如，机器人团队已能利用现有模拟器，根据给定的机器人规格参数自动生成性能优越的新模拟器。预计到2027年下半年，在这些领域中将能看到可规模化落地的重大进步。</p>
+<h3>对于您提到的设计领域，其商业化路径是怎样的？是否会通过替代部分人力来实现，例如设计院采用AI工具辅助设计？</h3>
+<p>是的，商业化的核心逻辑在于优化与迭代。以建筑设计为例，大模型可以接收现有的设计方案，并自动生成优化版本，比如在不改变总体结构的前提下，将空间利用率提升10%，同时将建筑的节能效率再提升10%。大模型尤其擅长执行这类迭代优化任务，类似于优化代码。这主要适用于计算机辅助设计以及其他工业设计领域。目前尚不能完全确定大模型是否具备原创设计能力，但其在优化现有设计方面的能力已经非常明确。另一个例子是，在保持各项服务等级协议指标不变的前提下，通过AI优化将手机壳的材料用量减少30%。尽管单个案例的商业价值可能有限，但它能为制造商在不影响用户体验的情况下显著节省材料成本，这一商业化路径已非常清晰。</p>
+<h3>与其他领域相比，设计优化的商业价值如何？哪个领域的商业潜力更大？</h3>
+<p>目前来看，机器人领域的商业价值潜力更大。得益于近期模拟器的快速迭代，机器人技术可能已经越过了相当于GPT-3.5的技术拐点。新型机器人模型通过结合现有模型与模拟器进行大量实验，再转化为具体行动，已在工具使用方面取得了实质性突破。例如，过去被视为中等难度的任务，如开关抽屉或使用特定工具进行组装，现在的执行准确率已非常高。而像“拾取与放置”这类基础任务，技术上已基本得到解决。</p>
+<h3>与机器人和设计领域相比，编程领域的商业化空间是否更大？</h3>
+<p>是的，编程领域的商业化空间潜力巨大，尤其是在引入“智能体团队”的概念后。智能体团队的推出将极大地扩展编程领域的市场空间，但其实现方式是以大规模替代现有程序员为前提。</p>
+<h3>您提到的“智能体团队”具体是指什么？它是否意味着组建一个完全由AI智能体构成的团队来替代现实世界中的整个编程团队？</h3>
+<p>是的，这正是当前各大公司都在推进的重要项目。例如，据专家了解，DeepMind内部有一个名为“Project 4K”的项目，目标是管理约4,000个智能体。而Cognition AI的Devin产品，在公开演示中能同时管理几十个智能体。智能体团队的应用将带来两种核心变革：首先是知识与能力的共享，例如，一个代表您的智能体可以直接与一个代表专家的智能体进行信息交互，探讨技术突破或模拟器成熟度等问题，无需双方本人投入时间，从而降低沟通成本。其次，智能体具备极强的主动性，能够打破人与人之间、部门与部门之间的层级壁垒，无需逐级审查，可以直接管理整个部门的工作流。未来，一个十人部门可能只需要保留两名员工负责最终的审查工作。从技术角度看，虽然存在记忆管理、上下文管理与压缩、验证机制等挑战，但这些都属于大模型公司擅长解决的领域。</p>
+<h3>既然智能体团队有如此大的潜力，为什么目前硅谷尚未出现大规模的程序员裁员潮？</h3>
+<p>当前尚未出现大规模裁员，主要是因为工作流程还不是“AI原生”的。目前普遍的模式是，每个人管理多个智能体和会话来处理不同任务。例如，专家收到同事提问后，会先问自己的智能体，再将智能体的回答转发给同事；而同事出于不完全信任，可能会再将该答复交由自己的智能体进行二次验证。这个流程本身效率低下，因为它依然依赖于人与人之间的沟通。一个真正AI原生的流程应该是两个智能体之间直接对话，无需人类作为中间环节。这本质上构成了“智能体互联网”，未来公司与其供应商之间的沟通、谈判、日程协调等工作，都可能由各自的智能体来负责。</p>
+<h3>AI Agent技术在企业组织中的应用前景如何，尤其是在实现跨部门或跨员工的全局优化方面，目前存在哪些局限性，预计何时能够规模化落地并产生实质性影响？</h3>
+<p>大模型已具备管理整个部门的能力，通过AI Agent进行全局性优化，可以显著提升效率。例如，在软件开发中，若两个不相识的员工正在运行相同的测试流程，一个全局Agent可以将其合并为一个，从而节省大量算力。同样，一个Agent修复的bug可以即时共享，避免其他团队成员重复劳动。当前的主要局限在于，企业内部的Agent应用仍处于孤立状态，每个Agent通常只服务于单个用户，缺乏全局视角和协同能力，无法将不同员工的工作流串联起来。理想的模式是构建一个能够统筹协调所有工作的上层Agent。解决这一局限性是目前大型模型公司的核心研发重点之一，包括开发可供团队共享的、或具备层级管理能力的Agent。与生物医药等领域面临的知识共享壁垒和技术瓶颈不同，该技术的落地障碍相对较小，主要涉及产品设计与交互界面等工程问题。预计这项技术最晚在2027年底前就能落地。一旦实现，企业组织形态将发生改变，例如一个管理者可能只需管理两名真人员工和八名虚拟员工，这可能导致高达80%的裁员。目前，已有团队开始试点，部分员工的汇报线上已包含数字员工。</p>
+<h3>从商业化角度看，AI模型相较于传统搜索引擎在广告变现方面存在哪些核心挑战？用户对AI判断的信任与广告植入的商业诉求之间存在天然矛盾，这一问题应如何解决？</h3>
+<p>AI模型的商业化能力确实远不如传统搜索，其核心挑战在于用户信任与广告植入的内在矛盾。用户使用传统搜索引擎时，平台扮演的是信息展示角色，用户自行筛选和判断搜索结果，因此植入广告是合理的。然而，用户倾向于直接信任AI模型的判断和推荐，如果在AI的回答中植入广告，会损害其判断的中立性和可信度。例如，当用户要求AI基于其个人审美偏好推荐一款网球拍时，如果AI因为收取了广告费而推荐特定品牌，用户便无法相信其判断的客观性。目前，谷歌的广告业务主要分为传统搜索和AI模型两块。据专家了解，后者计划在2027年专门投放广告。传统搜索业务方面，本季度的广告收入仍在增长，增速约为4%—5%，回归到了近几年的正常水平。该增速相较于2026年第一季度超过10%的高增长有所回落，但第一季度的高增长原因尚无定论。AI模型业务方面，其变现能力差主要源于两个因素。第一，用户渗透率远低于传统搜索。据专家观察，尽管谷歌在美国市场通过大量算力补贴，AI模型在搜索用户中的日活跃用户渗透率已达到20%出头，但全球范围内的渗透率仅为5%—6%，因为算力资源不足以支持全球性的用户补贴。第二，从行业情况看，广告投放策略极为保守。AI模型通常仅在具有明确商业意图的会话中投放广告，例如购物比价等场景，而这类会话的比例仅为10%出头。并且，即便是这类场景，广告展示也十分有限，初期甚至每人每天只展示一个广告。相比之下，传统搜索能保持约40%的广告覆盖率，即100次查询中有40次会展示一个或多个广告。因此，如果按单次点击的变现效率计算，AI模型的广告因其精准性而表现更优；但若按千次展示的收入计算，则远远低于传统搜索。</p>
+<h3>AI模型的商业化路径是怎样的，广告模式和订阅模式各自面临哪些挑战？</h3>
+<p>目前行业主要通过广告模式实现商业化，尚无法通过订阅模式有效变现。广告的实现方式与搜索引擎类似，即自然内容的排序与广告费无关，而是在特定位置展示带有“Sponsored”标识的广告内容。然而，这种模式可能会引发用户疑虑，担心非广告内容的排序是否也受到付费影响，类似于对搜索引擎付费排名的质疑。订阅模式方面，每月几美元至20美元的低价订阅尚有盈利空间，但对于每月100美元及以上的高价订阅，据专家观察，提供此类服务的公司普遍面临较大的亏损压力。高价订阅用户通常需要更高端的服务，同时也更擅于利用服务资源，导致公司成本急剧上升。例如，Grok目前就面临巨大的收支平衡压力。因此，依靠订阅模式在当前并非一条可持续的商业化路径。</p>
+<h3>鉴于广告和订阅模式都存在问题，AI商业化是否需要探索新的路径？</h3>
+<p>一种可能的路径是利用AI模型中的用户数据为其他业务进行广告精准投放。例如，谷歌虽然未在AI模型内部直接放置广告，但会利用用户的聊天记录来优化其在YouTube或谷歌搜索等其他平台上的广告投放。具体操作上，系统会将对话内容进行分类，比如识别出用户计划去夏威夷、上海或广州旅游，但会剔除具体日期或特定地点等敏感信息。据专家观察，这种方式已显示出一定效果。未来，Meta的Muse智能体也可能采用类似策略，利用其聊天记录在其他地方进行广告投放，例如当用户使用Muse查询酒店时，向其推荐租车等相关服务，尽管这种方式的用户接受度尚不确定。</p>
+<h3>当前CPU的供需情况和应用场景是怎样的？</h3>
+<p>目前CPU并未遇到瓶颈。谷歌主要使用自研的Arm架构CPU运行一些特定的轻量级任务，没有针对CPU进行特别优化。当前绝大多数CPU运行的任务并不需要特别高的多线程能力、计算强度或视觉渲染能力，因此也不需要超线程等并行计算技术。对于并行度高且轻量化的任务，Arm架构CPU表现良好。然而，如果未来家用机器人成为主流，每个机器人在执行动作前都需要进行大量模拟运算，届时将需要更高端的CPU支持。</p>
+<h3>如何从算力租赁价格和谷歌内部资源分配两个维度观察当前算力紧张的状况？</h3>
+<p>从市场层面看，算力租赁价格，特别是反映真实供需关系的按需实例价格，呈现持续上涨的趋势。这不仅限于AI相关的GPU或TPU，即便是租用一个普通的非AI虚拟机，其价格也在上涨。从谷歌内部资源分配来看，算力也变得更为紧张。为了优先保障核心训练任务的资源供应，其他非核心团队现在很难获取到计算卡，这反过来凸显了整体算力的短缺状况。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

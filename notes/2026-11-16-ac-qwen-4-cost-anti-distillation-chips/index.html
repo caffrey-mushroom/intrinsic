@@ -1,0 +1,206 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.16 | AC | LLM | Qwen 4 Cost, Anti-Distillation &amp; Chips</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.16 | AC | LLM | Qwen 4 Cost, Anti-Distillation &amp; Chips</h1>
+<p class="orig">原标题：头部AI大厂：Qwen 4.0与DeepSeek、Kimi、GLM等单任务推理成本及速度对比，Anthropic等反蒸馏措施对国内模型训练数据结构影响，自研芯片应用效果等 – DeepSeek_智谱_平头哥</p>
+<p class="tags">#llm #china</p>
+<p class="meta">AceCamp · 2026-11-16 07:28 · article 70569170</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>Qwen 4 MAX预览版于2026年11月11日接入千问办公和千问APP，预览期两周，正式版预计12月中下旬发布，参数量4T、激活参数100B。</li>
+<li>实测长文本任务稳定性追平Kimi 3.1 Pro，中文写作预计与GLM对齐，但与Fable 5、GPT-6等海外顶尖模型仍有差距，整体回到国内T0梯队。</li>
+<li>核心劣势是单任务成本过高：同一PPT优化任务WorkBuddy消耗约40–50积分，千问需150–200积分，成本约为其4倍，被认为是按任务计最贵的开源模型，公司以两折折扣对冲。</li>
+<li>自2026年8月起Anthropic、OpenAI对高频蒸馏加入动态路由降级与扰乱，5–7月超过30%的外部闭源轨迹进入后训练数据池并污染推理分布，8月底公司停止海外蒸馏，相关数据占比降幅达十倍。</li>
+<li>新模型后训练数据九成来自自有场景，包括3.8基座在线采样、Coder与千问办公数百万开发者及企业的回流数据，这也是云栖大会推迟两个月发布的原因。</li>
+<li>复杂调研任务WorkBuddy需21分钟、千问办公需27分钟；简单3D小游戏生成从1.5小时缩短至约20分钟，输出冗余问题有所缓解但仍存在。</li>
+<li>Computer Use仅达到“能用”，单APP内两三步任务可行，跨APP复杂操作成功率降至10%–15%；“世界感知”能力被视为千问Go和电商趋势预测的基础。</li>
+<li>线上推理约一半流量由自研890芯片承载，稳定性弱于英伟达，公司正加紧推进900芯片；平头哥计划在香港分拆上市，后续4.5版计划2027年中、5.0版计划2027年底发布。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>本文核心要点包括：1，Qwen4.0预计于2026年12月正式发布，参数量4T，激活参数100B，长文本稳定性追平Kimi K3.1Pro。2，Qwen模型核心劣势为单任务成本极高（约为WorkBuddy的4倍），推理优化不足导致Token消耗巨大。3，2026年8月起停止海外模型蒸馏，转向自有场景数据，相应对模型迭代节奏有显著影响。</p>
+<p>以下为专家观点：</p>
+<p><b>1，关于Qwen 4模型的最新进展，例如其当前状态、模型参数、能力侧重以及预期如何？</b></p>
+<p>Qwen 4 MAX的预览版已于2026年11月11日接入千问办公及千问APP等产品，该预览阶段将持续至11月25日，为期两周。这本质上是正式发布前的一个验证期，更准确地说是后训练阶段的收尾验证，因为后续的RLHF还需要针对长文本任务的执行进行完善。设置此预览阶段的主要目的是扩大数据量。此前，模型验证主要在内部进行，数据源包括基于3.8版本基座模型在线训练的数据、百万级开发者回流的数据，以及千问办公数千家企业的数据。此次开放预览旨在引入更广泛的数据。Qwen 4的正式版本预计将在2026年12月中旬或下旬发布。该模型参数量为4T，激活参数量为100B。</p>
+<p><b>2，从测试效果来看，Qwen 4模型的性能表现如何？与Kimi 3.1 Pro、DeepSeek V4.1以及海外SOTA模型相比，其定位和竞争力体现在哪些方面？</b></p>
+<p>Qwen 4模型在持续深化中文语境知识理解这一传统优势的基础上，主要优化了两个方向：第一个方向是Coding和Agent能力的持续迭代，本质上是对长文本任务的优化，涵盖复杂编程、办公、前端设计乃至软硬件操作（Computer Use）。第二个方向是世界感知能力的提升，旨在解决模型对物体的识别，并进一步理解空间位置关系（如上下、前后、远近）、时序关系和因果关系。例如，模型能够根据时间轴理解物体从A点移动到B点再到C点的过程及其执行者。这一能力主要应用于中长视频的理解，以及AI通过摄像头直接感知和理解外部环境，例如根据平面设计图在实际空间中进行位置标注。</p>
+<p>从实际效果来看，在长文本任务方面，Qwen 4的表现追平了Kimi 3.1 Pro。此前，3.8版本在处理长文本任务时常出现中断，稳定性较差，而Kimi 3.1 Pro和DeepSeek V4.1在这一领域表现更优。Qwen 4在稳定性上有所提升，基本达到了与Kimi 3.1 Pro相当的水平。然而，与Fable 5或GPT-6相比，在长文本任务这一短板上仍存在差距。在中文写作能力方面，Qwen 4也有所提升，预计能与GLM对齐。需要指出的是，这是即将发布的最新模型与Kimi 3.1 Pro和GLM的上一个版本旗舰模型进行对标。以上结论均基于实际场景验证，而非单纯的评分数据，评分结果届时可能会更高。</p>
+<p><b>3，考虑到Qwen 4的4T参数量远高于Kimi 3.1 Pro和GLM，这一优势是否会在特定方面，如长文本任务处理上，体现出超越竞争对手的表现？</b></p>
+<p>预计不会有明显优势。目前模型存在一个尚未解决的显著劣势，即任务处理速度慢且成本高，这一点已成为用户反馈最集中的问题。尽管单token价格较低，但市场已普遍转向评估单任务成本，而非仅关注token价格。根据内部及第三方社区开发者的测试，在执行同一分析任务时，千问的成本约与某些海外模型的成本差距仅在0.几美元，单任务成本在国内属于最高水平。</p>
+<p>以办公应用场景WorkBuddy为例，执行一个在已有框架基础上进行设计风格优化的PPT任务（输出两版并进行修改），WorkBuddy的标准积分消耗约为40至50分，而千问模型的积分消耗则高达150至200分，成本差距达到四倍。这反映出推理优化方面存在不足，思考过程消耗的token极多，在社区中已被认为是按任务计算成本最昂贵的开源模型。</p>
+<p><b>4，此前模型表现未达预期的核心原因是什么，是否与推理优化方面的人才密度不足有关？</b></p>
+<p>核心原因主要有三点：</p>
+<p>首先是数据源受到了外部限制与干扰。自2026年8月起，以Anthropic及OpenAI为代表的海外闭源模型供应商对高频蒸馏行为施加了严格的管控。具体而言，针对高频蒸馏的prompt，对方增加了一层动态路由降级与扰乱机制。这导致获取的工具调用轨迹中被掺杂了次优解，甚至部分关键逻辑被抹去。在2026年5月至7月期间，约有超过30%的外部闭源轨迹数据被灌入后训练数据池，这些受污染的数据不仅未能提升模型性能，反而导致基座模型的推理分布被带偏。基于此，公司内部在2026年8月底决定，停止采用海外闭源模型进行蒸馏，相关数据在训练数据中的占比降幅达十倍，剩余配额仅用于评测团队进行黑盒水位测试，不再进入主流训练流程。</p>
+<p>其次，技术框架存在惯性思维。在后训练（post-training）环节，当时使用的旧有框架版本相对落后。虽然新推出的框架对长程任务有显著优化，但当时尚未应用。</p>
+<p>最后，虽然任何问题都可以归因于人才密度和算力维度（算力密度阿里其实有优势），但人才密度的影响确实是最大的。</p>
+<p><b>5，在模型性能方面，针对新发布的Qwen 4版本，在办公场景相比之前有哪些具体的改进和差异？</b></p>
+<p>新的Qwen 4.0模型在多个维度上有所改进。在推理速度方面，以一个偏复杂的调研分析任务为例，WorkBuddy完成需要21分钟，而使用最新模型的千问办公则需要27分钟，时间差距已从缩短，在用户体感上已基本可以接受。</p>
+<p>在训练数据层面，数据结构发生了根本性变化。由于停止了大规模外部蒸馏，后训练数据盘中九成的数据来源于自有场景。具体而言，在2026年8月至10月这三个月，通过3.8基座模型的在线LLM采样，结合Coder和千问办公数百万开发者及企业用户的编程IDE与Working Agent环境产生的自然回流数据，以及部分专家精标数据，构成了主要的训练来源。Qwen4.0模型在云栖大会延迟发布的原因，需要等待这批高质量数据跑出结果。</p>
+<p>综合来看，新模型在国内已回到T0梯度，与国内厂商水平持平，但与国外顶尖模型仍有差距。</p>
+<p><b>6，在推理成本和输出结果质量方面，新模型具体解决了哪些先前版本存在的问题？</b></p>
+<p>在推理成本方面，目前尚未找到有效降低成本的方法，主要因为这涉及到思维链的根本问题。在应用侧，公司采取了市场策略来弥补token消耗带来的高成本，例如为新推出的Qwen 4提供两折的折扣。</p>
+<p>在输出结果质量方面，表现因任务类型而异。对于长程任务，例如生成一个简单的3D小游戏，使用Qwen 4Max预览版的时间从过去的1.5小时缩短至约20分钟，这是最大的改变，但游戏画面的精细度与此前相比区别不大。在中文能力方面，模型输出冗余的问题有所改善但依然存在，例如过去模型可能生成10,000字而用户只需1,000字，现在可能生成5,000字，问题根源在于此前受蒸馏数据影响，导致模型倾向于啰嗦、频繁换行和分段。</p>
+<p>此外，新模型在多个方面解决了3.8版本存在的问题。首先，慢和贵的问题正在逐步解决。其次，稳定性得到显著提升，基本解决了过去运行时中断崩溃的问题。在超长文档检索方面，由于采用了1M上下文机制，模型对后段上下文的吸收能力增强，提升了后续内容的精准度。幻觉问题仍在解决中，但尚未完全解决。工具调用方面，效果表现良好，与K3.1 Pro版本相比没有显著区别。</p>
+<p><b>7，目前如何看待千问computer use这一能力模块的表现？</b></p>
+<p>关于“computer use”这一能力，目前其表现可以被认为是“能用”，但距离“好用”还有一段距离。</p>
+<p>当前版本在“Computer use”或“Agent”应用方面尚处于起步阶段，这并非阿里的核心优势，相较而言，“豆包”模型在这一领域可能更擅长。阿里的模型本质上是多模态能力，即从图片到视频的环境感知。目前，模型在单个APP内执行两至三个步骤的简单任务是可行的，例如执行检索、从网盘下载文件或查看数据。然而，一旦涉及跨APP的复杂操作，其能力便显著下降，成功率会降至10%到15%。因此，对于浏览器内的简单操作尚可应对，但无法处理更复杂的任务。</p>
+<p><b>8，“世界感知”能力在未来的商业化应用中主要体现在哪些方面？</b></p>
+<p>“世界感知”能力是后续应用发展的基石。首先，在“千问Go”这类产品中，该能力至关重要，因为其目标是链接阿里生态之外的众多APP，这必然需要借助“世界感知”的操作能力。其次，在电商领域，这项能力能够满足一个非常刚性的需求——趋势预测。通过预测下一个“爆品”，可以直接为业务带来增量，提升生产力。要实现精准的趋势预测，模型需要读取和理解海量数据，不仅是销量的结果数据，还包括从商品上架至今整个时间轴上的所有动态，例如商家采取了哪些运营动作、哪些是有效的、哪些是无效的，以及这些动作带来了何种影响。这背后涉及到大量因果关系和时序逻辑的分析，而中长视频的理解能力也包含在这一范畴内。目前，趋势预测是企业最刚需的应用场景之一，并且高度依赖“世界感知”能力。</p>
+<p><b>9，“世界感知”能力与阿里之前发布的“HappyHorse”模型之间是什么关系？</b></p>
+<p>“HappyHorse”模型更侧重于对物理世界的理解，其应用场景主要集中在数字孪生、XR游戏、3D建模以及使用Blender等工具进行渲染的领域，本质上更偏向于渲染技术。</p>
+<p><b>10，在“世界感知”能力方面，目前国内厂商的竞争格局如何，阿里的定位是怎样的？</b></p>
+<p>目前国内各厂商在“世界感知”领域的表现普遍一般，大家仍主要聚焦于长文本任务的竞争，尚未达到GPT级别的效果。据了解，最新的“豆包”模型在“世界感知”方面可能相对较强，但具体效果尚未体验。</p>
+<p><b>11，在美国芯片出口管制趋严的背景下，获取英伟达高端卡的预期是怎样的，以及阿里的应对策略和国产芯片的进展如何？</b></p>
+<p>在芯片供应方面，阿里后续会采用890芯片与英伟达的H系列、B系列芯片相结合的方案。尽管目前890芯片在各类场景中的应用占比还不高，但阿里已经在尽力将其接入。趋势上，国产卡的占比一定会提升。阿里在芯片和云领域的投入是内部公认最为坚决和巨大的，相较于AI眼镜、耳机等硬件或其他应用层项目可能存在的内部竞争和组织架构调整，对芯片和云的投入决心始终未变。这种坚决主要体现在资金投入上，尤其是在芯片领域，投入仍在持续。此外，平头哥也计划在香港分拆上市。</p>
+<p><b>12，未来模型版本的发布节奏是怎样的，例如4.0之后的版本规划如何，发布周期是否会延长？</b></p>
+<p>预计在2026年12月中旬或月底发布4.0版本。4.5版本计划在2027年年中推出，而5.0版本则计划在2027年年底发布。在4.0与4.5版本之间，可能会发布一至两个阶段性的小版本，例如4.1或4.2。大版本的发布节奏是以年终为节点，但最终发布时间取决于模型效果是否达到预期。例如，4.0版本原计划在云栖大会发布，但为了对标海外模型而延迟了两个月。</p>
+<p>从DeepSeek模型发布至今，Qwen一直都处于追赶状态，从未实现过领先。尽管产品线覆盖全面，但这并不意味着在特定领域达到了顶级（T0）水平。</p>
+<p><b>13，除了模型本身，是否有其他因素影响了产品的实际效果和稳定性？</b></p>
+<p>线上推理业务中，有一半的流量由“890”型号的芯片承载，这对实际效果产生了间接影响。在训练阶段，硬件配置主要由英伟达芯片和“890”芯片混合构成，因此训练过程相对稳定。</p>
+<p>然而，在推理阶段，由于使用了“890”芯片，部分用户会感知到某些时刻产品性能不稳定。相较于英伟达的芯片，“890”芯片在稳定性方面存在差距，因此公司正致力于尽快推出“900”型号的芯片，尽管目前遇到一些问题。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

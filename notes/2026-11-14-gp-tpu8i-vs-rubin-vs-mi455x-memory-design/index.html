@@ -1,0 +1,330 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.14 | GP | Semis | TPU8i vs Rubin vs MI455X Memory Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.14 | GP | Semis | TPU8i vs Rubin vs MI455X Memory Design</h1>
+<p class="orig">原标题：NVDA and GOOGL: GOOGL TPU8i Max (576 GB HBM) vs. NVDA VRU (192 GB) vs. AMD MI455x (432 GB) on Memory Architectures — Views From the Former d-Matrix Chief AI Software Architect</p>
+<p class="tags">#semis #memory #asic</p>
+<p class="meta">GuidePoint · 2026-11-14</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>d-Matrix院士认为，英伟达Rubin保持288GB HBM、Rubin Ultra据报降至192GB，而AMD MI455X为432GB、谷歌TPU 8i Max达576GB，这种分化既源于HBM供应紧张，也源于工作负载从大批量训练转向推理、强化学习和后训练。</li>
+<li>他指出HBM堆叠超过约4层后只增加容量不增加带宽，对交互式应用而言带宽比容量更关键，英伟达降低单卡内存是在保留高带宽的前提下适应市场与成本现实。</li>
+<li>英伟达能这样做依赖其系统优势：机架已成为计算单元，NVLink可将72到576个器件组成低延迟的统一扩展域，再辅以闪存、NVMe、网络内存和Vera的系统内存等片外层级来弥补训练所需容量。</li>
+<li>据报部分Blackwell系统有50–60%的内存容量未被使用，专家认为这取决于负载；以两颗小内存芯片替代一颗大内存芯片，因HBM是BOM中最贵的部分，总价不会翻倍，同时带宽也成倍增加。</li>
+<li>AMD和谷歌缺乏同等的短距离扩展网络，因此押注大容量芯片服务离线代理、长文档处理、代码库重构等对交互性要求低、更看重每美元token和并发的场景，这块市场正在快速扩大。</li>
+<li>AMD定位为高性价比方案，但仍需在CUDA、TensorRT、NCCL、vLLM等周边软件生态、集群互联和客户信任上追赶；谷歌TPU历经8代已在算力和带宽规格上追平英伟达，并依靠大规模横向扩展集群竞争。</li>
+<li>英伟达宣称Rubin相比GB300的每兆瓦推理吞吐提升最高30倍，专家认为来自约2倍带宽提升、4bit数据类型、微架构改进和推测解码等软件技术的叠加。</li>
+<li>专家判断HBM需求短期内不会下降，除非前沿模型实现大幅上下文压缩；CXL、高带宽闪存等新内存层级释放的容量会被新应用吞噬，符合杰文斯悖论，只是增速可能放缓。</li>
+<li>高通、d-Matrix等押注3D堆叠DRAM，主要解决带宽和数据搬运能耗而非容量问题，相关产品明年上市；NVLink Fusion向第三方ASIC开放，可让部分采用DDR的加速器接入，对HBM需求影响有限。</li>
+</ol></section>
+<div class="body">
+<p>Primary:</p>
+<p>NVDA</p>
+<p>AMD</p>
+<p>GOOGL</p>
+<p>Associated:</p>
+<p>OpenAI Global, LLC</p>
+<p>MSFT</p>
+<p>MRVL</p>
+<p>AVGO</p>
+<p>285A:JP</p>
+<p>SNDK</p>
+<p>005930:KS</p>
+<p>000660:KS</p>
+<p>MU</p>
+<p>2454:TT</p>
+<p>CBRS</p>
+<p>688825:CH</p>
+<p>ORCL</p>
+<p>AMZN</p>
+<p>Viewpoint:</p>
+<p>Former Executive</p>
+<p>Moderator: Dan Kaplan (DK)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Nov 13, 2026</td><td>34 Min Read</td></tr></tbody></table></div>
+<p>Satyam Srivastava (SS), Fellow - d-Matrix, Inc.</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The discussion examined how memory capacity, bandwidth, and interconnect design shape AI accelerator strategies at NVIDIA, AMD, Google, and emerging chip vendors. The expert argued that shifting workloads—from large-batch training toward inference, reinforcement learning, and post-training—make bandwidth and system-level performance as important as memory capacity.</p>
+<p>Key Insights</p>
+<p>Capacity is not the only measure of value. Adding HBM layers beyond a certain point can increase capacity without increasing bandwidth. For interactive applications, bandwidth may matter more; larger capacity can benefit high-batch, less latency- sensitive workloads. NVIDIA’s lower-memory approach may be deliberate. The expert sees it as a response to HBM supply constraints, cost, and possible memory underuse, enabled by fast system interconnects and off-device memory tiers. It could encourage customers to use multiple accelerators, though this is a risky strategy. The rack is increasingly the unit of compute. NVIDIA’s NVLink can combine devices into a low-latency scale-up system. Google emphasizes larger scale-out clusters, where communication between devices has higher latency. Demand for AI memory is not expected to decline in the near term. Additional memory tiers and more efficient software could relieve capacity pressures, though growing applications may use up the capacity they release, reflecting a rebound effect. AMD and Google have an opportunity in throughput-oriented workloads. Larger-memory devices may appeal where cost per token, concurrency, and context size matter more than fast interaction. The expert cautioned that AMD still faces software, connectivity, and customer-transition hurdles.</p>
+<p>Competitive Landscape</p>
+<p>11/14/2026 at 08:07 AM UTC</p>
+<p>Company or approach</p>
+<p>NVIDIA</p>
+<p>AMD</p>
+<p>Google</p>
+<p>Qualcomm and other specialized vendors</p>
+<p>NVLink Fusion ecosystem</p>
+<p>Quantitative Insights</p>
+<p>Positioning and advantages</p>
+<p>Challenges or pressures</p>
+<p>Strong software ecosystem and leading scale-up connectivity; can aggregate device capacity across a rack.</p>
+<p>Reducing per-device memory could require customers to purchase more accelerators.</p>
+<p>Value-oriented option with higher-memory configurations suited to large-batch, less interactive workloads.</p>
+<p>Must improve software support, cluster connectivity, and customer confidence.</p>
+<p>TPU specifications are increasingly competitive; higher capacity and large scale-out clusters suit long-context workloads.</p>
+<p>Lacks an equivalent short-distance scale- up fabric, according to the expert.</p>
+<p>Exploring 3D-stacked memory to improve bandwidth and energy efficiency.</p>
+<p>New architectures bring product, cooling, tooling, and software challenges.</p>
+<p>Could help third-party accelerators connect through NVIDIA’s fabric, including some designs using DDR rather than HBM.</p>
+<p>Potential HBM savings are likely limited relative to overall market demand.</p>
+<p>Metric mentioned</p>
+<p>Context</p>
+<p>288 GB, 192 GB, and 432 GB</p>
+<p>Discussed reported or referenced memory capacities for NVIDIA and AMD products.</p>
+<p>576 GB</p>
+<p>Discussed as a reported capacity for Google’s higher-memory TPU configuration.</p>
+<p>72 to 576 devices</p>
+<p>NVIDIA scale-up configurations described by the expert.</p>
+<p>50%–60%</p>
+<p>Up to 30×</p>
+<p>Reported estimates of unused memory capacity on some systems; the expert said this could occur depending on workload.</p>
+<p>NVIDIA’s claimed inference throughput per megawatt improvement; the expert attributed gains to multiple architectural and software factors, including higher bandwidth.</p>
+<p>About 2×</p>
+<p>Approximate bandwidth improvement discussed for a newer NVIDIA generation.</p>
+<p>DK: Hi, everyone. Thank you for joining today's call. NVIDIA and Google, Google TPU 8i Max versus NVIDIA Rubin Ultra versus AMD and the focus here is on memory architectures. Why is Google doing up to 576 gigabytes of HBM on their combined package? AMD is doing 432 gigabytes while NVIDIA seems to be or reportedly moving the other way. So please feel free to email me any questions at ask@guidepoint.com and I will work your questions into the call. In the meantime, it is my pleasure to introduce Satyam Srivastava who is our expert today and he is a fellow at D-</p>
+<p>11/14/2026 at 08:07 AM UTC</p>
+<p>Matrix and he is a former chief AI software architect at D-Matrix. And he has also had experience with NVIDIA a little bit earlier in his career, but I will let him speak about that. Satyam, thank you very much for joining us today. If you could please give us a few words about your background, that would be amazing.</p>
+<p>SS: Sure, thank you for having me. Like I said, I work at D-Matrix. I've been here for close to 6 years now. I'm a fellow responsible for hardware software architecture. Prior to this, I was at Intel for about 10 years and at a brief stint at NVIDIA before that.</p>
+<p>DK: Wonderful. All right. I would love to get your thoughts here. So NVIDIA kept Rubin at 288 gigabytes, but the report is that Rubin Ultra might actually come at 192 gigabytes, while at the same time, AMD's MI455X has 432 and then Google's TPU 8i would have double the memory of a regular TPU. At the same time, AMD's custom MI450 for Meta has, once again, reportedly quite a bit less memory. So what does it all mean? And why do you think this is happening? Is that just HBM rationing, or is that just driven by different workloads and the company is trying to be efficient?</p>
+<p>SS: Yeah, it's a bit of both. Obviously, the DRAM supply constraints in the whole industry is a factor. At the same time, there is also a technical aspect to this directional change. That needs a little bit breaking down. So if you start with just how memory is used by these accelerators and going back a few years, everything was driven by the need for large batch training and there having that extra capacity was very important. Now as the workload shifts towards more inference, more RL, more post-training, the capacity alone is not a driver for the ROI. So this is probably 1 of the technical factors as well, that in order for the customers or the users of these accelerators to be able to utilize these devices with the proper performance, they not only need to have the capacity, but also the bandwidth. And the thing to realize is that beyond, say, a 4-high HBM, stacking more layers of memory doesn't add bandwidth at all. So if the workload is constrained by memory bandwidth, adding some excess capacity for storing large context or user data is only going to help so much, but there is a trade-off that people have to do, especially if they're looking at interactive applications. So on that note, I think what NVIDIA is doing is adapting to both the market realities as well as the evolving mix of training and inference to dial down the memory capacity so that they can still retain the higher bandwidth, whereas AMD and Google are probably going in the more traditional direction of having the chips which can support larger context, more capacity, more users, more concurrency. And it gets very, at least it's probably trying to cater to both training and inference markets.</p>
+<p>DK: But then, NVIDIA seems to do most of the training anyways, right? So why does it feel that it's okay for them to configure their entire systems, not to have 2 different variants, but to configure their entire systems with less memory?</p>
+<p>SS: Yeah, so that is a counterintuitive way of looking at things. Traditionally, if you look at some of the SRAM-based accelerators, one of the challenges that they had to overcome is that because of the memory capacity constraints, you have to add more accelerators to aggregate more memory to serve larger models. Now that's a deterrent for users because they have to spend more to get the memory capacity, whereas they could buy just a few GPUs and get more HBM capacity. If you flip it back, by constraining the capacity of the GPUs, you now are forcing the users to actually buy more. So in a way, it's counterintuitive. It's forcing the users in a certain direction, but you are also adapting to the market realities and to the evolving needs of the workloads. It's a risky thing to do to force the users into larger purchases by reducing the amount of memory. But it may have some net economic benefit, at least in the near term. Another thing is there are more techniques available for utilizing other tiers of memory outside of the chip for training purposes. Some of them could be just checkpointing on flash drives, there is network memory, there is NVMe memory or even system DRAM in some cases. So by augmenting the memory hierarchy using off-chip and off-device memory, the training needs of capacity can be mitigated without having to put extra memory on the GPU itself. So it's a combination of those. Again, it's an economic factor. There is market realities, but also the technology mitigations available that can counter the detrimental impact of reducing the memory capacity. All 3 of them are coming together, which makes NVIDIA perhaps feel safe that even reducing the capacity here is not going to be that bad for</p>
+<p>11/14/2026 at 08:07 AM UTC</p>
+<p>the users.</p>
+<p>DK: Is that essentially NVIDIA's system approach advantage in action? They don't need to have that much memory as perhaps some of their competition in order to be able to, well, frankly, compete?</p>
+<p>SS: Mm-hmm. That's the crux of it, in my view. And again, it might be good to think about what is the unit of compute as far as modern AI deployments is concerned. It's no longer a single device anymore. It's a full system, which is typically a rack. And that's the scale-up domain. When we're trying to distribute a model, a large model over multiple devices in order to aggregate the compute, the bandwidth, and the memory capacity, the fundamental constraint shifts from the individual device properties to the interconnect latency and bandwidth. And at the moment, I think NVLink is one-of-a-kind solution. There are others such as Ethernet which are emerging, but in terms of deployed solutions, NVLink is unique that it offers low latency as well as pretty high bandwidth. So NVIDIA has that unique advantage that even if the individual devices have slightly lower capacity and slightly lower bandwidth, they can still aggregate quite a bit going from a single device to 72 in an NVL72 configuration or even in case of Rubin Ultra going to 576 scale-up domain. They have that advantage that at the moment is not quite evident in case of Google and AMD.</p>
+<p>DK: Got it. So the argument then is, well, no matter how much memory you put on a single device, right, it's not going to be enough for a large model. So then might as well optimize the device, say, for inference, right? And if you are using it for... or maximize the device for another level of efficiency and then use a fast connection to bring together, to be able to actually do inference or training on a larger model.</p>
+<p>SS: That's right. That's the realization that as the growth of models has continued over the last several years, no matter how big of a chip you build, even if you take a whole wafer as a single chip, there is still never going to be enough compute memory or bandwidth available to serve the largest models. You always have to go to multiple devices and at that point it becomes a 3-way optimization problem of satisfying the compute flops, how quickly can you move data around within the device and how quickly can you move data between devices. The overall system level optima that addresses all 3 is the one which will serve the most number of applications.</p>
+<p>DK: Then why are AMD and Google going the other way and introducing higher memory devices or keeping higher memory devices? What are they trying to achieve there or perhaps what are they trying to mitigate?</p>
+<p>SS: Yeah, so multiple factors at play there as well. 1 is, again, building upon that system angle a bit, they don't have the equivalent of NVLink quite to that extent. They have their own solutions for scale up and scale out. But they aren't as competitive as NVIDIA, at least today. So for them, scaling up especially is not as straightforward as NVIDIA is. Second thing is you do have a large number of applications that don't require very high interactivity. So these would be the offline agentic workflows, large document processing, refactoring of code bases. These kind of applications happen over a prolonged period of time and there's no user which is constantly interacting with the agents or with the LLMs. And cases like these, the workload is... the properties of the workloads are still the same, but you can afford to take a slight dip in the interactivity or increase the latency by batching more, by having a higher concurrency. And that's where the extra capacity can come in handy. So you can serve more number of users, you can serve larger context by sacrificing interactivity a bit. So that's the second factor. And then the third, as we mentioned, is that some of these devices are probably aimed at both training and inference solutions. And just having more capacity allows the training runs to be done at higher batches for longer periods of time and larger micro-batches. I would think those are the 3 factors at play here, which is allowing Google and AMD to continue with their product offerings.</p>
+<p>DK: Got it. And I actually probably was wrong to think of TPU 8i Max as a training device, and the i in there says specifically inferencing. So I hear you more on larger agentic workloads. Is that the right way to go? Because it's also my understanding that a lot more of the agentic workflows are being done on CPUs rather than GPUs. So is it also</p>
+<p>11/14/2026 at 08:07 AM UTC</p>
+<p>perhaps a situation where you could eventually even have multiple CPUs per GPU as a more efficient situation? Or is a dual-core TPU with double the memory the better answer?</p>
+<p>SS: So, agentic workflows are quite complex. It's hard to provide a single template for how those operate. And the typical role that CPUs play is for function calling or invoking applications for doing, say, database searches, web queries. The intelligence is still running on the accelerators. The intelligence still is on the LLMs. So it's a combination of the two. The place where CPUs have an increased role in those systems is one, of course, for those function calls. And the second is also for just better orchestration, better shifting between different LLMs, switching between users, better load balancing. So in that regard, it's not one or the other. You do need more CPUs, you need better connectivity between the CPUs and the accelerators, but they're not replacing the accelerators from the workflow itself. There are, of course, examples such as if you take Vera Rubin where you have the integrated CPU-GPU with the tight interface and shared memory. The spillover is an option, especially if your GPU has limited memory HBM capacity, you could offload some of the context or the warm data back to the system memory, the SoC memory on the Vera. And that's an option. So in that case, co-designing CPU-GPU in that tight manner is an option to support some of these agentic workflows, especially if we are trying to support long context extended context workloads.</p>
+<p>DK: Okay, got it. So overall, do you think they could actually... they can gain share here, Google and AMD by offering more HBM?</p>
+<p>SS: Yes, in my opinion, potentially yes. And it's largely coming from the fact that the universe of applications is expanding so quickly that people will take whatever compute they have available to serve those applications, so the pie is becoming much bigger. So in that regard, as I said, there is always going to be a class of workloads which requires the best interactivity. So having more capacity doesn't help there. But there is also a very large class of applications that don't require that much interactivity where processing can happen over an extended period of time, where throughput is more important, where tokens per dollar is more important. And in those cases, having devices that offer larger capacity would potentially have an edge. So for applications like those, at least the customers have a choice now to either look at TPUs or the AMD GPUs as opposed to the only choice they had a little bit ago.</p>
+<p>DK: Got it. Okay. That's also very helpful. So that plays very much into what AMD has been offering, namely that you could have the same GPU. Well, not the same GPU, but you could have a GPU, but at a cheaper cost per dollar, cheaper cost per token rather than perhaps the most efficient way for all the workloads.</p>
+<p>SS: Yes, yes. AMD has been pitching their product as a value-oriented offering, which is a prudent approach to make an entry into the market segments. These are going to be the cost-conscious customers who are probably okay with an extra amount of engineering lift needed to port over their applications from NVIDIA to AMD if in the long term it gives them more value. So that's a reasonable place to start. And now with a slight fork in the approaches between AMD and NVIDIA, that becomes an even more pronounced business strategy. So NVIDIA is chasing the high end, whereas AMD has a bigger lower end to operate.</p>
+<p>DK: But AMD has not had a huge amount of success here, even if you look at Anthropic, right? Their commitments to AMD is much less than that to the TPU. Do you think that going forward that will change? Can they gain share here?</p>
+<p>SS: Yeah, there are a lot of factors at play here. I think the biggest one that keeps coming up is the software ecosystem and how well AMD is adapting to or providing the onboarding support for customers to move over from an entrenched ecosystem like NVIDIA's to theirs. Now, as far as programming the accelerator itself is concerned, that's perhaps not the biggest problem anymore. Even with custom accelerators, with the emergence of the LLM coding agents, programming the accelerator itself is not the biggest hurdle. But it's the peripheral software which is built around it. The combination of say CUDA, TensorRT, NCCL, vLLM, everything is first class for NVIDIA. And there AMD is still trying to catch up. So I would assume that plays a role. And then the second, of course, is the connectivity solution</p>
+<p>11/14/2026 at 08:07 AM UTC</p>
+<p>that NVIDIA offers is best in the industry even today. And AMD is coming up with its own solutions. But that's a limiting factor, especially for customers like Anthropic, which are very quality oriented. It's not just single devices that they're operating. They have to be able to operate it in a cluster that they can manage and control the SLA for. So there is technical hurdles both on the software front and connectivity front that AMD has to overcome in addition to just the reputational challenge.</p>
+<p>DK: Got it. But I know there's perhaps more product differentiation, they're offering something NVIDIA really isn't in terms of more memory per chip. So do you think that once again, does that enable them to gain share, or is that still remains to be seen?</p>
+<p>SS: This is AMD you're talking about? Yes, yes. As I said, as the footprint of AI applications is expanding, there is a significant volume associated with non-interactive applications. And that is definitely a place where there is an opportunity for AMD to take some market share, just because that segment of market is not as impacted by both the memory bandwidth and the connectivity solutions. You can be slightly slower at the memory level, you could also be slightly slower at the connectivity level, but if you're offering larger capacities in a smaller footprint, those value- oriented large batch non-interactive applications might see a net benefit going with AMD compared to NVIDIA. So there is an opportunity there.</p>
+<p>DK: That's very helpful. What does it mean for Google? So is this a bigger opportunity for them?</p>
+<p>SS: So it's a brand new opportunity for Google. Historically, they haven't... Google provided their TPU chips to anybody outside of GCP, so this is an entirely new opportunity. And they chose a time when the demand for AI computing is so high that whatever they put out will be consumed. So as it is, they're starting from 0 as the bar to cross, and they have a large opportunity ahead of them. Compared to NVIDIA, the TPU offering or other eighth generation TPU offerings, they have certain tailwinds for them. One is that finally at a competitive level in terms of the flops, in terms of the memory bandwidth, they have caught up to NVIDIA after 8 generations. So at this point, TPUs are fairly competitive, at least at a spec level. Beyond that, of course, they have a higher memory capacity offering compared to NVIDIA, which also plays into those non-interactive agentic applications. So definitely there is an advantage. Now, the other place where NVIDIA's approach differs from Google's is on their networking, where NVIDIA has a very good advantage in terms of the NVLink fabric for scale-up. Google typically doesn't emphasize that short distance communication as much. They have much more emphasis on scale-out, and they can create very large clusters based on these TPU devices. So unless they have a new networking-based, a new short-distance scale-up network technology in the works, Google isn't really competing with NVIDIA at the moment. In that regard, again, it goes back to those very large agentic long-context, high-batch workloads where you get the advantage of both large memory capacity and the fact that you can create larger clusters, which are not on a scale up fabric, they are on a scale out fabric. So you can carve out groups of TPU devices, you can carve out islands of users, workloads, different models that can be managed better. So Google's offering is looking at it more from deployment perspective and the competitive edges on the scale and of course, the competitiveness of the device itself.</p>
+<p>DK: You know, maybe it would be great to address this a little bit. What's the biggest difference between being able to create clusters on a scale up versus on a scale out?</p>
+<p>SS: Yeah. So in case of Google, the unit of computing, historically at least, has been a single device, a TPU. Now you could have a cluster which is comprising of, say, let's just take 576 TPUs. They are on a scale-out fabric, so they can communicate peer-to-peer with all 576. You can even extend that to a much larger number, but they're not on a scale- up domain. There's no memory semantic communication between the TPU devices. The latencies are somewhat higher compared to NVLink because they're going over a network fabric. So that's the main difference. Whereas the unit of compute, the unit of a scale-up domain in case of NVIDIA is the NVLink fabric, which can go from 72, 144 to 576 devices. Google doesn't have that kind of a two-step network. They have a flat network, flat hierarchy, where TPU</p>
+<p>11/14/2026 at 08:07 AM UTC</p>
+<p>devices communicate with each other with a slightly higher latency. But the universal peer devices is larger. So that's the, in a way, philosophical or architectural choice that Google has taken differently.</p>
+<p>DK: And that is really helpful. Would that help explain this memory differential? Because once again... It's also, so NVIDIA is looking at it as how much memory do we have in the 72 devices plus elsewhere in the system perhaps, right, versus one unit of compute where for Google, it's more important to have perhaps a more powerful and memory-dense unit.</p>
+<p>SS: Yes. I think that's the right summary. Whereas because of the superior connectivity technology, especially in terms of latency, NVIDIA can claim to have the entire rack as a unified device, a logical device, a logical computer, so to speak. Google typically doesn't do that or historically hasn't taken that route. For them, an individual TPU is the unit of computing which can interact with its peers in the device world.</p>
+<p>DK: Got it. So let me go into a somewhat different, well, of course, related topic here. I've heard reports that on average as much as 50% or some people said 60% of memory capacity on Blackwells goes unused. First of all, do you agree with that? And second, does that make sense?</p>
+<p>SS: It could. It depends on the application, but I can see that that can happen.</p>
+<p>DK: Nice.</p>
+<p>SS: And the reason why that could be important is that NVIDIA by cutting memory or not increasing memory might actually be increasing the efficiency of the entire system. If you don't make your customer pay for the extra memory that on average doesn't get used, but if you do need to use it, then you could combine other devices, then you're actually instead of forcing customers to buy more, you're actually giving them an ability not to buy more than they need, right? Yeah. So again, in applications where bandwidth is more important compared to capacity and you're seeing underutilization of memory capacity, it is prudent in a way to pitch a cut-down version of the product as a cost- saving measure, especially because the DRAM, HBM happens to be one of the most costly pieces of the bill of materials for the GPUs. So that's a wise strategy. And again, given the technology pieces that are at NVIDIA's disposal, they could offer 2 devices with reduced memory capacity as an alternative to 1 device with a larger capacity and get away with it, both in terms of the application performance... in some cases it might actually benefit compared to the latter... and also in terms of the pricing. It may not be a 2x difference compared to buying 2 devices, but because your memory cost has reduced, you can price the device lower. And the cost of 2 devices will not be 2 times what it used to be before. So yes, it's a viable, it's a potentially viable strategy.</p>
+<p>DK: Right, because I've heard a lot of sentiments that, yes, that means they're forcing people to buy more devices, but this might actually be more efficient for their customers who are buying more than 1 device anyways.</p>
+<p>SS: Indeed.</p>
+<p>DK: Okay. Wonderful. All right. So that's a really helpful discussion there. So NVIDIA claims to have up to 30x more GenAI inference throughput per megawatt on Rubin versus, say, GB300 with the same memory per GPU. Okay. And essentially, can memory tiering and the software and just what we discussed essentially decouple AI performance perhaps from HBM demand, at least to some extent?</p>
+<p>SS: Yes and no. Let me address the no first. When you said they have the same memory, I think you meant only the memory capacity, not the bandwidth. Because DK: I'm sorry.</p>
+<p>SS: Going from Blackwell to Rubin, the bandwidth increases.</p>
+<p>11/14/2026 at 08:07 AM UTC</p>
+<p>DK: Yes, I'm sorry. Yes.</p>
+<p>SS: To Rubin, the bandwidth increases. And as we said earlier, this class of workloads is extremely bound by memory bandwidth. So if you get 2 times higher memory bandwidth, give or take, you will see 2x improvement at the workload level in token generation. Now, that said, there are many other improvements at an architectural level, at software level. For example, support for 4-bit data types in Rubin is going to help both with the data movement as well as with the throughput of the tensor cores themselves. The way kernel dispatch happens, the queuing happens, the grouping of threads. So those are all micro architectural enhancements. And then of course there are software techniques which have emerged in, say, the last 2 years, last 3 years, which have also improved the efficiency. Such as, an example of that is speculative heads, which are built into language models. So those are not necessarily tied to the Rubin architecture, but if you take a baseline of where the top performance was on Blackwell 2 years ago, 1 year ago, versus using the best techniques available today on Rubin, all that adds up. So yeah, I can see how we can factor that large multiplier factor that NVIDIA is putting into a combination of these additive enhancements.</p>
+<p>DK: What does that mean for overall HBM demand? Because the data points we seem to get here is that the demand is really insatiable. At the same time, it seems that NVIDIA really has not been increasing their demands per unit. They're just increasing perhaps their demand proportionately, while some others are increasing not just proportionately, but they're also increasing the amount of memory per unit too.</p>
+<p>SS: The demand is not decreasing. So for the demand to decrease, the demand for memory to decrease, the driver has to be the AI labs and model architectures and the way applications are written. If we have, if say Anthropic or OpenAI or DeepSeek comes up with an extremely efficient way of compressing context that doesn't require storing 1 million tokens worth of context instead of compressing it into 100K. That 10X reduction in context would have a sizable impact on the demand for HBM, but we're not quite there yet. Almost all of the frontier models don't have that aggressive of a compression. They have some compression for multi-turn applications, but... Most of them don't aggressively compress context. So demand is not decreasing because the main driver is not there yet. So, in that regard, as you rightly said, and we discussed earlier, there are 2 approaches, 2 paths. 1, create devices that bite the cost of increased memory and still offer a large capacity, or split that into 2 devices, each with a slightly lower capacity. But now, not only have you reduced the per device cost, you've also multiplied the bandwidth by offering 2 devices instead of 1. So it's a clever way of positioning or adapting to a market reality by also addressing another problem in the workload, which is bandwidth. If you're not utilizing that much capacity and you have to pay more for it, instead of that, you pay less, reduce the capacity, and offer 2 devices instead of 1.</p>
+<p>DK: And then if you use the capacity and you have a fast enough connection, right, then you can connect.</p>
+<p>SS: Exactly. Then you can still have the access to capacity. That's right. Yes.</p>
+<p>DK: So, all right, very interesting. But again, I think overall, that means perhaps memory is being used more efficiently than the architectures we've had, say, even 6 months ago or maybe 1 year ago.</p>
+<p>SS: Potentially, yes. Actually, yes, I would say it is true, because for the interactive applications which were still running on those 288 GB GPUs and not utilizing all that capacity. If they were to be run on 192 GB GPUs, the underutilization in those cases would be less. So, sure, yes.</p>
+<p>DK: Right. And do you think that certain apps have an effect on HBM demand?</p>
+<p>SS: Unlikely. Like I said, the driver for HBM demand is not so much utilization or the cost, it's really the demand for AI computing. So unless there is a sizable reduction in the needs of AI applications and how much memory footprint they have, any spare capacity which is freed up by reducing these underutilized stacks of memory is going to be consumed</p>
+<p>11/14/2026 at 08:07 AM UTC</p>
+<p>by more demand. So I am somewhat bullish that memory demand is not going to go down. It may not increase at the same pace as it has in the last year or so, but it's not reducing anytime soon.</p>
+<p>DK: Got it.</p>
+<p>SS: So, DK: I see your point. So if we were looking at it 6 months ago before the service change and while we were expecting that perhaps the Rubin would come in with 12 or even 16 stacks, right, 16 layers, then we would have thought that memory demand would grow faster. But memory demand is still growing, it's just not as fast as before.</p>
+<p>SS: Correct, correct. Yeah. And again, if you're in the speculative territory, it could be a decoy that NVIDIA took that we are going to offer a terabyte of HBM and then not do that. Everybody else took the cue. They're offering more than half a terabyte of HBM on the devices, whereas NVIDIA took the alternative route, looking ahead at the supply chain, at the demands of the workloads, and adjusting the roadmap accordingly.</p>
+<p>DK: Right. But as we discussed, it doesn't seem that that is putting them at a disadvantage that they went that route.</p>
+<p>SS: Okay.</p>
+<p>DK: Is there increasing perhaps their own content versus decreasing the HBM content, which they have to pay fairly dearly for?</p>
+<p>SS: Yes, yes. Yeah, again, it's about where the concentration of applications is, where is the volume, and if the frontier labs have a majority, a vast, vast majority of the revenue or the share of the tokens and they demand high interactivity. They don't need those devices with high capacity. But on the flip side, if the size of applications that require low interactivity, high batching and more memory capacity continues to increase, then others, including Google and AMD will also benefit from it. Again, it's those 2 segments which are somewhat further apart from each other that these approaches are catering to.</p>
+<p>DK: But going back to demand and given NVIDIA's market share, does it mean that we will have a situation where perhaps supply-demand become balanced earlier if demand is not growing as fast as we had expected before?</p>
+<p>SS: Yeah, that's a little harder to predict. From all the indicators that we are seeing in the industry, things are very much capacity constrained, so even if there was an easing of the memory demand, it won't fundamentally shift how things are today. It might bring down the backlog, it might enable more users to have access to the devices, but I don't know how significant that's going to be in the short term. Any additional capacity that the memory vendors are provisioning for, say, 2027 and beyond, is likely going to be consumed. Again, going back to unless the driver for demand changes at the architecture level, if the demand for memory is reduced significantly, then that excess capacity will be under question. Otherwise, even at the current rate of growth, the additional capacity being brought online by memory vendors is likely going to be utilized.</p>
+<p>DK: Got it. So what other possibilities, other than compression, what could result perhaps in reduced or maybe even increased memory demand?</p>
+<p>SS: Increased.</p>
+<p>DK: Sure. Some people say CXL might actually be reducing the growth of memory demand, but overall might actually increase it versus, well, it depends on which benchmarks you're using.</p>
+<p>SS: Mm-hmm.</p>
+<p>11/14/2026 at 08:07 AM UTC</p>
+<p>DK: So I just would love to get your thoughts in terms of what's upcoming, what are people considering out there and what do you think can increase or reduce memory demand in the future?</p>
+<p>SS: Yeah, so...</p>
+<p>DK: Beyond SS: to...</p>
+<p>DK: one more thing, beyond current expectations.</p>
+<p>SS: Okay, yeah. In terms of the emerging technologies and the new memory hierarchies being created, that's one of the ways in which the available on-device memory can be augmented. As you mentioned, CXL, it's a way to use memory which is provisioned elsewhere in a system to be accessed by a computing device. Another is NVMe over PCIe or in some cases NVMe over NVLink. Then there is the new framework and standard being developed for high bandwidth flash, which is using non-volatile memory as a tier between DRAM and SSDs. So it's non-volatile, higher density, slightly more distance, but because it is designed for higher bandwidth access, it can be another memory tier which is being explored. So a combination of new technologies, such as network or fabric memory, and new technology tiers, such as high bandwidth flash, along with algorithmic techniques to utilize those, such as dynamic offloading of context or switching of user caches across different tiers of memory, those are actively being worked out to mitigate the current crunch in memory. And as you rightly said, that every time there is an innovation that addresses a certain shortage, rather than reducing the demand, it actually frees up... an opportunity for more demand. It's that classic Jevons paradox. I think we are very much in that range where any spare capacity is going to be used up by new applications rather than reducing the demand at the moment.</p>
+<p>DK: Got it. How about, say, what about 3D stacked DRAM in-memory computing and perhaps some of the more dedicated inferencing chips that use different architectures, such as, for instance, HPC from Qualcomm? Can this reduce HBM demand, or does it just complement existing architectures and not really affect... not reduce HBM?</p>
+<p>SS: It's a little too early to say how much proportion of AI workloads will shift towards these stacked memory architectures, but it's a direction that almost everybody, every major player in the industry is taking. Qualcomm with their high bandwidth cache, D-Matrix with 3D DRAM, NVIDIA is looking into it, Meta has talked about it, Tesla has talked about it. So every major vendor is looking at die-stack memory as a means to overcome the limitations of HBM. Now, that limitation is not capacity. The die-stacking of memory addresses energy cost of data movement because the high bandwidth memory, HBM, is located across the interposer; it has to traverse longer distances, so it has a higher energy cost of data movement. And second is bandwidth. You're limited by the I/O that is connected to those HBM tiles and your chip can only have so much perimeter. So die stacking of DRAM is addressing energy and bandwidth rather than capacity limitation of HBM. As a realization in the industry that a memory bandwidth is more important compared to capacity alone, that is what has given credibility to this die stack 3D DRAM technology as a genuine candidate for a memory hierarchy somewhere in between SRAM and HBM. So in that regard, it's very real. There are products hitting the market next year that utilize 3D DRAM, but it doesn't address the capacity needs of AI. It addresses bandwidth, not capacity.</p>
+<p>DK: Let's see. What do you think of Qualcomm and their high-bandwidth compute?</p>
+<p>SS: Yeah, it's an interesting proposition. The Qualcomm team has some very talented architects. Their AI 100 product when it came out several years ago was very impressive. It didn't get the commercial success but as an architecture it was quite interesting. Since then they have been somewhat absent from the high performance AI computing space. So now they're... I'm assuming that they've had a chance to study the industry a bit and look at promising technology directions before coming up with their current AI 250 and subsequent product lines. And their bet on 3D DRAM is</p>
+<p>11/14/2026 at 08:07 AM UTC</p>
+<p>also, as I said, it's very timely and it's a technology that is seeing emergence. So they are likely going to be one of the early vendors that brings this concept of die stack memory to market along with, say, D-Matrix as one of the 2.</p>
+<p>DK: Got it. What do you think is the timing for Qualcomm? When should we expect some success there? Or if we don't see it, when should we be concerned?</p>
+<p>SS: I haven't seen as many details of their die stack chips architecture, but I've seen the specs, which... and just based on experience... I can try to visualize what their architecture likely is, and if that's the case, they have several challenges to overcome. So looking at it from our experience, since we had a first generation chip with that similar distributed architecture before we went to 3D DRAM. So we had some learning from the first generation chip before we went the additional risk step of 3D DRAM, whereas Qualcomm is going straight to 3D DRAM and a distributed memory architecture to get those bandwidths. So I would be curious to see how they adapt both their existing tooling to get a chip like that powered up, verified, calibrated, and even cooled as a first generation product, but also there's software stack... how does it evolve when you go from a shared memory, more traditional kind of tensor representation to a shared memory, distributed memory design that they're likely going to use in their 3D DRAM chips? So they have some challenges to see. I would, again, I don't want to speculate too much on another company, but they have a talented team. I would think they might be able to bring out their product towards the end of next year. But let's see how it looks.</p>
+<p>DK: Got it. That's really helpful. So really appreciate your time and your thoughts here. Any closing remarks you might have or anything that perhaps we should also discuss that we haven't talked about yet on this call?</p>
+<p>SS: I think we covered quite a ground today. It was a great conversation. Thanks for all the questions. I think one place where we, I don't know if we talked much about this, we talked about NVLink as an NVIDIA asset, but NVLink Fusion as something being made available to more chip vendors and allowing NVIDIA that heterogeneous computing fabric where it's not only NVIDIA's own devices but also an ecosystem of external ASIC providers that is something that they are ahead of compared to Google and AMD. So it's one way in which they have enabled some of the newer ASIC vendors to be able to bring their products to market faster on a proven fabric like NVLink. So although it wasn't quite the topic for this discussion, I think it's important to have that in mind.</p>
+<p>DK: And it's also an interesting move because that perhaps reduces the pressures on the industry to come up with the competing, to support the competing standards.</p>
+<p>SS: That's right, that's right. In a way, opening up of NVLink Fusion to external ASIC vendors is a response to Broadcom and their efforts to standardize Ethernet-based scaler, Ultra Ethernet. But yes, it does lower the barrier to entry for some of the other vendors.</p>
+<p>DK: Right. And does that, you think, overall, does that help manage HBM demand or is that not quite there yet? Is that one way to perhaps reduce some of the growth in HBM demand?</p>
+<p>SS: Indirectly, in a way, there are accelerators that are built using DDR as enabling technology which typically has slightly higher capacity compared to HBM and there have been a few public statements from companies like Rebellion and others who are adopting an NVLink Fusion. So at least in certain class of workloads where interactivity and bandwidth is not super important, enabling these ASIC solutions that rely on higher density and higher capacity DDR instead of HBM, it does make a slight dent on the demand for HBM. But again, in the larger scheme of things, that may be a small number.</p>
+<p>DK: Got it. Right. I really appreciate your time and your thoughts. Thank you. Thank you so much again for doing this call. It was wonderful and I hope you have a great weekend and I hope everybody who joined also has a great</p>
+<p>11/14/2026 at 08:07 AM UTC</p>
+<p>weekend and a great day. So thank you so much and take care.</p>
+<p>SS: Thank you. Bye.</p>
+<p>DK: Bye. Cheers.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>11/14/2026 at 08:07 AM UTC</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
