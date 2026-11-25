@@ -25,7 +25,7 @@ def page(src, title):
            '<a class="mark" href="../../../" aria-label="Mushroom 首页"><span>Mushroom</span></a>'
            '<span class="crumb">Track · Daily notes</span><span class="sp"></span></div></header>')
     bar_css = ('.mbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:var(--hair)}'
-               '.mbar-in{max-width:1180px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-left,0px));height:56px;display:flex;align-items:center;gap:16px}'
+               '.mbar-in{max-width:1320px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-left,0px));height:56px;display:flex;align-items:center;gap:16px}'
                '.mark{font-family:var(--serif);font-weight:500;font-size:19px;color:var(--text)}.mark:hover{text-decoration:none}'
                '.back{display:flex;align-items:center;gap:16px;color:var(--muted);white-space:nowrap}'
                '.back::after{content:"";width:1px;height:16px;background:var(--rule)}'
