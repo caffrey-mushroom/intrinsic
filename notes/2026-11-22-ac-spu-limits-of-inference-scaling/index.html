@@ -1,0 +1,220 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.22 | AC | LLM | SPU: Limits of Inference Scaling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.22 | AC | LLM | SPU: Limits of Inference Scaling</h1>
+<p class="orig">原标题：Scale Up的滑铁卢：SPU五倍算力砸下去，却没有改善</p>
+<p class="tags">#llm #ai-demand</p>
+<p class="meta">AceCamp · 2026-11-22 21:16 · article 70569514</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>UniPat AI牵头的SPU研究用116项真实科学实验预测任务测试前沿模型，GPT-6 Astra提高推理强度后运行时间增约4.8倍、输出Token增约5.4倍、成本增约5.3倍，得分却从0.431降至0.409。</li>
+<li>对照数学领域，o1在AIME上单次正确率74%，64次投票升至83%，1000个候选加评分模型筛选达93%，说明多算有效的前提是能检验和纠错。</li>
+<li>SPU中772次运行有317次修改了排序，但修改前后平均得分仅变化+0.001，额外思考几乎没有改进。</li>
+<li>第一类失效是缺关键事实：同一批电解液，AI预测离子电导率相关系数达0.89-0.95，预测电化学稳定窗口却只有-0.55至0.07。</li>
+<li>第二类是算错对象：钴催化聚合任务中三个模型用相似方法却分别得0.829、-0.429和-0.429，差别在于分子结构是否构造正确。</li>
+<li>第三类是缺乏验证：模型间排序平均相关0.52，而与实验结果仅0.33；第四类是难度不合适，部分推理模型Token达普通模型18倍但正确率不升。</li>
+<li>作者认为若此类情况在更多应用中出现，市场可能高估了单项任务所需的推理算力，推理算力需求的增长斜率存在被高估的风险。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>2026年11月11日，UniPat AI（非上市）牵头的研究团队发布《Science Prediction Universe》（SPU），用116项真实科学实验预测任务测试前沿AI。研究人员将实验条件交给模型，隐藏实际测量结果，让AI自己查文献、写程序、做计算，预测哪些实验方案表现更好。结果有些反常：同一个GPT-6 Astra模型，提高推理强度后，运行时间增加约4.8倍，输出Token增加约5.4倍，API成本增加约5.3倍，预测得分却从0.431降至0.409，统计上没有显著改善。这个结果挑战了过去几年AI行业的一种惯性认识：遇到更难的问题，让模型多想一会儿、多尝试几种解法、多花一些计算资源，往往就能获得更好的答案。数学和编程领域的成功，已经让推理阶段的Scale Up成为提高AI能力的重要方法。但SPU表明，这种方法并非在所有任务中都有效。增加计算投入，有时只是让模型花更多时间重复错误判断。由此产生了一个值得研究的问题：究竟什么样的任务，增加推理算力也很难提高正确率？这些任务有哪些共同特征？结合SPU与其他领域的实验，可以归纳出四类容易出现算力收益停滞的场景：缺少关键事实、计算方向错误、缺乏有效验证，以及任务超出现有推理方法的有效难度区间。识别这些特征，不仅有助于判断AI应该在哪里投入更多算力，也可能改变市场对未来推理算力需求的判断。</p>
+<p>2026年11月11日，UniPat AI（非上市）牵头的研究团队发布《Science Prediction Universe》（SPU），用116项真实科学实验预测任务测试前沿AI。研究人员将实验条件交给模型，隐藏实际测量结果，让AI自己查文献、写程序、做计算，预测哪些实验方案表现更好。结果有些反常：同一个GPT-6 Astra模型，提高推理强度后，运行时间增加约4.8倍，输出Token增加约5.4倍，API成本增加约5.3倍，预测得分却从0.431降至0.409，统计上没有显著改善。</p>
+<p><b>这个结果挑战了过去几年AI行业的一种惯性认识：遇到更难的问题，让模型多想一会儿、多尝试几种解法、多花一些计算资源，往往就能获得更好的答案。</b>数学和编程领域的成功，已经让推理阶段的Scale Up成为提高AI能力的重要方法。<b>但SPU表明，这种方法并非在所有任务中都有效。增加计算投入，有时只是让模型花更多时间重复错误判断。</b></p>
+<p>由此产生了一个值得研究的问题：<b>究竟什么样的任务，增加推理算力也很难提高正确率？这些任务有哪些共同特征？</b>结合SPU与其他领域的实验，可以归纳出四类容易出现算力收益停滞的场景：缺少关键事实、计算方向错误、缺乏有效验证，以及任务超出现有推理方法的有效难度区间。识别这些特征，不仅有助于判断AI应该在哪里投入更多算力，也可能改变市场对未来推理算力需求的判断。</p>
+<h2>01 SPU：Scale Up并非一定成立，堆Token也会没用</h2>
+<p>先看多算为什么有用。2024年，OpenAI的o1在AIME数学测试中，单次作答正确率为74%；让模型独立做64遍，再从这些答案中投票，正确率提高到83%；生成1000份候选答案并用评分模型挑选，正确率进一步达到93%。</p>
+<p><b>同一类数学题，增加尝试次数并认真挑选，确实有机会找到原来没找到的正确解法。</b> <b>这组实验也让更多人相信，推理算力能够继续换来模型能力。</b></p>
+<p><b>数学题中，增加候选解并筛选能够显著提高正确率</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569514_70d27e3dab3b2056.webp" alt="" loading="lazy"></p>
+<p>来源：OpenAI，《Learning to reason with LLMs》，2024-09-12；AIME 2024结果。</p>
+<p><b>这里有个容易被忽略的前提：多做几遍之所以管用，是因为这些额外尝试有机会找出不同解法，而且还能够检查哪种更靠谱。</b>数学题可以验算推导，程序可以运行测试；模型多试一次，就可能发现上一遍哪里错了。<b>真正有效的是“多一次尝试，能多一次发现错误、改正错误的机会”。</b></p>
+<p><b>但不少任务本身没有正确答案可以核算。</b>比如预测一种还没做过的材料实验，AI可以提出十套理由，却要等实验真的做完，才知道哪一套接近事实。多想十遍，不一定就多知道了什么。SPU测的正是这种更难及时核对答案的任务。</p>
+<h2>SPU的反例：多想近五倍，结果还是没有更准</h2>
+<p>SPU包含100项已发表实验任务和16项未发表实验任务，涉及化学、材料、生物和医学。模型要预测的是不同实验条件的结果排名。研究用Spearman排序相关系数打分：越接近1，说明AI排出的顺序越接近真实结果；接近0，说明排序没有明显相关性。</p>
+<p><b>SPU：推理时间、Token与成本都增加，排序成绩没有提高</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569514_57602400d5461a8d.webp" alt="" loading="lazy"></p>
+<p>数据来源：Tu等，《Science Prediction Universe》，arXiv:2611.15049，Table 1、Figure 24及§3.5；运行时间、成本为同题配对中位倍数。</p>
+<p>研究人员还看了模型后面几轮修改到底有没有帮助：在772次已经形成完整初始排序的运行中，有317次后来又修改了排名，但修改前后的平均得分只变化了+0.001，几乎没有进步。<b>AI确实花了更多时间，也改了答案，却没有稳定地把错误改对。</b></p>
+<p>当然，这不意味着所有Scale Up都会失效。数学题多生成几份答案再筛选，与同一个模型沿着一条思路反复琢磨，本来就是两种不同的做法。更值得分析的是算力在哪些场景最容易白花。</p>
+<h2>02 哪些场景容易让算力打水漂</h2>
+<h2>第一类：缺关键事实——模型不知道的事，想再久也补不出来</h2>
+<p>第一种情况最容易理解：回答问题需要某个重要事实，但AI手里根本没有。比如要预测一种新材料的性能，实际生产时却混入了会改变结果的杂质。模型只拿到配方，不知道杂质的存在，哪怕把配方反复计算几十遍，也替代不了一次实际检测。</p>
+<p>SPU里有个很直观的例子。同一批电解液，AI预测离子电导率时，13种系统配置的排序相关系数达到0.89—0.95，与实验结果高度一致；换成预测电化学稳定窗口，12种配置的得分却落在−0.55—0.07，整体表现很差。<b>材料明明没换，只是问了另一种性能，AI就从比较会预测，变成很难排准。原因之一是，电导率可以从已有的材料性质推断不少信息，而稳定窗口还涉及复杂的电极界面反应等因素。</b></p>
+<p><b>同一批电解液，能预测电导率，却难以预测稳定窗口</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569514_96c374ae51f620e6.webp" alt="" loading="lazy"></p>
+<p>数据来源：SPU，Figure 10、§3.4；显示不同模型配置的得分范围。</p>
+<p>以上对比试验揭示了一种容易遇到算力瓶颈的任务：<b>真正决定结果的条件没有被测到，或者现有资料不足以推断时，反复推理无法代替新的观测。</b> 新材料测试、复杂工艺参数预测、缺少关键检查指标的诊断问题，都可能遇到类似困难。</p>
+<h2>第二类：算错对象——方向偏了，算得越仔细也没用</h2>
+<p>第二种情况更隐蔽：AI不缺计算工具，却一开始就算错了东西。SPU的钴催化聚合任务里，Astra Medium、GLM-5.3和Qwen3.8都调用了半经验计算和动力学模型，计算思路看起来相近，结果差距却很大。三个系统的排序相关系数分别是0.829、−0.429和−0.429。<b>有的预测接近实验，有的甚至把顺序排反了。</b></p>
+<p><b>同样的计算方法，选错分子结构就可能算出相反结论</b></p>
+<p><img src="https://aecapllc.s3.ap-southeast-1.amazonaws.com/images/acecamp/acecamp_article_70569514_4bdd55adca097631.webp" alt="" loading="lazy"></p>
+<p>来源：SPU，§4.7，钴催化聚合案例；</p>
+<p>三个模型在相同任务上的排序得分。</p>
+<p>研究人员回看执行记录，发现关键差别发生在计算之前：有的模型把分子的立体结构构造错了；有的在软件提示缺少氢原子信息后，仍没有补上必要的结构信息。后续计算即使一步步执行得很认真，处理的也已经不是正确的分子。<b>就像要算一辆车的油耗，却从一开始把发动机型号填错了，算得越详细也救不回最初的错误。</b></p>
+<p>另一个乙烯/CTFE共聚实验也说明了这一点。研究者让AI给12种溶剂的聚合物产量排序，Opus 5.5取得0.874的相关系数。它没有只盯着一种溶解度，而是同时考虑另一种原料的混溶性、催化剂相容性等影响产量的因素。</p>
+<p>所以，第二类场景的关键，不是“这道题复杂不复杂”，而是模型有没有研究对对象、用对指标。药物筛选中的靶点、材料设计中的分子构型、化学反应中的关键条件，都可能在这一步出错。方向不对，更多计算只是把原来的偏差延续下去。</p>
+<h2>第三类：没法验证——多得几个答案，也不知道选谁</h2>
+<p>一种新材料究竟好不好用，在实验做出来之前，往往没有现成答案。于是模型能生成十种解释，却很难凭自己判断哪一种对。<b>多出几份答案，并不自动等于多出一份正确答案。</b></p>
+<p>SPU记录到一个很有意思的现象：<b>不同AI模型之间，预测排序的平均相关系数是0.52；模型与真实实验结果的平均相关系数只有0.33。也就是说，AI彼此往往比它们和实验结果更一致。</b>大家都觉得某个方案好，并不能证明它真的好；如果大家依赖的是同一套错误想法，再多几个模型附和，也可能一起判断错。</p>
+<p>Setlur等人在ICML 2025的研究，也从理论与实验上讨论了类似问题：在论文设定的条件下，能用可靠信号挑出较好答案的方法，比缺乏这种反馈的方法更善于利用新增计算。道理并不复杂：额外尝试只有能帮助排除错误，才更容易变成实际进步。</p>
+<p><b>AI算完以后，如果无法知道靠什么知道新答案比旧答案更好，那么就是在没有外部依据的情况下自我肯定、相互投票，更多推理可能只是让已有的错误判断变得更一致。</b></p>
+<h2>第四类：难度不合适——容易的题不必多想，太难的题也未必想得出来</h2>
+<p>还有一种情况与资料和验证无关，单纯是题目的难度不合适。</p>
+<p>先看太简单的一端。LLMThinkBench（ACL 2026）研究了53种语言模型在14类基础数学任务上的表现，发现一些推理模型生成的Token达到普通模型的18倍，正确率却没有随之提高。原因很好理解：一道题本来已经会做，再反复写十遍解法，答案也不会更正确。</p>
+<p>另一端是太难。苹果团队的《The Illusion of Thinking》设计了难度逐步增加的逻辑谜题：简单题用普通推理就能解决；难度提高后，较长的推理开始发挥优势；可当题目复杂到一定程度，正确率又明显下降。有的模型明明还没用完Token预算，却已经无法继续找到有效解法。</p>
+<p>简单题已经解决，额外投入没有必要；极难题若当前方法根本找不到路径，延长思考也未必能突破。把四类情况放在一起看，算力失效并不神秘：或者缺事实，或者方向错，或者没办法判断对错，或者已经到了当前方法难以继续改善的程度。</p>
+<h2>03 Scale Up失效，意味着算力需求的斜率可能被高估</h2>
+<p><b>Scale Up并不是所有场景都失效。</b>数学测试里，模型多做几遍、再挑出更好的解法，正确率可以从74%提高到93%；但在SPU的科学预测里，同一个模型运行时间增加4.8倍、API成本增加5.3倍，排序得分没有显著改善。差别就在于：<b>前者多算之后有机会找到并识别更好的答案，后者增加的计算没有稳定改变判断。</b></p>
+<p>再往里看，原因也能串起来。<b>Scale Up失效往往是因为新增计算无法带来能够改善结果的有效信息或解法。</b>比如：缺少关键事实时，再多Token也无法代替测量；算错分子或关键变量时，计算越细越可能偏离目标；没有可靠的检查办法时，多列几种答案也未必选得出正确的；题目太简单或超出现有方法能力时，推理收益同样会很快停下来。</p>
+<p>这也带来一个值得重新审视的产业判断：<b>Scale Up在部分场景下失效，意味着市场可能高估了单项AI任务需要消耗的推理算力。</b>过去，如果假设模型解决的问题越来越复杂，每项任务就需要生成更多Token、投入更长推理时间，那么任务数量增长与单项任务计算量增加，会共同推动算力需求上升。但SPU证明，至少在部分科学预测任务中，计算投入增加数倍，结果也没有显著改善。</p>
+<p><b>如果类似情况在更多应用中出现，企业就没有充分理由持续为这些任务增加推理预算，而会转向补充数据、改进方法或减少无效计算。因此，推理算力总需求仍可能快速增长就存在被高估的可能。最终需要验证的是，不同应用在增加推理预算后，实际正确率是否还能持续提高。</b></p>
+<p>#</p>
+<h2>资料与说明</h2>
+<ol><li>Tu, Z. et al.（2026），Science Prediction Universe，arXiv:2611.15049。</li><li>OpenAI（2024），Learning to reason with LLMs。</li><li>Setlur, A. et al.（2025），Scaling Test-Time Compute Without Verification or RL is Suboptimal，ICML。</li><li>Shojaee, P. et al.（2025），The Illusion of Thinking，NeurIPS。</li><li>Zhou, S. et al.（2026），When More Thinking Hurts，ACL Findings。</li><li>Srivastava, G. et al.（2026），Do LLMs Overthink Basic Math Reasoning?，ACL Findings。</li><li>Liu, J. et al.（2026），AMO-Bench: Large Language Models Still Struggle in High School Math Competitions，ACL Findings。</li></ol>
+<h3>风险提示：上述内容均为笔者个人观点，投资者需风险自担。</h3>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

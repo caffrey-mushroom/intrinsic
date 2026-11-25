@@ -1,0 +1,198 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.22 | AC | LLM | On-Device AI &amp; Private Deployment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.22 | AC | LLM | On-Device AI &amp; Private Deployment</h1>
+<p class="orig">原标题：端侧AI调研：DeepSeek类通用大模型厂商对小模型厂商具降维打击能力，华为等手机品牌核心优势在于供应链及硬件集成能力 – OpenAI_谷歌_DeepSeek_阿里_腾讯_苹果</p>
+<p class="tags">#llm #china #hardware</p>
+<p class="meta">AceCamp · 2026-11-22 07:37 · article 70569429</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>端侧模型分化为两类：桌面级/家用超算可运行70B-100B经INT4/INT2量化的模型，权重几十到200GB，具备生产力；手机端主力在3B左右、普遍不超过7B，主要用于离线和调用云端Agent。</li>
+<li>专家认为通用大模型厂商对小模型厂商具有降维打击能力，手机厂商多以开源模型为教师蒸馏自有小模型，核心优势在供应链、算力和硬件集成。</li>
+<li>本地部署几百B模型与云端效果差距通常在5%-10%，一两年视角下云API更具成本效益，但本地部署满足数据安全需求且硬件可按3-5年折旧。</li>
+<li>B端私有化部署需求旺盛，受运营商联合浪潮、曙光推广一体机以及H200停供、B系列受限引发的算力恐慌推动，但长期经济性存疑。</li>
+<li>企业部署更看重预算而非功耗，几十万元级别投入约相当于10-50台Mac Studio，每台可支撑十几到二十名员工，跨境电商、出海应用和AI原生公司率先渗透。</li>
+<li>Harness层面WorkBuddy在办公场景暂时领先，DeepSeek侧重开发者和开源生态，token用量半年内增长数倍；DeepSeek、腾讯和阿里千问被视为最具竞争力，智谱、MiniMax、Kimi面临更大挑战。</li>
+<li>私有化部署的利润分配中设备侧占大头，英伟达芯片拿走大部分，其次是集成商与IDC，模型厂商居中，交付层利润最薄且面临进一步压缩。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>本文核心要点包括：端侧模型分化：桌面级/家用超算主打30B-100B参数，需200GB内存，具备生产力；手机端受限于内存与功耗，主力规模为3B-7B，主要用于离线Agent调用。竞争格局：通用大模型厂商（DeepSeek、阿里、腾讯）对小模型厂商具降维打击能力；手机厂商中，华为等凭借供应链、算力储备及硬件集成能力优于纯模型公司。B端私有化趋势：需求旺盛但长期经济性存疑；企业部署核心考量是数据安全与硬件折旧，而非功耗；利润分配中设备侧（芯片/集成商）占大头，交付层利润最薄。</p>
+<p>以下为专家观点：</p>
+<p><b>1，当前AI大模型与端侧模型的整体发展状态如何，以及端侧AI若要实现规模化落地，需要在哪些方面取得提升，其后续的落地节奏预期是怎样的？</b></p>
+<p>端侧模型整体上存在分化：</p>
+<p>一类是面向拥有大内存或统一内存架构的高性能设备，例如基于英伟达芯片的家用级小型超算，或搭载苹果M系列强劲芯片的Mac Studio，这类设备能够运行70B至100B参数规模、经过INT4甚至INT2量化的模型，在编程和推理方面能力较强，足以胜任对隐私要求高、计算负载重的生产力任务。这类概念上的端侧模型，其权重文件大小在几十GB到不超过200GB之间。向下兼容时，个人极客玩家也可以在家用4090等消费级显卡上部署类似DeepSeek V2 Flash的极致量化版或千问最新开源的小模型。</p>
+<p>另一类是尺寸更小的模型，通常在4GB以内，真正能够部署在手机端。例如Gemini Nano等与手机厂商合作的端侧模型，以及面壁智能等公司为刷榜而优化的模型。这类模型主要面向手机端，用于操作APP或调用云端的Agent，它们主要在离线、弱网、无网以及对隐私有极高要求的限定场景中发挥作用。目前，这类模型的主力参数规模在3B左右，普遍不超过7B。上下文窗口方面，通常在百K级别。对于手机等小型桌面级设备而言，其核心瓶颈不在于算力密度，而在于内存密度及相应的功耗限制。</p>
+<p><b>2，当前端侧AI市场，无论是面向大内存设备的大模型还是面向手机的小模型，其核心参与者分别有哪些，未来的发展前景如何？</b></p>
+<p>在面向桌面级或家用消费级主机的Flash级别模型领域，发展速度远快于手机端。这得益于模型本身的开源以及社区极客的共同推动。这类模型的参与者主要是具备强大技术实力的大模型厂商，包括DeepSeek、智谱AI、千问、Meta、谷歌（Gemma）以及微软。</p>
+<p>而在更小尺寸的端侧模型（3B至7B），即适用于手机、平板甚至浏览器的模型领域，主要参与者包括：海外的苹果、谷歌（Gemini Nano）、微软（Phi-3/Phi-4 mini版）；国内的则有千问（千问三4B及千问四的小尺寸模型）、面壁智能和MiniMax。</p>
+<p><b>3，业界有一种观点认为，训练小模型的最优路径之一是使用参数量更大的模型作为“教师”进行知识蒸馏，这是否意味着在几百B参数规模的端侧模型领域，那些在通用大模型方面表现优异的厂商会更具优势？</b></p>
+<p>这个论断是成立的。通用大模型对其他所有类型的模型都具备很强的降维打击能力。例如，OpenAI最新发布的成果展示了其模型能够调用Python工具和环境，结合自身的经验、对数据的理解以及小规模实验来解决问题，这体现了通用大模型在能力上的领先性。因此，在几百B参数规模的端侧模型领域，那些在通用大模型研发上做得好的玩家，如OpenAI或Anthropic，如果他们涉足这一领域，其模型能力大概率也会表现得更为出色。</p>
+<p><b>4，在通用大模型厂商能够利用其云端基座模型对各领域小模型形成降维打击并快速产出的背景下，手机厂商的核心竞争力体现在哪些方面？其技术路径是否主要是基于开源模型作为教师模型，来训练自有的小参数模型？</b></p>
+<p>在当前技术格局下，云端的通用大模型基座扮演着核心大脑的角色，而各细分领域的专用小模型则作为其外延或可调用工具。通过减枝蒸馏或多教师在线策略蒸馏学习等方法，可以快速孵化大量小模型，其算力瓶颈主要在于强化学习或并行实验，与训练万亿参数级别的Mo E模型相比，算力复杂度相对可控。在此背景下，手机厂商通常会采用基于开源模型进行微调的路径，将其作为教师模型来训练自有的小参数模型。</p>
+<p><b>5，参数量达到数百亿（几百B）级别的模型，其核心落地场景主要有哪些？</b></p>
+<p>数百亿参数量级的模型属于通用型或偏重生产力的模型，具备较强的编程能力和工具调度能力。这类模型几乎可以等同于云端大模型，能够接入并全天候连续工作。尽管在部分任务细节和推理质量上可能略有欠缺，但其在处理大多数编程代码任务，以及本地办公场景中涉及的工具调度和本地操作等任务时，能力表现非常出色。具体应用场景已高密度部署在法律、金融、保险、电商、跨境出海、应用服务及客服等多个领域。由于其对应的算力投入较小，对于无力自建并运行大规模任务体系的中小型企业团队而言，这类模型是理想的选择。</p>
+<p><b>6，与直接使用云端大模型API相比，在本地化部署数百亿参数模型的方案在成本和效果上存在哪些具体差异？企业选择本地化部署主要出于何种考量？</b></p>
+<p>在模型表现上，本地化部署的模型与云端模型的效果差距通常在5%至10%之间，一般不会超过10%。本地化部署的劣势在于模型版本升级的灵活性和更新迭代速度会受到影响。从综合成本来看，若将电费、固定算力投入、算力利用率以及可支撑的并发数量等因素纳入考量，采用云端API通常更具成本效益，尤其是在一至两年的短期视角内。</p>
+<p>然而，本地化部署的优势在于企业能够将业务数据保留在自身可控的体系内运行，满足数据安全和隐私的需求。此外，从财务角度看，采购硬件形成的固定资产可以通过三至五年的折旧周期进行账务处理，这使得自部署方案在特定财务模型下显得更具吸引力。尽管云端服务存在版本波动、服务质量不稳定、系统拥堵、高峰期排队以及定价不确定等干扰因素，但考虑到硬件折旧和模型版本的快速迭代可能带来的负面效应，本地化部署的长期经济性并非绝对成立。</p>
+<p><b>7，考虑到数据隐私安全是企业选择本地化部署的重要因素，当前B端市场对本地化部署的需求状态如何？这种需求是否具有可持续性？</b></p>
+<p>当前B端市场对本地化部署的需求非常旺盛。这一需求主要由几方面因素驱动：首先，三大运营商联合浪潮、曙光等硬件厂商，积极推广一体机和整体服务器解决方案，企业自身也在储备算力。其次，由于英伟达已停止后续H200的输入，B系列芯片供应受限，引发了市场对算力短缺的恐慌，进一步刺激了追加订单和采购的行为。再次，企业普遍认识到AI技术在各场景中持续深化的渗透率，及其对脑力工作和办公软件操作的显著提效作用，因此会增加部署投入。</p>
+<p>尽管如此，从技术有效性的角度看，此前流行的私有化部署方案，如基于DeepSeek搭建的平台，目前在产品体验上已无法与一线AI产品相媲美。因此，尽管需求将持续存在且企业会积极追赶技术前沿，但在实际执行、落地和周期上，技术迭代的差距将是客观存在的问题。</p>
+<p><b>8，当前Harness对AI应用落地落地节奏影响？</b></p>
+<p>Harness的增长速度会进一步加快，因为目前的渗透场景和渗透率仍然不足。高强度使用Harness的用户主要局限在泛编程领域，绝大多数白领用户尚未深入使用。然而，从体验层面看，存在大量数字员工的需求和场景，非常适合用Harness进行重构。此外，日益激烈的职场竞争将促使这类工具成为每位职场人士的必备技能，这将引发更大规模的超常规用量和更广泛的应用场景渗透。因此，国产模型、国产算力及国产Harness的使用量和投入建设都将持续增加。目前中美算力阵营已出现明显分化，各自都将发展出独立的生态和体系。</p>
+<p><b>9，对于那些适合用Harness重构的传统场景，主要会由哪些类型的厂商来主导实施？在几百B模型及Harness的落地应用方面，哪些厂商的产品或方案可能成为主流？</b></p>
+<p>在这个领域，最具竞争力的厂商包括DeepSeek、腾讯以及阿里的千问系列，后者在开源小模型领域一直享有良好口碑。这些厂商能够借助其云基建和一体化解决方案的优势，为需要数字化或AI化转型的B端客户提供一整套链路式的解决方案和工具，对用户而言是很好的选择。</p>
+<p>相比之下，智谱、MiniMax等公司则会面临更大挑战。其中，智谱的情况稍好于另外两家；Kimi的问题在于模型过大过重，而MiniMax则在算力和模型领先性方面遇到了瓶颈。云厂商方面，阿里和腾讯的优势会更加突出。而运营商则会进一步固化其作为基础设施提供商的角色，主要提供带宽、云存储、云算力及容器等基础服务。</p>
+<p><b>10，企业在进行端侧部署时，通常会如何考量功耗、预算以及算力投入？哪些行业或场景会率先渗透此类应用？</b></p>
+<p>企业在内部进行部署时，通常不太关注功耗问题，而主要考虑预算。对于超过500万元的传统服务器级投入（如昂贵的英伟达GPU服务器），企业可能难以接受，但几十万元级别的算力需求对任何公司而言都是有能力解决的。这反映到设备端，大致相当于10到50台Mac Studio体量的投入。每台这样的设备都能运行一个具备生产力的模型，并能支持十几到二十名员工的高强度使用，这非常符合他们的需求。这类应用场景会率先在跨境电商、应用出海、中小型创业公司、APP开发团队以及AI原生公司中渗透。随后，会逐步扩展到高校、科研机构、公共事业单位以及地方性政府组织等领域。</p>
+<p><b>11，各大厂商在Harness（应用层）层面的竞争格局如何？以DeepSeek为例，其发展路径有何不同？</b></p>
+<p>在Harness层面，各家厂商仍在各自的赛道上竞争。WorkBuddy在办公场景暂时领先，其在白领办公、知识库、文档处理、团队协作以及本地化的研究报告、PPT制作、代码交互原型和智能体等方面体验较好，因此阿里和字节跳动都在模仿它。</p>
+<p>DeepSeek的Harness则走了另一条路线，更侧重于服务真正的开发者、极客群体以及开源生态和插件开发者，它试图构建一个由官方旗舰模型引导的、类似于“龙虾”的生态，但其生态治理优于后者，并且背后有自身强大模型的约束。通过这种方式，Dee pSeek能够持续迭代并优化其终端体验，弥补自身基础能力的短板，使其能力更全面。其token用量在不到半年的时间里增长了数倍。</p>
+<p><b>12，在企业私有化部署的商业化落地过程中，产业链各环节的利润是如何分配的？</b></p>
+<p>利润分配格局中，设备侧占据最大头。首先是英伟达的芯片拿走大部分利润；其次是设备集成商、供应商、IDC及网络带宽运营商等机房侧或总包方；再次是模型厂商，通过按用量或按license授权等方式获得收入。利润最薄的是交付层，其收入模式仍类似于上一个软件时代，主要依靠按人天入场的外包服务，利润水平也相近，甚至面临被进一步压缩的风险，因为客户会预期AI能够为交付团队提效，从而要求服务更快、更便宜。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

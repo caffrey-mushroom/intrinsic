@@ -1,0 +1,284 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.24 | GP | Datacenter | Data Center Cooling &amp; Power Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.24 | GP | Datacenter | Data Center Cooling &amp; Power Design</h1>
+<p class="orig">原标题：Data Center Infrastructure: Where Will Efficiency and Resource Sensitivity Lead Critical System Design Next?</p>
+<p class="tags">#datacenter #thermal #power</p>
+<p class="meta">GuidePoint · 2026-11-24</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>Ramboll数据中心战略顾问（28年行业经验）表示，SC 2026上行业关注点首次从GPU性能转向配套关键基础设施，包括供电、液冷、系统集成、可靠性以及机柜密度提升对整体设计和调试的影响。</li>
+<li>他对2028年及以后的长期增长保持乐观，但提醒要区分宣布、获得融资和签约的项目：德州宣布的数据中心规模约40GW，而ERCOT预计只能提供约11GW，部分园区会被推迟、缩小规模或重新评估。</li>
+<li>美国大选后各州和县的审查、暂停令及环保要求将会加强，开发商会更谨慎地投入资本，并优先选择工业用地和有现实许可路径的地块。</li>
+<li>专家对表后(behind-the-meter)天然气发电作为过渡电源持怀疑态度，许可、环评和设备供应链使其开发周期也需要3-5年，与等待电网接入相差无几，部分项目已暂停或取消。</li>
+<li>社区沟通仍然不足，居民关心的是用水、噪音、电费、交通和长期就业，而不只是税收；美国一家运营商承诺向社区投入约1亿美元，欧洲有开发商为社区建造体育场和学校。</li>
+<li>冷却方案需要结合负载、气候、可靠性和全生命周期成本来定制：干式冷却节水但占地更多；更大的CDU可以减少连接点、提升效率，但会集中单点故障风险；数据厅将分别采用液冷和风冷两套策略。</li>
+<li>下一代AI设备越来越多指定更高温的液冷回路，英伟达宣布的45°C回路在合适的气候下可大幅减少甚至取消压缩机制冷，但存量混合IT设施的转变会较慢，冷水机组仍会作为备份。</li>
+<li>OCP白皮书提出单相直触芯片冷却在单die约1,000W时效率下降、约4,000W时达到物理极限，专家不认为这是通用阈值；两相冷却传热性能好，但成本高、缺乏可靠性数据，需先通过试点验证。</li>
+<li>最大的交付风险在于IT规格与设施设计日益深度绑定，灵活性降低，且多厂商液冷控制系统让调试更加复杂，合格的调试人员成为瓶颈；施耐德、Vertiv在推广撬装预制模块，但运输尺寸和重量限制了预制程度。</li>
+<li>OEM可以通过可量化的节能效果、预测性维护和控制软件来变现（例如按节省金额分成），施耐德、Vertiv、江森自控等正在收购软件公司，Datadog、Dynatrace等可观测性平台也在切入，关键在于开放协议、互操作性和网络安全，而不是再做一个仪表盘。</li>
+</ol></section>
+<div class="body">
+<p>Associated:</p>
+<p>NVT</p>
+<p>MOD</p>
+<p>CARR</p>
+<p>TT</p>
+<p>JCI</p>
+<p>VRT</p>
+<p>SU:FP</p>
+<p>6367:JP</p>
+<p>ETN</p>
+<p>Viewpoint:</p>
+<p>Industry Consultant</p>
+<p>Moderator: Robert Jacapraro (RJ)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Nov 23, 2026</td><td>33 Min Read</td></tr></tbody></table></div>
+<p>Spiros Liolis (SL), Managing Consultant for Data Center Strategy - Ramboll Group</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The expert, a mechanical engineer with extensive data center experience, discussed how rising AI workloads are shifting industry attention from chip performance alone to the infrastructure needed to support high-density computing. Key topics included power access, liquid cooling, permitting, community concerns, project feasibility, prefabrication, and operational software.</p>
+<p>The expert remains positive about longer-term data center growth but cautioned that announced capacity should not be confused with funded or contracted projects. Development is likely to vary by region, with US projects facing greater local scrutiny and some campuses delayed, resized, or reconsidered.</p>
+<p>Key Insights</p>
+<p>Data center design is becoming an integrated challenge: IT specifications increasingly determine facility power, cooling, redundancy, and commissioning requirements. The expert warned that this tighter connection reduces flexibility and increases delivery risk, particularly as commissioning teams must handle systems from multiple vendors. Behind-the-meter natural gas should not be assumed to provide a quick bridge to grid power. Permitting, environmental reviews, and equipment supply can make its timeline comparable to utility connections. Community engagement remains inadequate. Developers need credible answers on water, electricity costs, noise, traffic, and local employment, rather than relying mainly on financial or civic incentives. Cooling decisions should be tailored to workload, climate, reliability needs, and lifecycle cost. Water-saving dry cooling can require more land, while larger cooling distribution units can improve installation efficiency but concentrate risk. Two-phase direct-to-chip cooling offers promising heat transfer, but expense and limited operating evidence currently constrain broad adoption. OEMs may monetize measurable energy savings, predictive maintenance, and controls software. The expert emphasized interoperability, cybersecurity, and demonstrated performance over additional dashboards.</p>
+<p>Competitive Landscape</p>
+<p>Segment</p>
+<p>Companies or approaches discussed</p>
+<p>Market position and considerations</p>
+<p>Facility equipment and modular systems</p>
+<p>Schneider Electric, Vertiv</p>
+<p>Promote skid-mounted and repeatable designs that can reduce site labor and improve factory testing; transportation size and weight limit prefabrication.</p>
+<p>DCIM and building management</p>
+<p>Schneider Electric, Vertiv, Johnson Controls, Honeywell, Enlight, Device42</p>
+<p>Established vendors are expanding software capabilities, including through acquisitions.</p>
+<p>Observability software</p>
+<p>Datadog, Sumo Logic, Dynatrace</p>
+<p>Can layer over existing systems to analyze data and recommend operational changes.</p>
+<p>Cooling technologies</p>
+<p>Direct-to-chip liquid cooling, warm-water loops, dry coolers, two-phase cooling</p>
+<p>Liquid cooling is gaining importance for high-density GPU racks; warmer loops can reduce compressor use in suitable settings. Two-phase systems remain costly and not broadly validated.</p>
+<p>11/24/2026 at 05:20 AM UTC</p>
+<p>Quantitative Insights</p>
+<p>Metric</p>
+<p>Context</p>
+<p>About 40 GW announced versus roughly 11 GW expected from ERCOT</p>
+<p>Illustrates the gap between announced Texas development and potential power availability.</p>
+<p>3–5 years</p>
+<p>Estimated development timeline for some behind-the-meter projects.</p>
+<p>About $100 million</p>
+<p>One US operator’s reported community investment commitment.</p>
+<p>45°C</p>
+<p>Warm-loop temperature cited as potentially reducing mechanical refrigeration in suitable climates.</p>
+<p>1,000 W and 4,000 W per die</p>
+<p>Thresholds proposed in a white paper for single-phase efficiency and a potential two- phase transition; the expert did not validate them as universal limits.</p>
+<p>RJ: Hello, everyone. My name is Robert Jacapraro, and I am an industrials analyst here with Guidepoint. I would just like to welcome everyone to our data center infrastructure: Where will efficiency and resource sensitivity lead critical system design next? Teleconference with Spiros Liolis. If you have any questions for our advisor today, please feel free to email them to ask@guidepoint.com. Again, that email address for questions is ask@guidepoint.com. We will try to get to your questions in the order that they are received, and as always, they would be asked anonymously. Just before we start, I would like to introduce our advisor for today, Spiros Liolis. Spiros, welcome and thank you for your time today. If you wouldn't mind giving us a little bit of background on yourself, especially for those that might be less familiar with you, that would be great. And then we can begin.</p>
+<p>SL: Yeah, thank you. Thank you for your time, Rob. Again, my name is Spiros Liolis. I am a mechanical engineer working for an MEP firm. My work spans about 28 years now in the data center industry alone, and I have done work across hyperscalers, data center operators, neoclouds, in the past, vast enterprise companies, and all of that work has taken me in more than 55 countries by now. Lately, the bulk of the work is around technical due diligence on project finance, sell-side/buy-side facilities, and of course, I do a lot of development with new technologies such as liquid cooling or other innovations that are happening in the industry. So with that, hopefully I can respond to most, if not all, of your questions.</p>
+<p>RJ: Coming off of Supercomputing 2026, what were your most impactful takeaways from the presentations or the interactions with peers that you had?</p>
+<p>SL: SC 2026 was once again a great event. I mean, it happens every year and every year we go, we see the amount of vendors and the amount of people attending the event, you know, multiplying, increasing. So what we saw, I'm sorry, overall there's a very large sector that focuses a lot on the research of AI and the new models, which if you are a scientist or if you are what I call a nerd enough, you can probably follow some of these things. I'm not... I'm a mechanical engineer, so I cannot follow some of the development of the AI specifically, but what I could follow is on everything around the critical infrastructure. So the industry has obviously a lot of its attention into the GPU performance, the infrastructure, but for the first time, we actually started seeing the industry focusing a little bit less on the GPU performance itself simply because I think we have ironed out that component, but now we're focusing on the</p>
+<p>11/24/2026 at 05:20 AM UTC</p>
+<p>infrastructure to support it. And when I say infrastructure, I mean the critical infrastructure, including the power, the liquid cooling, the integration, the reliability, the operational temperatures, and of course, how the increasing rack densities ultimately affect the whole design of a data center from the power distribution to cooling all the way through commissioning and operations. So I think now the supercomputer gave the world, or at least the attendees, that it's not just about the model, it's not just about the GPU, but now it's a whole integrated system put together working as a whole, as an ecosystem.</p>
+<p>RJ: Did you learn anything incremental or anything that might change your outlook on the potential growth in new data centers and equipment spending for 2028 and beyond?</p>
+<p>SL: Outside the things that are beyond our control, the industry control in the data center, like the recent thing that happened with NVIDIA's CEO, I mean, nobody has control over that. But my overall longer-term outlook remains positive for 2028 and beyond. But I do expect, as I mentioned previously, the pace of delivery to be somewhat different across different markets. You can call it an uneven pace. You know, the US will probably see some increasing scrutiny, whereas EMEA... sorry, EMEA... will probably see similar results, but other regions may not necessarily see the same. So I do believe that there is going to be some changes. Now, what I would like to perhaps bring out here is the thing that I've always been arguing. We need to distinguish what is being announced, what is being funded, and what is being contracted, especially when it comes to projects. I'll give you a very recent example in Texas. Until recently, they had announced approximately 40 gigawatts worth of data center developments. Now, we do know that ERCOT is only going to supplement about 11. So, what is actually being announced and what actually will be contracted are 2 different things. So don't buy the headlines. I would actually buy the real contracted capabilities. And when I look at them, because I don't read the big headlines, I read what actually is being contracted, I still remain optimistic about these projects under construction. Furthermore, if I can say 1 more thing, some campuses will be delayed, will be resized. I mean, we've seen a few cancellations that have made the headlines like the recent Microsoft cancellations, other ones will be under scrutiny. It doesn't necessarily mean that these will disappear, right? I'm just saying that some of these projects will have to be revisited, and investors will have to look a little bit more careful where they're going to put their money. So, but overall, yeah, I remain optimistic.</p>
+<p>RJ: How are you expecting the results of the US elections to have the greatest impact on planning, design, and construction for US data centers?</p>
+<p>SL: There is obviously, you know, and I think this somewhat started before the elections in anticipation on how to pass a message to the constituents. But, you know, I do expect increased scrutiny. I do expect additional moratoriums. I do expect the community pushback to now drive more policy, right? But at the same time, we also need to differentiate what federal policy can do and what state and local decisions actually do, right? I mean, the administration might say, you know, all in for data centers, but at the end of the day, it is the state and the counties that ultimately make the decisions that will move or block the projects. So, you know, more and more states have now turned blue, right? More and more states have announced and will enforce scrutiny or, you know, environmental, stricter environmental controls. And the developers would just need to demonstrate that they have done their due diligence, rather than the kind of due care that they so far exercise. So yeah, a lot more pressure at the state and local level.</p>
+<p>RJ: What reactions have you seen already post-election or do you expect to see from the data center developer community as soon as the next quarter or two?</p>
+<p>SL: Well, it's an interesting thing because... a couple of days, I mean, sorry, a week after the elections in Texas, they said we are lifting the moratorium that we had. And then on another state, we said we are now reinforcing or adding another moratorium. So it's a mixed signal. At this moment, it does remain a little bit political, right? So some states will try to do some sort of a political bargain. But for the purposes of our discussion and for us as data center developers, the developers are likely to be a lot more selective before they commit the capital. They will absolutely</p>
+<p>11/24/2026 at 05:20 AM UTC</p>
+<p>review and re-review every single approval, especially around the environmentals, to remove any level of uncertainty. They will have to go through sites where there is some sort of an industrial zoning where data centers are allowed versus rural or agricultural developments that we had seen so far. They will try to find a realistic permitting path rather than try to work on the promise that, yes, this can be permitted. On-site generation, I do have... personally, I do have my doubts. I do believe that natural gas generation, behind the meter kind of thing, will go through stronger scrutiny, right? But overall, the reactions that we've seen so far are somewhat mixed. I think we would have to wait until January before we see, or even February, before we just kind of see how all things settle.</p>
+<p>RJ: I'd like to follow on there, if you could elaborate on some of the doubts on your part for behind-the-meter projects.</p>
+<p>SL: The thing about behind-the-meter is that we call this a bridge power or an alternative power to the grid, right? And the moment developers realize that there is a very long delay of getting utility power, they jump into the natural gas, knowing that, of course, the United States can provide plenty of it. But at the same time, very little attention was paid to the development of such behind-the-meters, the amount of permitting that it requires, and of course, the supply chain to support it. So what happened is, while many developers rushed to get the natural gas turbines or get the necessary amount of gas into those locations, they didn't necessarily think of, is the supply chain ready to accept this? Are there enough environmental controls or policies there to support such large developments? So many of these data center developments came into somewhat of a halt simply because they hadn't done their environmental due diligence. Today, some of these developments, they are quoted... or I'm sorry... they have a project development timeline of approximately, some of them are 3, some of them are 5 years. So let's use that as an average, 3 to 5 years, which is also the same amount of time they are going to get from the utility. So I personally don't necessarily see that as kind of a bridge power. I do believe additional scrutiny will come. A few projects in certain locations have been halted or even canceled. So I'm not as optimistic as the speed of development of behind-the-meter and bridge power.</p>
+<p>RJ: Spiros, on our previous call in August, you spoke of the need for the industry to engage more with communities to encourage data center development and address the most notable concerns around resources. Do you see any progress in the industry making its case more actively with the public?</p>
+<p>SL: There is some progress, obviously in recognizing that community engagement is indeed something that is an essential part, right? But has the industry done enough so far? Very little. I mean, I've got a few examples to discuss. But at the end of the day, what I said is the communities are asking, you know, very specific questions about the water, about the noise, about the electricity bills, about traffic and what does it mean for long-term employment. They don't necessarily just care for the tax revenues they might get into the industry. And we haven't prepared the responses to all of these questions just yet. I mean, we are throwing, I don't wanna say gimmicks, but we're throwing a lot of incentives back. But at the end of the day, we will have to look at, you know, responding to the specific questions. Do we actually use all the water that is being rumored out there? Do we actually increase the electricity bills? And so far, we're not quite there yet. So we need to come up with realistic views on the... I'm sorry, realistic responses and realistic views about the benefits.</p>
+<p>RJ: What ways do you already see or expect to see the industry make use of to win over the hearts and minds where there is community opposition?</p>
+<p>SL: I'll give you 2 examples. One is in Europe and another one in the US, but I cannot name who or where, but I can tell you what it is that they've done. But one data center operator in the US has committed approximately 100 million in... I don't want to... lack of a better term of incentives, or actually money that will flow into the specific community in terms of development of some housing, some community centers, and they will pay their housing taxes or property taxes for so many years or some portion of it, right? So... that is one thing that we've seen here in the US. In Europe,</p>
+<p>11/24/2026 at 05:20 AM UTC</p>
+<p>there was another developer who built stadiums and high schools and schools altogether for an entire community, right? Now, like I said, is that a gimmick or is that just... what is it called... beads for the... there's a term that I can't remember what it's called now, but RJ: Greenmail?</p>
+<p>SL: In general, yeah. So... we've seen some of these things happening to, I think you call it to win the hearts and minds of the community. But again, it's only an indication at the moment. These 2 examples are the ones that I have personally seen and witnessed. But again, we have to have those questions that these utilities, the communities have response, and responses have to be realistic. And... I mean... honest, right?</p>
+<p>RJ: At the end of the day, is this likely to push development to more remote or undeveloped areas than the industry might have planned for the 2028 and later year time frame? And if that's the case, are there knock-on effects to costs and construction timelines that might concern you?</p>
+<p>SL: Well, we've been pushing the development to remote areas for quite some time now. Odessa, Midlands, Texas and South Dakota, some of these not so exotic areas. We have already been trying to do that. But at the same time, there's always a need to have some workloads and some data center capacity near people, rural and urban areas. We have to find out, as an industry, how to keep that balance. Yes, remote sites will come with cheaper land, but they also have higher costs for development. Somebody will have to drive much longer distances. Transmission is going to be... labor will have to drive longer distances. Transmission over time is going to be more expensive. Fiber development is going to be more expensive. Road upgrades are going to be more expensive. Getting the qualified labor to go in the middle of nowhere to do that work is going to be very expensive. The saving in land cost that you might get by developing something in a remote area will probably be somewhat balanced, counterbalanced by the expense and the delays of infrastructure extensions. But again, as I said earlier on, it won't solve the problem. We do need data centers that need to be closer to the actual, well, tenants, inference data centers, co-location data centers, et cetera. So we still have to find that right balance, what goes remote and what stays close to the end users.</p>
+<p>RJ: You brought up the issues of water consumption and power consumption and costs. So with public opposition and scrutiny on data center development as a front and center item, do you see operators or developers leaning harder into solutions or design adaptations with a premium on power and water efficiency and management?</p>
+<p>SL: Clearly, yes. And although I think I've been saying this for the longest, I remember myself in the industry... I mean, the most conservative industry on earth is the data center... I've been calling this "my mom with the thermostat," right? You leave it there and you don't touch it. Very, very conservative. We don't want to do many things. But right now we are pressured more and more to identify and innovate solutions that they can indeed increase the efficiency, which affects both the operating economics, right? So anything around, you know, closed water loop systems that we've been using for some time now, dry heat rejection, the warm liquid cooling loop system that was announced a few months ago by NVIDIA. So everything that we can do, we will. We will adopt it. But there are also trade-offs, right? The dry system, sorry, I think because you mentioned the water, right? Example, the dry system can save water, but it's going to require a lot more land, right, for the heat exchangers. So I think what we need to look at is find out across the entire life cycle cost of a data center, its lifetime. Find out what makes sense. Evaluate the climate. Evaluate the liability. Evaluate what is very important, the workload itself, right? And then build to that, you know, build to suit, right? It's just one. It's not just the power. It's not just the water efficiency. It's like we have to look at it as an ecosystem.</p>
+<p>RJ: So what are the efficiency-enhancing changes in design for cooling and heat mitigation that large data center developments might consider from the rack outward as we move ahead?</p>
+<p>SL: I usually start from the outward into the rack, but I'll do the rack outward. So obviously we start at the chip, right? I mean, that's at the end of the day, that's what makes the fundamental difference. We're going to do better cold plates</p>
+<p>11/24/2026 at 05:20 AM UTC</p>
+<p>and we're going to use different types of alloys to create those better cold plates. Anything, thermal interfaces, direct liquid cooling technologies to manage that increasing heat, right? And there are quite a few companies out there that they just do that, right? In fact, some of the larger players, they have acquired those cold plate technologies. I mean, look at Ecolab recently that they are just focusing on that element. At the rack level, heat capture, larger manifolds, better instrumentation to see where the... raising, I'm sorry... increased heat is. And as you have seen, more and more racks now are increasing their reliance to liquid cooling versus the air. So there's going to be less reliance on airflow. Now, I'm not necessarily suggesting that air is going to be removed from the data center. Don't get me wrong. That's not what I'm saying. But at least on the GPU level, we're going to see much more density on liquid rather than air. At the data center... sorry, at the data hall, we're going to have larger and more distributed CDUs. We're going to see how we can circulate a lot more water or liquid in general. We're going to have to be very careful about the redundancy, especially with the CDUs. And we're going to have what we call 2 cooling strategies. One is going to be for the liquid cooled and the other one is going to be for the air cooled loads. And air cooled loads are networking, storage, ambient in the racks, etc. And then finally at the overall facility level, the entire data center, I do believe that we're going to be seeing a secondary loop, the warmer loop, dry coolers, pre-cooling where necessary or where appropriate. And we may be seeing independent chiller plants to just handle either the liquid cooling, well, mostly the liquid cooling, or the air cooling itself. So, yeah, these are all different strategies that we're seeing, and the companies that have the great responsibility to bring all that together are engineering firms, but they need to design around it.</p>
+<p>RJ: Is that steady progression of larger CDUs or CDUs likely to be supported to wring efficiency out of the power consumption for single-phase direct-to-chip cooling systems?</p>
+<p>SL: Ultimately, a larger CDU can reduce the number of installations and connections, right? And it can improve the equipment selection, let alone the serviceability, right? But also these larger CDUs, right? These larger units also concentrate, bring some risk, right? Redundancy, maintenance access, single point of failure. So we are all in for a larger CDU provided that it has been designed for the resiliency and that it is required. So overall, I think people, again, because the data center industry is very conservative and very risk adverse, we will continue seeing centralized large CDUs as well as some distributed arrangements depending on the campus, depending on the workload, depending on the configuration. So it doesn't mean bigger is not better. So yeah, we have to understand and find out what are the real benefits of going one all big, or whether we should maintain some balance between small and big.</p>
+<p>RJ: How much progress have you seen since January in operators moving to higher technical fluid temperatures?</p>
+<p>SL: This year has actually been somewhat interesting because the next generation AI equipment are increasingly specifying warmer liquid cooling solutions, right? I mean, piping system and loops. So the conversation is now gradually moving from a theoretical efficiency to a more practical efficiency, and that includes, of course, the 45 Celsius cooling loop system that was announced. It could materially reduce the mechanical refrigeration in certain suitable climates. But again, we're not going to go one way or the other. We're just expecting that, you know, the secondary... the warmer loop is just going to be one more into an already complex world in the data center because ultimately we're going to have the equipment that are designed for warmer loops, and there's going to be another set of systems that are going to be designed and operating for another. So the adoption is gradual, small, I should say, very small, but gradual. And we are going to be seeing these happening for facilities that they are more what we call hybrid IT. So not everything is going to be on 1 generation of a GPU or another. It's something that is developed over time and we're going to be seeing this progression.</p>
+<p>RJ: Has the progress in that cooling fluid temperature change been consistent with how you thought the process would proceed or any surprises to one way or the other?</p>
+<p>SL: Broadly, yes. And we are always monitoring the space, right? We understand, obviously, that there is an efficiency</p>
+<p>11/24/2026 at 05:20 AM UTC</p>
+<p>of the warmer cooling water. We know that. From an engineering point of view, we get it. The speed of the GPU and the hardware that supports the AI workloads has been impressive. But to build that infrastructure, going from an existing data center facility to the next one where it supports the cooling as well as the new GPUs and in general the IT hardware is not an overnight change, right? It's just humanly impossible and physically impossible to do that. Existing facilities with mixed equipment which sort of be slower in the adoption. But new facilities, starting from scratch or a complete retrofit would probably be faster, is going to experience a faster adoption. So it's going to take some time. It's more of a transition rather than just a complete rip and replace kind of a technology.</p>
+<p>RJ: On the risk side, have you seen or heard of any service or operating issues that operators might have encountered during a move to warmer fluid temperatures?</p>
+<p>SL: To be honest, there isn't... there aren't many out there to have enough data, right? And if there are any issues, they're probably what we called... early symptoms of a new technology. So nothing that it is not already somewhat anticipated or something that cannot be fixed. So, again, from the engineering perspective, the higher temperatures will remove or do remove the thermal margins and therefore, we have a better management or a better grasp on that. We have to look into materials and how they cope with the higher temperatures, the chemistry of the liquid itself, the seals, the pumps, the hoses, everything. So we have to keep order. But just there aren't enough data out there to report.</p>
+<p>RJ: Most popular question we get revolves around how quickly do you think this transition is likely to affect the specifications for mechanical chillers and alternative heat mitigation methods like dry coolers?</p>
+<p>SL: Look, the AI will drive the design, right? So any... and it has always been that way. It is the chip that drives the design, right? Not the other way around. So new AI-focused designs will reflect warmer loop designs immediately. So from the design point of view, you put it on paper, it's great, it's fantastic. For us as engineers we say, "Oh, there's a new AI requirement specification," yeah, we will design around it. But how fast you actually adopt and build, that's a separate thing. So the adoption, as I mentioned earlier on, is going to... the physical build-outs... is actually going to take some time. But you know, to your more specific question, the higher water temperatures can ultimately reduce or, in some cases, eliminate compressor-based cooling. But again, only for those specific workloads. I do believe there's going to be a mixed use for most of the data centers. Traditional cloud will still need the conventional mechanical, I'm sorry, cooling systems that we've seen. And we also need to look at, you know, the geography itself. It doesn't mean that Finland is different than south of France. Canada is different than Arizona. So not all of them, not both of these states or countries have the same dry cooling opportunities.</p>
+<p>RJ: Right. So, is there a way for you to put color or description around what you're thinking in terms of for new data center developments at the leading edge, how sure content or capacity per, you know, whether it's 100 megawatts of power design or however best you can phrase it would change in the coming 3 years?</p>
+<p>SL: Ooh, that's a tough one. We would have to separate that 100 megawatt into... I'm sorry, we would have to understand what that 100 megawatt is, right? If it's a purpose-built AI facility that is going to host only a portion or one type of an AI type, we could ultimately, and especially utilizing the warm water loop, yeah, I would expect lower installed chiller capacities for that 100 megawatt. In some cases, it could be very little chillers or even none. But I cannot say whether, across the entire market, in the United States or globally, 30% is going to have a reduced chiller capacity because you don't know how we're building today, right? Conventional, cloud, mixed IT, AI inference. And furthermore, what you build today doesn't necessarily mean that it's going to be your data center of tomorrow. These data centers will move workloads. Some of these AI training today will move as it will become inference tomorrow. So it's kind of hard to put a... percentage, and even so, I mean a chiller will remain some sort of a backup, right? But operate somewhat infrequently.</p>
+<p>11/24/2026 at 05:20 AM UTC</p>
+<p>RJ: One of the challenges with dry coolers, you mentioned size already, but that size also requires more on-site work versus the industry evolving to more factory-based construction where it can. As an engineer, do you see ways for that equipment to be redesigned to enable greater prefabrication and less site-based construction?</p>
+<p>SL: Oh, there's no doubt that we're moving or we're trying to move more towards prefabrication. And the reason is the fact that we cannot have enough of a supply chain... I'm sorry... enough of a workforce to do site work. So yes, I do expect more standardized modules with factory pre-installed and factory-installed piping and valves and instrumentation, controls, everything. Both Schneider and Vertiv, as an example, offer or they promote a lot of the skid-mounted arrangements. And I think they call them repeatable solutions or repeatable assemblies. So that reduces the labor, and therefore, it doesn't necessarily require a lot of work on site. It's also better in terms of schedule 70. When you're getting that equipment, you're also increasing the quality by doing factory testing, having complete integrated controls across the electrical, the mechanical systems, etc. There are some limits to prefabrication and usually that's the size. At the end of the day, you will have to move this equipment to site through trucks. And there is a site limitation. But we will stretch those limits as much as possible. So, yeah, we will... Kind of a side story, a transportation dimension and the transportation lifting weight that I've faced recently in Finland, there are only specific roads and there are very specific trucks that can actually move some of these large chillers. And they had to be done during specific time windows, they had to use specific platforms, they had to use specific roads, etc. So yeah, there's so much prefabrication you can do, but there is physics, you can't mess with physics.</p>
+<p>RJ: On another topic related to efficiency of cooling, an OCP white paper from October puts what they call the efficiency boundary for single-phase direct chip near the low end of 1,000 watts for a single die. Does the drop-off in efficiency beyond that threshold agree with your view of the efficiency profile for single-phase direct-to-chip liquid cooling?</p>
+<p>SL: Okay. Let me start with, I've actually been a member of OCP for some time. And white papers are white papers, and they're great for academia and great for research work. Many of them are applicable to the real world. At the same time, you know, many of them will take some time before they materialize. So to your question, broadly, a higher single-die system flux makes a single phase cooling, you know, more and more challenging, right? With diminishing... you get diminishing returns from the coolant. But I would, at the same time, I would not treat that 1,000 as a universal efficiency number without understanding a little bit more about, you know, the assumptions in that specific white paper. I have not read the white paper myself, to be honest. I need to understand why they came up with that number and so why 1,000 and not 2,000 or something like that. So I may not be able to give you a very solid answer, but what I can tell you is that at least from the engineering point of view, what is important to understand is the implication of how a chip-level design affects the rack heat captured, the CDU sizing, the airflow, the pumping energy, etc. So I would need to have a good read of the white paper before I can make further comments on that.</p>
+<p>RJ: I'll try 1 other for you there if it's a different potential answer, but they also put what they're calling a physics boundary for single phase cooling at 4,000 watts, where, in their eyes, two-phase directed chip would theoretically be the enabling cooling technology to take over. Are those the ranges or differences? Or have you had any changes you've seen or noticed in consideration of two-phase direct-to-chip cooling at the device's leading edges?</p>
+<p>SL: Going from 1,000 to 4,000, that's a leap, right? So it's a big change. I think I've mentioned before, two-phase cooling deserves greater attention, right? At the moment it is an expensive solution, right? Our conservative industry will try to avoid overspending if there is no need, right? It has not yet been proven as a universal solution, right? It's out there, we monitor it, but it's not a universal solution. Yes, it does offer strong heat transfer performance. Of course, you get better fluid pressure controls, the maintenance is easy, serviceability considerations, right? But we need to have more evidence of reliability, of efficiency, right, before we're going into broad adoption, because it's an expensive solution. I had a similar discussion on the 16th, right before Super Compute with a very large group of mechanical engineers in the industry and they said all the same thing. From the engineering point of view, it is a great</p>
+<p>11/24/2026 at 05:20 AM UTC</p>
+<p>solution. Yet, it's very expensive and right now with the technology that we have, we've been managing very well. Let's see some pilots or proof of concepts or small data centers use that. Look at the real benefits before me trying to describe whether the 4,000 is an absolute physical boundary like the paper is stating. And if yes, then we would design the facility infrastructure to adopt to that and get while remaining adaptable.</p>
+<p>RJ: As an engineer and from a design standpoint, apart from power and entitlement and permitting, are there any issues that concern you on the risk for extending the normal timelines involved in bringing a hyperscale data center project online?</p>
+<p>SL: My main concern is the interdependence, and I would explain why this is a concern by the way. It might sound paradoxical, but there's a growing interdependence between IT specifications and facility design, right? So in many ways, what AMD or NVIDIA or the chip manufacturer in general specifies, it drives a very specific facility design and therefore that remains a bit locked, right? The rack densities, cooling temperatures, redundancy, the electrical and mechanical systems. They used to be able to change without having an effect on the IT. Now, because of that interdependency, you're somewhere locked between selecting a specific IT vendor and specifications together with the facility. Almost gone are the days where you had the flexibility to build a rather adaptable facility and having the optionality of... I don't even know if that's a word... or the options to host different IT systems, right? So that increases to me somewhat of the risk. Furthermore, when you bring that liquid cooling integration with the vendors—the Dell, the HP, the Lenovo, whoever is out there, right? They bring their own controls, they bring their own platforms, they bring their own systems to monitor. So now commissioning has become a lot more complex. We used to commission the IT infrastructure; now we're commissioning a very complex environment that involves both the IT world as we used to call it together with the critical systems. So you need now qualified installers and commissioning teams, which is a bottleneck, right? They need to be trained on specific equipment coming from all sorts of different vendors. So to me, yes, although it's somewhat... people might say, "Oh, but don't you like this interdependency?" Yes, but at the same time, it's making our world a lot more complex. We are removing that flexibility that we used to have.</p>
+<p>RJ: What are some of the ways that the equipment OEMs might be able to monetize efficiency improvements or changes via software or service offerings?</p>
+<p>SL: Many of them have actually done that already. I mean, look at Schneider. They have been on a buying spree of software solutions, and I think their solution is called EcoStruxure, if I remember... Vertiv, similarly. So the OEMs can ultimately expand from just the equipment sales into monitoring, controls, performance, all these are software solutions. Condition-based or predictive-based maintenance, which you need some sort of software to do that. And those integrated software now, because everything is AI, everything can do predictive analytics, everything can do... we now have the power to sort of do intelligent decisions. They can optimize the pumps, they can optimize the fan walls and the speed of the fan, the temperatures, any equipment sequencing. We used to do that in the old days, 20 years ago, but it was a lot of manual work to figure that out. Nowadays, with such integrated software and the use of quote-unquote AI, we can do that a lot more automated. Right. So these software now can learn the efficiencies, they can learn how systems operate and they can adjust directly and they can provision new systems, they can enable new speeds. So I think that's where potentially good money is for them. By the way, they don't need another dashboard. Don't get me wrong. They don't need just another dashboard. I remember for the last 25 years, 28 in the industry, they say a single pane of glass or a unified dashboard. I think we've got enough of those, but we really need to have measurable performance and that demonstrable performance that you can actually monetize. So, for example, I'll get paid $1 for every $100 that I save you, something along these lines. Believe me, they will make it.</p>
+<p>RJ: Well, are there OEMs that you think are offering more advanced or capable DCIM or BMS systems that you think might be better positioned if efficiency and that documented performance become more important?</p>
+<p>SL: There are what we call the legacy vendors in the DCIM and BMS systems like Schneider Electric and Vertiv and</p>
+<p>11/24/2026 at 05:20 AM UTC</p>
+<p>Johnson Controls and Honeywell and Enlight, Device 42. These are all the legacy vendors that have already been buying smaller firms to bring another capability, not just be the DCIM or BMS, but also energy performance, etc. But what is interesting is that now, lately, we have seen a few vendors that come from 2 different angles. The first one is observability platforms where they say, "We do not want to replace your DCIM or BMS. We want to sit on top of it, collect the data," And through our observability scripts, we can suggest... not enforce, but we can suggest changes into the way you operate your data center. So observability platforms such as Datadog, Sumo Logic, and a few others, Dynatrace, they are out there. Side by side, the traditional legacy DCIM to do that to provide that additional capability that some of the DCIM do not have. The second group is the ones that we call AI platforms. Yes, there is another AI group that they say we will collect your DCIM data or DMS and we will do predictive analytics or stuff like that and operate or make suggestions on how to operate your data centers. What matters most, though, for me is, are they using open protocols? Are the systems interoperable? Do they also provide the cyber resilience and cybersecurity that is being needed these days with all of these hacks and cyber attacks? That's what I would look at. But the big players like Schneider and Johnson Controls that I mentioned earlier, these are the ones that they do a lot of development, and they're also buying a lot.</p>
+<p>RJ: That concludes our agenda for today's teleconference. I would like to thank Spiros Liolis again for his time today, as well as his valuable and extensive contributions to today's topic and our audience for their interest in the topic. A final reminder for the audience that a replay and a transcript of this call will be available shortly following. Spiros, as always, an enjoyable discussion. I wish you a happy upcoming Thanksgiving holiday, and I look forward to our next opportunity to catch up.</p>
+<p>SL: Absolutely. Same to you. Thank you. Thank you for your time.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>11/24/2026 at 05:20 AM UTC</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

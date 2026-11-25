@@ -1,0 +1,216 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.23 | AC | Robotics | Apple HALO Humanoid Sim2Real System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.23 | AC | Robotics | Apple HALO Humanoid Sim2Real System</h1>
+<p class="orig">原标题：苹果HALO人形机器人系统解读—技术创新点、仿真数据、零样本Sim2Real</p>
+<p class="tags">#robotics</p>
+<p class="meta">AceCamp · 2026-11-23 17:14 · article 70569576</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>苹果HALO论文旨在通过仿真与合成数据解决人形机器人训练过度依赖高成本真实数据的问题，实现规模化数据生产和零样本Sim2Real迁移。</li>
+<li>技术创新包括自动化合成数据管线、融入深度图的运动跟踪器、异步运动生成与连续轨迹连接，以及三阶段强化学习迁移策略。</li>
+<li>HALO定位于感知理解层，在线系统由VLM、Motion Generator和Motion Tracker三个核心模块组成，是连接任务层与执行层的枢纽。</li>
+<li>单项技能平均成功率约91%、最低88%，每项测试360次；多步骤组合任务平均成功率约70%，部分任务降至50%-60%。</li>
+<li>组合任务成功率下降源于训练数据分布差异、状态估计误差累积以及长时序容错和动态重规划能力不足。</li>
+<li>系统后训练使用约296.3小时仿真数据，控制策略仅在1000个程序化生成的虚拟家庭环境中训练即可直接部署到真实场景。</li>
+<li>仿真数据每小时成本仅几十元，而真实数据采集通常在每小时1000元以上，且能自动生成精确配对的监督信息。</li>
+<li>HALO短板包括仍需任务定义和少量真实数据、缺乏触觉感知、未实现灵巧手操作；此前苹果已有ARMADA、EMOTION、ALMA等近两年研究积累。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>以下观点来自行业资深专家：1.苹果HALO论文的核心目的是解决当前人形机器人大模型训练对真实数据采集的过度依赖问题。由于真实数据的采集成本高昂，该研究旨在探索通过仿真数据和合成数据，解决预训练及后期训练过程中数据获取的难度与规模化问题。2.苹果HALO系统并非一个单纯的控制器。在通用的大模型三层架构中，它主要定位于最上层的感知理解层。其核心功能是实现感知，并基于感知结果进行任务规划和运动生成。</p>
+<p>1.苹果近期发表的HALO论文，其核心研究目的是什么？</p>
+<p>苹果HALO论文的核心目的是解决当前人形机器人大模型训练对真实数据采集的过度依赖问题。由于真实数据的采集成本高昂，该研究旨在探索通过仿真数据和合成数据，解决预训练及后期训练过程中数据获取的难度与规模化问题。其最终目的是使机器人能够在不依赖大量人工遥操作数据的情况下，通过仿真数据，乃至结合视觉语言与运动数据，在模拟环境中学会理解指令并自主完成任务。</p>
+<p>具体而言，该论文有三个主要目标：第一，实现合成数据的规模化生产；第二，使机器人能仅通过全视觉RGB数据等感知信息生成运动轨迹；第三，验证从仿真到现实的数据迁移能力，使机器人能够自主执行任务。在此过程中，合成仿真数据与深度相机提供的深度图信息是两个至关重要的技术要素。</p>
+<p>2.苹果的HALO论文在技术上实现了哪些主要创新？</p>
+<p>该论文的技术创新点主要体现在四个方面。第一，创建了一套自动化的合成数据管线，该系统能够利用深度相机捕捉的视觉信息，结合部分真实数据，自动化地生成大量仿真数据。</p>
+<p>第二，将系统架构分为任务理解、运动生成和底层控制三个层级，尤其在底层控制层面，运动跟踪器并非盲目跟踪预设轨迹，而是创新性地融入了深度图信息，以实时进行几何层面的动作调整。</p>
+<p>第三，采用了异步运动生成与连续轨迹连接技术，允许在推理阶段实时修正运动轨迹，从而提升了动作的灵活性和任务成功率。</p>
+<p>第四，通过多阶段强化学习策略，有效解决了从仿真环境到真实环境的控制迁移难题。</p>
+<p>该策略分为三个阶段：首先，为每个单一技能单独训练一个专家策略；其次，将多个专家策略的知识蒸馏到一个学生策略中；最后，对这个统一的学生策略进行强化学习微调，以增强其在真实环境中的适应能力。这套三阶段迁移方法为行业提供了重要的实践范例。</p>
+<p>3.苹果HALO系统存在哪些技术短板或局限性？</p>
+<p>苹果HALO系统目前存在四个主要技术短板。第一，尽管数据生产实现了自动化，不再完全依赖人工，但仍需预先进行任务定义，例如明确需要完成的动作、动作分解步骤以及目标姿态，因此依然需要少量真实数据作为引导。</p>
+<p>第二，系统在感知层面仅集成了感知与导航功能，缺乏对触觉及真实接触状态的感知能力，导致机器人在与物体交互，如抓取或碰撞时，无法感知接触的力度大小。</p>
+<p>第三，系统尚未实现灵巧操作，其交互能力目前仅限于推、搬箱子等简单动作，未使用灵巧手，也未涉及使用工具（如螺丝刀）等更复杂的物体交互。</p>
+<p>第四，虽然单个技能（如行走、弯腰、开门）的成功率较高，但在将多个技能组合成连续任务时，整体成功率显著下降。</p>
+<p>4.在发表HALO论文之前，苹果在人形机器人领域有哪些相关的研究储备？</p>
+<p>苹果在发表HALO之前，已进行了近两年的系统性研究。其研究历程始于2024年12月发表的ARMADA论文，该研究旨在通过模仿学习或虚拟现实技术降低真实数据采集的难度与硬件成本。ARMADA的核心创新是把Apple Vision Pro增强现实头显，直接变成机器人动作数据的采集入口，全程不需要实体机器人在场，普通人裸手就能完成高质量数据采集。</p>
+<p>随后，在2025年1月公开了Emotion项目，该研究始于2024年10月，EMOTION框架依托大语言模型的上下文学习能力，打造了一套全新的机器人动作生成体系，专注于语言模型与人形机器人动作生成之间的关系，使LLM能根据对话情境选择合适的表达性动作，并引入人类反馈以提升动作的自然度。苹果团队基于这套框架，成功生成了10类完全不同的高表现力拟人化手势动作，随后开展了大规模线上用户对照调研。</p>
+<p>2025年2月公布的ALMA项目，其研究方向已与HALO非常接近，重点是通过第一视角感知和全视觉方案实现机器人的自主导航与避障。到了2025年5月，苹果发布了一项通过人类数据训练模型的研究，当时已构建了部分数据集，并解决了人类与人形机器人之间的状态统一与动作表示空间问题。在2025年4月至5月期间，苹果对语音、语言、机器人功能性运动及表达性运动等技术进行了整合。最终，这些持续近两年的研究积累，促成了2026年11月HALO论文的发表。</p>
+<p>5.HALO系统在人形机器人大模型架构中扮演何种角色？它是否可以被理解为一个控制器或规划器？</p>
+<p>HALO系统并非一个单纯的控制器。在通用的大模型三层架构中，它主要定位于最上层的感知理解层。其核心功能是实现感知，并基于感知结果进行任务规划和运动生成。因此，它既不是单纯的底层硬件控制器，也不是传统意义上的上层任务规划器，而是介于大语言模型任务层和硬件执行层之间的“承上启下核心枢纽”，它的角色与任务规划器的概念较为相似，负责处理高级别的任务拆解与动作序列的生成。</p>
+<p>6.苹果HALO系统在公开测试中，其单项技能与多步骤组合任务的成功率分别是多少？</p>
+<p>在单项技能测试中，HALO系统的成功率普遍较高，平均达到91%。例如，走上物体、开门、弯腰通过平地等任务的成功率最低为88%，每项技能均进行了360次测试。但当这些技能被组合成多步骤连续任务时，成功率出现明显下降。例如，“通过半开的门走向指定目标”的任务成功率为100%，但“从桌子下面弯腰通过，再找到椅子坐下”的成功率降至60%，“弯腰通过障碍物再走向箱子并推动”的成功率则为50%。在对每个多步骤任务进行330次测试后，连续执行全部子任务的平均成功率约为70%。</p>
+<p>7.为何单项技能和组合任务的成功率存在差异？</p>
+<p>成功率下降的主要原因在于：</p>
+<p>①训练数据的分布天然存在结构性差异，像蹲身、直行、推箱子这类独立单项动作，能在仿真中被训练到接近完美的状态，迁移到真实场景后只需要少量适配就能达到极高成功率。但组合链式任务没有办法靠简单的仿真批量生成：多个动作串联后，每一个前置动作的微小误差，都会在后续步骤中被持续放大。</p>
+<p>②串联后状态估计的误差会持续累积</p>
+<p>执行单项技能时，机器人只需要在短时间内保持高精度的本体状态估计，传感器的微小漂移、地面的轻微打滑都不会对最终动作结果产生决定性影响，哪怕中间出现小偏差，也能在单项动作结束前快速修正回来。但执行组合任务时，机器人要连续跨越多个动作阶段，状态估计的误差会随着运行时间不断累积。</p>
+<p>③长时序任务的容错和动态重规划能力不足</p>
+<p>执行单项技能时，哪怕中间出现小失误，机器人也可以立刻终止当前动作重新执行，不会对整体结果产生太大影响。但组合链式任务是一个连续的长时序流程，前一个动作的微小失误，很可能把机器人推入一个完全不在预设规划路径里的陌生状态。</p>
+<p>8.HALO系统的完整技术架构由哪些核心模块组成？</p>
+<p>HALO的系统架构主要分为两大部分：训练系统和在线运行系统。训练系统负责数据生成与模型训练，其内部包含四个模块：运动生成、场景生成、仿真渲染和数据配对。该系统通过相机数据生成机器人的全身运动轨迹，并创建不同的虚拟场景，随后将第一视角的RGB数据与语言动作数据进行配对，最终通过模仿学习和强化学习来训练模型。</p>
+<p>在线运行系统则负责机器人的实时自主运行，由三个核心模块构成。第一部分是VLM（视觉语言模型），负责语言理解、任务拆解和子任务调度。第二部分是Motion Generator，一个全身运动规划生成器。第三部分是Motion Tracker，它处理视觉信息和机器人本体状态，跟踪全身关节指令，并将其适配到机器人本体上。此外，该架构还包含一个实时运动控制层，用于硬件层面的部署与执行。</p>
+<p>9.苹果HALO系统在训练中使用了多大规模的仿真数据，其数据生成效率如何？</p>
+<p>在后训练阶段，该系统使用了约296.3小时的仿真数据，与直接采集真实数据相比，这种生成方式的效率非常高。</p>
+<p>10.采用仿真数据进行训练的核心优势是什么？</p>
+<p>使用仿真数据主要有三大优势。首先是成本低廉，仿真数据通过GPU生成，每小时成本可能仅为几十元，而真实数据的采集成本通常在每小时1,000元以上，这使得大规模获取数据在经济上成为可能，特别是对于视觉、语言和机械动作之间的监督学习。</p>
+<p>其次是可规模化，仿真环境能够大规模、快速地生成数据，从而尽可能多地覆盖各种应用场景，这是真实数据采集难以比拟的。</p>
+<p>最后，仿真数据能够自动生成精确配对的监督信息。在仿真环境中，可以无延迟、无误差地直接获取机器人准确的关节状态、完整的运动轨迹以及物体的状态，并通过反向器进行转换，确保了监督信息的准确性，避免了真实环境中多设备数据采集所需的时间同步和坐标系转换等复杂处理。</p>
+<p>11.在有了高效的仿真数据生成管线后，是否还需要其他类型的数据？</p>
+<p>其他类型的数据在当前阶段仍然有其价值，但未来可能被仿真数据部分替代。第一类是人类视频和Ego数据，其优势在于规模大、成本低，但缺点是缺乏机器人精确的关节动作信息，且本体约束有限。特别是Ego数据，通常只包含头部视角，缺少手部运动轨迹和关节角度等关键数据，这部分数据未来很有可能被仿真数据所取代。第二类是UMI（Universal Manipulation Interface）这类侧重于手部精细操作的数据，目前仍然是必需的。</p>
+<p>总体来看，仿真数据可以作为遥操作和动捕数据的有效补充，通过预先合成一部分数据来降低整体数据成本并用于模型预训练。未来，没有动作标签的人类视频数据以及非复杂动作的运动轨迹采集数据，最有可能被仿真数据大规模替代。即便是精细化动作，随着仿真技术的发展，仿真数据也有望逐步取代传统的采集方式。</p>
+<p>12.苹果此次是如何进行数据仿真的？其流程是怎样的？</p>
+<p>此次数据仿真的流程首先从任务定义开始。在任务定义阶段，需要为一个运动技能设定明确的目标和分解动作。例如，对于“坐到椅子上”这一技能，需要定义出包含行走、转身、调整姿态和坐下等一系列子动作。对于“走向指定物体”的任务，则需要定义目标识别、路径规划和行走等运动模块。而对于更复杂的任务，如“从桌子下面爬过”或“推动箱子”，则需要定义更多细节动作，如弯腰、爬行等。通过这种方式，将一个宏观任务分解为一系列可执行的、定义清晰的子技能和动作序列，为后续的仿真生成提供基础。</p>
+<p>13.人形机器人领域的“零样本迁移能力”具体指什么？</p>
+<p>零样本迁移能力指的是，通过仿真数据训练出的模型和技能，无需再使用真实数据进行微调，就可以直接部署到物理机器人上，使其在真实环境中完成指定动作。具备零样本或少样本迁移能力的模型被认为是非常强大的。</p>
+<p>具体到苹果HALO整套人形机器人的运动控制策略，全程只在1000个程序化生成的虚拟仿真家庭环境中完成训练，从未接触过任何真实世界的房屋场景数据，也没有针对目标真实环境做任何额外微调、预扫描和真机数据采集，部署到实体机器人上后，就能直接在完全陌生的真实物理空间里，稳定完成各类复杂人形运动任务。</p>
+<p>14.实现该能力的主要难点在哪里？</p>
+<p>实现这一能力最核心的难点在于仿真数据与真实数据之间存在的差距（Sim-to-Real Gap）。这个差距主要体现在两个方面：首先，仿真生成的机器人关节状态、轨迹、电机和传感器等硬件信息，与真实硬件的物理特性和运动轨迹必然存在误差。</p>
+<p>其次，仿真环境中生成的理想运动轨迹与真实机器人在物理世界中执行的轨迹也会有偏差，例如电机在运动过程中可能产生微小偏差。如何有效降低这种仿真与现实之间的差距，是提升仿真数据价值和实现零样本迁移的关键。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

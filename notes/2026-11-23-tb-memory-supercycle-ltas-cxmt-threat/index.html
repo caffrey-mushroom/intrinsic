@@ -1,0 +1,238 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.23 | TB | Memory | Memory Supercycle, LTAs &amp; CXMT Threat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.23 | TB | Memory | Memory Supercycle, LTAs &amp; CXMT Threat</h1>
+<p class="orig">原标题：Semiconductor Memory Industry – Micron, CXMT, Samsung &amp; SK Hynix – Former Senior Executive at SK Hynix Inc</p>
+<p class="tags">#memory #semis #china</p>
+<p class="meta">Third Bridge · 2026-11-23</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>前SK海力士高管认为本轮存储周期不同于传统3至4年的商品周期，需求由AI服务器的HBM、服务器DRAM和企业级SSD驱动，供给要到2029年才能追上需求。</li>
+<li>他预计2027至2028年价格仍将上涨，但不再出现今年单季70%至90%的涨幅：HBM和服务器DRAM单季约涨10%至20%，PC和手机DRAM约涨3%至5%。</li>
+<li>美光称约75%的产能已被LTA锁定，三星和海力士的LTA占比也在50%至70%以上，LTA期限约五年至2030年，并附有预付款。</li>
+<li>LTA普遍设有价格下限，海力士和三星不设上限，美光早期与16家客户的协议设有上限，但新签LTA已不再设上限；现货市场占比不足5%至10%。</li>
+<li>由于HBM占用3至4倍的晶圆面积，即使产能扩张，实际位元增长最多约20%；需求端每年增长约30%至40%，最大风险是超大规模厂商可能在2028年下调资本开支。</li>
+<li>他认为长鑫存储并非真正威胁，受EUV禁令限制，其工艺停留在约19nm，而三大厂已在1b、1c节点；长鑫宣称的4F2结构仍需EUV，良率可能仅10%至20%，真正的3D DRAM预计约2033年才能商用。</li>
+<li>即使长鑫技术突破，美国政府也不允许其DRAM进入美国超大规模数据中心，但客户可能把它当作压价工具，苹果曾游说采购但未获国会批准。</li>
+<li>Nvidia因供应紧张将HBM从12或16层降至8层，并把SOCAMM2容量从约125GB至150GB降到约80GB至90GB，但企业级SSD因推理需求反而在扩容。</li>
+<li>海力士计划为Solidigm推动IPO，以便在美国新建NAND晶圆厂，规避其大连工厂受到的出口管制扩产限制；HBF可能替代部分DRAM，但不会取代企业级SSD。</li>
+</ol></section>
+<div class="body">
+<p>Client-led • 14 Oct 2026</p>
+<p>Companies: A005930 KR, MU US, A000660 KR, 688825 CN, AAPL US, NVDA US</p>
+<p><b>Expert</b> Former Senior Executive at SK Hynix Inc</p>
+<h3>Agenda</h3>
+<ul><li>Over 30 years' experience in the memory industry, focusing on strategic planning, corporate planning and strategic alliance establishment</li><li>Comprehensive understanding of memory and non-memory technology integration, supply-demand dynamics and market technology trends</li><li>Deep insights into memory pricing cycles, LTA (long-term agreement) structures, downside risk protections and geopolitical impacts on the supply chain</li></ul>
+<h3>Questions</h3>
+<h3>00:04:26] Where are we currently in the memory market cycle in terms of supply, demand and price? What is your view amid different market opinions?</h3>
+<p><b>Expert</b> [00:04:55]: This cycle is different from previous traditional cycles. Traditional memory cycles occurred three or four years, some up and down, it continuously occur. Basically, that was based on commodity. Commodity means DRAM or NAND sold mostly to PC or mobile phones. Still, those markets exist, but currently, those applications are not a big part of current demand for memory.</p>
+<p>Current memory focus on AI server that comprise the AI data centre that's becoming a big demand since end of 2022, when ChatGPT emerged. HBM, for example, [is] becoming a very critical memory in AI servers because it needs high bandwidth of memory for AI training and increasingly, AI inference is becoming important. Not only for HBM, other DRAM, DRAM modules or enterprise SSD, these are all required for AI inference stage.</p>
+<p>Memory demand is very high. The problem is, supply does not match this demand. Supply [is] mostly focused on three players, SK Hynix, Samsung and Micron. They have limited their production capacity. They are building new fabs, but if the new production supply increasing to meet the demand, it will go like '29.</p>
+<p>From '26 to '27 and '28, still supply does not meet the demand. Demand is still expected to grow because of the high demand in AI server and data centre, considering all of this cycle. This cycle is not going to peak down. It still is going up or level to peak has not yet come. Some stock prices fluctuate very much, but in the supply-demand of memory, prices still expect to increase. Then many procurement or selling structures are now turning into long-term agreements, so-called LTAs, and recent announcements of Micron CEO says that 75% of their capacity is locked in this LTA. Samsung or SK Hynix, they go to LTAs, a lot more than 50% or 60% or 70% goes to LTA.  LTA is a five-year period. Up until 2030, more than 70% of production has it designed to the purchasers. They guaranteed to pay some prepayment also. Considering all of this, it is not like the prior times of cyclicality or down cycles.</p>
+<h3>00:09:43] Given your point that shortage will continue through 2028 and supply will not catch up until 2029, do you expect memory prices to not decline before 2029?</h3>
+<p><b>Expert</b> [00:10:10]: I guess so. Currently, capacity is measured like a 600,000 wafer month input. Up until '27 or even '28, I guess, price still increasing, but not a very huge increase we experienced early this year, [on a] quarterly basis, such as 70% or even 90%. That huge quarterly increase will not happen, but maybe 10% to maximum 20% or 18%. That's for server, HBM or server DRAM, but [for] traditional PCO or mobile phones, maybe less than 5% or 3% or 5% increase at most. There is some difference between applications.</p>
+<p><b>Client</b> [00:11:37]: This is your expectation, judging from the current capacity announcements of Micron, Hynix and Samsung.</p>
+<h3>00:11:37] Given that Micron, Hynix and Samsung have to think about capacity vs price, is there a risk that customers, such as Nvidia, make suppliers expand capacity or pull forward timelines, causing price to decline earlier than expected?</h3>
+<p><b>Expert</b> [00:12:21]: Nvidia has to make a server system and install their GPU and HBM and then they sell those to other hyperscalers, US hyperscalers, Google or Microsoft or others. These hyperscalers have a plan to continuously expand their CAPEX for building a new data centre up until '28, '29 or '30. That's why they want to have LTAs with memory players to secure this memory, HBM or the DRAM or NAND to install in their data centre AI servers.</p>
+<p>If you think about the risk, in terms of the demand, the supply side, supply increasing is now scheduled because new fabs are coming on, but only risk is on the demand side. If demand is not expected increase as we see, my understanding is every year, at least 30% increase, 30% or maximum 40% like that, but if data centre instalment is not realised as expected, maybe in '28, they determined to reduce their CAPEX, data increasing CAPEX, then demand will not the same that the expectation that currently have.</p>
+<p>Personally, I don't think that kind of risk really comes realised because LTAs is what US hyperscalers see the future market because they see that up until 2030, still data centre has to grow install or create much. That's why they want to secure the component memory. I still believe that demand is still healthy, and new demand for AI, physical AI or localised edge AI installed in our mobile or PC, this all stimulate to increase the memory demand. I'm still optimistic about this cycle. Even though the price increasing level is not dramatic like already this year, but still it will increasing. It will not go down.</p>
+<p>Real output may be maximum 20% or 30% because, you understand that HBM, for example, consumes 3x or 4x the space. Real output is smaller. Even though capacity [is] increasing, real bit growth is maximum around 20%. That will also help to this short supply situation continue.</p>
+<h3>00:16:49] How is the pricing of these LTAs [long-term agreements] structured? If Hynix or Samsung have 60% or 70% of their DRAM capacity under LTAs, does it even matter if the DRAM spot price fluctuates by 10%?</h3>
+<p><b>Expert</b> [00:17:32]: Yes. These manufacturers focus on these LTAs. A small quantity will be released to spot market or to mobile phone or PC makers. Currently, the commodity DRAM, the price increasing earlier this year until the summer of or currently, the price increasing was much higher than the HBM price increase because the manufacturers mostly focus on HBM or the LTAs. The spot market portion of the overall memory is very small. It's not big. Many of these profits the manufacturers earn [are] mostly from HBM or LTA. It's a big customer. 60% or 70% of their sales go to LTA. I guess, under 10% or 5% goes to real spot market. Spot market means small retailers or module makers. They mostly purchase in the spot market, but that portion is small. It's not very much.</p>
+<h3>00:19:29] How much downside risk is there for memory prices if LTAs run through 2030? If prices fall faster than expected, would that be reflected in the LTA? Would customers suddenly pay less for these five-year contracts, or do they lock in a price floor?</h3>
+<p><b>Expert</b> [00:20:08]: You just mentioned price floor. This LTA is designed very favourably to the manufacturer suppliers. The pricing scheme is like there is a minimum price. If the market price goes down because we do not expect, but if oversupply situation comes, then price eventually will go down, but in the LTAs, these three companies altogether set some minimum price. Certain level of price will not go down with the selling of these hyperscalers.</p>
+<p>The upper level, the opposite of floor price is a ceiling price. For the ceiling price, SK Hynix does not have a ceiling price. They open the ceiling price. That means that if market prices [are] going up, then this LTA price will adjust [to] that trend. LTA price continues to increase.</p>
+<p>Micron had [a] different schedule. Micron, a previous quarter, they said 26, and it seems now maybe exceeding 30%. Two quarters ago, they said contract with 16 parties. At the time, they said they have a ceiling price. They do not price go above the certain level. Then, next quarter, what they say is that for the new additional LTAs, they do not have a ceiling price. That means that they can continue to increase the price. Micron has a dual approach for the price increasing.</p>
+<p>Samsung, my understanding is they also increases. They do not set the ceiling. They had the minimum price, but for the upward, they opened. When price trend is going up, then the LTA price also adjusted to go up. HBM price is another example. HBM price every year is increasing. People expect that HBM4 price may double next year. I don't know whether it happen that way, but maybe maximum 70%, I guess, increase from current year. In that way, HBM price also increasing.</p>
+<h3>00:23:43] Given that the DRAM market is an oligopoly market, how are Hynix and Samsung able to sign LTAs without a ceiling, and Micron has a ceiling for some customers?</h3>
+<p><b>Expert</b> [00:24:01]: Maybe because Micron's capacity is smaller than Samsung's and Hynix's. That's why they may have some weak negotiation power. I don't know, but initially, with 16 parties, they had set the ceiling price. Then later, their management also mentioned that [for] new LTAs, they will not set the ceiling. They will open the increase. Yes, Micron has different approach, but still, Micron continuously said that the shortages continue '27 or '28. Their CEO openly say that the short supply situation is continuing is not stopped.</p>
+<h3>00:25:07] Given recent news regarding China-based CXMT's [ChangXin Memory Technologies] progress and its plan to add more capacity this year, what do you think of the threat CXMT poses to Samsung and Hynix?</h3>
+<p><b>Expert</b> [00:25:49]: I was asked many times about these Chinese players, [and whether] their competitiveness is becoming a threat to three players or not. I always answer that they are not real threat.</p>
+<p>The reason is because US government banned the advanced technology export to China. These Chinese memory players, including CXMT, YMTC, do not get access to this advanced equipment. One particular one is lithography, ASML's EUV equipment. Without this, they cannot produce advanced-performance DRAM or NAND. Their technology remain in 19nm level. The current three players now produce 11nm or 10nm level or 1b or 1c level.</p>
+<p>They have to rely on DUV, not EUV. DUV need to shoot multi times of multi-patterning. That is a risk of a mismatch of very delicate precise overlay. In lithography, in a-12 inch wafer, they shoot the pattern with EUV light because they cannot use the EUV, very sophisticated and small width of EUV line, they have to multi-pattern, multi-shot multiple times, and that's called multi-patterning. Multi-patterning has a risk of overlay mismatch that can destroy a whole wafer and cells. That's a big hurdle for them. That's why they cannot go into advanced server DRAM.</p>
+<p>I have been saying that's why they're only limited to the PC or mobile level and designed for Chinese companies, but very recently, as you said, within one week or several days ago, they announced that they developed a new technology called 4F2, four-square cell structure. What three players now applying is 6F2, six square technology, but people are very concerned about this because they now says that develop new technology ahead of these three players, but if you go into the details, you find that this four-square cell structure still needs to use EUV. Without EUV, they cannot make it possible for gate or capacity [to be] realised in smaller space. Small space means what they say is that they can now reduce 30% smaller space because they use 4F2 technology, but it becomes more difficult to realise the commercialisation of real cell or capacitor. Still, it requires EUV equipment. I don't think they can develop in R&amp;D stage, but commercialisation is another matter. It's very difficult. It's difficult from current 6F2 technology.</p>
+<p>My position is same. Even though Chinese makers claim that they can develop new technology, it is difficult to make it commercialised. They cannot provide server levels of high-quality performance of DRAM. I can still say that yes, it will take [time] for them to realise commercialisation. Technology-wise, it is not easier, is too complicated technology. Chinese CXMT still is not a real threat.</p>
+<h3>00:31:52] I read that moving from 6F2 to 4F2 allows CXMT to build a better chip without EUV because it is not about node shrinking. What does this advancement mean?</h3>
+<p><b>Expert</b> [00:32:36]: Yes. Without EUV can actually realise in next step, next generation of 4F2 level, is called 3D DRAM. 3D is a real outcome of vertical stack of cell and [capacitor]. Currently, DRAM technology, you have to build gate and capacitor in a space. What they are developing now is when it goes below 10nm level, it is technically or practically very difficult to miniaturise cell or [capacitor]. That's why they structure vertically. The same way that NAND is, they stack up vertically and then increase the capacity, such as a 300-layer or 400-layer. Eventually, what they are developing is 3D DRAM. Vertically, they set up gate, gate means cell and [capacitor] vertically, but this 4F2 technology is not a real 3D DRAM. It only reduces the horizontal space [by] 33%, but still [capacitor] has to build same way vertically. In 3D DRAM, the [capacitor] will be built horizontally.</p>
+<p>In 3D DRAM, capacitor and gate will be built horizontally, shaped horizontally, but in 4F2 technology, they can reduce the gate from horizontal to vertical. They only set the gate to the vertical. That's why they reduce the space 33%, but still top of that, they have to build capacitor. The capacitor current technology, what these three players are applying is they build capacitor vertically. In 4F2 technology, capacitor has to also build vertically, and that requires EUV.</p>
+<h3>00:36:06] In 4F2, the capacitor and the gate should be built vertically. Does CXMT build one of them vertically, rather than both?</h3>
+<p><b>Expert</b> [00:36:38]: Yes, they only set vertically, my understanding is cell or gate. In DRAM, [cell] comprises gate and capacitor, but capacitor, still, they have to set up horizontally. That's very difficult process, and it requires EUV, but some people confuse 4F2 technology is like a 3D DRAM. It's not a 3D DRAM.</p>
+<p>Still, it makes even harder making the good yield because commercialisation is difficult. It's only in R&amp;D level, they can develop this, but when they have a stable yield, they only remain maybe 10% or 20% maximum because it is difficult to realise or make. Still, they use DUV multi-patterning lithography and under those multi-patterning lithography, making high aspect ratio, 50:1 or 80:1, such as that very difficult capacitor, it's not easy to make with DUV multi-patterning this capacitor. Capacitor is difficult to make. Even for 4F2 technology, as you said, only half is vertically realised. It has to be horizontally structured, then, without EUV, they can make these cells, but even in 4F2, EUV is very critical.</p>
+<p><b>Client</b> [00:38:57]: Although they call it 4F2, it doesn't fit the definition used by Micron, Hynix or Samsung.</p>
+<p><b>Expert</b> [00:39:14]: 4F2 is same with Samsung, Hynix and Micron say, but what I mean is the real revolution comes in next stage called 3D DRAM. In 3D DRAM, actually, you don't worry about EUV because in 3D DRAM, even capacitor is built horizontally, not vertically. When 3D DRAM is realised maybe '33 or '32 time period, then (talking over each other).</p>
+<p>2033, that's the timeline for the commercialisation of 3D DRAM. 4F2 is not a real target for these memory players. They can develop, but they do not hurry on this 4F2 because their real target is commercialisation of this 3D DRAM.</p>
+<h3>00:40:38] Investors in public markets are worried that CXMT will add to server DRAM supply and push down prices. Do you think this is unrealistic?</h3>
+<p><b>Expert</b> [00:41:05]: Yes. Maybe CXMT obviously think that they can succeed in 4F2 and then that can increase substantially their DRAM performance, but even they succeed in 4F2, to qualify for high-performance of server DRAM, they have to very good at speed or energy consumption, I mean, efficiency of energy and heat resistance is called heat dissipation. Speed is personally very important. Heat, speed and less energy is consumed, energy efficiency.</p>
+<p>All of these factors require high-performance DRAM and CXMT's current technology didn't prove [to] qualify with this high performance. What they're saying is [that by] applying 4F2, they can go into server DRAM, but it's still questionable if they can succeed in 4F2. Other question is even though they succeed in 4F2, how can we increase the speed? How can we increase the energy efficiency?</p>
+<p>It's not like a legacy DRAM or commodity DRAM, what CXMT has produced and supplied to Chinese mobile phone or PC application companies. Yes, the gap is still big.</p>
+<h3>00:43:11] The US classifies CXMT as a Chinese military affiliate. Given current geopolitics and the US-China AI rivalry, would CXMT's server DRAM ever enter a US data centre, even after a massive technology breakthrough – just from a geopolitical standpoint?</h3>
+<p><b>Expert</b> [00:44:04]: They would lobby the Trump administration. Apple is a good example because Apple could not secure the DRAM in their mobile phone. That's why they lobby Congress or the government to allow them to purchase Chinese CXMT's DRAM, but US Congress didn't approve it. My understanding is that.</p>
+<p>Commercially, if price is increasing very much, for example, Microsoft or others want DRAM very much, but price is increasing substantially, continuously increasing, then they may use CXMT as a negotiation tool to reduce the price.</p>
+<p>Still, as you said, it is a policy, geopolitical tension between China and US government. We still refuse to allow CXMT DRAM installed in US hyperscaler servers, but if they want to use it as a negotiation tool to reduce or negotiate price like what Apple did, then they could do, but so far, US government, Congress do not allow Chinese manufacturers to sell their product to US server manufacturers.</p>
+<h3>00:46:23] Given the severe shortage of HBM [high-bandwidth memory] and DRAM, Nvidia has specced down HBM stacks for next-generation GPUs. What does this mean for NAND, SSDs [solid-state drives] and everything beyond DRAM? Will demand spread fast from DRAM and HBM to other types of memory?</h3>
+<p><b>Expert</b> [00:47:38]: That's a very good question. This is called dispatching. As you explained, Nvidia is considering applying eight height, instead of 12- or 16-high in building HBM. If it is built in eight high, it is easier for manufacturers. They can reduce the threshold. At the same time, manufacturers produce more HBM, then Nvidia eventually can sell their Rubin server system, higher number. They can sell more because they can get access to the HBM component. That's mostly focused on HBM.</p>
+<p>For DRAM, DRAM is called CXL. CXL is a module. There is concern that DRAM in a server system, DRAM installed inside, but not 100% of DRAM is used. Some 10% is not used. It's called stranded memory. Commonly, they can use so-called CXL. It's a pooling of memory in one area. All different maybe 16 other servers can use this pool of servers altogether, then they can more efficiently use DRAM, but they do not say reduce the capacity of server. What they said before was for SOCAMM2. They reduced the capacity. Original capacity was like 125GB or 150GB, then Micron in June timeframe. Nvidia says that they reduced the spec to like 90GB or 80GB.</p>
+<p>Because there's a shortage of LPDDR. LPDDR is packaged in SOCAMM2. That was the first approach of Nvidia and then this HBM reducing 12 to eight-high, next approach of spec, but they do not say much about NAND because NAND is mostly used in AI inferencing, not AI training. Periodically, they have to vastly install in DRAM and HBM. Token or what do you say? But in AI inference, they do not need this fast data coming from DRAM or HBM. Mostly, data comes from NAND enterprise SSD.</p>
+<p>But NAND or enterprise SSD, compared to HBM or DRAM, is about 10,000x slow, and its bandwidth is smaller than HBM or even a DRAM module, but inference doesn't require very much high speed or very big bandwidth. Still, enterprise SSD or NAND do not say despecting, reducing the capacity. More, it increases companies developing higher capacity. Currently, Solidigm, for example, produce 125GB of enterprise SSD, and then they target 250GB.</p>
+<h3>00:53:00] To what extent will SSD demand continue to grow in AI inference and NAND, because it has traditionally been slow, at least for enterprise SSDs? Will it grow faster than before? Could you share any interesting numbers or an outlook?</h3>
+<p><b>Expert</b> [00:53:28]: Once AI training is done, resulted data has to be stored, and training is continuously happen. The data in terms of text, image or for example, YouTube, some movement of big data required of this kind of data.</p>
+<p>In inference stage, data has to be stored and the data is continuously increasing. That's why NAND is good to permanently store the data. That's why NAND is increasingly popularly used ever more. I do not know how much it will increase. I do not know the reference number, but because now AI inference is becoming more important, the data has to be fetched or draw from storage devices, the storage devices, enterprise SSD and it will be answered from many questions on Gemini or ChatGPT when people ask, they have to answer that comes from inference stage, not from training.</p>
+<p>Once training is done, the data is stored in storage device, storage device in enterprise SSD, not in hard disk drive. Hard disk drive is too slow. They use now enterprise SSD. They fetch data from and used in inference stage. More of AI use is done in AI inference. In that perspective, AI enterprise NAND SSD is increasingly important. Demand is still going on. It's increasing.</p>
+<p>Some DRAM may be replaced by new technologies such as HBF. I think you have heard of HBF. HBF may kill some DRAM area, but not SSD. HBF is the same type of NAND type, but HBF is a high bandwidth. Higher bandwidth and speed is faster than enterprise SSD. It can place very near to GPU, same with HBM, but it will not kill the AI training HBM. It will support fastly the compute with GPU, but it will not replace enterprise SSD. Enterprise is remaining, the demand will continuously growing.</p>
+<h3>00:57:22] Given that AI inference is driving NAND demand in SSDs, what is your view on SK Hynix potentially pursuing an IPO for Solidigm?</h3>
+<p><b>Expert</b> [00:57:47]: That matches with the growing demand. SK Hynix in Korea has its own NAND operation. Solidigm is purchased from Intel and it's a different entity. It's about 100% subsidiary. Now Solidigm has fab in China in Dalian because Intel has its fab in China and SK Hynix purchased that operation and the whole company of NAND division.</p>
+<p>The problem for Solidigm is that because of this US export control, they cannot easily expand their capacity in China, even though it is not a Chinese company. What they are thinking is that with this IPO, with that money, they can build new fab within US. Within US, they can easily expand capacity or apply high-technology equipment. Solidigm Chinese fab has some limitation expanding fab or applying higher-performance equipment.</p>
+<p>Firstly, IPO, the design is that they need to further invest in CAPEX, but for SK Hynix, they want to focus on their own DRAM fab. Using IPO, they want money from [the] US financial market and exclusively invest in NAND. Possibly in US fab, NAND fab building US fab. That's the IPO scheme, but also have a NAND operation in Korea too.</p>
+<h3>01:00:23] What is SRAM [static random access memory]? How relevant is it in a data centre? Who produces it?</h3>
+<p><b>Expert</b> [01:00:34]: SRAM is not like a DRAM. SRAM has pros and cons. Pros is very fast. SRAM is used as a cache. Cache means very fast. When you turn on the computer, very fast, they have to run the system software. SRAM is used in cache. It's a memory, same memory with DRAM, but it's very fast, but their disadvantage is their capacity is very small.</p>
+<p>Even though some companies now developing their design, replacing HBM. They want to develop some kind of SRAM types of device, but the problem is that, solely using SRAM, they cannot handle large quantities. For example, HBM can handle large quantities for AI training, but SRAM cannot handle large quantities of data, because their capacity is very small. If add many SRAMs, they will only capture larger space. It is not economical. What they can do is that using SRAM, also at the same time, install DRAM or even HBM. That can make sense.</p>
+<p><b>Client</b> [01:02:22]: Who makes SRAM?</p>
+<p><b>Expert</b> [01:02:22]: SK Hynix do not make SRAM. I doubt that Micron, some Taiwanese company make SRAM or even some US fabless companies, design companies, design SRAM, but Taiwanese foundry companies produce that. Some US design companies do not produce. Fab is located in Taiwan, the foundry companies [are] such as TSMC or some other company.</p>
+<p><b>Client</b> [01:03:11]: Would these be companies such as Marvell, Renesas and Infineon?</p>
+<p><b>Expert</b> [01:03:17]: Yes.</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

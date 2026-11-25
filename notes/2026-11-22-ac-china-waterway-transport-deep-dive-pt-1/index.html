@@ -1,0 +1,212 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.22 | AC | Transport | China Waterway Transport Deep Dive Pt.1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.22 | AC | Transport | China Waterway Transport Deep Dive Pt.1</h1>
+<p class="orig">原标题：水运行业深度分析（上）—水路运输量、港口吞吐量等</p>
+<p class="tags">#transport #china</p>
+<p class="meta">AceCamp · 2026-11-22 22:56 · article 70569520</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>2026年前三季度全国营业性水路货运量63.9亿吨、同比增2.2%，港口货物吞吐量136.4亿吨、同比增0.7%，其中外贸增2.9%、内贸降0.2%，集装箱吞吐量2.8亿标准箱、增4.5%。</li>
+<li>2025年全年水路货运量101.25亿吨、增3.2%，其中内河50.20亿吨增1.3%、沿海40.04亿吨增4.1%、远洋11.01亿吨增8.9%，港口吞吐量183.38亿吨、集装箱3.54亿标准箱。</li>
+<li>2025年末内河航道通航里程12.87万公里，三级及以上高等级航道1.64万公里，内河亿吨大港25个；船舶数量减少1.01万艘至10.01万艘，集装箱箱位增加42.17万标准箱至365.37万。</li>
+<li>2026年运价全面上行：三季度CCFI、SCFI均值约1854点和3333点，同比分别涨约54%和125%；11月18日BDI报2914点、同比涨约七成，9月中东-中国VLCC运价一度超80万美元/天。</li>
+<li>2026年前三季度水运固定资产投资1571亿元，统计局口径水上运输业投资同比增13.5%，在基建投资整体下降4.2%背景下逆势增长。</li>
+<li>三峡水运新通道6月开工，建成后三峡枢纽双向通过能力将达3.36亿吨，平陆运河主体工程已基本建成并全线通水，全国累计建成自动化码头60座。</li>
+<li>报告认为水运核心观测变量包括外贸与内需、集运散货油运运价、航道港口能级、船舶运力与绿色转型，以及内河、沿海、远洋的区域分化。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>水运行业是以船舶为运输工具、依托水域、航道与港口完成客货空间位移的基础性、先导性行业，是综合交通运输体系中最经济、最绿色、最具规模效益的运输方式之一。水运行业由水路运输（内河运输、沿海运输、远洋运输）与水运基础设施（航道、港口、船舶运力）两大板块构成，按货种分为集装箱、干散货、油品、液体化工、滚装、液化天然气（LNG）等运输，按航线分为远洋、近洋、沿海与内河运输。从行业属性看，水运具有运量大、成本低、占地少、能耗低、污染小的显著比较优势，是大宗商品、能源与外贸货物运输的主力，也是沿江沿海产业带与内河经济发展的关键支撑。行业呈现"强周期、重资产、贸易与政策敏感"特征：航运运价随全球供需、地缘政治、大宗商品贸易大幅波动，盈利弹性大；港口与航道属基础设施，现金流稳定、区域垄断性强、资产沉淀重。水运行业是宏观经济的"晴雨表"，其景气度与全球贸易、中国外贸进出口、内河产业布局高度相关。据交通运输部《2026年前三季度交通运输经济运行情况》（2026年10月26日发布），2026年前三季度全国完成营业性水路货运量63.9亿吨、同比增长2.2%；全国港口完成货物吞吐量136.4亿吨、同比增长0.7%，其中9月同比增长2.6%、内贸吞吐量同比下降0.2%、外贸吞吐量同比增长2.9%，完成集装箱吞吐量2.8亿标准箱、同比增长4.5%；完成水路客运量2.0亿人次、同比下降1.2%；完成水运固定资产投资1571亿元，国家统计局口径下2026年1—9月水上运输业固定资产投资同比增长13.5%。以2025年全年为基数，全国完成营业性水路货运量101.25亿吨、同比增长3.2%，货物周转量149944亿吨公里、增长6.0%，其中内河货运量50.20亿吨、增长1.3%，沿海40.04亿吨、增长4.1%，远洋11 .01亿吨、增长8.9%；完成港口货物吞吐量183.38亿吨、增长4.2%，集装箱吞吐量3.54亿标准箱、增长6.8%；年末内河航道通航里程12.87万公里、三级及以上高等级航道1.64万公里、内河亿吨大港25个；全国拥有水上运输船舶10. 01万艘、净载重量3.00亿吨、集装箱箱位365.37万标准箱；全年完成水路固定资产投资2145亿元。从金融机构投研视角，水运行业核心观测逻辑包括：第一，宏观贸易与内需是根本变量，外贸进出口、大宗商品贸易、内河产业布局决定水路运量与运价；第二，运价是航运盈利核心变量，集运运价（CCFI/SCFI）、干散货BDI、油轮与液体化工运价直接决定航运企业收入；第三，航道与港口是水运基础设施核心，内河航道等级、港口吞吐量与费率决定水运网络能级；第四，船舶运力与绿色转型是中长期变量，船队规模、船型结构与LNG/甲醇等绿色船舶影响成本与合规；第五，区域分化明显，内河（长江、珠江、京杭运河）与沿海、远洋景气逻辑不同。本报告依托交通运输部、国家统计局、上海航运交易所、中国海关总署、上市公司公开披露等官方数据与权威媒体报道，系统梳理水运行业的定义与分类、全产业链、政策体系、行业运行基本面、竞争格局、重点上市公司基本面、行业核心风险、中长期发展方向。</p>
+<p><b>一、水运行业基础定义与分类</b></p>
+<p><b>1.1 行业定义与官方边界</b></p>
+<p>水运行业由水路运输与水运基础设施两大板块构成：</p>
+<ol><li><b>水路运输</b>：指利用船舶在水域（海洋、江河、湖泊、运河）运送旅客和货物的运输方式，按航行区域分为内河运输（长江、珠江水系、京杭运河、淮河、黑龙江水系等）、沿海运输、远洋运输（国际航线）。在国民经济行业分类中归属"水上运输业"，是交</li></ol>
+<p>通运输业的重要组成。</p>
+<ol><li><b>水运基础设施</b>：包括航道（内河航道、沿海航道）、港口（码头泊位、装卸、仓储、集疏运）、船舶（运力供给）以及助航、通信、安全监管、搜救等配套设施。港口归属"水上运输辅助活动"，航道与港口是水运网络的骨架与枢纽。</li><li>水运行业是综合交通运输体系的重要组成部分，具有运能大、成本低、能耗少、污染小、占地少的特点，尤其适合大宗散货、集装箱与长距离、大批量运输，是落实"运输结构调整"和绿色低碳发展的重要载体。</li></ol>
+<p><b>1.2 水路运输分类</b></p>
+<p>按航行区域与货种，水路运输主要分为：</p>
+<ol><li><b>内河运输</b>：依托长江、珠江、京杭运河、淮河等内河航道，运输集装箱、干散货、液体化工等，是沿江沿海产业带与大宗物资运输的重要方式，江海联运、江海直达、干支联动是发展方向。内河运输单位成本低、能耗少，是大宗物资"公转水"的主要承接方</li></ol>
+<p>式。</p>
+<ol><li><b>沿海运输</b>：沿我国海岸线的南北运输，以煤炭、矿石、粮食、集装箱、液体化工为主，服务南北大宗商品与能源运输，是"北煤南运""北粮南运"的主力。</li><li><b>远洋运输</b>：国际航线运输，分集装箱班轮、干散货、油轮、LNG、滚装等，运价随全球贸易与地缘波动，是外贸运输主力，直接受全球贸易格局影响。</li><li><b>液体化工与危化品运输</b>：专用化学品船、液化品船运输，安全与环保壁垒高，服务石化产业链，运价相对稳定、专业性强。</li></ol>
+<p><b>1.3 水运基础设施类型</b></p>
+<p>按功能，水运基础设施主要分为：</p>
+<ol><li><b>内河航道</b>：按等级分为一至七级航道及等外航道，等级越高通航能力越强；三级及以上高等级航道是内河运输网络主干。截至2025年底，全国三级及以上高等级航道通航里程达1.64万公里，内河亿吨大港达25个。</li><li><b>港口</b>：按货种分为集装箱港、干散货港、油品/液体化工港、综合港；按区域分为沿海港口与内河港口；按功能分为枢纽港、支线港、喂给港。</li><li><b>船舶运力</b>：按船型分为集装箱船、干散货船、油轮、化学品船、LNG船、滚装船等，运力规模与船型结构决定运输能力与成本。</li></ol>
+<p><b>二、水运行业全产业链解析</b></p>
+<p><b>2.1 上游：船舶制造、航道建设与装备</b></p>
+<p>水运行业产业链上游主要包括：</p>
+<ol><li><b>船舶制造与运力供给</b>：船舶建造周期与船队运力规模决定水运供需格局；我国是全球造船大国，为水运提供运力支撑。新造船订单、船舶交付节奏直接影响航运长期供给与运价周期。</li><li><b>航道与港口基建</b>：航道整治、疏浚、船闸建设及港口码头、装卸设备、集疏运体系建设，决定水运网络能力与港口吞吐效率；水路固定资产投资直接形成行业基础设施，2025年水路固定资产投资2145亿元。</li><li><b>船用燃料与绿色装备</b>：船用燃料油、LNG、甲醇、氨等绿色燃料及岸电、节能设备，影响航运运营成本与环保合规，是航运绿色转型的上游支撑。</li></ol>
+<p><b>2.2 中游：水路运输与水运运营（核心环节）</b></p>
+<p>中游为水运核心运营环节：</p>
+<ol><li><b>航运企业</b>：班轮公司、干散货船东、油轮/化学品船公司、LNG船队等，通过自有或租赁运力承接运输，获取运费收入；运力规模、船型结构、期租与即期比例决定盈利稳定性。</li><li><b>港口经营企业</b>：码头运营商通过装卸、堆存、仓储、港口物流获取收入，部分向多港口投资运营、综合物流、贸易延伸；集装箱码头费率、单箱收入、吞吐量是核心指标。</li><li><b>航道与枢纽运营</b>：航道维护、船闸运行、江海联运枢纽组织、港口集疏运调度，保障水运网络畅通与周转效率。</li></ol>
+<p><b>2.3 下游：货主、贸易商与综合物流</b></p>
+<p>下游为货主与综合物流服务商：</p>
+<ol><li><b>外贸货主</b>：进出口企业、制造企业，其外贸订单决定集装箱与散货需求；</li><li><b>大宗商品贸易商与实体企业</b>：铁矿石、煤炭、粮食、原油、化工品等贸易商与钢铁、电力、石化企业，决定干散货、油轮与液体化工需求；</li><li><b>综合物流与货代</b>：货代、供应链企业连接货主与承运人，提供订舱、报关、仓储、配送等，是水运下游的组织者。</li></ol>
+<p>产业链传导逻辑：全球贸易、大宗商品与内需到水路运量与运价再到航运与港口企业收入盈利。运价受运力供给、地缘、燃料成本影响；港口吞吐量受外贸、腹地经济、产能与集疏运条件影响。水运的比较优势（成本、能耗、绿色）通过"运输结构调整"政策持续强化，形成产业链的长期需求支撑。</p>
+<p><b>三、行业政策体系</b></p>
+<p>水运行业发展受国家交通、发改、水利、环保、海关等多部门政策约束，核心国家级政策与官方部署如下：</p>
+<ol><li><b>《交通强国建设纲要》（中共中央、国务院印发）</b>：提出建设世界一流港口、完善内河航运网络、推进运输结构调整，将水运作为综合交通运输体系重要组成。</li><li><b>《国家综合立体交通网规划纲要》</b>：规划内河航道与沿海港口布局，建设长江、珠江等内河航运体系与世界级港口群，明确水运在综合立体交通网中的骨架地位。</li><li>《中华人民共和国国民经济和社会发展第十五个五年规划纲要》（2026年印发）：以专章安排"完善现代化综合交通运输体系"，并以专栏形式提出国家综合立体交通网建设6项重大工程，明确加强内河水运体系联通、完善国家高等级航道网、优化世界级港</li></ol>
+<p>口群功能布局，推动国家综合立体交通网主骨架建成率提升至95%。</p>
+<ol><li>“十五五”水运发展部署（交通运输部）：明确“十五五”时期水运进入打造世界一流港口跃升期、强化内河水运体系联通攻坚期、建设国际海运安全发展体系关键期，按“一网四化”（一体化融合、安全化提升、数智化升级、绿色化转型）构建现代化水运体系</li></ol>
+<p>，推进三峡水运新通道、平陆运河、小洋山北集装箱码头等重大工程，建设“亿吨级”“千万标箱级”数智化港区。</p>
+<ol><li><b>《关于建设世界一流港口的指导意见》（交通运输部等部门）</b>：提出到2035年建成一批世界一流港口，明确港口枢纽化、智慧化、绿色化发展路径。</li><li><b>《推进多式联运发展优化调整运输结构工作方案》及"公转水"相关政策</b>：推动大宗货物中长距离运输向水路、铁路转移，提升水运在大宗运输中的比重。</li><li><b>国际航运环保规则</b>：国际海事组织（IMO）硫排放、碳减排、压载水管理等法规，推动水运绿色低碳转型与船舶更新。</li></ol>
+<p>地方层面，长江沿线省市（湖北、江西、安徽、江苏、重庆、四川等）、珠江水系（广东、广西）、京杭运河沿线（江苏、山东、浙江）推进内河航运高质量发展，出台航道升级、江海联运、港口整合等政策。政策主线总结：水运行业聚焦内河航运高质量发展、运输结构调整、世界一流港口建设、江海联运与智慧绿色转型，政策导向在提升水运网络能级、发挥水运比较优势与绿色低碳水平。</p>
+<p><b>四、行业运行基本面</b></p>
+<p><b>4.1 水路运输量</b></p>
+<p>据交通运输部《2026年前三季度交通运输经济运行情况》，2026年前三季度全国完成营业性水路货运量63.9亿吨、同比增长2.2%，增速较2025年全年（3.2%）小幅回落，9月货运主要指标呈积极回升态势。以2025年全年为基数，完成营业性水路货运量101.25亿吨、增长3.2%，货物周转量149944亿吨公里、增长6.0%；分区域看，内河货运量50.20亿吨、增长1.3%（周转量22188亿吨公里、增长1.6%），沿海货运量40.04亿吨、增长4.1%（42476亿吨公里、增长1.5%），远洋货运量11.01亿吨、增长8.9%（85280亿吨公里、增长9.7%）。远洋货运量与周转量增速领先，反映外贸运输较快增长；内河货运量占水路货运量的近半，是水运的基础盘但增速最低，2026年前三季度珠江水系内河货运量6.17亿吨、同比下降0.6%，显示内河运输仍受航道条件、产业布局与阶段性因素影响。</p>
+<p>客运方面，2026年前三季度完成营业性水路客运量2.0亿人次、同比下降1.2%，降幅较2025年全年（下降0.1%）有所扩大；2025年全年完成客运量2.60亿人次、旅客周转量56.62亿人公里、增长3.6%。客运量小幅下降、周转量增长，反映水路客运向中长途与邮轮、观光休闲等结构转变。</p>
+<p><b>4.2 水运基础设施与船舶运力</b></p>
+<p>据交通运输部统计公报，2025年末全国内河航道通航里程12.87万公里、与上年末基本持平，七级及以上等级航道通航里程6.86万公里、比上年末增加183公里；截至2025年底三级及以上高等级航道通航里程达1.64万公里，内河亿吨大港达25个，内河港口万吨级及以上码头泊位503个。2026年基础设施扩能继续推进：6月8日三峡水运新通道开工，为“十五五”期首个开工的国家重大标志性工程，建成后三峡枢纽双向通过能力将达3.36亿吨、葛洲坝枢纽达3.6亿吨，可通航1万吨级船舶；平陆运河主体工程已基本建成并实现全线通水，正按计划推进船闸有水调试；2025年新增高等级航道约900公里，全国累计建成自动化码头60座。2026年年度航道里程与泊位数据尚未发布，暂以2025年末数据为最新年度口径。</p>
+<p>港口方面，年末全国港口生产用码头泊位22346个、比上年末增加127个，其中沿海5806个、内河16540个；全国港口万吨级及以上码头泊位3061个、增加90个，其中沿海2558个、内河503个。内河港口泊位数量占比高，但万吨级泊位以沿海为主，体现沿海港口的深水化与大型化优势。</p>
+<p>船舶运力方面，年末全国拥有水上运输船舶10.01万艘、比上年末减少1.01万艘，净载重量3.00亿吨、减少0.12亿吨，载客量77.82万客位、减少0.49万客位，集装箱箱位365.37万标准箱、增加42.17万标准箱。船舶数量与净载重量略降、集装箱箱位增长，反映运力结构优化、老旧船舶淘汰与集装箱化率提升的趋势。</p>
+<p><b>4.3 港口吞吐量、运价与投资</b></p>
+<p>据交通运输部统计，2026年前三季度全国港口完成货物吞吐量136.4亿吨、同比增长0.7%，其中9月同比增长2.6%；分结构看，内贸吞吐量同比下降0.2%、外贸吞吐量同比增长2.9%；完成集装箱吞吐量2.8亿标准箱、同比增长4.5%。与20 25年全年基数相比（港口货物吞吐量183.38亿吨、增长4.2%，其中外贸56.53亿吨、增长4.7%，内贸126.86亿吨、增长4.0%，沿海116.34亿吨、增长3.7%，内河67.04亿吨、增长5.1%；集装箱3.54亿标准箱、增长6 .8%，其中外贸集装箱2.15亿标准箱、增长9.8%；旅客吞吐量7948.95万人次、增长0.7%），2026年港口吞吐量增速明显放缓，外贸集装箱仍是主要增量，内贸散货吞吐量转负。</p>
+<p>运价方面，据上海航运交易所数据，2026年集运、油运、干散货运价同步上行且结构分化明显。集运：2026年三季度中国出口集装箱综合运价指数（CCFI）、上海出口集装箱综合运价指数（SCFI）均值分别约1854点、3333点，同比分别约上涨54 %、125%；9月CCFI月均值1887.59点、SCFI月均值3657.79点，10月分别为1898.28点、3678.10点，11月13日CCFI报1919.27点，维持高位。油运：11月18日中国进口原油运价指数（CTFI）报1273 6.95点，三季度VLCC-TCE大幅冲高，9月中东—中国航线运价一度升至80万美元/天以上。干散货：11月18日波罗的海干散货指数（BDI）报2914点、同比约上涨七成，11月13日中国沿海散货运价指数（CBFI）报1155.65点，11月18日中国沿海煤炭运价指数（CBCFI）报974.18点。对比2025年：CCFI年均值约1201.93点、较2024年下降约22.49%，SCFI年均值约1580.37点，2025年12月CBFI报收1018.75点、月平均值1059. 66点。官方口径下，2026年运价已由2025年的高位回落转为全面上行，油运弹性最强，集运现货强于长协。</p>
+<p>固定资产投资方面，2026年前三季度完成交通固定资产投资2.4万亿元，其中水运完成投资1571亿元；国家统计局口径下，2026年1—9月水上运输业固定资产投资同比增长13.5%，在基础设施投资整体下降4.2%的背景下逆势增长。对比2025年全年：水路固定资产投资2145亿元、比上年下降2.9%，其中内河建设1105亿元、下降7.2%，沿海建设992亿元、增长1.1%。2026年水运投资由降转升，与三峡水运新通道、平陆运河等重大项目开工形成呼应，投资结构由补短板转向重大通道与枢纽扩能。</p>
+<p>金融机构跟踪水运行业景气度，应以水路货运量/周转量、内河航道里程、船舶运力、港口吞吐量、集运与散货运价指数、外贸进出口、水路固定资产投资等实物量与价格信号为准，而非依赖无官方来源的运量运价预测。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

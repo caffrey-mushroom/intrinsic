@@ -1,0 +1,225 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.23 | AC | Power | Server PSU: Google V8 Delay &amp; HVDC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.23 | AC | Power | Server PSU: Google V8 Delay &amp; HVDC</h1>
+<p class="orig">原标题：服务器电源产业调研：谷歌项目交付、PSU价格与供需、HVDC进展-聚焦Google_台达_光宝_麦格米特</p>
+<p class="tags">#power #datacenter #china</p>
+<p class="meta">AceCamp · 2026-11-23 10:44 · article 70569531</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>谷歌V8电源项目整体延后一到两个月，原定2026年10月初交付尚未开始，全年实际交付量预计仅一万多颗。</li>
+<li>延期产品为由六个5000瓦PSU组成的30kW Power Shelf，原因是客户芯片放量推迟；V7存量订单仍由台达、光宝供应。</li>
+<li>公司早期按5万颗交付目标储备原材料，首批约1万颗PSU物料已全部就绪待上线。</li>
+<li>上游IC、功率器件、电容和电源PCB价格开始松动，英飞凌、ST主开关管交期从32周以上缩短至20周以内，预计2027年上半年体现在成本上。</li>
+<li>预计BOM原材料成本有3%-5%下调空间，2027年服务器电源价格可能下降；5000瓦电源当前约1元/瓦，长期底线约0.4元/瓦，需三到四年达到。</li>
+<li>国内市场受“卡”限制，2026年下半年互联网算力投入放缓、电源拉货旺季不旺；阿里每年电源采购约12-13亿元，公司份额接近三成。</li>
+<li>字节2026年采购规模与约16亿元预期一致，2027年增速最高约30%；腾讯2027年增幅约20%，超节点需求预计增长一到两倍。</li>
+<li>公司HVDC柜外电源取得突破，正负400V（等效800V）产品单柜1-1.2MW可扩展至3.6MW，预计2027年下半年对谷歌小批量交付。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>1、谷歌V8项目交付节奏及客户需求变化；2、服务器电源元器件供应、成本与价格趋势；3、国内算力电源需求、客户结构与竞争格局；4、越南产能、海外客户拓展及HVDC产品进展。</p>
+<p><b>以下是专家观点：</b></p>
+<p><b>关于公司在谷歌的电源业务，2026年第四季度（10月、11月、12月）的交付进展和出货量情况如何？</b></p>
+<p>谷歌项目的整体计划有所延后，大约延期了一到两个月。原计划于2026年10月初开始交付，但目前尚未开始。受此影响，2026年全年的交付量预测也进行了调整。由于客户端原因导致整个计划延期，预计今年的实际交付量将在一万多颗的水平。</p>
+<p><b>此次延期交付的产品具体是什么型号？延期的具体原因是什么？</b></p>
+<p>延期交付的产品是为谷歌定制的电源模组，具体是由六个5,000瓦PSU组成的30千瓦Power Shelf。延期的主要原因是客户端的芯片（卡）放量节奏推迟，特别是V8的整个系统方案向后顺延。公司主要供应的是V8项目，而V7的存量订单目前由台达和光宝等原有供应商满足，公司在V7上的机会较少。</p>
+<p><b>谷歌V8项目的延期是否影响了所有供应商，包括台达等同行？V7和V8项目在电源模组和供应商竞争格局上有何不同？</b></p>
+<p>V7和V8项目使用的是同一款电源模组。台达作为V7项目的主力供应商，其V7存量订单的交付并未延期。行业原则上不会轻易替换存量订单的供应商，除非出现原有供应体系无法满足的大规模放量情况。目前由于V8需求延后，台系厂商的交付能力足以匹配现有需求。而V8项目属于新需求，公司与其他供应商处于平等的竞争地位，可以参与其中。因此，V8项目的整体延期影响了包括公司在内的V8相关供应商。</p>
+<p><b>公司在2026年9月末的成品备货情况，是否与谷歌V8项目有关？</b></p>
+<p>截至2026年9月末的备货中，针对谷歌项目公司只储备了原材料，并未准备成品。公司早期曾按照5万颗的交付目标储备了部分原材料，如功率器件、模拟芯片和PDB等。但鉴于项目延期和临近年底，今年的实际交付量将远低于此前的备货预期。</p>
+<p><b>服务器电源产品的价格明年（2027年）是否会下降？其背后的驱动因素是什么？</b></p>
+<p>预计明年（2027年）价格有下降的可能。主要原因是上游原材料端的价格已经开始松动，体现在元器件的交付周期缩短且价格具备了议价空间。成本端的压力缓解后，考虑到与友商的竞争关系，若有厂商率先降价，公司必然会跟进，从而引发价格竞争。</p>
+<p><b>能否具体说明哪些上游元器件的价格已经开始松动？</b></p>
+<p>以5,000瓦服务器电源为例，价格松动的元器件主要包括以下几类：</p>
+<p>第一，IC层面，除了ST生产的两个主要控制器外，其他如运算放大器（运放）、存储器、驱动器等品类的交付已无压力，价格开始松动。其中，部分存储器和驱动器已采用纳芯微、复旦微等国产品牌。</p>
+<p>第二，功率器件层面，尽管作为PFC和LLC主要开关管的英飞凌和ST产品价格尚未下降，但其交付周期已从之前的32周以上缩短至20周以内。而用量较大的同步整流管，已大量采用东微、新洁能等国产品牌，其供应情况良好并存在一定的议价空间。</p>
+<p>第三，通用器件层面，国产江海等品牌的低压电解电容已具备替代能力，且价格有议价空间。</p>
+<p>第四，定制器件层面，如电源PCB，由于早期交付压力，公司导入了金顺、奥士康等供应商，目前这些厂商也提供了议价空间，价格不像之前那样坚挺。</p>
+<p>这些关键元器件价格的松动预计将在明年（2027年）上半年体现在成本上。今年（2026年）第四季度的利润表现依然会比较困难，因为目前使用的仍是第二、三季度采购的高价物料。</p>
+<p><b>基于当前成本端的变动，明年（2027年）产品价格预计会有多大的下降空间？</b></p>
+<p>价格的下降幅度主要基于成本核算。在制造成本及管理费用等保持稳定的前提下，原材料成本是主要变量。根据整个BOM清单分析，预计原材料成本有3%至5%的下调空间。</p>
+<p><b>5,000瓦电源产品是否已进入成熟期并会持续面临价格竞争？</b></p>
+<p>是的，5,000瓦电源产品已相对成熟，未来会继续面临价格竞争。根据以往新产品价格周期的经验判断，在这一轮物料涨价周期进入下行通道后，5,000瓦电源的长期价格底线预计在每瓦0.4元左右。当前价格约为每瓦1元，达到这个价格底线可能需要三到四年的时间。</p>
+<p><b>公司对于2027年海外市场的拓展有何规划？是否仍以谷歌为核心，以及与其他北美云厂商、芯片厂商和ODM厂商的合作进展如何？</b></p>
+<p>公司2027年的海外市场策略是以谷歌作为支撑点，利用已建立的合作关系和背书效应，以点带面地进行横向拓展。拓展目标主要包括北美的其他CSP云厂商，如Meta和亚马逊；芯片厂商，其中AMD是目前的重点；以及一些网络通讯厂商。</p>
+<p>与AMD的合作目前仍处于商务洽谈的早期阶段，尚未形成产品落地。相较之下，与亚马逊和Meta等云厂商的合作进展更为可靠。一方面，这些厂商会采购谷歌的TPU卡，公司可以借此机会将电源产品一同销售给他们；另一方面，公司也在配合他们进行自研芯片方案的开发。不过，自研方案存在不确定性，例如，公司曾与亚马逊就其Trainium 3相关方案进行过合作洽谈，但该合作项目未形成规模化订单，导入最终未能成型。因此，当前的策略是先通过谷歌的TPU卡进入这些云厂商，后续再寻求切入其自研产品线。</p>
+<p>此外，公司也在拓展服务器厂商，如超微电脑、惠普和戴尔。这些厂商主要面向英伟达公版方案的市场。由于英伟达会对外公开授权部分公版设计，这些服务器厂商可以基于此开发自有品牌产品。公司有机会在这一细分市场获得部分份额，但预计短期内体量有限，这些厂商实现大规模放量的可能性较小。</p>
+<p><b>2027年国内市场的整体情况如何？面临哪些主要挑战？</b></p>
+<p>国内市场目前受“卡”的因素影响较大，主要体现在两个方面。第一，由于政策原因，部分受出口限制的英伟达先进算力卡无法通过正常合规渠道采购。第二，国产卡的导入进展不如预期。</p>
+<p>受限于“卡”的问题，今年（2026年）下半年国内互联网公司的算力中心投入已出现放缓迹象，具体表现为电源产品的拉货情况呈现“旺季不旺”的态势。尽管如此，预计随着国产卡切换进程的逐步完成，2027年国产替代将取得显著进步，各家厂商的市场份额有望得到提升。</p>
+<p><b>国产卡导入进展低于预期的具体原因是什么？H公司昇腾卡的市场情况又是怎样的？</b></p>
+<p>国产卡导入不及预期的原因有两方面。首先，国产卡的良率普遍偏低。其次，国产产能非常有限，这进一步加剧了供应紧张的局面。寒武纪的产品也面临类似的产能限制，其产出量甚至不及H公司昇腾。</p>
+<p>关于H公司昇腾，互联网厂商目前主要采购其单卡或加速卡模组，很少购买整柜服务器。整柜的昇腾服务器，如超级节点，其采购方主要是运营商和国央企等信创领域的客户。</p>
+<p><b>国内AI服务器电源市场的竞争格局在2027年将如何演变？</b></p>
+<p>国内市场的竞争正日趋白热化。以阿里为例，其每年的电源采购需求总额大约在12至13亿元。目前市场的主要参与者是台达、光宝、公司以及长城这四家。公司的市场份额已接近三成。然而，预计未来竞争将更加激烈，一些新的竞争者，如高斯宝、麦格米特以及杭州的博科福特等，正蠢蠢欲动，预计将在明后年陆续进入市场，参与到互联网厂商的供应链竞争中。</p>
+<p><b>字节跳动2026年在AI服务器电源上的采购规模是否与年初16亿元的预期一致？其明年的增长预期如何？</b></p>
+<p>字节跳动是2026年互联网行业中采购规模最大、增速最快的公司，其采购规模与预期基本一致。这主要因为字节跳动未使用自研芯片，且其GPU卡来源渠道广泛。展望2027年，预计其增长将面临挑战，增速最高预计在30%左右。</p>
+<p><b>腾讯在AI服务器电源方面的采购规模、2027年增长预期以及采购结构将发生何种变化？</b></p>
+<p>腾讯在AI服务器电源方面的年采购规模在几家大型互联网公司中体量最小。其投资和采购策略相对保守，预计2027年的增幅在20%左右。从结构上看，一个显著的变化是超节点的需求将持续翻倍增长，预计至少增长一到两倍。这种增长将抵消传统八卡服务器采购量的下降，因为超节点和八卡服务器之间存在替代关系，超节点部署的增加会相应减少对八卡服务器的需求。</p>
+<p><b>市场对2027年AI服务器电源需求的整体展望为何，与2026年上半年的预期相比有何变化？</b></p>
+<p>目前对2027年市场的整体展望偏向悲观。2026年上半年，在禁令刚出台时，市场曾对国产替代抱有非常乐观的预期。但后续发展表明，国产替代的进程并未如想象中顺利，主要面临能力和产能两大瓶颈问题，因此市场预期已有所下调。</p>
+<p><b>在PCB供应商方面，公司是否与中富电路、威尔高等企业合作？这些合作的具体情况如何？</b></p>
+<p>公司会使用中富电路的PCB，同时威尔高也是公司的供应商。这两家公司于2026年上半年进入公司的供应链体系，主要为面向海外市场的产品供货，例如供应给谷歌的订单。不过，由于公司海外市场业务尚未完全起量，目前这两家供应商的实际交付量还不大。</p>
+<p><b>除了中富电路和威尔高，公司主要的PCB供应商还有哪些？其中份额占比较高的有哪几家？</b></p>
+<p>公司的PCB供应商众多，除了上述两家，还包括金盛、奥士康、深南电路和景旺电子等。从目前的供应份额来看，排名前三的主要是景旺电子、奥士康以及金盛。</p>
+<p><b>公司与海外客户的业务对接模式是怎样的？</b></p>
+<p>公司不直接与海外终端客户对接，而是支持公司内部负责海外业务拓展的人员。海外业务团队常驻美国，当他们拓展客户时，公司会根据其需求提供支持，例如制作样机、跟进备货和订单需求等。因此，公司承接的是经过内部海外业务团队传递的“二手需求”，而非直接面对海外客户。</p>
+<p><b>针对谷歌的首批订单，目前的排产进度和物料准备情况如何？</b></p>
+<p>首批订单所需的所有物料已经采购到位，处于待上线状态。具体而言，首批约1万颗PSU的物料已全部就绪。</p>
+<p><b>从行业经验来看，大规模生产存在哪些挑战？</b></p>
+<p>一旦小批量需求顺利完成且未出现重大问题，大批量订单的落地便会顺理成章。大规模生产的过程考验严峻，行业内的主要厂商如台达、光宝等都曾在此过程中遇到过问题。</p>
+<p><b>相较于2026年年中，公司当前的整体战略有何变化？</b></p>
+<p>公司的整体战略没有发生重大变化，依旧坚定地将重心放在北美市场，出海战略不会动摇。公司高层管理者一年中大部分时间常驻美国，体现了对北美市场的高度重视。近年来，公司的重大投入也几乎都是围绕北美客户和市场进行的部署。</p>
+<p><b>目前公司面临的主要风险点有哪些？</b></p>
+<p>主要风险包括以下几个方面：首先是市场风险，即北美云厂商资本开支下调的风险；其次是政策风险，例如北美地区对数据中心建设在功率等方面设置的限制；再者是质量风险，需要警惕可能出现的“黑天鹅”事件；最后是知识产权风险，由于电源产品方案在电路和结构设计上存在雷同性，且台达、光宝等厂商先入为主，作为后来者在跟随其技术路线的过程中，难免会存在摩擦。此前公司也曾遇到过专利相关的问题。</p>
+<p><b>与2026年六七月份相比，行业层面出现了哪些重大变化？竞争格局有何新动向？</b></p>
+<p>行业的主要变化体现在两个方面：一是市场端对未来预期的下调；二是原材料端由涨价潮转向。竞争格局方面没有太大变化，竞争对手依然是原有的几家公司，在国内主要与长城竞争，在海外则与麦格米特竞争。新的竞争者目前尚在发展阶段，还未构成显著影响。</p>
+<p><b>除了现有的PSU产品线，公司在HVDC等新品类上与谷歌的合作有何新进展？</b></p>
+<p>公司在HVDC柜外大电源等新品类上取得了突破，预计2027年将进入对谷歌的小批量交付阶段。具体产品为正负400伏（等效800伏）的HVDC，单机柜功率可达1兆瓦或1.2兆瓦，并可扩展至3.6兆瓦。该产品的原型机已在谷歌方面试点运行超过一年，到2027年将满两年，预计在2027年下半年（6月份之后）开始小批量交付。此外，公司也在为谷歌设计Power Shelf等电源柜产品（单个功率500-600千瓦），并已在陆续送样，旨在实现从单品类向多品类的拓展。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
