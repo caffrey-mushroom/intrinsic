@@ -1,0 +1,196 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.25 | AC | Semis | Cerebras CSO on Wafer-Scale CS-4 Architecture &amp; Inference Speed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.25 | AC | Semis | Cerebras CSO on Wafer-Scale CS-4 Architecture &amp; Inference Speed</h1>
+<p class="orig">原标题：Cerebras 首席战略官 Andy Hock ：Cerebras晶圆级芯片架构演进与AI推理速度的非对称价值分析</p>
+<p class="tags">#semis #asic #llm #ai-demand #hardware</p>
+<p class="meta">AceCamp · 2026-11-25 14:34 · article 70569649</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>Cerebras首席战略官Andy Hock指出AI推理速度具备非对称商业价值，Anthropic对2倍速算力收费翻倍、高频交易商愿为超高速算力支付每兆瓦2亿美元，高速推理可突破人工速度限制并满足机器人、网络安全（如CrowdStrike）及代理工作流的硬性延迟预算。</li>
+<li>Cerebras基于低精度稀疏线性代数、高通信带宽与高内存带宽三大第一性原理，采用比传统芯片大50倍以上的300毫米晶圆级芯片，集成近百万计算核心与独立片上SRAM，消除GPU计算裸片与片外HBM间的导线物理瓶颈，AI推理速度较GPU集群快10-15倍。</li>
+<li>最新发布的CS-4为机架级设备，内含3块晶圆级引擎，在未更换新芯片（沿用CS-3引擎微调变体）的前提下，依靠供电重构、水冷模块化背包封装与I/O协同创新实现单晶圆性能翻倍、推理速度较GPU快30倍且显著提升每瓦Token效率。</li>
+<li>受限于台积电与三星现有300毫米晶圆工艺上限及系统成本，Cerebras将通过3D多晶圆堆叠及与美国政府合作的下一代晶圆间高速I/O技术扩展算力规模，而非继续增大单体晶圆面积。</li>
+<li>市场买家已从6-18个月前能买到什么就用什么转向成本敏感与场景细分，Cerebras定位全栈AI基础设施公司，同时提供硬件直售与云服务，并已与OpenAI、AWS Bedrock及AMD（拆分推理负载的异构协同）达成深度合作。</li>
+<li>在快速部署上公司借助比特币矿工既有电力资源及芬兰大型站点突破美国审批与电力制约，同时判断面向医疗、金融与物理AI的专用模型未来有望带来10倍以上速度提升。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>纪要源于：2026 年 11 月 24 日，alementary播客发布的访谈节目中对 Cerebras 首席战略官 Andy Hock 的访谈。</p>
+<h2>正文</h2>
+<p>以下为访谈全文：</p>
+<p>Q&amp;A</p>
+<p>近期市场数据显示，例如Anthropic对2倍速算力的收费翻倍，以及交易公司为超高速算力支付高达每兆瓦2亿美元的费用，这些现象是否表明市场对高速算力的价值评估已发生根本性变化，即2倍的算力速度不仅仅是价值提升20%，而是价值翻倍？</p>
+<p>市场对高速算力给予非对称性高价值的现象并不令人意外。在人工智能推理领域，速度直接关联到生产力、洞察时间、用户满意度、留存率和使用率。对于网络安全等特定应用，速度甚至等同于能力本身。纵观整个互联网发展史，速度所带来的价值增益往往超过其性能提升的倍数。目前市场仍在探索衡量速度价值的具体乘数因子，该因子会因不同用例和行业而异，但速度与其价值之间存在非对称关系是确定的。</p>
+<p>您在去年（2025年）的Cerebras Supernova活动中提到了“人工速度限制”这一概念，这是否意味着AI的速度限制了其应用的可能性？能否解释为何某些AI用例在推理速度未达到特定阈值前，不仅体验不佳，甚至根本无法实现？</p>
+<p>“人工速度限制”确实存在，其影响体现在几个层面。首先，技术发展史表明，速度的提升不仅是让现有应用变得更快，而是催生了全新的能力和应用。例如，网络速度从拨号调制解调器演进到光纤宽带，我们得到的不仅仅是更快的电子公告板，而是整个互联网、搜索引擎、社交媒体乃至流媒体等全新的、价值数十亿美元的产业。其次，从硬件架构层面看，不同的芯片和系统架构对特定工作负载存在固有的速度瓶颈。例如，Cerebras的芯片架构在推理任务上表现出极高的速度，正是因为它针对这类工作进行了根本性的优化。最后，许多合作伙伴构想的应用场景，如个人助理代理，其可行性完全取决于速度。以行程规划或外卖订餐为例，如果AI代理的响应速度慢于用户自己完成任务的速度，那么该应用便不具备实用价值，无法推出市场。只有当推理速度足够快，这类应用才从概念变为可能。</p>
+<p>除了自动驾驶、导弹防御和高频交易这类对响应速度有极端要求的场景外，还有哪些AI应用场景因为存在严格的“延迟预算”（latency budget）而必须依赖高速算力？</p>
+<p>延迟预算在现实世界和物理AI用例中是普遍存在的硬性约束。在机器人控制领域，例如生产线上的机器人，其反应速度必须在特定的延迟预算内，才能保证经济可行性，否则将被其他算法或系统替代。在网络安全领域，与CrowdStrike等公司的合作表明，延迟不仅关系到响应时间，更直接决定了能力——即在单位时间内发现更多安全威胁并提供更复杂解决方案的能力。除了满足延迟预算这一基本功能门槛外，速度的价值还体现在“在延迟范围内挤入更多能力”。特别是在代理工作流（agentic workflows）和推理模型中，如果能在固定的延迟预算内完成更多计算，应用就能进行更深层次的推理，从而给出更智能的答案。从这个意义上说，速度等同于智能。</p>
+<p>鉴于AI已从最初的好奇心驱动发展为对许多行业至关重要的核心工具，当推理速度实现数量级的提升后，我们对AI的使用量将会增长多少？未来AI的计算需求是否会远超当前互联网和流媒体的总和？</p>
+<p>AI已经从一个有趣的研发项目演变为被证明有价值的工具，并且在越来越多行业中，正从“有价值”转变为“关键性”甚至“决定生存”的核心业务组成部分。未来，随着AI变得即时且能力更强，我们使用AI系统的频率将不亚于甚至超过今天使用互联网和移动技术的总和。大部分与数字系统（如互联网、地图、移动应用、社交平台、企业数据系统）的交互都将通过AI进行。如果将未来的使用模式与现在进行比较——例如，从今天早上我主动进行一次天气搜索，到未来由AI个人助理团队为我主动查询天气及其他信息——这背后涉及的计算单元或查询量将是几何级数的扩张，可能达到百倍、千倍甚至更高的数量级增长。这种对计算单元（compute cycles）需求的巨大增长，正是当前全球数据中心和相关物理基础设施建设热潮的根本驱动力。未来世界在制造、自动化、科学和安全等领域广泛应用AI，其基础计算需求将比支撑现有互联网和流媒体所需高出几个数量级。</p>
+<p>Cerebras的晶圆级芯片（wafer-scale chip）设计始于十年前，当时AI的主流问题与现在截然不同。请问该芯片的设计遵循了哪些基本原则，从而使其在AI技术快速迭代的十年间始终保持领先，并实现远超GPU集群的推理速度？</p>
+<p>十年前，在设计晶圆级引擎（Wafer Scale Engine）时，我们并未预测AI的具体发展路径，而是回归到AI计算的“第一性原理”，即所有AI计算任务共通的基础需求。我们总结出三大设计支柱：第一，大量的低精度、稀疏线性代数计算能力。AI计算通常使用32位、16位、8位甚至更低的精度，并且涉及大量稀疏向量或矩阵运算，这与传统GPU为处理密集矩阵（如图形渲染）而优化的架构有本质区别。第二，高通信带宽，确保处理单元之间能快速共享数据。第三，高内存带宽，确保每个计算核心能迅速访问内存。AI的本质是“运动中的数据”（data in motion），无论是训练还是推理，都需要系统能快速从内存中提取权重，与输入数据结合，并将结果迅速传递给下一个计算单元。为了最大化这三个指标，我们设计并制造了这款比以往任何芯片大50倍以上的晶圆级芯片。我们将近百万个计算核心集成在同一块晶圆上，通过片上互连网络紧密连接，并为每个核心配备了独立的、速度极快的片上SRAM内存。这种基于第一性原理的架构设计，因其抓住了AI计算的根本需求，所以在过去十年AI技术飞速演进的过程中表现出了强大的生命力和持久的性能优势，使我们的系统在AI推理工作负载上比任何GPU集群快10到15倍。</p>
+<p>最近Cerebras发布了CS-4系统，在没有采用新芯片的情况下，实现了每块晶圆性能翻倍，并使推理速度比GPU快30倍。请问这是通过哪些技术创新实现的？</p>
+<p>CS-4系统性能的显著提升，源于全系统层面的协同创新，而非仅仅依赖芯片本身。尽管CS-4使用的是与CS-3相同的晶圆级引擎的微小变体，但性能却提升了一倍，部署时间大幅缩短，每瓦特产生的token效率也实现了巨大飞跃。这主要得益于对整个系统的优化，包括供电系统、冷却子系统以及负责为引擎输入数据的I/O系统。除了电源、散热和I/O，系统级的封装技术也发挥了关键作用。</p>
+<p>CS4相较于CS3在性能上实现了显著提升，其背后的关键技术创新主要体现在哪些方面？这些创新是如何通过系统级设计共同作用以实现性能目标的？</p>
+<p>CS4的核心技术创新主要集中在功率传输、I/O、散热和系统级模块化这几个方面。CS4是一个机架级设备，内部包含三个晶圆级引擎（Wafer Scale Engine）。为了实现CS3到CS4的性能飞跃，我们对物理封装进行了彻底的重新架构，以便能够输送更多电力。这是性能提升的关键因素，因为更高的功率输入允许芯片以更高的时钟频率运行，从而在单位时间内完成更多计算。为支持更高的功率和计算密度，我们必须对散热子系统进行创新，否则芯片会因过热而损坏。在解决了供电和散热问题后，为了保持芯片的高利用率，还需要提升I/O能力，确保数据能够足量、及时地输入。整个系统的封装也从单一物理机箱重新设计为机架级设备。这种设计的独特之处在于，机架的大部分空间用于功率传输，而晶圆级引擎则被置于一个我们称之为“模块化背包”的独立单元中。这种背包式设计使其可以完全采用水冷散热，并实现了高度模块化。在部署时，我们只需先将电源机架推入到位，第二天再将这些“背包”模块安装上去，接上电源即可运行。这种模块化设计也极大地提升了可维护性：如果晶圆封装部分需要维修，可以从机架的一侧轻松操作；如果电源出现问题，则可以从机架正面进行维护。这体现了在AI计算基础设施中采用全系统级方法的重要性，单纯的芯片或软件创新已不足以满足市场对性能和效率的极致要求，物理系统和封装层面的创新是实现CS4性能优势的关键。</p>
+<p>鉴于Cerebras以制造大规模芯片而闻名，是什么物理或技术限制阻止了公司制造比当前晶圆级芯片更大的芯片，例如双晶圆尺寸的芯片？公司在扩大晶圆级系统规模方面有何未来规划？</p>
+<p>目前无法制造更大尺寸单体芯片的原因主要有两点。首先，这受限于全球顶尖芯片制造厂的现有工艺能力。当前，如台积电、三星等最先进的晶圆厂，其生产线上使用的最大圆形硅晶圆直径为300毫米（约12英寸）。我们的晶圆级芯片的对角线尺寸已接近这一极限，我们已经利用了现有最先进晶圆厂所能处理的最大尺寸的硅晶圆。目前这些工厂没有能力处理更大尺寸的晶圆，甚至更大尺寸的晶圆本身可能也无法获得。其次，即使能够获得更大的晶圆，也会带来巨大的封装、供电、散热和I/O等系统级制造成本。我们现有的系统是围绕当前晶圆的尺寸规格构建的，进一步扩大单体芯片尺寸所带来的性能增益将是递增的，但成本会急剧上升。尽管如此，我们仍在积极创新以扩展晶圆级引擎的规模。在今年（2026年）的Hot Chips会议上我们曾提及，未来的系统将超越单晶圆，通过在第3D度上进行堆叠，实现多晶圆系统。此外，我们已与美国政府合作开展基础研究项目，开发下一代I/O技术，旨在让堆叠在一起的晶圆之间能够更快速、更高效地通信，从而使多晶圆机器的性能表现更接近于一个巨大的单一晶圆机器，因为晶圆间的I/O延迟将被缩减至极小。因此，我们正通过3D堆叠和I/O技术来扩展晶圆级系统的规模，而非简单地增加单个芯片的物理面积。</p>
+<p>与NVIDIA GPU等其他高速计算方案相比，Cerebras在架构上有何根本区别？这些区别如何影响其在AI推理等特定任务中的性能表现？</p>
+<p>GPU架构与我们架构最根本的区别在于其计算芯片和内存芯片是物理分离的。GPU通常将一个逻辑计算裸片和一个HBM（高带宽内存）芯片通过细微的导线连接在同一封装内。这种架构在处理AI推理的解码阶段时，其速度上限实际上受限于内存带宽，即逻辑芯片访问HBM芯片上内存并来回传输数据的能力。连接它们的微小导线成为了物理瓶颈。尽管可以通过减小批量大小（batch size）或提高时钟频率等方式进行优化，但这些方法会对吞吐量和能效产生实质性影响，进而影响成本，并且即便如此，其速度也无法达到Cerebras芯片的水平。我们的架构将计算和内存集成在同一晶圆上，避免了数据在片外内存和片上内存之间来回传输，也避免了在一个由数千个小芯片组成的集群中芯片之间的数据传输。相比之下，我们的系统可能只由10个大芯片组成，这种设计在本质上具有更高的能效。这并非优劣之分，而是不同的架构带来了不同的资源限制。</p>
+<p>随着AI计算市场的演变，客户在选择计算解决方案时的决策过程发生了怎样的变化？Cerebras如何定位自身以满足不同客户群体的需求？</p>
+<p>市场正在变得更加成熟和细分。大约在6到18个月前，客户普遍处于“能买到什么就用什么”的阶段。但现在，客户对应用需求和速度的理解更加深入，同时市场对价格和成本也变得更加敏感。如今的买家越来越专业，他们会根据具体应用场景来选择不同的基础设施。例如，一些客户表示，对于需要处理大量慢速token的应用，他们会选择其他方案；但同时，他们也面临着越来越多需要超低延迟和快速推理的应用场景，并为此寻求行业内最快的解决方案。我们服务的正是后一部分市场，并且我们观察到这部分需求正在不断扩大。对于追求极致速度的推理用例，我们不仅是速度最快的选择，同时也更具能效优势。由于我们的架构避免了跨芯片的数据传输瓶颈，因此在快速AI推理场景下，每瓦或每美元能产出更多的快速AI token。</p>
+<p>Cerebras的业务模式似乎已从纯粹的硬件公司扩展到更广泛的领域，应如何准确理解公司当前的定位？公司在构建生态系统方面采取了哪些合作策略？</p>
+<p>我们将自身定位为一家“全栈AI基础设施公司”。这一过程是逐步演进的：我们从设计芯片开始，进而必须创新并开发相应的封装和系统，最终构建出服务器。大约在2019年交付首批系统后，我们很快意识到还需要围绕晶圆级服务器设计和规划支持集群，因此我们现在交付的是包含CPU服务器、网络交换机、存储和冷却等组件的完整集群。随着AI应用的扩展，特别是进入推理时代，并非所有客户都拥有能够容纳百机柜级别超级计算机的数据中心。为了满足这些客户的需求，我们推出了云服务。在构建硬件系统的同时，我们也开发了完整的软件栈，支持标准的PyTorch编程，并提供符合OpenAI模板的API来访问推理服务，确保应用开发者和机器学习研究者无需改变其编码习惯。我们之所以构建云服务，正是因为客户有使用我们系统的强烈意愿，但缺乏相应的数据中心设施。除了自身构建全栈能力，我们还积极通过战略合作来扩大市场覆盖和交付成功。我们与OpenAI的合作是里程碑式的，双方研发和工程团队紧密协作。我们与AWS的合作同样深入，与他们的Bedrock团队共同理解客户模型、速度价值和数据中心环境，以确保交付的系统能为AWS及其用户创造成功。最近，我们还宣布了与AMD的合作，将推理工作负载的两个主要部分进行拆分，一部分由AMD GPU处理，另一部分由我们的晶圆级引擎处理。因此，我们并非单打独斗，而是通过与行业伙伴的战略合作，在不断发展和增长的市场中实现价值交付。</p>
+<p>面对客户对本地部署系统和云服务的不同需求，Cerebras如何决定是出售硬件系统还是将其保留用于自有的云服务？公司的战略决策流程是怎样的？</p>
+<p>我们的核心战略是满足客户和合作伙伴的需求，帮助他们取得成功。在销售初期，我们首先会了解客户在AI领域的业务目标，以及支撑这些目标的具体应用、性能、延迟、吞吐量、功耗和成本要求。通过这种方式，我们试图找到客户的业务目标、AI计算挑战与我们技术优势之间的交集。我们并不试图解决客户所有的问题，因为AI生态系统非常庞大，涉及数据标注、数据组织等多个环节。我们的目标是专注于我们能够提供独特价值的领域。在这个交集中，解决方案可能是多样的。例如，对于有主权需求或出于企业应用需要而必须对物理基础设施拥有所有权的客户，将系统直接交付到他们自有的数据中心是最佳选择，我们很乐意提供这种传统的硬件销售模式。相反，对于一个在共享办公室工作的两人AI初创公司，他们显然不具备兆瓦级的数据中心，云服务则是更合适的选择。因此，我们的战略是建立一个足够稳健的业务体系，能够通过不同的交互界面满足不同用户的需求。与OpenAI、AWS等伙伴的合作，使我们能够触及比以往更广泛、更多样化的客户群体。未来，我们可能会继续扩大这类合作，以便在更多用户需要的地方为他们提供服务。</p>
+<p>在当前美国建设超级计算中心面临电力和审批挑战的背景下，Cerebras采取了哪些策略来确保计算能力的快速部署？对于未来百兆瓦乃至吉瓦级别的计算需求，这些策略是否可持续？</p>
+<p>简而言之，是的。当前行业发展的关键在于速度和价值。AI计算需求巨大且增长迅速，无论是为客户部署还是为我们自己管理的数据中心，都需要场地、电力、冷却和网络连接。因此，部署速度至关重要。我们希望能够简化地方和区域的法规流程，以便在确保社区价值的同时，促进这些“超级计算中心”的建设。在追求速度的同时，我们同样重视为设施所在的社区创造价值。例如，像橡树岭国家实验室这样的顶级超算中心，几十年来一直是其所在社区的科研、工程、技术、就业和创新的引力中心，对当地做出了净贡献。早期AI数据中心的快速发展有时给社区资源带来了压力。我们认为行业有机会做得更好，将这些设施建设成对社区的净价值贡献者，而非负担。因此，我们既要为满足行业发展和国家安全需求而快速行动，也必须平衡速度与价值。与比特币矿工等已拥有电力资源的公司合作，以及在芬兰等地建设大型站点，都是我们为实现快速部署而采取的策略，这些策略在未来应对更大规模的计算需求时仍将继续适用。</p>
+<p>除了Cerebras自身的技术路线外，未来几年还有哪些来自外部的创新可能对AI计算速度产生颠覆性影响，甚至可能带来数量级的提升？</p>
+<p>当前AI领域的创新正发生在技术栈的每一个层面。在基础学习算法和神经网络架构方面，有许多激动人心的研究正在进行。同时，面向医疗、金融、网络安全和物理AI等领域的专用模型（domain-specific models）也展现出巨大潜力。大型通用基础模型虽然功能强大，但对于特定任务，例如药物设计，一个在分子动力学等领域经过深度训练的、能力更集中的模型可能更有效。针对这类特定工作负载，专用模型或许能实现10倍甚至更高的速度提升，并具备更强的专业能力。在硬件领域，新型内存架构、光学计算和光学I/O等技术的发展令人期待。最后，虽然不直接提升速度，但在效率方面，核能、风能等可持续能源的研究为实现更清洁的计算开辟了道路。这个时代令人兴奋，因为整个行业在计算及以外的众多领域都在不断挑战过去的“不可能”。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

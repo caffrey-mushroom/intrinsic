@@ -1,0 +1,200 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.25 | AC | Cloud | CRWV &amp; Neocloud Delivery Bottlenecks Power Gap &amp; Shakeout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.25 | AC | Cloud | CRWV &amp; Neocloud Delivery Bottlenecks Power Gap &amp; Shakeout</h1>
+<p class="orig">原标题：AI算力云淘汰赛：比的不是订单多少，而是能不能按时交付</p>
+<p class="tags">#cloud #datacenter #financing #semis #power</p>
+<p class="meta">AceCamp · 2026-11-25 17:00 · article 70569644</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>独立算力云（Neocloud）正进入以按时交付为核心的淘汰赛：从签单到计费需过锁配额、硬件交期（GPU约36周、网络超6个月）、场地接电（12-18个月）、英伟达万卡验证（至少1个月）及客户烧机测试（4-6周）五道关。</li>
+<li>时间风险高度集中于运营商，头部云厂与AI实验室普遍设置约每天100万美元的延期罚金及单方解约条款（如Nscale与微软合同按100%当日账单抵扣），叠加GPU抵押贷款固定计息，延期与硬件涨价可将集群回本期从3-6个月拉长至18-24个月。</li>
+<li>CoreWeave手握1,325亿美元积压订单，签约电力4.6GW对比在运营1.7GW存在2.9GW缺口（约对应116万张GPU），两年填平需每季新增0.36GW，但3Q26实际仅增0.2GW、4Q26指引隐含0.15GW（仅为所需节奏的40%-60%）。</li>
+<li>CoreWeave还面临2027年超13万张、2028年约17万张旧GPU合约到期重定价的叠加冲击，加回附注169亿美元封顶在建租约后未起租租约达643亿美元，其五年期CDS于10月中旬破1,000基点（11月10日约1,135基点），信用市场已提前定价交付风险。</li>
+<li>GPU配额分配权掌握在大客户与英伟达手中，微软正收缩Neocloud合作名单并放弃Nscale得州扩容选项，英伟达亦派员赴现场核查进度；Lambda（背负Anthropic 349亿美元协议）错过机房租约期限并急寻40亿美元IPO前融资，2027年兑现率仅约五成，Nebius则披露新泽西托管机房延期。</li>
+<li>运营商通过集装箱式部署（省2-3个月，英伟达DSX Pod面向Rubin要2027年初交付）及脱离英伟达参考架构（转用RoCE搭配Arista/诺基亚与中际旭创/新易盛第三方光模块）提速，为兜底可靠性须囤积至少5%黄金备件，带来阶段性增量需求但持续性存疑。</li>
+<li>未来24个月预计30%-40%的Neocloud将被并购或吸收，2027年需求仍旺但2028年底供给趋稳后增速将回落；估值锚正由积压订单面值转向已通电兆瓦乘以交付记录、自有电力及跨设施软件管理能力。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<ol><li>为什么积压订单不能直接等同于收入；</li><li>CoreWeave电力缺口与实际上线节奏的差距有多大；</li><li>配额流向、提速方案与行业整合如何影响Neocloud估值。</li></ol>
+<h2>正文</h2>
+<p><b><i>算力不缺买家，但缺的是按时交付。延期罚金普遍约每天100万美元，集群回本期可能从3至6个月拉长到18至24个月，而GPU配额握在大客户手里、随时可以改派。未来两年三到四成Neocloud可能被并购或吸收，估值的锚正从积压订单转向交付速度。</i></b></p>
+<p>CoreWeave手握1,325亿美元积压订单，签约电力是在运营电力的近三倍；Lambda背着Anthropic一份349亿美元的协议。按理说，这样的订单规模足以让任何一家公司高枕无忧。但过去两个月，CoreWeave的五年期CDS冲上1,000基点以上，Lambda被曝错过了一项机房租约期限，Nebius也承认部分托管机房进度落后。订单没有变少，市场的担忧却越来越重。问题出在哪里？</p>
+<p>本文要回答的核心问题是：<b>当GPU的分配权越来越集中在云大厂和英伟达手里，Neocloud（独立算力云公司）靠什么留下来，谁又会留下来？</b></p>
+<h2>一、积压订单不等于收入：从签约到计费要过五道关</h2>
+<p>先说结论的前提：<b>积压订单只是“客户愿意买”，并不代表“运营商能按时交”。</b>CoreWeave三季报披露的1,325亿美元收入积压，常被市场当作锁定的未来收入，但从签合同到开始收钱，中间至少要过五道关，每一道都可能卡住。</p>
+<p><b>第一关是锁定配额。</b>以通过戴尔采购为例，运营商先向戴尔下单，戴尔再向英伟达下单，这条链最长要一个月。在英伟达出具销售订单号之前，口头承诺的配额并不属于运营商，随时可能被挪给别人。<b>第二关是硬件交期。</b>调研显示，目前GPU交期约36周，没有提前下单的网络设备要6个月以上。值得注意的是，GPU直到最近一两个月才成为新的瓶颈，此前最紧的一直是光模块和交换机，这说明供应链的短板在轮换，而不是在消失。</p>
+<p><b>第三关是场地。</b>机房内部的母线槽、插接箱、液冷管路都有交期，连PG25冷却液都要送实验室检测后才能用。如果变电站和电力设施还没落实，一块新场地距离投运还要12至18个月，这一关往往是五道关里最长的。<b>第四关是调试和英伟达验证</b>，一个万卡集群光是英伟达验证就至少要一个月。<b>第五关是客户自己的烧机测试</b>，从测试验证到真正开始计费，通常还要四到六周。</p>
+<p><b>为什么这五道关如此关键？因为时间风险几乎全部压在运营商身上</b>，而惩罚是真金白银。头部云厂和前沿实验室的合同普遍设置约<b>每天100万美元的延期罚金</b>，部分新合同还加入了“延期交付可单方解约”的条款。<b>11月19日报告</b>中拆解过Nscale与微软的合同：批次交付每延误一天，就按当日全额账单的100%给微软抵扣。</p>
+<p>把这类条款放到GPU抵押贷款的结构里看，后果就很清楚了。贷款一提款就开始计息，罚金按天累积，收入却要等验收才能确认。一个原本前3至6个月就能赚钱的集群，经历显著延期和硬件涨价之后，<b>回本期可能被拉长到18个月到两年</b>。最坏的情形是合同被撤销、债务照常计息、罚金已经付出；即便这批产能很快转租出去，时间成本也已经全部落在股东身上。换句话说，对Neocloud而言，延期不是“晚一点赚钱”，而是“可能一直赚不回来”。</p>
+<h2>二、CoreWeave的考题：2.9GW缺口要填，眼下的上线速度只有所需节奏的四到六成</h2>
+<p>既然交付速度决定生死，最直接的检验对象就是规模最大的CoreWeave。三季度末，它的签约电力4.6GW，在运营电力1.7GW，中间有2.9GW的缺口。公司10-Q显示，尚未起租的租约将在2026至2029年间陆续起租，这意味着这2.9GW并不是一次到位，而是要在未来几年里一块一块地点亮。</p>
+<p><b>这个缺口到底有多大？</b>按行业排产经验，要兑现这份规划，CoreWeave每天需要点亮1,500张以上的GPU。本文用一个简单假设做交叉验证：如果每张GPU分摊的设施功率（含网络和冷却）约2.5kW，2.9GW对应约116万张GPU。每天1,500张，大约需要两年才能装满；如果要压缩到12个月，则需要每天约3,200张。</p>
+<p>再看实际进度，差距就出来了。如果要在两年内填平缺口，平均每个季度要新增约0.36GW在运营电力；而CoreWeave三季度实际新增约0.2GW，按年底1.85GW以上的指引倒推，四季度新增约0.15GW。也就是说，<b>眼下的上线节奏只有所需节奏的四到六成</b>。这不代表订单有问题，而是说明兑现时间表大概率要比积压订单暗示的更长。</p>
+<p><b>更容易被忽略的是两条曲线的叠加。</b>管理层披露，2027年有超过13万张GPU合约到期，2028年再到期约17万张。新产能还在爬坡，旧卡又要续约重定价，两件事挤在同一个时间窗口，2027年的收入曲线很可能比市场预期更颠簸。<b>11月24日的北美CSP表外承诺季报</b>测算过，加回附注中封顶169亿美元的在建租约后，CoreWeave真实的未起租租约约643亿美元。机房起租早于GPU到货，或者GPU到货早于机房就绪，两种错配都会变成空转成本。</p>
+<p><b>这也解释了为什么信用市场比股票市场反应得更早。</b>CoreWeave依靠客户预付款、合同支持融资和GPU抵押融资三条腿扩张，债务成本是固定的，收入时点却取决于交付。验收每推迟一个月，就是一个月的利息和折旧没有收入对冲；如果再叠加约每天100万美元的罚金，一个月就是约3,000万美元的额外现金流出。CoreWeave五年期CDS在10月中旬突破1,000基点，11月10日仍在约1,135基点，本质上是在给“交付节奏”定价。笔者认为CoreWeave有能力走向持续盈利，但前提是尽快把积压订单变成收入，留给它的时间窗口并不宽。</p>
+<h2>三、配额握在大客户手里：交付一慢，订单就可能换人</h2>
+<p><b>如果说交付速度决定了Neocloud能不能赚钱，那么配额的流向决定了它还有没有机会。</b>要理解这一点，得先看清配额是怎么流动的。云大厂直接跟英伟达和服务器厂谈年度配额，Neocloud更像是把配额变成可用算力的“管道”。假设Lambda、Nebius和CoreWeave都在消化微软在戴尔那里的GB300配额，微软只需要告诉戴尔哪个项目优先，配额就会改道。在行业里，硬件交期一夜之间从“下周”变成“明年”并不少见。</p>
+<p>由此推论，微软一旦对某家伙伴的交付失去信心，改派配额几乎没有摩擦。11月初市场报道微软正在收缩合作的Neocloud数量，此前它也已放弃Nscale得州项目的扩容选项。这些动作的实质，是<b>把配额集中给能按时交付的少数伙伴</b>。对微软来说，这样做能更准确地预测产能何时上线，也能借助自身体量帮伙伴打通供应瓶颈；Meta等其他大厂大概率会跟进。</p>
+<p>英伟达也在收紧。它已开始派人到建设现场核实进度，确认运营商在承诺的日期是否真能接货。黄仁勋11月23日复职，减少了管理层动荡对合作关系的扰动，但“把卡给能部署的人”这条纪律不会因为人事回归而放松。<b>11月24日报告</b>中的判断依然成立，这里要补充一句：被锁死的不只是杠杆，还有配额的流向。</p>
+<p>落到具体公司，差异就很明显。<b>Lambda</b>与英伟达关系紧密，但在大客户的体量面前，这种关系只能换来轻微的优先权，找不到机房，配额照样会流走。更棘手的是验收方式：微软对Lambda要按可扩展单元（SU）逐个测试，最后再做整批次的全量测试，而Neocloud通常按SU分批交付、让客户先用起来，两种做法正面冲突。Lambda正寻求约40亿美元的IPO前融资，说明流动性相当紧张，很可能已经用尽主要服务器厂的信用额度。在硬件和电力双重约束下，2027年每周要上线数千张GPU，本文认为兑现的概率大约一半。</p>
+<p><b>Nebius</b>则从另一个方向印证了同一个逻辑。它11月披露新泽西的第三方托管机房延期，而自建站点进度正常。原因并不复杂：依赖托管方，就等于把关键节点交给自己控制不了的人；如果要对托管方监督到每一个环节，还不如自己建。本文预计头部Neocloud会更多转向已有电力的棕地改造，也就是把原有的工业用地或电厂旧址改成机房，跳过最耗时的接电环节。</p>
+<h2>四、提速有代价：绕开英伟达标准方案，受益的是网络与光模块供应商</h2>
+<p>既然慢的代价这么大，运营商自然想办法提速。目前主要有两条路，但每条路都有代价，也各有受益方。</p>
+<p><b>第一条路是集装箱式部署：</b>在场外把集群装好、测好，再整体运到现场，和场地施工并行推进。按行业调研口径，这种做法大约能省2至3个月。英伟达10月发布的DSX Pod也是同一思路，官方称场地就绪后的部署时间可从约六个月缩短至最快14天；不过它面向Vera Rubin平台，合作伙伴要到2027年初才开始交付，对当前正在部署的GB300集群帮助有限。</p>
+<p><b>第二条路是脱离英伟达参考架构（RA）：</b>后端网络用RoCE替代InfiniBand，交换机选Arista或诺基亚，光模块用第三方产品。这样做的好处是硬件更容易到位，而且不需要英伟达验证，客户和运营商自己的测试达标即可，等于少了一道关。性能上基本没有差别，代价是光模块和交换机的可靠性略逊于英伟达原厂，需要靠“黄金备件”兜底，比如一万到一万五千张GB300的集群，线缆库存要守住不低于5%的安全线。前沿AI实验室比云大厂更愿意走这条路，原因就是供应链紧张和上线时间压力。</p>
+<p><b>为了保交付而囤的备件，本身就是增量需求</b>。备件池加上多源采购，意味着第三方网络和光模块的需求量会高于实际端口数。对Arista、诺基亚以及中际旭创、新易盛这类第三方光模块厂商而言，这是一块不完全跟着英伟达整机出货走的需求。但也要看到它的边界：这部分需求来自交期紧张，一旦英伟达供应缓解，备件比例可能回落，持续性需要打折看待。</p>
+<p><b>另一面，运营能力会变成新的瓶颈。</b>在万卡集群里，吞掉有效算力最多的是网络问题，端口抖动、线缆故障，甚至维护时有人碰掉一根线都算。脱离标准方案会放大运维复杂度，而能管好这种规模基础设施的工程师非常有限。本文判断，人才会是继硬件之后的下一个约束，这也意味着运维团队的成熟度应当纳入对Neocloud的评估。</p>
+<h2>五、谁能留下来：交付记录、自有电力和软件层决定估值</h2>
+<p>把前面的逻辑串起来：<b>交付慢会吞掉利润，配额会流向交付快的人，提速又需要额外的成本和能力。</b>顺着这条线推下去，行业整合几乎是必然的。本文判断未来24个月内，约<b>30%至40%的Neocloud会被并购、整合或被大厂吸收</b>。Gartner预测2030年前超过80%的Neocloud将不再独立运营，本文认为这个比例偏高：新玩家几乎每周都在出现，大企业客户也有采购几十万张GPU的需求和财力，这块市场还远没被充分开发。</p>
+<p>需求端同样需要冷静看待。当前确有泡沫成分，但更可能的走向是修正而非破裂：2027年需求仍然旺盛，到2028年底供给趋稳后，增速才会回落。需求一旦走平，大厂对Neocloud的依赖就会下降。过去半年，大厂在验证和尽调上明显变得更内行，部分已开始在小集群上自己干，这本身就是依赖度下降的早期信号。</p>
+<p>因此，<b>Neocloud最终能留下来的价值，落在三样东西上：可验证的交付记录、自有且已通电的电力、以及能管理客户自有算力的软件层。</b>CoreWeave扩展Omni平台，去管理客户自有基础设施上的AI负载，就是在为大厂“自建”那一天买保险，目前行业里还没有人真正做成。对估值而言，二线Neocloud更合理的锚可能是“已通电兆瓦乘以交付记录”，而不是积压订单的面值；反过来看，能连续几个季度兑现电力爬坡的公司，市场给它的折价也许过大了。</p>
+<p>接下来最值得跟踪的是六个信号。最先给出答案的，可能是CoreWeave每季度新增的在运营电力：三季度约0.2GW、四季度指引约0.15GW，都低于两年填平缺口所需的约0.36GW，如果2027年上半年仍维持这个节奏，积压订单的兑现时间表就要整体后移。其次是大厂的取舍，会不会从放弃可选扩容，升级到对已生效合同撤约或改派配额。两个信号同时出现时，淘汰赛就从预期变成了现实。</p>
+<p>以上内容不构成任何投资建议，请风险自担。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
