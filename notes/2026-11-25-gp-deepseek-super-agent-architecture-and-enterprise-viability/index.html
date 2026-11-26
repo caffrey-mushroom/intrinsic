@@ -1,0 +1,283 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.25 | GP | China AI | DeepSeek Super Agent Architecture and Enterprise Viability</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.25 | GP | China AI | DeepSeek Super Agent Architecture and Enterprise Viability</h1>
+<p class="orig">原标题：DeepSeek: Super Agent Architecture — Assessing Technical Differentiation, Commercial Viability, and the Paradigm Shift</p>
+<p class="tags">#deepseek #aiagents #llm #enterpriseai #saas</p>
+<p class="meta">GuidePoint · 2026-11-25</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>拥有模型训练背景的海外前沿部署工程师指出，DeepSeek开源“Super Agent”采用的路由加工作节点（Router + Worker）分层设计早在约1.5年前即已出现，本质是用外部脚手架（Harness）弥补开源模型长程任务能力不足，在欧美市场实际采用有限且技术路线容易被竞品复制。</li>
+<li>企业环境中无人工监督的后台自主Agent任务成功率仅约20%–30%，因此企业普遍排斥不可控的后台试错，仍首选步骤固化的有向无环图（DAG）或沉淀日常工作流的Skills Markdown，并配合LangSmith等工具进行人工与AI双重审计。</li>
+<li>自今年6–7月OpenAI与Azure从固定套餐转向按Token计费后，企业用量账单激增并收紧额度（开发者月度预算通常限额20至50美元）；同时欧美企业虽签有2–3年合约，但因担心模型训练数据不可审计及效果不及预期而加速引入Claude作为替代或备选。</li>
+<li>跨部门多Agent协同在传统企业几乎无法推进，核心壁垒在于组织架构、权限隔离（RBAC）与权责归属而非通信协议，目前仅在科技行业见到约2至3家企业尝试通过共享Markdown、GitHub或Jira看板（Kanban）开展人机协同。</li>
+<li>若7×24小时后台Agent普及，云厂商算力负荷将从突发峰值转向夜间非高峰平稳推理并面临更严苛的延迟与SLA要求，同时DeepSeek开源推理引擎DeepInfer并公开Blackwell显卡盈利与利润率基线，将迫使云服务商在压缩模型降本与保证服务质量间艰难平衡。</li>
+<li>在软件应用层，传统ERP/SaaS内嵌AI插件（如SAP Joule）体验不佳，而模型厂商正通过收购破产企业内部办公数据复刻业务运行逻辑，专家预计未来1至2年内企业将愈发倾向跳过标准SaaS产品、围绕自身业务规则直接构建专属系统。</li>
+<li>专家认同AI竞争已进入重产品与生态的下半场：受算力及强化学习环境制约中国模型短期仍集中于高性价比Flash级水平，国内真正竞争压力来自腾讯WorkBuddy、字节豆包等依托办公与流量生态的互联网大厂，而欧美中小企业则偏好借助Fireworks、Databricks或SGLang/vLLM商业版在本地机房托管DeepSeek开源模型以规避数据主权与内容审查风险。</li>
+</ol></section>
+<div class="body">
+<p>Primary:</p>
+<p>Hangzhou DeepSeek Artificial Intelligence Co., Ltd.</p>
+<p>Associated:</p>
+<p>OpenAI, L.L.C.</p>
+<p>Anthropic, PBC</p>
+<p>Viewpoint:</p>
+<p>Industry Consultant</p>
+<p>Moderator: Elfy Yin (EY)</p>
+<div class="tbl"><table class="t wrap"><tbody><tr><td>Nov 25, 2026</td><td>33 Min Read</td></tr></tbody></table></div>
+<p>Nuo Ma (NM), Relations Developer and International Business Solutions Expert - Beijing Lingyi Wanwu Technology</p>
+<p>SUMMARY</p>
+<p>Overview</p>
+<p>The discussion examines DeepSeek’s open-source agent framework and the broader shift in enterprise AI from improving models alone toward building systems that can reliably complete work. The framework combines an orchestrator with task-specific agents and uses efficiency and safety mechanisms. The expert views this approach as useful in some settings, but says it does not resolve core enterprise concerns around reliability, oversight, security, and cost.</p>
+<p>Key Insights</p>
+<p>The expert considers agent orchestration an established approach, not a unique DeepSeek breakthrough. Scaffolding can compensate for weaker models, while leading models may handle some multistep work with less external support. Enterprise adoption remains bounded by trust: the expert estimates unsupervised task completion succeeds only about 20–30% of the time. Businesses therefore tend to favor defined workflows, reusable task skills, and human review over autonomous agents. Cross-department agents are uncommon. Organizational structure, permissions, and accountability often present greater obstacles than the technical design. The expert expects product experience, workflow integration, and ecosystem reach to matter more than model capability alone, particularly as models become less differentiated. The expert says always-on agents could increase demand for inference, but raise expectations for latency, reliability, and service quality. This may pressure cloud providers to balance performance with profitability. Traditional SaaS providers risk losing ground if their AI features remain weak and customers can build tools around their own processes. The expert sees this as a growing threat over the next year or two.</p>
+<p>Competitive Landscape</p>
+<p>Company or category</p>
+<p>Positioning and competitive dynamics</p>
+<p>DeepSeek</p>
+<p>Open-source framework offers an engineering-led approach, but the expert sees limited evidence of adoption in Western markets and says its design can be replicated.</p>
+<p>Frontier model providers</p>
+<p>Stronger models can reduce reliance on scaffolding, but customers may switch providers when performance disappoints.</p>
+<p>Chinese internet platforms</p>
+<p>Products connected to established ecosystems and promoted to everyday users may compete effectively through convenience and reach.</p>
+<p>Traditional SaaS and ERP vendors</p>
+<p>Native AI tools may be vulnerable if they offer limited functionality; accumulated business methods and workflow knowledge remain a defense.</p>
+<p>Open-model hosting providers</p>
+<p>Western firms may prefer locally hosted options due to data sovereignty concerns and reservations about using a Chinese provider’s API.</p>
+<p>11/26/2026 at 05:04 AM UTC</p>
+<p>Quantitative Insights</p>
+<p>Metric</p>
+<p>Expert’s assessment</p>
+<p>Unsupervised agent task success</p>
+<p>Roughly 20–30%; most tasks still require human supervision.</p>
+<p>Developer token budgets</p>
+<p>Reported examples range from $20 to $50 per month after usage-based billing increased costs.</p>
+<p>Enterprise contracts</p>
+<p>Commonly described as lasting 2–3 years, though dissatisfaction can still prompt pressure to add or change providers.</p>
+<p>Cross-department agent experiments</p>
+<p>The expert has seen 2–3 companies testing Kanban-style collaboration between people and agents.</p>
+<p>Traditional SaaS defense</p>
+<p>The expert describes vendors’ accumulated management methods as built over roughly 30–40 years.</p>
+<p>EY: Good day, everyone, and thank you for joining us today. I'm Elfy, TMT analyst covering AI and the SaaS sector. Today, we're examining a major architectural shift in enterprise AI, which is DeepSeek's open-source super-agent framework. As foundational models begin to commoditize, the bottleneck for productivity is shifting from raw intelligence to system engineering, specifically how we orchestrate autonomous agents at scale. So, DeepSeek is trying to break that bottleneck by applying classic computer system engineering to AI agents, and specifically, their architecture introduces a few notable technical highlights. First, the decoupled router and worker design that can separate lightweight task routing from heavy concurrent execution, and second, the efficiency mechanism borrowed from CPU and OS design, such as speculative execution, trigger batching, and inline and spill memory management, which is designed to drastically lower token and inference latency. And third, bring your own machine security model that separates the cloud-based client from local execution, paired with an automated watchdog to prevent agents from getting stuck in infinite loops. Over this session, we will discuss the technical merits of this design, its real-world enterprise viability, and what it means for the cloud providers. And to help us break this down, I'm very happy to welcome our guest today, Dr. Ma, to join us. So before we dive into our first topic, could you briefly introduce yourself and share a little bit about your background?</p>
+<p>NM: Yeah, sure. Hi, everyone. So my name is Nuo Ma. So I have a background in model training, and in the past 2 years, I gradually shifted my direction from pure research towards more of, you know, enterprise usages. So right now, I'm a forward deploy engineer, mainly serving Hong Kong and Australian market. And I think that's kind of my experience and my background.</p>
+<p>EY: Okay, thank you. And let's start with our first topic, like the framework of this superagent. The first topic is about the router plus worker design that users often complain about losing context across multiple AI chat windows. So from an engineering standpoint, does DeepSeek's two-tier architecture actually solve this problem and where do the real scheduling bottlenecks lie?</p>
+<p>NM: Well, it still doesn't fully solve the problem, right? So especially this year, we gradually see the majority of the end users... we're not saying power users, but like ordinary regular users... they're shifting from more of a chatbot experience towards an agent experience. Now, I think from a technical perspective, the DeepSeek architecture of</p>
+<p>11/26/2026 at 05:04 AM UTC</p>
+<p>having the orchestrator and also the sub-agents, it's not special, right? This methodology has really existed since, I think it was almost 1.5 years ago where that was still the deep research era. And a lot of these frameworks or, let's say, these scaffolding codes are actually adapting the same methodology where each of these sub-agents starts fresh with a new, very constrained context and to execute a very specific task. And also, we see very similar designs like Claude, they have UltraFlow. When we look at the recent Anthropic by Google, they have the swarm mode. So, I think the formality is not new. So I think 1 of the major reasons why DeepSeek is driving that is that the model capability is not yet good enough, so they do need to design some of these external... I would call it external... scaffoldings in order to compensate for the model weakness that DeepSeek is really struggling to solve. Because you see, when you compare with really top-tier models like Claude, like Astra, these kind of top models, they can actually natively take your prompt and dissect it into sub-questions and to answer them gradually, sequentially. But then, because the model is not... especially open-source models... many of these are not really strong enough in that field, so that's why they need to put a lot of these scaffoldings, for instance, 1 of the sub-agents to try to help them finish a task. So we're talking about 2 different sides, right? In terms of model capability, the researchers are trying to improve the so-called long-horizon tasks, which, you know, in order to finish a task, the model tries to do multi-step reasoning and try to finish the task in a multi-step. On the other hand, it's the long-running jobs, but long-running jobs is not something that you can natively solve within a model, at least not right now, right? So that's the kind of thing that you need to design in your harness system. I think if you want to ask about, specifically about the orchestrator versus sub-agents or workers, I think that's probably what you meant.</p>
+<p>EY: Okay, I see.</p>
+<p>NM: Yeah.</p>
+<p>EY: So I saw that DeepSeek's core thesis is that the agent equals the model plus harness. Is it because their model itself is not as good as their SOTA models in the US? Or do you think that it means the primary mode for AI labs is shifting away from model training toward traditional system engineering or other frameworks?</p>
+<p>NM: So I wouldn't say the frontier labs are shifting away from model. I think these are 2 parallel tracks. I think model performance from what I see is saturating because you see how these top priority, high proprietary models train, how they get their huge performance boost this year is because they are getting a lot of these data and environment to train the reinforcement learning training. That's on one hand. But on the other hand, models get smaller, especially on these top tasks with top complexity and stuff. But on the other hand, you think you're dealing with most of these are regular customers that don't need top-notch model performance on a daily basis. They just want to get their work done. So the topic of getting work done includes, I think personally from my observation, 2 main tracks. The first one is the regular tasks like writing documents and making a PowerPoint, making slides, writing an email reply, that kind of thing. While on the other hand are tasks that are very special. For instance, it's not difficult, but it's special, like how to operate an ERP system like SAP, how can I make it to automate a certain task? So I think this is more, it belongs more to the harness level. Because model alone doesn't really solve that kind of thing. So in order to make more users use their product or sell more tokens, they need to have the kind of product genre that really deals with these ordinary regular daily tasks, not necessarily like power tasks, but just like regular tasks. And I think this is also, I'm not sure if you want to know about the Chinese market versus the Western market specifically, but we do see their frameworks like WorkBuddy, QCoder... these kinds of new entrances, let's say new entrances for work. So I think also that's one of the things that DeepSeek also want to rival is to have an easier, lower barrier entrance for maybe the majority of the users out there.</p>
+<p>EY: Mm-hmm.</p>
+<p>NM: Yeah.</p>
+<p>11/26/2026 at 05:04 AM UTC</p>
+<p>EY: Thank you.</p>
+<p>NM: And another highlight about this architecture is that it introduced a mechanism akin to the CPU branch prediction that allowing the AI to silently perform trial and error process in the background. So for enterprises with this approach, like trading idle compute capacity to reduce human waiting time will increase the cost and the cost- effective in terms of the ROI between the compute expenditure and final task conversion rates. I think the direct answer is yes, because as we noticed that, so first and foremost, I think from my regular, you know, my view on my customer is that in enterprise usages, companies don't really trust agents running in background, right? They still prefer human supervision, human in the loop. They still need humans for, I think, the majority of the task right now because agents are still not reliably can solve 100% of, or even let's say the majority of the problems, right? For instance, I think my view is that if I want to finish a certain task. I think the success rate without any human supervision is I would say roughly around 20% to 30%. A majority of the tasks still needs, you know, regular human supervision. So there's one caveat is that DeepSeek, their approach is really very software engineering-oriented view where I'm pretty sure their company is filled with a lot of, you know, talented engineers and their day job is to just write software and maybe discuss some of their software defects. Actually, the regular way is to raise a PR, raise an issue and describe the issue that you come across. And for that specific scenario, yes, the agents in the background can watch the different dialogues between the user or between different chats, try to synthesize that into a list of the issues so that the agentic framework can solve these software bugs or maybe make a new feature automatically. But that is assuming that everything can be managed under the software engineering framework, which is everything is managed by GitHub and you raise some kind of issue to communicate on new requirements or maybe bug fixes and you can fix 1 by 1 and each issue fixed should be screened by a human engineer or maybe in this case an AI model can also do that and automatically merge the pull requests, right? That's the very software engineering approach. But when you look at the majority of the enterprise use cases out there, it's not really like that, right? So I would say from my observation, The better approach would even be a skills-based task where usually a human employee, he works on a very routine task, right? So this routine task, if he does that every day, so that task can be the so-called distilled, right? Although it's not the right definition, but distilled into a skills markdown to finish a very routine job. So I think that's still the majority of, you know, how the enterprise cases are using right now. Otherwise, it's because most of these are very fixed steps when they're doing some work. So they just do coding and use a very relatively traditional DAG, directed acyclic graph, because the stacks are fixed, right? So they don't want the agents to behave above this range. So the skills markdown and the DAG are the 2, I would say, most common ways of how enterprises are using AI right now. I can't say for sure if these background agents will be a mainstream in the upcoming next year, at least in 2 years, but at least for I think the rest of this year and earlier next year, it's not going to be a thing because it doesn't solve the trust issue that enterprises have with AI models plus the harness. Yeah.</p>
+<p>EY: So if AI can run on its own in the background, so will enterprises worry about uncontrollable token usage because they cannot observe it?</p>
+<p>NM: Yes, that is already the case right now. Because let's put it in 2 different perspectives. One is the bill, right? I think started from around May or June this year, that was 5 months ago. Before that, all the enterprise clients that I work with, they're token maxing. They're just using arbitrary tokens that they encourage their employees to try to use different models. The problem is that after June and July, especially in the Western market, now OpenAI and Azure, they've changed the way how they charge their clients. Before June, it used to be the regular coding plan for customers where you pay a fixed fee and then you can just use an arbitrary amount of quotas when their employee is using Codex, stuff like that. But after June, they're charging based on tokens. After that changed, the token bills went astronomical. After July, I'm seeing more and more companies are enforcing a very, I would say, strict limit on how many tokens the employee can use. Unless you're a developer, then the amount I see varies from $20 per month to $50 a month. That's on the bills level. Now, we were talking about the trust issue. Another perspective would be the auditability of the behavior of the agents. I think the majority of the enterprises out there, especially when they're not</p>
+<p>11/26/2026 at 05:04 AM UTC</p>
+<p>in the tech sector, they're not in the finance sector where they know very well about AI. So these companies, even for those companies that are very aggressive on AI, they don't really dare to hand over arbitrary jobs to generic AIs or generic harnesses. They also build a lot of these so-called observability capability into the agents. Like for instance, one of the, I think the most popular framework is called LangSmith. That's by... so basically you can audit the trails of the agents to see what the agents are doing specifically. The problem is that they're letting the engineers to audit these trails to make sure that the agents are following the rules. They're following the steps. However, these data gets... very, very soon these data gets... there's just so many auditability data that the human becomes the bottleneck. Engineers can't really audit all the trails. So we're somewhere in the middle where observability frameworks like LangSmith, they also have their new products and say, "Hey, we are using another AI model to try to help you go through all these agent trails to make sure that the agents are behaving within the design boundaries." But still, I think there's a trust issue. I think the gap is actually pretty big, still big right now. Just like I said, the enterprises right now still prefer to use very well-designed boundaries and very fixed graphs instead of just letting the agents just do things arbitrarily.</p>
+<p>EY: Like we all know that enterprises hate sending proprietary code and credentials to the cloud, and DeepSeek introduces "bring your own machine" model this time, that is keeping the compute in the cloud while execution stays local. So do you think it will provide enough security to win over risk-averse banks or giant financial institutions?</p>
+<p>NM: No. Are you asking for the Chinese market specifically or like the global market?</p>
+<p>EY: In the Chinese market.</p>
+<p>NM: Oh, Chinese market? Okay. The problem is I think Chinese enterprises generally have trust with cloud as a service in general because the Chinese market doesn't really have a long history on clouds, software as a service kind of category. So whenever they can, they will try to do their local deployment, right? Even though that means higher costs of buying their own infrastructures and try to tune that. So what DeepSeek claim is that... okay, the execution of course it stays local, but then... it's actually a difficult question because you're forgetting about the API level because you need to call the API service anyways, right? So it's no matter... it's about... either DeepSeek official... they have their own official API service, but enterprises still... well, it really depends, right? I would say my observation is the smaller enterprises are willing to use API services to reduce costs, but especially for medium to large enterprises, they're still willing to build their own infrastructure and they're not even willing to use other competitors like ByteDance; they provide so-called private cloud solutions, right? Even that is not very attractive to these Chinese enterprises. And also note that when you were saying local executions, it actually doesn't necessarily mean running on your personal or company laptop because gradually, actually very soon, these are moving into the cloud as well. Which means that even though these systems are a two-tier architecture, you still need to first and foremost call the API service to the LLM, EY: Mm-hmm.</p>
+<p>NM: right? And then hand off to the compute on the agent stuff into a CPU environment, which is still... lives in a cloud environment. So I think it's a very binary thing, right? You either go all cloud or you try to do everything locally. I think these are 2 very diverse groups. Yeah.</p>
+<p>EY: Okay, so before you answer this question, you asked me which market we are talking about. So do you observe any major differences among different markets like in China?</p>
+<p>NM: Oh, completely different, completely different.</p>
+<p>EY: Mm-hmm.</p>
+<p>11/26/2026 at 05:04 AM UTC</p>
+<p>NM: So when we talk about especially Western markets, then it's completely different because Western enterprises do have a long history of working with different service providers like Azure, AWS, GCP, whereas these are the 3 most usual ones, right? Plus some of them may choose like Oracle, Snowflake, blah, blah. Now, usually, let's say generally, they don't really have trust issues because they trust that if I sign a contract with OpenAI, then you will not use my data to train your model, right? That's written in a contract. Now, however, that lacks a... how should I put it? A way of getting this thing audited, right? Because in a more traditional cloud computing industry, you can audit that, right? You can make sure that your data is not disclosed to outside. But you can't really verify if a model company has or has not been using your data as a training set, right? So I think that's sort of like the elephant in the room where, under the water, every employee is discussing and saying, "Hey, this is really a sensitive thing, right?" It's maybe from an email of the executive. So probably we shouldn't be... We try not to use it. There are some discussions, but haven't really converted to real actions. But I start to hear whispers about, "Should we really trust OpenAI enterprise plans, or should we start to host... actually even, yeah, start to host their own GPU services?" Actually, there are more than you would thought or you would hear because they thought, "Oh, we probably have more control, we have more auditability." So, yeah, there are quite a handful of companies that are really willing to do that.</p>
+<p>EY: Mm-hmm. Okay.</p>
+<p>NM: Yep.</p>
+<p>EY: So I saw this thing means that the cross-agent communication or A2A is still an unsolved problem in this framework. So if a company wants to deploy a lot of agents across different departments, is there any physical limits or other things that prohibited such things?</p>
+<p>NM: Yes, a lot.</p>
+<p>EY: Yeah.</p>
+<p>NM: I think that's... again, on 2 levels, right? So I think first and foremost, I think from my observation, there are very few, or let's say almost no company is doing the cross-department agents because it's just not real. It's not really happening right now because organizational changes happen before technical changes. If a company thinks that there is an agent or there's some kind of workflow that needs multiple departments to work together, they would rather merge these 2 departments to 1 and then kick off the AI work rather than trying to design an agent that works across different systems, across different departments, because then you're also dealing with power plays or dealing with different permission controls, role-based access controls that becomes really complex, right? So, yeah, I think. Especially in more, let's say, traditional enterprises, this has been a really big concern. So I think I've never seen an example of an agent being deployed across different departments. Now, there are actually attempts in the tech sector, those technology companies where they are doing some very brave attempts. So the technology itself, it may not necessarily be fancy like what Google introduced like AQA, right? It's not really a protocol because it's not going nowhere. But what these companies are trying are very basic methods, like some of these I can name a few, let's say something like a markdown, like a blackboard markdown where all agents read and write into that single file, right? That's a markdown. And second is we previously described the GitHub way, right? If you have a GitLab, anything like that, using GitHub as a way to manage a large and complex project, that's also a way of doing that. And there is actually a third way of more, I would say, more traditional software engineering/project management, which is use Jira tickets, the Kanban style. Now, Kanban has been proven to be very effective in terms of project management and also backlogging requirements. So there are a few companies, like at least 2 to 3 companies, they are experimenting with this Kanban style project management that human and agents are working together. Or even sometimes they try to let the agents to do everything on their own. Well, I'm not sure if that attempt is going to be successful or not. We're not quite sure yet. That's a very big question mark. But these 3 categories are usually the more, I would say, the more technical approaches I see that have been implemented in the tech sector. Yeah.</p>
+<p>11/26/2026 at 05:04 AM UTC</p>
+<p>I hope that answers your question.</p>
+<p>EY: Okay. So do you think such agents is just a stage of development or a problem of time?</p>
+<p>NM: Yeah.</p>
+<p>EY: When it happens?</p>
+<p>NM: Problem of time and also similar to how you manage a technology-oriented project, right? Because that's how human would do. Have a project manager or the fancy word is called DRI... Directly Responsible Individual... where a person oversees across different teams, across different roles and try to achieve a very definitive goal. I think for a project like those, that can be doable, but maybe not so much outside the tech sector.</p>
+<p>EY: Okay, thank you. My another question is that since DeepSeek is doing such thing, do you think there is a pressure that can put on other major Chinese model labs such as Moonshot or Step?</p>
+<p>NM: Oh, yeah, for sure. So you see, the problem is that different model, the so-called, we call it the actual, right? The LLM field players, like Minimax, Step, right? These companies, so they all have their own coding harnesses, right? So in a sense, the problem is that when you train your model, you try to co-design your harness and also co-train your models so that your model works the best in your own harness, not in your competitor's harness. That's the easier approach, right? And also DeepSeek in the past have been making mistakes, I think in their initial version of V4 when they also announced their DeepSeek harness, it was not co-trained, which means that... the performance is even worse when they use their own harnesses, right? So that's one of their past versions, and it's no longer a problem right now. So I think the pressure for DeepSeek is that because everyone is doing that, how... so let's talk about the entrances, right? Because you see their competitor is... their competitor is not really these model-first labs, because if you're only facing engineers specifically, now the engineers, they know a lot of stuff, right? I would say the most engineers that I talk to, they tend to use Cloud code, right? Cloud code, the software, both an API, a model API from a different company, let's say like DeepSeek, the AI. That's kind of like the reality where you're facing the majority of engineers. But on the other hand, as we just talked about, like Baidu and Doubao, right? They co-work, they cohesively, you know, live in their Lark ecosystem, and also WorkBuddy, which apparently attracted a lot of these regular users, right? They don't need to understand what is an API, they don't really need to understand a lot of these details, they just need a handy tool to get work done, right? I think that's kind of the pressure coming mainly, I would say, from the larger internet companies in China; it's not really from the AI or Minimax. These two companies. Yeah.</p>
+<p>EY: Mm-hmm. Okay, thank you. And besides the other model labs, I want to discuss its impact on the cloud providers. Like if 24/7 always-on background agents become the norm, will that change server demand for cloud providers, and do we shift from spiking inference peaks to steady baseline background compute?</p>
+<p>NM: Yes, I think that's the trend that is gradually happening, because you probably also see recently there has been a lot of work done in the space of so-called personal assistants, right? So these background agents, they really require on-demand, or maybe for jobs that is not so emergent, they will probably delay that task to execute at night because that's the non-peak hours and have a lower API cost, which means that for IaaS providers, let's say for the cloud companies, they're facing way more token usages and a lot of competition on the service quality as well, because then people pay attention to the latency, to the stability, to the quality of the inference, and the price. I think the price is actually the least important factor here because the quality is actually very important.</p>
+<p>EY: Mm-hmm.</p>
+<p>NM: And can you actually maintain a reasonable profit margin for these companies as well, right? So I think there'll be</p>
+<p>11/26/2026 at 05:04 AM UTC</p>
+<p>multiple consumers, higher requirements on service level agreements, higher high quality of service. I think that's kind of the challenge that the cloud providers are facing. And also, by the way, because... You see DeepSeek open source their inference framework called DeepInfer, right? And they also open source their statistics on how much money, what's their margin, right? How much money they can earn per Blackwell graphics card. And that's going to be a huge challenge and baseline for these cloud companies because internally, no one ever disclosed digits like that, right? They disclose their profit margins so naturally they would use that as a baseline and there are ways... it's a complex field, the AI inference, so I think there are a lot of ways of doing optimization. So if you want to make the model cheaper, have a larger margin, you could probably compress your model. There are different ways of doing the compression. But then if the user noticed that the service quality is not as good as the official service, then the users will pivot. So I think it's a very tricky area, definitely a huge challenge for more and more cloud service providers out there providing API services. Yeah, EY: Okay, NM: sure, EY: So let's talk about the ERP and some traditional SaaS software like many domestic SaaS providers are attempting to develop their own AI plugins based on their ERP system. So if a universal super agent which is capable of operating across platforms and directly can solve the problem in the local execution environment, will that push enterprises to bypass the traditional SaaS companies' native AI tools and directly call the agents from DeepSeek or other AI?</p>
+<p>NM: Yes, yes. Yeah, that's for sure because that is already the trend that we're already seeing. So for instance, the reason I'm very familiar with SAP, I think SAP is a very representative example here because one of the AI use cases that were done earlier this year is to make AI agents inside SAP because SAP has their own official quote-unquote version of an agent called Joule, J-O-U-L-E. But the problem is no one actually uses that because it's terrible. It's just a regular rag chatbot that just search for something, doesn't really do anything, right? So the problem is that the customers don't want to use that, they don't want to pay for that. And then also because the open calls was very popular back then, so they actually tried to ban external AI agents to try to access their own databases via API services. Now, that's a terrible move because they were scared. I think the problem right now is that these more traditional SaaS companies, they are not invested enough in terms of AI research, so they cannot really hire the best person. And without the best person, you just have a very mediocre product that the users are unwilling to use and is useless. It's a problem. And also, I think everyone has been talking about... how should I put it... what's your efforts of protecting yourself, right? So most people thought these traditional SaaS companies, their protection is private databases, is their other stuff, but from my view, the most protection is the methodology, right? So for instance, their best defense is the management methodology that has been developed over the past 30 or 40-ish years. That's a very thick level, right? That's a very thick wall that AI models, at least last year, cannot break. But the problem is that as the models get more and more smart... smart enough, the model companies are also doing something the same, right? Because the model companies right now are buying EY: Mm-hmm.</p>
+<p>NM: Those smaller companies that has went bankrupt, and they're trying to buy the data. So their data includes their Teams chat, Slack chat, work orders, right... conference documents, their code, so that they can reproduce how a company works, right? So it's actually getting easier and easier for the model to say, "Hey, I want to probably build a subsystem within the ERP system. I have a very specific problem to solve." And models this year can actually solve problems like those, and it's going to eat off more and more space from these more traditional SaaS companies. So I think that it's almost inevitable that these spaces that traditional SaaS companies, I think they won't really defend themselves, right? Because these different enterprises, they will very soon figure out they can just build what they want instead of adapting to an off-the-shelf standard product, right? If when they can build around their own business flows, around their own business rules, they could probably ditch, they can just go away from the traditional, you know, software very quickly. I think that's probably see that within the next year or 2. So I think that's upcoming. Yeah.</p>
+<p>11/26/2026 at 05:04 AM UTC</p>
+<p>EY: Okay, thank you. And for the last part, I want to discuss the competitive landscape and outlook for 2027. Like in this year, we have heard a lot of comments on how AI companies compete. Like, for example, the Tencent technical leader, Yao Xu, mentioned that the AI competition has entered the second half where model capability is not the most important thing, but the product itself is the most important. So do you think such comment is only because his position in Tencent and Hunyuan seems performed very poorly in the AI application?</p>
+<p>NM: No, I disagree. I actually agree with what he said because when you look at what happens with clouds versus OpenAI, I think a model API service, or let's say model services, it doesn't really behave like how traditionally the software industry works where there's a strong loyalty. The customer has a strong loyalty. Customers don't have strong loyalty, especially for individual customers.</p>
+<p>EY: Mm-hmm.</p>
+<p>NM: We're first talking about the overseas market, right? Especially the Western market. So there is no loyalty. You need to constantly burn a lot of money in order to stay at the frontier. Once your model doesn't catch up, then you will lose your clients very quickly, right? It's actually the same for enterprises as well because enterprises, they're willing to sign 1 or 2-year enterprise contracts, usually 2 to 3 years contracts. But you see, for instance, the clients I'm working with right now, they've signed a contract with OpenAI a little over a year, and you see right now everybody is complaining that their model is terrible. We don't want to use that anymore. Can we have access to cloud, right? They're asking that to the company leadership. They're asking that to the IT team, pushing them to try to make a pivot or at least a secondary service provider, right, pivot away from OpenAI. So model capability is very commoditized, right? So for Western markets, even for these frontier models, they're facing the same challenge. Now for the Chinese market, I think it's lagging behind just a little bit. It's... I'm actually seeing it's very... I think it's very similar. I think the reason is because from what I see, at least around me personally, so the vendors here in mainland China, including the Hunyuan, right, and also Baichuan, GLM, Kimi, everybody, although there are small differences, but they are in the same tier, right? They are all the flash level model, where the model is quick, is very cheap. It does quite some work, but it's not as smart as the Western models or proprietary models.</p>
+<p>EY: Mm-hmm.</p>
+<p>NM: I think that's limited by a lot of factors. I think the majority is first and foremost compute. And the second thing is the reinforcement learning training data and the environment. Now, because you don't have these, you don't have sufficiently these two kinds of resources, which means that in the coming year, I don't think we're going to see a frontier level model within the Chinese vendors. We'll probably stay with where we are, which is the flash-level model. It's quick, it's easy, it's capable to some extent, and especially the sentiment on the Chinese market right now is try to pivot away from NVIDIA's ecosystem and try to use the domestic Chinese chips to do training and inference. I think this is going to last for a long time. Then what's the differentiator? We are also seeing what happens with Tencent is that they're treating their WorkBuddy product. They're actually getting more clients, not because their model is really capable. It's because they've spent a lot of money doing marketing. And also, I'm not sure if you have seen, but in these airports, they're having lots of advertisements everywhere. Plus the ecosystem, they're connecting a lot of typical software that is within the Chinese ecosystem so that it becomes a Swiss Army knife. Maybe we cannot really compete on a model capability level, but we can compete on the ecosystem level and they hope that by doing this they can develop a clinch from the customers where customers just get used to use WorkBuddy just like in the last, the chatbot era, the clear winner is Dobao. Where it's just a chatbot, but it's not super smart. It's not super good, but it's pretty useful for day-to-day users. So apparently, ByteDance has invested a lot of money on marketing and make Dobao a very the absolute king in the era of chatbots. And now we are moving towards the WorkBuddy era. So I actually agree with Shen Yu's view that...</p>
+<p>EY: Mm-hmm.</p>
+<p>11/26/2026 at 05:04 AM UTC</p>
+<p>NM: Model alone, I say model capability alone is not really feasible on the Chinese market. That is why you need to spend quite a lot of effort trying to design... for instance, the harness that DeepSeek designs or the harness that compensates for model weaknesses, making it a more useful, more handy tool by incorporating some of the very domestic ecosystem or the usual kind of work that people usually do on these harnesses. Not to mention that, if you can somehow develop some kind of very in-depth functionalities like Chinese ERP systems or software like those, if they can incorporate more and more of these ecosystems and maybe make their model very good at doing 4 or 5 different perspectives, I think that is going to be at least a longer period of competitiveness, right? For instance, you see Kimi, their K3 model, they are putting a lot of effort on modeling stuff on front-end design. I think that is the kind of direction that they are headed. But for Tencent specifically, they wanted to cut in on regular office works, regular enterprise work, like very small use cases like procure-to-pay. I actually agree with his view on model alone does not earn you more customers. Actually, you earn more customers by your product design. Yeah, and I honestly don't think DeepSeek, the super agent thing, is going to have a major impact because that is really designed for the tech sector, for those who work in the AI or in the tech sector, not really the broader general audience. Yeah, I think that answers your question.</p>
+<p>EY: Okay, thank you. And I saw some overseas developers already favor DeepSeek for its cost-performance ratio. Will this open-source ecosystem framework accelerate the adoption among Western small and middle-sized businesses looking to automate workflows on a budget?</p>
+<p>NM: Yes, but not necessarily DeepSeek's official API. There are 2 reasons. 1 is that they worry about data sovereignty. The second is, it's a Chinese company. They're worried about that, especially for Western companies. And the second thing is that DeepSeek's API service has censorship in it, which means that very occasionally, it refuses to answer certain topics. So from what I see, Western customers are willing to sign with new labs, for instance, Fireworks being 1 of these. Because this is open source. If you deploy it, if you serve it in the West, in, let's say, 1 of the server rooms in the United States, they are actually more willing to use Fireworks or Databricks. They also serve these open source models. And companies like SGLang and vLLM, the inventors of the 2 very famous inference engines, they both have spin-offs. They also provide enterprise services. They're roughly around a year old, mostly servicing medium to large enterprises. But for now, it's still in North America only, but I do see this maybe extending to other Western countries as well. So not necessarily a good news for DeepSeek's official API service, but it benefits the new lab or the new cloud service in general, I think.</p>
+<p>EY: Okay, thank you. And that's all for my question.</p>
+<p>NM: And also, I think, by the way, what DeepSeek has introduced by their DeepSeek harness and DeepSeek super agents, I did not see a lot of adaptations in the Western market.</p>
+<p>EY: Mhm.</p>
+<p>NM: I'm not quite sure why. Probably because on the harness level there are a lot of competitors in that space, right? So for instance the PI agents, right? There in the past week, there has been a T3 code, there are a lot of competitions in that space. And DeepSeek's design is, well, it's a unique design, right? It's a special design, but it's not something that other companies cannot copy.</p>
+<p>EY: Mm-hmm.</p>
+<p>NM: So I think people would probably adapt their methodology of how they design their harnesses, but not necessarily DeepSeek's own software. But I think that's a topic we didn't really cover in our previous discussion.</p>
+<p>EY: Okay, thank you. And that's all for my questions today. And thank you for sharing your time. Yeah, let's end up</p>
+<p>11/26/2026 at 05:04 AM UTC</p>
+<p>here. And if there is any other proper topics, I will let my colleagues contact you again.</p>
+<p>NM: Yeah, sure. All right. Thank you very much.</p>
+<p>EY: Thank you. Bye.</p>
+<p>NM: Thank you. Bye-bye.</p>
+<p>DISCLAIMER: The statements or opinions expressed today are those of the Advisor and not Guidepoint, who disclaims all liability for the content provided. The Advisor may not disclose material nonpublic or confidential information or any information that would cause the Advisor to breach any duty or obligations. Guidepoint is not a registered investment advisor and the information provided is not intended to constitute investment advice.</p>
+<p>11/26/2026 at 05:04 AM UTC</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
