@@ -1,0 +1,275 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.26 | AC | LLM | Anthropic Platform Engineering Lead: Rust API Rewrite &amp; Agentic R&amp;D Transformation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.26 | AC | LLM | Anthropic Platform Engineering Lead: Rust API Rewrite &amp; Agentic R&amp;D Transformation</h1>
+<p class="orig">原标题：Anthropic 平台工程负责人 Katelyn Lesse：Anthropic API 架构 Rust 化迁移与 AI 驱动的研发范式转型</p>
+<p class="tags">#anthropic #agents #software #cloud #llm</p>
+<p class="meta">AceCamp · 2026-11-26 14:08 · article 70569680</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>Anthropic平台工程负责人Katelyn Lesse披露，2025年底至2026年初（尤其超级碗广告带动移动端激增）流量暴涨导致原有Python单体API在GCP集群遭遇严重CPU瓶颈，向云厂商争取更多CPU资源变得异常困难。</li>
+<li>团队在5–6个月内由几人核心小组借助自有模型完成核心API（鉴权、分词、计费与安全）向Rust的“大跃进式”重写，通过影子流量校验token输出一致性并保留Python回退链路实现平滑上线。</li>
+<li>AI辅助彻底重构了研发流程：约75%代码由模型编写、约80%由Agent发起的PR无需人类工程师逐行审查，借助Rust强编译期检查即可建立信任，传统手写代码面试正逐步被Agent协作评审取代。</li>
+<li>云端托管Agent架构经历彻底重构：早期每请求启动沙箱跑Claude Code导致延迟高、凭证不安全且每沙箱耗用≥1个CPU，新版将核心Harness移至持久化服务器并以旁路保险库注入凭证，使平均CPU消耗降至原系统的三分之一。</li>
+<li>内部全系统已接入MCP服务器，工程师在Slack中编排多Claude实例处理CI修复、QA测试及值班告警噪音过滤，产品经理已可借助Claude独立向生产环境部署开发者控制台诊断仪表盘。</li>
+<li>展望未来，软件工程正从写代码转向跨系统协调与构建安全/身份底层护栏，Anthropic在维护MCP交互标准之外正探索连接实验室设备与机器人的MHS（模型硬件标准），支撑成千上万持久化智能体并行协作。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>纪要源于：2026 年 11 月 26 日，The Pragmatic Engineer Podcast 官方频道发布的对 Anthropic 平台工程负责人 Katelyn Lesse的访谈。</p>
+<h2>正文</h2>
+<p>以下为访谈全文：</p>
+<p>Q&amp;A</p>
+<p>能否请您概述一下 Claude 的后端架构，特别是详细说明各个不同层级及其功能？</p>
+<p>该架构包含多个层级。最底层是由推理团队管理的加速器层，涵盖运行模型的 GPU、TPU 以及其他硬件芯片。紧挨着它上方的是平台层。该平台包含我们面向外部的 API 套件，这是外部开发者在我们服务基础上进行构建的基础。它还为我们所有的内部应用提供基础服务和产品基础设施。一个核心原则是，我们自己的应用构建在与外部客户使用的相同 API 之上；例如，Claude 提供的每一个 token 都会通过 messages API 传输。除 API 外，平台层还负责管理身份验证、CPU 资源、网络以及我们应用的沙箱等服务。</p>
+<p>顺着一个 API 请求的完整流转过程来看，从最初接收到最终响应涉及哪些关键阶段和基础设施组件？这一过程有哪些独特特征？</p>
+<p>当接收到一个 API 请求时，它首先会抵达我们的身份验证和授权服务。验证通过后，请求会进入核心 API 服务，该服务运行在跨多区域、多云的 CPU 集群上，负责将请求路由至合适的位置。在此服务内部，我们在将 token 下发给 GPU 之前，会先完成分词（tokenization）、计费处理并运行安全检查。随后，响应经由同一个服务原路返回并交付给用户。该系统的一个独特特征是能够将请求保持打开状态长达一个小时，以支持长时间运行的流式对话。由于这些对话本质上是无状态的，因此在每次模型轮次中，整个对话状态都会来回传递。随着时间的推移，我们一直致力于通过创新来增强弹性，并减少线上传输的数据量，从而让这一过程更加稳健。</p>
+<p>重写整个 Claude API 层的动力是什么？最初的技术栈又是怎样的？</p>
+<p>整个 API 层——涵盖身份验证、授权、分词、计费以及安全防护机制——最近已用 Rust 进行了重构。最初，它是一个 Python 单体应用。这次重写的主要诱因来自性能与扩展性方面的挑战。最初，Python 单体应用运行在单个 GCP 区域内，随着请求量急剧飙升，我们在 CPU 效率方面开始面临巨大困难。在集群内获取足够的 CPU 资源来应对这种负载变得越来越成问题。</p>
+<p>鉴于 Python 众所周知的性能局限，为什么最初开发 API 时会选择它？导致做出这一选择的具体背景是什么？</p>
+<p>采用 Python 的决定是在大约三年前做出的，远在我入职之前。当时，Anthropic 主要是一家专注于研发模型的公司，通过 API 向公众提供模型服务当时还算不上核心业务。当团队决定构建 API 和应用时，开发团队规模极小，并且与研究团队有着深厚渊源。研究界（尤其是当时）在处理涉及 TensorFlow 等框架的任务时，主要使用 Python。这一选择促成了研究、推理、基础设施以及初创产品团队之间的顺畅协作，不仅便于沟通配合，也能轻松将研究原型转化为生产环境应用。</p>
+<p>具体是哪些事件和技术限制导致团队最终认定必须彻底重写 API？在决定走这条路线之前，采取过哪些过渡措施？</p>
+<p>从 2025 年底到 2026 年初，随着我们观察到请求量出现持续且显著的暴增，重写的必要性逐渐显现。今年（2026年）早些时候我们的超级碗（Super Bowl）广告是一个标志性事件，尽管它并未直接带动 API 调用的立即接入，却引发了移动端 App 下载量和使用量的激增，而这些流量全都通过同一个 messages API 运行。这进一步加剧了我们 CPU 集群的承载压力。我们甚至遇到了这样的局面：CPU 这种传统上被视为易于扩展的资源反而成了受限资源；向云厂商争取更多 CPU 资源变得比以往更为艰难。在决定彻底重写之前，我们采取了几种相对常规的手段。我们曾将服务扩展至另一个区域运行并相应路由流量，但这又在区域间的网络带宽上带来了挑战。我们还在应用层和基础设施层发掘并落实了一些较小维度的性能优化。然而，显而易见的是，面对业务的增长轨迹，这些举措杯水车薪，促使工程师们主张推行更为彻底的解决方案。</p>
+<p>在为 API 重写选择新语言的过程中，选择 Rust 而非 Go 或 C++ 等其他高性能替代方案的考量是什么？</p>
+<p>虽然在推进服务导向架构的过程中，我们已经开始使用 Go 构建部分新服务，但对于核心 API 的重写，我们需要极致的性能。去年（2025年），Go 最初被选用于新服务，对于一个以 Python 或 Ruby 背景为主的团队来说，它是效率与开发体验之间的一个良好折中。然而，针对系统中对性能要求最苛刻的部分，大家的共识是要追求更高的效率。我们曾考虑过 C++，但最终予以放弃，部分原因是出于对开发生产力以及可能导致人员流失的担忧。Rust 则展现出极具吸引力的平衡点。它具备与 C++ 媲美的性能，同时提供内存安全性，从而杜绝了整类 bug 的出现。至关重要的一点是，我们模型能力的不断提升抚平了 Rust 陡峭的学习曲线。模型能够替开发人员分担许多复杂的实现细节以及令人头疼的问题（例如借用检查器 borrow checker），而这些往往是 Rust 初学者面临的痛点。这使得团队无需具备深厚的先验经验，便能顺利过渡到这一高效率语言。</p>
+<p>许多此前没有 Rust 经验的工程团队成员是如何适应这种新语言的？AI 模型在这一转型过程中发挥了什么作用？</p>
+<p>这一转型过程本身是一次学习历程，而这在很大程度上得益于我们自有模型的辅助。包括我在内，团队中的绝大多数人此前都没有使用过 Rust。模型扮演了双重角色：不仅帮忙编写代码，还充当了帮助理解生成代码的学习工具。尽管初期存在摸索阶段的阵痛，但团队对 Rust 的上手速度远超预期。通行的做法是：约 75% 的工作交由模型完成代码编写，深入吃透确切的底层语法并非必不可少。剩下的 25% 则源自工程师探究底层机制的好奇心，促使他们向模型提问，以理解其编写的逻辑。这种互动式学习让工程师迅速掌握了新范式并变得熟练。这种体验类似于我们早先引入 Go 时的情形，即便是一年前模型能力尚不及如今，也显著缩短了团队在新语言中建立生产力所需的时间。只要开发者愿意探究，模型就能降低学习具体细节的难度，切实拉低了复杂语言的准入门槛。</p>
+<p>随着AI模型能力的提升，开发者是否还需要深入理解每一行代码的实现细节？AI模型在多大程度上可以替代开发者编写代码？</p>
+<p>随着2026年以来AI模型的持续进步，开发者已无需像过去那样理解每一个底层细节。尽管工程师出于本能会花时间去了解代码，但实现细节和具体的编码语法已不再那么重要。只要能够清晰地阐述代码意图，模型编写的代码质量可能比开发者自己写的更高。</p>
+<p>Rust语言以其严格的编译时检查而著称，这曾让开发者感到困扰。在AI辅助编程的背景下，这种特性是否反而会提升Rust的受欢迎程度？AI模型如何与这种强验证机制协同工作？</p>
+<p>是的，Rust的强编译时检查特性在AI辅助开发中成为一个显著优势。在非确定性的环境中，任何可验证的机制都非常有价值。过去，开发者手动编写代码时，为了通过编译需要经历缓慢的迭代循环，这可能令人沮丧。然而，当代码主要由AI模型或Agent生成时，开发者无需过多关注这一过程。严格的编译时检查反而增强了对最终生成代码的信任度，因为一旦代码编译通过，就意味着一整类潜在的错误（如内存安全问题）已经被排除，从而确保了更高的代码质量和可靠性。</p>
+<p>在使用AI将API从Python重写为Rust的过程中，采取了怎样的迁移策略？具体如何通过“影子流量（shadow traffic）”机制来验证和确保新旧系统的一致性？</p>
+<p>最初计划是逐步替换系统模块，但这个过程相当缓慢。后来团队采纳了一位新加入的高级工程师提出的“大跃进式（great leap style）”策略，即一次性完成全部重写。具体做法是，创建一个代码库的分支，用Rust完整重写整个系统。然后，设立一个极简的Python前端作为入口，当请求进入时，该前端会将请求同时路由至原有的Python系统和作为“影子”运行的新Rust系统。通过对比两个系统的输出是否完全一致来迭代优化。这种方式的核心在于验证输出的同一性，并持续追踪和修复Rust与Python系统之间请求处理结果的差异。</p>
+<p>在使用影子流量进行系统验证时，鉴于数据隐私限制无法直接查看用户数据，团队遇到了哪些挑战，并采取了何种替代性验证方法来确保重写后系统的准确性？</p>
+<p>最大的挑战在于，出于数据隐私保护，团队无法查看流经系统的具体用户数据（如prompts和completions）。这意味着当Python和Rust系统的输出存在差异时，无法通过直接检视原始数据来定位和修复问题。为解决此问题，团队采用了两种主要的替代验证方法：首先，确保在数据进入推理层之前的处理逻辑完全一致，因为这部分是系统的核心且不涉及敏感数据，可以进行详细排查。其次，在数据返回时，通过检查输出的token数量是否相同来进行间接验证。尽管这种方法在面对微小差异时仍具挑战性，但团队通过日复一日地迭代，持续降低Python和Rust系统之间的差异率，直至其接近完美。</p>
+<p>在完成Rust系统的重写并达到高一致性后，具体的上线部署和风险控制策略是怎样的？</p>
+<p>在新旧系统差异率降至近乎完美的水平后，团队开始正式上线Rust系统。在过渡阶段，保留了原有的Python前端作为一个降级方案。如果在Rust系统处理请求时遇到任何错误或bug，请求会自动回退到Python系统进行处理。虽然这会导致响应稍慢，但确保了服务的连续性，避免了请求失败。通过这种方式运行了一段时间，直到团队对Rust系统的稳定性建立起充分信心后，才最终移除了Python前端和回退机制。</p>
+<p>在这个由AI Agent主导的代码重写项目中，工程师的参与程度如何？他们是否需要对Agent生成的每一行代码进行深入审查？</p>
+<p>在这个项目中，工程师的角色发生了转变，他们无需审查由Agent生成的每一行Rust代码。只要系统能够通过某种方式被有效验证，工程师就可以不必关注所有代码细节。据估计，对于由Agent发起的约80%的拉取请求（pull requests），工程师并未进行深入的代码审查。剩余约20%的情况，则主要是在遇到问题或需要确保某些部分完全正确时，工程师才会深入研究代码细节以理解和解决问题。</p>
+<p>对于一个由AI Agent构建的新系统，新入职的工程师如何快速了解和上手？这与传统的入职培训方式有何不同？</p>
+<p>传统的入职方式通常依赖于资深工程师通过白板讲解、查阅可能过时的图表或文档来理解系统架构。现在，新工程师的上手方式已大为不同。他们入职后的第一件事通常是直接向Claude提问，例如“请告诉我这个系统是如何工作的”。Claude能够根据代码库及其他相关数据（如事后复盘文档等），生成交互式的系统架构图、详细的文字说明，甚至是视频或播客风格的讲解材料。这种方式允许新工程师根据自己的学习偏好，通过点击交互图中的模块或阅读生成的文档，深入了解系统的各个部分及其相互关系。这种由AI生成的文档始终保持最新，因为它直接来源于作为“唯一真实来源”的代码库本身。</p>
+<p>在Anthropic内部，Claude是如何访问公司数据以帮助工程师理解系统的？</p>
+<p>Anthropic内部的所有系统都设有MCP服务器，并与Claude建立了连接。当内部员工使用Claude时，它可以根据需要搜索所有连接的数据源，包括代码库、可观测性数据、事后复盘文档等，从而生成完成任务所需的相关信息。</p>
+<p>与您过去在Stripe等公司经历的传统系统重写项目相比，这次由AI辅助的重写项目在语言选择、项目耗时和工程师投入方面有何本质区别？</p>
+<p>过去在Stripe规划API V2时，团队曾在Ruby和Java之间进行过艰难的抉择，最终因学习和开发成本高昂而放弃了性能更优的Java。在Betterment，从Java转向Ruby on Rails时，也投入了大量时间对工程师进行新语言培训。这些传统项目最大的瓶颈在于工程师学习新语言和手动实现代码所需的时间。而在AI辅助的项目中，这些问题几乎可以忽略不计。由于模型本身精通各种语言，工程师无需花费大量时间学习新语言的语法细节，也无需手动编写大量代码。AI承担了学习和实现这两个过去最耗时的环节，使得团队可以更专注于业务逻辑和系统设计，而不必在语言选择和前期培训上投入过多精力。这使得选择性能更优但团队不熟悉的语言（如Rust）变得可行，因为AI弥合了技能差距。</p>
+<p>对于工程师而言，随着AI辅助编程的普及，精通特定编程语言的重要性是否正在下降？这对不同类型的工程师可能产生怎样的影响？</p>
+<p>是的，在当前趋势下，工程师掌握特定编程语言的语法细节已不再像过去那么重要。对于那些专注于创造和构建最终产品的工程师来说，这是一种积极的转变。AI工具使他们能够更快、更具雄心地实现目标，类似于代码自动补全（tab-completion）带来的效率提升。然而，对于那些真正享受钻研语言底层细节和精妙之处的工程师而言，可能会感到失落。不过，对于后者，仍然有大量深入的工作机会，例如参与语言本身的设计与演进，或优化框架效率。但在以实现业务目标为导向的商业环境中，工程师的工作重心正从代码的精雕细琢转向利用最佳工具实现业务成果。</p>
+<p>这次从Python到Rust的系统重写项目，在AI的深度参与下，其实际耗时和核心团队规模是怎样的？项目过程中遇到了哪些与多团队并行开发相关的复杂挑战？</p>
+<p>整个重写项目大约耗时五到六个月，核心团队的规模相对较小，大约几个人。项目中最复杂的挑战之一是协调。在重写期间，其他团队并未停止对原有Python系统的功能开发。初期，重写团队专注于核心路径的迁移，但曾发生过一个beta功能在Rust团队不知情的情况下正式上线，导致影子流量系统中出现大量差异。为了解决这个问题，团队引入了静态分析和linting等机制，强制要求其他团队在为Python系统开发新功能时，必须同步完成Rust的实现。这种“双轨并行开发”的模式增加了协调的复杂性，团队的目标是尽快完成迁移并关闭Python系统，以避免所有团队长期维护两个版本的负担。</p>
+<p>在AI Agent承担了大量编码工作后，工程师的主要工作内容转向了何处？</p>
+<p>工程师的时间和精力更多地投入到了协调性工作上。这包括与其他团队沟通，确保所有开发步调一致，以及在系统出现问题时进行调查和定位。尽管AI Agent完成了大量的实现工作，甚至Agent之间也会进行自我编排，但确保所有部分能够协同工作、让所有相关人员达成共识，这些涉及“人”的工作成为了工程师投入时间最多的地方。</p>
+<p>在开发云端托管的Agent（cloud-managed agent）过程中，最初的架构设计是什么？遇到了哪些具体挑战，又是如何通过重新设计架构来解决这些问题的？</p>
+<p>最初，我们为云端Agent构建了一个系统，旨在同时服务于API客户和内部的cloud code团队，以支持在云端运行并可异步返回结果的web和移动体验。最初的架构方案是，当API请求进入时，系统会生成一个沙箱，并在其中启动cloud code，从而形成一个Agent。然而，这个方案遇到了四个主要问题：</p>
+<p>第一，可靠性问题。如果沙箱崩溃，Agent也会随之中断。</p>
+<p>第二，延迟问题。获取模型返回的token需要等待沙箱启动，然后等待沙箱内的cloud code启动，之后才能与模型通信并回传token，整个过程延迟较高。</p>
+<p>第三，安全问题。在沙箱内启动cloud code意味着，当需要调用工具或外部服务时，必须将凭证存放在沙箱内部，而这个沙箱同时也能接触到模型，这带来了安全风险。</p>
+<p>第四，CPU资源消耗问题。每个沙箱至少需要一个或更多的CPU，导致资源占用过高。</p>
+<p>在早期Beta版本发布后，我们对这些问题并不满意。因此，我们决定重新从第一性原理出发进行设计。新的架构将核心的运行逻辑部署在持久化服务器（durable server）上，仅在需要执行具体工作时才生成沙箱，并将会话状态（session state）分开存储。这个新架构解决了上述所有问题：</p>
+<p>可靠性方面，由于harness运行在持久化服务器上，即使执行任务的沙箱崩溃，Agent本身也不会受影响。</p>
+<p>延迟方面，请求直接进入持久化服务器，然后几乎无缝地对接至messages API，延迟显著降低。</p>
+<p>安全性方面，当Agent需要调用外部工具时，我们通过一个旁路代理处理请求，并将所有凭证独立存放在一个保险库中。在请求发出时（at egress），即时注入所需凭证，从而避免了凭证进入沙箱。</p>
+<p>CPU消耗方面，新系统的平均CPU使用量约为原系统的三分之一。</p>
+<p>尽管在项目中期决定完全重构是一个重大的决策，但由于AI辅助开发缩短了规划和实现周期，使得这次重构变得可行。整个项目从构想到重写再到最终推出，总共花费了大约五到六个月的时间。</p>
+<p>与AI出现之前相比，在启动一个全新的、宏大的绿地项目（greenfield project）时，项目开发流程中哪些方面保持不变，哪些方面发生了根本性的变化？</p>
+<p>在项目开发流程中，保持不变的主要是前期设计和跨团队协作对齐的工作。无论是过去还是现在，明确项目的核心目标、确保设计方案能够实现这些目标，以及与所有相关系统和团队（例如底层的推理、研究、模型团队，周边的安全团队，以及上层的应用团队）进行充分沟通和协调，仍然需要投入大量精力。这部分工作并未因AI的出现而有太大改变。</p>
+<p>而发生根本性变化的是项目的实现阶段。过去，在完成大量规划后，还需要投入大量时间进行编码实现。现在，由于AI的辅助，实现阶段被极大地压缩了。这使得整个项目的总周期可以比以往短得多，即使前期协调工作耗时依旧，但启动和完成一个大型项目的可行性也因此提高了。</p>
+<p>在Anthropic，一个新加入的软件工程师会体验到怎样的团队结构和工作流程？团队的构成、使用的工具有何特点？</p>
+<p>团队的组织结构与AI时代之前没有太大差异，基本遵循“两个披萨”团队的规模，即大约5到10人。这个规模能够确保团队成员对所负责的系统有深入的理解，并有足够的人员冗余来应对成员休假、生病或处理on-call等情况。不过，团队成员的资深程度普遍更高。因为现在的工作模式不再是技术负责人（tech lead）设计系统，然后由中级工程师执行实现；而是团队中的任何人都可能深度参与设计或跨团队协调，然后通过编排AI（orchestrating clouds）来完成构建。</p>
+<p>在工具和工作流程方面，工程师会面对一个与以往截然不同的工具生态。当需要进行人机协同的构思和迭代时，我们会使用cloud code和co-work等工具。而在编排云端Agent时，我们主要在一个类似cloud tag的系统上操作，并在此基础上构建了一些定制化的功能。大量工作是在Slack中完成的，因此有许多基于Slack的工具。工作模式的核心是，工程师在Slack中与Claude以及其他人类同事一起协作。我们并没有为各种Agent创建独立的身份，而是将Claude作为一个统一的协作伙伴，它在不同的上下文（如私聊或频道中）可能拥有不同的权限和行为模式，但其核心概念保持一致。</p>
+<p>在AI辅助开发的背景下，传统的软件开发生命周期，如编写代码、代码审查、CI/CD、部署和监控等环节，具体发生了哪些变化？</p>
+<p>变化的核心在于工作单元的粒度从单个变更（pull request）上升到了更高层级的项目或任务。工程师不再仅仅是执行一个具体的、小的线性任务并提交一个PR，而是从更高维度思考如何端到端地构建包含多个组件的复杂功能。</p>
+<p>在开发循环中，许多过去需要工程师深度参与的环节现在已经可以实现“人不在环”（human out of the loop）。例如，对于一些机械性的代码变更，如在新API版本或新模型发布时更新SDK的版本号，这类PR可以由Claude自动创建。随后，另一个Claude实例会首先进行审查，判断该变更是否属于已知的、低风险的机械性变更。如果确认无风险，该PR就可以在没有人工干预的情况下被合并和部署。</p>
+<p>因此，对于一个新工程师而言，完成一个端到端的功能可能意味着他只直接参与了其中一部分PR的交互，而另一部分则由持续运行的Agent在后台处理。这种转变体现在多个方面：</p>
+<ul><li><b>主动修复</b>：当CI/CD因不稳定的测试（flaky test）而变红时，不再需要工程师手动介入修复，现在有Agent会自动运行并解决这些问题。- <b>任务分化</b>：工程师最初启动的Agent可能会在执行过程中自行衍生出其他子任务，而这些子任务的编排无需工程师直接控制。- <b>交互式协作</b>：Agent在工作时会保持沟通，例如在Slack中报告进度（“我已经创建了这个PR，下一步将做……”），或提出建议（“我检查了分析数据，发现一个有趣的现象，建议我们构建这个功能”），甚至主动识别跨团队依赖（“另一个团队有段相关代码，我建议联系他们，需要我代为联系吗？”）。工程师可以选择关注所有细节，也可以让Agent在遇到关键阻塞点时再寻求介入。我们的目标是让越来越多的流程自动化，减少需要人工决策的环节。</li></ul>
+<p>在当前的工作模式下，代码审查（code review）是如何进行的？是否还强制要求另一位工程师进行审查？</p>
+<p>我们不再强制要求所有代码变更都必须经过另一位人类工程师的审查。工程师在构建功能时拥有自主权和责任，可以自行判断是否需要引入他人进行审查，或者根据自己的验证确认代码质量。</p>
+<p>在生产环境的监控和事件管理中，如何利用AI模型（如Claude）处理警报并协助处理On-call轮值任务？</p>
+<p>公司的生产监控和事件管理流程与传统的工程团队类似，同样会面临监控、探测器和警报产生噪音的问题。为了解决这一问题，特别是在负载极高的API On-call轮值中，公司在过去数月里部署了一个Claude模型来“影子”跟随时序轮值。该流程的目标是，当一个警报触发时，首先由Claude接收。Claude的首要任务是判断该警报是噪音还是真实问题。如果判定为噪音，其核心目的是避免打扰或唤醒工程师，从而节省了大量原本会用于调查非真实问题的人力时间。如果Claude判定为真实问题，它会将警报升级给工程师。在等待工程师介入的间隙，Claude会开始分析问题并尝试找出解决方案。通常情况下，当工程师（尤其是在深夜被唤醒后）到达电脑前时，Claude已经完成了问题诊断，并提出了修复建议，有时甚至已经开始采取初步的修复措施，仅需工程师确认即可。长远目标是，对于越来越多类型的真实问题，Claude能够独立、可信地处理，从而完全无需唤醒工程师。目前，该系统主要实现了警报触发时判断其是否为噪音的功能，并已显著节省了团队的时间。</p>
+<p>在当前的工作流程中，非工程背景的员工（如产品经理、设计师）是否能够直接向生产环境推送代码，以及这在实践中是如何运作的？</p>
+<p>非工程背景的员工确实可以向生产环境推送代码。过去，这类操作通常仅限于营销网站等非核心系统，但现在，允许非工程师直接部署的系统范围正在扩大。一个具体的例子是开发者控制台（developer console）中的一个新功能，该功能用于诊断提示词缓存（prompt caching）。提示词缓存对于API的成本和延迟至关重要，高缓存命中率能显著优化性能。为了帮助开发者理解和提升缓存命中率，团队在API中构建了缓存未命中时返回原因的功能，并在开发者控制台中增加了一个仪表盘，用于展示缓存命中率及相关情况。这个仪表盘功能完全由一位产品经理构建并推送到生产环境。尽管这位产品经理具备较强的技术背景，但他认为这项工作无需占用工程师的资源。在开发过程中，工程师会参与代码审查（code review）以确保质量，但实际的实现工作是由该产品经理与他在Slack中协作的Claude模型共同完成的。最终上线的该功能质量很高。虽然核心API的重大变更目前仍由工程师负责，但对于开发者控制台中的诊断仪表盘这类功能，产品经理已经可以独立完成开发和部署。</p>
+<p>当非工程师（如产品经理）或自动化代理向生产环境推送代码时，最终的问责机制是如何运作的？团队在其中扮演什么角色？</p>
+<p>问责机制与传统模式基本一致，即拥有某个系统的团队最终对该系统的质量和稳定运行负责。当系统出现问题时，负责该系统的团队会首先收到警报并介入处理。这与过去其他团队的工程师跨代码库进行修改的情况类似：如果修改引发了问题，系统所属团队会先被通知，然后他们可能会联系进行修改的工程师以获取更多信息。具体到产品经理构建缓存诊断功能的例子，如果该功能出现问题，负责开发者控制台的“开发者体验团队”将会收到警报。他们随后可能会联系构建该功能的产品经理，因为后者掌握着团队所不具备的细节信息。这个原则同样适用于没有人类参与、由代理完成的变更，例如自动更新SDK版本或修复CI构建失败。无论变更是由产品经理、其他团队的工程师还是自动化代理引入的，系统所属团队始终承担着维持系统高质量运行的最终责任。因此，保持“双披萨团队”的组织结构依然至关重要，因为需要有一组人类专家深刻理解并对系统负责，以应对来自任何渠道的变更。尽管未来代理可能会在处理问题时扮演更重要的角色，甚至首先接收警报，但目前仍然需要一个明确的人类团队单元来承担最终的问责。</p>
+<p>行业中常提到的“软件工厂”（software factory）这一概念，是否能准确描述Anthropic当前的工作模式？</p>
+<p>尽管公司内部不常使用“软件工厂”这个术语，但其所描述的精神内核与公司目前的工作方式高度一致。整个流程旨在实现端到端的变更交付至生产环境。在这个流程中，代理扮演了多个角色：它们不仅负责执行变更，还进行变更验证和初步甚至全部的代码审查，并最终将代码部署到生产环境。在生产环境中，监控环节也引入了代理。例如，公司最近开始试验独立的QA代理，这些代理根据人类编写的系统预期行为说明，持续对系统进行测试，一旦发现问题就会自动提交拉取请求（pull requests）进行修复。此外，在On-call环节，代理也会率先接收警报。所有这些环节——从变更引入、部署到生产环境后的质量维护——公司都在尽可能地让代理承担更多工作，从而使人类工程师能够专注于更高价值的任务，以确保系统的高质量构建和运行。</p>
+<p>在公司内部，推动开发效率提升的工具和平台是由中心化团队构建，还是由各业务团队自行负责？</p>
+<p>公司内部存在多个层级的团队共同推动开发效率。首先，有一个独立于平台团队的中心化基础设施组织（central infra org），负责整个公司的基础设施，涵盖研究、推理和产品等多个领域。该组织下的“开发者加速团队”（developer acceleration team）主导了许多提升效率的工作，例如构建了名为Scion的新源代码控制系统。其次，在平台团队（platform team）内部，设有一个名为“平台加速团队”（platform acceleration）的小组，他们与中心化的开发者加速团队紧密合作，但专注于平台团队自身的需求，旨在提升内部团队的开发速度。例如，之前提到的QA代理以及修复CI红色构建的代理，就是由平台加速团队在中心化团队提供的工具基础上构建的。最后，公司文化鼓励每一位工程师思考并动手改进自己的工作流程。许多优秀的内部工具都源于工程师在日常工作中遇到瓶颈后，自发地进行创新和修复。随着越来越多的工作由代理完成，工程师投入到改进工具和流程这类“元工作”（meta work）上的人力小时数反而有所增加。大家普遍受到“如何减少流程中的人力干预”这一目标的激励，积极地将重复性或低效的工作流程自动化和代理化。</p>
+<p>在工程师文化中，除了专门的加速团队，普通工程师在多大程度上参与了工作流程的自动化和效率提升？</p>
+<p>工程师们拥有极大的自主权去构建任何他们认为能改善自身或团队工作效率的工具。一个典型的例子是，几个月前，一位并非来自平台加速团队的工程师，思考如何优化基于Slack的代理交互模式，以支持更宏大的开发目标。他构想并实现了一个概念：在Slack中创建一个专用频道，用于编排一个由多个代理组成的团队来协同完成一个特定的大型任务。在这个频道里，多个Claude实例在特定工具的协调下共同工作。这个实验最初旨在探索如何通过“一次性”指令，在Slack中驱动一个多代理团队完成一个雄心勃勃的目标。随着时间的推移，这个概念逐渐演变为处理持久性、环境性问题的方案，例如让一个代理团队持续扫描代码库中的漏洞并自动修复。整个项目始于一位工程师对现有工作模式的实验性探索，其初衷是为了提升自己的工作效率，而非其本职工作要求，这充分体现了工程师自发参与流程创新的文化。</p>
+<p>随着AI编程助手的普及，公司的招聘流程，特别是对工程师的筛选和验证方式，发生了哪些变化？</p>
+<p>公司的招聘流程正在经历重大变革，具体而言，传统的编程面试环节已被逐步淘汰。此前，招聘流程包括技术设计、大型技术项目回顾以及编程面试等多个环节。然而，实践中发现，许多候选人可能在编程面试中表现不佳，但在其他所有面试环节中表现出色，这主要是因为他们已不再习惯于徒手编写代码。因此，编程面试的权重和参考价值逐渐降低。</p>
+<p>为适应这一变化，公司并未直接取消该环节，而是开始试验多种由编程智能体（coding agent）驱动的新型面试形式。这些新形式包括：评审由智能体编写的代码、评估由智能体生成的系统设计，或利用编程智能体构建特定系统。这些试验旨在找到最有效的方法，以准确评估候选人利用AI工具完成工作的能力。简而言之，原先考察纯粹编码能力的环节，正被替换为评估与智能体协作完成工作能力的环节。而关于技术设计、项目经验等其他面试部分则保持不变。</p>
+<p>传统的编程面试之所以在大型公司中普及，主要有两个原因：一是即使面试问题在网上泄露，影响也相对可控；二是便于对大量面试官进行标准化培训，从而获得相对一致的评估信号。然而，编程面试的信号往往不够精细，有时甚至会出现“零或一”的极端结果，其精确度有限。例如，数据科学和算法面试所考察的编码类型与日常工作中的实际编码任务并不完全匹配。因此，这类面试从未是完美的评估工具。</p>
+<p>在设计新的面试类型时，除了评估信号的准确性，还需考虑其可信度、面试官培训的难度以及评估流程的客观性（例如，制定易于遵守的评分标准）。正因如此，公司并未草率地用某个固定方案替代编程面试，而是在测试多种不同选项，以期在各个维度上找到最佳平衡点。</p>
+<p>在当前技术环境下，公司内部的职级、绩效评估和晋升体系是如何运作的？与以往相比，这些体系在评估员工，特别是资深员工时，面临哪些新的挑战和调整？</p>
+<p>公司依然保留了职级、晋升和绩效评估等传统体系。主要变化体现在两个方面：首先，招聘策略更倾向于资深人才。对于初级职位，成功的标准相对统一，易于界定。但随着职级升高，员工负责的问题领域和系统差异巨大，使得在高级别（如Staff及以上级别）上定义“良好绩效”变得更具挑战性。</p>
+<p>其次，评估工作复杂性的标准发生了变化。过去，项目耗时常被用作衡量其复杂性的一个代理指标。例如，一个领导了为期两年项目的工程师，其工作会被认为具有相当高的复杂性。然而现在，借助AI工具，一个过去需要两年才能完成的任务（如将API从Python迁移到Rust），可能在五到六个月内就能完成。这意味着单纯以时间为尺度的评估方式已不再适用，工作本身的复杂性标准也随之改变。因此，公司正不断迭代评估工作复杂性的方法。</p>
+<p>在这种情况下，最终的衡量标准回归到了“影响力”。例如，在评估API迁移项目时，会关注其带来的具体成果，如节省了多少CPU资源、延迟降低了多少、避免了多少事故等。同时，也会定性地评估员工在项目中的协调能力，例如是否高效地与多个团队协作。这些具体的成果和软性技能成为了衡量资深员工能力和贡献的核心指标。尽管评估变得比过去更困难、确定性更低，但职级、晋升和绩效评估的核心框架依然保留，以确保员工拥有清晰的职业发展路径。</p>
+<p>在绩效评估周期之外，团队内部、团队之间以及个人之间的反馈机制是如何运作的？与以往相比，当前的反馈文化有何特点？</p>
+<p>反馈机制的运作方式与过去相比没有本质区别，核心理念是及时沟通。如果在绩效评估时提出的反馈让员工感到意外，这通常被视为管理者的失职，因为重要的反馈应该在日常工作中更实时地传达。</p>
+<p>在收集他人反馈方面，流程也保持了传统做法。例如，当有人向管理者反映其团队成员的问题时，通常会鼓励他们直接与当事人沟通，以避免信息传递失真，促进开放对话。在正式的绩效评估期间，员工可以向同事请求反馈，或同事也可以主动提交反馈。</p>
+<p>一个显著的特点是公司高度重视反馈的透明度。在Anthropic，大部分反馈是公开透明的，员工可以直接看到同事给予的评价，这与一些公司将反馈仅提供给管理者的做法不同。这种透明的文化旨在减少信息不对称和意外情况的发生，让员工对自己的表现有更清晰的认知。</p>
+<p>面对AI带来的变革，软件工程师群体中出现的“身份认同危机”具体体现在哪些方面？如何看待工程师在未来解决复杂问题中的核心价值？</p>
+<p>软件工程师的“身份认同危机”主要源于工作乐趣和自我价值实现方式的转变。一部分工程师的乐趣来自于亲手编写代码、在键盘上敲击完成任务，当AI能够替代这些具体操作时，他们会感到自身的价值受到了挑战。然而，另一部分工程师的乐趣来自于解决宏大的、有挑战性的问题。对于后者而言，未来充满了无限机遇。</p>
+<p>AI的最终目标是解决人类面临的重大难题，例如治愈疾病、在机械工程等领域实现科幻般的突破。要实现这些宏伟目标，需要先解决一系列基础性的工程问题。例如，多智能体系统（multi-agent systems）的构建就是一个典型例子。一个实际应用场景是，在药物研发过程中，将提交给FDA审批的复杂流程分解，让成千上万个持久性智能体（persistent agents）协同工作，自动完成各个阶段的任务，从而大幅缩短研发周期。</p>
+<p>要让这种由大规模智能体团队驱动的宏大愿景成为现实，必须首先解决一系列底层的工程挑战，包括安全性、基础设施、身份认证（identity and auth）等。如果这些基础系统没有被正确地构建，大规模智能体系统就无法安全、有效地运行。因此，尽管智能体可以协助解决许多问题，但仍然迫切需要具备安全、基础设施等领域深厚专业知识的人类工程师来设计和构建这些底层系统和防护机制。工程师的价值正从编写每一行代码，转变为构建能够让智能体安全、高效协作的复杂系统，从而赋能更宏大的创新。</p>
+<p>对于那些无法接触前沿多智能体系统或AI预算有限的工程师而言，提升工作抱负和利用现有AI工具的实际路径是什么？工程师如何在不同规模和复杂度的项目中找到新的价值和机遇？</p>
+<p>无论项目规模大小或技术环境如何，核心在于持续提升工作的抱负水平（ambition level）。即使是看似成熟或体验不佳的软件，如英国航空的应用程序或某些用户体验糟糕的费用报销应用，现在都有机会在数月而非数年内进行重构和优化。Shopify重写其系统的案例就是一个很好的证明。</p>
+<p>对于资源有限的工程师，机会同样存在。例如，一些云服务平台（如Max plans）已开始在其服务中包含API额度，使得工程师可以利用这些资源构建持久性智能体，去解决比以往更复杂的问题。</p>
+<p>提升抱负水平适用于所有行业。以法律AI领域为例，AI模型最初的应用是审查合同这类基础任务。而现在，从业者开始探索让AI运行整个尽职调查流程——这是一个远比前者宏大得多的目标。要实现这一目标，就需要工程师构建更复杂的多智能体系统和编排机制。在这个过程中，AI法律公司的工程师需要思考如何构建底层系统，以确保智能体能够顺利、准确地完成整个尽职调查。</p>
+<p>结论是，在任何规模、任何领域，只要提升抱负水平，工程师就有工作要做。目前的技术远未达到人类完全无需介入、智能体可以自主解决所有问题的阶段。如果没有人类工程师构建正确的系统、护栏和安全机制，完全依赖智能体的结果很可能是错误的。</p>
+<p>随着AI成为一种新的“工程材料”，软件工程是否会更趋近于土木工程等传统工程学科？在解决了当前如多智能体系统等挑战后，工程师未来的工作重点将转向何方？</p>
+<p>软件工程与土木工程等传统工程学科的比拟是恰当的。正如建成一座摩天大楼后，工作并未结束，后续还需要维护、翻新甚至拆除重建，同时新的建筑需求会不断涌现。同样，在软件工程领域，完成一个项目后，不仅需要维护，更要在此基础上持续构建，追求更宏大的目标。</p>
+<p>未来的一个重要趋势是，让智能体承担更多维护性、重复性的工作，例如处理on-call事件和编写文档，从而将人类工程师解放出来，专注于更具创造性和挑战性的任务。</p>
+<p>从长远来看，工程师的工作重点将围绕以下几个方面：</p>
+<p>首先，持续构建和迭代更复杂的多智能体系统。</p>
+<p>其次，在模型能力的边缘地带解决新的工程问题。例如，为智能体与外部系统交互开发更好的工具。目前团队中的工程师创建并维护着MCP（一种交互标准），并正在探索MHS（模型硬件标准），该标准旨在规范智能体与实验室设备、机器人等物理世界实体的交互方式。这些新兴领域将持续产生新的工程挑战和机遇。</p>
+<p>在AI智能体和多智能体（multi-agents）时代，软件工程师的工作与过去相比发生了哪些变化？其核心职责和所需技能的演变趋势是怎样的？</p>
+<p>当前软件工程师的工作核心更多地转向了协调。这包括确保团队成员、个人乃至AI智能体之间能够有效协同，达成共识并完成任务。本质上，是从宏观层面理解并掌握从概念到现实的实现机制。许多具体的执行环节可以交由智能体处理，但要确保产品能够高质量地成功发布，其中涉及的复杂协调网络仍然至关重要。</p>
+<p>工程师们目前投入大量时间处理的许多协调性工作依然具有重要价值。此外，创意的产生本身也同样关键。在可预见的未来，特定领域的深度专业知识将变得尤为重要，例如安全领域。随着技术发展，安全等领域正面临新的挑战，这要求从业者比以往任何时候都更深入地钻研这些日益重要的专业领域。</p>
+<p>具体而言，工程师不应仅仅为了解决眼前某个具体问题而去成为某个领域的专家，因为这类问题或许可以由智能体高效解决。更重要的是，工程师需要具备预见能力，能够推断出当前初现端倪的问题将如何随时间演变并变得更加复杂。他们需要能够洞察和预见这些趋势，在问题恶化前提前布局和应对。尽管智能体在这一过程中可以提供帮助，但我们仍将深度依赖那些对此充满热情并具备深厚专业知识的人才来引领和解决这些前瞻性问题。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

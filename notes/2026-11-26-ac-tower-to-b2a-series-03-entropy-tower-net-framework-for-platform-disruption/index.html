@@ -1,0 +1,214 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.26 | AC | Internet | Tower to B2A Series 03: Entropy &amp; Tower-Net Framework for Platform Disruption</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.26 | AC | Internet | Tower to B2A Series 03: Entropy &amp; Tower-Net Framework for Platform Disruption</h1>
+<p class="orig">原标题：从巴别塔到B2A系列03：用熵与塔网框架判断，Agent会拍平互联网的哪一层</p>
+<p class="tags">#agents #b2a #internet #monetization #valuation</p>
+<p class="meta">AceCamp · 2026-11-26 17:18 · article 70569687</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>结合熵的投资框架，超额收益源于产业外部熵增、企业自身局部熵减能力以及市场认知预期差三者的乘积；赢家是能把外部高复杂度转化为低边际成本收入的公司。</li>
+<li>互联网平台的高利润长期建立在让用户和商家免费“逛、比、筛”分担网络熵减成本之上，而Agent打破的正是“用户必须亲自操作界面”这堵承重墙，直接接走筛选比较工作并削弱曝光广告位与排序位的变现力。</li>
+<li>判断互联网公司受损还是受益可归结为三个检验问题：是被Agent调用还是绕过、网织在纯信息里还是锚定在履约/物流/支付/独家供给的现实里、能否在AI底层算力云模型栈占住一层地基。</li>
+<li>Agent主要替代机票预订、比价、填表等愿意外包的工具型任务，而不替代刷短视频、追剧、社交等人类想亲自体验的娱乐消费（后者面临的是分发入口竞争而非需求消失）。</li>
+<li>二级市场预期差常源于“隐喻错配”：把履约型公司当成流量入口定价会高估其被Agent颠覆的风险，而把纯广告曝光型公司当成稳固网络效应定价则会低估其坍塌斜率。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>技术变化打破旧边界、让外部系统走向高熵之后，收入最终归属于能在混乱中重建内部秩序的公司。重建秩序有两种做功方式：自己集中投入的建塔，以及让网上节点替自己做功的织网。互联网平台长期依靠用户替它完成筛选和比较，Agent恰好要接走这部分工作。本篇把熵的框架与塔网原型合在一起，给出判断互联网公司哪一层会被拍平的五个步骤。</p>
+<h2>正文</h2>
+<p>从巴别塔到B2A系列之三系列前两篇讨论了两件事。第一篇从a16z提出的B2A（Business to Agent，企业面向AI代理提供服务）出发，说明人类理解秩序有两种最古老的原型：一种是建筑，有地基、有层级、有上下；另一种是编织，有经纬、有节点、有连接。第二篇用这两种原型回看工业革命和互联网，结论是每一次技术革命都同时织网、也同时建塔；AI对现有互联网平台的冲击，集中在平台作为流量枢纽的那个位置。</p>
+<p>这两篇回答的是秩序长什么形状。投资还需要回答另一个问题：秩序在什么时候被打破，新的收入和利润最终由谁取得。笔者此前用熵的视角讨论过这个问题。本篇先重述这套框架，再把它和塔网原型合在一起，形成一套分析现有互联网公司的步骤。</p>
+<h2>一、熵的投资框架：外部高熵，内部低熵</h2>
+<p>这里的熵是一种观察系统结构的语言，不能当作物理公式直接代入财务模型。</p>
+<p>低熵系统的参与者数量有限，需求相对同质，连接方式稳定，行业边界清晰，价值分配规则可以长期沿用。系统可能呈现的状态较少，企业可以靠标准化、规模化和流程优化持续提高效率。高熵系统则意味着参与者增加，需求分层，连接关系变多，边界开始模糊，系统能够呈现的状态显著增加。低熵到高熵，描述的是一个系统从少数状态、少数选择和固定连接，转向更多状态、更多选择和动态连接。</p>
+<p>高熵只说明旧地图可能失效，不会自动告诉投资者新赢家是谁。参与者变多、系统变热闹，如果利润总额没有扩大，关键的稀缺环节也没有变化，企业又建立不起稳定的收费机制，这个行业依然不会产生值得投资的公司。</p>
+<p>判断一次变化是否属于结构变化，可以问四个问题：</p>
+<ol><li>哪个旧约束正在消失：成本、技术门槛、信息壁垒、分发限制，还是组织边界；2. 参与者的行为是否已经改变；3. 新的反馈循环能否在脱离补贴和外力之后持续强化；4. 回到旧状态的代价是否越来越高。</li></ol>
+<p>在此基础上，笔者把一家公司的潜在超额收益拆成三个因子的乘积：外部环境变得多混乱（外部系统的熵增），公司在混乱中重建秩序的能力（企业局部的熵减），以及市场对这种能力认识得多不足。三者缺一项，超额收益都不成立：外部没有变化，就没有新的需求可抢；公司没有重建秩序的能力，外部变化只会变成它的成本；市场已经充分认识，股价里就已经包含了这部分收益。</p>
+<p>这三个因子对应三个层次的熵。产业系统的熵决定机会出现在哪里；企业组织的熵决定谁能把系统变化转化为持续的现金流；投资者认知和组合的熵决定投资者能否真正赚到前两层创造的回报。完整链条是：识别产业熵增，寻找企业局部熵减，再用低熵的投资系统完成定价和持有。</p>
+<p>企业层面最值得研究的，是那些能把复杂度变成收入的公司：外部状态越多，它能处理的交易或任务越多，而每多处理一种状态，内部成本并不需要同比例增加。判断这一点有四个条件：系统活动增加是否直接扩大公司的使用量或收费基础；新参与者加入会强化公司，还是只增加服务成本；公司是否掌握跨场景复用的共同能力；处理复杂度的边际成本是否低于客户愿意支付的边际价值。</p>
+<h2>二、重建秩序的两种做功方式：建塔与织网</h2>
+<p>熵的框架说明，赢家是能建立局部低熵的公司。塔网原型可以把这句话再拆开一层：建立秩序本身有两种做法。</p>
+<p>物理学对局部有序的解释是，一个开放系统要在内部维持秩序，必须持续从外界获取能量，并把熵排到外部，普里高津把这类系统称为耗散结构。放到企业上，维持内部低熵同样需要持续做功，区别在于这份功由谁来做。</p>
+<p>上一节"复杂度变成收入"的条件，在这两种方式里有不同的实现路径。建塔的公司靠统一架构，把客户的差异重新抽象成少数标准模块，用同一套能力服务不同需求。织网的公司靠节点自组织：商家自己上架商品、写详情页、做客服，用户自己搜索、比较、写评价，平台只维护规则、撮合交易并抽取佣金或广告费。</p>
+<p>网络效应因此可以理解为，网上的每个节点都在为整张网做熵减。一个商家补全了商品信息，一个用户留下了一条评价，后来的用户找东西就更容易，平台却不需要为这份工作付工资。互联网平台的高利润率，有相当一部分来自这种把熵减成本分散给节点的结构。</p>
+<h2>三、Agent接走的是用户替平台完成的熵减</h2>
+<p>沿着这个思路看，用户在互联网平台上"逛、比、筛"的过程，本身就是一种熵减工作。用户面对成千上万个商品、店铺和内容，花时间搜索、点开详情页、对比价格和评价，最后做出选择。这段时间对用户是成本，对平台是收入来源：搜索结果页的排序位、信息流里的广告位、详情页的推荐位，都按用户的浏览和点击收费。</p>
+<p>B2A设想的场景，是由Agent替用户完成这部分工作。用户只说出要什么，Agent去查询、比较、下单，再把结果交给用户确认。熵减工作的执行者从用户换成了Agent，这会带来三项具体变化：</p>
+<ul><li>用户在平台页面上停留的时间减少，按曝光和点击计费的广告位，面对的浏览者从人变成了Agent；- Agent比较商品时依据的是结构化的价格、库存、评价和履约数据，排序位和广告投放对它的影响力，低于对人类用户的影响力；- 帮用户完成选择的那一方，从平台换成了Agent的提供者，后者有机会向商家或用户收取新的服务费用。</li></ul>
+<p>图1：AI导流的转化表现与购物前使用AI的比例。数据来源：a16z</p>
+<p>这就是互联网平台面对的核心问题：过去由用户免费完成、再由平台变现的那部分熵减，现在可能由另一家公司的Agent来完成。平台收入中依赖"用户必须在页面上亲自筛选"的部分，受到的影响最直接。</p>
+<h2>四、破掉一条边：承重墙与经线</h2>
+<p>技术变化打破原有边界的某一条边，系统进入一个状态更多、空间更大的领域。塔网原型可以帮助判断，被打破的这条边属于哪一种结构。</p>
+<p>如果被打破的是建筑的承重墙或地基，压在上面的整层结构都会失效。互联网打破了"信息分发必须依靠物理渠道"这堵墙，报纸的发行网络、唱片的实体零售、旅行社的线下门店，整层中介失去了存在理由。如果被打破的只是网里的一根经线，网会重新编织，流量绕道流向其他节点，整张网依然存在。某个渠道被替代后，流量迁往新的渠道，大多属于这种情况。</p>
+<p>Agent打破的这条边，是"用户必须亲自操作界面"。互联网时代的注意力经济建在这条边之上：用户打开App，浏览页面，平台按用户的时间和注意力向商家收费。这条边是承重墙。墙一旦松动，压在它上面的那一层，包括流量入口、搜索结果页、导购信息流和App内的停留时长，都面临被拍平的风险。</p>
+<h2>五、市场的预期差，常常来自隐喻差</h2>
+<p>三因子里的第三项，是市场对公司能力认识得多不足。塔网原型给这一项提供了一个具体的观察角度：市场给一家公司定价时，背后总有一个默认的隐喻。</p>
+<p>市场如果仍然把一家公司看作"入口之塔"，就会按流量、日活和用户时长给它估值；当Agent绕开界面的趋势出现，市场会快速下调它的估值。但如果这家公司的收入其实更多来自一张"履约之网"，即骑手、仓储、商家供给和支付这些Agent必须调用的能力，那么市场用入口隐喻定价，就会高估它受到的冲击。反过来，一家被市场当作"网"来估值的公司，收入如果主要来自按曝光收费的广告位，它在Agent时代的风险就被低估了。</p>
+<p>找到市场正在使用、但已经失效的那个隐喻，往往就找到了预期差。</p>
+<h2>六、五个步骤与三个检验问题</h2>
+<p>把熵的三因子和塔网原型合在一起，可以拆成五个依次回答的问题：</p>
+<p>落到具体公司时，前四步可以压缩成三个检验问题。</p>
+<p>第一，这家公司是被Agent调用，还是被Agent绕过。被绕过的公司，收入来自"用户必须经过平台"，例如流量分发、搜索结果页、导购广告和信息比价；Agent一旦替用户完成筛选，用户就不必再经过它。被调用的公司，收入来自"事情必须靠平台办成"，例如即时配送、仓储物流、支付结算、商品与服务的独家供给、身份认证；Agent再强，也需要调用这些能力才能把事情办完。</p>
+<p>第二，这家公司的网织在信息里，还是织在现实里。纯信息的网，例如网页索引和内容聚合，最容易被大模型吸收和替代。锚定在物理世界或真实社会关系里的网，最难被拍平：骑手和仓储网络、商家供给网络、真实的熟人关系链。Agent可以替用户下单，但送餐仍要依靠骑手，与朋友的联系也无法由Agent代替。</p>
+<p>第三，这家公司能否在新的技术栈里占到一层地基。AI的底层是芯片、云、模型和数据，层层依赖、资本密集。拥有算力、云服务、自研模型或独有数据的公司，在新的塔里有自己的位置；没有这些能力的公司，只能在别人的地基上租用能力，并向地基的所有者支付费用。</p>
+<p>还要补上一个边界：Agent只替代人愿意委托出去的事。订机票、比价格、填表格、预约服务，属于人愿意外包的任务；刷短视频、追剧、打游戏、和朋友聊天，属于人想亲自完成的体验。没有人会让Agent替自己看完一部电影。内容、娱乐和社交类平台受到的冲击，与搜索、导购类平台在性质上不同，前者面对的问题更多是Agent会不会成为新的内容分发入口，后者面对的问题是用户还需不需要亲自打开页面。</p>
+<p>把调用与绕过、信息网与现实网两个维度组合起来，可以得到一张粗略的定位图：</p>
+<p>图2：Agent冲击下互联网业务的定位图。</p>
+<h2>七、每个判断都要配一个可观察的指标</h2>
+<p>熵和塔网都是解释力很强的框架。系统思维本身就有解释得太多的风险：只要把时间拉长、变量增加、反馈画得足够复杂，几乎任何热门主题都能包装成不可逆的结构变化。两个框架叠加之后，这种风险更大，几乎可以把任何一家公司都讲得自圆其说。</p>
+<p>因此，框架推出的每一个判断，都需要对应一个可以观察的经营指标和一个推翻条件：</p>
+<p>框架告诉投资者应该看哪里，经营数据告诉投资者实际发生了什么。</p>
+<h2>结论</h2>
+<p>熵的框架回答机会在哪里、谁能捕获、投资者能否赚到；塔网原型回答新秩序长什么形状。二者合起来，可以把"AI会怎样冲击互联网公司"拆成五个可以逐项回答的问题：破了哪条边，哪一层被拍平，新秩序长什么形，谁的结构同构，市场用哪个隐喻定价。</p>
+<p>笔者认为，Agent打破的是"用户必须亲自操作界面"这堵承重墙。互联网平台过去依靠用户免费完成筛选、再把用户的注意力卖给商家，这部分收入首先受到冲击。收入来自履约、支付和独家供给的平台，会成为Agent调用的对象；在算力、云和模型上拥有自己一层的公司，会成为新技术栈地基的所有者。</p>
+<p>判断一家公司，还要找到市场给它定价时使用的那个隐喻。市场仍按入口和时长给履约型公司估值时，会高估它受到的冲击；市场按网络效应给广告型公司估值时，会低估它面临的风险。</p>
+<h2>风险提示</h2>
+<p>本文所述观点仅代表笔者个人研究和分析，不构成任何投资建议。文中涉及的公司、行业及市场分析均基于公开信息和合理推测，可能存在信息滞后或理解偏差。投资有风险，入市需谨慎。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
