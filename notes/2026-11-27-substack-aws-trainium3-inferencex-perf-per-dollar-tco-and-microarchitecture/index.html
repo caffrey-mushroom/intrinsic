@@ -1,0 +1,323 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.27 | Substack | AMZN | AWS Trainium3 InferenceX Perf per Dollar TCO and Microarchitecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.27 | Substack | AMZN | AWS Trainium3 InferenceX Perf per Dollar TCO and Microarchitecture</h1>
+<p class="orig">原标题：AWS Challenger: Trainium3 Inference and Microarchitecture Deep Dive</p>
+<p class="tags">#asic #amzn #tco #inference #nvda #hbm</p>
+<p class="meta">Substack · 2026-11-27</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>SemiAnalysis首次在AgentX智能体代码工作负载下公开AWS Trainium3实测数据：凭借从零专为ML原语打造的Tile架构与极低自研BOM，Trainium3 PDS + vLLM在全交互延迟曲线上的每美元性能击败除Vera Rubin以外的全部加速器（达到GB300 NVL72、B300及MI355X的两倍以上）。</li>
+<li>在135 tok/s/user典型交互速度下，按Z.ai定价与60%机群利用率测算，Trainium3以73.5%的毛利率大幅领先亚军GB300 + SGLang（53%）；尽管其FP4算力仅为GB300的17%（2,517 vs 15,000 TFLOPS）致TTFT略慢，但4.9 TB/s内存带宽（GB300的61%）配合约30%的TCO使其在内存受限的Decode阶段大获全胜。</li>
+<li>Trainium3单颗仅配144GB HBM（GB300的一半），印证了SemiAnalysis“4-Hi Short King”核心论点——额外HBM容量若无法换取对应延迟下的更高吞吐则纯属冗余成本；同时16卡节点在Prefill采用跨芯片流水线、Decode将模型摊至全节点128个NeuronCore作为独立EP rank运行。</li>
+<li>微架构基准（UBenchX）实测表明：硬件DGE可在256 KiB即跑满HBM带宽（64 KiB下Static DMA读写利用率即达80%–88.8%），128×128脉动阵列在N≥128时达理论吞吐且M维无关性极利好小Batch解码；不过full-chip满载下MXFP8会因功耗降频掉至68.6% MFU（BF16与MXFP4可维持~90%）。</li>
+<li>软件与互联补齐短板：Trainium精细化Profiler已获Anthropic性能团队盛赞（被评远胜NVIDIA及AMD工具），而二代单平面320通道Astera Scorpio X交换托盘（Trainium3n）消除了跨芯片跳数棋盘格效应，将MoE关键的all-to-all集合通信带宽提升2.8倍。</li>
+</ol></section>
+<div class="body">
+<p>Forwarded this email? Subscribe here for more</p>
+<h3>Better Perf TCO vs NVIDIA GB300, First Principles Physics-Based Architecture, High MFU and MBU, UBenchX, Low Latency, Alisa Liu vs Eileen Gu</h3>
+<p>Kimbo Chen, Bryan Shan, Wenyao Gao, Cam Quilici, Alec Ibarra, Daniel Nishball, Tony Sung, and Dylan Patel</p>
+<p>Nov 27</p>
+<p>Preview</p>
+<p>READ IN APP<img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1795795047525-5.png" alt="" loading="lazy"></p>
+<p>The Nvidia GPU was originally built to shade pixels, and every Nvidia generation since 2017 has bolted on another piece of AI-specific hardware to fix the bottleneck the previous one exposed. Volta added Tensor Cores, Hopper added TMA for tile data movement between HBM and SRAM, and Blackwell added Tensor Memory for accumulating. Nvidia removed many hardware units that are required to render graphics for their datacenter GPUs</p>
+<p>In comparison, the Trainium microarchitecture is built ground-up specifically for ML workloads, with tiles as a first-class primitive instead of having a sea of threads and then bolting on tensor/tile compute and data movement engines. Trainium3 behaves the way the physics says it should. In this past this meant software was a humongous challenge, but now no longer.</p>
+<p>Source: Dwarkesh Podcast 7 months later, Trainium 3 and TPUs are live on InferenceX, both trading blows or even winning vs Nvidia GB300 in cost to generate tokens at TCO. We will dive into those details below.</p>
+<p>This advantage is not purely due to Amazon’s ultra low cost supply chain. It's also due to microarchitectural decisions, which we will dive into in this post. For example, using the Trainium Descriptor Generation Engines (DGE), the equivalent of Nvidia TMA and AMD MI455X TDM, our microbenchmarks show that Trainium can reach peak HBM bandwidth utilization (MBU) at small message sizes, which is not possible on Nvidia GPUs.</p>
+<p>Furthermore, our testing covers cycle-level SRAM scratchpad latency and bandwidth testing (SBUF to PSUM),  rack-scale bandwidth and latency microbenchmarks, attention exponential testing, and the precise cycle-level latency of different shapes, including how different attention head_dim (K) would affect the percentage of roofline.</p>
+<p>Every result comes from UBenchX, our microbenchmark suite, and we model each unit from first principles before we measure it. We thank Nafea Bshara (Co-Founder of AWS Annapurna Labs), Ron Diamant (Trainium Chief Architect), Michael Shteinbok, Armin Ebrahim and the rest of their team for helping teach us their architecture and validate our benchmark experiments.</p>
+<p>Star the InferenceX &amp; UBenchX GitHub repository if you find the open-source benchmark and data useful! InferenceX is the only inference benchmark in the world to have TPUv7, OpenAI Jalapeño, Nvidia Rubin NVL72, AMD, and now, Trainium3.</p>
+<p>Source: SemiAnalysis</p>
+<h2>Trainium’s Superior Inference Performance per Dollar - AgentX</h2>
+<p>AgentX measures Trainium3 on a production end-to-end agentic inference workload. This is achieved by replaying real coding-agent sessions against a Trainium3 server. The goal is to compare accelerators’ *realistic *inference performance, that you may expect to see on actual agentic workloads.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1795795053270-8.jpg" alt="" loading="lazy"></p>
+<p>AgentX - InferenceXv3: Does CUDA Moat Hold up in Agentic Inferencing?</p>
+<p>Cam Quilici, Bryan Shan, and 5 others</p>
+<p>·</p>
+<p>Aug 24 Read full story</p>
+<p>For those unfamiliar with InferenceX, the Pareto frontiers (curves) represent the fundamental inference tradeoff between throughput and latency. Each point is a different inference configuration targeting a different latency-throughput target. At each slice of the x-axis, higher perf per TCO is better and directly leads to higher inference gross margins. <img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1795795055138-9.png" alt="" loading="lazy">View interactive content → Today, we are excited to share that Trainium 3 PDS + vLLM achieves amazing perf/$ TCO across the entire frontier. In fact, it is better than every other accelerator besides Vera Rubin across the *entire *TCO versus p90 interactivity curve. This is an amazing achievement.</p>
+<p>Source: SemiAnalysis Trainium is also very competitive from an end-to-end latency perspective, across the entire curve. With that being said, there is still room for improvement, particularly with respect to TTFT.</p>
+<p>Source: SemiAnalysis</p>
+<p>Source: SemiAnalysis It is not surprising that Trainium lags behind in some p90 TTFT cases against GB300 as this metric is largely dictated by prefill, a compute bound operation. Trainium3 has only 17% the theoretical FP4 flops as Blackwell Ultra (2,517 TFLOPS versus 15,000 TFLOPS). It has more competitive interactivity since decode is memory bound and Trainium3 has 4.9 TB/s per chip against 8.0 TB/s for GB300, 61% of the bandwidth at about 30% the TCO. Also, pipelined prefill (which Trainium relies on, as discussed in the subsequent section) generally favors throughput over latency.</p>
+<p>In fact, at a p90 interactivity of 135 tok/s/user (a typical speed you’d observe on OpenRouter), Trainium3 with vLLM yields the highest profit margin at 73.5%, compared to runner up GB300 + SGLang at 53% (at 3 year rental prices). This assumes Z.ai list price for token pricing and a 60% hardware fleet utilization factor.</p>
+<p>Trainium3 achieves these margins with 144GB of HBM per chip, half GB300’s capacity per GPU. This reflects our Short King thesis: additional HBM capacity must deliver enough extra throughput at the target latency to justify its cost. This is also why 4-Hi is attractive industry wide option and next generation accelerators are primarily using 8-Hi.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1795795063496-13.jpg" alt="" loading="lazy"></p>
+<p>Long Live the Short King: Why 4-hi HBM Wins</p>
+<p>Myron Xie, Bryan Shan, and 3 others</p>
+<p>·</p>
+<p>Sep 13 Read full story</p>
+<p>Source: SemiAnalysis What makes these results interesting for this article is how directly the software follows the hardware we measure in Section 2. Prefill and decode run on separate nodes, and each arranges the same 16 chips to suit the topology.</p>
+<h2>Prefill</h2>
+<p>A quick primer for this section: a Trainium3 chip has 8 NeuronCores, each pair sharing one HBM stack, and a node is 16 chips. Section 2 covers the hardware in detail. For a more in depth analysis, see our Trainium3 deep dive article.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1795795068245-15.jpg" alt="" loading="lazy"></p>
+<p>AWS Trainium3 Deep Dive  A Potential Challenger Approaching</p>
+<p>Dylan Patel, Daniel Nishball, and 8 others</p>
+<p>·</p>
+<p>December 4, 2025 Read full story</p>
+<p>Source: SemiAnalysis A prefill node is a pipeline. The model’s layers are cut into 16 stages, one chip per stage, and a chunk of prompt tokens flows from chip to chip. Inside a stage, the chip’s 8 NeuronCores split the chunk between them, so all of the stage’s tensor and expert parallelism stays on one chip.</p>
+<p>This is the layout our collective benchmarks argue for. Chip-level collectives were well ahead of every wider group we tested, and all-to-all, the pattern MoE layers need, is slower once it leaves the chip. With the heavy exchanges kept on one chip, what limits a stage is TensorE, which is where the MXFP4 matmul modes covered below do their work.</p>
+<h2>Decode</h2>
+<p>Source: SemiAnalysis For decode, one copy of the model is spread across individual ranks on all 128 NeuronCores (across 16 chips), and every core takes part in the computation for each token. For those familiar with Nvidia architecture, each GPU is typically a separate rank whereas Trainium treats all 128 cores as logical devices and separate EP ranks. In the case of multi-user GLM-5.3, this assigns two routed experts per NeuronCore. Decode runs at LNC=1, so each physical NeuronCore is its own rank, whereas the rest of this article uses the default LNC=2.</p>
+<p>Again, each NeuronCore is its own device with local HBM, so nothing synchronizes across the chip unless the software invokes a collective. Nvidia added locality domains in CUDA 13.4 to pin Rubin kernels to one die’s memory in the same way.</p>
+<p>Source: SemiAnalysis Not every exchange spans the node though. Decode declares nested groups of cores: half a chip, one chip, the two chips of a tray, two trays, half the node, and the whole node, plus a second family that takes the same core position on every chip. The smaller exchanges, such as the dense layers and the shared expert, can run on the small groups. A group of 8 is one chip and a group of 16 is one tray, whose two chips share a direct link, so those exchanges never touch a switch. But activations are gathered across all 128 cores and the expert outputs are reduced across all 128, so that traffic crosses the switch on every layer.</p>
+<h2>Trainium Profiler Fine-grain Accuracy - Better Than Nvidia and AMD</h2>
+<p>Trainium’s profiler is by far the industry leader and is state of the art (SOTA). Trainium’s profiler is loved by all the performance engineers at Anthropic. Anthropic’s head of performance has publicly said that performance analysis on Trainium is way better than performance analysis on Nvidia GPUs (and obviously better than on AMD GPUs). In order to demonstrate how fine-grained their profiler is, we recreated the Olympic performance of the Bay Area’s own Alysa Liu on the actual Trainium3 hardware profile. We were mainly inspired by the Bad Apple post from Daniel Liu (Anthropic Performance Engineer). This combines fine art, performance art, and chip architecture all into one video.</p>
+<p>Source: SemiAnalysis Full video:</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1795795080166-20.jpg" alt="" loading="lazy">SemiAnalysis@SemiAnalysis_ALERT 🚨: Trainium3 Neuron profiling &amp; trace stack is so fine-grained and precise that it can generate pixel art of entire videos! The video below is an actual profile running on Trainium3 DMA engines. We will open-source the entire SKILLS.md later this month.</p>
+<p><img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1795795083450-21.jpg" alt="" loading="lazy"></p>
+<p>9:21 PM · Nov 16, 2026 · 52.3K Views19 Replies · 14 Reposts · 279 Likes</p>
+<h2>Section 2: Microbenchmarks</h2>
+<h2>Hardware and Programming Model</h2>
+<p>Trainium3 consists of 8 NeuronCore-v4s, and every 2 NeuronCores share an HBM stack. By default, 2 NeuronCores that share an HBM stack form a Logical NeuronCore (LNC). Users write kernels that map to LNCs, and in LNC=2, it follows the Single-Program Multiple-Data (SPMD) paradigm: NeuronCores in an LNC execute the same kernel program with separate hardware resources except the HBM. In a Neuron Kernel Interface (NKI) kernel, programmers can assign work to NeuronCores in an LNC with the API nl.program_id and synchronize NeuronCores with the barrier mechanism nisa.core_barrier.</p>
+<p>One of the most important concepts in data movement is <b>the partition dimension</b> (pdim) and <b>the free dimension</b> (fdim). Every tensor has a designated partition dimension, and other dimensions are called free dimensions. In principle, the partition dimension aligns with the dimensions of hardware components, and data can be processed in parallel. We explain the dimensions of each component throughout the article.</p>
+<h2>Memory</h2>
+<h3>HBM Bandwidth</h3>
+<p>Here we investigate the achievable HBM bandwidth of Trainium3. In Trainium3’s memory hierarchy, we move data from HBM to SBUF using the API nki.isa.dma_copy. Each NeuronCore comes with 16 main Direct Memory Access (DMA) engines, in charge of moving data between HBM and SBUF. For every data transfer, a main DMA engine ingests a DMA descriptor, which contains the source and destination address information. In Trainium3, there are three modes of generating DMA descriptors: static (None), software-based DGE (swdge), and hardware-based DGE (hwdge). Each mode generates and stores descriptors differently.</p>
+<p>Source: SemiAnalysis Starting from NeuronCore-v3 (Trainium2), GpsimdE comes with one integrated DMA engine per processor, totaling eight integrated DMA engines. With these integrated DMA engines, programmers can perform data movements in parallel with the main DMA engines, while also enabling indirect access patterns, such as gather and scatter operations. NeuronCore-v3 also comes with two Descriptor Generation Engines (DGE). DGE accelerates descriptor generation with hardware: it frees up GpsimdE to perform other computation, frees up memory space, and accelerates address generation. DGE resembles Tensor Memory Accelerator (TMA) in Nvidia architecture and Tensor Data Mover (TDM) in AMD architecture. TMA focuses on accelerating large data copies at the cost of higher latency, while hardware-based DGE has no performance trade-offs compared to software DGE. However, while TMA is able to perform gather and scatter operations, not even the latest NeuronCore DGE can do so. As a result, NKI constrains DMA copy mode to swdge when performing indirect memory accesses.</p>
+<p>Source: SemiAnalysis Here we compare the achieved memory bandwidth of a single Trainium3 NeuronCore for the three descriptor modes. Static mode, since descriptors are compiled ahead of time, has the lowest descriptor generation overhead and achieves the highest memory utilization. At the smallest tested message size 64 KiB, static mode achieves 492 GB/s (80% utilization) for load and 544 GB/s (88.8% utilization) for store. Static mode also achieves near peak memory bandwidth at around 256 KiB. Hardware DGE, the default mode of DMA copy, follows closely behind static mode: it achieves 398 GB/s (65% utilization) for load and 476 GB/s  (77.7% utilization) for store at 64 KiB message size, likely due to the address generation overhead. The gap narrows as message size increases, and hardware DGE mode matches static mode after 256 KiB. On the other hand, software DGE performs significantly worse than the other two. This likely indicates indirect memory access patterns may suffer great performance loss, as they are restricted to software DGE mode.</p>
+<p>Trainium3 consists of 8 physical NeuronCores, and while they have individual DMA engines, each pair of NeuronCores shares one HBM stack. Thus, we measure the memory bandwidth achieved by 8 concurrent NeuronCore programs to understand the utilization under full load. Overall, the HBM is able to sustain the high utilization, dropping by only about 3% for larger message sizes.</p>
+<p>Source: SemiAnalysis</p>
+<h3>PSUM to SBUF Bandwidth</h3>
+<p>In Trainium3, PSUM and SBUF are arranged in a 2D grid of 128 lanes of 16 KiB / 256 KiB capacity. The 128-lane setup is the partition dimension, and the data is accessed in parallel along the partition dimension.</p>
+<p>There are two main types of data movement between PSUM and SBUF:</p>
+<ul><li>SBUF to PSUM: Upon an nki.isa.nc_matmul call, TensorE moves both input matrices from SBUF to PSUM- PSUM to SBUF: Epilogue operations such as data type casting, activation, and quantization. These operations are mostly based on the nki.isa.tensor_copy API</li></ul>
+<p>This section focuses on PSUM to SBUF. Two engines have PSUM read access: ScalarE and VectorE. We measure the achieved memory bandwidth for the two engines across different tile shapes, using the full 128 partitions with varied per-partition sizes.</p>
+<p>Source: SemiAnalysis Our results show that PSUM read bandwidth starts from 453.9 bytes per cycle for ScalarE and 413.9 bytes per cycle for VectorE at 32 KiB message size, and both reach near the theoretical bandwidth of 512 bytes per cycle (4 bytes per cycle per lane, 128 lanes) at around 256 KiB message size. This translates to a 614.4 GB/s bandwidth for each engine. Starting from NeuronCore-v3 (Trainium2), the two engines can perform PSUM reads in parallel. Our benchmarks show that parallel access causes near-zero bandwidth loss, indicating that the PSUM is well designed to sustain parallel access. When both engines are used in parallel, they reach 1024 bytes per cycle.</p>
+<p>Source: SemiAnalysis</p>
+<p>Source: SemiAnalysis The bandwidth gap between the two engines in the smaller message sizes indicates different instruction issue overhead: ScalarE has about 8 cycles of overhead, whereas VectorE has about 16 cycles.</p>
+<h2>Tensor Engine</h2>
+<p>Tensor Engine (TensorE) is the hardware unit that executes matrix multiplications. In terms of architecture, TensorE is a systolic array, which consists of a 128-by-128 processing element (PE) grid. The 128 dimension matches the number of partitions in SBUF and PSUM, and since TensorE reads both matrix inputs from SBUF and writes the results to PSUM, this simplifies programming. TensorE applies near-memory accumulation: the output accumulates in PSUM, avoiding a round trip to HBM, and it is especially useful for epilogue operations and consecutive matrix multiplications. This design is also present in Nvidia Blackwell, where the TensorCore output accumulates in TMEM.</p>
+<p>We invoke TensorE with the API nisa.nc_matmul. For a matrix multiplication of x @ y = z, the input dimensions are as follows:</p>
+<ul><li>Stationary x.T: [K, M]. Maximum of M (stationary fdim) is 128; TensorE reaches full performance at K=128- Moving y: [K, N]. Maximum of N (moving fdim) is 4096. This is because PSUM has 16 KiB per partition, which can hold a maximum of 16384 B / 4B = 4096 FP32 elements- Output z: [M, N]</li></ul>
+<p>Note that TensorE requires the stationary matrix x to be transposed, meaning the hardware takes x.T as input but computes x @ y. This is due to TensorE’s systolic array design: the systolic array computes dot products between rows of x and columns of y.</p>
+<h3>Simple Systolic Array Performance Model</h3>
+<p>In the systolic array, each y column is staggered by one element. Every TensorE matrix multiplication involves two steps: LoadStationary (LS) loads the stationary matrix into the array, and MovingMultiply (MM) performs the calculation. During each cycle of MM, every PE computes a partial sum, passes the y element to the PE on its right, and passes the partial sum to the PE below. <img src="https://mw-meeting.oss-cn-shanghai.aliyuncs.com/image/research-email/1795795098309-28.png" alt="" loading="lazy">View interactive content →Trainium3 systolic array performance model animation. Source: SemiAnalysis With the understanding of the systolic array, we can model the instruction latency as N+254 cycles. In a matrix multiplication, the lower-right element is the last to complete computation, and it depends on how many cycles it takes to move the lowerleft element of y into the lower-right PE. Focusing on the dynamics of the lower-left element of y, we see there are three stages: fill, stream, and drain. The fill stage refers to the period when the input edge isn’t full due to staggering, which is R-1 cycles, where R represents the number of rows in the PE grid. The stream stage refers to the last row entering the PE grid, and it takes N cycles for the lower-left element to reach the input edge. Finally, the drain stage is when the PEs consume the moving matrix inputs, and it takes C-1 cycles for the lower-left element of y to get to the lower-right PE, where C represents the number of columns in the PE grid. Overall, the latency is (R-1)+N+(C-1)=127+N+127=N+254 cycles.</p>
+<p>We can also model the initiation interval as approximately N cycles for sufficiently large N. Initiation interval is the time gap between instruction launches when we consecutively launch many of the same instructions. In this case, we model the number of cycles between a series of MM instruction launches. From the perspective of the systolic array, we can continuously stream multiple input matrices y1, y2, … in the same staggered fashion, and the computation of the next MM instruction starts as soon as the next input matrix’s element streams into a PE. In a steady state where we ignore the fill and drain stages, each PE streams through one row of input matrix y for every MM instruction, meaning the initiation interval is N cycles. However, this only holds for large N due to our steady-state assumption.</p>
+<h2>nisa.nc_matmul Performance</h2>
+<p>We collect experimental results to verify our modeling. We are able to map the latency results to the formula N+393 with little error, indicating that there’s a roughly 140-cycle overhead for MM instructions, which may include things like writing results to PSUM.</p>
+<p>Source: SemiAnalysis As for the initiation interval, experiments show that by adding a constant 6-cycle overhead, we are able to reliably predict the initiation interval for matrix multiplication shapes N &gt;= 64 and M=128. As we suspected, the model breaks down for small N, and we observe the initiation interval to be 30 cycles at N=8, likely dominated by other overheads.</p>
+<p>Source: SemiAnalysis Our model also predicts that M is irrelevant to both performance metrics, and our experiments corroborate this. At N=512, both latency and initiation interval stay constant across all M sizes. This has great implications for performance. LLM inference decode workloads tend to have small M for matrix multiplications, and M not being the main factor in performance alleviates many difficulties when optimizing decode workloads.</p>
+<p>Source: SemiAnalysis We also measure a more realistic scenario, where we change both stationary and moving matrices, so the kernel alternates between executing LS and MM instructions, and the two instructions of different matrix multiplications can overlap. Results show that we reach more than 90% utilization at N=64, and we reach near theoretical throughput for shapes larger than N=128.</p>
+<p>Source: SemiAnalysis</p>
+<h2>Double FP8 Matmul Performance</h2>
+<p>Starting from NeuronCore-v3 (Trainium2), TensorE supports FP8 matrix multiplication. In terms of programming, users set the argument perf_mode to nisa.matmul_perf_mode.double_row, and double row mode supports contraction dimension K=256, 2x the standard K=128. However, the systolic array is still a 128-by-128 PE grid, so under the hood, double row mode shards the input into two tiles along the K dimension and computes them in parallel. During computation, each PE takes in two FP8 elements from the moving matrix and computes two multiply and accumulation operations every cycle.</p>
+<p>Source: SemiAnalysis As a result, the latency of FP8 double row mode is near-identical to its BF16 counterpart, and we show this in the experiments below. TensorE can theoretically double the throughput of FP8 matrix multiplication, since the latency is still bounded by the same systolic array grid. In reality, we see FP8 demonstrating near-identical instruction latency and initiation interval as its BF16 counterpart.</p>
+<p>Source: SemiAnalysis</p>
+<p>Source: SemiAnalysis However, for realistic scenarios of alternating LS and MM instructions, double_row mode FP8 performance is mixed. When comparing the same shapes, FP8 underperforms BF16 until around N=96 and only reaches 2x the compute throughput after around N=256, which makes sense as FP8 is executing at half the N size. If we consider the effective N size, double row mode FP8 only starts showing throughput benefits at N=64.</p>
+<p>FP8 power throttles more frequently than its BF16 counterpart, indicating that typical performance may be less ideal than our full-rate measurements.</p>
+<p>Source: SemiAnalysis</p>
+<h2>Microscaling Matmul Performance</h2>
+<p>NeuronCore-v4 (Trainium3) introduces microscaling format (MXFP4, MXFP8) matrix multiplication support with the new API nisa.nc_matmul_mx.</p>
+<h3>Quad-MX Matmul</h3>
+<p>Further scaling the FP8 matrix shape, nc_matmul_mx supports the K dimension of 512 (4x the standard) through the quad-MXFP8 data type. Users pass the matrices into the API nisa.quantize_mx to compact the matrices along the K dimension, packing every 4 MXFP8 elements into one quad-MXFP8 element, resulting in the K to be 128. Trainium3 offloads the quantization step to the user, instead of TensorE doing it, and this is different from major MX-supporting hardware such as Nvidia and AMD GPUs. This reduces the quantization overhead during the matrix multiplication instruction but exposes the quantization step to users to optimize.</p>
+<p>With the quad-MXFP8 data type, how LS loads the stationary matrix and how MM streams the moving matrix behave closer to the standard nc_matmul, except each element is 4-bytes wide. nc_matmul_mx accepts quad-MXFP8 inputs and theoretically has the same performance characteristics as the BF16 nc_matmul, hence 4x the throughput. Realistically, quad-MXFP8 does have similar latency and initiation interval as BF16 nc_matmul, but still suffers from minor overhead, which is understandable given the dequantization step. As for computation throughput, quad-MXFP8 outperforms its BF16 counterpart for most shapes, but it only reaches 4x throughput for N greater than 128.</p>
+<p>Source: SemiAnalysis</p>
+<p>Source: SemiAnalysis</p>
+<p>Source: SemiAnalysis</p>
+<h3>Row Tiling Mode</h3>
+<p>Row tiling mode is another new feature in NeuronCore-v4 (Trainium3) unique to nc_matmul_mx. Row tiling mode allows users to concurrently execute multiple matrix multiplications with smaller K dimensions, improving the utilization of TensorE. TensorE achieves this by splitting up the systolic array along the rows and outputting the results without passing down the partial sums through the whole array. Row tiling mode offers multiple configurations, including tile sizes (32, 128) and (64, 128). A tile represents the cut-up systolic array, so tile size refers to the number of quad elements, and the packed K dimension is essentially the partition size, which we denote as Kp.</p>
+<p>Theoretically, row tiling mode should offer T times throughput, where T represents the number of tiles. Here we compare the un-tiled, the tiled, and the standard full array configurations.</p>
+<p>Source: SemiAnalysis Our results show that row tiling mode does improve utilization and achieve higher throughput, and it reaches near the theoretical 2x / 4x boost for N &gt;= 128. Compared to the standard full array configuration, row tiling mode retains about 90% of the full array throughput and closes the gap at N=512. A caveat of row tiling mode is that it might not support certain shapes due to PSUM capacity limits, since the number of output matrix elements doubles / quadruples.</p>
+<h2>Full Chip Performance and Power Throttling</h2>
+<p>We further investigate the power throttling effects on TensorE performance by benchmarking with full chip activated, specifically, 8 matrix multiplication kernels on 8 NeuronCores in a chip. We compare all data types, including BF16, double row FP8, MXFP8, and MXFP4, and we run at the (M, N) = (128, 512) for a typical shape with max K size for each data type.</p>
+<p>Overall, we see BF16 executing at near max compute throughput, double row FP8 and MXFP4 running at around 90% MFU, and MXFP8 heavily throttled at 68.6% MFU. To set up a non-power throttled comparison, we use AWS power profile tools to apply a clock-limited profile, lowering the max boost clock from 2.4 GHz to 2 GHz. As shown below, all precisions except MXFP8 reach near the max throughput of 2 GHz rate, but are throttled at around 80% of the original MFU. For MXFP8, it reaches 84.5% MFU of 2 GHz rate, boosting the true MFU at 1.9%. This shows power throttling is a critical issue for the MXFP8 matrix multiplication using TensorE.</p>
+<p>Source: SemiAnalysis</p>
+<h2>Transcendental Functions</h2>
+<p>Transcendental functions are the math operations used in model activations, and those operations are critical to kernel performance due to their inherent mathematical calculation complexities. By default, ScalarE computes the transcendental functions, and to program ScalarE, we call nisa.activation and pass in the math operation, e.g. nl.gelu, as argument. Starting from NeuronCore-v4 (Trainium3), other engines support small sets of the transcendentals. For example, GpsimdE supports functions like sigmoid, and VectorE supports the exponential function through the new API nisa.exponential.</p>
+<p>We first benchmark the exponential function, since the exponential function throughput is a great performance bottleneck to FlashAttention operation. Here we compare VectorE and ScalarE to find out how much VectorE boosts the performance. The benchmark setup follows the most common softmax precisions, FP32 input / BF16 output and BF16 input / BF16 output. According to documentation (here and here), both engines have 128 compute lanes, matching the partition dimensions of PSUM and SBUF. For each cycle, ScalarE executes at 1 element per cycle, while VectorE at 2 FP32 elements / 4 BF16 elements per cycle. We sweep through different free dimension sizes while keeping partition dimension to 128, and the element process throughput is as below.</p>
+<p>Benchmarks show that ScalarE and FP32-input of VectorE quickly nears the theoretical throughput at around fdim=256, while it takes fdim=1024 for BF16-input to get to near 512 elements per cycle. As for instruction latency, ScalarE saturates quickly at fdim=16, after which latency scales with fdim, whereas VectorE saturates at fdim=64 for FP32 inputs and fdim=128 for BF16 inputs.</p>
+<p>Source: SemiAnalysis</p>
+<p>Source: SemiAnalysis nisa.exponential API offers many features relevant to FlashAttention, including subtract by max value for stable softmax, and input summation for running exponential sum calculations. We are delighted to see such ergonomic improvements.</p>
+<p>We further benchmarked activation functions commonly used in LLMs. All activation functions surprisingly perform identically, reaching near max 128 elements-per-cycle performance at fdim=256.</p>
+<p>Source: SemiAnalysis</p>
+<p>Source: SemiAnalysis</p>
+<h2>Intra-Logical NeuronCore Communication</h2>
+<p>Trainium supports grouping 2 physical NeuronCores into one Logical NeuronCore (LNC). Physically, an LNC maps to two NeuronCores that share an HBM stack. Physical NeuronCores within an LNC have two ways of communicating: exchanging data on SBUF through DMA engines and accessing the shared HBM with a semaphore mechanism.</p>
+<p>nisa.sendrecv implements the bi-directional data exchange, and it’s essentially a two-rank all-gather operation. sendrecv supports utilizing the main DMA engines and the ones in GpsimdE. sendrecv through GpsimdE (GpSIMD DMA) offers lower latency but has message size restrictions. Our benchmark shows GpSIMD DMA achieves up to 2.6x lower latency at a small message size of 512 bytes, but the speedup diminishes as message size increases, and the two transfer methods cross over at 32 KiB. For the main DMA engine, the latency greatly increases after 128 KiB message size, and the bandwidth nears saturation at 14 MiB, reaching 572 GB/s. We couldn’t increase the message size without errors, which is likely due to the SBUF size being 32 MiB.</p>
+<p>Source: SemiAnalysis Neuron also supports the all-reduce version, nisa.sendrecv_compute, where we pass in an NKI operator, and the NeuronCores perform a fused all-gather and reduce operation. Here we compare a naive sendrecv + tensor_tensor add setup with sendrecv_compute add. We see minor improvements for smaller message sizes but performance loss at large ones.</p>
+<p>Source: SemiAnalysis The shared HBM pattern is an all-gather that uses nl.shared_hbm to access the shared HBM and nisa.core_barrier to synchronize the NeuronCores. Both NeuronCores write their tiles from their own SBUF to the shared HBM, wait for the semaphore, and copy each other’s tiles from the shared HBM to their own SBUF. To understand the semaphore mechanism overhead, we also benchmark a local copy for a comparison.</p>
+<p>Source: SemiAnalysis Overall, the core barrier semaphore introduces 10-20% latency overhead. Compared to shared HBM + semaphore, sendrecv is the more performant option for doing 2-rank all-gather operations, as sendrecv skips HBM and transfers from SBUF to SBUF.</p>
+<p>The latency curve shows a peculiar dip around 8 KiB, and we investigate the reason. We hypothesize that the dip is due to the partition size matching the HBM burst write size. Smaller sizes trigger frequent read-modify-write operations, which adds to latency. On the other hand, data transfer time dominates latency for larger sizes.</p>
+<p>Partition size, rather than message size, appears to be the cause. When we hold the message size constant and vary the number of partitions and partition size, the latency drops 2-3x between partition size 16 bytes and 32 bytes.</p>
+<p>Source: SemiAnalysis Sweeping through partition sizes for the 128-partition configuration, we see latency drops for partition sizes that are multiples of 32. This implies the HBM write burst may be at 32 bytes.</p>
+<p>Source: SemiAnalysis</p>
+<h2>Inter-LNC Collective Communications</h2>
+<p>Neuron supports LNC-level communication, from intra-chip to full UltraServer, through the collective communication APIs nki.collectives. Using the Neuron collective benchmark nccom-test, we tested the major collective operations, including all-gather, all-reduce, reduce-scatter, and all-to-all.</p>
+<h2>Intra-Chip LNC Collective Communication</h2>
+<p>For intra-chip LNC, the NKI collectives API supports two types of data transfer source and destination: HBM to HBM and SBUF to SBUF. For the HBM-to-HBM collectives, we see the achieved bandwidth for all operations plateau at around 256 MiB message size and hold it up to 4 GiB. Which algorithm runs depends on Neuron’s collective algorithm selection. Neuron intra-node collective communications documentation says Neuron chooses different algorithms for different message sizes: Mesh for small message size, Recursive Doubling Halving (RDH) for medium, KangaRing for large, and Ring for backup.</p>
+<p>Source: Neuron Intra-node Collective Communications documentation</p>
+<p>On one chip, all-gather uses Mesh up to 2 MiB and RDH from 4 MiB. All-reduce, reduce-scatter and all-to-all stay on Mesh at every size we tested.</p>
+<p>SBUF to SBUF (sb2sb) collectives allocate the input, output, and buffers on SBUF instead of HBM. sb2sb avoids round trips to HBM, which is advantageous for communication-computation overlapped kernels to reduce latency. In our testing, we found sb2sb runs up to 24 MiB for all-gather, reduce-scatter and all-to-all, and up to 16 MiB for all-reduce, despite SBUF being 32 MiB in capacity; we believe the intermediate steps of collectives may require extra memory. Currently, sb2sb performs on par with HBM-to-HBM up to about 2 MiB. Above that, all-to-all stays on par, while the other three operations flatten and HBM keeps climbing. However, Amazon engineers are optimizing sb2sb collectives, and we expect the performance to rapidly improve in the future.</p>
+<p>Source: SemiAnalysis</p>
+<h2>Cross-Node Collective Communications</h2>
+<p>To show the scalability of Trainium3 on collective operations, we benchmarked the major collective operations with four world sizes: 1 chip (4-rank)  as the baseline, 1 node (64-rank), 1 rack (128-rank), and 1 UltraServer (256-rank). We see chip-level collectives significantly outperform other world sizes, achieving roughly 1.5x to 3x the bandwidth at sizes below 16 MiB. The other three configurations perform similarly, with the 1-node setup performing slightly better at smaller message sizes. This shows the rack is designed to scale well without losing performance. For all-to-all, chip-level achieves about 9x to 10x the bandwidth of node and rack-level world sizes, meaning performing all-to-all within a chip is highly advantageous.</p>
+<p>Source: SemiAnalysis <b>We will further test this in CollectiveX, which runs more complex, realistic collective patterns and will publicly launch in a few weeks.</b></p>
+<p>We compare the 2-node collective operation performance of different link types, including intra-rack NeuronLink, cross-rack peer NeuronLink, and cross-rack non-peer EFA. Overall, we see the NeuronLink types perform roughly the same, and intra-rack only visibly outperforms cross-rack at message sizes of 256 MiB and above. If we compare NeuronLink with EFA, NeuronLink types achieve about 1.65x the bandwidth. All-to-all is the unique case here: only intra-rack NeuronLink supports 128-rank all-to-all, while EFA supports a limited 2-rank 64-group all-to-all. Intra-rack NeuronLink reaches a max of 31 GB/s, while cross-rack non-peer EFA can only reach 8 GB/s.</p>
+<p>Source: SemiAnalysis</p>
+<h2>Trainium3n</h2>
+<p>In our AWS Trainium3 Deep Dive article, we explained the different network architectures of the Trainium3 NL32x2 Switched. We run all of our benchmarks on a Trainium3 NL32x2 Switched on gen1 switch trays, but in this section, we present the collective operation benchmark results of Trainium3 NL32x2 Switched on gen2 switch trays, comparing it with its gen1 counterpart.</p>
+<p>Gen1 uses 160-lane Astera Scorpio X switches to connect 32 chips in a rack, and the lane count constraints lead to a dual switch plane design. On the other hand, gen2, labeled as Trainium3n (trn3n) in AWS documentation, employs 320-lane Astera Scorpio X switches, and 8 switches form a single switch plane to connect all chips in a rack. Dual switch plane means some chips in a rack are two hops apart (a switch hop plus a tray link), whereas a single switch plane puts every chip in a rack one switch hop away. This theoretically lowers latency for node-level, rack-level, and UltraServer-level communications, and we show the experimental results below.</p>
+<p>At large message sizes, the Trainium3n design also raises bandwidth across all collective operations. Most notably, Trainium3n achieves a 2.8x bandwidth for all-to-all, which is very helpful to mixture-of-experts model workloads.</p>
+<p>Source: SemiAnalysis Latency tells the same story at small message sizes, where the time per operation is mostly fixed cost and not bandwidth. The largest gain is at rack level: on Trainium3n, a collective across the two nodes of a rack costs almost the same as one inside a single node for all-reduce and reduce-scatter, while gen1 pays a clear step for leaving the node. This is the removed switch hop showing up directly. The gain carries through to the full UltraServer, where both operations run about a fifth to a quarter faster than on gen1.</p>
+<p>SemiAnalysis All-to-all improves modestly at node and rack level. The only cross-rack all-to-all that runs is between two non-peer nodes in small 2-rank groups over EFA, and there the two generations are identical, at about three times the in-rack latency.</p>
+<h2>Intra-Chip and Scale Up Cycle Latency and Bandwidth Topology</h2>
+<h2>Intra-Chip NeuronCore to NeuronCore</h2>
+<p>Source: SemiAnalysis A Trainium3 chip is 2 dies of 2 SENGs each. A SENG, short for “shared engine”, is two NeuronCores sharing one HBM stack, so a chip has 8 cores and 4 stacks. Each core also has its own SRAM: SBUF for a kernel’s working tiles and PSUM for matrix-multiply partial sums. An HBM stack serves only its own pair of cores, so the pair never competes with the others for memory bandwidth. The cost is four separate HBM domains per chip: data needed outside its SEngine has to be moved by a DMA copy or a collective.</p>
+<p>In the core-to-core exchange latency/BW diagram, we can see transfers within SENGs being faster, and cross die being slowest, due to no diagonal links.</p>
+<p>Source: SemiAnalysis</p>
+<h2>Node Level Cycle Latency and Bandwidth Topology</h2>
+<p>As we covered in our previous Trainium3 article, the two chips in a tray are linked directly, and trays are joined through two switch planes per rack: one for the even-numbered chips and one for the odd-numbered chips. Traffic between an even chip and an odd chip in different trays therefore takes an extra hop, which shows up as a checkerboard pattern in the chip-to-chip matrix.</p>
+<p>Source: SemiAnalysis Newer racks use a single-plane design instead, where one switch plane connects all 32 chips in the rack. These use the Gen2 PCIe switch trays, removing the checkerboard pattern.</p>
+<p>Source: SemiAnalysis</p>
+<h2>UltraServer Rack Scale Cycle Latency and Bandwidth Topology...</h2>
+<h2>Subscribe to SemiAnalysis to unlock the rest.</h2>
+<p>Become a paying subscriber of SemiAnalysis to get access to this post and other subscriber-only content. Upgrade to paid</p>
+<h3>A subscription gets you:</h3>
+<p>Full access to newsletter posts and archive. (This does not include access to separate institutional models and products)</p>
+<p>Post comments and join the community</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>

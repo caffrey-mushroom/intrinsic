@@ -1,0 +1,227 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026.11.27 | AC | Power | AI Server Power Architecture 800V HVDC SST and Capacitor Bottlenecks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Serif+SC:wght@500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Rota Slate — web track (v2 shell, approved Sep 2026).
+   Serif (Newsreader + Noto Serif SC) = titles, wordmark, big numbers, Executive Summary.
+   Sans (Inter + PingFang / Noto Sans SC) = everything read or worked with.
+   One 8px spacing grid · four type sizes · one radius · one hairline · 2px data lines.
+   Needs the fonts <link> in references/web.md. */
+:root{
+  /* canvas & text */
+  --bg:#FAF9F5; --hover:#F3F1EA; --soft:#EFEDE6; --rule:#E6E3D9;
+  --text:#141413; --muted:#5F5E59; --faint:#8A887F;
+  /* Rota data colors */
+  --slate-100:#E3E7ED; --slate-200:#C8D0DA; --slate-300:#ABB7C8; --slate-400:#90A1B6;
+  --slate-500:#7189A7; --slate-600:#5E728D; --slate-700:#4D5E74; --slate-800:#364456; --navy:#022B46;
+  --blue:#0070C0; --blue-l:#73B0DC; --red:#C00000; --red-l:#DC7373; --green:#00B050; --green-l:#73D49F;
+  --cyan:#00B0F0; --cyan-l:#73D4F7; --orange:#ED7D31; --orange-l:#F5B88E;
+  /* direction marks (arrows only, never whole numbers) */
+  --up:#1E8E4E; --down:#B42318;
+  /* type */
+  --serif:Newsreader, "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, Georgia, serif;
+  --sans:Inter, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --code:ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display:40px; --fs-title:20px; --fs-body:15px; --fs-note:12.5px;
+  /* space, shape */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px;
+  --radius:8px; --hair:1px solid var(--rule); --line-w:2px;
+  --page-w:960px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; } }
+:root[data-theme="dark"]{
+  --bg:#1F1E1D; --hover:#282725; --soft:#2E2D2A; --rule:#3A3935; --text:#F0EEE6; --muted:#B3B0A6; --faint:#85827A;
+  --slate-100:#2F3540; --navy:#C8D0DA; --up:#4FCB85; --down:#E07A7A; }
+
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg); scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:var(--fs-body); line-height:1.7;
+     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums}
+a{color:var(--slate-600); text-decoration:none} a:hover{text-decoration:underline; text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--slate-500); outline-offset:3px; border-radius:4px}
+
+/* top bar — identical on every page of a site */
+.mbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter:blur(8px); border-bottom:var(--hair)}
+.mbar-in{max-width:1120px; margin:0 auto; padding:0 var(--s3); height:56px; display:flex; align-items:center; gap:var(--s2)}
+.mark{display:flex; align-items:center; font-family:var(--serif); font-weight:500; font-size:19px; letter-spacing:-.005em; color:var(--text)}
+.mark:hover{text-decoration:none}
+.crumb{color:var(--muted); display:flex; align-items:center; gap:var(--s2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.crumb::before{content:""; width:1px; height:16px; background:var(--rule)}
+.mbar .sp{flex:1}
+.mstamp{font-size:var(--fs-note); color:var(--muted); white-space:nowrap}
+
+/* page & headings */
+.page{max-width:var(--page-w); margin:0 auto; padding:var(--s6) var(--s3) var(--s8)}
+h1,.ptitle{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.15; letter-spacing:-.012em; margin:0}
+h2,.sec-t{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35; margin:0}
+h3{font-family:var(--sans); font-weight:600; font-size:var(--fs-body); margin:var(--s3) 0 0}
+.psub,.lede{color:var(--muted); margin:var(--s1) 0 0; max-width:72ch}
+.sec{margin-top:var(--s6); padding-top:var(--s3); border-top:var(--hair)}
+.note,.meta,.cap{font-size:var(--fs-note); color:var(--muted); line-height:1.6; margin:4px 0 0}
+
+/* prose — Claude-reply / Bear rhythm, sans */
+.prose{margin-top:var(--s2)}
+.prose p{margin:0 0 .9em; max-width:72ch}
+.prose ul,.prose ol{margin:0 0 1em; padding-left:1.3em; max-width:72ch}
+.prose li{margin:.35em 0} .prose li::marker{color:var(--faint)}
+.prose strong,.prose b{font-weight:600}
+.prose blockquote{margin:1.2em 0; padding-left:var(--s2); border-left:2px solid var(--slate-300); color:var(--muted)}
+.prose mark{background:var(--slate-100); color:inherit; padding:0 .15em; border-radius:3px}
+.prose code{font-family:var(--code); font-size:.86em; background:var(--soft); padding:.1em .4em; border-radius:4px}
+
+/* Executive Summary — the one serif paragraph */
+.summary{font-family:var(--serif); font-size:var(--fs-title); line-height:1.6; margin:var(--s4) 0 0; padding-left:var(--s3); border-left:2px solid var(--slate-500); max-width:68ch}
+
+/* big numbers: no boxes, hairline above and below the row */
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); margin-top:var(--s4); padding:var(--s3) 0; border-top:var(--hair); border-bottom:var(--hair)}
+.kpi .l{font-size:var(--fs-note); color:var(--muted)}
+.kpi .v{font-family:var(--serif); font-weight:500; font-size:var(--fs-display); line-height:1.1; letter-spacing:-.015em; margin-top:var(--s1); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
+.kpi .n,.kpi .d{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.ar{font-size:.8em; margin-right:3px} .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+.kpi .v .ar{font-size:.42em; vertical-align:.38em; margin-right:6px}
+
+/* tables */
+.tbl,.tbl-wrap{overflow-x:auto; margin-top:var(--s2)}
+table.t,table.rota{border-collapse:collapse; width:100%}
+table.t th,table.rota th{font-size:var(--fs-note); font-weight:600; color:var(--muted); text-align:right; padding:var(--s1) 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t td,table.rota td{font-size:13.5px; text-align:right; padding:10px 12px; border-bottom:var(--hair); white-space:nowrap}
+table.t th:first-child,table.t td:first-child,table.rota th:first-child,table.rota td:first-child{text-align:left; padding-left:0}
+table.t tr:hover td,table.rota tr:hover td{background:var(--hover)}
+tr.key td{font-weight:600}
+td.rate{color:var(--muted); font-style:italic} td.pct{font-style:italic}
+tr.dim td{color:var(--faint)}
+
+/* charts sit on the canvas, no frame */
+figure.chart{margin:var(--s6) 0 0; padding-top:var(--s3); border-top:var(--hair)}
+figure.chart .title{font-family:var(--serif); font-weight:500; font-size:var(--fs-title); line-height:1.35}
+figure.chart svg{display:block; width:100%; height:auto; overflow:visible}
+figure.chart figcaption{font-size:var(--fs-note); color:var(--muted); margin-top:var(--s1)}
+.card{padding-top:var(--s3); margin-top:var(--s6); border-top:var(--hair)}  /* legacy class: section, not a box */
+
+/* loading: skeleton until data is in, then everything appears at once */
+.sk{display:block; background:var(--soft); border-radius:var(--radius); animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+body.loading [data-live]{visibility:hidden}
+body:not(.loading) .sk-wrap{display:none}
+
+@media (max-width:760px){
+  :root{--fs-display:32px}
+  .mbar-in{padding:0 var(--s2); gap:12px} .mstamp{display:none}
+  .page{padding:var(--s4) var(--s2) var(--s6)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:var(--s3)}
+  .kpi .v{white-space:normal}
+}
+.fu{list-style:none; padding-left:0 !important}
+.fu li{padding:var(--s2) 0; border-bottom:var(--hair); margin:0}
+.fu li:last-child{border-bottom:0}
+.fu .why{display:block; font-size:var(--fs-note); color:var(--muted); margin-top:2px}
+</style><style>
+.tags{font-family:var(--sans); font-size:13.5px; color:var(--slate-500); margin:6px 0 2px; letter-spacing:.01em; word-spacing:.35em}
+.orig{font-size:var(--fs-note); color:var(--muted); margin:var(--s1) 0 0}
+.backrow{max-width:var(--page-w); margin:0 auto; padding:var(--s3) var(--s3) 0}
+.back{font-size:var(--fs-body); color:var(--muted)}
+.back:hover{color:var(--text); text-decoration:none}
+.body{margin-top:var(--s4); padding-top:var(--s3); border-top:var(--hair)}
+.body h2{margin:var(--s4) 0 var(--s1)} .body h2:first-child{margin-top:0}
+.body h3{margin:var(--s3) 0 var(--s1)}
+.body p{margin:0 0 .9em}
+.body p.qq{font-weight:600; margin-top:var(--s3)}
+.body ul,.body ol{margin:0 0 1em; padding-left:1.3em} .body li{margin:.35em 0} .body li::marker{color:var(--faint)}
+.body b{font-weight:600}
+.body img{display:block; max-width:100%; height:auto; margin:var(--s2) 0}
+.body .tbl{margin:var(--s2) 0}
+table.t.wrap td, table.t.wrap th{white-space:normal; text-align:left; vertical-align:top}
+@media (max-width:760px){.backrow{padding:var(--s2) var(--s2) 0}}
+</style><style>
+.tldr{margin-top:var(--s3); padding:var(--s2) var(--s3); background:var(--soft); border-left:3px solid var(--slate-400); border-radius:var(--radius)}
+.tldr .tl{font-family:var(--sans); font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--muted); margin:0 0 6px}
+.tldr ol{margin:0; padding-left:1.3em} .tldr li{margin:.3em 0; line-height:1.65} .tldr li::marker{color:var(--faint)}
+</style></head><body>
+<div class="backrow"><a class="back" href="../" aria-label="返回 Notes">←&#8201;返回</a></div>
+<main class="page">
+<h1>2026.11.27 | AC | Power | AI Server Power Architecture 800V HVDC SST and Capacitor Bottlenecks</h1>
+<p class="orig">原标题：AI供电架构升级调研_ 800V HVDC及SST量产节奏, 垂直供电与二次侧电源发展, 电容供需及高功率电源竞争壁垒-聚焦台达_Vicor_伊顿_松下_江海股份</p>
+<p class="tags">#power #800vdc #datacenter #rubin #asic #components</p>
+<p class="meta">AceCamp · 2026-11-27 14:15 · article 70569720</p>
+<section class="tldr" aria-label="核心摘要"><p class="tl">核心摘要</p><ol>
+<li>800V HVDC已于2026年10月按期小批量出货（每柜配6至8个110kW Power Shelf），目前未见工程延期，预计2027Q3随Rubin Ultra 1:1进入量产并提前一个季度在2027Q2体现于台达等厂商财报，SST规划节点仍在2028Q4。</li>
+<li>二次侧（54V转10V）与三次侧垂直供电（VRM）将于2028年随Rubin Ultra放量，Vicor与台达具备核心竞争力；Google未来以V7用5.5kW、V8i/V8t转用与Rubin同规格的18.3kW模块为主，8.5kW属过渡品。</li>
+<li>电源扩产核心卡点在组装与检测设备（交期约40周）及上游电容（交期48至52周），牛角电容与薄膜电容由松下、NCC及金山电主导，而江海股份、艾华集团等大陆电容厂因海外审核及政策因素已基本暂停海外供货。</li>
+<li>110kW及18.3kW电源模块主要由台达（约70%）与另一台系龙头（约30%）双寡头供应，双方在产能吃紧下不会为10%份额打价格战，麦格米特与欧陆通受品牌信任与政策审核限制难以进入海外HVDC一二供。</li>
+<li>需求前瞻方面，电源链目前尚未看到2028年明确客户Forecast（预计2027年9月才能明朗），专家个人判断2028年NVIDIA需求增速可能放缓，但ASIC仍将维持高速增长至2030年。</li>
+</ol></section>
+<div class="body">
+<h2>摘要</h2>
+<p>· 方向：围绕AI服务器向高压直流供电、固态变压器及垂直供电架构升级的方向展望。· 结构：围绕一次侧、二次侧及三次侧电源的价值量变化，以及电源模块与系统集成商竞争格局展望。· 节奏：围绕新一代供电架构量产、生产设备及电容供应瓶颈、国产供应商客户导入的节奏展望。</p>
+<h2>正文</h2>
+<p>以下是调研纪要总结：</p>
+<p>·800V HVDC、SST与垂直供电进展：专家称800V HVDC已于2026年10月开始出货，目前未观察到工程问题或延期，每个机柜配置6—8个110kW Power Shelf，预计2027年价格基本稳定。专家预计2027Q3随Rubin Ultra推出进入量产，两者按照1:1配置，电源厂商将提前一个季度向ODM交付，相关收入可能于2027Q2开始体现。SST目前规划时间为2028Q4。除一次侧电源外，专家更看好二次侧及三次侧电源的发展，其中54V转10V为二次侧电源，垂直供电预计2028年随Rubin Ultra放量进入批量应用，Vicor和台达有望获得较大份额。Google方面，8.5kW PSU属于过渡产品，V7主要采用5.5kW模块，V8i及V8t预计转向18.3kW模块。</p>
+<p>· 扩产瓶颈与上游电容供需：专家称当前电源扩产的主要瓶颈是生产及检测设备，其中组装设备限制最为明显，设备交期约40周。上游物料中电容最为紧缺，交期达到48—52周，牛角电容及薄膜电容主要由松下、NCC等日系厂商供应，台系供应商包括金山电。大陆电容厂商交期约24—36周，短于日系产品，主要服务长城、欧陆通、奥海、高斯宝等国内电源厂商。专家认为受海外客户供应链审核及政策变化影响，江海股份、艾华集团等大陆电容厂商进入海外AI电源供应链的难度可能增加。当前台系电源厂商5.5kW及18.3kW模块产能仍不足，优先保障海外需求，大陆5.5kW模块已开始少量应用，18.3kW仍处于前期验证阶段。</p>
+<p>· 电源竞争壁垒与长期需求：专家称110kW及18.3kW电源产品目前主要由台达和公司供应，份额分别约70%和30%，双方在产能紧张的情况下不会为了争夺约10%的份额而主动降价。相较于冷板、Manifold等精密加工类液冷部件，电源行业的壁垒更多体现在长期积累的设计经验、故障保护、生产冗余、品牌及客户信任。伊顿目前更多通过与台系电源厂商贴牌合作提供整体解决方案，其800V HVDC所用电源模块仍主要来自外部供应商。需求方面，目前尚未看到明确的2028年客户Forecast，预计到2027年9月才能获得相关信息。专家个人预计2028年NVIDIA需求增速可能放缓，但ASIC仍将维持较高增长，并可能持续至2030年。</p>
+<p>以下是专家观点：</p>
+<p>Bryce Wang：2027年需求相对明确，客户对2028年需求是否已有预期？</p>
+<p>专家：目前没有2028年明确信息，只能看到2027年Rubin排产，预计到2027年9月才能看到2028年Forecast。公司自身预计2028年NV增速可能放缓，ASIC仍将像2026、2027年一样大幅增长，预计持续至2030年。</p>
+<p>Bryce Wang：长城有计划与台达或公司竞争海外客户吗？</p>
+<p>专家：没有。因企业性质原因，长城无法出海，主要在国内发展，具备较强的技术和市场能力。</p>
+<p>Bryce Wang：台系厂商目前向大陆供货的情况如何？</p>
+<p>专家：目前主要处于送样阶段，原因是产能不足。台达和公司的18.3kW、5.5kW模块产能不足，优先供应海外，国内交期较长。腾讯等部分国内CSP已开始使用5.5kW模块，主要由台达和长城供应，但量不大，长城仍能满足需求，台达交期较长。国内18.3kW模块尚未开始批量采购，仍处于前期验证阶段。</p>
+<p>Bryce Wang：年初更看好光通信和存储，液冷、电源排序靠后。目前冷板标准化程度较高，扩产快，过剩速度可能比半导体更快。电源市场相对较好，是否仍由台系厂商主导？</p>
+<p>专家：需要区分国内和海外市场。海外客户认可台系厂商。麦格米特虽然是英伟达三供，但出货量一直较低，主要因为其并非台系厂商。CSP较少将麦格米特作为重要供应商，因此其在英伟达和Google TPU的份额较低，欧陆通类似。海外市场主要认可台达和公司，预计两家的份额格局基本不会改变。</p>
+<p>Bryce Wang：台达和公司之间不会竞争吗？</p>
+<p>专家：110kW和18.3kW产品基本七三开，台达70%，公司30%。不会为抢10%的份额而降价，主要考虑维持毛利率及自身产能，产能不足时抢到订单也无法交付。</p>
+<p>Bryce Wang：除台股外，还有哪些电源链公司有机会？例如Vicor？</p>
+<p>专家：Vicor和公司、台达不同，他与台达有联系，与公司没有。除18.3kW模块和800V HVDC外，个人更看好二次、三次侧电源。二次侧为54V转10V，未来Rubin Ultra将采用VRM相关垂直电源方案，Vicor和台达具备竞争力。公司尚未涉足垂直电源，目前主要做54V转10V二次电源。2027年以Rubin为主，垂直电源不会批量使用。预计2028年随Rubin Ultra放量，垂直电源进入量产，Vicor和台达有望获得较大份额。</p>
+<p>Bryce Wang：大陆厂商未来有机会切入海外HVDC市场吗？</p>
+<p>专家：个人认为难度较大，尤其是近期政策变化后。无论Google链还是ASIC链，未处于一供、二供地位的国产供应商，若缺乏绝对优势，后续供货难度较大。800V HVDC目前主要由公司和台达主导。目前没有看到大陆厂商进入海外800V HVDC市场的机会，除品牌知名度外，还存在政策限制。</p>
+<p>Bryce Wang：为什么电源也会受到政策限制？</p>
+<p>专家：整个电源供应商都会被审核，包括Power Shelf和800V HVDC。主要是供应链稳定性的考虑。国内供应商出海较快，美国客户担心相关电源制造工艺及零配件最终反哺国内市场，这是其主要顾虑。</p>
+<p>匿名投资者：2027年Google是否没有8.5kW PSU，全部采用5.5kW？</p>
+<p>专家：8.5kW属于过渡产品。Google未来主要有两种形态：V7采用5.5kW；v8i和v8t采用与Rubin相同的18.3kW模块。V8曾做过5.5kW方案，但后来基本停掉，主要采用18.3kW模块。</p>
+<p>Bryce Wang：800V HVDC进展如何？是否延期？</p>
+<p>专家：原预计2026Q4推出，公司和台达已于2026年10月开始正常出货800V HVDC，进展符合预期。</p>
+<p>Bryce Wang：是否存在可能导致后续延期的工程问题？</p>
+<p>专家：目前没有出现工程问题。</p>
+<p>Bryce Wang：SST研发进展如何？是否加快？</p>
+<p>专家：SST目前给出的时间点为2028Q4。</p>
+<p>Bryce Wang：还有其他新的产品形态吗？</p>
+<p>专家：目前主要是三种：Power Shelf（18.3kW、15kW等不同功率）、800V HVDC和SST。暂未看到其他产品形态。</p>
+<p>Bryce Wang：HVDC目前价格如何？2027年批量供应后，价格和毛利率预计是多少？</p>
+<p>专家：每个机柜配置6~8个110kW Power Shelf。预计2027年价格维持这一水平，目前仍处于小批量阶段，预计2027Q3随Rubin Ultra推出进入量产。800V HVDC与Rubin Ultra预计为1:1配置。</p>
+<p>Bryce Wang：如果Rubin Ultra在2027Q3起量且无工程延期，HVDC能否提前一个季度反映在台达或公司等电源厂商的Q2季报中？收入确认节奏如何？</p>
+<p>专家：是的，会提前一个季度向ODM交付800V HVDC，预计提前一个季度反映在季报中。</p>
+<p>Bryce Wang：现在扩产的瓶颈在哪里？</p>
+<p>专家：扩产瓶颈主要是生产设备交期。电源生产设备及检测设备交期约40周，其中组装设备交期是主要瓶颈，其他方面目前还好。</p>
+<p>Bryce Wang：上游物料中哪类交期最长？</p>
+<p>专家：电容，交期48~52周，接近一年。</p>
+<p>Bryce Wang：哪些电容厂商会受益？</p>
+<p>专家：主要是日系厂商。牛角电容和薄膜电容以日系为主，包括松下、NCC等，台系主要是金山电。国内电容厂商可能受到一定影响。</p>
+<p>Bryce Wang：大陆厂商呢，比如江海？</p>
+<p>专家：江海、艾华未来可能受到政策影响。目前公司、台达等电源厂基本只选择日系和台系供应商。</p>
+<p>Bryce Wang：整体电容缺货，国内电容厂商是否可以转向国内电源厂供货？</p>
+<p>专家：国内电容厂商此前主要供应长城、欧陆通、奥海、高斯宝等国内电源厂。过去也向海外供货，目前因政策影响，海外供货基本暂停。</p>
+<p>Bryce Wang：国内几百万颗算力芯片对应的电容需求，目前是否缺货？</p>
+<p>专家：国内电容交期约24~36周，短于日系产品。</p>
+<p>Bryce Wang：24~36周也比较长？</p>
+<p>专家：电容交期通常在20周以上。</p>
+<p>Bryce Wang：有观点认为HVDC可能延期，2027年渗透率低于预期，目前进展是否正常？</p>
+<p>专家：公司已在10月开始供应HVDC，目前没有看到出货延期。前期可能存在延期的说法，但实际已经开始供货。</p>
+<p>Bryce Wang：整体电源链比预期乐观？</p>
+<p>专家：是的。</p>
+<p>Bryce Wang：电源的主要壁垒是什么？与液冷这种制造业的区别？</p>
+<p>专家：液冷范围较广，冷板、Manifold、快接头主要依赖精密加工，属于结构件能力。如果不考虑政策影响，国内厂商可以进入海外供应链。CDU涉及冷热水循环、温控等功能，个人认为国内CDU厂商进入海外供应链难度很大，即使已有成熟方案也难以获得客户认可。这也是近期台系厂商积极收购海外液冷厂商的原因。</p>
+<p>电源壁垒更多体现在品牌和经验。海外云厂商选择电源品牌时更看重供应年限和市场份额，认为老牌厂商在设计、生产冗余和意外故障预判方面能力更强。新电源厂拆解老厂商产品时，可能发现很多看似不必要的设计，实际是经历故障后增加的保护电路。这些经验需要长期积累，因此海外CSP更信任大型电源厂，国内厂商出海接受度较低。</p>
+<p>Bryce Wang：Vertiv或伊顿的电源与台系厂商相比有何优势？</p>
+<p>专家：伊顿目前更多与电源厂商进行贴牌合作，比如台达或公司。其800V HVDC方案所用电源模块仍采用公司、台达的产品，自研模块尚不成熟，但整体解决方案会以伊顿品牌对外销售。</p>
+<p>Bryce Wang：台系厂商如何看待美国选举后部分数据中心项目可能延期的担忧？</p>
+<p>专家：目前来看，对台系厂商影响较小。近期东南亚相关政策变化对国内供应商影响更大，主要集中在电源和液冷，未来几个月影响可能较明显。东南亚及国内客户相对价格敏感，对品牌重视程度较低。</p>
+<p>Bryce Wang：其他领域没有影响是指什么？</p>
+<p>专家：比如PCB没有明显影响，国内厂商主要处于一供或二供地位。</p>
+</div>
+</main>
+<script src="../back.js" defer></script>
+</body></html>
